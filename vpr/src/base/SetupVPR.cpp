@@ -47,8 +47,10 @@ static void SetupSwitches(const t_arch& Arch,
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
+// Fill the data structures used when flat_routing is enabled to speed-up routing
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
 static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type);
+// Fill the pin_num to pb_pin map in physical_type
 static void add_logical_pin_to_physical_tile(int physical_pin_offset,
                                              t_logical_block_type_ptr logical_block_ptr,
                                              t_physical_tile_type* physical_type);
@@ -737,6 +739,8 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
 
     for (auto& physical_type : device_ctx.physical_tile_types) {
         set_root_pin_to_pb_pin_map(&physical_type);
+        // Physical number of pins and classes in the clusters start from the number of pins and classes on the cluster
+        // to avoid collision between intra-cluster pins and classes with root-level ones
         int physical_pin_offset = physical_type.num_pins;
         int physical_class_offset = (int)physical_type.class_inf.size();
         physical_type.primitive_class_starting_idx = physical_class_offset;
@@ -750,6 +754,7 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                     int logical_block_idx = logic_block_ptr->index;
                     t_logical_block_type* mutable_logical_block = &device_ctx.logical_block_types[logical_block_idx];
                     VTR_ASSERT(mutable_logical_block == logic_block_ptr);
+                    // Continuous ranges are assigned to make passing them more memory-efficient
                     sub_tile.primitive_class_range[sub_tile_inst].insert(
                         std::make_pair(logic_block_ptr, t_class_range(physical_class_offset,
                                                                       physical_class_offset+num_classes-1)));
@@ -758,7 +763,8 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                                                                     physical_pin_offset+num_pins-1)));
                     add_logical_pin_to_physical_tile(physical_pin_offset, logic_block_ptr, &physical_type);
 
-                    auto logical_classes = logic_block_ptr->primitive_logical_class_inf;
+                    std::vector<t_class> logical_classes = logic_block_ptr->primitive_logical_class_inf;
+                    // Change the pin numbers in a class pin list from logical number to physical number
                     std::for_each(logical_classes.begin(), logical_classes.end(),
                                   [&physical_pin_offset](t_class& l_class) { for(auto &pin : l_class.pinlist) {
                                                                                 pin += physical_pin_offset;
@@ -781,6 +787,7 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                         physical_class_num++;
                     }
 
+                    // Add the number of seen pins and classes to the relevant offsets
                     physical_pin_offset += num_pins;
                     physical_class_offset += num_classes;
                 }
