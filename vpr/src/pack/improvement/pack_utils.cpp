@@ -28,23 +28,6 @@ void init_multithreading_locks() {
     }
 }
 
-void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-#ifdef pack_improve_debug
-    vtr::ScopedFinishTimer lookup_timer("Building CLB atoms lookup");
-#endif
-
-    atoms_lookup.resize(cluster_ctx.clb_nlist.blocks().size());
-
-    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
-        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
-
-        atoms_lookup[clb_index].insert(atom_blk_id);
-    }
-}
-
 void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_data& clustering_data, int) {
     /*
      * auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -103,6 +86,16 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
         move_generator = std::make_unique<quasiDirectedCompatibleTypePackingSwap>();
     else if (strcmp(move_type.c_str(), "semiDirectedSameSizeSwap") == 0)
         move_generator = std::make_unique<quasiDirectedSameSizePackingSwap>();
+    else if (strcmp(move_type.c_str(), "randomConnSwap") == 0)
+        move_generator = std::make_unique<randomConnPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedConnSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedConnPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameTypeConnSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameTypeConnPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedCompatibleTypeConnSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedCompatibleTypeConnPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameSizeConnSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameSizeConnPackingSwap>();
 
     else {
         VTR_LOG("Packing move type (%s) is not correct!\n", move_type.c_str());

@@ -191,3 +191,23 @@ bool quasiDirectedSameSizePackingSwap::propose_move(std::vector<molMoveDescripti
     }
     return found;
 }
+
+bool randomConnPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_connection(new_locs));
+}
+
+bool quasiDirectedConnPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_connection(new_locs));
+}
+
+bool quasiDirectedSameTypeConnPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_connection(new_locs));
+}
+
+bool quasiDirectedCompatibleTypeConnPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_connection(new_locs));
+}
+
+bool quasiDirectedSameSizeConnPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_connection(new_locs));
+}

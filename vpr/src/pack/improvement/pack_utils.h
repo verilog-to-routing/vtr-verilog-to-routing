@@ -14,7 +14,4 @@ struct t_pack_iterative_stats {
 void iteratively_improve_packing(const t_packer_opts& packer_opts,
                                  t_clustering_data& clustering_data,
                                  int verbosity);
-
-void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup);
-
 #endif //VTR_PACK_UTILS_H

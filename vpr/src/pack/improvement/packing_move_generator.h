@@ -52,8 +52,29 @@ class quasiDirectedSameSizePackingSwap : public packingMoveGenerator {
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };
 
-class quasiDirectedCompatibleTypeSameSizePackingSwap : public packingMoveGenerator {
-    bool propose_move(std::vector<molMoveDescription>& new_locs);
-    bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
+/************ Moves that evaluate on abosrbed Connections *********************/
+class randomConnPackingSwap : public randomPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedConnPackingSwap : public quasiDirectedPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameTypeConnPackingSwap : public quasiDirectedSameTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedCompatibleTypeConnPackingSwap : public quasiDirectedCompatibleTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameSizeConnPackingSwap : public quasiDirectedSameSizePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
 };
 #endif //VTR_PACKINGMOVEGENERATOR_H
