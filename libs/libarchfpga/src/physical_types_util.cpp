@@ -380,16 +380,15 @@ static std::vector<const t_pb_graph_node*> get_sink_hierarchical_parents(t_physi
     const t_pb_graph_node* curr_pb_node = get_pb_graph_node_from_pin_physical_num(physical_tile,
                                                                                   get_pin_list_from_class_physical_num(physical_tile,
                                                                                                                        class_physical_num)[0]);
-    pb_nodes.reserve(curr_pb_node->pb_type->depth+1);
+    pb_nodes.reserve(curr_pb_node->pb_type->depth + 1);
     VTR_ASSERT(curr_pb_node != nullptr);
 
-    while(curr_pb_node != nullptr) {
+    while (curr_pb_node != nullptr) {
         pb_nodes.push_back(curr_pb_node);
         curr_pb_node = curr_pb_node->parent_pb_graph_node;
     }
 
     return pb_nodes;
-
 }
 
 static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
@@ -403,18 +402,17 @@ static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
     const auto& connected_sinks = pb_pin->connected_sinks_ptc;
 
     // If ref_sink_num is not reachable by pin_physical_num return 0
-    if(connected_sinks.find(ref_sink_num) == connected_sinks.end()) {
+    if (connected_sinks.find(ref_sink_num) == connected_sinks.end()) {
         return 0;
     }
 
-    for(auto sink_num : sink_grp) {
-        if(connected_sinks.find(sink_num) != connected_sinks.end()) {
+    for (auto sink_num : sink_grp) {
+        if (connected_sinks.find(sink_num) != connected_sinks.end()) {
             num_reachable_sinks++;
         }
     }
 
     return num_reachable_sinks;
-
 }
 
 /******************** End Subroutine declarations and definition ************************/
@@ -901,7 +899,6 @@ t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_ti
     auto pin_list = get_pin_list_from_class_physical_num(physical_tile, class_physical_num);
     VTR_ASSERT((int)pin_list.size() != 0);
     return get_logical_block_from_pin_physical_num(physical_tile, pin_list[0]);
-
 }
 
 const std::vector<int>& get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
@@ -970,7 +967,7 @@ std::vector<int> get_tile_root_classes(t_physical_tile_type_ptr physical_type) {
 
 t_class_range get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type) {
     int low_class_num = physical_type->primitive_class_starting_idx;
-    return {low_class_num, low_class_num+(int)physical_type->primitive_class_inf.size()-1};
+    return {low_class_num, low_class_num + (int)physical_type->primitive_class_inf.size() - 1};
 }
 
 /** **/
@@ -1052,7 +1049,7 @@ const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr 
 }
 
 t_pb_graph_pin* get_mutable_pb_pin_from_pin_physical_num(t_physical_tile_type* physical_tile, t_logical_block_type* logical_block, int physical_num) {
-    if(is_pin_on_tile(physical_tile, physical_num)) {
+    if (is_pin_on_tile(physical_tile, physical_num)) {
         return get_mutable_tile_pin_pb_pin(physical_tile, logical_block, physical_num);
     } else {
         return physical_tile->pin_num_to_pb_pin.at(physical_num);
@@ -1077,7 +1074,7 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
     } else {
         auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_physical_num);
         auto port_type = pb_pin->port->type;
-        if(port_type == PORTS::IN_PORT) {
+        if (port_type == PORTS::IN_PORT) {
             return e_pin_type::RECEIVER;
         } else {
             VTR_ASSERT(port_type == PORTS::OUT_PORT);
@@ -1207,8 +1204,8 @@ t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr /*physical_tile*/,
 
     int physical_pin_offset = sub_tile->intra_pin_range[relative_cap].at(logical_block).low;
 
-    return {physical_pin_offset+pb_graph_node->pin_num_range.low,
-            physical_pin_offset+pb_graph_node->pin_num_range.high};
+    return {physical_pin_offset + pb_graph_node->pin_num_range.low,
+            physical_pin_offset + pb_graph_node->pin_num_range.high};
 }
 
 std::vector<int> get_tile_root_pins(t_physical_tile_type_ptr physical_tile) {
@@ -1220,15 +1217,15 @@ std::vector<int> get_tile_root_pins(t_physical_tile_type_ptr physical_tile) {
 
 std::vector<int> get_flat_tile_pins(t_physical_tile_type_ptr physical_type) {
     std::vector<int> tile_pins;
-    tile_pins.reserve(physical_type->num_pins+physical_type->pin_num_to_pb_pin.size());
+    tile_pins.reserve(physical_type->num_pins + physical_type->pin_num_to_pb_pin.size());
 
-    for(int pin_num = 0; pin_num < physical_type->num_pins; pin_num++) {
+    for (int pin_num = 0; pin_num < physical_type->num_pins; pin_num++) {
         tile_pins.push_back(pin_num);
     }
 
-    for(const auto& pin_num_pb_pin_pair: physical_type->pin_num_to_pb_pin) {
+    for (const auto& pin_num_pb_pin_pair : physical_type->pin_num_to_pb_pin) {
         auto pb_pin = pin_num_pb_pin_pair.second;
-        if(pb_pin->is_root_block_pin()) {
+        if (pb_pin->is_root_block_pin()) {
             continue;
         } else {
             tile_pins.push_back(pin_num_pb_pin_pair.first);
@@ -1423,16 +1420,16 @@ float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
     float delay = std::numeric_limits<float>::min();
 
     const t_pb_graph_pin* pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
-                                                                         logical_block,
-                                                                         pin_physical_num);
+                                                                    logical_block,
+                                                                    pin_physical_num);
     VTR_ASSERT(pb_pin->is_primitive_pin());
 
-    if(pb_pin->num_pin_timing == 0) {
+    if (pb_pin->num_pin_timing == 0) {
         return 0.;
     } else {
-        for(int pin_timing_num = 0; pin_timing_num < pb_pin->num_pin_timing; pin_timing_num++) {
+        for (int pin_timing_num = 0; pin_timing_num < pb_pin->num_pin_timing; pin_timing_num++) {
             float max_delay = pb_pin->pin_timing_del_max[pin_timing_num];
-            if(delay < max_delay) {
+            if (delay < max_delay) {
                 delay = max_delay;
             }
         }
@@ -1495,9 +1492,9 @@ std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_til
     std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_class_physical_num(physical_tile, sink_ptc_num);
     auto logical_block = get_logical_block_from_class_physical_num(physical_tile, sink_ptc_num);
     auto sink_hierarchical_parents_node = get_sink_hierarchical_parents(physical_tile, sink_ptc_num);
-    for(auto pb_graph_node : sink_hierarchical_parents_node) {
+    for (auto pb_graph_node : sink_hierarchical_parents_node) {
         // We assume that choke points do not occur on the root-level pb_graph_node due to having a relatively populated crossbar
-        if(pb_graph_node->is_root()) {
+        if (pb_graph_node->is_root()) {
             continue;
         }
 
@@ -1506,29 +1503,28 @@ std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_til
                                               logical_block,
                                               sub_tile_rel_cap,
                                               pb_graph_node);
-        std::unordered_map<int , int> reachability_inf;
+        std::unordered_map<int, int> reachability_inf;
         bool has_unique_val = false;
         int prev_val = -1;
         // Iterate over all of the block's IPINs, and check how many sinks in the group are reachable by each pin.
         // If there are pins that the number of reachable sinks are different, we consider those pins as choke points
-        for(int pin_num = pb_pins.low; pin_num <= pb_pins.high; pin_num++) {
+        for (int pin_num = pb_pins.low; pin_num <= pb_pins.high; pin_num++) {
             // Only choke points on IPINs are analyzed
-            if(get_pin_type_from_pin_physical_num(physical_tile, pin_num) == e_pin_type::RECEIVER) {
+            if (get_pin_type_from_pin_physical_num(physical_tile, pin_num) == e_pin_type::RECEIVER) {
                 int num_reachable_sinks = get_num_reachable_sinks(physical_tile,
                                                                   pin_num,
                                                                   sink_ptc_num,
                                                                   grp);
 
-
-                if(num_reachable_sinks != 0) {
-                    if(prev_val == -1) {
+                if (num_reachable_sinks != 0) {
+                    if (prev_val == -1) {
                         prev_val = num_reachable_sinks;
                     } else {
-                        if(prev_val != num_reachable_sinks) {
+                        if (prev_val != num_reachable_sinks) {
                             has_unique_val = true;
                         }
                     }
-                    if(num_reachable_sinks > 1) {
+                    if (num_reachable_sinks > 1) {
                         reachability_inf.insert(std::make_pair(pin_num, num_reachable_sinks));
                     }
                 }
@@ -1536,13 +1532,11 @@ std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_til
         }
 
         // Choke point happens if there is a discrepancy between the number of sinks reachable by the pins
-        if(has_unique_val) {
-            for(const auto& reachability_it : reachability_inf) {
+        if (has_unique_val) {
+            for (const auto& reachability_it : reachability_inf) {
                 choking_point.insert(std::make_pair(reachability_it.first, reachability_it.second));
             }
         }
-
-
     }
 
     return choking_point;

@@ -313,7 +313,6 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     const auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-
     auto choking_spots = set_nets_choking_spots(net_list,
                                                 route_ctx.net_terminal_groups,
                                                 route_ctx.net_terminal_group_num,
@@ -368,7 +367,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                                                                           segment_inf,
                                                                           is_flat);
 
-    if(is_flat) {
+    if (is_flat) {
         auto cache_key = route_ctx.router_lookahead_cache_key_;
         std::unique_ptr<RouterLookahead> mut_router_lookahead(route_ctx.cached_router_lookahead_.release());
         VTR_ASSERT(mut_router_lookahead);
@@ -376,7 +375,6 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         mut_router_lookahead->compute_intra_tile();
         route_ctx.cached_router_lookahead_.set(cache_key, std::move(mut_router_lookahead));
     }
-
 
     VTR_ASSERT(router_lookahead != nullptr);
 
@@ -1319,7 +1317,7 @@ static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
 
     bool found_path;
     t_heap cheapest;
-    ConnectionParameters conn_params (net_id,
+    ConnectionParameters conn_params(net_id,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
@@ -2356,15 +2354,13 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                                                                                                                   std::vector<int>>& net_terminal_group_num,
                                                                                                 bool has_choking_spot,
                                                                                                 bool is_flat) {
-
-
     vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
-    for(const auto& net_id : net_list.nets()) {
+    for (const auto& net_id : net_list.nets()) {
         choking_spots[net_id].resize(net_list.net_pins(net_id).size());
     }
 
     // Return if the architecture doesn't have any potential choke points
-    if(!has_choking_spot) {
+    if (!has_choking_spot) {
         return choking_spots;
     }
 
@@ -2376,15 +2372,15 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
     const auto& route_ctx = g_vpr_ctx.routing();
     const auto& net_rr_terminal = route_ctx.net_rr_terminals;
 
-    for(const auto& net_id : net_list.nets()) {
+    for (const auto& net_id : net_list.nets()) {
         int pin_count = 0;
         // Global nets are not routed, thus we don't consider them.
-        if(net_list.net_is_global(net_id)) {
+        if (net_list.net_is_global(net_id)) {
             continue;
         }
-        for(auto pin_id : net_list.net_pins(net_id)) {
+        for (auto pin_id : net_list.net_pins(net_id)) {
             // pin_count == 0 corresponds to the net's source pin
-            if(pin_count == 0) {
+            if (pin_count == 0) {
                 pin_count++;
                 continue;
             }
@@ -2396,7 +2392,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
             // run-time purpose
             std::vector<int> sink_grp = net_terminal_groups[net_id][group_num];
             VTR_ASSERT((int)sink_grp.size() >= 1);
-            if(sink_grp.size() == 1) {
+            if (sink_grp.size() == 1) {
                 pin_count++;
                 continue;
             } else {
@@ -2410,7 +2406,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                                                                   rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),
                                                                   sink_grp);
                 // Store choke points rr_node_id and the number reachable sinks
-                for(const auto& choking_spot : sink_choking_spots) {
+                for (const auto& choking_spot : sink_choking_spots) {
                     int pin_physical_num = choking_spot.first;
                     int num_reachable_sinks = choking_spot.second;
                     auto pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),

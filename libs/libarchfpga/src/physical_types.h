@@ -460,8 +460,8 @@ struct t_class_range {
     t_class_range() = default;
 
     t_class_range(int low_class_num, int high_class_num)
-        : low(low_class_num), high(high_class_num) {}
-
+        : low(low_class_num)
+        , high(high_class_num) {}
 };
 
 struct t_pin_range {
@@ -475,7 +475,8 @@ struct t_pin_range {
     t_pin_range() = default;
 
     t_pin_range(int low_class_num, int high_class_num)
-        : low(low_class_num), high(high_class_num) {}
+        : low(low_class_num)
+        , high(high_class_num) {}
 };
 
 enum e_power_wire_type {
@@ -643,15 +644,15 @@ struct t_physical_tile_type {
     int primitive_class_starting_idx = -1;
     std::unordered_map<int, t_class> primitive_class_inf; // [primitive_class_num] -> primitive_class_inf
 
-    std::vector<int> pin_width_offset;  // [0..num_pins-1]
-    std::vector<int> pin_height_offset; // [0..num_pins-1]
-    std::vector<int> pin_class;         // [0..num_pins-1]
+    std::vector<int> pin_width_offset;                // [0..num_pins-1]
+    std::vector<int> pin_height_offset;               // [0..num_pins-1]
+    std::vector<int> pin_class;                       // [0..num_pins-1]
     std::unordered_map<int, int> primitive_pin_class; // [primitive_pin_num] -> primitive_class_num
-    std::vector<bool> is_ignored_pin; // [0..num_pins-1]
-    std::vector<bool> is_pin_global;  // [0..num_pins-1]
+    std::vector<bool> is_ignored_pin;                 // [0..num_pins-1]
+    std::vector<bool> is_pin_global;                  // [0..num_pins-1]
 
-    std::unordered_map<int , std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>> on_tile_pin_num_to_pb_pin; // [root_pin_physical_num][logical_block] -> t_pb_graph_pin*
-    std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin; // [intra_tile_pin_physical_num] -> t_pb_graph_pin
+    std::unordered_map<int, std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>> on_tile_pin_num_to_pb_pin; // [root_pin_physical_num][logical_block] -> t_pb_graph_pin*
+    std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin;                                                       // [intra_tile_pin_physical_num] -> t_pb_graph_pin
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -760,7 +761,7 @@ struct t_sub_tile {
     t_class_range class_range; // Range of the root-level classes
 
     std::vector<std::unordered_map<t_logical_block_type_ptr, t_class_range>> primitive_class_range; // [rel_cap][logical_block_ptr] -> class_range
-    std::vector<std::unordered_map<t_logical_block_type_ptr, t_pin_range>> intra_pin_range; // [rel_cap][logical_block_ptr] -> intra_pin_range
+    std::vector<std::unordered_map<t_logical_block_type_ptr, t_pin_range>> intra_pin_range;         // [rel_cap][logical_block_ptr] -> intra_pin_range
 
     int num_phy_pins = 0;
 
@@ -886,7 +887,7 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;         /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                   /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
     std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping; /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
     std::vector<t_class> primitive_logical_class_inf;                                             /* primitive_logical_class_inf[class_logical_number] -> class */
     std::unordered_map<const t_pb_graph_node*, t_class_range> pb_graph_node_class_range;
@@ -1296,7 +1297,6 @@ class t_pb_graph_pin {
     std::unordered_map<const t_pb_graph_pin*, int> sink_pin_edge_idx_map;
     std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
-
 
     t_pb_graph_node* parent_node = nullptr;
     int pin_count_in_cluster = 0;

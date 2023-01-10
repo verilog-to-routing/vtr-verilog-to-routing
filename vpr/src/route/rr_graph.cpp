@@ -89,7 +89,7 @@ struct t_pin_chain_node {
 };
 
 struct t_cluster_pin_chain {
-    std::vector<int> pin_chain_idx; // [pin_physical_num] -> chain_num
+    std::vector<int> pin_chain_idx;                    // [pin_physical_num] -> chain_num
     std::vector<std::vector<t_pin_chain_node>> chains; // [chain_num] -> chain_node
 
     t_cluster_pin_chain() = default;
@@ -357,20 +357,20 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          int j);
 
 static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
-                            t_rr_edge_info_set& rr_edges_to_create,
-                            int& num_collapsed_pins,
-                            t_physical_tile_type_ptr physical_type,
-                            t_logical_block_type_ptr logical_block,
-                            const t_cluster_pin_chain& nodes_to_collapse,
-                            const std::unordered_set<int>& cluster_pins,
-                            const std::vector<int>& chain_pins,
-                            float R_minW_nmos,
-                            float R_minW_pmos,
-                            int chain_idx,
-                            int node_idx,
-                            int sink_pin_num,
-                            int i,
-                            int j);
+                                        t_rr_edge_info_set& rr_edges_to_create,
+                                        int& num_collapsed_pins,
+                                        t_physical_tile_type_ptr physical_type,
+                                        t_logical_block_type_ptr logical_block,
+                                        const t_cluster_pin_chain& nodes_to_collapse,
+                                        const std::unordered_set<int>& cluster_pins,
+                                        const std::vector<int>& chain_pins,
+                                        float R_minW_nmos,
+                                        float R_minW_pmos,
+                                        int chain_idx,
+                                        int node_idx,
+                                        int sink_pin_num,
+                                        int i,
+                                        int j);
 
 static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
                                     t_logical_block_type_ptr logical_block,
@@ -1319,7 +1319,6 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          int x,
                          int y,
                          const int delayless_switch) {
-
     std::map<int, t_arch_switch_inf> sw_map = g_vpr_ctx.device().all_sw_inf;
 
     int num_rr_nodes = 0;
@@ -2134,13 +2133,13 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
             }
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
             int sw_id = -1;
-            if(is_primitive) {
+            if (is_primitive) {
                 VTR_ASSERT(logical_block != nullptr);
                 float primitive_comb_delay = get_pin_primitive_comb_delay(physical_type_ptr,
                                                                           logical_block,
                                                                           pin_num);
                 sw_id = find_create_intra_cluster_sw_arch_idx(arch_sw_inf_map,
-                                                               primitive_comb_delay);
+                                                              primitive_comb_delay);
             } else {
                 sw_id = delayless_switch;
             }
@@ -2154,7 +2153,6 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
             }
         }
     }
-
 }
 
 static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
@@ -2205,7 +2203,6 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
     std::vector<int> class_num_vec(class_num_range.total_num());
     std::iota(class_num_vec.begin(), class_num_vec.end(), class_num_range.low);
-
 
     add_classes_rr_graph(rr_graph_builder,
                          class_num_vec,
@@ -2413,10 +2410,10 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          int i,
                          int j) {
     auto pin_num_range = get_pb_pins(physical_type,
-                                sub_tile,
-                                logical_block,
-                                pb,
-                                rel_cap);
+                                     sub_tile,
+                                     logical_block,
+                                     pb,
+                                     rel_cap);
     const auto& pin_chain_idx = nodes_to_collapse.pin_chain_idx;
     for (auto pin_physical_num = pin_num_range.low; pin_physical_num <= pin_num_range.high; pin_physical_num++) {
         // The pin belongs to a chain - outgoing edges from this pin will be added later
@@ -2503,40 +2500,40 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(num_nodes > 1);
         for (int node_idx = 0; node_idx < num_nodes; node_idx++) {
             add_chain_node_fan_in_edges(rr_graph_builder,
-                            rr_edges_to_create,
-                            num_collapsed_pins,
-                            physical_type,
-                            logical_block,
-                            nodes_to_collapse,
-                            cluster_pins_set,
-                            chain_pins[chain_idx],
-                            R_minW_nmos,
-                            R_minW_pmos,
-                            chain_idx,
-                            node_idx,
-                            chain_sink_pin[chain_idx],
-                            i,
-                            j);
+                                        rr_edges_to_create,
+                                        num_collapsed_pins,
+                                        physical_type,
+                                        logical_block,
+                                        nodes_to_collapse,
+                                        cluster_pins_set,
+                                        chain_pins[chain_idx],
+                                        R_minW_nmos,
+                                        R_minW_pmos,
+                                        chain_idx,
+                                        node_idx,
+                                        chain_sink_pin[chain_idx],
+                                        i,
+                                        j);
         }
     }
     return num_collapsed_pins;
 }
 
 static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
-                            t_rr_edge_info_set& rr_edges_to_create,
-                            int& num_collapsed_pins,
-                            t_physical_tile_type_ptr physical_type,
-                            t_logical_block_type_ptr logical_block,
-                            const t_cluster_pin_chain& nodes_to_collapse,
-                            const std::unordered_set<int>& cluster_pins,
-                            const std::vector<int>& chain_pins,
-                            float R_minW_nmos,
-                            float R_minW_pmos,
-                            int chain_idx,
-                            int node_idx,
-                            int sink_pin_num,
-                            int i,
-                            int j) {
+                                        t_rr_edge_info_set& rr_edges_to_create,
+                                        int& num_collapsed_pins,
+                                        t_physical_tile_type_ptr physical_type,
+                                        t_logical_block_type_ptr logical_block,
+                                        const t_cluster_pin_chain& nodes_to_collapse,
+                                        const std::unordered_set<int>& cluster_pins,
+                                        const std::vector<int>& chain_pins,
+                                        float R_minW_nmos,
+                                        float R_minW_pmos,
+                                        int chain_idx,
+                                        int node_idx,
+                                        int sink_pin_num,
+                                        int i,
+                                        int j) {
     int pin_physical_num = nodes_to_collapse.chains[chain_idx][node_idx].pin_physical_num;
 
     auto& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
@@ -2565,7 +2562,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                               pin_num);
 
             int arch_sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
-                                                           edge_delay);
+                                                                edge_delay);
 
             find_create_rr_switch(rr_graph_builder,
                                   g_vpr_ctx.mutable_device().switch_fanin_remap,
@@ -2573,7 +2570,6 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                   R_minW_pmos,
                                   all_sw_inf[arch_sw],
                                   arch_sw);
-
 
             rr_edges_to_create.emplace_back(sink_rr_node_id, rr_node_id, arch_sw);
         }
@@ -2623,7 +2619,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
         for (auto src_pair : src_node_edge_pair) {
             VTR_ASSERT(src_pair.first != RRNodeId::INVALID());
             int arch_sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
-                                                           src_pair.second);
+                                                                src_pair.second);
             find_create_rr_switch(rr_graph_builder,
                                   g_vpr_ctx.mutable_device().switch_fanin_remap,
                                   R_minW_nmos,
@@ -4468,7 +4464,6 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
 
 static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                                  float delay) {
-
     // Check whether is there any other intra-tile edge with the same delay
     auto find_res = std::find_if(arch_sw_inf.begin(), arch_sw_inf.end(),
                                  [delay](const std::pair<int, t_arch_switch_inf>& sw_inf_pair) {
@@ -4508,7 +4503,7 @@ static void find_create_rr_switch(RRGraphBuilder& rr_graph_builder,
                                   float R_minW_pmos,
                                   const t_arch_switch_inf& arch_sw_inf,
                                   const int arch_sw_id) {
-    if((int)switch_fanin_remap.size() > arch_sw_id){
+    if ((int)switch_fanin_remap.size() > arch_sw_id) {
         return;
     } else {
         t_rr_switch_inf rr_switch = create_rr_switch_from_arch_switch(arch_sw_inf,
@@ -4516,9 +4511,8 @@ static void find_create_rr_switch(RRGraphBuilder& rr_graph_builder,
                                                                       R_minW_pmos);
         auto rr_switch_id = rr_graph_builder.add_rr_switch(rr_switch);
         switch_fanin_remap.push_back({{UNDEFINED, size_t(rr_switch_id)}});
-        VTR_ASSERT(((int)switch_fanin_remap.size()-1) == arch_sw_id);
+        VTR_ASSERT(((int)switch_fanin_remap.size() - 1) == arch_sw_id);
     }
-
 }
 
 static float get_delay_directly_connected_pins(t_physical_tile_type_ptr physical_type,

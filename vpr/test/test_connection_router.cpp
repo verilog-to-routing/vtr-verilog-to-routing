@@ -63,7 +63,7 @@ static float do_one_route(int source_node,
     // Find the cheapest route if possible.
     bool found_path;
     t_heap cheapest;
-    ConnectionParameters conn_params (ParentNetId::INVALID(),
+    ConnectionParameters conn_params(ParentNetId::INVALID(),
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());

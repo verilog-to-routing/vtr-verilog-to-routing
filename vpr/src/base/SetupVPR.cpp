@@ -757,18 +757,19 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                     // Continuous ranges are assigned to make passing them more memory-efficient
                     sub_tile.primitive_class_range[sub_tile_inst].insert(
                         std::make_pair(logic_block_ptr, t_class_range(physical_class_offset,
-                                                                      physical_class_offset+num_classes-1)));
+                                                                      physical_class_offset + num_classes - 1)));
                     sub_tile.intra_pin_range[sub_tile_inst].insert(
                         std::make_pair(logic_block_ptr, t_pin_range(physical_pin_offset,
-                                                                    physical_pin_offset+num_pins-1)));
+                                                                    physical_pin_offset + num_pins - 1)));
                     add_logical_pin_to_physical_tile(physical_pin_offset, logic_block_ptr, &physical_type);
 
                     std::vector<t_class> logical_classes = logic_block_ptr->primitive_logical_class_inf;
                     // Change the pin numbers in a class pin list from logical number to physical number
                     std::for_each(logical_classes.begin(), logical_classes.end(),
-                                  [&physical_pin_offset](t_class& l_class) { for(auto &pin : l_class.pinlist) {
-                                                                                pin += physical_pin_offset;
-                                                                            }
+                                  [&physical_pin_offset](t_class& l_class) {
+                                      for (auto& pin : l_class.pinlist) {
+                                          pin += physical_pin_offset;
+                                      }
                                   });
 
                     int physical_class_num = physical_class_offset;
@@ -797,15 +798,14 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
 }
 
 static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
-    for(int sub_tile_idx = 0; sub_tile_idx < (int)physical_type->sub_tiles.size(); sub_tile_idx++) {
+    for (int sub_tile_idx = 0; sub_tile_idx < (int)physical_type->sub_tiles.size(); sub_tile_idx++) {
         auto& sub_tile = physical_type->sub_tiles[sub_tile_idx];
         int inst_num_pin = sub_tile.num_phy_pins / sub_tile.capacity.total();
         // Later in the code, I've assumed that pins of a subtile are mapped in a continuous fashion to
         // the tile pins - Usage case: vpr_utils.cpp:get_pb_pins
-        VTR_ASSERT(sub_tile.sub_tile_to_tile_pin_indices[0] + sub_tile.num_phy_pins - 1 ==
-                   sub_tile.sub_tile_to_tile_pin_indices[sub_tile.num_phy_pins-1]);
-        for(int sub_tile_pin_num = 0; sub_tile_pin_num < sub_tile.num_phy_pins; sub_tile_pin_num++) {
-            for(auto& eq_site : sub_tile.equivalent_sites) {
+        VTR_ASSERT(sub_tile.sub_tile_to_tile_pin_indices[0] + sub_tile.num_phy_pins - 1 == sub_tile.sub_tile_to_tile_pin_indices[sub_tile.num_phy_pins - 1]);
+        for (int sub_tile_pin_num = 0; sub_tile_pin_num < sub_tile.num_phy_pins; sub_tile_pin_num++) {
+            for (auto& eq_site : sub_tile.equivalent_sites) {
                 t_physical_pin sub_tile_physical_pin = t_physical_pin(sub_tile_pin_num % inst_num_pin);
                 int physical_pin_num = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_num];
                 auto direct_map = physical_type->tile_block_pin_directs_map.at(eq_site->index).at(sub_tile.index);
@@ -815,13 +815,12 @@ static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
                 t_pb_graph_pin* pb_pin = eq_site->pin_logical_num_to_pb_pin_mapping.at(logical_pin.pin);
 
                 auto map_find_res = physical_type->on_tile_pin_num_to_pb_pin.find(physical_pin_num);
-                if(map_find_res == physical_type->on_tile_pin_num_to_pb_pin.end()) {
+                if (map_find_res == physical_type->on_tile_pin_num_to_pb_pin.end()) {
                     physical_type->on_tile_pin_num_to_pb_pin.insert(std::make_pair(physical_pin_num,
                                                                                    std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>()));
                 }
                 auto insert_res = physical_type->on_tile_pin_num_to_pb_pin.at(physical_pin_num).insert(std::make_pair(eq_site, pb_pin));
                 VTR_ASSERT(insert_res.second);
-
             }
         }
     }
@@ -830,21 +829,19 @@ static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
 static void add_logical_pin_to_physical_tile(int physical_pin_offset,
                                              t_logical_block_type_ptr logical_block_ptr,
                                              t_physical_tile_type* physical_type) {
-    for(auto logical_pin_pair : logical_block_ptr->pin_logical_num_to_pb_pin_mapping) {
+    for (auto logical_pin_pair : logical_block_ptr->pin_logical_num_to_pb_pin_mapping) {
         auto pin_logical_num = logical_pin_pair.first;
         auto pb_pin = logical_pin_pair.second;
-        physical_type->pin_num_to_pb_pin.insert(std::make_pair(pin_logical_num+physical_pin_offset, pb_pin));
+        physical_type->pin_num_to_pb_pin.insert(std::make_pair(pin_logical_num + physical_pin_offset, pb_pin));
     }
 }
 
 static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
                                                int physical_class_num,
                                                t_physical_tile_type* physical_tile) {
-    for(auto pin_num : pin_list) {
+    for (auto pin_num : pin_list) {
         physical_tile->primitive_pin_class.insert(std::make_pair(pin_num, physical_class_num));
     }
-
-
 }
 
 static void add_intra_tile_switches() {
@@ -912,13 +909,12 @@ static void add_intra_tile_switches() {
 }
 
 static void do_reachability_analysis(t_physical_tile_type* physical_tile,
-                                      t_logical_block_type* logical_block,
-                                      t_class* class_inf,
-                                      int physical_class_num) {
+                                     t_logical_block_type* logical_block,
+                                     t_class* class_inf,
+                                     int physical_class_num) {
     VTR_ASSERT(class_inf->type == e_pin_type::RECEIVER);
     std::list<int> pin_list;
     pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
-
 
     std::set<t_pb_graph_pin*> seen_pb_pins;
     while (!pin_list.empty()) {
@@ -926,25 +922,23 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
         pin_list.pop_front();
 
         t_pb_graph_pin* curr_pb_graph_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
-        if(curr_pb_graph_pin->port->type != PORTS::IN_PORT) {
+        if (curr_pb_graph_pin->port->type != PORTS::IN_PORT) {
             continue;
         } else {
             auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
             // Make sure that we are visiting each pin once.
-            if(insert_res.second) {
+            if (insert_res.second) {
                 curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
                 auto driving_pins = get_physical_pin_src_pins(physical_tile,
                                                               logical_block,
                                                               curr_pin_physical_num);
                 for (auto driving_pin_physical_num : driving_pins) {
                     // Since we define reachable class as a class which is connected to a pin through a series of IPINs, only IPINs are added to the list
-                    if(get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num) == e_pin_type::RECEIVER) {
+                    if (get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num) == e_pin_type::RECEIVER) {
                         pin_list.push_back(driving_pin_physical_num);
                     }
                 }
             }
-
         }
-
     }
 }

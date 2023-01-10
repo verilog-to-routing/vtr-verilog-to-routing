@@ -324,7 +324,6 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
-
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
     add_route_tree_to_heap(rt_root, target_node, cost_params, false);
@@ -826,7 +825,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     }
     if (conn_params_->has_choking_spot_ && is_flat_ && rr_graph_->node_type(RRNodeId(to_node)) == IPIN) {
         auto find_res = conn_params_->connection_choking_spots_.find(RRNodeId(to_node));
-        if(find_res != conn_params_->connection_choking_spots_.end()) {
+        if (find_res != conn_params_->connection_choking_spots_.end()) {
             cong_cost = cong_cost / (float)find_res->second;
         }
     }
@@ -1072,7 +1071,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
                     highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
                     highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
-                    if(rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
+                    if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                         chan_nodes_added++;
                     }
                     nodes_added++;

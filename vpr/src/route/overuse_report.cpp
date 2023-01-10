@@ -432,7 +432,7 @@ void print_block_pins_nets(std::ostream& os,
     t_pin_range pin_num_range;
     if (is_pin_on_tile(physical_type, pin_physical_num)) {
         pin_num_range.low = 0;
-        pin_num_range.high = physical_type->num_pins-1;
+        pin_num_range.high = physical_type->num_pins - 1;
     } else {
         const t_sub_tile* sub_tile = nullptr;
         int rel_cap = -1;

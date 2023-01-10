@@ -400,10 +400,10 @@ int get_pb_graph_node_num_pins(const t_pb_graph_node* pb_graph_node);
 std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node);
 
 t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
-                                        const t_sub_tile* sub_tile,
-                                        t_logical_block_type_ptr logical_block,
-                                        int relative_cap,
-                                        const t_pb_graph_node* pb_graph_node);
+                                   const t_sub_tile* sub_tile,
+                                   t_logical_block_type_ptr logical_block,
+                                   int relative_cap,
+                                   const t_pb_graph_node* pb_graph_node);
 
 std::vector<int> get_tile_root_pins(t_physical_tile_type_ptr physical_tile);
 

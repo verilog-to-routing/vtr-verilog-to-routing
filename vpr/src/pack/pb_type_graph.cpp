@@ -322,7 +322,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         }
     }
 
-    pb_graph_node->pin_num_range.high = (pin_count_in_cluster-1);
+    pb_graph_node->pin_num_range.high = (pin_count_in_cluster - 1);
 
     /* Power */
     if (load_power_structures) {
@@ -446,7 +446,7 @@ static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logica
     while (!pb_graph_node_q.empty()) {
         auto pb_graph_node = pb_graph_node_q.front();
         pb_graph_node_q.pop_front();
-        if(pb_graph_node->is_primitive()) {
+        if (pb_graph_node->is_primitive()) {
             pb_graph_nodes.push_back(pb_graph_node);
         }
 
@@ -500,8 +500,7 @@ static void add_primitive_logical_classes(t_logical_block_type* logical_block) {
             num_added_classes += add_port_logical_classes(logical_block, pb_graph_pins, num_ports, num_pins);
         }
         logical_block->pb_graph_node_class_range.insert(std::make_pair(pb_graph_node, t_class_range(first_class_num,
-                                                                                                    first_class_num+num_added_classes-1)));
-
+                                                                                                    first_class_num + num_added_classes - 1)));
     }
 }
 
@@ -986,10 +985,10 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                     edges[i_edge].driver_pin = i_inpin;
 
                     auto insert_res = in_pin->sink_pin_edge_idx_map.insert(std::make_pair(out_pin,
-                                                                                          in_pin->num_output_edges-1));
+                                                                                          in_pin->num_output_edges - 1));
                     VTR_ASSERT(insert_res.second);
                     insert_res = out_pin->src_pin_edge_idx_map.insert(std::make_pair(in_pin,
-                                                                                     out_pin->num_input_edges-1));
+                                                                                     out_pin->num_input_edges - 1));
                     VTR_ASSERT(insert_res.second);
 
                     i_edge++;
@@ -1076,7 +1075,7 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
             auto out_pin = output_pb_graph_node_pin_ptrs[iset][ipin];
 
             int in_pin_edge_offset = in_pin->num_output_edges - num_output_sets;
-            int out_pin_edge_offset = out_pin->num_input_edges - num_output_sets*pins_per_set;
+            int out_pin_edge_offset = out_pin->num_input_edges - num_output_sets * pins_per_set;
 
             edges[iedge].num_input_pins = 1;
             edges[iedge].input_pins = new t_pb_graph_pin*[1];
@@ -1090,12 +1089,11 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
             edges[iedge].driver_pin = ipin;
             edges[iedge].infer_pattern = interconnect->infer_annotations;
 
-
             auto insert_res = in_pin->sink_pin_edge_idx_map.insert(std::make_pair(out_pin,
-                                                                                 in_pin_edge_offset+iset));
+                                                                                  in_pin_edge_offset + iset));
             VTR_ASSERT(insert_res.second);
             insert_res = out_pin->src_pin_edge_idx_map.insert(std::make_pair(in_pin,
-                                                                             out_pin_edge_offset+iedge));
+                                                                             out_pin_edge_offset + iedge));
             VTR_ASSERT(insert_res.second);
         }
     }
@@ -1178,10 +1176,10 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
             edges[i_inset].driver_pin = i_inpin;
 
             auto insert_res = in_pin->sink_pin_edge_idx_map.insert(std::make_pair(out_pin,
-                                                                                  in_pin->num_output_edges-1));
+                                                                                  in_pin->num_output_edges - 1));
             VTR_ASSERT(insert_res.second);
             insert_res = out_pin->src_pin_edge_idx_map.insert(std::make_pair(in_pin,
-                                                                             out_pin->num_input_edges-1));
+                                                                             out_pin->num_input_edges - 1));
             VTR_ASSERT(insert_res.second);
         }
     }

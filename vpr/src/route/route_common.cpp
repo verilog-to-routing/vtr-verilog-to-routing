@@ -1899,5 +1899,3 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               bool /*is_flat*/) {
     return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
 }
-
-

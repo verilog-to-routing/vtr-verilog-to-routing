@@ -213,7 +213,6 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
     if (router_lookahead) {
         return router_lookahead;
     } else {
-
         return mut_router_ctx.cached_router_lookahead_.set(
             cache_key,
             make_router_lookahead(det_routing_arch,

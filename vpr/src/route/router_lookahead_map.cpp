@@ -524,7 +524,6 @@ void MapLookahead::compute_intra_tile() {
     min_global_cost_map(distance_based_min_cost,
                         f_wire_cost_map.dim_size(2),
                         f_wire_cost_map.dim_size(3));
-
 }
 
 void MapLookahead::read(const std::string& file) {
@@ -1282,7 +1281,6 @@ static void compute_tiles_lookahead(std::unordered_map<t_physical_tile_type_ptr,
                                     std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx) {
-
     const auto& tiles = device_ctx.physical_tile_types;
 
     for (const auto& tile : tiles) {
@@ -1345,7 +1343,7 @@ static void store_min_cost_to_sinks(std::unordered_map<t_physical_tile_type_ptr,
                                          std::numeric_limits<float>::max() / 1e12);
 
         for (int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
-            if(get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num) != e_pin_type::RECEIVER){
+            if (get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num) != e_pin_type::RECEIVER) {
                 continue;
             }
             const auto& pin_delays = tile_pin_delays[pin_physical_num];
