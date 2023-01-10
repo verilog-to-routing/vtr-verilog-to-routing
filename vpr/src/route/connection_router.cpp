@@ -319,8 +319,11 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
     t_rt_node* rt_root,
     const t_conn_cost_params cost_params,
     t_bb bounding_box,
-    RouterStats& router_stats) {
+    RouterStats& router_stats,
+    const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
+    conn_params_ = &conn_params;
+
 
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;

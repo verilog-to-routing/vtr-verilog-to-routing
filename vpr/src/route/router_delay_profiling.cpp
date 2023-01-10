@@ -144,10 +144,12 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
         routing_ctx.rr_node_route_inf,
         is_flat);
     RouterStats router_stats;
+    ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int> ());
     std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
                                                                                                       cost_params,
                                                                                                       bounding_box,
-                                                                                                      router_stats);
+                                                                                                      router_stats,
+                                                                                                      conn_params);
 
     free_route_tree(rt_root);
 

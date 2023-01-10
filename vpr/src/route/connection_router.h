@@ -102,7 +102,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         t_rt_node* rt_root,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        RouterStats& router_stats) final;
+        RouterStats& router_stats,
+        const ConnectionParameters& conn_params) final;
 
     void set_router_debug(bool router_debug) final {
         router_debug_ = router_debug;
