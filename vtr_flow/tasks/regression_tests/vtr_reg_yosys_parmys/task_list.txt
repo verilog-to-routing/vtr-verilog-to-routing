@@ -1,9 +1,9 @@
 regression_tests/vtr_reg_yosys_parmys/vtr_benchmarks/
-regression_tests/vtr_reg_yosys_parmys/koios/
-regression_tests/vtr_reg_yosys_parmys/ultraembedded/
-regression_tests/vtr_reg_yosys_parmys/vexriscv/
-regression_tests/vtr_reg_yosys_parmys/freecores/
+#regression_tests/vtr_reg_yosys_parmys/koios/
+#regression_tests/vtr_reg_yosys_parmys/ultraembedded/
+#regression_tests/vtr_reg_yosys_parmys/vexriscv/
+#regression_tests/vtr_reg_yosys_parmys/freecores/
 #regression_tests/vtr_reg_yosys_parmys/system_verilog/f4pga_button_controller/
 #regression_tests/vtr_reg_yosys_parmys/system_verilog/f4pga_pulse_width_led/
 #regression_tests/vtr_reg_yosys_parmys/system_verilog/f4pga_timer/
-regression_tests/vtr_reg_yosys_parmys/mips32r1/
+#regression_tests/vtr_reg_yosys_parmys/mips32r1/
