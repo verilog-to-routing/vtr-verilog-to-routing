@@ -42,6 +42,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
         CONFIGURE_COMMAND "" 
         BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
             -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
+            CPPFLAGS=${CURRENT_CPPFLAGS}
             ENABLE_LIBYOSYS=1
             ENABLE_ABC=0
             PREFIX=${VTR_SOURCE_DIR}/Yosys
@@ -53,7 +54,6 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             ENABLE_LIBYOSYS=1
             ENABLE_ABC=0
             PREFIX=${VTR_SOURCE_DIR}/Yosys
-            -j${CMAKE_BUILD_PARALLEL_LEVEL}
     
         # redirect logs to a logfile
         LOG_BUILD ON
