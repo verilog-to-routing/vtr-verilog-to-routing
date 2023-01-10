@@ -42,13 +42,16 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
         CONFIGURE_COMMAND "" 
         BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
             -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
-            -k "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
+            ENABLE_LIBYOSYS=1
+            ENABLE_ABC=0
             PREFIX=${VTR_SOURCE_DIR}/Yosys
             -j${CMAKE_BUILD_PARALLEL_LEVEL}
 
         INSTALL_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
             -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
-            install "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
+            install
+            ENABLE_LIBYOSYS=1
+            ENABLE_ABC=0
             PREFIX=${VTR_SOURCE_DIR}/Yosys
             -j${CMAKE_BUILD_PARALLEL_LEVEL}
     
