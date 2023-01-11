@@ -1417,25 +1417,20 @@ float get_edge_delay(t_physical_tile_type_ptr physical_type,
 float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
                                    t_logical_block_type_ptr logical_block,
                                    int pin_physical_num) {
-    float delay = std::numeric_limits<float>::min();
 
     const t_pb_graph_pin* pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
                                                                     logical_block,
                                                                     pin_physical_num);
     VTR_ASSERT(pb_pin->is_primitive_pin());
 
-    if (pb_pin->num_pin_timing == 0) {
+    auto it = std::min_element(pb_pin->pin_timing_del_max.begin(), pb_pin->pin_timing_del_max.end());
+
+    if(it == pb_pin->pin_timing_del_max.end()) {
         return 0.;
     } else {
-        for (int pin_timing_num = 0; pin_timing_num < pb_pin->num_pin_timing; pin_timing_num++) {
-            float max_delay = pb_pin->pin_timing_del_max[pin_timing_num];
-            if (delay < max_delay) {
-                delay = max_delay;
-            }
-        }
-
-        return delay;
+        return *it;
     }
+
 }
 
 bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,

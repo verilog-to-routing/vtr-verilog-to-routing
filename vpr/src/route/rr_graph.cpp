@@ -229,6 +229,20 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                               const int j,
                               t_physical_tile_type_ptr physical_type);
 
+/**
+ * Add the edges between pins and their respective SINK/SRC. It is important to mention that in contrast to another similar function,
+ * the delay of these edges is not necessarily zero. If the primitive block which a SINK/SRC belongs to is a combinational block, the delay of
+ * the edge is equal to the pin delay. This is done in order to make the router lookahead aware of the different IPIN delays. In this way, more critical
+ * nets are routed to the pins with less delay.
+ * @param rr_graph_builder
+ * @param arch_sw_inf_map
+ * @param class_num_vec
+ * @param i
+ * @param j
+ * @param rr_edges_to_create
+ * @param delayless_switch
+ * @param physical_type_ptr
+ */
 static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                           std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                           const std::vector<int>& class_num_vec,
