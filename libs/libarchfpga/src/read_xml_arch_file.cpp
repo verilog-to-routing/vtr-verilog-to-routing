@@ -3682,7 +3682,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name)) {
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
                     break; /* End loop so j is where we want it */
                 }
             }
@@ -3705,7 +3705,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name)) {
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
                     break; /* End loop so j is where we want it */
                 }
             }
@@ -3719,7 +3719,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name)) {
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
                     break; /* End loop so j is where we want it */
                 }
             }
@@ -3933,13 +3933,13 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
         /* Check for switch name collisions */
         for (j = 0; j < i; ++j) {
-            if (0 == strcmp((*Switches)[j].name, switch_name)) {
+            if (0 == strcmp((*Switches)[j].name.c_str(), switch_name)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                                "Two switches with the same name '%s' were found.\n",
                                switch_name);
             }
         }
-        arch_switch.name = vtr::strdup(switch_name);
+        arch_switch.name = std::string(switch_name);
 
         /* Figure out the type of switch */
         /* As noted above, due to their configuration of pass transistors feeding into a buffer,
@@ -4164,7 +4164,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* N
         if (switch_name != nullptr) {
             //Look-up the user defined switch
             for (j = 0; j < NumSwitches; j++) {
-                if (0 == strcmp(switch_name, Switches[j].name)) {
+                if (0 == strcmp(switch_name, Switches[j].name.c_str())) {
                     break; //Found the switch
                 }
             }
@@ -4380,7 +4380,7 @@ static void ProcessClockSwitchPoints(pugi::xml_node parent,
             const char* switch_name = get_attribute(curr_switch, "switch_name", loc_data).value();
             int switch_idx;
             for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
-                if (0 == strcmp(switch_name, switches[switch_idx].name)) {
+                if (0 == strcmp(switch_name, switches[switch_idx].name.c_str())) {
                     break; // switch_idx has been found
                 }
             }
@@ -4452,7 +4452,7 @@ static void ProcessClockRouting(pugi::xml_node parent,
 
         int switch_idx;
         for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
-            if (0 == strcmp(switch_name, switches[switch_idx].name)) {
+            if (0 == strcmp(switch_name, switches[switch_idx].name.c_str())) {
                 break; // switch_idx has been found
             }
         }

@@ -461,21 +461,22 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // If the switch name is not present in the architecture, generate an
         // error.
         bool found_arch_name = false;
+        std::string string_name = std::string(name);
         for (const auto& arch_sw_inf: arch_switch_inf_) {
-            if (strcmp(name, arch_sw_inf.name) == 0) {
-                name = arch_sw_inf.name;
+            if (string_name == arch_sw_inf.name) {
+                string_name = arch_sw_inf.name;
                 found_arch_name = true;
                 break;
             }
         }
         if (!found_arch_name) {
-            report_error("Switch name '%s' not found in architecture\n", name);
+            report_error("Switch name '%s' not found in architecture\n", string_name.c_str());
         }
 
-        sw->name = name;
+        sw->name = string_name;
     }
     inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
-        return sw->name;
+        return sw->name.c_str();
     }
 
     inline void set_switch_type(uxsd::enum_switch_type type, t_rr_switch_inf*& sw) final {

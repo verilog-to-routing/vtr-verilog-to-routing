@@ -2032,9 +2032,9 @@ void print_switch_usage() {
     }
     VTR_LOG("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < (int)device_ctx.all_sw_inf.size(); iswitch++) {
-        char* s_name = device_ctx.all_sw_inf.at(iswitch).name;
+        std::string s_name = device_ctx.all_sw_inf.at(iswitch).name;
         float s_area = device_ctx.all_sw_inf.at(iswitch).mux_trans_size;
-        VTR_LOG(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
+        VTR_LOG(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name.c_str(), s_area);
 
         std::map<int, int>::iterator itr;
         for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr++) {
@@ -2439,7 +2439,7 @@ t_arch_switch_inf create_internal_arch_sw(float delay) {
     arch_switch_inf.set_type(SwitchType::MUX);
     std::ostringstream stream_obj;
     stream_obj << delay << std::scientific;
-    arch_switch_inf.name = vtr::strdup(("Internal Switch/" + stream_obj.str()).c_str());
+    arch_switch_inf.name = ("Internal Switch/" + stream_obj.str());
     arch_switch_inf.R = 0.;
     arch_switch_inf.Cin = 0.;
     arch_switch_inf.Cout = 0;

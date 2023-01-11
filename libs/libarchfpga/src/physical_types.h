@@ -1617,7 +1617,7 @@ struct t_arch_switch_inf {
   public:
     static constexpr int UNDEFINED_FANIN = -1;
 
-    char* name = nullptr;
+    std::string name;
     float R = 0.;
     float Cin = 0.;
     float Cout = 0.;
@@ -1690,7 +1690,7 @@ struct t_rr_switch_inf {
     float Tdel = 0.;
     float mux_trans_size = 0.;
     float buf_size = 0.;
-    const char* name = nullptr;
+    std::string name;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
     float power_buffer_size = 0.;
 

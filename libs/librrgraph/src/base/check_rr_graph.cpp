@@ -552,7 +552,7 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node) {
                       "in check_unbuffered_edges:\n"
                       "connection from node %d to node %d uses an unbuffered switch (switch type %d '%s')\n"
                       "but there is no corresponding unbuffered switch edge in the other direction.\n",
-                      from_node, to_node, from_switch_type, rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).name);
+                      from_node, to_node, from_switch_type, rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).name.c_str());
         }
 
     } /* End for all from_node edges */

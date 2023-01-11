@@ -1141,13 +1141,6 @@ void free_device(const t_det_routing_arch& routing_arch) {
     device_ctx.chan_width.y_list.clear();
     device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
 
-    for (int iswitch : {routing_arch.delayless_switch, routing_arch.global_route_switch}) {
-        if (!device_ctx.arch_switch_inf.empty() && device_ctx.arch_switch_inf[iswitch].name) {
-            vtr::free(device_ctx.arch_switch_inf[iswitch].name);
-            device_ctx.arch_switch_inf[iswitch].name = nullptr;
-        }
-    }
-
     device_ctx.arch_switch_inf.clear();
 
     device_ctx.all_sw_inf.clear();
