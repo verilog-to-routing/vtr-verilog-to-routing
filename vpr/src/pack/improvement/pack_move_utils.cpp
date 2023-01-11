@@ -90,11 +90,11 @@ int calculate_cutsize_change(const std::vector<molMoveDescription>& new_locs) {
     return change_cutsize;
 }
 
-int absorbed_conn_change(const std::vector<molMoveDescription>& new_locs) {
+float absorbed_conn_change(const std::vector<molMoveDescription>& new_locs) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     // initialize the old and new cut sizes
-    int absorbed_conn_change = 0;
+    float absorbed_conn_change = 0;
 
     // define some temporary
     AtomBlockId cur_atom;
@@ -107,24 +107,26 @@ int absorbed_conn_change(const std::vector<molMoveDescription>& new_locs) {
         for (auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
             if (!moving_atom)
                 continue;
+            
             for (auto& atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
                 AtomNetId atom_net = atom_ctx.nlist.pin_net(atom_pin);
                 if (atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
                     continue;
 
+                double num_pins_in_new = 0;
                 for (auto& net_pin : atom_ctx.nlist.net_pins(atom_net)) {
                     cur_atom = atom_ctx.nlist.pin_block(net_pin);
                     if (cur_atom == moving_atom)
-                        continue;
+                        num_pins_in_new++;
 
                     cur_clb = atom_to_cluster(cur_atom);
                     if (cur_clb == new_block_id) {
-                        absorbed_conn_change++;
-
+                        num_pins_in_new++;
                     } else if (cur_clb == old_block_id) {
-                        absorbed_conn_change--;
+                        num_pins_in_new--;
                     }
                 }
+                absorbed_conn_change += num_pins_in_new/(float)atom_ctx.nlist.net_pins(atom_net).size();
             }
         }
     }

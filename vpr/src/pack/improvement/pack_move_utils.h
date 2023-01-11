@@ -33,7 +33,7 @@ bool evaluate_move_based_on_cutsize(const std::vector<molMoveDescription>& new_l
 bool evaluate_move_based_on_connection(const std::vector<molMoveDescription>& new_locs);
 
 int calculate_cutsize_change(const std::vector<molMoveDescription>& new_locs);
-int absorbed_conn_change(const std::vector<molMoveDescription>& new_locs);
+float absorbed_conn_change(const std::vector<molMoveDescription>& new_locs);
 
 #if 0
 int calculate_cutsize_of_clb(ClusterBlockId clb_index);
