@@ -2147,7 +2147,7 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
             }
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
             int sw_id = -1;
-            if (is_primitive) {
+            if (is_primitive || pin_type == RECEIVER) {
                 VTR_ASSERT(logical_block != nullptr);
                 float primitive_comb_delay = get_pin_primitive_comb_delay(physical_type_ptr,
                                                                           logical_block,
