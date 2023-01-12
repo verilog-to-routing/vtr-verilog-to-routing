@@ -50,11 +50,6 @@ ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
 
 std::unordered_set<AtomBlockId>* cluster_to_atoms(const ClusterBlockId& cluster) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
-
-    //If the lookup is not built yet, build it first
-    if (helper_ctx.atoms_lookup.empty())
-        init_clb_atoms_lookup(helper_ctx.atoms_lookup);
-
     return &(helper_ctx.atoms_lookup[cluster]);
 }
 
