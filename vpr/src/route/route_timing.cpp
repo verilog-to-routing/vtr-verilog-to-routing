@@ -430,7 +430,10 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
     //sort so net with most sinks is routed first.
     auto sorted_nets = std::vector<ParentNetId>(net_list.nets().begin(), net_list.nets().end());
-//    std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than(net_list));
+    if(!timing_info) {
+        //If we don't have timing info, we can't sort by criticality, so just sort by number of sinks
+        std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than(net_list));
+    }
     /*
      * Configure the routing predictor
      */
@@ -618,10 +621,12 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         /*
          * Route each net
          */
-        if(itry != 1) {
-            std::sort(sorted_nets.begin(), sorted_nets.end(), net_less_critical_than_comp);
-        } else {
-            std::sort(sorted_nets.begin(), sorted_nets.end(), net_greater_critical_than_comp);
+        if(timing_info) {
+            if(itry != 1) {
+                std::sort(sorted_nets.begin(), sorted_nets.end(), net_less_critical_than_comp);
+            } else {
+                std::sort(sorted_nets.begin(), sorted_nets.end(), net_greater_critical_than_comp);
+            }
         }
         for (auto net_id : sorted_nets) {
             bool was_rerouted = false;
