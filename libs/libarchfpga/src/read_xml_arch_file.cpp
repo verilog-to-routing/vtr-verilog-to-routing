@@ -63,6 +63,7 @@
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
 
+#include "physical_types.h"
 #include "physical_types_util.h"
 
 using namespace std::string_literals;
@@ -1630,6 +1631,8 @@ static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node 
     std::map<std::string, int> interc_names;
     std::pair<std::map<std::string, int>::iterator, bool> ret_interc_names;
 
+    std::map<enum e_interconnect, std::string> interc_to_arch_name {{COMPLETE_INTERC, "complete"},{DIRECT_INTERC, "direct"},{MUX_INTERC, "mux"}, {PARTIAL_INTERC, "partial"}};
+
     num_complete = num_direct = num_mux = 0;
     num_complete = count_children(Parent, "complete", loc_data, ReqOpt::OPTIONAL);
     num_direct = count_children(Parent, "direct", loc_data, ReqOpt::OPTIONAL);
@@ -1641,27 +1644,10 @@ static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node 
     mode->interconnect = new t_interconnect[num_interconnect];
 
     i = 0;
-    for (L_index = 0; L_index < 4; L_index++) {
-        if (L_index == 0) {
-            Cur = get_first_child(Parent, "complete", loc_data, ReqOpt::OPTIONAL);
-        } else if (L_index == 1) {
-            Cur = get_first_child(Parent, "direct", loc_data, ReqOpt::OPTIONAL);
-        } else if (L_index == 2) {
-            Cur = get_first_child(Parent, "mux", loc_data, ReqOpt::OPTIONAL);
-        } else {
-            Cur = get_first_child(Parent, "partial", loc_data, ReqOpt::OPTIONAL);
-        }
+    for (auto e : interc_to_arch_name) {
+        Cur = get_first_child(Parent, e.second, loc_data, ReqOpt::OPTIONAL);
         while (Cur != nullptr) {
-            if (0 == strcmp(Cur.name(), "complete")) {
-                mode->interconnect[i].type = COMPLETE_INTERC;
-            } else if (0 == strcmp(Cur.name(), "direct")) {
-                mode->interconnect[i].type = DIRECT_INTERC;
-            } else if (0 == strcmp(Cur.name(), "mux")) {
-                mode->interconnect[i].type = MUX_INTERC;
-            } else {
-                VTR_ASSERT(0 == strcmp(Cur.name(), "partial"));
-                mode->interconnect[i].type = PARTIAL_INTERC;
-            }
+            mode->interconnect[i].type = e.first;
 
             mode->interconnect[i].line_num = loc_data.line(Cur);
 
