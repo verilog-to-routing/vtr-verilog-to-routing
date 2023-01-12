@@ -7,7 +7,8 @@
 
 /* File-scope routines */
 //a scaled and clipped exponential function
-static float scaled_clipped_exp(float x) { return std::exp(std::min(1000000 * x, float(3.0))); }
+static float scaled_clipped_exp(float x) { return std::exp(std::min(10*x, float(3.0))); }
+//static float scaled_clipped_exp(float x) { return std::exp(x);}
 
 /*                                     *
  *                                     *
@@ -76,6 +77,7 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     q_[last_action_] += delta_q;
 
     if (agent_info_file_) {
+        fseek(agent_info_file_,0,SEEK_END);
         fprintf(agent_info_file_, "%zu,", last_action_);
         fprintf(agent_info_file_, "%g,", reward);
 
@@ -90,6 +92,7 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
             }
         }
         fprintf(agent_info_file_, "\n");
+        fflush(agent_info_file_);
     }
 }
 
@@ -130,6 +133,7 @@ void EpsilonGreedyAgent::init_q_scores() {
             fprintf(agent_info_file_, "n%zu,", i);
         }
         fprintf(agent_info_file_, "\n");
+        fflush(agent_info_file_);
     }
     set_epsilon_action_prob();
 }
@@ -238,6 +242,7 @@ void SoftmaxAgent::init_q_scores() {
     action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
 
     cumm_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_);
+
     if (agent_info_file_) {
         fprintf(agent_info_file_, "action,reward,");
         for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
@@ -247,9 +252,10 @@ void SoftmaxAgent::init_q_scores() {
             fprintf(agent_info_file_, "n%zu,", i);
         }
         fprintf(agent_info_file_, "\n");
+        fflush(agent_info_file_);
     }
     set_action_prob();
-    //agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 t_propose_action SoftmaxAgent::propose_action() {
@@ -278,7 +284,7 @@ t_propose_action SoftmaxAgent::propose_action() {
     last_action_ = (num_available_types_ == 1) ? action : action + (blk_type.index * num_available_moves_);
 
     t_propose_action propose_action;
-    propose_action.move_type = (e_move_type)action;
+    propose_action.move_type = (e_move_type) action;
     propose_action.blk_type = blk_type;
 
     return propose_action;
@@ -290,6 +296,7 @@ void SoftmaxAgent::set_action_prob() {
 
     // calculate the sum of all scaled clipped expnential q values
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
+    std::transform(q_.begin(), q_.end(), exp_q_.begin(), scaled_clipped_exp);
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     int num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
@@ -297,21 +304,26 @@ void SoftmaxAgent::set_action_prob() {
     if(sum_q == num_available_types_ * num_available_moves_) {
         //action probabilities need to be initialized based on availability of the block type in the netlist
         for (size_t i = 0; i < num_available_moves_ * num_available_types_; i++) {
+            //SARA_TODO: clean up these codes especially blk_type.index
             t_logical_block_type blk_type;
-            blk_type.index = i / num_available_moves_ + 1; //excluding the EMPTY type by adding one to the blk type index
+            blk_type.index =
+                    i / num_available_moves_ + 1; //excluding the EMPTY type by adding one to the blk type index
             auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
             //q_[i] = (float) num_blocks / num_total_blocks;
-//            q_[i] /= (num_available_moves_ * num_available_types_);
-
+            //q_[i] /= (num_available_moves_); // * num_available_types
+            //q_[i] *= 10^-7;
             action_prob_[i] = (float) num_blocks / num_total_blocks;
             action_prob_[i] /= (num_available_moves_);
         }
-    } else {
-        // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
-        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-            action_prob_[i] = exp_q_[i] / sum_q; //SARA_TODO: check its logic with Mohamed.
-        }
     }
+
+//    sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
+
+    // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
+    for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
+        action_prob_[i] = (exp_q_[i] / sum_q) * action_prob_[i];
+    }
+
     // normalize all the action probabilities to guarantee the sum(all action probs) = 1
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),

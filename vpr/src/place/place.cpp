@@ -157,6 +157,7 @@ static int num_ts_called = 0;
 
 /* This variable keeps track of each move type and block type frequency
  proposed by the RL agent at any specific temperature.*/
+//SARA_TODO: MAKE THIS OPTIONAL WITH COMMAND-LINE OPTION
 static std::vector<int> proposed_move_per_temp;
 static FILE* proposed_move_agent_per_temp;
 
@@ -422,7 +423,9 @@ static void print_placement_swaps_stats(const t_annealing_state& state);
 static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat);
 
+//SARA_TODO: delete these functions in the final version
 static void save_proposed_move_per_temp ();
+
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -1573,9 +1576,9 @@ static e_move_result try_swap(const t_annealing_state* state,
                                (move_outcome ? "ACCEPTED" : "REJECTED"), "");
     }
     move_outcome_stats.outcome = move_outcome;
-
+    //SARA_TODO: fix delta cost value!
     calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
-                                         delta_c, timing_bb_factor, move_generator);
+                                         delta_c/*/costs->cost*/, timing_bb_factor, move_generator);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS

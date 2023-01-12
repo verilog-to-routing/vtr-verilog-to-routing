@@ -556,8 +556,6 @@ ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
      * loop if all blocks are fixed.                                  */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-//    t_logical_block_type blk_type_temp = blk_type;
-//    blk_type_temp.index++;
     t_logical_block_type blk_type_temp;
     blk_type_temp.index = convert_agent_to_logical_block_type(blk_type.index);
     auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
@@ -617,7 +615,6 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     pin_from = crit_pin.second;
     return b_from;
 
-    //No critical block with 'blk_type' found
     //Unreachable statement
     return ClusterBlockId::INVALID();
 }
