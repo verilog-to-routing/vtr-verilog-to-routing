@@ -107,7 +107,7 @@ float absorbed_conn_change(const std::vector<molMoveDescription>& new_locs) {
         for (auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
             if (!moving_atom)
                 continue;
-            
+
             for (auto& atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
                 AtomNetId atom_net = atom_ctx.nlist.pin_net(atom_pin);
                 if (atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
@@ -126,7 +126,7 @@ float absorbed_conn_change(const std::vector<molMoveDescription>& new_locs) {
                         num_pins_in_new--;
                     }
                 }
-                absorbed_conn_change += num_pins_in_new/(float)atom_ctx.nlist.net_pins(atom_net).size();
+                absorbed_conn_change += num_pins_in_new / (float)atom_ctx.nlist.net_pins(atom_net).size();
             }
         }
     }
@@ -428,7 +428,7 @@ bool evaluate_move_based_on_cutsize(const std::vector<molMoveDescription>& new_l
 }
 
 bool evaluate_move_based_on_connection(const std::vector<molMoveDescription>& new_locs) {
-    int change_in_absorbed_conn = absorbed_conn_change(new_locs);
+    float change_in_absorbed_conn = absorbed_conn_change(new_locs);
 
     return (change_in_absorbed_conn > 0);
 }
