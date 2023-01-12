@@ -1,3 +1,12 @@
+/*********************************************************************
+# Description: Renaming depth-split singlePortRam to single_port_ram #
+#			   to be recognized by VTR flow CAD tools. This file  	 #
+#			   is executed by the Yosys synthesis flow once the      #
+#			   single_port_ram.v is executed.		  	  			 #
+#																  	 #
+# Author: Seyed Alireza Damghani (sdamghann@gmail.com)   		 	 #
+*********************************************************************/
+
 `timescale 1ps/1ps
 
 `define MEM_MAXADDR PPP
