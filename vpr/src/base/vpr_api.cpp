@@ -1134,7 +1134,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 }
 
 ///@brief Free architecture data structures
-void free_device(const t_det_routing_arch& routing_arch) {
+void free_device(const t_det_routing_arch& /*routing_arch*/) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     device_ctx.chan_width.x_list.clear();
