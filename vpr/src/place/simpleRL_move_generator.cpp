@@ -302,6 +302,16 @@ void SoftmaxAgent::set_action_prob() {
     int num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
 
     if(sum_q == num_available_types_ * num_available_moves_) {
+        //find the minimum number of available blocks of available types
+        int min_block_type_count = INT_MAX;
+        for(size_t i = 1; i <= num_available_types_; i++){
+            t_logical_block_type blk_type;
+            blk_type.index = i;
+            if(min_block_type_count > cluster_ctx.clb_nlist.blocks_per_type(blk_type).size()){
+                min_block_type_count = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
+            }
+        }
+
         //action probabilities need to be initialized based on availability of the block type in the netlist
         for (size_t i = 0; i < num_available_moves_ * num_available_types_; i++) {
             //SARA_TODO: clean up these codes especially blk_type.index
@@ -312,8 +322,8 @@ void SoftmaxAgent::set_action_prob() {
             //q_[i] = (float) num_blocks / num_total_blocks;
             //q_[i] /= (num_available_moves_); // * num_available_types
             //q_[i] *= 10^-7;
-            action_prob_[i] = (float) num_blocks / num_total_blocks;
-            action_prob_[i] /= (num_available_moves_);
+            action_prob_[i] = (float) num_blocks / (min_block_type_count);
+//            action_prob_[i] /= (num_available_moves_);
         }
     }
 
