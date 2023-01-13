@@ -1631,7 +1631,7 @@ static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node 
     std::map<std::string, int> interc_names;
     std::pair<std::map<std::string, int>::iterator, bool> ret_interc_names;
 
-    std::map<enum e_interconnect, std::string> interc_to_arch_name {{COMPLETE_INTERC, "complete"},{DIRECT_INTERC, "direct"},{MUX_INTERC, "mux"}, {PARTIAL_INTERC, "partial"}};
+    std::map<enum e_interconnect, std::string> interc_to_arch_name{{COMPLETE_INTERC, "complete"}, {DIRECT_INTERC, "direct"}, {MUX_INTERC, "mux"}, {PARTIAL_INTERC, "partial"}};
 
     num_complete = num_direct = num_mux = 0;
     num_complete = count_children(Parent, "complete", loc_data, ReqOpt::OPTIONAL);
