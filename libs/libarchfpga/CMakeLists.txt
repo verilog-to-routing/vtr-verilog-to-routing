@@ -48,7 +48,7 @@ if (WRITE_ARCH_BB_USES_IPO)
 endif()
 
 install(TARGETS libarchfpga DESTINATION bin)
-install(FILES ${LIB_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libarchfpga)
+install(FILES ${LIB_HEADERS} DESTINATION include/libarchfpga)
 
 #
 # install executables in the VTR source root directory
