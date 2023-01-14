@@ -1,5 +1,0 @@
-read_verilog -sv size_cast.sv
-proc
-opt -full
-select -module top
-sat -verify -prove-asserts -show-all

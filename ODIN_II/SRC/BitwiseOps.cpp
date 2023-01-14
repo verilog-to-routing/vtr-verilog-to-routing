@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2022 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,9 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: This file provides utilities to modify the bitwise nodes 
- * to make them compatible with the Odin-II partial mapper.
  */
 
 #include <cmath> // log2

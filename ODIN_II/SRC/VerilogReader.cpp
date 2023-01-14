@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,13 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: includes the definition of VERILOG Reader class to read a 
- * given Verilog or Verilog Header file. Odin-II utilizes Bison and
- * Flex to parse input Verilog files. After parsing a Verilog file, 
- * Odin-II uses an abstract syntax tree to perform elaboration.
- * It should mention that Odin-II currently does not have extensive
- * Verilog 2005 standard support.
  */
 
 #include "Verilog.hpp"

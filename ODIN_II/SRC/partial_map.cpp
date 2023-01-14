@@ -1,4 +1,6 @@
-/**
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -19,13 +21,8 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: this file includes the instantiation process of Odin-II 
- * supported cells. Technically, the Odin-II partial mapper transforms 
- * netlist to a target device technology dependent cells. The partial
- * decides the hard/soft logic inference of logic blocks according to
- * the target architecture and specified threshold in command arguments.
  */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

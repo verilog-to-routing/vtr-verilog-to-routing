@@ -453,7 +453,7 @@ function run_single_hdl() {
                 then
                     export PARSER="surelog";
                 else
-                    echo "Synthesizing UHDM files requires Yosys-plugins"
+                    echo "Synthesizing UHDM files requires Yosys-F4PGA-plugins"
                     echo "Please re-compile the VTR project with the \"YOSYS_SV_UHDM_PLUGIN=ON\" flag"
                     _exit_with_code "-1"
                 fi
