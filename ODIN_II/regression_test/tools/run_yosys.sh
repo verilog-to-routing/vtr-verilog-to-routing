@@ -43,6 +43,7 @@ _YOSYS_EXEC="${VTR_DIR}/Yosys/bin/yosys"
 _SURELOG_EXEC="${VTR_DIR}/Yosys/bin/surelog"
 _UHDM_DUMP_EXEC="${VTR_DIR}/Yosys/bin/uhdm-dump"
 _UHDM_HIER_EXEC="${VTR_DIR}/Yosys/bin/uhdm-hier"
+_PARMYS_PLUGIN_EXEC="${VTR_DIR}/Yosys/share/yosys/plugins/parmys.so"
 _INPUT_TYPE=""
 _TEST_INPUT_LIST=()
 _INPUT_LIST=()
@@ -452,7 +453,7 @@ function run_single_hdl() {
                 then
                     export PARSER="surelog";
                 else
-                    echo "Synthesizing UHDM files requires Yosys-plugins"
+                    echo "Synthesizing UHDM files requires Yosys-F4PGA-plugins"
                     echo "Please re-compile the VTR project with the \"YOSYS_SV_UHDM_PLUGIN=ON\" flag"
                     _exit_with_code "-1"
                 fi
@@ -461,6 +462,12 @@ function run_single_hdl() {
                 _exit_with_code "-1"
         esac
         
+        if [ -f "${_PARMYS_PLUGIN_EXEC}" ]
+        then
+            export MAPPER="parmys";
+        else
+            export MAPPER="yosys";
+        fi
 
         if [ -f "${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}" ]; then
             print_test_stat "E"

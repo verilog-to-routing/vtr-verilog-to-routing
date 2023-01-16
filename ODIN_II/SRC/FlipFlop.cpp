@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,17 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: This file includes the circuitry implementation of six synchronous
- * Data Flip-Flop models. All control signals will be check based on their 
- * polarity specified in the attribute structure of the related node.
- *      SDFF: A DFF with synchronous reset 
- *      DFFE: A DFF with enable signal
- *      SDFFE: A DFF with enabling and synchronous signals
- *      SDFFCE: A DFF with enable signal prior to the synchronous reset 
- *             (enable needs to be active to be able to reset)
- *      DFFSR: A DFF with set (VCC) and clear (GND) signals
- *      DFFSRE: A DFF with the set (VCC), clear (GND), and enable signals
  */
 
 #include "FlipFlop.hpp"

@@ -21,6 +21,7 @@ yosys_path = root_path / "Yosys"
 yosys_exe_path = yosys_path / "bin" / "yosys"
 yosys_lib_path = vtr_flow_path / "misc" / "yosyslib"
 yosys_script_path = yosys_lib_path / "synthesis.tcl"
+yosys_parmys_script_path = yosys_lib_path / "synthesis_parmys.tcl"
 
 # ARCHFPGA paths
 archfpga_path = root_path / "ArchFPGA"

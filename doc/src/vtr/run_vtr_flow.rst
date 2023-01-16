@@ -96,7 +96,14 @@ The parser for these runs is considered the Yosys conventional Verilog/SystemVer
 
 Running the default VTR flow using the Yosys standalone front-end.
 The Yosys HDL parser is considered as Yosys-SystemVerilog plugin (i.e., ``read_systemverilog``) and Yosys UHDM plugin (i.e., ``read_uhdm``), respectively.
-It is worth mentioning that utilizing Yosys plugins requires passing the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to build and install the plugins for the Yosys front-end. 
+It is worth mentioning that utilizing Yosys plugins requires passing the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to build and install the plugins for the Yosys front-end.
+
+.. code-block:: bash
+
+    # Using the Parmys (Partial Mapper for Yosys) plugin as partial mapper
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys -mapper parmys
+
+Will run the VTR flow (default configuration) with Yosys frontend using Parmys plugin as partial mapper. To utilize the Parmys plugin, the ``-DYOSYS_PARMYS_PLUGIN=ON`` compile flag should be passed while building the VTR project with Yosys as a frontend.
 
 Detailed Command-line Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -313,3 +320,14 @@ Detailed Command-line Options
     The ``yosys-plugins`` parser, which represents the ``read_systemverilog`` command, reads SystemVerilog files directly in Yosys.
     It executes Surelog with provided filenames and converts them (in memory) into UHDM file. Then, this UHDM file is converted into Yosys AST. `[Yosys-SystemVerilog] <https://github.com/antmicro/yosys-systemverilog#usage>`_
     On the other hand, the ``surelog`` parser, which uses the ``read_uhdm`` Yosys command, walks the design tree and converts its nodes into Yosys AST nodes using Surelog. `[UHDM-Yosys <https://github.com/chipsalliance/UHDM-integration-tests#uhdm-yosys>`_, `Surelog] <https://github.com/chipsalliance/Surelog#surelog>`_
+
+.. option:: -mapper <MAPPER>
+
+    Choose a partial mapper for the Yosys synthesizer [yosys (default), parmys (Partial Mapper for Yosys plugin)].
+    The Yosys default partial mapper will be used if no mapper is specified.
+
+    **Default:** yosys
+
+.. note::
+
+    Parmys is a Yosys plugin which provides intelligent partial mapping features (inference, binding, and hard/soft logic trade-offs) from Odin-II for Yosys. For more information on available paramters see the `Parmys <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ plugin page.
