@@ -8,6 +8,7 @@
 /* File-scope routines */
 //a scaled and clipped exponential function
 static float scaled_clipped_exp(float x) { return std::exp(std::min(10*x, float(3.0))); }
+static float normalize(float x, float sum){return x * (1/sum);}
 //static float scaled_clipped_exp(float x) { return std::exp(x);}
 
 /*                                     *
@@ -302,16 +303,6 @@ void SoftmaxAgent::set_action_prob() {
     int num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
 
     if(sum_q == num_available_types_ * num_available_moves_) {
-        //find the minimum number of available blocks of available types
-        int min_block_type_count = INT_MAX;
-        for(size_t i = 1; i <= num_available_types_; i++){
-            t_logical_block_type blk_type;
-            blk_type.index = i;
-            if(min_block_type_count > cluster_ctx.clb_nlist.blocks_per_type(blk_type).size()){
-                min_block_type_count = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-            }
-        }
-
         //action probabilities need to be initialized based on availability of the block type in the netlist
         for (size_t i = 0; i < num_available_moves_ * num_available_types_; i++) {
             //SARA_TODO: clean up these codes especially blk_type.index
@@ -322,12 +313,10 @@ void SoftmaxAgent::set_action_prob() {
             //q_[i] = (float) num_blocks / num_total_blocks;
             //q_[i] /= (num_available_moves_); // * num_available_types
             //q_[i] *= 10^-7;
-            action_prob_[i] = (float) num_blocks / (min_block_type_count);
+            action_prob_[i] = (float) num_blocks / (num_total_blocks);
 //            action_prob_[i] /= (num_available_moves_);
         }
     }
-
-//    sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
     // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
@@ -337,7 +326,7 @@ void SoftmaxAgent::set_action_prob() {
     // normalize all the action probabilities to guarantee the sum(all action probs) = 1
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
-                   bind2nd(std::plus<float>(), (1.0 - sum_prob) / (num_available_moves_ * num_available_types_)));
+                   bind2nd(std::multiplies<float>(), (1/sum_prob)));
 
     //calulcate the accumulative action probability of each action
     // e.g. if we have 5 actions with equal probability of 0.2, the cumm_action_prob will be {0.2,0.4,0.6,0.8,1.0}
