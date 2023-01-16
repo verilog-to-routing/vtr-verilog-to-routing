@@ -151,6 +151,7 @@ static float get_net_pin_criticality(const std::shared_ptr<SetupHoldTimingInfo> 
                                      const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                      float max_criticality,
                                      float criticality_exp,
+                                     ParentNetId net_id,
                                      ParentPinId pin_id,
                                      bool is_flat);
 
@@ -431,7 +432,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     //sort so net with most sinks is routed first.
     auto sorted_nets = std::vector<ParentNetId>(net_list.nets().begin(), net_list.nets().end());
     if(!timing_info) {
-        //If we don't have timing info, we can't sort by criticality, so just sort by number of sinks
+        //If we routing is not timing_driven, we can't sort by criticality, so just sort by number of sinks
         std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than(net_list));
     }
     /*
@@ -1256,24 +1257,13 @@ bool timing_driven_route_net(ConnectionRouter& router,
     for (int ipin : remaining_targets) {
         if (timing_info) {
             auto pin = net_list.net_pin(net_id, ipin);
-            if (!route_ctx.is_clock_net[net_id]) {
-                pin_criticality[ipin] = get_net_pin_criticality(timing_info,
-                                                                netlist_pin_lookup,
-                                                                router_opts.max_criticality,
-                                                                router_opts.criticality_exp,
-                                                                pin,
-                                                                is_flat);
-            } else {
-                // Use max_criticality for clock nets.
-                // calculate_clb_net_pin_criticality likely doesn't generate
-                // good values for clock nets.
-                //
-                // This will cause them to use min delay paths rather than
-                // avoid congestion. As a future enchancement, the clock nets
-                // should likely route for min slew, but that is a larger
-                // change.
-                pin_criticality[ipin] = router_opts.max_criticality;
-            }
+            pin_criticality[ipin] = get_net_pin_criticality(timing_info,
+                                                            netlist_pin_lookup,
+                                                            router_opts.max_criticality,
+                                                            router_opts.criticality_exp,
+                                                            net_id,
+                                                            pin,
+                                                            is_flat);
 
 
         } else {
@@ -1940,6 +1930,7 @@ static float get_net_criticality(const Netlist<>& net_list,
                                                     netlist_pin_lookup,
                                                     max_criticality,
                                                     criticality_exp,
+                                                    net_id,
                                                     pin_id,
                                                     is_flat);
             if(pin_crit > net_crit) {
@@ -1955,13 +1946,21 @@ static float get_net_pin_criticality(const std::shared_ptr<SetupHoldTimingInfo> 
                                      const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                      float max_criticality,
                                      float criticality_exp,
+                                     ParentNetId net_id,
                                      ParentPinId pin_id,
                                      bool is_flat) {
     float pin_criticality = 0.0;
-    pin_criticality = calculate_clb_net_pin_criticality(*timing_info,
-                                                        netlist_pin_lookup,
-                                                        pin_id,
-                                                        is_flat);
+    const auto& route_ctx = g_vpr_ctx.routing();
+
+    if(route_ctx.is_clock_net[net_id]) {
+        pin_criticality = max_criticality;
+    } else {
+        pin_criticality = calculate_clb_net_pin_criticality(*timing_info,
+                                                            netlist_pin_lookup,
+                                                            pin_id,
+                                                            is_flat);
+    }
+
 
     /* Pin criticality is between 0 and 1.
              * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
