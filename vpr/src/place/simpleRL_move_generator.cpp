@@ -8,7 +8,6 @@
 /* File-scope routines */
 //a scaled and clipped exponential function
 static float scaled_clipped_exp(float x) { return std::exp(std::min(10*x, float(3.0))); }
-static float normalize(float x, float sum){return x * (1/sum);}
 //static float scaled_clipped_exp(float x) { return std::exp(x);}
 
 /*                                     *
