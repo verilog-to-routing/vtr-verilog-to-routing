@@ -1,7 +1,6 @@
-#ifndef ODIN_TYPES_H
-#define ODIN_TYPES_H
 /*
- *
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -23,6 +22,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
+#ifndef ODIN_TYPES_H
+#define ODIN_TYPES_H
 
 #include "string_cache.h"
 #include "hierarchy_util.h"
