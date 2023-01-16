@@ -37,7 +37,8 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
 
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     init_clb_atoms_lookup(helper_ctx.atoms_lookup);
-
+    init_clb_clb_conn_numbers(helper_ctx.clb_conn_counts);
+    print_block_connections(helper_ctx.clb_conn_counts);
 #ifdef pack_improve_debug
     float propose_sec = 0;
     float evaluate_sec = 0;

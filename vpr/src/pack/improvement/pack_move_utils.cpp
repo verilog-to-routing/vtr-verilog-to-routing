@@ -511,3 +511,43 @@ static void calculate_connected_clbs_to_moving_mol(const t_pack_molecule* mol_1,
         }
     }
 }
+
+/************* CLB-CLB connection count hash table helper functions ***************/
+void init_clb_clb_conn_numbers(std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash>& conn_counts) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    for (auto atom_net : atom_ctx.nlist.nets()) {
+        if (atom_ctx.nlist.net_pins(atom_net).size() > 7)
+            continue;
+
+        std::unordered_set<ClusterBlockId> clusters;
+        for (auto atom_pin_it = atom_ctx.nlist.net_pins(atom_net).begin(); atom_pin_it != atom_ctx.nlist.net_pins(atom_net).end(); atom_pin_it++) {
+            auto clb1 = atom_to_cluster(atom_ctx.nlist.pin_block(*atom_pin_it));
+            clusters.insert(clb1);
+            for (auto atom_pin_it2 = atom_pin_it + 1; atom_pin_it2 != atom_ctx.nlist.net_pins(atom_net).end(); atom_pin_it2++) {
+                auto clb2 = atom_to_cluster(atom_ctx.nlist.pin_block(*atom_pin_it2));
+                if (clusters.count(clb2) == 0) {
+                    if (conn_counts.find({clb1, clb2}) == conn_counts.end())
+                        conn_counts.insert({{clb1, clb2}, 1});
+                    else
+                        conn_counts[{clb1, clb2}]++;
+
+                    clusters.insert(clb2);
+                }
+            }
+        }
+    }
+}
+
+void print_block_connections(const std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash>& conn_count) {
+    for (const auto& block_pair_count : conn_count) {
+        VTR_LOG("Block : %d is connected to Block: %d with %d direct connections.\n",
+                block_pair_count.first.first, block_pair_count.first.second, block_pair_count.second);
+    }
+}
+
+std::pair<std::pair<ClusterBlockId, ClusterBlockId>, int> get_max_value_pair(const std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash>& conn_count) {
+    auto max_iter = std::max_element(conn_count.begin(), conn_count.end(),
+                                     [](const auto& a, auto& b) { return a.second < b.second; });
+    return *max_iter;
+}

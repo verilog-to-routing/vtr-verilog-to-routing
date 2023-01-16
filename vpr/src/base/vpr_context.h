@@ -339,6 +339,11 @@ struct ClusteringHelperContext : public Context {
     // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
+
+    // An unordered map of the count of connections between different clb blocks
+    // Only blocks that have connections between each others are added to this hash table
+    // This may be useful for some type of packing moves.
+    std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash> clb_conn_counts;
 };
 
 /**
