@@ -1063,19 +1063,26 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 RRNodeId rr_node_to_add = RRNodeId(rt_node->inode);
 
                 //Put the node onto the heap
-                if (relevant_node_to_target(rr_graph_, rr_node_to_add, target_node_id)) {
-                    add_route_tree_node_to_heap(rt_node, target_node, cost_params, true);
-                    //Update Bounding Box
-                    RRNodeId node(rt_node->inode);
-                    highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_graph_->node_xlow(node));
-                    highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
-                    highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
-                    highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
+                if(is_flat_) {
+                    if(!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node_id))
+                        continue;
+                }
+
+                add_route_tree_node_to_heap(rt_node, target_node, cost_params, true);
+                //Update Bounding Box
+                RRNodeId node(rt_node->inode);
+                highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_graph_->node_xlow(node));
+                highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
+                highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
+                highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
+                if(is_flat_) {
                     if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                         chan_nodes_added++;
                     }
-                    nodes_added++;
+                } else {
+                    chan_nodes_added++;
                 }
+                nodes_added++;
             }
 
             constexpr int SINGLE_BIN_MIN_NODES = 2;
