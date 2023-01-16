@@ -415,20 +415,6 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     const auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    less_critical_than net_less_critical_than_comp(net_list,
-                                                   timing_info,
-                                                   netlist_pin_lookup,
-                                                   router_opts.max_criticality,
-                                                   router_opts.criticality_exp,
-                                                   is_flat);
-
-    more_critical_than net_greater_critical_than_comp(net_list,
-                                                      timing_info,
-                                                      netlist_pin_lookup,
-                                                      router_opts.max_criticality,
-                                                      router_opts.criticality_exp,
-                                                      is_flat);
-
     auto choking_spots = set_nets_choking_spots(net_list,
                                                 route_ctx.net_terminal_groups,
                                                 route_ctx.net_terminal_group_num,
@@ -579,6 +565,20 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         VTR_LOG("Initial Net Connection Criticality Histogram:\n");
         print_router_criticality_histogram(net_list, *route_timing_info, netlist_pin_lookup, is_flat);
     }
+
+    less_critical_than net_less_critical_than_comp(net_list,
+                                                   route_timing_info,
+                                                   netlist_pin_lookup,
+                                                   router_opts.max_criticality,
+                                                   router_opts.criticality_exp,
+                                                   is_flat);
+
+    more_critical_than net_greater_critical_than_comp(net_list,
+                                                      route_timing_info,
+                                                      netlist_pin_lookup,
+                                                      router_opts.max_criticality,
+                                                      router_opts.criticality_exp,
+                                                      is_flat);
 
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
     if (timing_info) {
