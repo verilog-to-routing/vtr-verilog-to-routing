@@ -301,24 +301,30 @@ void SoftmaxAgent::set_action_prob() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     int num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
 
-    if(sum_q == num_available_types_ * num_available_moves_) {
-        //action probabilities need to be initialized based on availability of the block type in the netlist
-        for (size_t i = 0; i < num_available_moves_ * num_available_types_; i++) {
-            //SARA_TODO: clean up these codes especially blk_type.index
-            t_logical_block_type blk_type;
-            blk_type.index =
-                    i / num_available_moves_ + 1; //excluding the EMPTY type by adding one to the blk type index
-            auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-            //q_[i] = (float) num_blocks / num_total_blocks;
-            //q_[i] /= (num_available_moves_); // * num_available_types
-            //q_[i] *= 10^-7;
-            action_prob_[i] = (float) num_blocks / (num_total_blocks);
+//    if(sum_q == num_available_types_ * num_available_moves_) {
+//        //action probabilities need to be initialized based on availability of the block type in the netlist
+//        for (size_t i = 0; i < num_available_moves_ * num_available_types_; i++) {
+//            //SARA_TODO: clean up these codes especially blk_type.index
+//            t_logical_block_type blk_type;
+//            blk_type.index =
+//                    i / num_available_moves_ + 1; //excluding the EMPTY type by adding one to the blk type index
+//            auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
+//            //q_[i] = (float) num_blocks / num_total_blocks;
+//            //q_[i] /= (num_available_moves_); // * num_available_types
+//            //q_[i] *= 10^-7;
+//            action_prob_[i] = (float) num_blocks / (num_total_blocks);
 //            action_prob_[i] /= (num_available_moves_);
-        }
-    }
+//        }
+//    }
 
     // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
+        t_logical_block_type blk_type;
+        blk_type.index =
+                i / num_available_moves_ + 1; //excluding the EMPTY type by adding one to the blk type index
+        auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
+        action_prob_[i] = (float) num_blocks / (num_total_blocks);
+        action_prob_[i] /= (num_available_moves_);
         action_prob_[i] = (exp_q_[i] / sum_q) * action_prob_[i];
     }
 
