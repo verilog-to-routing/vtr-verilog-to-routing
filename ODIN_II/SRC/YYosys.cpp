@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,19 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file This file includes the definition of the basic structure used
- * in Odin-II to run Yosys API. Technically, this class utilizes Yosys
- * as a separate synthesizer to generate a coarse-grain netlist. In the
- * end, the Yosys generated netlist is technology mapped to the target
- * device using Odin-II partial mapper. It is worth noting that users
- * can also separately run Yosys to performs coarse-grain synthesis using
- * the $ODIN_II_ROOT/regression_test/tool/run_yosys.sh script. This script
- * generates a coarse-grain netlist; then, they can pass the BLIF file to
- * Odin-II with --coarsen flag for performing techmap. Yosys log file is 
- * located in the same place where the Odin-II output BLIF is. To see
- * Yosys logs in the standard output stream you can provide Odin-II with 
- * --show_yosys_log flag.
  */
 
 #include <cstdlib>

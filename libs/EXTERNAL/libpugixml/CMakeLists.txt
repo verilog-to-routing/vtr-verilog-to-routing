@@ -26,4 +26,4 @@ if(NOT VTR_ENABLE_SANITIZE)
 endif()
 
 install(TARGETS libpugixml DESTINATION bin)
-install(FILES ${LIB_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libpugixml)
+install(FILES ${LIB_HEADERS} DESTINATION include/libpugixml)

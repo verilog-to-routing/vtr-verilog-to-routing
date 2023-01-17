@@ -1,5 +1,0 @@
-*.log
-*.json
-/run-test.mk
-+*_synth.v
-+*_testbench
