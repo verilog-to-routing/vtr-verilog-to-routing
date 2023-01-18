@@ -211,3 +211,63 @@ bool quasiDirectedCompatibleTypeConnPackingSwap::evaluate_move(const std::vector
 bool quasiDirectedSameSizeConnPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
     return (evaluate_move_based_on_connection(new_locs));
 }
+
+bool randomTerminalPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals(new_locs));
+}
+
+bool quasiDirectedTerminalPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals(new_locs));
+}
+
+bool quasiDirectedSameTypeTerminalPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals(new_locs));
+}
+
+bool quasiDirectedCompatibleTypeTerminalPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals(new_locs));
+}
+
+bool quasiDirectedSameSizeTerminalPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals(new_locs));
+}
+
+bool randomTerminalNetPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_and_nets(new_locs));
+}
+
+bool quasiDirectedTerminalNetPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_and_nets(new_locs));
+}
+
+bool quasiDirectedSameTypeTerminalNetPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_and_nets(new_locs));
+}
+
+bool quasiDirectedCompatibleTypeTerminalNetPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_and_nets(new_locs));
+}
+
+bool quasiDirectedSameSizeTerminalNetPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_and_nets(new_locs));
+}
+
+bool randomTerminalNetNewFormulaPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_new_formula(new_locs));
+}
+
+bool quasiDirectedTerminalNetNewFormulaPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_new_formula(new_locs));
+}
+
+bool quasiDirectedSameTypeTerminalNetNewFormulaPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_new_formula(new_locs));
+}
+
+bool quasiDirectedCompatibleTypeTerminalNetNewFormulaPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_new_formula(new_locs));
+}
+
+bool quasiDirectedSameSizeTerminalNetNewFormulaPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_new_formula(new_locs));
+}

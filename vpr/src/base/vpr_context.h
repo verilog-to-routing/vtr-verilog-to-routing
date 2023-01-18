@@ -354,6 +354,7 @@ struct ClusteringHelperContext : public Context {
 struct PackingMultithreadingContext : public Context {
     vtr::vector<ClusterBlockId, std::mutex*> mu;
     std::mutex lookup_mu;
+    std::mutex apply_mu;
 };
 
 /**

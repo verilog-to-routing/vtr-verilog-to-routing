@@ -37,8 +37,8 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
 
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     init_clb_atoms_lookup(helper_ctx.atoms_lookup);
-    init_clb_clb_conn_numbers(helper_ctx.clb_conn_counts);
-    print_block_connections(helper_ctx.clb_conn_counts);
+    //init_clb_clb_conn_numbers(helper_ctx.clb_conn_counts);
+    //print_block_connections(helper_ctx.clb_conn_counts);
 #ifdef pack_improve_debug
     float propose_sec = 0;
     float evaluate_sec = 0;
@@ -97,7 +97,36 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
         move_generator = std::make_unique<quasiDirectedCompatibleTypeConnPackingSwap>();
     else if (strcmp(move_type.c_str(), "semiDirectedSameSizeConnSwap") == 0)
         move_generator = std::make_unique<quasiDirectedSameSizeConnPackingSwap>();
-
+    else if (strcmp(move_type.c_str(), "randomTerminalSwap") == 0)
+        move_generator = std::make_unique<randomTerminalPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedTerminalSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedTerminalPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameTypeTerminalSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameTypeTerminalPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedCompatibleTypeTerminalSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedCompatibleTypeTerminalPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameSizeTerminalSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameSizeTerminalPackingSwap>();
+    else if (strcmp(move_type.c_str(), "randomTerminalNetSwap") == 0)
+        move_generator = std::make_unique<randomTerminalNetPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedTerminalNetSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedTerminalNetPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameTypeTerminalNetSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameTypeTerminalNetPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedCompatibleTypeTerminalNetSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedCompatibleTypeTerminalNetPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameSizeTerminalNetSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameSizeTerminalNetPackingSwap>();
+    else if (strcmp(move_type.c_str(), "randomTerminalNetNewFormulaSwap") == 0)
+        move_generator = std::make_unique<randomTerminalNetNewFormulaPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedTerminalNetNewFormulaSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedTerminalNetNewFormulaPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameTypeTerminalNetNewFormulaSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameTypeTerminalNetNewFormulaPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedCompatibleTypeTerminalNetNewFormulaSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedCompatibleTypeTerminalNetNewFormulaPackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameSizeTerminalNetNewFormulaSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameSizeTerminalNetNewFormulaPackingSwap>();
     else {
         VTR_LOG("Packing move type (%s) is not correct!\n", move_type.c_str());
         VTR_LOG("Packing iterative improvement is aborted\n");

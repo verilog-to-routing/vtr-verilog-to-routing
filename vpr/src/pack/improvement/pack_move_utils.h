@@ -30,10 +30,26 @@ void build_mol_move_description(std::vector<molMoveDescription>& new_locs,
                                 ClusterBlockId clb_index_2);
 
 bool evaluate_move_based_on_cutsize(const std::vector<molMoveDescription>& new_locs);
+int calculate_cutsize_change(const std::vector<molMoveDescription>& new_locs);
+
+/* Calculate the change of the absorbed connection */
+/* +ve means more connections are absorbed         */
+int absorbed_conn_change(const std::vector<molMoveDescription>& new_locs);
 bool evaluate_move_based_on_connection(const std::vector<molMoveDescription>& new_locs);
 
-int calculate_cutsize_change(const std::vector<molMoveDescription>& new_locs);
-float absorbed_conn_change(const std::vector<molMoveDescription>& new_locs);
+/* Calculate the number of abosrbed terminals of a net */
+/* +ve means more terminal are now absorbed            */
+float absorbed_pin_terminals(const std::vector<molMoveDescription>& new_locs);
+bool evaluate_move_based_on_terminals(const std::vector<molMoveDescription>& new_locs);
+
+/* Calculate the number of absorbed terminals of a net *
+ * and add a bonus for absorbing the whole net         *
+ * +ve means more terminals are now absorbed           */
+float absorbed_pin_terminals_and_nets(const std::vector<molMoveDescription>& new_locs);
+bool evaluate_move_based_on_terminals_and_nets(const std::vector<molMoveDescription>& new_locs);
+
+float abosrbed_terminal_new_formula(const std::vector<molMoveDescription>& new_locs);
+bool evaluate_move_based_on_terminals_new_formula(const std::vector<molMoveDescription>& new_locs);
 
 void init_clb_clb_conn_numbers(std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash>& conn_counts);
 void print_block_connections(const std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash>& conn_count);

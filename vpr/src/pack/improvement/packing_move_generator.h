@@ -77,4 +77,83 @@ class quasiDirectedSameSizeConnPackingSwap : public quasiDirectedSameSizePacking
   public:
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
 };
+
+/************ Moves that evaluate on abosrbed Terminals *********************/
+class randomTerminalPackingSwap : public randomPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedTerminalPackingSwap : public quasiDirectedPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameTypeTerminalPackingSwap : public quasiDirectedSameTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedCompatibleTypeTerminalPackingSwap : public quasiDirectedCompatibleTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameSizeTerminalPackingSwap : public quasiDirectedSameSizePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+/************ Moves that evaluate on abosrbed Terminals and nets *********************/
+class randomTerminalNetPackingSwap : public randomPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedTerminalNetPackingSwap : public quasiDirectedPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameTypeTerminalNetPackingSwap : public quasiDirectedSameTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedCompatibleTypeTerminalNetPackingSwap : public quasiDirectedCompatibleTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameSizeTerminalNetPackingSwap : public quasiDirectedSameSizePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+/************ Moves that evaluate on abosrbed Terminals and nets new formula *********************/
+class randomTerminalNetNewFormulaPackingSwap : public randomPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedTerminalNetNewFormulaPackingSwap : public quasiDirectedPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameTypeTerminalNetNewFormulaPackingSwap : public quasiDirectedSameTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedCompatibleTypeTerminalNetNewFormulaPackingSwap : public quasiDirectedCompatibleTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameSizeTerminalNetNewFormulaPackingSwap : public quasiDirectedSameSizePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
 #endif //VTR_PACKINGMOVEGENERATOR_H
