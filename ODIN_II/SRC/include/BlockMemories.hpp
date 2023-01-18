@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,11 +21,8 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file This file includes the definition of the basic structure 
- * used in Odin-II Block Memory resolving process. Moreover, it 
- * provides the declaration of the related public routines.
  */
+
 #ifndef _BLOCK_MEMORIES_H_
 #define _BLOCK_MEMORIES_H_
 

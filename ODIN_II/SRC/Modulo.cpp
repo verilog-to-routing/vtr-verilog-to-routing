@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,11 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: This file provides the resolving process for the modulo 
- * node which exactly the same as division. The only different 
- * remainder output signal is taken instead of the quotient signal 
- * for the modulo node. 
  */
 
 #include "Modulo.hpp"

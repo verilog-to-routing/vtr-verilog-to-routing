@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,11 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: this file proposes the combinational instantiation of constant
- * and variable exponentiation operations. Both implementations utilize 
- * the multiplication operations; however, the constant exponentiation is
- * designed to use fewer multiply nodes to achieve area and speed efficiency.
  */
 
 #include "Power.hpp"

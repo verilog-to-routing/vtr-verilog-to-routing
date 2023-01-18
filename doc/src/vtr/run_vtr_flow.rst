@@ -321,7 +321,7 @@ Detailed Command-line Options
     It executes Surelog with provided filenames and converts them (in memory) into UHDM file. Then, this UHDM file is converted into Yosys AST. `[Yosys-SystemVerilog] <https://github.com/antmicro/yosys-systemverilog#usage>`_
     On the other hand, the ``surelog`` parser, which uses the ``read_uhdm`` Yosys command, walks the design tree and converts its nodes into Yosys AST nodes using Surelog. `[UHDM-Yosys <https://github.com/chipsalliance/UHDM-integration-tests#uhdm-yosys>`_, `Surelog] <https://github.com/chipsalliance/Surelog#surelog>`_
 
-.. option:: -mapper <PARSER>
+.. option:: -mapper <MAPPER>
 
     Choose a partial mapper for the Yosys synthesizer [yosys (default), parmys (Partial Mapper for Yosys plugin)].
     The Yosys default partial mapper will be used if no mapper is specified.
