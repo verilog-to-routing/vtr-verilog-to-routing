@@ -150,10 +150,15 @@ float absorbed_pin_terminals(const std::vector<molMoveDescription>& new_locs) {
     AtomBlockId cur_atom;
     ClusterBlockId cur_clb;
     std::unordered_set<AtomBlockId> moving_atoms;
+    std::unordered_set<AtomNetId> moving_nets;
     for (auto& new_loc : new_locs) {
         for (auto& atom : new_loc.molecule_to_move->atom_block_ids) {
-            if (atom)
+            if (atom) {
                 moving_atoms.insert(atom);
+                for (auto& atom_pin : atom_ctx.nlist.block_pins(atom)) {
+                    moving_nets.insert(atom_ctx.nlist.pin_net(atom_pin));
+                }
+            }
         }
     }
 
@@ -170,6 +175,10 @@ float absorbed_pin_terminals(const std::vector<molMoveDescription>& new_locs) {
             // iterate over the atom pins
             for (auto& atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
                 AtomNetId atom_net = atom_ctx.nlist.pin_net(atom_pin);
+                if (!moving_nets.count(atom_net))
+                    continue;
+
+                moving_nets.erase(atom_net);
                 if (atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
                     continue;
 
@@ -177,15 +186,7 @@ float absorbed_pin_terminals(const std::vector<molMoveDescription>& new_locs) {
                 // iterate over the net pins
                 for (auto& net_pin : atom_ctx.nlist.net_pins(atom_net)) {
                     cur_atom = atom_ctx.nlist.pin_block(net_pin);
-                    if (cur_atom == moving_atom)
-                        num_pins_in_new++;
-                    else if (moving_atoms.count(cur_atom)) {
-                        cur_clb = atom_to_cluster(cur_atom);
-                        if (cur_clb == new_block_id)
-                            num_pins_in_new--;
-                        else
-                            num_pins_in_new++;
-                    } else {
+                    if (!moving_atoms.count(cur_atom)) {
                         cur_clb = atom_to_cluster(cur_atom);
                         if (cur_clb == new_block_id) {
                             num_pins_in_new++;
@@ -194,7 +195,7 @@ float absorbed_pin_terminals(const std::vector<molMoveDescription>& new_locs) {
                         }
                     }
                 }
-                absorbed_conn_change += (float)num_pins_in_new / (float)atom_ctx.nlist.net_pins(atom_net).size();
+                absorbed_conn_change += (float)(num_pins_in_new) / (float)atom_ctx.nlist.net_pins(atom_net).size();
             }
         }
     }
@@ -239,28 +240,30 @@ float absorbed_pin_terminals_and_nets(const std::vector<molMoveDescription>& new
                 if (atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
                     continue;
 
-                int num_pins_in_new = 0;
+                int num_old_absorbed = 0;
+                int num_new_absorbed = 0;
                 // iterate over the net pins
                 for (auto& net_pin : atom_ctx.nlist.net_pins(atom_net)) {
                     cur_atom = atom_ctx.nlist.pin_block(net_pin);
-                    if (cur_atom == moving_atom)
-                        num_pins_in_new++;
-                    else if (moving_atoms.count(cur_atom)) {
+                    if (cur_atom == moving_atom) {
+                        num_old_absorbed++;
+                        num_new_absorbed++;
+                    } else if (moving_atoms.count(cur_atom)) {
                         cur_clb = atom_to_cluster(cur_atom);
-                        if (cur_clb == new_block_id)
-                            num_pins_in_new--;
-                        else
-                            num_pins_in_new++;
+                        if (cur_clb == old_block_id) {
+                            num_old_absorbed++;
+                            num_new_absorbed++;
+                        }
                     } else {
                         cur_clb = atom_to_cluster(cur_atom);
                         if (cur_clb == new_block_id) {
-                            num_pins_in_new++;
+                            num_new_absorbed++;
                         } else if (cur_clb == old_block_id) {
-                            num_pins_in_new--;
+                            num_old_absorbed++;
                         }
                     }
                 }
-                absorbed_conn_change += (float)num_pins_in_new / (float)atom_ctx.nlist.net_pins(atom_net).size() + (int)num_pins_in_new / (int)atom_ctx.nlist.net_pins(atom_net).size();
+                absorbed_conn_change += (float)(num_new_absorbed - num_old_absorbed) / (float)atom_ctx.nlist.net_pins(atom_net).size() + (int)(num_new_absorbed) / (int)atom_ctx.nlist.net_pins(atom_net).size() - (int)num_old_absorbed / (int)atom_ctx.nlist.net_pins(atom_net).size();
             }
         }
     }
@@ -311,13 +314,13 @@ float abosrbed_terminal_new_formula(const std::vector<molMoveDescription>& new_l
                 for (auto& net_pin : atom_ctx.nlist.net_pins(atom_net)) {
                     cur_atom = atom_ctx.nlist.pin_block(net_pin);
                     if (cur_atom == moving_atom) {
-                        old_pin_outside++;
+                        //old_pin_outside++;
                     } else if (moving_atoms.count(cur_atom)) {
                         cur_clb = atom_to_cluster(cur_atom);
-                        if (cur_clb == new_block_id)
-                            new_pin_outside++;
-                        else
+                        if (cur_clb == new_block_id) {
                             old_pin_outside++;
+                            new_pin_outside++;
+                        }
                     } else {
                         cur_clb = atom_to_cluster(cur_atom);
                         if (cur_clb != new_block_id) {
@@ -329,7 +332,7 @@ float abosrbed_terminal_new_formula(const std::vector<molMoveDescription>& new_l
                     }
                 }
                 float terminals = (float)atom_ctx.nlist.net_pins(atom_net).size();
-                absorbed_conn_change += (float)old_pin_outside / (terminals - new_pin_outside + 1.) - (float)new_pin_outside / (terminals - new_pin_outside + 1.);
+                absorbed_conn_change += (float)old_pin_outside / (terminals - old_pin_outside + 1.) - (float)new_pin_outside / (terminals - new_pin_outside + 1.);
             }
         }
     }
