@@ -21,8 +21,7 @@ parse_file=vpr_noc.txt
 qor_parse_file=qor_noc_spec.txt
 
 # Pass requirements
-#SARA_TODO: should add this later on, after making sure it is working
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params =-starting_stage vpr --noc on --noc_flows_file ../../../../complex_2_noc_1D_chain.flows --noc_routing_algorithm xy_routing --device "EP4SGX110" 
+script_params =-starting_stage vpr --noc on --noc_flows_file ../../../../../../../../benchmarks/noc/Synthetic_Designs/complex_2_noc_1D_chain/complex_2_noc_1D_chain.flows --noc_routing_algorithm xy_routing --device "EP4SGX110" 
