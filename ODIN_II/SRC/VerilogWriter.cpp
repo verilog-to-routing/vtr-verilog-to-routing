@@ -120,12 +120,6 @@ long Verilog::Writer::declare_blackbox(const char* bb_name) {
 
     std::stringstream bb_declaration;
 
-    // need to specify "(* blackbox *)" tag if Yosys
-    // is going to elaborate the Verilog file
-    if (elaborator_e::_YOSYS) {
-        bb_declaration << BLACKBOX_ATTR << NEWLINE;
-    }
-
     bb_declaration << MODULE << TAB << bb_name << OPEN_PARENTHESIS << std::endl;
     bb_declaration << declare_ports(bb) << std::endl;
     bb_declaration << CLOSE_PARENTHESIS << SEMICOLON << std::endl;

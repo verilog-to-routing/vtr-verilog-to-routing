@@ -31,13 +31,11 @@ jobs:
           - {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test5", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test6", cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON",                           extra_pkgs: ""}
           - {test: "vtr_reg_strong",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                          extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON", extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON",     extra_pkgs: ""}
           - {test: "vtr_reg_yosys_parmys",  cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_PARMYS_PLUGIN=ON -DYOSYS_SV_UHDM_PLUGIN=ON",      extra_pkgs: ""}
-          - {test: "vtr_reg_yosys_odin",    cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON", extra_pkgs: ""}
-          - {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON",                           extra_pkgs: ""}
+          - {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "",                           extra_pkgs: ""}
           - {test: "odin_reg_strong",       cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
 
     env:
@@ -169,17 +167,17 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_YOSYS=ON',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with NO_GRAPHICS',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off -DODIN_USE_YOSYS=ON',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off -DWITH_YOSYS=ON',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DODIN_USE_YOSYS=ON',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_YOSYS=ON',
             suite: 'vtr_reg_basic'
           },
           {
@@ -252,7 +250,7 @@ jobs:
 
     - name: Test
       env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON'
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
@@ -305,39 +303,6 @@ jobs:
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
-
-
-  YOSYSODINII:
-    runs-on: ubuntu-18.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include: [
-          {
-            name: 'Yosys+ODIN-II Basic',
-            suite: 'odin_tech_basic'
-          }
-        ]
-    name: '${{ matrix.name }}'
-    steps:
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
-
-    - uses: hendrikmuhs/ccache-action@v1
-
-    - name: Test
-      env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON'
-        BUILD_TYPE: debug
-      run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
-        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
-
 
   Compatibility:
     runs-on: ubuntu-18.04

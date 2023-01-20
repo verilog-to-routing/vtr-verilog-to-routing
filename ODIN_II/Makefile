@@ -8,11 +8,6 @@ else
 _ELABORATOR=ODIN
 endif
 
-# Yosys+Odin-II compile flags
-ifeq ($(_ELABORATOR), YOSYS)
-_YOSYS_COMPILE_FLAG="-DODIN_USE_YOSYS=ON"
-endif
-
 ################
 # build with ninja when doable
 ################

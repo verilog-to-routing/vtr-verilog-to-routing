@@ -98,7 +98,7 @@ struct global_args_t {
     argparse::ArgValue<std::string> blif_file;
     argparse::ArgValue<std::string> output_file;
     argparse::ArgValue<std::string> arch_file;   // Name of the FPGA architecture file
-    argparse::ArgValue<std::string> tcl_file;    // TCL file to be run by yosys elaborator
+    // argparse::ArgValue<std::string> tcl_file;    // TCL file to be run by yosys elaborator
     argparse::ArgValue<std::string> elaborator;  // Name of the external elaborator tool, currently Yosys is supported, default is Odin
     argparse::ArgValue<bool> permissive;         // turn possible_errors into warnings
     argparse::ArgValue<bool> print_parse_tokens; // print the tokens as they are parsed byt the parser
@@ -192,9 +192,9 @@ enum file_type_e {
     _ILANG, /* not supported yet */
     _VERILOG,
     _VERILOG_HEADER,
-    _SYSTEM_VERILOG,        /* supported by the SystemVerilog/UHDM plugin for Yosys */
-    _SYSTEM_VERILOG_HEADER, /* supported by the SystemVerilog/UHDM plugin for Yosys */
-    _UHDM,                  /* supported by the SystemVerilog/UHDM plugin for Yosys */
+    _SYSTEM_VERILOG,
+    _SYSTEM_VERILOG_HEADER,
+    _UHDM,
     _BLIF,
     _EBLIF, /* not supported yet */
     file_type_e_END
@@ -202,7 +202,6 @@ enum file_type_e {
 
 enum elaborator_e {
     _ODIN,
-    _YOSYS,
     elaborator_e_END
 };
 

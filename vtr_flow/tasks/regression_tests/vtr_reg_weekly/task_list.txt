@@ -6,5 +6,3 @@ regression_tests/vtr_reg_weekly/vtr_reg_fpu_soft_logic_arch
 regression_tests/vtr_reg_weekly/vpr_ispd
 regression_tests/vtr_reg_weekly/koios
 regression_tests/vtr_reg_weekly/koios_no_hard_block
-regression_tests/vtr_reg_weekly/koios_yosys_odin
-regression_tests/vtr_reg_weekly/koios_yosys_odin_no_hard_block

@@ -62,7 +62,6 @@
 #include "adders.h"
 #include "netlist_statistic.h"
 #include "subtractions.h"
-#include "YYosys.hpp"
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_memory.h"
@@ -105,14 +104,6 @@ static void elaborate() {
     switch (configuration.elaborator_type) {
         case (elaborator_e::_ODIN): {
             /* parse Verilog/BLIF files */
-            syn_netlist = static_cast<netlist_t*>(generic_reader._read());
-            break;
-        }
-        case (elaborator_e::_YOSYS): {
-            YYosys yosys;
-            /* perform elaboration */
-            yosys.perform_elaboration();
-            /* parse yosys generated BLIF file */
             syn_netlist = static_cast<netlist_t*>(generic_reader._read());
             break;
         }
@@ -545,14 +536,6 @@ void get_options(int argc, char** argv) {
         .action(argparse::Action::STORE_TRUE)
         .metavar("INPUT_BLIF_FLATNESS");
 
-    ext_elaborator_group.add_argument(global_args.tcl_file, "-S")
-        .help("TCL file")
-        .metavar("TCL_FILE");
-
-    ext_elaborator_group.add_argument(global_args.tcl_file, "--tcl")
-        .help("TCL file")
-        .metavar("TCL_FILE");
-
     ext_elaborator_group.add_argument(global_args.decode_names, "--decode_names")
         .help("Enable extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming")
         .default_value("false")
@@ -733,7 +716,6 @@ void get_options(int argc, char** argv) {
     if (!only_one_is_true({
             global_args.config_file.provenance() == argparse::Provenance::SPECIFIED, //have a config file
             global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED,   //have a BLIF file
-            global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED,    //have a TCL file that includes HDL designs
             global_args.input_files.value().size() > 0                               //have a Verilog input list
         })) {
         parser.print_usage();
@@ -788,14 +770,6 @@ void get_options(int argc, char** argv) {
 
     if (global_args.show_yosys_log.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.show_yosys_log = global_args.show_yosys_log;
-    }
-
-    if (global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.tcl_file = global_args.tcl_file;
-
-        coarsen_cleanup = true;
-        configuration.coarsen = true;
-        configuration.elaborator_type = elaborator_e::_YOSYS;
     }
 
     if (global_args.decode_names.provenance() == argparse::Provenance::SPECIFIED) {

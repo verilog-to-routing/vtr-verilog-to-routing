@@ -253,8 +253,7 @@ extern const strbimap<file_type_e> file_type_strmap({{"ilang", file_type_e::_ILA
                                                      {"eblif", file_type_e::_EBLIF}});
 
 /* available elaborators for Odin-II techmap */
-extern const strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN},
-                                                     {"yosys", elaborator_e::_YOSYS}});
+extern const strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN}});
 
 /**
  * global hashmap of odin subckt types

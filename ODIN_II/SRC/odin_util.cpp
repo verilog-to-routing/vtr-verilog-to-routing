@@ -100,38 +100,7 @@ void report_frontend_elaborator() {
     switch (configuration.input_file_type) {
         case (file_type_e::_VERILOG): // fallthrough
         case (file_type_e::_VERILOG_HEADER): {
-            if (configuration.elaborator_type == elaborator_e::_ODIN) {
-                printf("Using the ODIN_II parser for elaboration\n");
-            } else if (configuration.elaborator_type == elaborator_e::_YOSYS) {
-                printf("Using the Yosys elaborator with it's conventional Verilog/SystemVerilog parser\n");
-            }
-            break;
-        }
-        case (file_type_e::_SYSTEM_VERILOG): {
-            if (configuration.elaborator_type != elaborator_e::_YOSYS) {
-                error_message(PARSE_ARGS, unknown_location, "%s", SYSTEMVERILOG_PARSER_ERROR);
-            }
-#ifndef YOSYS_SV_UHDM_PLUGIN
-            printf("Using the Yosys elaborator with it's conventional Verilog/SystemVerilog parser\n");
-#else
-            printf("Using the Yosys elaborator with the Yosys-F4PGA-Plugin parser for SystemVerilog\n");
-#endif
-            break;
-        }
-        case (file_type_e::_UHDM): {
-            if (configuration.elaborator_type != elaborator_e::_YOSYS) {
-                error_message(PARSE_ARGS, unknown_location, "%s", UHDM_PARSER_ERROR);
-
-            } else if (configuration.elaborator_type == elaborator_e::_YOSYS) {
-#ifndef ODIN_USE_YOSYS
-                error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
-#else
-#    ifndef YOSYS_SV_UHDM_PLUGIN
-                error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_PLUGINS_NOT_COMPILED);
-#    endif
-#endif
-            }
-            printf("Using the Yosys elaborator with the Surelog parser for UHDM\n");
+            printf("Using the ODIN_II parser for elaboration\n");
             break;
         }
         case (file_type_e::_BLIF): {
@@ -140,6 +109,9 @@ void report_frontend_elaborator() {
         }
         case (file_type_e::_EBLIF): //fallthrough
         case (file_type_e::_ILANG): //fallthrough
+        case (file_type_e::_SYSTEM_VERILOG):
+        case (file_type_e::_SYSTEM_VERILOG_HEADER):
+        case (file_type_e::_UHDM):
         default: {
             error_message(UTIL, unknown_location, "%s", "Invalid file type");
             break;

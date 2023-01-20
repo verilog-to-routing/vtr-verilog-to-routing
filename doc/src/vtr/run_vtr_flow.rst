@@ -63,21 +63,6 @@ They will cause VPR to perform only :ref:`packing and placement <general_options
 .. code-block:: bash
 
     # Using the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
-
-    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
-    
-    # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
-    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -elaborator yosys -fflegalize
-
-Passes a Verilog/SystemVerilog/UHDM file to Yosys to perform elaboration. 
-The BLIF elaboration and partial mapping phases will be executed on the generated netlist by Odin-II, and all latches in the Yosys+Odin-II output file will be rising edge.
-Then ABC and VPR perform the default behaviour for the VTR flow, respectively.
-
-.. code-block:: bash
-
-    # Using the Yosys conventional Verilog parser
     ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys
 
     # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
