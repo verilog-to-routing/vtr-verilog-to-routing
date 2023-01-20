@@ -2,7 +2,6 @@ regression_test/run*
 regression_test/benchmark/_BLIF
 regression_test/latest
 
-/yosys
 /temp
 /*.v
 /*.blif

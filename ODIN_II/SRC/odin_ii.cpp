@@ -101,17 +101,7 @@ static void elaborate() {
 
     module_names_to_idx = sc_new_string_cache();
 
-    switch (configuration.elaborator_type) {
-        case (elaborator_e::_ODIN): {
-            /* parse Verilog/BLIF files */
-            syn_netlist = static_cast<netlist_t*>(generic_reader._read());
-            break;
-        }
-        default: {
-            // Invalid elaborator type
-            throw vtr::VtrError("Invalid Elaborator");
-        }
-    }
+    syn_netlist = static_cast<netlist_t*>(generic_reader._read());
 
     if (!syn_netlist) {
         printf("Empty BLIF generated, Empty input or no module declared\n");
@@ -345,7 +335,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         print_input_files_info();
         report_frontend_elaborator();
 
-        if (configuration.input_file_type != file_type_e::_BLIF || configuration.coarsen) {
+        if (configuration.input_file_type != file_type_e::_BLIF) {
             try {
                 error_code = synthesize();
                 printf("Odin_II synthesis has finished with code: %d\n", error_code);
@@ -368,26 +358,13 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.input_file_type = file_type_e::_BLIF;
 
-        if (global_args.coarsen.provenance() != argparse::Provenance::SPECIFIED) {
-            // if we started with a verilog file read the output that was made since
-            // the simulator can only simulate blifs
-            if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
-                configuration.list_of_file_names = {global_args.output_file};
-                my_location.file = 0;
-            } else {
-                printf("BLIF: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
-                fflush(stdout);
-            }
-
-        } else {
-            /*
-             * Considering the output blif file (whether specified or default one)
-             * as the blif for simulation process. This is because the input blif 
-             * from other tools are not compatible with Odin simulation process, 
-             * so they need to be processed first.
-             */
+        // the simulator can only simulate blifs
+        if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
             configuration.list_of_file_names = {global_args.output_file};
             my_location.file = 0;
+        } else {
+            printf("BLIF: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+            fflush(stdout);
         }
 
         try {
@@ -519,29 +496,6 @@ void get_options(int argc, char** argv) {
 
     auto& ext_elaborator_group = parser.add_argument_group("other options");
 
-    ext_elaborator_group.add_argument(global_args.elaborator, "--elaborator")
-        .help("Specify an external elaborator")
-        .default_value("odin")
-        .metavar("ELABORATTOR");
-
-    ext_elaborator_group.add_argument(global_args.show_yosys_log, "--show_yosys_log")
-        .help("Print Yosys log into the standard output stream")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE)
-        .metavar("show_yosys_log");
-
-    ext_elaborator_group.add_argument(global_args.coarsen, "--coarsen")
-        .help("specify the input BLIF is flatten or coarsen")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE)
-        .metavar("INPUT_BLIF_FLATNESS");
-
-    ext_elaborator_group.add_argument(global_args.decode_names, "--decode_names")
-        .help("Enable extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE)
-        .metavar("DECODE_NAMES");
-
     auto& other_grp = parser.add_argument_group("other options");
 
     other_grp.add_argument(global_args.show_help, "-h")
@@ -575,11 +529,6 @@ void get_options(int argc, char** argv) {
 
     other_grp.add_argument(global_args.all_warnings, "-W")
         .help("Print all warnings (can be substantial)")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE);
-
-    other_grp.add_argument(global_args.fflegalize, "--fflegalize")
-        .help("Make all flip-flops rising edge to be compatible with VPR (may add inverters)")
         .default_value("false")
         .action(argparse::Action::STORE_TRUE);
 
@@ -764,18 +713,6 @@ void get_options(int argc, char** argv) {
         configuration.arch_file = global_args.arch_file;
     }
 
-    if (global_args.elaborator.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.elaborator_type = elaborator_strmap.at(string_to_lower(global_args.elaborator.value()));
-    }
-
-    if (global_args.show_yosys_log.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.show_yosys_log = global_args.show_yosys_log;
-    }
-
-    if (global_args.decode_names.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.decode_names = global_args.decode_names;
-    }
-
     if (global_args.write_netlist_as_dot.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.output_netlist_graphs = global_args.write_netlist_as_dot;
     }
@@ -790,19 +727,6 @@ void get_options(int argc, char** argv) {
 
     if (global_args.print_parse_tokens.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.print_parse_tokens = global_args.print_parse_tokens;
-    }
-
-    if (global_args.coarsen.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.coarsen = global_args.coarsen;
-        coarsen_cleanup = true;
-    }
-
-    if (global_args.coarsen.provenance() == argparse::Provenance::UNSPECIFIED) {
-        coarsen_cleanup = false;
-    }
-
-    if (global_args.fflegalize.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.fflegalize = global_args.fflegalize;
     }
 
     if (global_args.sim_directory.value() == DEFAULT_OUTPUT) {
@@ -830,13 +754,8 @@ void get_options(int argc, char** argv) {
  *-------------------------------------------------------------------------*/
 void set_default_config() {
     /* Set up the global configuration. */
-    configuration.coarsen = false;
-    configuration.fflegalize = false;
-    configuration.show_yosys_log = false;
-    configuration.decode_names = false;
     configuration.tcl_file = "";
     configuration.output_file_type = file_type_e::_BLIF;
-    configuration.elaborator_type = elaborator_e::_ODIN;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;
     configuration.print_parse_tokens = 0;

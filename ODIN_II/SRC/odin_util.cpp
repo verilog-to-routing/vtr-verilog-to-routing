@@ -671,27 +671,11 @@ char* get_stripped_name(const char* subcircuit_name) {
 
     char* subcircuit_stripped_name = NULL;
 
-    /* looking for Yosys style generated RTLIL module name */
-    if (configuration.coarsen) {
-        const char* pos = strchr(subcircuit_name, '\\');
-        if (pos) {
-            const char* end = strchr(pos, '\0');
-            // get stripped name
-            if (end) {
-                subcircuit_stripped_name = (char*)vtr::malloc((end - pos + 1) * sizeof(char));
-                memcpy(subcircuit_stripped_name, pos + 1, end - pos - 1);
-                subcircuit_stripped_name[end - pos - 1] = '\0';
-            }
-        }
-    }
-    /* looking for Odin-II style subckt types */
-    else {
-        /* init sub-circuit */
-        subcircuit_stripped_name = (char*)vtr::calloc(6, sizeof(char));
-        /* Determine the type of hard block. */
-        memcpy(subcircuit_stripped_name, subcircuit_name, 5);
-        subcircuit_stripped_name[5] = '\0';
-    }
+    /* init sub-circuit */
+    subcircuit_stripped_name = (char*)vtr::calloc(6, sizeof(char));
+    /* Determine the type of hard block. */
+    memcpy(subcircuit_stripped_name, subcircuit_name, 5);
+    subcircuit_stripped_name[5] = '\0';
 
     if (subcircuit_stripped_name == NULL)
         return (vtr::strdup(subcircuit_name));

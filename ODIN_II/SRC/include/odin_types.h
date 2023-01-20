@@ -98,8 +98,6 @@ struct global_args_t {
     argparse::ArgValue<std::string> blif_file;
     argparse::ArgValue<std::string> output_file;
     argparse::ArgValue<std::string> arch_file;   // Name of the FPGA architecture file
-    // argparse::ArgValue<std::string> tcl_file;    // TCL file to be run by yosys elaborator
-    argparse::ArgValue<std::string> elaborator;  // Name of the external elaborator tool, currently Yosys is supported, default is Odin
     argparse::ArgValue<bool> permissive;         // turn possible_errors into warnings
     argparse::ArgValue<bool> print_parse_tokens; // print the tokens as they are parsed byt the parser
 
@@ -111,11 +109,6 @@ struct global_args_t {
     argparse::ArgValue<bool> write_ast_as_dot;
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
-
-    argparse::ArgValue<bool> fflegalize;     // makes flip-flops rising edge sensitive
-    argparse::ArgValue<bool> coarsen;        // tells Odin-II that the input blif is coarse-grain
-    argparse::ArgValue<bool> show_yosys_log; // Show Yosys output logs into the standard output stream
-    argparse::ArgValue<bool> decode_names;   // Extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming
 
     argparse::ArgValue<std::string> adder_def; //DEPRECATED
 

@@ -251,12 +251,6 @@ Detailed Command-line Options
 .. note::
 
     A coarse-grained BLIF file is defined as a BLIF file inclduing unmapped cells with the Yosys internal cell (listed `here <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/b913727959e22ae7a535ac8b907d0aaa9a3eda3d/ODIN_II/SRC/enum_str.cpp#L402-L494>`_) format which are represented by the ``.subckt`` tag in coarse-grained BLIF.
-    
-.. option:: -fflegalize
-    
-    Makes flip-flops rising edge for coarse-grained input BLIFs in the partial technology mapping phase (ODIN II synthesis flow generates rising edge FFs by default, should be used for Yosys+Odin-II)
-    
-    **Default:** False
 
 .. option:: -encode_names
     

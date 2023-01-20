@@ -122,9 +122,6 @@ void* BLIF::Reader::_read() {
     // delete output_nets_hash;
     fclose(file);
 
-    printf("Elaborating the netlist created from the input BLIF file\n");
-    blif_elaborate_top(blif_netlist);
-
     /* clean up */
     vtr::free(buffer);
 
@@ -331,67 +328,22 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
 
     static long hard_block_number = 0;
 
-    // init the edge sensitivity of hard block
-    if (configuration.coarsen)
-        hard_block_sensitivities(subcircuit_name, new_node);
-
     {
         // getting the subckt prefix name
         char* subcircuit_stripped_name = get_stripped_name(subcircuit_name);
-        /* check for coarse-grain configuration */
-        if (configuration.coarsen) {
-            if (yosys_subckt_strmap.find(subcircuit_name) != yosys_subckt_strmap.end())
-                new_node->type = yosys_subckt_strmap.at(subcircuit_name);
 
-            if (new_node->type == NO_OP && yosys_subckt_strmap.find(subcircuit_stripped_name) != yosys_subckt_strmap.end())
-                new_node->type = yosys_subckt_strmap.at(subcircuit_stripped_name);
+        if (odin_subckt_strmap.find(subcircuit_name) != odin_subckt_strmap.end())
+            new_node->type = odin_subckt_strmap.at(subcircuit_name);
 
-            if (new_node->type == NO_OP) {
-                /* in case of weird names, need to add memories manually */
-                int sc_spot = -1;
-                char* yosys_subckt_str = NULL;
-                if ((yosys_subckt_str = retrieve_node_type_from_subckt_name(subcircuit_stripped_name)) != NULL) {
-                    /* specify node type */
-                    new_node->type = yosys_subckt_strmap.at(yosys_subckt_str);
-                } else if ((sc_spot = sc_lookup_string(hard_block_names, subcircuit_stripped_name)) != -1) {
-                    /* specify node type */
-                    new_node->type = HARD_IP;
-                    /* Detect used hard block for the blif generation */
-                    hb_model = find_hard_block(subcircuit_stripped_name);
-                    if (hb_model) {
-                        hb_model->used = 1;
-                    }
-                } else {
-                    error_message(PARSE_BLIF, unknown_location,
-                                  "Unsupported subcircuit type (%s) in BLIF file.\n", subcircuit_name);
-                }
+        /* check for subcircuit prefix prefix */
+        if (subcircuit_stripped_name
+            && new_node->type == NO_OP
+            && odin_subckt_strmap.find(subcircuit_stripped_name) != odin_subckt_strmap.end())
+            new_node->type = odin_subckt_strmap.at(subcircuit_stripped_name);
 
-                // CLEAN UP
-                vtr::free(yosys_subckt_str);
-            }
+        if (new_node->type == NO_OP)
+            new_node->type = MEMORY;
 
-            if (new_node->type == BRAM) {
-                new_node->type = (new_node->attributes->RD_PORTS
-                                  && new_node->attributes->WR_PORTS)
-                                     ? BRAM
-                                     : (new_node->attributes->RD_PORTS
-                                        && !new_node->attributes->WR_PORTS)
-                                           ? ROM
-                                           : operation_list_END;
-            }
-        } else {
-            if (odin_subckt_strmap.find(subcircuit_name) != odin_subckt_strmap.end())
-                new_node->type = odin_subckt_strmap.at(subcircuit_name);
-
-            /* check for subcircuit prefix prefix */
-            if (subcircuit_stripped_name
-                && new_node->type == NO_OP
-                && odin_subckt_strmap.find(subcircuit_stripped_name) != odin_subckt_strmap.end())
-                new_node->type = odin_subckt_strmap.at(subcircuit_stripped_name);
-
-            if (new_node->type == NO_OP)
-                new_node->type = MEMORY;
-        }
         // CLEAN UP
         vtr::free(subcircuit_stripped_name);
     }
@@ -479,37 +431,13 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
             output_nets_hash->add(name, new_net);
         }
 
-        if (!configuration.coarsen
-            || !configuration.decode_names
-            || new_node->type == SPRAM
-            || new_node->type == DPRAM) {
-            // Name the node subcircuit_name~hard_block_number so that the name is unique.
-            odin_sprintf(buffer, "%s~%ld", subcircuit_name, hard_block_number++);
-            new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL, -1);
-        } else {
-            // Find the basename of the output pin and name the node
-            // with BASENAME^TYPE
-            char* splitter = strrchr(new_node->output_pins[0]->net->name, '.');
-            char* output_pin_fullname = new_node->output_pins[0]->net->name;
+        // Name the node subcircuit_name~hard_block_number so that the name is unique.
+        odin_sprintf(buffer, "%s~%ld", subcircuit_name, hard_block_number++);
+        new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL, -1);
 
-            // there is only a top module, no instantiation of submodules
-            if (splitter == NULL)
-                splitter = strchr(output_pin_fullname, '^');
-
-            char basename[READ_BLIF_BUFFER];
-            size_t basename_len = splitter - output_pin_fullname;
-
-            strncpy(basename, output_pin_fullname, basename_len);
-            basename[basename_len] = '\0';
-            new_node->name = node_name(new_node, basename);
-        }
-
-        // Create a fake ast node.
-        if (!configuration.coarsen || new_node->type == HARD_IP) {
-            new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
-            new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-            new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
-        }
+        new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
+        new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
+        new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
 
         /*add this node to blif_netlist as an internal node */
         blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
@@ -714,7 +642,7 @@ void BLIF::Reader::add_top_input_nodes() {
      * this also fix the issue of constant verilog (no input)
      * that cannot simulate due to empty input vector
      */
-    if (insert_global_clock && !configuration.coarsen) {
+    if (insert_global_clock) {
         insert_global_clock = false;
         build_top_input_node(DEFAULT_CLOCK_NAME);
     }
@@ -896,10 +824,7 @@ hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, operati
         vtr::free(buffer);
 
         if (!model || feof(file)) {
-            if (configuration.coarsen)
-                model = create_hard_block_model(name_subckt, type, ports);
-            else
-                error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
+            error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
         }
 
         // Sort the names.
@@ -1968,31 +1893,17 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         }
     }
 
-    if (name && configuration.coarsen) {
-        oassert(index && "Invalid signal indexing!\n");
-        int idx = vtr::atoi(index);
-        if (name_prefix)
-            first_part = make_full_ref_name(name_prefix, NULL, NULL, name, idx);
-        else
-            first_part = make_full_ref_name(NULL, NULL, NULL, name, idx);
+    if (!strcmp(name_str, "$true")) {
+        return_string = make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
 
-        return_string = vtr::strdup((std::string(first_part) + std::string(second_part)).c_str());
+    } else if (!strcmp(name_str, "$false")) {
+        return_string = make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
+
+    } else if (!strcmp(name_str, "$undef")) {
+        return_string = make_full_ref_name(HBPAD_NAME, NULL, NULL, NULL, -1);
+
     } else {
-        if (!strcmp(name_str, "$true")) {
-            return_string = make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
-
-        } else if (!strcmp(name_str, "$false")) {
-            return_string = make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
-
-        } else if (!strcmp(name_str, "$undef")) {
-            return_string = make_full_ref_name(HBPAD_NAME, NULL, NULL, NULL, -1);
-
-        } else {
-            if (name_prefix && configuration.coarsen && strcmp(name_str, DEFAULT_CLOCK_NAME))
-                return_string = make_full_ref_name(name_prefix, NULL, NULL, name_str, -1);
-            else
-                return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
-        }
+        return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
     }
 
     if (name)

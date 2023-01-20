@@ -478,32 +478,6 @@ extern nnode_t* make_ff_node(npin_t* D, npin_t* clk, npin_t* Q, nnode_t* node, n
     if (clock_node->type != CLOCK_NODE && clock_node->type != INPUT_NODE)
         latch = true;
 
-    /* legalize ff */
-    if (configuration.fflegalize) {
-        if (clk->sensitivity == FALLING_EDGE_SENSITIVITY) {
-            nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
-            /* hook the input into not node */
-            add_input_pin_to_node(not_node, clk, 0);
-            /* create output pin */
-            signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
-            FF_clk = not_outputs->pins[0];
-
-            /* create clk node */
-            nnode_t* clk_node = make_1port_gate(CLOCK_NODE, 1, 1, node, node->traverse_visited);
-            /* hook the input into not node */
-            add_input_pin_to_node(clk_node, FF_clk, 0);
-            /* create output pin */
-            signal_list_t* clk_outputs = make_output_pins_for_existing_node(clk_node, 1);
-            FF_clk = clk_outputs->pins[0];
-
-            /* change clk sensitivity */
-            FF_clk->sensitivity = RISING_EDGE_SENSITIVITY;
-            // CLEAN UP
-            free_signal_list(not_outputs);
-            free_signal_list(clk_outputs);
-        }
-    }
-
     /* create FF node */
     nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, node->traverse_visited);
     /* hook clk into FF node */

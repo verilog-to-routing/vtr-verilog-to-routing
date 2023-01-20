@@ -90,29 +90,6 @@ static void look_for_clocks(netlist_t* netlist);
  * @param netlist pointer to the current netlist file
  *-----------------------------------------------------------------------*/
 void blif_elaborate_top(netlist_t* netlist) {
-    /* 
-     * depending on the input blif target how to do elaboration 
-     * Worth noting blif elaboration does not perform for odin's 
-     * blif since it is already generated from odin's partial 
-     * mapping and is completely elaborated
-     */
-    if (!configuration.coarsen) {
-        /**
-         *  nothing needs to be done since the netlist 
-         *  is already compatible with Odin_II style 
-         */
-    } else if (configuration.coarsen) {
-        /* init hashtable to index memory blocks and ROMs */
-        init_block_memory_index();
-
-        /* do the elaboration without any larger structures identified */
-        depth_first_traversal_to_blif_elaborate(BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
-        /**
-         * After blif elaboration, the netlist is flatten. 
-         * change it to not do flattening for simulation blif reading 
-         */
-        configuration.coarsen = false;
-    }
 }
 
 /**

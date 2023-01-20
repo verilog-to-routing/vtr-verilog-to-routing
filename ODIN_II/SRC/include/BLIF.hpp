@@ -114,13 +114,9 @@ inline char* getbline(char*& buf, size_t size, FILE* fd) {
         vtr::free(buf);
         buf = NULL;
     }
-    /* decide whether need to read line or using fgets */
-    if (configuration.coarsen) {
-        retval = vtr::getline(buf, fd);
-    } else {
-        buf = (char*)vtr::malloc(READ_BLIF_BUFFER * sizeof(char));
-        retval = vtr::fgets(buf, size, fd);
-    }
+
+    buf = (char*)vtr::malloc(READ_BLIF_BUFFER * sizeof(char));
+    retval = vtr::fgets(buf, size, fd);
 
     return (retval);
 }
