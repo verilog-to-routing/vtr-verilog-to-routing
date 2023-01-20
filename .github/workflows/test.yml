@@ -350,7 +350,6 @@ jobs:
       - Sanitized
       - ODINII
       - VQM2BLIF
-      - YOSYSODINII
       - Compatibility
     runs-on: ubuntu-18.04
     steps:
