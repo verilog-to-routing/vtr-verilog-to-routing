@@ -92,8 +92,6 @@ extern bool coarsen_cleanup;
 
 extern const strbimap<file_type_e> file_extension_strmap;
 extern const strbimap<file_type_e> file_type_strmap;
-extern const strmap<elaborator_e> elaborator_strmap;
 extern const strmap<operation_list> odin_subckt_strmap;
-extern const strmap<operation_list> yosys_subckt_strmap;
 
 #endif

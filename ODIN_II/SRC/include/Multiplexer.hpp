@@ -28,8 +28,6 @@
 
 #include "odin_types.h"
 
-extern void make_selector_as_first_port(nnode_t* node);
-extern void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern nnode_t** transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 #endif //__MULTIPLEXER_H__

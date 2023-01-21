@@ -116,23 +116,6 @@ class Verilog {
         void _write(const netlist_t* netlist);
         void _create_file(const char* file_name, const file_type_e file_type = _VERILOG);
 
-        /**
-         *-------------------------------------------------------------------------------------------
-         * (function: declare_blackbox)
-         * 
-         * @brief find the corresponding blackbox with the given 
-         * name in the given target arhitecture, then add its 
-         * Verilog declartion to this->models string cache.
-         * 
-         * @param bb_name the blackbox(DSP) name
-         * 
-         * @return a long value, which is representing the index of 
-         * the declartion in models string cache. Will return -1 if 
-         * a DSP with the given name does not exist in the architecture.
-         *-------------------------------------------------------------------------------------------
-         */
-        long declare_blackbox(const char* bb_name);
-
       protected:
         STRING_CACHE* models_declaration;
 
@@ -148,20 +131,6 @@ class Verilog {
          *-------------------------------------------------------------------------------------------
          */
         FILE* create_verilog(const char* file_name);
-        /**
-         *-------------------------------------------------------------------------------------------
-         * (function: declare_ports)
-         * 
-         * @brief generate a string that includes the declaration 
-         * of input/output ports of a given t_model
-         * 
-         * @param model the DSP t_model pointer
-         * 
-         * @return a string value including the declaration of all 
-         * input/output ports related to the given DSP model
-         *-------------------------------------------------------------------------------------------
-         */
-        std::string declare_ports(t_model* model);
     };
 };
 

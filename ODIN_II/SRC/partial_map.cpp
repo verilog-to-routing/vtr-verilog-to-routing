@@ -25,21 +25,15 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <algorithm>
 #include "odin_types.h"
 #include "odin_globals.h"
 
 #include "netlist_utils.h"
-#include "netlist_cleanup.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
 
 #include "partial_map.h"
-#include "multipliers.h"
 #include "hard_blocks.h"
-#include "math.h"
 #include "memories.h"
 #include "adders.h"
 #include "subtractions.h"

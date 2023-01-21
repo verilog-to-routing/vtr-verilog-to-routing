@@ -23,7 +23,6 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "odin_types.h"
@@ -32,12 +31,10 @@
 #include "adders.h"
 #include "subtractions.h"
 #include "netlist_utils.h"
-#include "partial_map.h"
 #include "read_xml_arch_file.h"
 #include "odin_globals.h"
 
 #include "vtr_memory.h"
-#include "vtr_util.h"
 
 using vtr::t_linked_vptr;
 

@@ -1371,7 +1371,7 @@ static void initialize_pin(npin_t* pin) {
 
     if (pin->net) {
         if (!pin->net->values) {
-            pin->net->values = std::make_shared<AtomicBuffer>(init_value(pin->node));
+            pin->net->values = std::make_shared<atomic_buffer>(init_value(pin->node));
         }
 
         pin->values = pin->net->values;
@@ -1380,7 +1380,7 @@ static void initialize_pin(npin_t* pin) {
             if (pin->net->fanout_pins[i])
                 pin->net->fanout_pins[i]->values = pin->net->values;
     } else {
-        pin->values = std::make_shared<AtomicBuffer>(init_value(pin->node));
+        pin->values = std::make_shared<atomic_buffer>(init_value(pin->node));
     }
 }
 

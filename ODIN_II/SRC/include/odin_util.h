@@ -87,7 +87,6 @@ char* get_pin_name(char* name);
 char* get_port_name(char* name);
 char* get_hard_block_node_name(char* name);
 char* get_stripped_name(const char* subcircuit_name);
-char* retrieve_node_type_from_subckt_name(const char* subcircuit_name);
 int get_pin_number(char* name);
 short get_bit(char in);
 short get_bit(short in);

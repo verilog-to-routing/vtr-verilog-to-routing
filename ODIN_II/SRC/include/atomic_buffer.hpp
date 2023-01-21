@@ -44,7 +44,7 @@ struct BitFields {
     uint8_t i3 : 2;
 };
 
-class AtomicBuffer {
+class atomic_buffer {
   private:
     BitFields bits[BUFFER_SIZE / 4];
     std::atomic<bool> lock;
@@ -106,7 +106,7 @@ class AtomicBuffer {
     }
 
   public:
-    AtomicBuffer(data_t value_in) {
+    atomic_buffer(data_t value_in) {
         this->lock = false;
         this->cycle = -1;
         this->init_all_values(value_in);
@@ -146,22 +146,11 @@ class AtomicBuffer {
         }
     }
 
-    void lock_free_copy_foward_one_cycle(int64_t cycle_in) {
-        set_bits(cycle_in + 1, get_bits(cycle_in));
-        lock_free_update_cycle(cycle_in);
-    }
-
     int32_t get_cycle() {
         lock_it();
         int32_t value = lock_free_get_cycle();
         unlock_it();
         return value;
-    }
-
-    void update_cycle(int64_t cycle_in) {
-        lock_it();
-        lock_free_update_cycle(cycle_in);
-        unlock_it();
     }
 
     data_t get_value(int64_t cycle_in) {
@@ -174,12 +163,6 @@ class AtomicBuffer {
     void update_value(data_t value_in, int64_t cycle_in) {
         lock_it();
         lock_free_update_value(value_in, cycle_in);
-        unlock_it();
-    }
-
-    void copy_foward_one_cycle(int64_t cycle_in) {
-        lock_it();
-        lock_free_copy_foward_one_cycle(cycle_in);
         unlock_it();
     }
 };

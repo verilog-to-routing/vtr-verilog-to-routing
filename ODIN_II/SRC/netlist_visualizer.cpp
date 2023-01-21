@@ -28,7 +28,6 @@
 #include <stdlib.h>
 
 #include "odin_types.h"
-#include "odin_globals.h"
 #include "netlist_utils.h"
 #include "netlist_visualizer.h"
 #include "odin_util.h"

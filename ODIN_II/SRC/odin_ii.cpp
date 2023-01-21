@@ -30,7 +30,6 @@
 #include <vector>
 
 #include "vtr_error.h"
-#include "vtr_time.h"
 #include "odin_ii.h"
 
 #include "argparse.hpp"
@@ -43,12 +42,9 @@
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
-#include "netlist_create_from_ast.h"
-#include "ast_util.h"
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
-// #include "BLIFElaborate.hpp"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "netlist_cleanup.h"
@@ -79,7 +75,6 @@ global_args_t global_args;
 std::vector<t_physical_tile_type> physical_tile_types;
 std::vector<t_logical_block_type> logical_block_types;
 short physical_lut_size = -1;
-int block_tag = -1;
 ids default_net_type = WIRE;
 HardSoftLogicMixer* mixer;
 
@@ -757,7 +752,7 @@ void set_default_config() {
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;
     configuration.print_parse_tokens = 0;
-    configuration.output_preproc_source = 0; // TODO: unused
+    // TODO: unused
     configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
     configuration.dsp_verilog = "arch_dsp.v";
     configuration.arch_file = "";

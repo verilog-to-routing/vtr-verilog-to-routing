@@ -61,27 +61,6 @@ void check_netlist(netlist_t* netlist) {
 }
 
 void depth_traverse_check_combinational_loop(nnode_t* node, short start, STRING_CACHE* in_path);
-/*---------------------------------------------------------------------------------------------
- * (function: check_for_combinational_loop_and_liveness)
- *-------------------------------------------------------------------------------------------*/
-void levelize_and_check_for_combinational_loop_and_liveness(netlist_t* netlist) {
-    /* go from the POs backwards and mark level */
-    levelize_backwards(netlist);
-    /* Since the net_data (void pointer) is used to record information, we need to clean this up so that it can be used again
-     * also, during this cleaning we check if nodes are live based on all the fanout pins have been visited */
-    levelize_backwards_clean_checking_for_liveness(netlist);
-
-    /* do a forward analysis */
-    levelize_forwards(netlist);
-
-    /* checks if there are any non-forward marked nodes */
-    depth_first_traversal_check_if_forward_leveled(COMBO_LOOP, netlist);
-    /* finds combo loops, but usually killed by previous.  Also cleans out net_data (void pointer) for next algorithm. */
-    levelize_forwards_clean_checking_for_combo_loop_and_liveness(netlist);
-
-    /* assign each node which sequential level it is in, and keep the primary inputs to that level */
-    sequential_levelized_dfs(SEQUENTIAL_LEVELIZE, netlist);
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traversal_check_if_forward_leveled()

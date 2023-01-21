@@ -39,14 +39,6 @@ struct t_adder {
     struct t_adder* next;
 };
 
-struct adder_signals {
-    signal_list_t* a;
-    signal_list_t* b;
-    signal_list_t* cin;
-    signal_list_t* cout;
-    signal_list_t* sumout;
-};
-
 extern t_model* hard_adders;
 extern vtr::t_linked_vptr* add_list;
 extern vtr::t_linked_vptr* chain_list;
@@ -59,7 +51,6 @@ void init_add_distribution();
 void report_add_distribution();
 void declare_hard_adder(nnode_t* node);
 void instantiate_hard_adder(nnode_t* node, short mark, netlist_t* netlist);
-void instantiate_simple_soft_adder(nnode_t* node, short mark, netlist_t* netlist);
 void find_hard_adders();
 void add_the_blackbox_for_adds(FILE* out);
 void define_add_function(nnode_t* node, FILE* out);
@@ -80,6 +71,5 @@ int match_pins(nnode_t* node, nnode_t* next_node);
 
 void instantiate_add_w_carry_block(int* width, nnode_t* node, short mark, netlist_t* netlist, short subtraction);
 bool is_ast_adder(ast_node_t* node);
-nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 #endif // ADDERS_H

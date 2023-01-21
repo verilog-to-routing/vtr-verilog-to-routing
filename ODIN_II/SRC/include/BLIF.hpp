@@ -37,10 +37,6 @@
 #include "vtr_memory.h"
 
 #define TOKENS " \t\n"
-#define YOSYS_TOKENS "[]"
-#define YOSYS_ID_FIRST_DELIMITER "\\\\"
-#define YOSYS_ID_LAST_DELIMITER "\""
-#define YOSYS_TOKENS "[]"
 #define GND_NAME "gnd"
 #define VCC_NAME "vcc"
 #define HBPAD_NAME "unconn"
@@ -530,53 +526,7 @@ class BLIF {
          * -------------------------------------------------------------------------------------------
          */
         static char* resolve_signal_name_based_on_blif_type(const char* name_str);
-        /**
-         *---------------------------------------------------------------------------------------------
-         * (function: create_hard_block)
-         * 
-         * @brief create a hard block model based on the given hard block port
-         * 
-         * @param name representing the name of a hard block
-         * @param ports list of a hard block ports
-         * -------------------------------------------------------------------------------------------
-         */
-        hard_block_model* create_hard_block_model(const char* name, operation_list type, hard_block_ports* ports);
-        /**
-         *---------------------------------------------------------------------------------------------
-         * (function: create_model)
-         * 
-         * @brief create a model that has multiple input ports and one output port.
-         * port sizes will be specified based on the number of pins in the BLIF file
-         * 
-         * 
-         * @param name representing the name of a hard block
-         * @param ports list of a hard block ports
-         * @param output_idx_START showing the beginning idx of output ports
-         * @param output_idx_END showing the end idx of output ports
-         * -------------------------------------------------------------------------------------------
-         */
-        hard_block_model* create_model(const char* name, hard_block_ports* ports, int output_idx_START, int output_idx_END);
-        /**
-         *---------------------------------------------------------------------------------------------
-         * (function: hard_block_sensitivities)
-         * 
-         * @brief specify whether a type needs clock sensitivity or not
-         * 
-         * @param subckt_name hard block name
-         * @param new_node pointer to the netlist node
-         * -------------------------------------------------------------------------------------------
-         */
-        void hard_block_sensitivities(const char* subckt_name, nnode_t* new_node);
-        /**
-         *---------------------------------------------------------------------------------------------
-         * (function: need_params)
-         * 
-         * @brief specify whether a type needs clock sensitivity or not
-         * 
-         * @param type node type
-         * -------------------------------------------------------------------------------------------
-         */
-        bool need_params(operation_list type);
+
     };
 
     class Writer : public GenericWriter {
@@ -702,9 +652,6 @@ class BLIF {
          * ---------------------------------------------------------------------------------------------
          */
         void define_decoded_mux(nnode_t* node, FILE* out);
-
-      private:
-        bool haveOutputLatchBlackbox;
     };
 };
 
