@@ -34,7 +34,7 @@
 #include "odin_globals.h"
 
 #include "ast_util.h"
-#include "BLIFElaborate.hpp"
+// #include "BLIFElaborate.hpp"
 #include "netlist_utils.h"
 #include "netlist_check.h"
 #include "netlist_cleanup.h"

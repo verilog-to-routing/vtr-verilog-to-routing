@@ -191,14 +191,14 @@ def run(
 
     # set the parser
     odin_parser_arg = "-v"
-    if odin_args["elaborator"] == "yosys":
-        if odin_args["parser"] in YOSYS_PARSERS:
-            odin_parser_arg = YOSYS_ODIN_PARSER[odin_args["parser"]]
-        else:
-            raise vtr.VtrError(
-                "Invalid parser is specified for the Yosys elaborator,"
-                " available parsers are [{}]".format(" ".join(str(x) for x in YOSYS_PARSERS))
-            )
+    # if odin_args["elaborator"] == "yosys":
+    #     if odin_args["parser"] in YOSYS_PARSERS:
+    #         odin_parser_arg = YOSYS_ODIN_PARSER[odin_args["parser"]]
+    #     else:
+    #         raise vtr.VtrError(
+    #             "Invalid parser is specified for the Yosys elaborator,"
+    #             " available parsers are [{}]".format(" ".join(str(x) for x in YOSYS_PARSERS))
+    #         )
     del odin_args["parser"]
 
     init_config_file(
@@ -216,9 +216,9 @@ def run(
     use_odin_simulation = False
 
     # handling the Odin-II decode_name flag for Yosys coarse-grained BLIFs
-    if not odin_args["encode_names"]:
-        odin_args["decode_names"] = True
-    del odin_args["encode_names"]
+    # if not odin_args["encode_names"]:
+    #     odin_args["decode_names"] = True
+    # del odin_args["encode_names"]
 
     if "use_odin_simulation" in odin_args:
         use_odin_simulation = True

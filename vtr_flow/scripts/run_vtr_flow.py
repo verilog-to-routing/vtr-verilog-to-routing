@@ -712,8 +712,8 @@ def process_odin_args(args):
     odin_args["parser"] = args.parser
     odin_args["adder_type"] = args.adder_type
     odin_args["top_module"] = args.top_module
-    odin_args["elaborator"] = args.elaborator
-    odin_args["encode_names"] = args.encode_names
+    # odin_args["elaborator"] = args.elaborator
+    # odin_args["encode_names"] = args.encode_names
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True
@@ -724,11 +724,11 @@ def process_odin_args(args):
     if args.use_odin_simulation:
         odin_args["use_odin_simulation"] = True
 
-    if args.coarsen:
-        odin_args["coarsen"] = True
+    # if args.coarsen:
+    #     odin_args["coarsen"] = True
 
-    if args.fflegalize:
-        odin_args["fflegalize"] = True
+    # if args.fflegalize:
+    #     odin_args["fflegalize"] = True
 
     return odin_args
 

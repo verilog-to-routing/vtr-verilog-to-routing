@@ -48,7 +48,7 @@
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
-#include "BLIFElaborate.hpp"
+// #include "BLIFElaborate.hpp"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "netlist_cleanup.h"
