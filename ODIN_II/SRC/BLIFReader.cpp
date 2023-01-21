@@ -298,7 +298,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     int i = 0;
     for (i = 0; i < count; i++) {
         mappings[i] = vtr::strdup(strtok(names_parameters[i], "="));
-        names[i] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, strtok(NULL, "="));
+        names[i] = resolve_signal_name_based_on_blif_type(strtok(NULL, "="));
     }
 
     // Associate mappings with their connections.
@@ -352,7 +352,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     hard_block_model* model = NULL;
     if ((subcircuit_name != NULL) && (!(model = get_hard_block_model(subcircuit_name, ports, models)))) {
         // If the model isn's present, scan ahead and find it.
-        model = read_hard_block_model(subcircuit_name, new_node->type, ports);
+        model = read_hard_block_model(subcircuit_name, ports);
         // Add it to the cache.
         add_hard_block_model(model, ports, models);
     }
@@ -465,7 +465,7 @@ void BLIF::Reader::create_internal_node_and_driver() {
     char buffer[READ_BLIF_BUFFER];
     while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
         names = (char**)vtr::realloc(names, sizeof(char*) * (input_count + 1));
-        names[input_count++] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
+        names[input_count++] = resolve_signal_name_based_on_blif_type(ptr);
     }
 
     /* assigning the new_node */
@@ -586,7 +586,7 @@ void BLIF::Reader::create_internal_node_and_driver() {
  * -------------------------------------------------------------------------------------------
  */
 void BLIF::Reader::build_top_input_node(const char* name_str) {
-    char* temp_string = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, name_str);
+    char* temp_string = resolve_signal_name_based_on_blif_type(name_str);
 
     /* create a new top input node and net*/
 
@@ -666,7 +666,7 @@ void BLIF::Reader::rb_create_top_output_nodes() {
     char buffer[READ_BLIF_BUFFER];
 
     while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
-        char* temp_string = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
+        char* temp_string = resolve_signal_name_based_on_blif_type(ptr);
 
         /*add_a_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);*/
 
@@ -767,7 +767,7 @@ bool BLIF::Reader::verify_hard_block_ports_against_model(hard_block_ports* ports
  * @return the file to its original position when finished.
  * -------------------------------------------------------------------------------------------
  */
-hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, operation_list type, hard_block_ports* ports) {
+hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, hard_block_ports* ports) {
     // Store the current position in the file.
     fpos_t pos;
     int last_line = my_location.line;
@@ -1290,7 +1290,7 @@ void BLIF::Reader::create_latch_node_and_driver() {
         input_token_count += 1;
         names = (char**)vtr::realloc(names, (sizeof(char*)) * (input_token_count));
 
-        names[input_token_count - 1] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
+        names[input_token_count - 1] = resolve_signal_name_based_on_blif_type(ptr);
     }
 
     /* assigning the new_node */
@@ -1849,7 +1849,7 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
  * @param name_str representing the name input signal
  * -------------------------------------------------------------------------------------------
  */
-char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_prefix, const char* name_str) {
+char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_str) {
     char* return_string = NULL;
 
     char* name = NULL;

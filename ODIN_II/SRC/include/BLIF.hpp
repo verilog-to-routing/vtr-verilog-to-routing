@@ -271,7 +271,7 @@ class BLIF {
          * @return the file to its original position when finished.
          * -------------------------------------------------------------------------------------------
          */
-        hard_block_model* read_hard_block_model(char* name_subckt, operation_list type, hard_block_ports* ports);
+        hard_block_model* read_hard_block_model(char* name_subckt, hard_block_ports* ports);
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: rb_create_top_driver_nets)
@@ -529,7 +529,7 @@ class BLIF {
          * @param name_str representing the name input signal
          * -------------------------------------------------------------------------------------------
          */
-        static char* resolve_signal_name_based_on_blif_type(const char* name_prefix, const char* name_str);
+        static char* resolve_signal_name_based_on_blif_type(const char* name_str);
         /**
          *---------------------------------------------------------------------------------------------
          * (function: create_hard_block)

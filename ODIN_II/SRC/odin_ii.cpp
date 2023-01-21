@@ -494,8 +494,6 @@ void get_options(int argc, char** argv) {
         .default_value("default_out.blif")
         .metavar("OUTPUT_FILE_PATH");
 
-    auto& ext_elaborator_group = parser.add_argument_group("other options");
-
     auto& other_grp = parser.add_argument_group("other options");
 
     other_grp.add_argument(global_args.show_help, "-h")
