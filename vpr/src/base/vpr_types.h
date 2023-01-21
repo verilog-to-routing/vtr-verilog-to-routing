@@ -1297,6 +1297,9 @@ struct t_router_opts {
     std::string write_router_lookahead;
     std::string read_router_lookahead;
 
+    std::string write_intra_cluster_router_lookahead;
+    std::string read_intra_cluster_router_lookahead;
+
     e_heap_type router_heap;
     bool exit_after_first_routing_iteration;
 
