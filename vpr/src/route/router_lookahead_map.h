@@ -31,7 +31,9 @@ class MapLookahead : public RouterLookahead {
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
     void compute_intra_tile() override;
     void read(const std::string& file) override;
+    void read_intra_cluster(const std::string& file) override;
     void write(const std::string& file) const override;
+    void write_intra_cluster(const std::string& file) const override;
 };
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates

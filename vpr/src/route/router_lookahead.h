@@ -24,9 +24,17 @@ class RouterLookahead {
     // May be unimplemented, in which case method should throw an exception.
     virtual void read(const std::string& file) = 0;
 
+    // Read intra-cluster router lookahead data (if any) from specified file.
+    // May be unimplemented, in which case method should throw an exception.
+    virtual void read_intra_cluster(const std::string& file) = 0;
+
     // Write router lookahead data (if any) to specified file.
     // May be unimplemented, in which case method should throw an exception.
     virtual void write(const std::string& file) const = 0;
+
+    // Write intra-cluster router lookahead data (if any) to specified file.
+    // May be unimplemented, in which case method should throw an exception.
+    virtual void write_intra_cluster(const std::string& file) const = 0;
 
     virtual ~RouterLookahead() {}
 };
@@ -71,8 +79,17 @@ class ClassicLookahead : public RouterLookahead {
     void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::read unimplemented");
     }
+
+    void read_intra_cluster(const std::string& /*file*/) override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::read_intra_cluster unimplemented");
+    }
+
     void write(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write unimplemented");
+    }
+
+    void write_intra_cluster(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write_intra_cluster unimplemented");
     }
 
   private:
@@ -94,8 +111,17 @@ class NoOpLookahead : public RouterLookahead {
     void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "Read not supported for NoOpLookahead");
     }
+
+    void read_intra_cluster(const std::string& /*file*/) override {
+        VPR_THROW(VPR_ERROR_ROUTE, "read_intra_cluster not supported for NoOpLookahead");
+    }
+
     void write(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "Write not supported for NoOpLookahead");
+    }
+
+    void write_intra_cluster(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "write_intra_cluster not supported for NoOpLookahead");
     }
 };
 
