@@ -391,7 +391,7 @@ def vtr_command_argparser(prog=None):
         "-mapper",
         default="yosys",
         dest="mapper",
-        help="Choose the partial mapper fot VTR flow with Yosys frontend between [parmys, yosys].",
+        help="Choose the partial mapper for VTR flow with Yosys frontend between [parmys, yosys].",
     )
     #
     # VPR arguments
