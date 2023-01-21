@@ -464,10 +464,11 @@ struct t_class_range {
         , high(high_class_num) {}
 };
 
+// Struct to hold the pin ranges for a specific sub block
 struct t_pin_range {
     int low = 0;
     int high = 0;
-    // Returns the total number of classes
+    // Returns the total number of pins
     int total_num() const {
         return high - low + 1;
     }
@@ -640,6 +641,8 @@ struct t_physical_tile_type {
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
+    // Primitive class is refered to a classes that are in the primitive blocks. These classes are
+    // used during flat-routing to route the nets.
     // The starting number of primitive classes
     int primitive_class_starting_idx = -1;
     std::unordered_map<int, t_class> primitive_class_inf; // [primitive_class_num] -> primitive_class_inf

@@ -306,6 +306,12 @@ class RRGraphBuilder {
         node_storage_.init_fan_in();
     }
 
+    /** @brief Disable the flags which would prevent adding adding extra-resources, when flat-routing
+     * is enabled, to the RR Graph
+     * @note
+     * When flat-routing is enabled, intra-cluster resources are added to the RR Graph after global rosources
+     * are already added. This function disables the flags which would prevent adding extra-resources to the RR Graph
+     */
     inline void reset_rr_graph_flags() {
         node_storage_.edges_read_ = false;
         node_storage_.partitioned_ = false;
