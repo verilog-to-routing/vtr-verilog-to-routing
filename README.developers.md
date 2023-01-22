@@ -311,7 +311,6 @@ will be triggered. The following tests are included in the workflow:
 * [vtr_reg_strong](#vtr_reg_strong)
 * vtr_reg_yosys
 * vtr_reg_yosys_parmys
-* odin_tech_strong
 * odin_reg_strong
 
 instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).
