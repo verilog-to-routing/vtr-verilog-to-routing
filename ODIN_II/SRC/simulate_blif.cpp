@@ -1850,10 +1850,7 @@ static void instantiate_memory(nnode_t* node, long data_width, long addr_width) 
 }
 
 static int parse_mif_radix(std::string radix) {
-    return (radix == "HEX") ? 16 : (radix == "DEC") ? 10
-                               : (radix == "OCT")   ? 8
-                               : (radix == "BIN")   ? 2
-                                                    : 0;
+    return (radix == "HEX") ? 16 : (radix == "DEC") ? 10 : (radix == "OCT") ? 8 : (radix == "BIN") ? 2 : 0;
 }
 
 static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int width, long address_width) {
