@@ -23,98 +23,77 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __VERILOG_H__
-#define __VERILOG_H__
+#ifndef __verilog_H__
+#define __verilog_H__
 
-#include "GenericReader.hpp"
-#include "GenericWriter.hpp"
+#include "generic_reader.h"
+#include "generic_writer.h"
 
 #include "ast_util.h"
 
-/* Yosys models attributes to be printed in a Verilog file */
-#define BLACKBOX_ATTR "(* blackbox *)"
-#define KEEP_HIERARCHY_ATTR "(* keep_hierarchy *)"
-/* useful aliases and fixed comment messages */
-#define TAB "\t"
-#define NEWLINE "\n"
-#define HARD_BLOCK_COMMENT "/* the body of the hardblock model is empty since it should be seen as a blackbox */"
-/* some fix keywords in the Verilog standard */
 #define MODULE "module"
-#define OPEN_PARENTHESIS "("
-#define CLOSE_PARENTHESIS ")"
-#define OPEN_SQUARE_BRACKET "["
-#define CLOSE_SQUARE_BRACKET "]"
-#define SEMICOLON ";"
-#define COLON ":"
-#define COMMA ","
-#define SPACE " "
-#define INPUT_PORT "input"
-#define OUTPUT_PORT "output"
-#define WIRE_PORT "wire"
-#define REG_PORT "reg"
-#define END_MODULE "endmodule"
 
 /**
- * @brief A class to provide the general object of an input Verilog file reader
+ * @brief A class to provide the general object of an input verilog file reader
  */
-class Verilog {
+class verilog {
   public:
     /**
      * @brief Construct the object
      * required by compiler
      */
-    Verilog();
+    verilog();
     /**
      * @brief Destruct the object
      * to avoid memory leakage
      */
-    ~Verilog();
+    ~verilog();
 
-    class Reader : public GenericReader {
+    class reader : public generic_reader {
       public:
         /**
-         * @brief Construct the Reader object
+         * @brief Construct the reader object
          * required by compiler
          */
-        Reader();
+        reader();
         /**
-         * @brief Destruct the Reader object
+         * @brief Destruct the reader object
          * to avoid memory leakage
          */
-        ~Reader();
+        ~reader();
 
         void* _read();
 
-        /* No need to have writer in Generic Reader */
+        /* No need to have writer in Generic reader */
         void _write(const netlist_t* /* netlist */) {
-            error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
+            error_message(UTIL, unknown_location, "%s is not available in Generic reader\n", __PRETTY_FUNCTION__);
         }
 
       protected:
       private:
     };
 
-    class Writer : public GenericWriter {
+    class writer : public generic_writer {
       public:
         /**
-         * @brief Construct the Writer object
+         * @brief Construct the writer object
          * required by compiler
          */
-        Writer();
+        writer();
         /**
-         * @brief Destruct the Writer object
+         * @brief Destruct the writer object
          * to avoid memory leakage
          */
-        ~Writer();
+        ~writer();
 
-        /* No need to have reader in Generic Writer */
+        /* No need to have reader in Generic writer */
         void* __read() {
-            error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
+            error_message(UTIL, unknown_location, "%s is not available in Generic writer\n", __PRETTY_FUNCTION__);
             return NULL;
         }
 
         void _write(const netlist_t* netlist);
-        void _create_file(const char* file_name, const file_type_e file_type = _VERILOG);
+        void _create_file(const char* file_name, const file_type_e file_type = VERILOG);
 
       protected:
         STRING_CACHE* models_declaration;
@@ -134,4 +113,4 @@ class Verilog {
     };
 };
 
-#endif //__VERILOG_H__
+#endif //__verilog_H__

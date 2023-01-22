@@ -23,7 +23,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "MixingOptimization.hpp"
+#include "mixing_optimization.h"
 
 #include <stdint.h> // INT_MAX
 #include <vector>
@@ -32,7 +32,7 @@
 #include "multipliers.h"          // instantiate_simple_soft_multiplier
 #include "odin_error.h"           // error_message
 #include "adders.h"               // hard_adders
-#include "HardSoftLogicMixer.hpp" // HardSoftLogicMixer
+#include "hard_soft_logic_mixer.h" // HardSoftLogicMixer
 
 void MixingOpt::scale_counts() {
     if (this->_blocks_count < 0 || this->_blocks_count == INT_MAX || this->_ratio < 0.0 || this->_ratio > 1.0) {

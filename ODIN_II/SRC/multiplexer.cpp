@@ -23,7 +23,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "Multiplexer.hpp"
+#include "multiplexer.h"
 #include "node_creation_library.h"
 #include "netlist_utils.h"
 #include "vtr_memory.h"
@@ -31,7 +31,7 @@
 /**
  * (function: transform_to_single_bit_mux_nodes)
  * 
- * @brief split the mux node read from yosys blif to
+ * @brief split the mux node to
  * the same type nodes with input/output width one
  * 
  * @param node pointing to the mux node 

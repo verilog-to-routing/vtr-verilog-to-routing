@@ -41,7 +41,7 @@
 
 #include "node_creation_library.h"
 
-#include "BLIF.hpp"
+#include "blif.h"
 
 int line_count;
 int num_lines;
@@ -50,15 +50,15 @@ bool insert_global_clock;
 
 FILE* file;
 netlist_t* blif_netlist;
-Hashtable* output_nets_hash;
+hash_table* output_nets_hash;
 
 /**
  * -----------------------------------------------------------------------------------------------------------------------------
- * ---------------------------------------------------------- Reader -----------------------------------------------------------
+ * ---------------------------------------------------------- reader -----------------------------------------------------------
  * -----------------------------------------------------------------------------------------------------------------------------
  */
 
-BLIF::Reader::Reader() {
+blif::reader::reader() {
     insert_global_clock = true;
 
     my_location.file = 0;
@@ -76,14 +76,14 @@ BLIF::Reader::Reader() {
     line_count = 0;
     num_lines = count_blif_lines();
 
-    output_nets_hash = new Hashtable();
+    output_nets_hash = new hash_table();
 }
 
-BLIF::Reader::~Reader() {
+blif::reader::~reader() {
     delete output_nets_hash;
 }
 
-void* BLIF::Reader::_read() {
+void* blif::reader::_read() {
     printf("Reading top level module\n");
     fflush(stdout);
 
@@ -141,7 +141,7 @@ void* BLIF::Reader::_read() {
  * @param buffer read blif buffer
  * @param models list of all hard block models
  *-------------------------------------------------------------------------------------------*/
-int BLIF::Reader::read_tokens(char* buffer, hard_block_models* models) {
+int blif::reader::read_tokens(char* buffer, hard_block_models* models) {
     /* Figures out which, if any token is at the start of this line and *
      * takes the appropriate action.                                    */
     char* token = vtr::strtok(buffer, TOKENS, file, buffer);
@@ -179,7 +179,7 @@ int BLIF::Reader::read_tokens(char* buffer, hard_block_models* models) {
  * @brief to find the name of top module
  * -------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::find_top_module() {
+void blif::reader::find_top_module() {
     fpos_t pos;
     int last_line = my_location.line;
     fgetpos(file, &pos);
@@ -211,7 +211,7 @@ void BLIF::Reader::find_top_module() {
 
     if (!found) {
         warning_message(PARSE_BLIF, unknown_location,
-                        "%s", "The top module name has not been specifed in the BLIF file, automatically considered as 'top'.\n");
+                        "%s", "The top module name has not been specifed in the blif file, automatically considered as 'top'.\n");
 
         blif_netlist->identifier = vtr::strdup("top");
     } else {
@@ -228,7 +228,7 @@ void BLIF::Reader::find_top_module() {
  * 
  * @brief find the output nets and add the corresponding nets
  *-------------------------------------------------------------------------------------------*/
-void BLIF::Reader::hook_up_nets() {
+void blif::reader::hook_up_nets() {
     nnode_t** node_sets[] = {blif_netlist->internal_nodes, blif_netlist->ff_nodes, blif_netlist->top_output_nodes};
     int counts[] = {blif_netlist->num_internal_nodes, blif_netlist->num_ff_nodes, blif_netlist->num_top_output_nodes};
     int num_sets = 3;
@@ -253,7 +253,7 @@ void BLIF::Reader::hook_up_nets() {
  * 
  * @param node represents one of netlist internal nodes or ff nodes or top output nodes
  * ---------------------------------------------------------------------------------------------*/
-void BLIF::Reader::hook_up_node(nnode_t* node) {
+void blif::reader::hook_up_node(nnode_t* node) {
     int j;
     for (j = 0; j < node->num_input_pins; j++) {
         npin_t* input_pin = node->input_pins[j];
@@ -275,7 +275,7 @@ void BLIF::Reader::hook_up_node(nnode_t* node) {
  * @param models list of hard block models
  * -------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
+void blif::reader::create_hard_block_nodes(hard_block_models* models) {
     char buffer[READ_BLIF_BUFFER];
     char* subcircuit_name = vtr::strtok(NULL, TOKENS, file, buffer);
 
@@ -299,7 +299,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     }
 
     // Associate mappings with their connections.
-    Hashtable* mapping_index = associate_names(mappings, names, count);
+    hash_table* mapping_index = associate_names(mappings, names, count);
 
     // Sort the mappings.
     qsort(mappings, count, sizeof(char*), compare_hard_block_pin_names);
@@ -454,7 +454,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
  * @brief to create an internal node and driver from that node
  * -------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::create_internal_node_and_driver() {
+void blif::reader::create_internal_node_and_driver() {
     /* Storing the names of the input and the final output in array names */
     char* ptr = NULL;
     char** names = NULL; // stores the names of the input and the output, last name stored would be of the output
@@ -582,7 +582,7 @@ void BLIF::Reader::create_internal_node_and_driver() {
  * @param name_str representing the input signal name
  * -------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::build_top_input_node(const char* name_str) {
+void blif::reader::build_top_input_node(const char* name_str) {
     char* temp_string = resolve_signal_name_based_on_blif_type(name_str);
 
     /* create a new top input node and net*/
@@ -632,7 +632,7 @@ void BLIF::Reader::build_top_input_node(const char* name_str) {
  *
  * -------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::add_top_input_nodes() {
+void blif::reader::add_top_input_nodes() {
     /**
      * insert a global clock for fall back.
      * in case of undriven internal clocks, they will attach to the global clock
@@ -658,7 +658,7 @@ void BLIF::Reader::add_top_input_nodes() {
  * @brief to add the top level outputs to the netlist
  * -------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::rb_create_top_output_nodes() {
+void blif::reader::rb_create_top_output_nodes() {
     char* ptr;
     char buffer[READ_BLIF_BUFFER];
 
@@ -706,7 +706,7 @@ void BLIF::Reader::rb_create_top_output_nodes() {
  * @return the hard is verified against model or no.
  * -------------------------------------------------------------------------------------------
  */
-bool BLIF::Reader::verify_hard_block_ports_against_model(hard_block_ports* ports, hard_block_model* model) {
+bool blif::reader::verify_hard_block_ports_against_model(hard_block_ports* ports, hard_block_model* model) {
     hard_block_ports* port_sets[] = {model->input_ports, model->output_ports};
     int i;
     for (i = 0; i < 2; i++) {
@@ -764,7 +764,7 @@ bool BLIF::Reader::verify_hard_block_ports_against_model(hard_block_ports* ports
  * @return the file to its original position when finished.
  * -------------------------------------------------------------------------------------------
  */
-hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, hard_block_ports* ports) {
+hard_block_model* blif::reader::read_hard_block_model(char* name_subckt, hard_block_ports* ports) {
     // Store the current position in the file.
     fpos_t pos;
     int last_line = my_location.line;
@@ -862,7 +862,7 @@ hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, hard_bl
  * @param instance_name_prefix the prefix of the instance name
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::rb_create_top_driver_nets(const char* instance_name_prefix) {
+void blif::reader::rb_create_top_driver_nets(const char* instance_name_prefix) {
     npin_t* new_pin;
     /* create the constant nets */
 
@@ -922,7 +922,7 @@ void BLIF::Reader::rb_create_top_driver_nets(const char* instance_name_prefix) {
  * going through tthe clock driver of ff nodes
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::rb_look_for_clocks() {
+void blif::reader::rb_look_for_clocks() {
     int i;
     for (i = 0; i < blif_netlist->num_ff_nodes; i++) {
         oassert(blif_netlist->ff_nodes[i]->input_pins[1]->net->num_driver_pins == 1);
@@ -939,7 +939,7 @@ void BLIF::Reader::rb_look_for_clocks() {
  * @brief continue reading file to the end
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::dum_parse(char* buffer) {
+void blif::reader::dum_parse(char* buffer) {
     /* Continue parsing to the end of this (possibly continued) line. */
     while (vtr::strtok(NULL, TOKENS, file, buffer))
         ;
@@ -955,7 +955,7 @@ void BLIF::Reader::dum_parse(char* buffer) {
  * @param output_name the node name
  * ---------------------------------------------------------------------------------------------
  */
-operation_list BLIF::Reader::assign_node_type_from_node_name(char* output_name) {
+operation_list blif::reader::assign_node_type_from_node_name(char* output_name) {
     //variable to extract the type
     operation_list result = GENERIC;
 
@@ -999,7 +999,7 @@ operation_list BLIF::Reader::assign_node_type_from_node_name(char* output_name) 
  * @param names list of node inputs
  * ---------------------------------------------------------------------------------------------
  */
-operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nnode_t* node, char** names) {
+operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nnode_t* node, char** names) {
     operation_list to_return = operation_list_END;
 
     fpos_t pos;
@@ -1113,7 +1113,7 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
                     to_return = SMUX_2;
 
                     /** 
-                     * if in some BLIF files the mux selector is considered as 
+                     * if in some blif files the mux selector is considered as 
                      * the last input instead of the first, here we handle it 
                      * to move the selector to the first port
                      */
@@ -1275,7 +1275,7 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
  * .latch <input> <output> [<type> <control/clock>] <initial val>
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::create_latch_node_and_driver() {
+void blif::reader::create_latch_node_and_driver() {
     /* Storing the names of the input and the final output in array names */
     char** names = NULL;       // Store the names of the tokens
     int input_token_count = 0; /*to keep track whether controlling clock is specified or not */
@@ -1378,7 +1378,7 @@ void BLIF::Reader::create_latch_node_and_driver() {
  * is not mentioned
  * ---------------------------------------------------------------------------------------------
  */
-char* BLIF::Reader::search_clock_name() {
+char* blif::reader::search_clock_name() {
     fpos_t pos;
     int last_line = my_location.line;
     fgetpos(file, &pos);
@@ -1459,7 +1459,7 @@ char* BLIF::Reader::search_clock_name() {
  * @param name the cstring of the port name
  * ---------------------------------------------------------------------------------------------
  */
-char* BLIF::Reader::get_hard_block_port_name(char* name) {
+char* blif::reader::get_hard_block_port_name(char* name) {
     name = vtr::strdup(name);
     if (strchr(name, '['))
         return strtok(name, "[");
@@ -1480,7 +1480,7 @@ char* BLIF::Reader::get_hard_block_port_name(char* name) {
  * @param original_name
  * ---------------------------------------------------------------------------------------------
  */
-long BLIF::Reader::get_hard_block_pin_number(char* original_name) {
+long blif::reader::get_hard_block_pin_number(char* original_name) {
     if (!strchr(original_name, '['))
         return -1;
 
@@ -1511,7 +1511,7 @@ long BLIF::Reader::get_hard_block_pin_number(char* original_name) {
  * @param p2 pin name 2
  * ---------------------------------------------------------------------------------------------
  */
-int BLIF::Reader::compare_hard_block_pin_names(const void* p1, const void* p2) {
+int blif::reader::compare_hard_block_pin_names(const void* p1, const void* p2) {
     char* name1 = *(char* const*)p1;
     char* name2 = *(char* const*)p2;
 
@@ -1544,7 +1544,7 @@ int BLIF::Reader::compare_hard_block_pin_names(const void* p1, const void* p2) {
  * @return the organised ports as a hard_block_ports struct.
  * ---------------------------------------------------------------------------------------------
  */
-hard_block_ports* BLIF::Reader::get_hard_block_ports(char** pins, int count) {
+hard_block_ports* blif::reader::get_hard_block_ports(char** pins, int count) {
     // Count the input port sizes.
     hard_block_ports* ports = (hard_block_ports*)vtr::calloc(1, sizeof(hard_block_ports));
     ports->count = 0;
@@ -1591,8 +1591,8 @@ hard_block_ports* BLIF::Reader::get_hard_block_ports(char** pins, int count) {
  * @param count the number of names
  * ---------------------------------------------------------------------------------------------
  */
-Hashtable* BLIF::Reader::index_names(char** names, int count) {
-    Hashtable* index = new Hashtable();
+hash_table* blif::reader::index_names(char** names, int count) {
+    hash_table* index = new hash_table();
     for (long i = 0; i < count; i++) {
         int* offset = (int*)vtr::calloc(1, sizeof(int));
         *offset = i;
@@ -1613,8 +1613,8 @@ Hashtable* BLIF::Reader::index_names(char** names, int count) {
  * @param count the number of names
  * ---------------------------------------------------------------------------------------------
  */
-Hashtable* BLIF::Reader::associate_names(char** names1, char** names2, int count) {
-    Hashtable* index = new Hashtable();
+hash_table* blif::reader::associate_names(char** names1, char** names2, int count) {
+    hash_table* index = new hash_table();
     for (long i = 0; i < count; i++)
         index->add(names1[i], names2[i]);
 
@@ -1633,7 +1633,7 @@ Hashtable* BLIF::Reader::associate_names(char** names1, char** names2, int count
  * @param models list of all hard block models
  * ---------------------------------------------------------------------------------------------
  */
-hard_block_model* BLIF::Reader::get_hard_block_model(char* name, hard_block_ports* ports, hard_block_models* models) {
+hard_block_model* blif::reader::get_hard_block_model(char* name, hard_block_ports* ports, hard_block_models* models) {
     hard_block_model* to_return = NULL;
     char needle[READ_BLIF_BUFFER] = {0};
 
@@ -1661,7 +1661,7 @@ hard_block_model* BLIF::Reader::get_hard_block_model(char* name, hard_block_port
  * @param models list of all hard block models
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::add_hard_block_model(hard_block_model* m, hard_block_ports* ports, hard_block_models* models) {
+void blif::reader::add_hard_block_model(hard_block_model* m, hard_block_ports* ports, hard_block_models* models) {
     if (models && m) {
         char needle[READ_BLIF_BUFFER] = {0};
 
@@ -1691,7 +1691,7 @@ void BLIF::Reader::add_hard_block_model(hard_block_model* m, hard_block_ports* p
  * @param ports list of the hard block's ports
  * ---------------------------------------------------------------------------------------------
  */
-char* BLIF::Reader::generate_hard_block_ports_signature(hard_block_ports* ports) {
+char* blif::reader::generate_hard_block_ports_signature(hard_block_ports* ports) {
     char buffer[READ_BLIF_BUFFER];
     buffer[0] = '\0';
 
@@ -1713,11 +1713,11 @@ char* BLIF::Reader::generate_hard_block_ports_signature(hard_block_ports* ports)
  * @brief Creates a new hard block model cache.
  * ---------------------------------------------------------------------------------------------
  */
-hard_block_models* BLIF::Reader::create_hard_block_models() {
+hard_block_models* blif::reader::create_hard_block_models() {
     hard_block_models* m = (hard_block_models*)vtr::calloc(1, sizeof(hard_block_models));
     m->models = NULL;
     m->count = 0;
-    m->index = new Hashtable();
+    m->index = new hash_table();
 
     return m;
 }
@@ -1730,7 +1730,7 @@ hard_block_models* BLIF::Reader::create_hard_block_models() {
  * before a .end token is hit.
  * ---------------------------------------------------------------------------------------------
  */
-int BLIF::Reader::count_blif_lines() {
+int blif::reader::count_blif_lines() {
     int local_num_lines = 0;
     char* buffer = NULL;
     while (getbline(buffer, READ_BLIF_BUFFER, file)) {
@@ -1757,7 +1757,7 @@ int BLIF::Reader::count_blif_lines() {
  * @param models list of all hard block models
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::free_hard_block_models(hard_block_models* models) {
+void blif::reader::free_hard_block_models(hard_block_models* models) {
     //does not delete the items in the hash
     delete models->index;
     int i;
@@ -1777,7 +1777,7 @@ void BLIF::Reader::free_hard_block_models(hard_block_models* models) {
  * @param models list of all hard block models
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::free_hard_block_model(hard_block_model* model) {
+void blif::reader::free_hard_block_model(hard_block_model* model) {
     free_hard_block_pins(model->inputs);
     free_hard_block_pins(model->outputs);
 
@@ -1797,7 +1797,7 @@ void BLIF::Reader::free_hard_block_model(hard_block_model* model) {
  * @param p list of hard block pins
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::free_hard_block_pins(hard_block_pins* p) {
+void blif::reader::free_hard_block_pins(hard_block_pins* p) {
     while (p->count--)
         vtr::free(p->names[p->count]);
 
@@ -1817,7 +1817,7 @@ void BLIF::Reader::free_hard_block_pins(hard_block_pins* p) {
  * @param p list of hard block ports
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
+void blif::reader::free_hard_block_ports(hard_block_ports* p) {
     while (p->count--)
         vtr::free(p->names[p->count]);
 
@@ -1846,7 +1846,7 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
  * @param name_str representing the name input signal
  * -------------------------------------------------------------------------------------------
  */
-char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_str) {
+char* blif::reader::resolve_signal_name_based_on_blif_type(const char* name_str) {
     char* return_string = NULL;
 
     char* name = NULL;

@@ -24,7 +24,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "vtr_util.h"
 #include "vtr_memory.h"

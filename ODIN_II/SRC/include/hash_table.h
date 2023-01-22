@@ -23,15 +23,30 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "Verilog.hpp"
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
 
-/**
- * @brief Construct the Verilog object
- * required by compiler
- */
-Verilog::Verilog() = default;
-/**
- * @brief Destruct the Verilog object
- * to avoid memory leakage
- */
-Verilog::~Verilog() = default;
+#include <stdlib.h>
+#include <stdint.h>
+#include <string>
+#include <unordered_map>
+#include <string>
+
+class hash_table {
+  private:
+    std::unordered_map<std::string, void*> my_map;
+
+  public:
+    // Adds an item to the hashtable.
+    void add(std::string key, void* item);
+    // Removes an item from the hashtable. If the item is not present, a null pointer is returned.
+    void* remove(std::string key);
+    // Gets an item from the hashtable without removing it. If the item is not present, a null pointer is returned.
+    void* get(std::string key);
+    // Check to see if the hashtable is empty.
+    bool is_empty();
+    // calls free on each item.
+    void destroy_free_items();
+};
+
+#endif

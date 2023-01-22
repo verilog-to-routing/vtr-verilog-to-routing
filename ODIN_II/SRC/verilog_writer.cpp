@@ -25,33 +25,33 @@
 
 #include <sstream> //std::stringstream
 
-#include "Verilog.hpp"
+#include "verilog.h"
 #include "odin_globals.h"
 #include "hard_blocks.h"
 #include "vtr_util.h"
 
-Verilog::Writer::Writer()
-    : GenericWriter() {
+verilog::writer::writer()
+    : generic_writer() {
     this->models_declaration = sc_new_string_cache();
 }
 
-Verilog::Writer::~Writer() {
+verilog::writer::~writer() {
     if (this->models_declaration)
         sc_free_string_cache(this->models_declaration);
 }
 
-inline void Verilog::Writer::_create_file(const char* file_name, const file_type_e file_type) {
+inline void verilog::writer::_create_file(const char* file_name, const file_type_e file_type) {
     // validate the file_name pointer
     oassert(file_name);
     // validate the file type
-    if (file_type != _VERILOG)
+    if (file_type != VERILOG)
         error_message(UTIL, unknown_location,
-                      "Verilog back-end entity cannot create file types(%d) other than Verilog", file_type);
-    // create the Verilog file and set it as the output file
+                      "verilog back-end entity cannot create file types(%d) other than verilog", file_type);
+    // create the verilog file and set it as the output file
     this->output_file = create_verilog(file_name);
 }
 
-void Verilog::Writer::_write(const netlist_t* netlist) {
+void verilog::writer::_write(const netlist_t* netlist) {
     // to write the top module and netlist components
     if (netlist) {
         /* [TODO] */
@@ -81,7 +81,7 @@ void Verilog::Writer::_write(const netlist_t* netlist) {
  * @return an output stream to the verilog file
  *-------------------------------------------------------------------------------------------
  */
-FILE* Verilog::Writer::create_verilog(const char* file_name) {
+FILE* verilog::writer::create_verilog(const char* file_name) {
     FILE* out = NULL;
 
     /* open the file for output */

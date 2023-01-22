@@ -23,7 +23,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "HardSoftLogicMixer.hpp"
+#include "hard_soft_logic_mixer.h"
 
 #include <stdint.h> // INT_MAX
 #include <vector>

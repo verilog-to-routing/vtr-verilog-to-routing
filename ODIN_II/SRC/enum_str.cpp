@@ -234,23 +234,23 @@ const char* ids_STR[] = {
     "ids_END"};
 
 /* supported input/output file extensions */
-extern const strbimap<file_type_e> file_extension_strmap({{".ilang", file_type_e::_ILANG},
-                                                          {".v", file_type_e::_VERILOG},
-                                                          {".vh", file_type_e::_VERILOG_HEADER},
-                                                          {".sv", file_type_e::_SYSTEM_VERILOG},
-                                                          {".svh", file_type_e::_SYSTEM_VERILOG_HEADER},
-                                                          {".blif", file_type_e::_BLIF},
-                                                          {".eblif", file_type_e::_EBLIF}});
+extern const strbimap<file_type_e> file_extension_strmap({{".ilang", file_type_e::ILANG},
+                                                          {".v", file_type_e::VERILOG},
+                                                          {".vh", file_type_e::VERILOG_HEADER},
+                                                          {".sv", file_type_e::SYSTEM_VERILOG},
+                                                          {".svh", file_type_e::SYSTEM_VERILOG_HEADER},
+                                                          {".blif", file_type_e::BLIF},
+                                                          {".eblif", file_type_e::EBLIF}});
 
 /* supported input/output file types */
-extern const strbimap<file_type_e> file_type_strmap({{"ilang", file_type_e::_ILANG},
-                                                     {"verilog", file_type_e::_VERILOG},
-                                                     {"verilog_header", file_type_e::_VERILOG_HEADER},
-                                                     {"systemverilog", file_type_e::_SYSTEM_VERILOG},
-                                                     {"systemverilog_header", file_type_e::_SYSTEM_VERILOG_HEADER},
-                                                     {"uhdm", file_type_e::_UHDM},
-                                                     {"blif", file_type_e::_BLIF},
-                                                     {"eblif", file_type_e::_EBLIF}});
+extern const strbimap<file_type_e> file_type_strmap({{"ilang", file_type_e::ILANG},
+                                                     {"verilog", file_type_e::VERILOG},
+                                                     {"verilog_header", file_type_e::VERILOG_HEADER},
+                                                     {"systemverilog", file_type_e::SYSTEM_VERILOG},
+                                                     {"systemverilog_header", file_type_e::SYSTEM_VERILOG_HEADER},
+                                                     {"uhdm", file_type_e::UHDM},
+                                                     {"blif", file_type_e::BLIF},
+                                                     {"eblif", file_type_e::EBLIF}});
 
 /**
  * global hashmap of odin subckt types

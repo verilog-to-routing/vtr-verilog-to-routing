@@ -51,7 +51,7 @@
 
 #include "hard_blocks.h"
 #include "memories.h"
-#include "BlockMemories.hpp"
+#include "block_memories.h"
 #include "simulate_blif.h"
 
 #include "netlist_visualizer.h"
@@ -61,10 +61,10 @@
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_memory.h"
-#include "HardSoftLogicMixer.hpp"
+#include "hard_soft_logic_mixer.h"
 
-#include "GenericReader.hpp"
-#include "BLIF.hpp"
+#include "generic_reader.h"
+#include "blif.h"
 
 #define DEFAULT_OUTPUT "."
 
@@ -78,8 +78,8 @@ short physical_lut_size = -1;
 ids default_net_type = WIRE;
 HardSoftLogicMixer* mixer;
 
-static GenericReader generic_reader;
-static GenericWriter generic_writer;
+static generic_reader reader;
+static generic_writer writer;
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
 static void set_physical_lut_size();
@@ -96,7 +96,7 @@ static void elaborate() {
 
     module_names_to_idx = sc_new_string_cache();
 
-    syn_netlist = static_cast<netlist_t*>(generic_reader._read());
+    syn_netlist = static_cast<netlist_t*>(reader._read());
 
     if (!syn_netlist) {
         printf("Empty BLIF generated, Empty input or no module declared\n");
@@ -183,7 +183,7 @@ static void techmap() {
 
 static void output() {
     /* creating the output file */
-    generic_writer._create_file(global_args.output_file.value().c_str(), configuration.output_file_type);
+    writer._create_file(global_args.output_file.value().c_str(), configuration.output_file_type);
 
     if (syn_netlist) {
         /**
@@ -192,7 +192,7 @@ static void output() {
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        generic_writer._write(syn_netlist);
+        writer._write(syn_netlist);
 
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
@@ -280,8 +280,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         set_default_config();
 
         /* Intantiating the generic reader and writer */
-        generic_reader = GenericReader();
-        generic_writer = GenericWriter();
+        reader = generic_reader();
+        writer = generic_writer();
 
         /* get the command line options */
         get_options(argc, argv);
@@ -324,13 +324,13 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     printf("Using Lut input width of: %d\n", physical_lut_size);
 
     /* do High level Synthesis */
-    if (!configuration.list_of_file_names.empty() || !configuration.tcl_file.empty()) {
+    if (!configuration.list_of_file_names.empty()) {
         ODIN_ERROR_CODE error_code;
 
         print_input_files_info();
         report_frontend_elaborator();
 
-        if (configuration.input_file_type != file_type_e::_BLIF) {
+        if (configuration.input_file_type != file_type_e::BLIF) {
             try {
                 error_code = synthesize();
                 printf("Odin_II synthesis has finished with code: %d\n", error_code);
@@ -351,7 +351,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.input_file_type = file_type_e::_BLIF;
+        configuration.input_file_type = file_type_e::BLIF;
 
         // the simulator can only simulate blifs
         if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
@@ -367,7 +367,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              * The blif file for simulation should follow odin_ii blif style 
              * So, here we call odin_ii's read_blif
              */
-            sim_netlist = static_cast<netlist_t*>(generic_reader._read());
+            sim_netlist = static_cast<netlist_t*>(reader._read());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load BLIF file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
             exit(ERROR_PARSE_BLIF);
@@ -685,11 +685,11 @@ void get_options(int argc, char** argv) {
         configuration.list_of_file_names = global_args.input_files.value();
         std::string arg_name = string_to_lower(global_args.input_files.argument_name());
         if (arg_name == "-v")
-            configuration.input_file_type = file_type_e::_VERILOG;
+            configuration.input_file_type = file_type_e::VERILOG;
         else if (arg_name == "-s")
-            configuration.input_file_type = file_type_e::_SYSTEM_VERILOG;
+            configuration.input_file_type = file_type_e::SYSTEM_VERILOG;
         else if (arg_name == "-u")
-            configuration.input_file_type = file_type_e::_UHDM;
+            configuration.input_file_type = file_type_e::UHDM;
         else {
             // Unknown argument name, should have been already checked in the argparse library
             error_message(PARSE_ARGS, unknown_location,
@@ -699,7 +699,7 @@ void get_options(int argc, char** argv) {
 
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
-        configuration.input_file_type = file_type_e::_BLIF;
+        configuration.input_file_type = file_type_e::BLIF;
     }
 
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
@@ -747,8 +747,7 @@ void get_options(int argc, char** argv) {
  *-------------------------------------------------------------------------*/
 void set_default_config() {
     /* Set up the global configuration. */
-    configuration.tcl_file = "";
-    configuration.output_file_type = file_type_e::_BLIF;
+    configuration.output_file_type = file_type_e::BLIF;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;
     configuration.print_parse_tokens = 0;

@@ -31,7 +31,7 @@
 #include "node_creation_library.h"
 #include "hard_blocks.h"
 #include "memories.h"
-#include "BlockMemories.hpp"
+#include "block_memories.h"
 #include "vtr_memory.h"
 
 using vtr::t_linked_vptr;

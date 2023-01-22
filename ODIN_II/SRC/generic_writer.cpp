@@ -23,20 +23,20 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "GenericWriter.hpp"
-#include "Verilog.hpp"
-#include "BLIF.hpp"
+#include "generic_writer.h"
+#include "verilog.h"
+#include "blif.h"
 #include "config_t.h"
 #include "odin_ii.h"
 
-GenericWriter::GenericWriter()
-    : GenericIO() {
+generic_writer::generic_writer()
+    : generic_io() {
     this->output_file = NULL;
     this->blif_writer = NULL;
     this->verilog_writer = NULL;
 }
 
-GenericWriter::~GenericWriter() {
+generic_writer::~generic_writer() {
     if (this->output_file)
         fclose(this->output_file);
     if (this->blif_writer)
@@ -45,23 +45,23 @@ GenericWriter::~GenericWriter() {
         delete this->verilog_writer;
 }
 
-inline void GenericWriter::_write(const netlist_t* netlist) {
+inline void generic_writer::_write(const netlist_t* netlist) {
     switch (configuration.output_file_type) {
-        case (file_type_e::_BLIF): {
+        case (file_type_e::BLIF): {
             this->write_blif(netlist);
             break;
         }
-        case (file_type_e::_VERILOG): {
+        case (file_type_e::VERILOG): {
             this->write_verilog(netlist);
             break;
         }
         /**
          * [TODO]
-         *  case (file_type_e::_EBLIF): {
+         *  case (file_type_e::EBLIF): {
          * netlist = this->write_verilog();
          * break;
          * }
-         *  case (file_type_e::_SYSTEM_VERILOG): {
+         *  case (file_type_e::SYSTEM_VERILOG): {
          * this->write_systemverilog();
          * break;
          * }
@@ -73,41 +73,41 @@ inline void GenericWriter::_write(const netlist_t* netlist) {
     }
 }
 
-inline void GenericWriter::write_blif(const netlist_t* netlist) {
+inline void generic_writer::write_blif(const netlist_t* netlist) {
     oassert(this->blif_writer);
     this->blif_writer->_write(netlist);
 }
 
-inline void GenericWriter::write_verilog(const netlist_t* netlist) {
+inline void generic_writer::write_verilog(const netlist_t* netlist) {
     oassert(this->verilog_writer);
     this->verilog_writer->_write(netlist);
 }
 
-inline void GenericWriter::_create_file(const char* file_name, const file_type_e file_type) {
+inline void generic_writer::_create_file(const char* file_name, const file_type_e file_type) {
     // validate the file_name pointer
     oassert(file_name);
 
     switch (file_type) {
-        case (file_type_e::_BLIF): {
+        case (file_type_e::BLIF): {
             if (!this->blif_writer) {
-                this->blif_writer = new BLIF::Writer();
+                this->blif_writer = new blif::writer();
                 this->blif_writer->_create_file(file_name, file_type);
             }
             break;
         }
-        case (file_type_e::_VERILOG): {
-            this->verilog_writer = new Verilog::Writer();
+        case (file_type_e::VERILOG): {
+            this->verilog_writer = new verilog::writer();
             this->verilog_writer->_create_file(file_name, file_type);
             break;
         }
         /**
          * [TODO]
-         *  case (file_type_e::_EBLIF): {
+         *  case (file_type_e::EBLIF): {
          * this->eblif_writer = new EBLIF::Writer();
          * this->eblif_writer->_create_file();
          * break;
          * }
-         *  case (file_type_e::_SYSTEM_VERILOG): {
+         *  case (file_type_e::SYSTEM_VERILOG): {
          * this->sverilog_writer = new SVERILOG::Writer();
          * this->sverilog_writer->_create_file();
          * break;

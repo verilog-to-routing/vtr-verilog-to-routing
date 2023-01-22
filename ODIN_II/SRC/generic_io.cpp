@@ -23,25 +23,25 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "GenericIO.hpp"
+#include "generic_io.h"
 #include "odin_error.h"
 
-GenericIO::GenericIO() = default;
+generic_io::generic_io() = default;
 
-GenericIO::~GenericIO() = default;
+generic_io::~generic_io() = default;
 
-void* GenericIO::_read() {
+void* generic_io::_read() {
     error_message(UTIL, unknown_location,
                   "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
     return NULL;
 }
 
-void GenericIO::_write(const netlist_t* /* netlist */) {
+void generic_io::_write(const netlist_t* /* netlist */) {
     error_message(UTIL, unknown_location,
                   "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
 }
 
-void GenericIO::_create_file(const char* /* file_name */, const file_type_e /* file_type */) {
+void generic_io::_create_file(const char* /* file_name */, const file_type_e /* file_type */) {
     error_message(UTIL, unknown_location,
                   "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
 }

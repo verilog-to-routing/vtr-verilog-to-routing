@@ -73,7 +73,6 @@ struct config_t {
     int soft_logic_memory_width_threshold;
 
     std::string arch_file; // Name of the FPGA architecture file
-    std::string tcl_file;  // TCL file to be run by yosys
 };
 
 extern config_t configuration;

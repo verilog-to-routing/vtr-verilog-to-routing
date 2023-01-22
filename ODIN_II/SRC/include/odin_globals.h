@@ -29,9 +29,9 @@
 #include "config_t.h"
 #include "odin_types.h"
 #include "string_cache.h"
-#include "Hashtable.hpp"
+#include "hash_table.h"
 #include "read_xml_arch_file.h"
-#include "HardSoftLogicMixer.hpp"
+#include "hard_soft_logic_mixer.h"
 
 /**
  * The cutoff for the number of netlist nodes. 

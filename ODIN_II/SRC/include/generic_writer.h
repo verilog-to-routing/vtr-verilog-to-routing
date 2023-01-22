@@ -23,32 +23,56 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __GENERIC_IO_H__
-#define __GENERIC_IO_H__
+#ifndef __GENERIC_WRITER_H__
+#define __GENERIC_WRITER_H__
 
-#include "odin_types.h"
+#include "generic_io.h"
 
 /**
- * @brief A class to provide the general object of an input file reader
+ * @brief A class to provide the general object of an input file writer
  */
-class GenericIO {
+class generic_writer : public generic_io {
   public:
     /**
-     * @brief Construct the GenericIO object
+     * @brief Construct the generic_writer object
      * required by compiler
      */
-    GenericIO();
+    generic_writer();
     /**
-     * @brief Destruct the GenericIO object
+     * @brief Destruct the generic_writer object
      * to avoid memory leakage
      */
-    virtual ~GenericIO();
+    ~generic_writer();
 
-    virtual void* _read();
-    virtual void _write(const netlist_t* netlist);
+    /* No need to have reader in Generic Writer */
+    void* _read() {
+        error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
+        return (NULL);
+    }
+
+    void _write(const netlist_t* netlist);
+    void write_blif(const netlist_t* netlist);
+    void write_verilog(const netlist_t* netlist);
+    /**
+     * [TODO]
+     * void  write_systemverilog(const netlist_t* netlist, FILE* output_file);
+     * void  write_ilang(const netlist_t* netlist, FILE* output_file); 
+     */
 
     /* to create the output file */
-    virtual void _create_file(const char* file_name, const file_type_e file_type = file_type_e_END);
+    void _create_file(const char* file_name, const file_type_e file_type = file_type_e_END);
+
+  protected:
+    FILE* output_file;
+
+  private:
+    generic_writer* blif_writer;
+    generic_writer* verilog_writer;
+    /**
+     * [TODO]
+     * generic_writer*  systemverilog_writer;
+     * generic_writer*  ilang_writer;
+     */
 };
 
-#endif // __GENERIC_IO_H__
+#endif //__GENERIC_WRITER_H__

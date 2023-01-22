@@ -26,12 +26,12 @@
 #ifndef __BLIF_H__
 #define __BLIF_H__
 
-#include "GenericReader.hpp"
-#include "GenericWriter.hpp"
+#include "generic_reader.h"
+#include "generic_writer.h"
 
 #include "config_t.h"
 #include "odin_types.h"
-#include "Hashtable.hpp"
+#include "hash_table.h"
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -48,7 +48,7 @@ struct hard_block_pins {
     int count;
     char** names;
     // Maps name to index.
-    Hashtable* index;
+    hash_table* index;
 };
 
 // Stores port names, and their sizes.
@@ -58,7 +58,7 @@ struct hard_block_ports {
     int* sizes;
     char** names;
     // Maps portname to index.
-    Hashtable* index;
+    hash_table* index;
 };
 
 // Stores all information pertaining to a hard block model. (.model)
@@ -77,7 +77,7 @@ struct hard_block_models {
     hard_block_model** models;
     int count;
     // Maps name to model
-    Hashtable* index;
+    hash_table* index;
 };
 
 extern int line_count;
@@ -92,8 +92,7 @@ extern FILE* file;
  * (function: getbline)
  * 
  * @brief reading blif file lines according to the blif file type.
- * For instance, in yosys blif we must read lines since there is 
- * no '\' usage. For arbitrary long lines fgets does not work due
+ * For arbitrary long lines fgets does not work due
  * to size limit. However, the scenario in Odin is on the flipside
  * and we ought to use fgets to pass '\' and the line length are 
  * always fix and less than a const value
@@ -120,31 +119,31 @@ inline char* getbline(char*& buf, size_t size, FILE* fd) {
 /**
  * @brief A class to provide the general object of an input BLIF file reader
  */
-class BLIF {
+class blif {
   public:
     /**
      * @brief Construct the Reader object
      * required by compiler
      */
-    BLIF();
+    blif();
     /**
      * @brief Destruct the Reader object
      * to avoid memory leakage
      */
-    ~BLIF();
+    ~blif();
 
-    class Reader : public GenericReader {
+    class reader : public generic_reader {
       public:
         /**
          * @brief Construct the Reader object
          * required by compiler
          */
-        Reader();
+        reader();
         /**
          * @brief Destruct the Reader object
          * to avoid memory leakage
          */
-        ~Reader();
+        ~reader();
 
         void* _read();
 
@@ -157,10 +156,8 @@ class BLIF {
         /**
          *---------------------------------------------------------------------------------------------
          * (function: read_tokens)
-         *
          * @brief Parses the given line from the blif file. 
          * Returns true if there are more lines to read.
-         * 
          * @param buffer a global buffer for tokenizing
          * @param models list of hard block models
          * -------------------------------------------------------------------------------------------
@@ -169,7 +166,6 @@ class BLIF {
         /**
          *---------------------------------------------------------------------------------------------
          * (function: resolve_signal_name_based_on_blif_type)
-         * 
          * @brief to find the name of top module
          * -------------------------------------------------------------------------------------------
          */
@@ -177,7 +173,6 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: hook_up_nets)
-         * 
          * @brief find the output nets and add the corresponding nets
          * -------------------------------------------------------------------------------------------
          */
@@ -185,10 +180,8 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: hook_up_node)
-         * 
          * @brief Connect the given node's input pins to their corresponding nets by
          * looking each one up in the output_nets_sc.
-         * 
          * @param node represents one of netlist internal nodes or ff nodes or top output nodes
          * ---------------------------------------------------------------------------------------------
          */
@@ -196,9 +189,7 @@ class BLIF {
         /**
          *------------------------------------------------------------------------------------------- 
          * (function:create_hard_block_nodes)
-         * 
          * @brief to create the hard block nodes
-         * 
          * @param models list of hard block models
          * -------------------------------------------------------------------------------------------
          */
@@ -206,9 +197,7 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function:create_internal_node_and_driver)
-         * 
          * @brief to create an internal node and driver from that node
-         * 
          * @param name_prefix
          * -------------------------------------------------------------------------------------------
          */
@@ -216,40 +205,31 @@ class BLIF {
         /**
          *---------------------------------------------------------------------------------------------
          * (function: build_top_input_node)
-         * 
          * @brief to build a the top level input
-         * 
          * @param name_str representing the name input signal
          * -------------------------------------------------------------------------------------------
          */
         void build_top_input_node(const char* name_str);
         /**
          * (function: add_top_input_nodes)
-         * 
          * @brief to add the top level inputs to the netlist
-         *
          * -------------------------------------------------------------------------------------------
          */
         void add_top_input_nodes();
         /**
          *---------------------------------------------------------------------------------------------
          * (function: rb_create_top_output_nodes)
-         * 
          * @brief to add the top level outputs to the netlist
-         * 
          * -------------------------------------------------------------------------------------------
          */
         void rb_create_top_output_nodes();
         /**
          *---------------------------------------------------------------------------------------------
          * (function: verify_hard_block_ports_against_model)
-         * 
          * @brief Check for inconsistencies between the hard block model and the ports found
          * in the hard block instance. Returns false if differences are found.
-         * 
          * @param ports list of a hard block ports
          * @param model hard block model
-         * 
          * @return the hard is verified against model or no.
          * -------------------------------------------------------------------------------------------
          */
@@ -257,13 +237,10 @@ class BLIF {
         /**
          *---------------------------------------------------------------------------------------------
          * (function: read_hard_block_model)
-         * 
          * @brief Scans ahead in the given file to find the
          * model for the hard block by the given name.
-         * 
          * @param name_subckt representing the name of the sub-circuit 
          * @param ports list of a hard block ports
-         * 
          * @return the file to its original position when finished.
          * -------------------------------------------------------------------------------------------
          */
@@ -271,11 +248,9 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: rb_create_top_driver_nets)
-         *
          * @brief Creates the drivers for the top module
          * Special as all inputs are actually drivers.
          * Also make the 0 and 1 constant nodes at this point.
-         *
          * @param instance_name_prefix the prefix of the instance name
          * ---------------------------------------------------------------------------------------------
          */
@@ -283,7 +258,6 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: rb_look_for_clocks)
-         *
          * @brief looking for clock nodes in the blif file by 
          * going through tthe clock driver of ff nodes
          * ---------------------------------------------------------------------------------------------
@@ -292,7 +266,6 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: dum_parse)
-         *
          * @brief continue reading file to the end
          * ---------------------------------------------------------------------------------------------
          */
@@ -300,10 +273,8 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function:assign_node_type_from_node_name)
-         *
          * @brief This function tries to assign the node->type by looking at the name
          * Else return GENERIC. function will decide the node->type of the given node
-         *
          * @param output_name the node name
          * ---------------------------------------------------------------------------------------------
          */
@@ -311,9 +282,7 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: read_bit_map_find_unknown_gate)
-         * 
          * @brief read the bit map for simulation
-         *
          * @param input_count number of inputs
          * @param node pointer to the netlist node
          * @param names list of node inputs
@@ -323,7 +292,6 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: create_latch_node_and_driver)
-         * 
          * @brief to create an ff node and driver from that node format
          * .latch <input> <output> [<type> <control/clock>] <initial val>
          * ---------------------------------------------------------------------------------------------
@@ -332,7 +300,6 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: search_clock_name)
-         * 
          * @brief to search the clock if the control in the latch
          * is not mentioned
          * ---------------------------------------------------------------------------------------------
@@ -341,14 +308,11 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (funtion: get_hard_block_port_name)
-         *
          * @brief Gets the text in the given string which occurs
          * before the first instance of "[". The string is
          * presumably of the form "port[pin_number]"
-         *
          * The retuned string is strduped and must be freed.
          * The original string is unaffected.
-         *
          * @param name the cstring of the port name
          * ---------------------------------------------------------------------------------------------
          */
@@ -356,13 +320,11 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: get_hard_block_pin_number)
-         * 
          * @brief Parses a port name of the form port[pin_number]
          * and returns the pin number as a long. Returns -1
          * if there is no [pin_number] in the name. Throws an
          * error if pin_number is not parsable as a long.
          * The original string is unaffected.
-         *
          * @param original_name
          * ---------------------------------------------------------------------------------------------
          */
@@ -370,12 +332,10 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: compare_hard_block_pin_names)
-         *
          * @brief Callback function for qsort which compares pin names
          * of the form port_name[pin_number] primarily
          * on the port_name, and on the pin_number if the port_names
          * are identical.
-         *
          * @param p1 pin name 1
          * @param p2 pin name 2
          * ---------------------------------------------------------------------------------------------
@@ -384,13 +344,10 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: get_hard_block_ports)
-         * 
          * @brief Organises the given strings representing pin names on a hard block
          * model into ports, and indexes the ports by name. 
-         *
          * @param pins list of hard block pins
          * @param count number of hard block pins
-         *
          * @return the organised ports as a hard_block_ports struct.
          * ---------------------------------------------------------------------------------------------
          */
@@ -398,35 +355,29 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: index_names)
-         *
          * @brief Creates a hashtable index for an array of strings of
          * the form names[i]=>i.
-         *
          * @param names the list of names
          * @param count the number of names
          * ---------------------------------------------------------------------------------------------
          */
-        static Hashtable* index_names(char** names, int count);
+        static hash_table* index_names(char** names, int count);
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: associate_names)
-         *
          * @brief Create an associative index of names1[i]=>names2[i]
          * NOTE: the size of both lists should be the same
-         *
          * @param names1 the first list of names
          * @param names2 the second list of names
          * @param count the number of names
          * ---------------------------------------------------------------------------------------------
          */
-        static Hashtable* associate_names(char** names1, char** names2, int count);
+        static hash_table* associate_names(char** names1, char** names2, int count);
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: get_hard_block_model)
-         *
          * @brief Looks up a hard block model by name. Returns null if the
          * model is not found.
-         *
          * @param name hard block model name
          * @param ports list of the hard block's ports
          * @param models list of all hard block models
@@ -436,9 +387,7 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: add_hard_block_model)
-         *
          * @brief Adds the given model to the hard block model cache.
-         *
          * @param m the hard block model
          * @param ports list of the hard block's ports
          * @param models list of all hard block models
@@ -448,9 +397,7 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: generate_hard_block_ports_signature)
-         *
          * @brief Generates string which represents the geometry of the given hard block ports.
-         *
          * @param ports list of the hard block's ports
          * ---------------------------------------------------------------------------------------------
          */
@@ -458,7 +405,6 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: create_hard_block_models)
-         * 
          * @brief Creates a new hard block model cache.
          * ---------------------------------------------------------------------------------------------
          */
@@ -466,7 +412,6 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: count_blif_lines)
-         * 
          * @brief Counts the number of lines in the given blif file
          * before a .end token is hit.
          * ---------------------------------------------------------------------------------------------
@@ -475,10 +420,8 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: free_hard_block_models)
-         *
          * @brief Frees the hard block model cache, freeing
          * all encapsulated hard block models.
-         *
          * @param models list of all hard block models
          * ---------------------------------------------------------------------------------------------
          */
@@ -486,9 +429,7 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: free_hard_block_model)
-         *
          * @brief Frees a hard_block_model.
-         * 
          * @param models list of all hard block models
          * ---------------------------------------------------------------------------------------------
          */
@@ -496,9 +437,7 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: free_hard_block_pins)
-         *
          * @brief Frees hard_block_pins
-         *
          * @param p list of hard block pins
          * ---------------------------------------------------------------------------------------------
          */
@@ -506,9 +445,7 @@ class BLIF {
         /**
          * ---------------------------------------------------------------------------------------------
          * (free_hard_block_ports)
-         *
          * @brief Frees hard_block_ports
-         *
          * @param p list of hard block ports
          * ---------------------------------------------------------------------------------------------
          */
@@ -518,10 +455,8 @@ class BLIF {
         /**
          *---------------------------------------------------------------------------------------------
          * (function: resolve_signal_name_based_on_blif_type)
-         * 
          * @brief to make the signal names of an input blif 
          * file compatible with the odin's name convention
-         * 
          * @param name_str representing the name input signal
          * -------------------------------------------------------------------------------------------
          */
@@ -529,27 +464,27 @@ class BLIF {
 
     };
 
-    class Writer : public GenericWriter {
+    class writer : public generic_writer {
       public:
         /**
-         * @brief Construct the Writer object
+         * @brief Construct the writer object
          * required by compiler
          */
-        Writer();
+        writer();
         /**
-         * @brief Destruct the Writer object
+         * @brief Destruct the writer object
          * to avoid memory leakage
          */
-        ~Writer();
+        ~writer();
 
-        /* No need to have reader in Generic Writer */
+        /* No need to have reader in Generic writer */
         void* _read() {
-            error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
+            error_message(UTIL, unknown_location, "%s is not available in Generic writer\n", __PRETTY_FUNCTION__);
             return NULL;
         }
 
         void _write(const netlist_t* netlist);
-        void _create_file(const char* file_name, const file_type_e file_type = _BLIF);
+        void _create_file(const char* file_name, const file_type_e file_type = BLIF);
 
       protected:
         /**

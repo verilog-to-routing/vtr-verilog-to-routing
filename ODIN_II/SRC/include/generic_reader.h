@@ -23,38 +23,50 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "Verilog.hpp"
-#include "ast_util.h"
-#include "odin_globals.h"
-#include "parse_making_ast.h"
-#include "netlist_create_from_ast.h"
+#ifndef __GENERIC_READER_H__
+#define __GENERIC_READER_H__
 
-Verilog::Reader::Reader()
-    : GenericReader() {}
+#include "generic_io.h"
+#include <string>
 
-Verilog::Reader::~Reader() = default;
-
-void* Verilog::Reader::_read() {
-    /* parse to abstract syntax tree */
-    printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
-    verilog_ast = init_parser();
-    parse_to_ast();
-
+/**
+ * @brief A class to provide the general object of an input file reader
+ */
+class generic_reader : public generic_io {
+  public:
     /**
-     *  Note that the entry point for ast optimzations is done per module with the
-     * function void next_parsed_verilog_file(ast_node_t *file_items_list)
+     * @brief Construct the generic_reader object
+     * required by compiler
+     */
+    generic_reader();
+    /**
+     * @brief Destruct the generic_reader object
+     * to avoid memory leakage
+     */
+    ~generic_reader();
+
+    void* _read();
+    void* read_verilog();
+    void* read_blif();
+    /**
+     * [TODO]
+     * void* read_systemverilog();
+     * void* read_ilang(); 
      */
 
-    /* after the ast is made potentially do tagging for downstream links to verilog */
-    if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
-        add_tag_data(verilog_ast);
+    /* No need to have writer in Generic Reader */
+    void _write(const netlist_t* /* netlist */) {
+        error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
+    }
 
+  private:
+    generic_reader* verilog_reader;
+    generic_reader* blif_reader;
     /**
-     *  Now that we have a parse tree (abstract syntax tree [ast]) of
-     *	the Verilog we want to make into a netlist.
+     * [TODO]
+     * generic_reader* systemverilog_reader;
+     * generic_reader* ilang_reader;
      */
-    printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
-    create_netlist(verilog_ast);
+};
 
-    return static_cast<void*>(syn_netlist);
-}
+#endif //__GENERIC_READER_H__

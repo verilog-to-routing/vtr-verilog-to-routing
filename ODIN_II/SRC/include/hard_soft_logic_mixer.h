@@ -27,7 +27,7 @@
 #define HARD_SOFT_LOGIC_MIXER_HPP
 
 #include "odin_types.h" // netlist_t, config_t
-#include "MixingOptimization.hpp"
+#include "mixing_optimization.h"
 
 class HardSoftLogicMixer {
   public:

@@ -23,40 +23,40 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "GenericReader.hpp"
-#include "Verilog.hpp"
-#include "BLIF.hpp"
+#include "generic_reader.h"
+#include "verilog.h"
+#include "blif.h"
 #include "config_t.h"
 #include "odin_ii.h"
 
-GenericReader::GenericReader()
-    : GenericIO() {
+generic_reader::generic_reader()
+    : generic_io() {
     this->verilog_reader = NULL;
     this->blif_reader = NULL;
 }
 
-GenericReader::~GenericReader() = default;
+generic_reader::~generic_reader() = default;
 
-inline void* GenericReader::_read() {
+inline void* generic_reader::_read() {
     void* netlist = NULL;
 
     switch (configuration.input_file_type) {
-        case (file_type_e::_VERILOG): // fallthrough
-        case (file_type_e::_VERILOG_HEADER): {
+        case (file_type_e::VERILOG): // fallthrough
+        case (file_type_e::VERILOG_HEADER): {
             netlist = this->read_verilog();
             break;
         }
-        case (file_type_e::_BLIF): {
+        case (file_type_e::BLIF): {
             netlist = this->read_blif();
             break;
         }
         /**
          * [TODO]
-         *  case (file_type_e::_EBLIF): {
+         *  case (file_type_e::EBLIF): {
          * this->read_systemverilog();
          * break;
          * }
-         *  case (file_type_e::_SYSTEM_VERILOG): {
+         *  case (file_type_e::SYSTEM_VERILOG): {
          * this->read_systemverilog();
          * break;
          * }
@@ -70,22 +70,20 @@ inline void* GenericReader::_read() {
     return static_cast<void*>(netlist);
 }
 
-inline void* GenericReader::read_verilog() {
-    this->verilog_reader = new Verilog::Reader();
+inline void* generic_reader::read_verilog() {
+    this->verilog_reader = new verilog::reader();
     void* to_return = this->verilog_reader->_read();
 
-    if (this->verilog_reader)
-        delete this->verilog_reader;
+    delete this->verilog_reader;
 
     return to_return;
 }
 
-inline void* GenericReader::read_blif() {
-    this->blif_reader = new BLIF::Reader();
+inline void* generic_reader::read_blif() {
+    this->blif_reader = new blif::reader();
     void* to_return = this->blif_reader->_read();
 
-    if (this->blif_reader)
-        delete this->blif_reader;
+    delete this->blif_reader;
 
     return to_return;
 }

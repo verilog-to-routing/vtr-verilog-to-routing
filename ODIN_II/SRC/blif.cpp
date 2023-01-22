@@ -23,42 +23,15 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "blif.h"
 
-#include "Hashtable.hpp"
-#include "odin_types.h"
-#include "vtr_memory.h"
-
-void Hashtable::destroy_free_items() {
-    for (auto kv : my_map)
-        vtr::free(kv.second);
-}
-
-void Hashtable::add(std::string key, void* item) {
-    this->my_map.emplace(key, item);
-}
-
-void* Hashtable::remove(std::string key) {
-    void* value = NULL;
-    auto v = this->my_map.find(key);
-    if (v != this->my_map.end()) {
-        value = v->second;
-        this->my_map.erase(v);
-    }
-    return value;
-}
-
-void* Hashtable::get(std::string key) {
-    void* value = NULL;
-    auto v = this->my_map.find(key);
-    if (v != this->my_map.end())
-        value = v->second;
-
-    return value;
-}
-
-bool Hashtable::is_empty() {
-    return my_map.empty();
-}
+/**
+ * @brief Construct the BLIF object
+ * required by compiler
+ */
+blif::blif() = default;
+/**
+ * @brief Destruct the BLIF object
+ * to avoid memory leakage
+ */
+blif::~blif() = default;

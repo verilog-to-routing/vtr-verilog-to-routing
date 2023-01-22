@@ -32,7 +32,7 @@
 #include "odin_error.h"
 #include "read_xml_arch_file.h"
 #include "argparse_value.hpp"
-#include "atomic_buffer.hpp"
+#include "atomic_buffer.h"
 #include <mutex>
 #include <atomic>
 #include <string>
@@ -64,16 +64,11 @@
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
 #define OUTPUT_TRAVERSE_VALUE 12
 #define COUNT_NODES 14 /* NOTE that you can't call countnodes one after the other or the mark will be incorrect */
-#define COMBO_LOOP 15
 #define COMBO_LOOP_ERROR 16
-#define GRAPH_CRUNCH 17
-#define STATS 18
-#define SEQUENTIAL_LEVELIZE 19
 
 /* unique numbers for using void *data entries in some of the datastructures */
 #define RESET -1
 #define LEVELIZE 12
-#define ACTIVATION 13
 
 #define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
 
@@ -180,14 +175,14 @@ template<typename T>
 using strbimap = vtr::unordered_bimap<std::string, T>;
 
 enum file_type_e {
-    _ILANG, /* not supported yet */
-    _VERILOG,
-    _VERILOG_HEADER,
-    _SYSTEM_VERILOG,
-    _SYSTEM_VERILOG_HEADER,
-    _UHDM,
-    _BLIF,
-    _EBLIF, /* not supported yet */
+    ILANG, /* not supported yet */
+    VERILOG,
+    VERILOG_HEADER,
+    SYSTEM_VERILOG,
+    SYSTEM_VERILOG_HEADER,
+    UHDM,
+    BLIF,
+    EBLIF, /* not supported yet */
     file_type_e_END
 };
 
@@ -289,7 +284,7 @@ enum operation_list {
     DPRAM,    // representing primitive dual port ram
     BRAM,                // Odin-II block memory, from techlib/bram_bb.v
     ROM,                 // Odin-II read-only memory, from techlib/rom_bb.v
-                         // [END] operations to cover yosys subckt
+                         // [END] operations
     operation_list_END
 };
 

@@ -23,59 +23,48 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdarg.h>
 
-#include "odin_ii.h"
 #include "odin_util.h"
 #include "odin_types.h"
 #include "odin_globals.h"
 
-#include "ast_util.h"
-#include "netlist_utils.h"
-#include "netlist_check.h"
-#include "netlist_cleanup.h"
-#include "simulate_blif.h"
-
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-#include "string_cache.h"
 #include "node_creation_library.h"
 
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "adders.h"
-#include "subtractions.h"
 
-#include "BLIF.hpp"
+#include "blif.h"
 
 /**
  * -----------------------------------------------------------------------------------------------------------------------------
- * ---------------------------------------------------------- Writer -----------------------------------------------------------
+ * ---------------------------------------------------------- writer -----------------------------------------------------------
  * -----------------------------------------------------------------------------------------------------------------------------
  */
 
-BLIF::Writer::Writer()
-    : GenericWriter() {
+blif::writer::writer()
+    : generic_writer() {
 }
 
-BLIF::Writer::~Writer() = default;
+blif::writer::~writer() = default;
 
-inline void BLIF::Writer::_write(const netlist_t* netlist) {
+inline void blif::writer::_write(const netlist_t* netlist) {
     output_blif(this->output_file, netlist);
 }
 
-inline void BLIF::Writer::_create_file(const char* file_name, const file_type_e file_type) {
+inline void blif::writer::_create_file(const char* file_name, const file_type_e file_type) {
     // validate the file_name pionter
     oassert(file_name);
     // validate the file type
-    if (file_type != _BLIF)
+    if (file_type != BLIF)
         error_message(UTIL, unknown_location,
-                      "BLIF back-end entity cannot create file types(%d) other than BLIF", file_type);
-    // create the BLIF file and set it as the output file
+                      "blif back-end entity cannot create file types(%d) other than blif", file_type);
+    // create the blif file and set it as the output file
     this->output_file = create_blif(file_name);
 }
 /**
@@ -88,7 +77,7 @@ inline void BLIF::Writer::_create_file(const char* file_name, const file_type_e 
  * @param net pointer to the net 
  *---------------------------------------------------------------------------------------------
  */
-bool BLIF::Writer::warn_undriven(nnode_t* node, nnet_t* net) {
+bool blif::writer::warn_undriven(nnode_t* node, nnet_t* net) {
     if (!net->num_driver_pins) {
         // Add a warning for an undriven net.
         warning_message(NETLIST, node->loc,
@@ -102,7 +91,7 @@ bool BLIF::Writer::warn_undriven(nnode_t* node, nnet_t* net) {
 }
 
 // [TODO] Uncomment this for In Outs
-/* static void BLIF::Writer::merge_with_inputs(nnode_t* node, long pin_idx) {
+/* static void blif::writer::merge_with_inputs(nnode_t* node, long pin_idx) {
  * oassert(pin_idx < node->num_input_pins);
  * nnet_t* net = node->input_pins[pin_idx]->net;
  * warn_undriven(node, net);
@@ -133,7 +122,7 @@ bool BLIF::Writer::warn_undriven(nnode_t* node, nnet_t* net) {
  * @param driver_idx index of the driver pin
  *---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long driver_idx) {
+void blif::writer::print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long driver_idx) {
     oassert(driver_idx < net->num_driver_pins);
     npin_t* driver = net->driver_pins[driver_idx];
     if (!driver->node) {
@@ -168,7 +157,7 @@ void BLIF::Writer::print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long 
  * @param pin_idx index of the driver pin
  *---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::print_input_single_driver(FILE* out, nnode_t* node, long pin_idx) {
+void blif::writer::print_input_single_driver(FILE* out, nnode_t* node, long pin_idx) {
     oassert(pin_idx < node->num_input_pins);
     nnet_t* net = node->input_pins[pin_idx]->net;
     if (warn_undriven(node, net)) {
@@ -188,7 +177,7 @@ void BLIF::Writer::print_input_single_driver(FILE* out, nnode_t* node, long pin_
  * @param node pointer to the netlist node
  *---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::print_output_pin(FILE* out, nnode_t* node) {
+void blif::writer::print_output_pin(FILE* out, nnode_t* node) {
     /* now print the output */
     if (node->related_ast_node != NULL
         && global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
@@ -209,7 +198,7 @@ void BLIF::Writer::print_output_pin(FILE* out, nnode_t* node) {
  * @param node pointer to the netlist node
  *---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::print_dot_names_header(FILE* out, nnode_t* node) {
+void blif::writer::print_dot_names_header(FILE* out, nnode_t* node) {
     char** names = (char**)vtr::calloc(node->num_input_pins, sizeof(char*));
 
     // Create an implicit buffer if there are multiple drivers to the component
@@ -253,7 +242,7 @@ void BLIF::Writer::print_dot_names_header(FILE* out, nnode_t* node) {
  * @param file_name cstring of the output blif file name
  *---------------------------------------------------------------------------------------------
  */
-FILE* BLIF::Writer::create_blif(const char* file_name) {
+FILE* blif::writer::create_blif(const char* file_name) {
     FILE* out = NULL;
 
     /* open the file for output */
@@ -281,7 +270,7 @@ FILE* BLIF::Writer::create_blif(const char* file_name) {
  * @param netlist pointer to the netlist
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
+void blif::writer::output_blif(FILE* out, const netlist_t* netlist) {
     fprintf(out, ".model %s\n", netlist->identifier);
 
     /* generate all the signals */
@@ -321,7 +310,7 @@ void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
     // }
 
     /* traverse the internals of the flat net-list */
-    if (configuration.output_file_type == file_type_e::_BLIF) {
+    if (configuration.output_file_type == file_type_e::BLIF) {
         depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);
     } else {
         error_message(NETLIST, unknown_location, "%s", "Invalid output file type.");
@@ -369,10 +358,10 @@ void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
  * @param netlist pointer to the netlist
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::depth_first_traversal_to_output(short marker_value, FILE* fp, const netlist_t* netlist) {
+void blif::writer::depth_first_traversal_to_output(short marker_value, FILE* fp, const netlist_t* netlist) {
     int i;
 
-    /* if a coarsen BLIF is recieved, these variables are already created */
+    /* if a coarsen blif is recieved, these variables are already created */
     if (!coarsen_cleanup) {
         netlist->gnd_node->name = vtr::strdup("gnd");
         netlist->vcc_node->name = vtr::strdup("vcc");
@@ -403,7 +392,7 @@ void BLIF::Writer::depth_first_traversal_to_output(short marker_value, FILE* fp,
  * @param fp the output blif file
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_mark_number, FILE* fp) {
+void blif::writer::depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_mark_number, FILE* fp) {
     int i, j;
     nnode_t* next_node;
     nnet_t* next_net;
@@ -449,7 +438,7 @@ void BLIF::Writer::depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_
  * @param fp the output blif file
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
+void blif::writer::output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
     switch (node->type) {
         case GT:
             define_set_input_logical_function(node, "100 1\n", fp);
@@ -561,7 +550,7 @@ void BLIF::Writer::output_node(nnode_t* node, short /*traverse_number*/, FILE* f
  * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::define_logical_function(nnode_t* node, FILE* out) {
+void blif::writer::define_logical_function(nnode_t* node, FILE* out) {
     int i, j;
     char* temp_string;
 
@@ -658,7 +647,7 @@ void BLIF::Writer::define_logical_function(nnode_t* node, FILE* out) {
  * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::define_set_input_logical_function(nnode_t* node, const char* bit_output, FILE* out) {
+void blif::writer::define_set_input_logical_function(nnode_t* node, const char* bit_output, FILE* out) {
     oassert(node->num_input_pins >= 1);
 
     print_dot_names_header(out, node);
@@ -680,7 +669,7 @@ void BLIF::Writer::define_set_input_logical_function(nnode_t* node, const char* 
  * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::define_clock(nnode_t* node, FILE* out) {
+void blif::writer::define_clock(nnode_t* node, FILE* out) {
     oassert(node->num_input_pins < 2);
 
     if (node->num_input_pins == 1) {
@@ -703,7 +692,7 @@ void BLIF::Writer::define_clock(nnode_t* node, FILE* out) {
  * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::define_ff(nnode_t* node, FILE* out) {
+void blif::writer::define_ff(nnode_t* node, FILE* out) {
     oassert(node->num_output_pins == 1);
     oassert(node->num_input_pins == 2);
 
@@ -742,7 +731,7 @@ void BLIF::Writer::define_ff(nnode_t* node, FILE* out) {
  * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
-void BLIF::Writer::define_decoded_mux(nnode_t* node, FILE* out) {
+void blif::writer::define_decoded_mux(nnode_t* node, FILE* out) {
     oassert(node->input_port_sizes[0] == node->input_port_sizes[1]);
     print_dot_names_header(out, node);
 

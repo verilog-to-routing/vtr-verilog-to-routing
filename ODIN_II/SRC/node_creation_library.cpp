@@ -30,7 +30,6 @@
 #include "odin_util.h"
 #include "node_creation_library.h"
 #include "vtr_util.h"
-#include "vtr_memory.h"
 
 long unique_node_name_id = 0;
 
