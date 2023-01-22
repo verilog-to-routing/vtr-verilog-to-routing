@@ -276,10 +276,10 @@ enum operation_list {
     GENERIC,             /*added for the unknown node type */
     CLOG2,               // $clog2
     UNSIGNED,            // $unsigned
-    SIGNED,               // $signed
+    SIGNED,              // $signed
     MULTIPORT_nBIT_SMUX, // n-bit input/output in multiple ports
     SPRAM,               // representing primitive single port ram
-    DPRAM,    // representing primitive dual port ram
+    DPRAM,               // representing primitive dual port ram
     BRAM,                // Odin-II block memory, from techlib/bram_bb.v
     ROM,                 // Odin-II read-only memory, from techlib/rom_bb.v
                          // [END] operations

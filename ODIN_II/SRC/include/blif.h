@@ -460,7 +460,6 @@ class blif {
          * -------------------------------------------------------------------------------------------
          */
         static char* resolve_signal_name_based_on_blif_type(const char* name_str);
-
     };
 
     class writer : public generic_writer {

@@ -26,10 +26,10 @@
 #include <vector>
 
 #include "mixing_optimization.h"
-#include "netlist_statistic.h"    // mixing_optimization_stats
-#include "multipliers.h"          // instantiate_simple_soft_multiplier
-#include "odin_error.h"           // error_message
-#include "adders.h"               // hard_adders
+#include "netlist_statistic.h"     // mixing_optimization_stats
+#include "multipliers.h"           // instantiate_simple_soft_multiplier
+#include "odin_error.h"            // error_message
+#include "adders.h"                // hard_adders
 #include "hard_soft_logic_mixer.h" // HardSoftLogicMixer
 
 void MixingOpt::scale_counts() {
