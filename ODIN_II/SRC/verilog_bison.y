@@ -27,7 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <stdbool.h>
+#include <cstdbool>
 
 #include "odin_types.h"
 #include "odin_globals.h"
