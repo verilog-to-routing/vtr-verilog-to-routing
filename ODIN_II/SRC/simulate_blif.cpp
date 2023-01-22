@@ -23,18 +23,20 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "simulate_blif.h"
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
-#include "vtr_util.h"
-#include "vtr_memory.h"
-#include "odin_buffer.h"
-#include "odin_util.h"
 #include <string>
 #include <sstream>
 #include <dlfcn.h>
 #include <thread>
+
+#include "simulate_blif.h"
+#include "odin_buffer.h"
+#include "odin_util.h"
+
+#include "vtr_util.h"
+#include "vtr_memory.h"
 
 #define CLOCK_INITIAL_VALUE 1
 

@@ -23,14 +23,15 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 
 #include "odin_types.h"
 #include "netlist_utils.h"
 #include "netlist_visualizer.h"
 #include "odin_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 

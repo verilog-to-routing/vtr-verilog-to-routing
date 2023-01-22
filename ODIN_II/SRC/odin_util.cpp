@@ -25,17 +25,18 @@
 
 #include <string>
 #include <sstream>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <limits.h>
-#include <errno.h>
-#include "odin_types.h"
-#include "odin_globals.h"
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cctype>
+#include <climits>
+#include <cerrno>
 #include <cstdarg>
 
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "odin_util.h"
+
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_memory.h"

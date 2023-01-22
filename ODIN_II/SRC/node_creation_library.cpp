@@ -23,12 +23,14 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
+#include <cstring>
+
 #include "odin_types.h"
 #include "odin_globals.h"
 #include "netlist_utils.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
+
 #include "vtr_util.h"
 
 long unique_node_name_id = 0;

@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <string>
+
 #include "odin_types.h"
 
 /* This is the data structure that holds config file details */

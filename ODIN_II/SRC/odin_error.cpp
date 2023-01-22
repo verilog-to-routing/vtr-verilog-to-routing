@@ -23,13 +23,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <cstdio>
+#include <cstring>
+#include <cstdarg>
+#include <cstdlib>
+
 #include "odin_error.h"
 #include "config_t.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdlib.h>
 
 std::vector<std::pair<std::string, int>> include_file_names;
 

@@ -23,27 +23,20 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include <cstdio>
+#include <cstring>
 
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
 #include "adders.h"
 #include "netlist_utils.h"
-#include "partial_map.h"
 #include "read_xml_arch_file.h"
 #include "odin_globals.h"
-
 #include "multipliers.h"
 #include "subtractions.h"
 
 #include "vtr_memory.h"
-#include "vtr_util.h"
-
 #include "vtr_list.h"
 
 using vtr::t_linked_vptr;
@@ -59,7 +52,6 @@ int min_threshold_adder = 0;
 
 netlist_t* the_netlist;
 
-void record_add_distribution(nnode_t* node);
 void init_split_adder(nnode_t* node, nnode_t* ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index, int flag, netlist_t* netlist);
 static void cleanup_add_old_node(nnode_t* nodeo, netlist_t* netlist);
 
@@ -72,16 +64,6 @@ void init_add_distribution() {
 
     int len = hard_adders->inputs->size + hard_adders->inputs->next->size + 1;
     adder = (int*)vtr::calloc(len, sizeof(int));
-}
-
-/*---------------------------------------------------------------------------
- * (function: record_add_distribution)
- *-------------------------------------------------------------------------*/
-void record_add_distribution(nnode_t* node) {
-    oassert(hard_adders != NULL);
-    oassert(node != NULL);
-    adder[hard_adders->inputs->size] += 1;
-    return;
 }
 
 /*---------------------------------------------------------------------------
@@ -1149,7 +1131,8 @@ static void connect_output_pin_to_node(int* width, int current_pin, int output_p
     if (subtraction) {
         remap_pin_to_new_node(node->output_pins[current_pin], current_adder, output_pin_id);
     } else {
-        npin_t* node_pin_select = node->output_pins[(node->num_input_port_sizes == 2) ? current_pin : (current_pin < width[output_pin_id] - 1) ? current_pin + 1 : 0];
+        npin_t* node_pin_select = node->output_pins[(node->num_input_port_sizes == 2) ? current_pin : (current_pin < width[output_pin_id] - 1) ? current_pin + 1
+                                                                                                                                               : 0];
         if (node_pin_select) {
             if (node_pin_select->type != NO_ID || (node->num_input_port_sizes == 2)) {
                 remap_pin_to_new_node(node_pin_select, current_adder, output_pin_id);

@@ -26,6 +26,12 @@
 #ifndef ODIN_TYPES_H
 #define ODIN_TYPES_H
 
+#include <mutex>
+#include <atomic>
+#include <string>
+#include <unordered_map>
+#include <cstdlib>
+
 #include "string_cache.h"
 #include "hierarchy_util.h"
 #include "scope_util.h"
@@ -33,14 +39,6 @@
 #include "read_xml_arch_file.h"
 #include "argparse_value.hpp"
 #include "atomic_buffer.h"
-#include <mutex>
-#include <atomic>
-#include <string>
-#include <stdbool.h>
-#include <unordered_map>
-
-#include <stdlib.h>
-
 #include "rtl_int.hpp"
 
 /**

@@ -26,9 +26,9 @@
 #ifndef __SCOPE_H__
 #define __SCOPE_H__
 
-#include "string_cache.h"
-
 #include <vector>
+
+#include "string_cache.h"
 
 struct sc_scope {
     STRING_CACHE* defparam_sc;

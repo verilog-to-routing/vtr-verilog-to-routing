@@ -26,6 +26,7 @@
 #include "multiplexer.h"
 #include "node_creation_library.h"
 #include "netlist_utils.h"
+
 #include "vtr_memory.h"
 
 /**

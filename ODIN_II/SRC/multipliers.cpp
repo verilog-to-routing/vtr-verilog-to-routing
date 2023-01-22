@@ -23,11 +23,12 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <algorithm>
 #include <cmath>
 #include <string>
+
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
@@ -36,7 +37,6 @@
 #include "partial_map.h"
 #include "read_xml_arch_file.h"
 #include "odin_globals.h"
-
 #include "adders.h"
 
 #include "vtr_memory.h"

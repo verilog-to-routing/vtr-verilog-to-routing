@@ -28,7 +28,6 @@
 
 #include "generic_reader.h"
 #include "generic_writer.h"
-
 #include "config_t.h"
 #include "odin_types.h"
 #include "hash_table.h"

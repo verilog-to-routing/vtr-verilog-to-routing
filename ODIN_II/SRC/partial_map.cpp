@@ -23,21 +23,21 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
+
 #include "odin_types.h"
 #include "odin_globals.h"
-
 #include "netlist_utils.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
-
 #include "partial_map.h"
 #include "hard_blocks.h"
 #include "memories.h"
 #include "adders.h"
 #include "subtractions.h"
 #include "multiplexer.h"
+
 #include "vtr_memory.h"
 #include "vtr_util.h"
 

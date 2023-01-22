@@ -26,8 +26,9 @@
 #ifndef __GENERIC_READER_H__
 #define __GENERIC_READER_H__
 
-#include "generic_io.h"
 #include <string>
+
+#include "generic_io.h"
 
 /**
  * @brief A class to provide the general object of an input file reader

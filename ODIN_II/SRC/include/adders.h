@@ -26,9 +26,10 @@
 #ifndef ADDERS_H
 #define ADDERS_H
 
+#include <vector>
+
 #include "read_xml_arch_file.h"
 #include "odin_types.h"
-#include <vector>
 
 struct t_adder {
     int size_a;

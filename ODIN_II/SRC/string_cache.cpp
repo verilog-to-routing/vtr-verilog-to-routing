@@ -23,11 +23,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+
+#include "string_cache.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include "string_cache.h"
 
 unsigned long
 string_hash(STRING_CACHE* sc,

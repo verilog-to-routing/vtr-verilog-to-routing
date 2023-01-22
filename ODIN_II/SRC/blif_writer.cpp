@@ -23,29 +23,20 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include "odin_util.h"
 #include "odin_types.h"
 #include "odin_globals.h"
-
-#include "vtr_util.h"
-#include "vtr_memory.h"
-
 #include "node_creation_library.h"
-
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "adders.h"
-
 #include "blif.h"
 
-/**
- * -----------------------------------------------------------------------------------------------------------------------------
- * ---------------------------------------------------------- writer -----------------------------------------------------------
- * -----------------------------------------------------------------------------------------------------------------------------
- */
+#include "vtr_util.h"
+#include "vtr_memory.h"
 
 blif::writer::writer()
     : generic_writer() {

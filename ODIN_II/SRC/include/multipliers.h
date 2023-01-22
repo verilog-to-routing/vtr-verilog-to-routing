@@ -26,6 +26,7 @@
 #ifndef MULTIPLIERS_H
 #define MULTIPLIERS_H
 
+#include "odin_types.h"
 #include "read_xml_arch_file.h"
 
 struct t_multiplier {

@@ -23,25 +23,22 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 
 #include "odin_util.h"
 #include "odin_types.h"
 #include "odin_globals.h"
-
 #include "ast_util.h"
 #include "netlist_utils.h"
 #include "netlist_check.h"
 #include "simulate_blif.h"
+#include "node_creation_library.h"
+#include "blif.h"
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
-
-#include "node_creation_library.h"
-
-#include "blif.h"
 
 int line_count;
 int num_lines;

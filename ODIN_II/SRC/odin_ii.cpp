@@ -23,19 +23,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 #include <sstream>
 #include <vector>
 
-#include "vtr_error.h"
 #include "odin_ii.h"
-
-#include "argparse.hpp"
-
-#include "arch_util.h"
-
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "odin_util.h"
@@ -43,28 +37,31 @@
 #include "arch_types.h"
 #include "parse_making_ast.h"
 #include "read_xml_config_file.h"
-#include "read_xml_arch_file.h"
 #include "partial_map.h"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "netlist_cleanup.h"
-
 #include "hard_blocks.h"
 #include "memories.h"
 #include "block_memories.h"
 #include "simulate_blif.h"
-
 #include "netlist_visualizer.h"
 #include "adders.h"
 #include "netlist_statistic.h"
 #include "subtractions.h"
+#include "hard_soft_logic_mixer.h"
+#include "generic_reader.h"
+#include "blif.h"
+
+#include "vtr_error.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_memory.h"
-#include "hard_soft_logic_mixer.h"
 
-#include "generic_reader.h"
-#include "blif.h"
+#include "argparse.hpp"
+
+#include "read_xml_arch_file.h"
+#include "arch_util.h"
 
 #define DEFAULT_OUTPUT "."
 

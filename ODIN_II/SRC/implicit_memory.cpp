@@ -23,6 +23,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <unordered_map>
+
 #include "odin_types.h"
 #include "odin_globals.h"
 #include "ast_util.h"
@@ -32,10 +34,9 @@
 #include "node_creation_library.h"
 #include "netlist_utils.h"
 #include "odin_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
-
-#include <unordered_map>
 
 // Hashes the implicit memory name to the implicit_memory structure.
 std::unordered_map<std::string, implicit_memory*> implicit_memories;

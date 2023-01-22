@@ -23,18 +23,17 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 #include <ctype.h>
-#include <stdarg.h>
-#include <math.h>
-#include <algorithm>
+#include <cmath>
+
 #include "odin_globals.h"
 #include "odin_types.h"
-
 #include "ast_util.h"
 #include "odin_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 

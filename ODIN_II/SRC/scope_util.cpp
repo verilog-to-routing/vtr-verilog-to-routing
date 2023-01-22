@@ -24,6 +24,7 @@
  */
 
 #include "scope_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 

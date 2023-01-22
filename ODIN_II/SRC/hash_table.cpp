@@ -23,12 +23,11 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstring>
 
 #include "hash_table.h"
 #include "odin_types.h"
+
 #include "vtr_memory.h"
 
 void hash_table::destroy_free_items() {

@@ -28,7 +28,6 @@
 
 #include "generic_reader.h"
 #include "generic_writer.h"
-
 #include "ast_util.h"
 
 #define MODULE "module"

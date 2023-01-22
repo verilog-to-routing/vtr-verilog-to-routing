@@ -28,6 +28,7 @@
 #include "verilog.h"
 #include "odin_globals.h"
 #include "hard_blocks.h"
+
 #include "vtr_util.h"
 
 verilog::writer::writer()

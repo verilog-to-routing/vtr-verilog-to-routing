@@ -23,13 +23,9 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "hard_soft_logic_mixer.h"
-
-#include <stdint.h> // INT_MAX
 #include <vector>
 
-#include "multipliers.h" // instantiate_simple_soft_multiplier
-#include "odin_error.h"  // error_message
+#include "hard_soft_logic_mixer.h"
 
 HardSoftLogicMixer::HardSoftLogicMixer() {
     for (int i = 0; i < operation_list_END; i++) {

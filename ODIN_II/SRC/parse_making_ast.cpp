@@ -23,12 +23,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <math.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
+#include <cmath>
 #include <sstream>
+
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "odin_util.h"
@@ -38,6 +39,7 @@
 #include "verilog_bison_user_defined.h"
 #include "verilog_bison.h"
 #include "hard_blocks.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include "vtr_path.h"

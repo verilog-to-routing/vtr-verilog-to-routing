@@ -23,19 +23,19 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
+#include <cstring>
+
 #include "odin_types.h"
 #include "odin_util.h"
-
 #include "netlist_utils.h"
 #include "node_creation_library.h"
 #include "hard_blocks.h"
 #include "memories.h"
 #include "block_memories.h"
+
 #include "vtr_memory.h"
 
 using vtr::t_linked_vptr;
-/* global linked list including block memory instances */
 struct block_memory_information_t block_memories_info;
 
 void map_bram_to_mem_hardblocks(block_memory_t* bram, netlist_t* netlist);
