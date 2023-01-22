@@ -1335,11 +1335,18 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
-    /* Set the initial temperature to the standard of deviation divided by 64 */
-    /* so that the initial temperature adjusts according to the circuit */
-    /* and also keep the initial placement qaulity (not destroying it completely) */
-    /* and fine-tune the initial placement with the anneal*/
-    float init_temp = (std_dev / 64);
+    float init_temp = 0.0;
+
+    /*There were some issues with PR#2175 where the reduced initial
+    temperature caused problems with the NoC placement. Current fix is
+    to change the initial temperature back to its orignal value when
+    NoC placement is turned on, otherwise use the reduced temperature.*/
+    if (noc_opts.noc){
+        init_temp = 20. * std_dev;
+    }
+    else {
+        init_temp = std_dev / 64;
+    }
 
     return init_temp;
 }
