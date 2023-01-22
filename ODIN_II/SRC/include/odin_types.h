@@ -270,6 +270,8 @@ enum operation_list {
     CARRY_FUNC,
     MUX_2,
     SMUX_2, // MUX_2 with single bit selector (no need to add not selector as the second pin) => [SEL] [IN1, IN2] [OUT]
+    BLIF_FUNCTION,
+    NETLIST_FUNCTION,
     MEMORY,
     PAD_NODE,
     HARD_IP,
@@ -277,12 +279,13 @@ enum operation_list {
     CLOG2,               // $clog2
     UNSIGNED,            // $unsigned
     SIGNED,              // $signed
+                         // [START] operations to cover yosys subckt
     MULTIPORT_nBIT_SMUX, // n-bit input/output in multiple ports
     SPRAM,               // representing primitive single port ram
     DPRAM,               // representing primitive dual port ram
     BRAM,                // Odin-II block memory, from techlib/bram_bb.v
     ROM,                 // Odin-II read-only memory, from techlib/rom_bb.v
-                         // [END] operations
+                         // [END] operations to cover yosys subckt
     operation_list_END
 };
 
