@@ -16,6 +16,7 @@ FILE_TYPES = {
     ".blif": "blif",
 }
 
+
 def create_circuits_list(main_circuit, include_files):
     """Create a list of all (.v) and (.vh) files"""
     circuit_list = []
