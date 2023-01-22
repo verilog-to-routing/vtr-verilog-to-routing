@@ -7,7 +7,6 @@ from collections import OrderedDict
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import vtr
-from vtr.yosys import YOSYS_PARSERS
 
 # supported input file type by Odin
 FILE_TYPES = {
