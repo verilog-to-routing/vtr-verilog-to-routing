@@ -164,93 +164,6 @@ struct more_sinks_than {
     }
 };
 
-struct more_critical_than {
-    const Netlist <>& net_list_;
-    const std::shared_ptr<SetupHoldTimingInfo> timing_info_;
-    const ClusteredPinAtomPinsLookup& netlist_pin_lookup_;
-    float max_criticality_;
-    float criticality_exp_;
-    bool is_flat_;
-    more_critical_than(const Netlist<>& net_list,
-                       const std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                       float max_criticality,
-                       float criticality_exp,
-                       bool is_flat)
-        : net_list_(net_list),
-        timing_info_(timing_info),
-        netlist_pin_lookup_(netlist_pin_lookup),
-        max_criticality_(max_criticality),
-        criticality_exp_(criticality_exp),
-        is_flat_(is_flat)  { VTR_ASSERT(timing_info); }
-    inline bool operator()(const ParentNetId& net_index1, const ParentNetId& net_index2) {
-        float first_net_crit = get_net_criticality(net_list_,
-                                                   timing_info_,
-                                                   netlist_pin_lookup_,
-                                                   max_criticality_,
-                                                   criticality_exp_,
-                                                   net_index1,
-                                                   is_flat_);
-
-        float second_net_crit = get_net_criticality(net_list_,
-                                                    timing_info_,
-                                                    netlist_pin_lookup_,
-                                                    max_criticality_,
-                                                    criticality_exp_,
-                                                    net_index2,
-                                                    is_flat_);
-        if (first_net_crit == second_net_crit) {
-            return net_list_.net_sinks(net_index1).size() > net_list_.net_sinks(net_index2).size();
-        } else {
-            return first_net_crit > second_net_crit;
-        }
-    }
-};
-
-struct less_critical_than {
-
-    const Netlist <>& net_list_;
-    const std::shared_ptr<SetupHoldTimingInfo> timing_info_;
-    const ClusteredPinAtomPinsLookup& netlist_pin_lookup_;
-    float max_criticality_;
-    float criticality_exp_;
-    bool is_flat_;
-    less_critical_than(const Netlist<>& net_list,
-                       const std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                       float max_criticality,
-                       float criticality_exp,
-                       bool is_flat)
-        : net_list_(net_list),
-        timing_info_(timing_info),
-        netlist_pin_lookup_(netlist_pin_lookup),
-        max_criticality_(max_criticality),
-        criticality_exp_(criticality_exp),
-        is_flat_(is_flat)  { VTR_ASSERT(timing_info); }
-    inline bool operator()(const ParentNetId& net_index1, const ParentNetId& net_index2) {
-        float first_net_crit = get_net_criticality(net_list_,
-                                                   timing_info_,
-                                                   netlist_pin_lookup_,
-                                                   max_criticality_,
-                                                   criticality_exp_,
-                                                   net_index1,
-                                                   is_flat_);
-
-        float second_net_crit = get_net_criticality(net_list_,
-                                                    timing_info_,
-                                                    netlist_pin_lookup_,
-                                                    max_criticality_,
-                                                    criticality_exp_,
-                                                    net_index2,
-                                                    is_flat_);
-        if(first_net_crit == second_net_crit) {
-            return net_list_.net_sinks(net_index1).size() < net_list_.net_sinks(net_index2).size();
-        } else {
-            return first_net_crit < second_net_crit;
-        }
-    }
-};
-
 static size_t calculate_wirelength_available();
 static WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t available_wirelength);
 
@@ -431,10 +344,8 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
     //sort so net with most sinks is routed first.
     auto sorted_nets = std::vector<ParentNetId>(net_list.nets().begin(), net_list.nets().end());
-//    if(!timing_info) {
-        //If we routing is not timing_driven, we can't sort by criticality, so just sort by number of sinks
-        std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than(net_list));
-//    }
+    std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than(net_list));
+
     /*
      * Configure the routing predictor
      */
@@ -575,20 +486,6 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         print_router_criticality_histogram(net_list, *route_timing_info, netlist_pin_lookup, is_flat);
     }
 
-    less_critical_than net_less_critical_than_comp(net_list,
-                                                   route_timing_info,
-                                                   netlist_pin_lookup,
-                                                   router_opts.max_criticality,
-                                                   router_opts.criticality_exp,
-                                                   is_flat);
-
-    more_critical_than net_greater_critical_than_comp(net_list,
-                                                      route_timing_info,
-                                                      netlist_pin_lookup,
-                                                      router_opts.max_criticality,
-                                                      router_opts.criticality_exp,
-                                                      is_flat);
-
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
     if (timing_info) {
         pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>(net_list,
@@ -644,13 +541,6 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         /*
          * Route each net
          */
-//        if(timing_info) {
-//            if(itry != 1) {
-//                std::sort(sorted_nets.begin(), sorted_nets.end(), net_less_critical_than_comp);
-//            } else {
-//                std::sort(sorted_nets.begin(), sorted_nets.end(), net_greater_critical_than_comp);
-//            }
-//        }
         for (auto net_id : sorted_nets) {
             bool was_rerouted = false;
             bool is_routable = try_timing_driven_route_net(router,
@@ -1281,11 +1171,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
     }
 
     // compare the criticality of different sink nodes
-//    if(itry == 1) {
-        std::sort(begin(remaining_targets), end(remaining_targets), Criticality_comp(pin_criticality, true));
-//    } else {
-//        std::sort(begin(remaining_targets), end(remaining_targets), Criticality_comp(pin_criticality, false));
-//    }
+    std::sort(begin(remaining_targets), end(remaining_targets), Criticality_comp(pin_criticality, true));
+
 
 
     /* Update base costs according to fanout and criticality rules */
