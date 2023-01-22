@@ -333,40 +333,10 @@ def vtr_command_argparser(prog=None):
         help="Supplies Odin with a custom config file for optimizations.",
     )
     odin.add_argument(
-        "-elaborator",
-        nargs=None,
-        default="odin",
-        dest="elaborator",
-        help="Specify the elaborator of the synthesis flow for Odin-II",
-    )
-    odin.add_argument(
         "-top_module",
         default=None,
         dest="top_module",
         help="Specify the name of the module in the design that should be considered as top",
-    )
-    odin.add_argument(
-        "-coarsen",
-        default=False,
-        action="store_true",
-        dest="coarsen",
-        help="Notify Odin if the input BLIF is coarse-grain",
-    )
-    odin.add_argument(
-        "-fflegalize",
-        default=False,
-        action="store_true",
-        dest="fflegalize",
-        help="Make flip-flops rising edge for coarse-grain input BLIFs in the techmap"
-        + "(Odin-II synthesis flow generates rising edge FFs by default)",
-    )
-    odin.add_argument(
-        "-encode_names",
-        default=False,
-        action="store_true",
-        dest="encode_names",
-        help="Enable Odin-II utilization of operation-type-encoded naming style for Yosys"
-        + " coarse-grained RTLIL nodes",
     )
     #
     # YOSYS arguments
@@ -712,8 +682,6 @@ def process_odin_args(args):
     odin_args["parser"] = args.parser
     odin_args["adder_type"] = args.adder_type
     odin_args["top_module"] = args.top_module
-    # odin_args["elaborator"] = args.elaborator
-    # odin_args["encode_names"] = args.encode_names
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True
@@ -723,12 +691,6 @@ def process_odin_args(args):
 
     if args.use_odin_simulation:
         odin_args["use_odin_simulation"] = True
-
-    # if args.coarsen:
-    #     odin_args["coarsen"] = True
-
-    # if args.fflegalize:
-    #     odin_args["fflegalize"] = True
 
     return odin_args
 

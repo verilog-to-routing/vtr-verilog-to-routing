@@ -232,52 +232,9 @@ Detailed Command-line Options
     
     **Default:** 1
 
-.. option:: -elaborator <ELABORATOR>
-    
-    Specifies the elaborator of the synthesis flow for ODIN II [odin, yosys]
-
-    **Default:** odin
-
 .. option:: -top_module <TOP_MODULE>
     
     Specifies the name of the module in the design that should be considered as top
-
-.. option:: -coarsen
-    
-    Notifies ODIN II if the input BLIF is coarse-grained.
-
-    **Default:** False
-
-.. note::
-
-    A coarse-grained BLIF file is defined as a BLIF file inclduing unmapped cells with the Yosys internal cell (listed `here <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/b913727959e22ae7a535ac8b907d0aaa9a3eda3d/ODIN_II/SRC/enum_str.cpp#L402-L494>`_) format which are represented by the ``.subckt`` tag in coarse-grained BLIF.
-
-.. option:: -encode_names
-    
-    Enables ODIN II utilization of operation-type-encoded naming style for Yosys coarse-grained RTLIL nodes.
-    
-    .. code-block::
-
-        # example of a DFF subcircuit in the Yosys coarse-grained BLIF
-        .subckt $dff CLK=clk D=a Q=inst1.inst2.temp
-        .param CLK_POLARITY 1
-
-        .names inst1.inst2.temp o
-        1 1
-
-        # fine-grained BLIF file with enabled encode_names option for Odin-II partial mapper
-        .latch test^a test^inst1.inst2.temp^FF~0 re test^clk 3
-
-        .names test^inst1.inst2.temp^FF~0 test^o
-        1 1
-
-        # fine-grained BLIF file with disabled encode_names option for Odin-II partial mapper
-        .latch test^a test^$dff^FF~0 re test^clk 3
-
-        .names test^$dff^FF~0 test^o
-        1 1
-
-    **Default:** False
 
 .. option:: -yosys_script <YOSYS_SCRIPT>
     

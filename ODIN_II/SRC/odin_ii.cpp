@@ -460,16 +460,6 @@ void get_options(int argc, char** argv) {
         .nargs('+')
         .metavar("VERILOG_FILE");
 
-    input_grp.add_argument(global_args.input_files, "-s")
-        .help("List of SystemVerilog HDL file")
-        .nargs('+')
-        .metavar("SYSTEMVERILOG_FILE");
-
-    input_grp.add_argument(global_args.input_files, "-u")
-        .help("List of UHDM HDL file")
-        .nargs('+')
-        .metavar("UHDM_FILE");
-
     input_grp.add_argument(global_args.blif_file, "-b")
         .help("BLIF file")
         .metavar("BLIF_FILE");
@@ -663,9 +653,6 @@ void get_options(int argc, char** argv) {
                             a config file(-c)\n\t\
                             a BLIF file(-b)\n\t\
                             a Verilog file(-v)\n\t\
-                            a SystemVerilog file(-s)\n\t\
-                            an UHDM file(-u)\n\t\
-                            a TCL file including HDL designs(-S)\n\
                         Unless is used for infrastructure directly\n");
     }
 
@@ -683,10 +670,6 @@ void get_options(int argc, char** argv) {
         std::string arg_name = string_to_lower(global_args.input_files.argument_name());
         if (arg_name == "-v")
             configuration.input_file_type = file_type_e::VERILOG;
-        else if (arg_name == "-s")
-            configuration.input_file_type = file_type_e::SYSTEM_VERILOG;
-        else if (arg_name == "-u")
-            configuration.input_file_type = file_type_e::UHDM;
         else {
             // Unknown argument name, should have been already checked in the argparse library
             error_message(PARSE_ARGS, unknown_location,
