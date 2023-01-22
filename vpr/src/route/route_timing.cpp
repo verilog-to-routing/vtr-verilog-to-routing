@@ -139,14 +139,6 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
 
 static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack);
 
-static float get_net_criticality(const Netlist<>& net_list,
-                                 const std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                 const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                 float max_criticality,
-                                 float criticality_exp,
-                                 ParentNetId net_id,
-                                 bool is_flat);
-
 static float get_net_pin_criticality(const std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                      const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                      float max_criticality,
@@ -1801,40 +1793,6 @@ static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) 
         return true;
     }
     return false;
-}
-
-static float get_net_criticality(const Netlist<>& net_list,
-                                 const std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                 const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                 float max_criticality,
-                                 float criticality_exp,
-                                 ParentNetId net_id,
-                                 bool is_flat) {
-    const auto& route_ctx = g_vpr_ctx.routing();
-
-    float net_crit = std::numeric_limits<float>::min();
-
-    int num_sinks = net_list.net_sinks(net_id).size();
-
-    if(route_ctx.is_clock_net[net_id]) {
-        net_crit = 1.;
-    } else {
-        for(int pin_num = 1; pin_num <= num_sinks; pin_num++) {
-            auto pin_id = net_list.net_pin(net_id, pin_num);
-            auto pin_crit = get_net_pin_criticality(timing_info,
-                                                    netlist_pin_lookup,
-                                                    max_criticality,
-                                                    criticality_exp,
-                                                    net_id,
-                                                    pin_id,
-                                                    is_flat);
-            if(pin_crit > net_crit) {
-                net_crit = pin_crit;
-            }
-        }
-    }
-
-    return net_crit;
 }
 
 static float get_net_pin_criticality(const std::shared_ptr<SetupHoldTimingInfo> timing_info,
