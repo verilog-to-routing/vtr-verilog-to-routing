@@ -23,23 +23,18 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Standard libraries */
-#include <stdlib.h>
-#include <string.h>
+#include <cstring>
 
-/* Odin_II libraries */
-#include "odin_globals.h"
 #include "odin_types.h"
 #include "ast_util.h"
 #include "ast_elaborate.h"
 #include "parse_making_ast.h"
 #include "netlist_create_from_ast.h"
 #include "odin_util.h"
+#include "ast_loop_unroll.h"
+
 #include "vtr_memory.h"
 #include "vtr_util.h"
-
-/* This files header */
-#include "ast_loop_unroll.h"
 
 ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrolled, sc_hierarchy* local_ref, bool is_generate) {
     oassert(node && node->type == FOR);

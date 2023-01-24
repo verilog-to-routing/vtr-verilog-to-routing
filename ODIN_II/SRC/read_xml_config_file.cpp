@@ -23,24 +23,24 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+
 #include "odin_types.h"
 #include "odin_util.h"
 #include "odin_globals.h"
 #include "read_xml_config_file.h"
-#include "read_xml_util.h"
+
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
 using namespace pugiutil;
 
 config_t configuration;
-char empty_string[] = "";
 
 void read_inputs(pugi::xml_node a_node, config_t* config, const pugiutil::loc_data& loc_data);
 void read_outputs(pugi::xml_node a_node, config_t* config, const pugiutil::loc_data& loc_data);
