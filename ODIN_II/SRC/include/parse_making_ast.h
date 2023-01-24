@@ -34,7 +34,6 @@ void parse_to_ast();
 /* INITIALISATIONS */
 ast_t* init_parser();
 void cleanup_parser();
-void cleanup_hard_blocks();
 
 /* GENERAL PARSER NODES */
 ast_node_t* newSymbolNode(char* id, loc_t loc);

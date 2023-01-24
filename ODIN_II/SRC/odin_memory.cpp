@@ -23,7 +23,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "odin_memory.hpp"
+#include "odin_memory.h"
 
 namespace odin {
 uintptr_t min_address = std::numeric_limits<uintptr_t>::max();

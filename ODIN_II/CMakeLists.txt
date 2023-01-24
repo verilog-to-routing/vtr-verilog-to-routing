@@ -132,15 +132,6 @@ if(FLEX_BISON_WARN_SUPPRESS_FLAGS)
                                 PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
 endif()
 
-# define cmake params to compile Yosys if the Odin-II makefile is called
-if(${ODIN_USE_YOSYS})
-    add_definitions("-DODIN_USE_YOSYS=ON")
-    add_definitions("-D_YOSYS_")
-    if(${YOSYS_SV_UHDM_PLUGIN})
-        add_definitions("-DYOSYS_SV_UHDM_PLUGIN=ON")
-    endif()
-endif()
-
 add_definitions(-DUSING_BISON -DYYERROR_VERBOSE)
 include_directories(${LIB_INCLUDE_DIRS} ${PARSER_INCLUDE_DIRS})
 
@@ -151,14 +142,6 @@ add_library(libodin_ii STATIC
              ${LIB_SOURCES}
              ${FLEX_VerilogLexer_OUTPUTS}
              ${BISON_VerilogParser_OUTPUT_SOURCE})
-
-# link libyosys to the Odin-II library
-if(${ODIN_USE_YOSYS})
-    add_dependencies(libodin_ii libyosys)
-    target_link_directories(libodin_ii PUBLIC ${VTR_SOURCE_DIR}/build/libs/EXTERNAL/libyosys)
-    target_include_directories(libodin_ii PUBLIC ${VTR_SOURCE_DIR}/Yosys/share/yosys/include)
-    target_link_libraries(libodin_ii yosys)
-endif()
 
 target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libodin_ii PROPERTIES PREFIX "") #Avoid extra 'lib' prefix

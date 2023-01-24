@@ -23,9 +23,10 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "ast_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include "ast_util.h"
 
 STRING_CACHE* copy_param_table_sc(STRING_CACHE* to_copy);
 

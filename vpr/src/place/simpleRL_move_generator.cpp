@@ -321,7 +321,8 @@ void SoftmaxAgent::set_action_prob() {
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
                    bind2nd(std::multiplies<float>(), (1/sum_prob)));
 
-    //calulcate the accumulative action probability of each action
+
+    // calculate the accumulative action probability of each action
     // e.g. if we have 5 actions with equal probability of 0.2, the cumm_action_prob will be {0.2,0.4,0.6,0.8,1.0}
     float accum = 0;
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
