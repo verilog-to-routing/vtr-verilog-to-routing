@@ -380,7 +380,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     }
 
     // only check the recomputed cost if it is above our expected latency cost threshold of 1 picosecond, otherwise there is no point in checking it
-    if (check_recomputed_noc_latency_cost(noc_latency_cost_check)){
+    if (check_recomputed_noc_latency_cost(noc_latency_cost_check)) {
         // check whether the latency placement cost is within the error tolerance
         if (fabs(noc_latency_cost_check - costs.noc_latency_cost) > costs.noc_latency_cost * error_tolerance) {
             VTR_LOG_ERROR(
@@ -422,7 +422,7 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
     return (single_traffic_flow_latency_cost * traffic_flow_info.traffic_flow_priority);
 }
 
-int get_number_of_traffic_flows_with_latency_cons_met(void){
+int get_number_of_traffic_flows_with_latency_cons_met(void) {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     // datastructure that stores all the traffic flow routes
@@ -450,7 +450,7 @@ int get_number_of_traffic_flows_with_latency_cons_met(void){
         double latency = (noc_link_latency * num_of_links_in_traffic_flow) + (noc_router_latency * num_of_routers_in_traffic_flow);
 
         // we check whether the latency constraint was met here
-        if ((std::max(0., latency - max_latency)) < MIN_EXPECTED_NOC_LATENCY_COST){
+        if ((std::max(0., latency - max_latency)) < MIN_EXPECTED_NOC_LATENCY_COST) {
             count_of_achieved_latency_cons++;
         }
     }
@@ -458,8 +458,7 @@ int get_number_of_traffic_flows_with_latency_cons_met(void){
     return count_of_achieved_latency_cons;
 }
 
-bool check_recomputed_noc_latency_cost(float recomputed_cost){
-
+bool check_recomputed_noc_latency_cost(float recomputed_cost) {
     return (recomputed_cost < MIN_EXPECTED_NOC_LATENCY_COST) ? false : true;
 }
 
@@ -489,38 +488,36 @@ void free_noc_placement_structs(void) {
 }
 
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
-bool check_for_router_swap(int user_supplied_noc_router_swap_percentage){
-
+bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
     // generate random number between 0-99 and compare it to the user supplied value
     return (vtr::irand(99) < user_supplied_noc_router_swap_percentage) ? true : false;
 }
 
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
-
     // need to access all the router cluster blocks int he design
     auto& noc_ctx = g_vpr_ctx.noc();
     // get a reference to the collection of router cluster blocks in the design
     const std::unordered_set<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
 
     // if there are no router cluster blocks to swap then abort
-    if (router_clusters.empty()){
+    if (router_clusters.empty()) {
         return e_create_move::ABORT;
     }
 
     int number_of_router_blocks = router_clusters.size();
 
     /* We will choose a random number between 0-number_of_router_blocks-1.
-    Then we will iterate through the router cluster blocks and stop when we 
-    have iterated through the chosen random number of blocks. The cluster
-    we have stopped at will be the cluster to swap.*/ 
-    int random_cluster_block_index = vtr::irand(number_of_router_blocks-1);
+     * Then we will iterate through the router cluster blocks and stop when we 
+     * have iterated through the chosen random number of blocks. The cluster
+     * we have stopped at will be the cluster to swap.*/
+    int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
     auto router_cluster_block_to_swap_ref = router_clusters.begin();
     std::advance(router_cluster_block_to_swap_ref, random_cluster_block_index);
 
     ClusterBlockId b_from = *router_cluster_block_to_swap_ref;
 
     // now choose a compatible block to swap with
-    
+
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -546,9 +543,8 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 }
 
 /* Below are functions related to modifying and printing the NoC placement
-statistical data */
-void initialize_noc_placement_stats(const t_placer_opts& placer_opts){
-
+ * statistical data */
+void initialize_noc_placement_stats(const t_placer_opts& placer_opts) {
     // initially there are not router blocks moved
     noc_place_stats.number_of_noc_router_moves = 0;
 
@@ -556,19 +552,16 @@ void initialize_noc_placement_stats(const t_placer_opts& placer_opts){
     noc_place_stats.number_of_noc_router_moves_per_move_type.resize(placer_opts.place_static_move_prob.size() + 1, 0);
 
     return;
-
 }
 
-void update_noc_placement_stats(int move_type){
-
+void update_noc_placement_stats(int move_type) {
     noc_place_stats.number_of_noc_router_moves++;
     noc_place_stats.number_of_noc_router_moves_per_move_type[move_type]++;
 
     return;
 }
 
-void print_noc_placement_stats(void){
-
+void print_noc_placement_stats(void) {
     float moves;
     std::string move_name;
 
@@ -590,7 +583,6 @@ void print_noc_placement_stats(void){
 }
 
 void write_noc_placement_file(std::string file_name) {
-
     // we need the clustered netlist to get the names of all the NoC router cluster blocks
     auto& cluster_ctx = g_vpr_ctx.clustering();
     // we need to the placement context to determine the final placed locations of the NoC router cluster blocks
@@ -605,8 +597,8 @@ void write_noc_placement_file(std::string file_name) {
     noc_placement_file.open(file_name.c_str(), std::ios::out);
     if (!noc_placement_file) {
         VTR_LOG_ERROR(
-                "Failed to open the placement file '%s' to write out the NoC router placement information.\n",
-                file_name);
+            "Failed to open the placement file '%s' to write out the NoC router placement information.\n",
+            file_name);
     }
 
     // assume that the FPGA device has a single layer (2-D), so when we write the palcement file the layer value will be constant
@@ -624,10 +616,9 @@ void write_noc_placement_file(std::string file_name) {
     const vtr::vector_map<ClusterBlockId, t_block_loc>& clustered_block_placed_locations = placement_ctx.block_locs;
 
     // go through all the cluster blocks and write out their information in the placement file
-    for(const auto& single_cluster_id : router_clusters) {
-
+    for (const auto& single_cluster_id : router_clusters) {
         // check if the current cluster id is valid
-        if (single_cluster_id == ClusterBlockId::INVALID()){
+        if (single_cluster_id == ClusterBlockId::INVALID()) {
             VTR_LOG_ERROR(
                 "A cluster block id stored as an identifier for a NoC router block was invalid.\n");
         }
@@ -643,7 +634,7 @@ void write_noc_placement_file(std::string file_name) {
 
         // write the current cluster information to the output file
         noc_placement_file << cluster_name << " " << layer_number << " " << (size_t)physical_router_cluster_is_placed_on << "\n";
-    } 
+    }
 
     // finished writing placement information so close the file
     noc_placement_file.close();

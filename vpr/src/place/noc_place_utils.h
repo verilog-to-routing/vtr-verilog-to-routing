@@ -25,12 +25,11 @@ constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
 constexpr double MIN_EXPECTED_NOC_LATENCY_COST = 1.e-12;
 
 /* Stores statistical data about how the NoC blocks were moved during placement
-*/
-struct NocPlaceStats{
+ */
+struct NocPlaceStats {
     int number_of_noc_router_moves;
     std::vector<int> number_of_noc_router_moves_per_move_type;
 };
-
 
 /* Defines how the links found in a traffic flow are updated in terms
  * of their bandwidth usage.

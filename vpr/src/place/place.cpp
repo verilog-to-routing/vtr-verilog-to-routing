@@ -671,7 +671,7 @@ void try_place(const Netlist<>& net_list,
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
             costs.bb_cost, costs.timing_cost);
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         VTR_LOG("Initial noc placement costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
     }
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -703,9 +703,9 @@ void try_place(const Netlist<>& net_list,
     sprintf(msg,
             "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         sprintf(msg,
-            "\nInitial noc placement costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g ", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
+                "\nInitial noc placement costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g ", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
     }
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
@@ -754,7 +754,7 @@ void try_place(const Netlist<>& net_list,
         placer_opts.place_static_move_prob.size() + 1, 0);
 
     // if the noc option was turned on then setup the noc placement stats datastructure
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         initialize_noc_placement_stats(placer_opts);
     }
 
@@ -1015,9 +1015,9 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", costs.cost,
             costs.bb_cost, costs.timing_cost);
     // print the noc costs info
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         sprintf(msg,
-            "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g noc_latency_constraints_cost: %d", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, noc_latency_constraints_cost);
+                "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g noc_latency_constraints_cost: %d", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, noc_latency_constraints_cost);
         VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, noc_latency_constraints_cost: %d, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, noc_latency_constraints_cost);
     }
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
@@ -1027,7 +1027,7 @@ void try_place(const Netlist<>& net_list,
     print_placement_swaps_stats(state);
 
     print_placement_move_types_stats(move_type_stat);
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         print_noc_placement_stats();
         write_noc_placement_file(noc_opts.noc_placement_file_name);
     }
@@ -1245,10 +1245,10 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
             VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
         }
         costs->noc_aggregate_bandwidth_cost = new_noc_aggregate_bandwidth_cost;
-        
+
         // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
-        // Otherwise there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond) 
-        if (check_recomputed_noc_latency_cost(new_noc_latency_cost)){
+        // Otherwise there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
+        if (check_recomputed_noc_latency_cost(new_noc_latency_cost)) {
             if (fabs(
                     new_noc_latency_cost
                     - costs->noc_latency_cost)
@@ -1346,13 +1346,12 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     float init_temp = 0.0;
 
     /*There were some issues with PR#2175 where the reduced initial
-    temperature caused problems with the NoC placement. Current fix is
-    to change the initial temperature back to its orignal value when
-    NoC placement is turned on, otherwise use the reduced temperature.*/
-    if (noc_opts.noc){
+     * temperature caused problems with the NoC placement. Current fix is
+     * to change the initial temperature back to its orignal value when
+     * NoC placement is turned on, otherwise use the reduced temperature.*/
+    if (noc_opts.noc) {
         init_temp = 20. * std_dev;
-    }
-    else {
+    } else {
         init_temp = std_dev / 64;
     }
 
@@ -1451,10 +1450,10 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     // Determine whether we need to force swap two router blocks
     bool router_block_move = false;
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         router_block_move = check_for_router_swap(noc_opts.noc_swap_percentage);
     }
-    
+
     /* Allow some fraction of moves to not be restricted by rlim, */
     /* in the hopes of better escaping local minima.              */
     float rlim;
@@ -1622,7 +1621,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                 costs->noc_latency_cost += noc_latency_delta_c;
 
                 // if a noc router block was moved, update the NoC related stats
-                if (number_of_affected_noc_traffic_flows != 0){
+                if (number_of_affected_noc_traffic_flows != 0) {
                     update_noc_placement_stats((int)move_type);
                 }
             }
@@ -1693,9 +1692,9 @@ static e_move_result try_swap(const t_annealing_state* state,
     move_outcome_stats.outcome = move_outcome;
 
     // dont update the move generator state if we force a router block move
-    if (!router_block_move){
+    if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
-                                         delta_c, timing_bb_factor, move_generator);
+                                             delta_c, timing_bb_factor, move_generator);
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
