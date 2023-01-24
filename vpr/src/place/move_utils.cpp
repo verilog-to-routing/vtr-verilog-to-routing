@@ -498,16 +498,16 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     return empty_locs;
 }
 //SARA_TODO:
-std::unordered_map<int,int> logical_to_agent_map;
-int convert_agent_to_logical_block_type(int agent_block_type_index){
-    if(logical_to_agent_map.count(agent_block_type_index)){
+std::unordered_map<int, int> logical_to_agent_map;
+int convert_agent_to_logical_block_type(int agent_block_type_index) {
+    if (logical_to_agent_map.count(agent_block_type_index)) {
         return logical_to_agent_map[agent_block_type_index];
     }
     //invalid block type
     return -1;
 }
 
-int get_num_agent_types(){
+int get_num_agent_types() {
     return logical_to_agent_map.size();
 }
 
@@ -561,17 +561,16 @@ ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
     auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
 
     //no blocks with this type is available
-    if(blocks_per_type.size() == 0){
+    if (blocks_per_type.size() == 0) {
         return ClusterBlockId::INVALID();
     }
 
     std::unordered_set<ClusterBlockId> tried_from_blocks;
 
-
     //So long as untried blocks remain
     while (tried_from_blocks.size() < blocks_per_type.size()) {
         //Pick a block at random
-        ClusterBlockId b_from = ClusterBlockId(blocks_per_type[vtr::irand((int) blocks_per_type.size() - 1)]);
+        ClusterBlockId b_from = ClusterBlockId(blocks_per_type[vtr::irand((int)blocks_per_type.size() - 1)]);
         //Record it as tried
         tried_from_blocks.insert(b_from);
 

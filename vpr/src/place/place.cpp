@@ -156,7 +156,7 @@ static int num_swap_aborted = 0;
 static int num_ts_called = 0;
 
 /* This variable keeps track of each move type and block type frequency
- proposed by the RL agent at any specific temperature.*/
+ * proposed by the RL agent at any specific temperature.*/
 //SARA_TODO: MAKE THIS OPTIONAL WITH COMMAND-LINE OPTION
 static std::vector<int> proposed_move_per_temp;
 static FILE* proposed_move_agent_per_temp;
@@ -424,8 +424,7 @@ static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat);
 
 //SARA_TODO: delete these functions in the final version
-static void save_proposed_move_per_temp ();
-
+static void save_proposed_move_per_temp();
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -720,13 +719,13 @@ void try_place(const t_placer_opts& placer_opts,
     MoveTypeStat move_type_stat;
     move_type_stat.num_moves.resize(placer_opts.place_static_move_prob.size(),
                                     0);
-    move_type_stat.blk_type_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
-    move_type_stat.accepted_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
-    move_type_stat.aborted_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
+    move_type_stat.blk_type_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.));
+    move_type_stat.accepted_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.));
+    move_type_stat.aborted_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.));
 
     //allocate move type statistics vector performed by the agent for each temperature
-    proposed_move_per_temp.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()),0);
-    proposed_move_agent_per_temp = vtr::fopen("agent_move_info.txt","w");
+    proposed_move_per_temp.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
+    proposed_move_agent_per_temp = vtr::fopen("agent_move_info.txt", "w");
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
@@ -1354,7 +1353,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     crit_params.crit_exponent = state->crit_exponent;
     crit_params.crit_limit = placer_opts.place_crit_limit;
 
-    e_move_type move_type;             //move type number
+    e_move_type move_type;              //move type number
     t_logical_block_type move_blk_type; //blk type that is chosen to be moved by the agent
 
     num_ts_called++;
@@ -1386,7 +1385,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected, move_type, move_blk_type , rlim, placer_opts, criticalities);
+        create_move_outcome = move_generator.propose_move(blocks_affected, move_type, move_blk_type, rlim, placer_opts, criticalities);
     }
 
     auto logical_type = convert_agent_to_logical_block_type(move_blk_type.index);
@@ -1578,7 +1577,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     move_outcome_stats.outcome = move_outcome;
     //SARA_TODO: fix delta cost value!
     calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
-                                         delta_c/*/costs->cost*/, timing_bb_factor, move_generator);
+                                         delta_c /*/costs->cost*/, timing_bb_factor, move_generator);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS
@@ -2894,13 +2893,13 @@ void print_clb_placement(const char* fname) {
 }
 #endif
 
-static void save_proposed_move_per_temp(){
-    if(proposed_move_agent_per_temp){
-        for(auto iaction = 0; iaction < proposed_move_per_temp.size(); iaction++){
-            fprintf(proposed_move_agent_per_temp,"%d\t",proposed_move_per_temp[iaction]);
+static void save_proposed_move_per_temp() {
+    if (proposed_move_agent_per_temp) {
+        for (auto iaction = 0; iaction < proposed_move_per_temp.size(); iaction++) {
+            fprintf(proposed_move_agent_per_temp, "%d\t", proposed_move_per_temp[iaction]);
             proposed_move_per_temp[iaction] = 0;
         }
-        fprintf(proposed_move_agent_per_temp,"\n");
+        fprintf(proposed_move_agent_per_temp, "\n");
     }
 }
 
@@ -3045,22 +3044,22 @@ static void print_placement_move_types_stats(
     std::string move_name;
     VTR_LOG("\n\nPercentage of different move types:\n");
 
-    for(auto itype : device_ctx.logical_block_types){
-        if(itype.index == 0){
+    for (auto itype : device_ctx.logical_block_types) {
+        if (itype.index == 0) {
             continue; //EMPTY type
         }
-        for(size_t imove = 0; imove < move_type_stat.num_moves.size(); imove++){
+        for (size_t imove = 0; imove < move_type_stat.num_moves.size(); imove++) {
             move_name = move_type_to_string(e_move_type(imove));
             moves = move_type_stat.blk_type_moves[imove][itype.index];
-            if(moves != 0) {
+            if (moves != 0) {
                 accepted = move_type_stat.accepted_moves[imove][itype.index];
                 aborted = move_type_stat.aborted_moves[imove][itype.index];
                 rejected = moves - (accepted + aborted);
                 VTR_LOG(
-                        "\t%.17s move with type %.17s: %2.6f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",
-                        move_name.c_str(), itype.name, 100 * moves / total_moves,
-                        100 * accepted / moves, 100 * rejected / moves,
-                        100 * aborted / moves);
+                    "\t%.17s move with type %.17s: %2.6f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",
+                    move_name.c_str(), itype.name, 100 * moves / total_moves,
+                    100 * accepted / moves, 100 * rejected / moves,
+                    100 * aborted / moves);
             }
         }
         VTR_LOG("\n");

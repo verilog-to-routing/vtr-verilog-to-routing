@@ -70,12 +70,12 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             auto& cluster_ctx = g_vpr_ctx.clustering();
             int logical_blk_types_count = 0;
             int agent_type_index = 0;
-            for(auto itype : device_ctx.logical_block_types){
-                if(itype.index == 0) //ignore empty type
+            for (auto itype : device_ctx.logical_block_types) {
+                if (itype.index == 0) //ignore empty type
                     continue;
                 auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
-                if(blk_per_type.size() != 0){
-                    logical_to_agent_map.insert(std::pair<int,int>(agent_type_index,itype.index));
+                if (blk_per_type.size() != 0) {
+                    logical_to_agent_map.insert(std::pair<int, int>(agent_type_index, itype.index));
                     agent_type_index++;
                     logical_blk_types_count++;
                 }

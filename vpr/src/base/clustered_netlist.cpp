@@ -28,8 +28,8 @@ t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) c
     return block_types_[id];
 }
 
-std::vector<ClusterBlockId> ClusteredNetlist::blocks_per_type(const t_logical_block_type blk_type) const{
-    if(blocks_per_type_.count(blk_type.index) == 0) {
+std::vector<ClusterBlockId> ClusteredNetlist::blocks_per_type(const t_logical_block_type blk_type) const {
+    if (blocks_per_type_.count(blk_type.index) == 0) {
         std::vector<ClusterBlockId> empty_vector;
         return empty_vector;
     }
@@ -210,7 +210,7 @@ void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);
-    std::remove(blocks_per_type_[blk_type->index].begin(), blocks_per_type_[blk_type->index].end(),blk_id);
+    std::remove(blocks_per_type_[blk_type->index].begin(), blocks_per_type_[blk_type->index].end(), blk_id);
     block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>());
 }
 

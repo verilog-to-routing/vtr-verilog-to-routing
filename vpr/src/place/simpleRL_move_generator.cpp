@@ -7,7 +7,7 @@
 
 /* File-scope routines */
 //a scaled and clipped exponential function
-static float scaled_clipped_exp(float x) { return std::exp(std::min(100000*x, float(3.0)));}
+static float scaled_clipped_exp(float x) { return std::exp(std::min(100000 * x, float(3.0))); }
 
 /*                                     *
  *                                     *
@@ -76,7 +76,7 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     q_[last_action_] += delta_q;
 
     if (agent_info_file_) {
-        fseek(agent_info_file_,0,SEEK_END);
+        fseek(agent_info_file_, 0, SEEK_END);
         fprintf(agent_info_file_, "%zu,", last_action_);
         fprintf(agent_info_file_, "%g,", reward);
 
@@ -239,7 +239,7 @@ void SoftmaxAgent::init_q_scores() {
     exp_q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
     num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
     action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
-    block_type_ratio = std::vector<float>(num_available_types_,0.);
+    block_type_ratio = std::vector<float>(num_available_types_, 0.);
     cumm_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_);
 
     if (agent_info_file_) {
@@ -284,7 +284,7 @@ t_propose_action SoftmaxAgent::propose_action() {
     last_action_ = (num_available_types_ == 1) ? action : action + (blk_type.index * num_available_moves_);
 
     t_propose_action propose_action;
-    propose_action.move_type = (e_move_type) action;
+    propose_action.move_type = (e_move_type)action;
     propose_action.blk_type = blk_type;
 
     return propose_action;
@@ -294,33 +294,32 @@ void SoftmaxAgent::set_block_ratio() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     int num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
 
-    for(int i = 1; i <= num_available_types_; i++){
+    for (int i = 1; i <= num_available_types_; i++) {
         t_logical_block_type blk_type;
         blk_type.index = i;
         auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-        block_type_ratio[i-1] = (float) num_blocks/num_total_blocks;
-        block_type_ratio[i-1] /= num_available_moves_;
+        block_type_ratio[i - 1] = (float)num_blocks / num_total_blocks;
+        block_type_ratio[i - 1] /= num_available_moves_;
     }
 }
 
 void SoftmaxAgent::set_action_prob() {
     //calculate the scaled and clipped explonential function for the estimated q value for each action
-    std::transform(q_.begin(), q_.end(), exp_q_.begin(),scaled_clipped_exp);
+    std::transform(q_.begin(), q_.end(), exp_q_.begin(), scaled_clipped_exp);
 
     // calculate the sum of all scaled clipped expnential q values
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
     // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-        int blk_ratio_index = (int) i / num_available_moves_;
+        int blk_ratio_index = (int)i / num_available_moves_;
         action_prob_[i] = (exp_q_[i] / sum_q) * block_type_ratio[blk_ratio_index];
     }
 
     // normalize all the action probabilities to guarantee the sum(all action probs) = 1
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
-                   bind2nd(std::multiplies<float>(), (1/sum_prob)));
-
+                   bind2nd(std::multiplies<float>(), (1 / sum_prob)));
 
     // calculate the accumulative action probability of each action
     // e.g. if we have 5 actions with equal probability of 0.2, the cumm_action_prob will be {0.2,0.4,0.6,0.8,1.0}

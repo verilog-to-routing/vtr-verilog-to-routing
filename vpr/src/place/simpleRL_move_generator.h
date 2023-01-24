@@ -18,7 +18,6 @@ class KArmedBanditAgent {
     virtual t_propose_action propose_action() = 0;
     void process_outcome(double, e_reward_function);
 
-
   protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of arms of the karmed bandit problem (k)
