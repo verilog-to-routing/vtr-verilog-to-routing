@@ -18,6 +18,7 @@ class KArmedBanditAgent {
     virtual t_propose_action propose_action() = 0;
     void process_outcome(double, e_reward_function);
 
+
   protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of arms of the karmed bandit problem (k)
@@ -77,6 +78,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
 
   public:
     void set_action_prob();
+    void set_block_ratio();
     void set_step(float gamma, int move_lim);
     void init_q_scores();
 
@@ -84,6 +86,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
     std::vector<float> action_prob_;      //The probability of choosing each action
     std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
+    std::vector<float> block_type_ratio;  //The probability of choosing each block type depends on its ratio in the netlist
 };
 
 /**
