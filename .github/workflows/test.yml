@@ -31,6 +31,8 @@ jobs:
           - {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test5", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test7", cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_PARMYS_PLUGIN=ON",      extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test8", cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_PARMYS_PLUGIN=ON",      extra_pkgs: "" }
           - {test: "vtr_reg_strong",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                          extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON", extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON",     extra_pkgs: ""}
