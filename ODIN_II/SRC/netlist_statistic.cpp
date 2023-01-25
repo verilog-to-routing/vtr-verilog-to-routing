@@ -25,16 +25,11 @@
 
 #include <algorithm>
 
-/* for hb */
-#include "memories.h"
-#include "adders.h"
 #include "multipliers.h"
-
 #include "odin_globals.h"
 #include "odin_types.h"
-#include "netlist_utils.h"
 #include "netlist_statistic.h"
-#include "odin_util.h"
+
 #include "vtr_memory.h"
 
 static void init(metric_t* m);

@@ -25,22 +25,21 @@
 
 #include <string>
 #include <sstream>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <limits.h>
-#include <errno.h>
-#include "odin_types.h"
-#include "odin_globals.h"
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cctype>
+#include <climits>
+#include <cerrno>
 #include <cstdarg>
 
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "odin_util.h"
+
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_memory.h"
-#include <regex>
-#include <stdbool.h>
 
 // for mkdir
 #ifdef WIN32
@@ -98,48 +97,20 @@ void create_directory(std::string path) {
 void report_frontend_elaborator() {
     // Check if the file_name extension matches with type
     switch (configuration.input_file_type) {
-        case (file_type_e::_VERILOG): // fallthrough
-        case (file_type_e::_VERILOG_HEADER): {
-            if (configuration.elaborator_type == elaborator_e::_ODIN) {
-                printf("Using the ODIN_II parser for elaboration\n");
-            } else if (configuration.elaborator_type == elaborator_e::_YOSYS) {
-                printf("Using the Yosys elaborator with it's conventional Verilog/SystemVerilog parser\n");
-            }
+        case (file_type_e::VERILOG): // fallthrough
+        case (file_type_e::VERILOG_HEADER): {
+            printf("Using the ODIN_II parser for elaboration\n");
             break;
         }
-        case (file_type_e::_SYSTEM_VERILOG): {
-            if (configuration.elaborator_type != elaborator_e::_YOSYS) {
-                error_message(PARSE_ARGS, unknown_location, "%s", SYSTEMVERILOG_PARSER_ERROR);
-            }
-#ifndef YOSYS_SV_UHDM_PLUGIN
-            printf("Using the Yosys elaborator with it's conventional Verilog/SystemVerilog parser\n");
-#else
-            printf("Using the Yosys elaborator with the Yosys-F4PGA-Plugin parser for SystemVerilog\n");
-#endif
-            break;
-        }
-        case (file_type_e::_UHDM): {
-            if (configuration.elaborator_type != elaborator_e::_YOSYS) {
-                error_message(PARSE_ARGS, unknown_location, "%s", UHDM_PARSER_ERROR);
-
-            } else if (configuration.elaborator_type == elaborator_e::_YOSYS) {
-#ifndef ODIN_USE_YOSYS
-                error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
-#else
-#    ifndef YOSYS_SV_UHDM_PLUGIN
-                error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_PLUGINS_NOT_COMPILED);
-#    endif
-#endif
-            }
-            printf("Using the Yosys elaborator with the Surelog parser for UHDM\n");
-            break;
-        }
-        case (file_type_e::_BLIF): {
+        case (file_type_e::BLIF): {
             printf("Using the ODIN_II BLIF parser\n");
             break;
         }
-        case (file_type_e::_EBLIF): //fallthrough
-        case (file_type_e::_ILANG): //fallthrough
+        case (file_type_e::EBLIF): //fallthrough
+        case (file_type_e::ILANG): //fallthrough
+        case (file_type_e::SYSTEM_VERILOG):
+        case (file_type_e::SYSTEM_VERILOG_HEADER):
+        case (file_type_e::UHDM):
         default: {
             error_message(UTIL, unknown_location, "%s", "Invalid file type");
             break;
@@ -262,48 +233,6 @@ char* make_full_ref_name(const char* previous, const char* /*module_name*/, cons
         return_string << "~" << std::dec << bit;
     }
     return vtr::strdup(return_string.str().c_str());
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: make_full_name_w_o_array_ref)
- * // {previous_string}.module_name+instance_name
- *-------------------------------------------------------------------------------------------*/
-char* make_full_name_w_o_array_ref(const char* previous, const char* /*module_name*/, const char* module_instance_name) {
-    std::stringstream return_string;
-    if (previous)
-        return_string << previous;
-
-    if (module_instance_name)
-        return_string << "." << module_instance_name;
-
-    std::string name = return_string.str();
-
-    size_t idx = name.find_first_of('[', 0);
-    if (idx != std::string::npos) {
-        // delete array refs
-        name.erase(idx, std::string::npos);
-    }
-
-    return vtr::strdup(name.c_str());
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: twos_complement)
- * Changes a bit string to its twos complement value
- *-------------------------------------------------------------------------------------------*/
-char* twos_complement(char* str) {
-    int length = strlen(str) - 1;
-    int i;
-    int flag = 0;
-
-    for (i = length; i >= 0; i--) {
-        if (flag)
-            str[i] = (str[i] == '1') ? '0' : '1';
-
-        if ((str[i] == '1') && (flag == 0))
-            flag = 1;
-    }
-    return str;
 }
 
 /*
@@ -660,32 +589,11 @@ char* get_port_name(char* name) {
 }
 
 /**
- * (function: get_node_name)
- * 
- * @brief Removing the hard block unique number from its name 
- * and gets the node name (everything before the ~).
- *  
- * @param name the given hard block name
- * 
- * @return pure hard block name
- */
-char* get_hard_block_node_name(char* name) {
-    char* port_name = vtr::strdup(name);
-    // Find out if there is a ~ and remove everything after it.
-    char* tilde = strchr(port_name, '~');
-    if (tilde)
-        *tilde = '\0';
-    return (port_name);
-}
-
-/**
  *---------------------------------------------------------------------------------------------
  * (function: get_stripped_name)
  * 
  * @brief find the sub-circuit name in an altered sub-circuit name
- * In yosys cases, it appears when there is an instantiated parameterized 
- * module, so Yosys changes the name to avoid name collision. For Odin-II,
- * it looks for the pattern specified as names of supported hard blocks, 
+ * it looks for the pattern specified as names of supported hard blocks,
  * such as mult_XXX
  * 
  * @param subcircuit_name complete name
@@ -699,60 +607,16 @@ char* get_stripped_name(const char* subcircuit_name) {
 
     char* subcircuit_stripped_name = NULL;
 
-    /* looking for Yosys style generated RTLIL module name */
-    if (configuration.coarsen) {
-        const char* pos = strchr(subcircuit_name, '\\');
-        if (pos) {
-            const char* end = strchr(pos, '\0');
-            // get stripped name
-            if (end) {
-                subcircuit_stripped_name = (char*)vtr::malloc((end - pos + 1) * sizeof(char));
-                memcpy(subcircuit_stripped_name, pos + 1, end - pos - 1);
-                subcircuit_stripped_name[end - pos - 1] = '\0';
-            }
-        }
-    }
-    /* looking for Odin-II style subckt types */
-    else {
-        /* init sub-circuit */
-        subcircuit_stripped_name = (char*)vtr::calloc(6, sizeof(char));
-        /* Determine the type of hard block. */
-        memcpy(subcircuit_stripped_name, subcircuit_name, 5);
-        subcircuit_stripped_name[5] = '\0';
-    }
+    /* init sub-circuit */
+    subcircuit_stripped_name = (char*)vtr::calloc(6, sizeof(char));
+    /* Determine the type of hard block. */
+    memcpy(subcircuit_stripped_name, subcircuit_name, 5);
+    subcircuit_stripped_name[5] = '\0';
 
     if (subcircuit_stripped_name == NULL)
         return (vtr::strdup(subcircuit_name));
 
     return (subcircuit_stripped_name);
-}
-
-/**
- *---------------------------------------------------------------------------------------------
- * (function: retrieve_node_type_from_subckt_name)
- * 
- * @brief to retrieve the actual node type from the subcircuit name 
- * in cases where yosys generates a weird name, which includes port 
- * widths and additional information in a subcircuit name 
- * 
- * @param stripped_name subcircuit irregular name
- * 
- * @return the actual subcircuit name if it was successfully 
- * retrieved, otherwise NULL pointer
- * -------------------------------------------------------------------------------------------
- */
-char* retrieve_node_type_from_subckt_name(const char* subcircuit_name) {
-    /* validation */
-    oassert(subcircuit_name);
-
-    /* looking for Yosys style generated RTLIL module name */
-    if (true) {
-        for (auto pair : yosys_subckt_strmap)
-            if (std::string(subcircuit_name).find(pair.first, 0) != std::string::npos)
-                return vtr::strdup(pair.first.c_str());
-    }
-
-    return (NULL);
 }
 
 /*
@@ -793,16 +657,6 @@ long int my_power(long int x, long int y) {
 }
 
 /*---------------------------------------------------------------------------------------------
- *  (function: make_string_based_on_id )
- *-------------------------------------------------------------------------------------------*/
-char* make_string_based_on_id(nnode_t* node) {
-    // any unique id greater than 20 characters means trouble
-    std::string return_string = std::string("n") + std::to_string(node->unique_id);
-
-    return vtr::strdup(return_string.c_str());
-}
-
-/*---------------------------------------------------------------------------------------------
  *  (function: make_simple_name )
  *-------------------------------------------------------------------------------------------*/
 std::string make_simple_name(char* input, const char* flatten_string, char flatten_char) {
@@ -839,20 +693,6 @@ void* my_malloc_struct(long bytes_to_alloc) {
     return allocated;
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: pow2 )
- *-------------------------------------------------------------------------------------------*/
-long int pow2(int to_the_power) {
-    int i;
-    long int return_val = 1;
-
-    for (i = 0; i < to_the_power; i++) {
-        return_val = return_val << 1;
-    }
-
-    return return_val;
-}
-
 /*
  * Changes the given string to upper case.
  */
@@ -863,32 +703,6 @@ char* string_to_upper(char* string) {
             string[i] = toupper(string[i]);
         }
     }
-    return (string);
-}
-
-/*
- * Changes the given string to lower case.
- */
-char* string_to_lower(char* string) {
-    if (string) {
-        unsigned int i;
-        for (i = 0; i < strlen(string); i++) {
-            string[i] = tolower(string[i]);
-        }
-    }
-    return (string);
-}
-
-/**
- * @brief create a new string by transforming the given string to upper case
- * 
- * @param string to be transformed string
- * 
- * @return the transformed string in a new container
- */
-std::string string_to_upper(std::string string) {
-    if (!string.empty())
-        std::transform(string.begin(), string.end(), string.begin(), ::toupper);
     return (string);
 }
 
@@ -939,26 +753,6 @@ void reverse_string(char* string, int length) {
     }
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: to_bit)
- *-------------------------------------------------------------------------------------------*/
-short get_bit(char in) {
-    if (in == 48 || in == 49)
-        return (short)in - 48;
-    fprintf(stderr, "not a valid bit\n");
-    return -1;
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: to_bit)
- *-------------------------------------------------------------------------------------------*/
-short get_bit(short in) {
-    if (in == 0 || in == 1)
-        return in;
-    fprintf(stderr, "not a valid bit\n");
-    return -1;
-}
-
 void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src) {
     if (!node)
         error_message(UTIL, unknown_location, "node unavailable @%s::%d", current_src, line_src);
@@ -986,46 +780,6 @@ void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int e
 
     if (error)
         error_message(UTIL, node->loc, "failed for %s:%s %s\n", node_name_based_on_op(node), node->name, err_message.str().c_str());
-}
-
-/*
- * Search and replace a string keeping original string intact
- */
-char* search_replace(char* src, const char* sKey, const char* rKey, int flag) {
-    std::string tmp;
-    char* line;
-    line = vtr::strdup(src);
-    tmp = line;
-    switch (flag) {
-        case 1:
-            tmp = vtr::replace_first(tmp, sKey, rKey);
-            odin_sprintf(line, "%s", tmp.c_str());
-            break;
-        case 2:
-            tmp = vtr::replace_all(tmp, sKey, rKey);
-            odin_sprintf(line, "%s", tmp.c_str());
-            break;
-        default:
-            return line;
-    }
-    return line;
-}
-std::string find_substring(char* src, const char* sKey, int flag) {
-    // flag == 1 first half, flag == 2 second half
-
-    std::string tmp(src);
-    std::string key(sKey);
-    long found = tmp.find(key);
-    switch (flag) {
-        case 1:
-            return tmp.substr(0, found - 1);
-
-        case 2:
-            return tmp.substr(found, tmp.length());
-
-        default:
-            return tmp;
-    }
 }
 
 /*
@@ -1243,17 +997,17 @@ char* str_collate(char* str1, char* str2) {
  */
 void print_input_files_info() {
     switch (configuration.input_file_type) {
-        case (file_type_e::_ILANG):          // fallthrough
-        case (file_type_e::_VERILOG):        // fallthrough
-        case (file_type_e::_VERILOG_HEADER): //fallthrough
-        case (file_type_e::_SYSTEM_VERILOG): //fallthorugh
-        case (file_type_e::_UHDM): {
+        case (file_type_e::ILANG):          // fallthrough
+        case (file_type_e::VERILOG):        // fallthrough
+        case (file_type_e::VERILOG_HEADER): //fallthrough
+        case (file_type_e::SYSTEM_VERILOG): //fallthorugh
+        case (file_type_e::UHDM): {
             for (std::string v_file : global_args.input_files.value())
                 printf("Input %s file: %s\n", file_type_strmap[configuration.input_file_type].c_str(), vtr::basename(v_file).c_str());
             break;
         }
-        case (file_type_e::_EBLIF): //fallthrough
-        case (file_type_e::_BLIF): {
+        case (file_type_e::EBLIF): //fallthrough
+        case (file_type_e::BLIF): {
             printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
             break;
         }

@@ -7,3 +7,4 @@ regression_tests/vtr_reg_yosys/vtr_benchmarks/
 #regression_tests/vtr_reg_yosys/vexriscv/
 regression_tests/vtr_reg_yosys/ultraembedded/
 regression_tests/vtr_reg_yosys/freecores/
+regression_tests/vtr_reg_yosys/hdl_include_yosys

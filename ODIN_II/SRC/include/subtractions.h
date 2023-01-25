@@ -32,7 +32,6 @@
 extern vtr::t_linked_vptr* sub_list;
 extern vtr::t_linked_vptr* sub_chain_list;
 
-extern void init_sub_distribution();
 extern void report_sub_distribution();
 extern void declare_hard_adder_for_sub(nnode_t* node);
 extern void instantiate_hard_adder_subtraction(nnode_t* node, short mark, netlist_t* netlist);
