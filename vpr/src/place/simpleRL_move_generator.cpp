@@ -255,7 +255,7 @@ void SoftmaxAgent::init_q_scores() {
     }
     set_block_ratio();
     set_action_prob();
-    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+//    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 t_propose_action SoftmaxAgent::propose_action() {
@@ -294,12 +294,12 @@ void SoftmaxAgent::set_block_ratio() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     int num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
 
-    for (int i = 1; i <= num_available_types_; i++) {
+    for (int i = 0; i < num_available_types_; i++) {
         t_logical_block_type blk_type;
-        blk_type.index = i;
+        blk_type.index = convert_agent_to_logical_block_type(i);
         auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-        block_type_ratio[i - 1] = (float)num_blocks / num_total_blocks;
-        block_type_ratio[i - 1] /= num_available_moves_;
+        block_type_ratio[i] = (float)num_blocks / num_total_blocks;
+        block_type_ratio[i] /= num_available_moves_;
     }
 }
 
