@@ -22,4 +22,4 @@ add_executable(test_log ${EXEC_SOURCES})
 target_link_libraries(test_log liblog)
 
 install(TARGETS liblog DESTINATION bin)
-install(FILES ${LIB_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/liblog)
+install(FILES ${LIB_HEADERS} DESTINATION include/liblog)

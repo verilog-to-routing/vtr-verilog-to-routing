@@ -332,9 +332,8 @@ benchmark
     │     │   └── task_list.conf
     │     ├── heavy_suite
     │     │   └── task_list.conf
-    │     ├── light_suite
-    │     │    └── task_list.conf
-    │     └── yosys+odin
+    │     └── light_suite
+    │         └── task_list.conf
     ├── task
     │     ├── arch_sweep
     │     │   ├── synthesis_result.json
@@ -460,10 +459,9 @@ benchmark
     │     │   ├── simulation_result.json
     │     │   ├── synthesis_result.json
     │     │   └── task.conf
-    │     ├── vtr
-    │     │   ├── synthesis_result.json
-    │     │   └── task.conf
-    │     └── yosys+odin
+    │     └── vtr
+    │         ├── synthesis_result.json
+    │         └── task.conf
     │             
     ├── third_party
     │     └── SymbiFlow

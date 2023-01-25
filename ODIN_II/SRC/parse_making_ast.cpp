@@ -1,5 +1,6 @@
 /*
- *
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -21,12 +22,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <math.h>
+
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
+#include <cmath>
 #include <sstream>
+
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "odin_util.h"
@@ -36,6 +39,7 @@
 #include "verilog_bison_user_defined.h"
 #include "verilog_bison.h"
 #include "hard_blocks.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include "vtr_path.h"
