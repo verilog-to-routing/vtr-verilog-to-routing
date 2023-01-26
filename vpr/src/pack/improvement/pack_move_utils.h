@@ -51,6 +51,8 @@ bool evaluate_move_based_on_terminals_and_nets(const std::vector<molMoveDescript
 float abosrbed_terminal_new_formula(const std::vector<molMoveDescription>& new_locs);
 bool evaluate_move_based_on_terminals_new_formula(const std::vector<molMoveDescription>& new_locs);
 
+bool evaluate_move_based_on_terminals_outside(const std::vector<molMoveDescription>& new_locs);
+
 void init_clb_clb_conn_numbers(std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash>& conn_counts);
 void print_block_connections(const std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash>& conn_count);
 std::pair<std::pair<ClusterBlockId, ClusterBlockId>, int> get_max_value_pair(const std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash>& conn_count);

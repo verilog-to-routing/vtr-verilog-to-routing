@@ -760,3 +760,69 @@ std::pair<std::pair<ClusterBlockId, ClusterBlockId>, int> get_max_value_pair(con
                                      [](const auto& a, auto& b) { return a.second < b.second; });
     return *max_iter;
 }
+
+bool evaluate_move_based_on_terminals_outside(const std::vector<molMoveDescription>& new_locs) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    int pins_absorbed_before, pins_absorbed_after, pins_outside_before, pins_outside_after;
+    double cost = 0;
+    std::unordered_set<AtomBlockId> moving_atoms;
+
+    for (auto& new_loc : new_locs) {
+        for (auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
+            if (moving_atom) {
+                moving_atoms.insert(moving_atom);
+            }
+        }
+    }
+
+    // iterate over moves proposed (a swap is two moves)
+    for (auto& new_loc : new_locs) {
+        std::unordered_set<AtomNetId> moving_nets;
+        auto cur_clb = atom_to_cluster(new_loc.molecule_to_move->atom_block_ids[new_loc.molecule_to_move->root]);
+        // iterate over atoms in the moving molcule
+        for (auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
+            if (moving_atom) {
+                // iterate over moving atom pins
+                for (auto& moving_atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
+                    auto atom_net = atom_ctx.nlist.pin_net(moving_atom_pin);
+                    // Make sure that we didn't count this net before
+                    if (moving_nets.count(atom_net))
+                        continue;
+
+                    moving_nets.insert(atom_net);
+                    pins_absorbed_before = 0;
+                    pins_absorbed_after = 0;
+                    pins_outside_before = 0;
+                    pins_outside_after = 0;
+
+                    for (auto& pin : atom_ctx.nlist.net_pins(atom_net)) {
+                        auto atom = atom_ctx.nlist.pin_block(pin);
+                        auto cluster = atom_to_cluster(atom);
+                        if (moving_atoms.count(atom)) {
+                            if (cluster == cur_clb) {
+                                pins_absorbed_before++;
+                                pins_absorbed_after++;
+                            } else {
+                                pins_outside_before++;
+                                pins_outside_after++;
+                            }
+                        } else {
+                            if (cluster == cur_clb) {
+                                pins_absorbed_before++;
+                                pins_outside_after++;
+                            } else {
+                                pins_outside_before++;
+                                if (cluster == new_loc.new_clb) {
+                                    pins_absorbed_after++;
+                                }
+                            }
+                        }
+                    }
+                    cost += (double)pins_absorbed_after / (pins_outside_after + 1.) - (double)pins_absorbed_before / (pins_outside_before + 1.);
+                }
+            }
+        }
+    }
+    return (cost > 0);
+}

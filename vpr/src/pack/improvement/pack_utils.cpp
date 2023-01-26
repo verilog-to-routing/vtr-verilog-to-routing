@@ -127,6 +127,16 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
         move_generator = std::make_unique<quasiDirectedCompatibleTypeTerminalNetNewFormulaPackingSwap>();
     else if (strcmp(move_type.c_str(), "semiDirectedSameSizeTerminalNetNewFormulaSwap") == 0)
         move_generator = std::make_unique<quasiDirectedSameSizeTerminalNetNewFormulaPackingSwap>();
+    else if (strcmp(move_type.c_str(), "randomTerminalOutsideSwap") == 0)
+        move_generator = std::make_unique<randomTerminalOutsidePackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedTerminalOutsideSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedTerminalOutsidePackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameTypeTerminalOutsideSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameTypeTerminalOutsidePackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedCompatibleTypeTerminalOutsideSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedCompatibleTypeTerminalOutsidePackingSwap>();
+    else if (strcmp(move_type.c_str(), "semiDirectedSameSizeTerminalOutsideSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameSizeTerminalOutsidePackingSwap>();
     else {
         VTR_LOG("Packing move type (%s) is not correct!\n", move_type.c_str());
         VTR_LOG("Packing iterative improvement is aborted\n");

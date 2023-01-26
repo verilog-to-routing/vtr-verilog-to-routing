@@ -156,4 +156,29 @@ class quasiDirectedSameSizeTerminalNetNewFormulaPackingSwap : public quasiDirect
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
 };
 
+/************ Moves that evaluate on abosrbed Terminals and nets new formula *********************/
+class randomTerminalOutsidePackingSwap : public randomPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedTerminalOutsidePackingSwap : public quasiDirectedPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameTypeTerminalOutsidePackingSwap : public quasiDirectedSameTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedCompatibleTypeTerminalOutsidePackingSwap : public quasiDirectedCompatibleTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameSizeTerminalOutsidePackingSwap : public quasiDirectedSameSizePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
 #endif //VTR_PACKINGMOVEGENERATOR_H

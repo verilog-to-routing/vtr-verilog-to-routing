@@ -271,3 +271,23 @@ bool quasiDirectedCompatibleTypeTerminalNetNewFormulaPackingSwap::evaluate_move(
 bool quasiDirectedSameSizeTerminalNetNewFormulaPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
     return (evaluate_move_based_on_terminals_new_formula(new_locs));
 }
+
+bool randomTerminalOutsidePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_outside(new_locs));
+}
+
+bool quasiDirectedTerminalOutsidePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_outside(new_locs));
+}
+
+bool quasiDirectedSameTypeTerminalOutsidePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_outside(new_locs));
+}
+
+bool quasiDirectedCompatibleTypeTerminalOutsidePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_outside(new_locs));
+}
+
+bool quasiDirectedSameSizeTerminalOutsidePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_terminals_outside(new_locs));
+}
