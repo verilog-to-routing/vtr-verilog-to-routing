@@ -135,6 +135,7 @@ void EpsilonGreedyAgent::init_q_scores() {
         fflush(agent_info_file_);
     }
     set_epsilon_action_prob();
+//    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
@@ -161,7 +162,7 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
 }
 
 t_propose_action EpsilonGreedyAgent::propose_action() {
-    size_t action = 0;
+    size_t move_type;
     t_logical_block_type blk_type;
 
     if (vtr::frand() < epsilon_) {
@@ -170,28 +171,28 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
         float p = vtr::frand();
         auto itr = std::lower_bound(cumm_epsilon_action_prob_.begin(), cumm_epsilon_action_prob_.end(), p);
         auto action_type_q_pos = itr - cumm_epsilon_action_prob_.begin();
-        action = (action_type_q_pos) % num_available_moves_;
+        move_type = (action_type_q_pos) % num_available_moves_;
         if (num_available_types_ != 1) {
             blk_type.index = action_type_q_pos / num_available_moves_;
         }
 
     } else {
         /* Greedy (Exploit)
-         * For probability 1-epsilon, choose the greedy action */
+         * For probability 1-epsilon, choose the greedy move_type */
         auto itr = std::max_element(q_.begin(), q_.end());
         VTR_ASSERT(itr != q_.end());
         auto action_type_q_pos = itr - q_.begin();
-        action = action_type_q_pos % num_available_moves_;
+        move_type = action_type_q_pos % num_available_moves_;
         if (num_available_types_ != 1) {
             blk_type.index = action_type_q_pos / num_available_moves_;
         }
     }
-    VTR_ASSERT(action < num_available_moves_);
+    VTR_ASSERT(move_type < num_available_moves_);
 
-    last_action_ = (num_available_types_ == 1) ? action : action + (blk_type.index * num_available_moves_);
+    last_action_ = (num_available_types_ == 1) ? move_type : move_type + (blk_type.index * num_available_moves_);
 
     t_propose_action propose_action;
-    propose_action.move_type = (e_move_type)action;
+    propose_action.move_type = (e_move_type)move_type;
     propose_action.blk_type = blk_type;
 
     return propose_action;
@@ -260,31 +261,31 @@ void SoftmaxAgent::init_q_scores() {
 
 t_propose_action SoftmaxAgent::propose_action() {
     set_action_prob();
-    size_t action = 0;
+    size_t move_type;
     t_logical_block_type blk_type;
 
     float p = vtr::frand();
     auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
     auto action_type_q_pos = itr - cumm_action_prob_.begin();
-    action = (action_type_q_pos) % num_available_moves_;
+    move_type = (action_type_q_pos) % num_available_moves_;
     if (num_available_types_ != 1) {
         blk_type.index = action_type_q_pos / num_available_moves_;
     }
 
     //To take care that the last element in cumm_action_prob_ might be less than 1 by a small value
     if (action_type_q_pos == num_available_moves_ * num_available_types_) {
-        action = num_available_moves_ - 1;
+        move_type = num_available_moves_ - 1;
         if (num_available_types_ > 1) {
             blk_type.index = num_available_types_ - 1;
         }
     }
 
-    VTR_ASSERT(action < num_available_moves_);
+    VTR_ASSERT(move_type < num_available_moves_);
 
-    last_action_ = (num_available_types_ == 1) ? action : action + (blk_type.index * num_available_moves_);
+    last_action_ = (num_available_types_ == 1) ? move_type : move_type + (blk_type.index * num_available_moves_);
 
     t_propose_action propose_action;
-    propose_action.move_type = (e_move_type)action;
+    propose_action.move_type = (e_move_type)move_type;
     propose_action.blk_type = blk_type;
 
     return propose_action;
@@ -300,6 +301,7 @@ void SoftmaxAgent::set_block_ratio() {
         auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
         block_type_ratio[i] = (float)num_blocks / num_total_blocks;
         block_type_ratio[i] /= num_available_moves_;
+//        block_type_ratio[i] = std::min(block_type_ratio[i], float(0.05));
     }
 }
 

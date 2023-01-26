@@ -825,7 +825,7 @@ void try_place(const t_placer_opts& placer_opts,
             print_place_status(state, stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, tot_iter);
 
-            //save_proposed_move_per_temp();
+//            save_proposed_move_per_temp();
 
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate

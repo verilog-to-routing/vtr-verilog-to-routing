@@ -34,52 +34,53 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
          *                  Region / CriticalUniform)                          *
          *                                                                     *
          *      This state is activated late in the anneale and in the Quench  */
+
+        //passing block type as well as number of available actions to the agents
+        //should change this to a command-line options, hence the user can choose
+        //the level of the agent intelligent
+        //default option now becomes considering move_type as well as block_types
+
+        auto& device_ctx = g_vpr_ctx.device();
+        //int logical_blk_types_count = device_ctx.logical_block_types.size() - 1;//excluding the EMPTY type
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+        int logical_blk_types_count = 0;
+        int agent_type_index = 0;
+        for (auto itype : device_ctx.logical_block_types) {
+            if (itype.index == 0) //ignore empty type
+                continue;
+            auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
+            if (blk_per_type.size() != 0) {
+                logical_to_agent_map.insert(std::pair<int, int>(agent_type_index, itype.index));
+                agent_type_index++;
+                logical_blk_types_count++;
+            }
+        }
+
         if (placer_opts.place_agent_algorithm == E_GREEDY) {
             VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent1, karmed_bandit_agent2;
             if (placer_opts.place_algorithm.is_timing_driven()) {
                 //agent's 1st state
-                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_1ST_STATE_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_1ST_STATE_MOVE_TYPES,logical_blk_types_count, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_MOVE_TYPES,logical_blk_types_count, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             } else {
                 //agent's 1st state
-                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES,logical_blk_types_count, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES,logical_blk_types_count, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             }
         } else {
             VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
             std::unique_ptr<SoftmaxAgent> karmed_bandit_agent1, karmed_bandit_agent2;
-
-            //passing block type as well as number of available actions to the agents
-            //should change this to a command-line options, hence the user can choose
-            //the level of the agent intelligent
-            //default option now becomes considering move_type as well as block_types
-
-            auto& device_ctx = g_vpr_ctx.device();
-            //int logical_blk_types_count = device_ctx.logical_block_types.size() - 1;//excluding the EMPTY type
-            auto& cluster_ctx = g_vpr_ctx.clustering();
-            int logical_blk_types_count = 0;
-            int agent_type_index = 0;
-            for (auto itype : device_ctx.logical_block_types) {
-                if (itype.index == 0) //ignore empty type
-                    continue;
-                auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
-                if (blk_per_type.size() != 0) {
-                    logical_to_agent_map.insert(std::pair<int, int>(agent_type_index, itype.index));
-                    agent_type_index++;
-                    logical_blk_types_count++;
-                }
-            }
 
             if (placer_opts.place_algorithm.is_timing_driven()) {
                 //agent's 1st state
