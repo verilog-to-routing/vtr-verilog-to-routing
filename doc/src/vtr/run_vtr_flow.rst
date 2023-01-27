@@ -107,7 +107,7 @@ Detailed Command-line Options
       * ``scripts``
       * ``vpr``
 
-    **Default:** ``odin``
+    **Default:** ``yosys``
 
 .. option:: -ending_stage <stage>
 

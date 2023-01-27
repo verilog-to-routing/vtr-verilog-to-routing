@@ -46,7 +46,7 @@ option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
 option(WITH_ABC "Enable building abc" ON)
-option(WITH_ODIN "Enable building odin" ON)
+option(WITH_ODIN "Enable building odin" OFF)
 option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
 option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
 option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
@@ -54,9 +54,9 @@ option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
-option(WITH_YOSYS "Enable building Yosys" OFF)
+option(WITH_YOSYS "Enable building Yosys" ON)
 option(YOSYS_SV_UHDM_PLUGIN "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
-option(YOSYS_PARMYS_PLUGIN "Enable building and installing Parmys (Partial Mapper for Yosys) plugin" OFF)
+option(YOSYS_PARMYS_PLUGIN "Enable building and installing Parmys (Partial Mapper for Yosys) plugin" ON)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 1)

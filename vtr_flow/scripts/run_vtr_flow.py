@@ -112,7 +112,7 @@ def vtr_command_argparser(prog=None):
         "-start",
         "-starting_stage",
         choices=VTR_STAGES,
-        default=vtr.VtrStage.ODIN,
+        default=vtr.VtrStage.YOSYS,
         action=VtrStageArgparseAction,
         help="Starting stage of the VTR flow.",
     )
@@ -359,7 +359,7 @@ def vtr_command_argparser(prog=None):
     )
     yosys.add_argument(
         "-mapper",
-        default="yosys",
+        default="parmys",
         dest="mapper",
         help="Choose the partial mapper fot VTR flow with Yosys frontend between [parmys, yosys].",
     )
