@@ -183,7 +183,7 @@ jobs:
           },
           {
             name: 'Basic odin with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITHODIN=on',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
