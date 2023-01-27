@@ -4,6 +4,8 @@
 #include "cluster_placement.h"
 #include "cluster_router.h"
 
+const char* move_suffix = "_m";
+
 bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              bool during_packing,
                              int verbosity,
@@ -161,6 +163,8 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
                         int verbosity,
                         t_clustering_data& clustering_data,
                         int thread_id) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
     //define local variables
     PartitionRegion temp_cluster_pr_1, temp_cluster_pr_2;
 
@@ -196,6 +200,11 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         VTR_LOGV(verbosity > 4, "Atom: %zu, %zu swap failed. This is the last atom in its cluster.\n", molecule_1->atom_block_ids[molecule_1->root], molecule_2->atom_block_ids[molecule_2->root]);
         return false;
     }
+
+    t_pb* clb_pb_1 = cluster_ctx.clb_nlist.block_pb(clb_1);
+    std::string clb_pb_1_name = (std::string)clb_pb_1->name + move_suffix;
+    t_pb* clb_pb_2 = cluster_ctx.clb_nlist.block_pb(clb_2);
+    std::string clb_pb_2_name = (std::string)clb_pb_2->name + move_suffix;
 
     //remove the molecule from its current cluster
     remove_mol_from_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, false, old_1_router_data);
@@ -235,6 +244,15 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
 
     //commit the move if succeeded or revert if failed
     VTR_ASSERT(mol_1_success && mol_2_success);
+    if(molecule_2->is_chain()) {
+        free(clb_pb_1->name);
+        cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+    }
+    if(molecule_1->is_chain()) {
+        free(clb_pb_2->name);
+        cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
+    }
+
 
     //If the move is done after packing not during it, some fixes need to be done on the clustered netlist
     if (!during_packing) {
