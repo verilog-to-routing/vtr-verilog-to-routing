@@ -182,7 +182,7 @@ jobs:
             suite: 'vtr_reg_basic'
           },
           {
-            name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
+            name: 'Basic odin with VTR_ENABLE_DEBUG_LOGGING',
             params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITHODIN=on',
             suite: 'vtr_reg_basic_odin'
           },

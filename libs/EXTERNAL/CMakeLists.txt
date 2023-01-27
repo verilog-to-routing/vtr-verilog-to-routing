@@ -164,11 +164,11 @@ if (${WITH_YOSYS})
                 install -j${CMAKE_BUILD_PARALLEL_LEVEL}
 
                 # redirect logs to a logfile
-                LOG_BUILD ON
-                LOG_UPDATE ON
-                LOG_INSTALL ON
-                LOG_CONFIGURE ON
-                LOG_OUTPUT_ON_FAILURE ON
+                # LOG_BUILD ON
+                # LOG_UPDATE ON
+                # LOG_INSTALL ON
+                # LOG_CONFIGURE ON
+                # LOG_OUTPUT_ON_FAILURE ON
 
                 # dependency
                 DEPENDS libyosys
