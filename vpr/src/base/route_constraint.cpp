@@ -35,7 +35,7 @@ std::string RouteConstraint::get_route_model() const {
 }
 
 void RouteConstraint::set_is_valid(bool value) {
-    is_valid_ = value;;
+    is_valid_ = value;
 }
 
 bool RouteConstraint::get_is_valid() const {
