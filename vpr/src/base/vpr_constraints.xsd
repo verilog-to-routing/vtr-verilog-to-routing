@@ -59,6 +59,26 @@
     </xs:sequence>
   </xs:complexType>
 
+
+
+  <!-- Add for global route constraint, an example
+    <global_route_constraints>
+      <set_global_signal name="clk0" type="clock" route_model="ideal"/> 
+      ...
+    </global_route_constraints>
+    -->
+  <xs:complexType name="set_global_signal">
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="type" type="xs:string" use="required"/>
+    <xs:attribute name="route_model" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="global_route_constraints">
+    <xs:sequence>
+      <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
 <!-- This last definition is the root tag definition.  The name of the
        xs:element is the root tag, and the contents of the xs:complexType
        defines what attributes and subtags are expected.
@@ -67,6 +87,7 @@
     <xs:complexType>
       <xs:all>
         <xs:element name="partition_list" type="partition_list"/>
+        <xs:element name="global_route_constraints" type="global_route_constraints"/>
       </xs:all>
 
       <xs:attribute name="tool_name" type="xs:string"/>

@@ -35,6 +35,10 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     floorplanning_ctx.constraints = reader.constraints_;
 
+    // update vpr constraints for routing
+    auto& routing_ctx = g_vpr_ctx.mutable_routing();
+    routing_ctx.constraints = reader.constraints_;
+
     VprConstraints ctx_constraints = floorplanning_ctx.constraints;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_VPR_CONSTRAINTS)) {

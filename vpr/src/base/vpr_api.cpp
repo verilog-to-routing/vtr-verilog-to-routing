@@ -346,10 +346,15 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         }
     }
 
-    //Initialize vpr floorplanning constraints
+    //Initialize vpr floorplanning and routing constraints
     auto& filename_opts = vpr_setup->FileNameOpts;
     if (!filename_opts.read_vpr_constraints_file.empty()) {
         load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
+
+        // give a notificaiton on routing constraints overiding clock modeling 
+        if (g_vpr_ctx.routing().constraints.get_route_constraint_num() && options->clock_modeling.provenance() == argparse::Provenance::SPECIFIED) {
+            VTR_LOG_WARN("Route constraint(s) detected and will override clock modeling setting.\n");
+        }
     }
 
     fflush(stdout);
@@ -766,6 +771,10 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_f
         //Assume successful
         route_status = RouteStatus(true, -1);
     } else { //Do or load
+
+        // apply route constraints
+        apply_route_constraints(g_vpr_ctx.routing().constraints);
+
         int chan_width = router_opts.fixed_channel_width;
 
         auto& cluster_ctx = g_vpr_ctx.clustering();

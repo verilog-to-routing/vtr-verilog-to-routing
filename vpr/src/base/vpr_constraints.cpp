@@ -1,5 +1,6 @@
 #include "vpr_constraints.h"
 #include "partition.h"
+#include "route_constraint.h"
 
 void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id) {
     auto got = constrained_atoms.find(blk_id);
@@ -56,6 +57,47 @@ PartitionRegion VprConstraints::get_partition_pr(PartitionId part_id) {
     PartitionRegion pr;
     pr = partitions[part_id].get_part_region();
     return pr;
+}
+
+void VprConstraints::add_route_constraint(RouteConstraint rc) {
+    route_constraints_.insert({rc.get_net_name(), rc});
+    return;
+}
+
+RouteConstraint VprConstraints::get_route_constraint_by_net_name(std::string net_name) const {
+    RouteConstraint rc;
+    auto const& rc_itr = route_constraints_.find(net_name); 
+    if (rc_itr == route_constraints_.end()) {
+        rc.set_net_name("INVALID");
+        rc.set_net_type("INVALID");
+        rc.set_route_model("INVALID");
+        rc.set_is_valid(false);
+    } else {
+        rc = rc_itr->second;
+    }
+    return rc;
+}
+
+RouteConstraint VprConstraints::get_route_constraint_by_idx(std::size_t idx) const {
+    RouteConstraint rc;
+    if ((route_constraints_.size() == 0) || (idx > route_constraints_.size() - 1)) {
+        rc.set_net_name("INVALID");
+        rc.set_net_type("INVALID");
+        rc.set_route_model("INVALID");
+        rc.set_is_valid(false);
+    } else {
+        std::size_t i = 0;
+        for (auto const& rc_itr : route_constraints_) {
+           if (i == idx) {
+               rc = rc_itr.second;
+           }
+        }
+    }
+    return rc;
+}
+
+int VprConstraints::get_route_constraint_num(void) const {
+    return route_constraints_.size();
 }
 
 void print_constraints(FILE* fp, VprConstraints constraints) {

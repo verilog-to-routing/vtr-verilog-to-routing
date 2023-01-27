@@ -20,6 +20,7 @@
 #include "pack_types.h"
 #include "device_grid.h"
 #include "timing_fail_error.h"
+#include "route_constraint.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -73,8 +74,6 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
-static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
 static void add_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
 
@@ -787,7 +786,7 @@ int get_max_primitives_in_pb_type(t_pb_type* pb_type) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_size += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_primitives_in_pb_type(
-                                   &pb_type->modes[i].pb_type_children[j]);
+                                 &pb_type->modes[i].pb_type_children[j]);
             }
             if (temp_size > max_size) {
                 max_size = temp_size;
@@ -810,7 +809,7 @@ int get_max_nets_in_pb_type(const t_pb_type* pb_type) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_nets += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_nets_in_pb_type(
-                                   &pb_type->modes[i].pb_type_children[j]);
+                                 &pb_type->modes[i].pb_type_children[j]);
             }
             if (temp_nets > max_nets) {
                 max_nets = temp_nets;
@@ -1145,7 +1144,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
@@ -1173,7 +1172,7 @@ static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_
 }
 
 /* Free pb_graph_pin lookup array */
-static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
     if (pb_graph_pin_lookup_from_type == nullptr) {
         return;
     }
@@ -1536,7 +1535,7 @@ void free_pb_stats(t_pb* pb) {
         pb->pb_stats->num_pins_of_net_in_pb.clear();
 
         if (pb->pb_stats->feasible_blocks) {
-            delete[](pb->pb_stats->feasible_blocks);
+            delete[] (pb->pb_stats->feasible_blocks);
         }
         if (!pb->parent_pb) {
             pb->pb_stats->transitive_fanout_candidates.clear();
@@ -2190,6 +2189,22 @@ bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
         } else {
             VTR_ASSERT(node_type == SINK || node_type == SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
+        }
+    }
+}
+
+void apply_route_constraints(const VprConstraints& vpr_constraint) {
+    ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
+    for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
+        std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
+        RouteConstraint rc = vpr_constraint.get_route_constraint_by_net_name(net_name);
+        if (rc.get_is_valid()) {
+            mutable_cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
+            if (rc.get_route_model() == "route") {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, false);
+            } else {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, true);
+            }
         }
     }
 }

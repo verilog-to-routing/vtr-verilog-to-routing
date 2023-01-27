@@ -432,6 +432,11 @@ struct RoutingContext : public Context {
     vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
                RouterLookahead>
         cached_router_lookahead_;
+
+    /**
+     * @brief Routing constraints, read only
+    */
+    VprConstraints constraints;
 };
 
 /**
