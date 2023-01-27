@@ -178,7 +178,7 @@ if (${WITH_YOSYS})
         add_custom_target(vtr-libs ALL
                 DEPENDS libarchfpga libvtrutil liblog libpugixml libpugiutil librtlnumber libyosys
                 COMMAND ${CMAKE_COMMAND}
-                --install ${CMAKE_INSTALL_PREFIX}/libs
+                --install ${CMAKE_BINARY_DIR}/libs
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
         add_dependencies(parmys-plugin vtr-libs)
     endif ()
