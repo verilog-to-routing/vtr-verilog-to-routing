@@ -158,7 +158,7 @@ if (${WITH_YOSYS})
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND ${MAKE_PROGRAM} -C ${PARMYS_SOURCE_DIR}
                 PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
-                VTR_INSTALL_DIR=${CMAKE_BINARY_DIR}
+                VTR_INSTALL_DIR=${CMAKE_INSTALL_PREFIX}
                 BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/parmys-plugin
                 YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
                 install -j${CMAKE_BUILD_PARALLEL_LEVEL}
@@ -178,7 +178,7 @@ if (${WITH_YOSYS})
         add_custom_target(vtr-libs ALL
                 DEPENDS libarchfpga libvtrutil liblog libpugixml libpugiutil librtlnumber libyosys
                 COMMAND ${CMAKE_COMMAND}
-                --install ${CMAKE_BINARY_DIR}/libs
+                --install ${CMAKE_INSTALL_PREFIX}/libs
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
         add_dependencies(parmys-plugin vtr-libs)
     endif ()
