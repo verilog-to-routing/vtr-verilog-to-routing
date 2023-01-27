@@ -400,7 +400,8 @@ add_subdirectory(utils)
 # define cmake params to compile Yosys
 if(${WITH_YOSYS})
     add_definitions("-D_YOSYS_")
-elseif(${WITH_ODIN})
+endif()
+if(${WITH_ODIN})
     add_subdirectory(ODIN_II)
     # blifexplorer depends on odin
     if(${WITH_BLIFEXPLORER})
