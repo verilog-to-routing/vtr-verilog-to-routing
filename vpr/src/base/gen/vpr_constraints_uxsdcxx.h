@@ -4,9 +4,15 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
+<<<<<<< HEAD
  * Cmdline: uxsdcxx.py ../vpr_repos/vpr/src/base/vpr_constraints.xsd
  * Input file: /home/soheil/vpr_repos/vpr/src/base/vpr_constraints.xsd
  * md5sum of input file: ea99cd05d67036ef541872d9d77a83c5
+=======
+ * Cmdline: uxsdcxx.py /home/tao/works/dev/clock/test/xml_gen/vpr_constraints.xsd
+ * Input file: /home/tao/works/dev/clock/test/xml_gen/vpr_constraints.xsd
+ * md5sum of input file: 1ab0562dd315daffe9ac257ab683233e
+>>>>>>> Support route constraints.
  */
 
 #include <functional>
@@ -51,7 +57,10 @@ template<class T, typename Context>
 inline void load_partition_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
 inline void load_set_global_signal(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+<<<<<<< HEAD
 inline void load_set_global_signal_required_attributes(const pugi::xml_node& root, enum_route_model_type* route_model, const std::function<void(const char*)>* report_error);
+=======
+>>>>>>> Support route constraints.
 template<class T, typename Context>
 inline void load_global_route_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
@@ -151,9 +160,15 @@ enum class gtok_t_partition_list { PARTITION };
 constexpr const char* gtok_lookup_t_partition_list[] = {"partition"};
 
 enum class atok_t_set_global_signal { NAME,
+<<<<<<< HEAD
                                       NETWORK_NAME,
                                       ROUTE_MODEL };
 constexpr const char* atok_lookup_t_set_global_signal[] = {"name", "network_name", "route_model"};
+=======
+                                      ROUTE_MODEL,
+                                      TYPE };
+constexpr const char* atok_lookup_t_set_global_signal[] = {"name", "route_model", "type"};
+>>>>>>> Support route constraints.
 
 enum class gtok_t_global_route_constraints { SET_GLOBAL_SIGNAL };
 constexpr const char* gtok_lookup_t_global_route_constraints[] = {"set_global_signal"};
@@ -408,6 +423,12 @@ inline atok_t_set_global_signal lex_attr_t_set_global_signal(const char* in, con
                 case onechar('n', 0, 32) | onechar('a', 8, 32) | onechar('m', 16, 32) | onechar('e', 24, 32):
                     return atok_t_set_global_signal::NAME;
                     break;
+<<<<<<< HEAD
+=======
+                case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
+                    return atok_t_set_global_signal::TYPE;
+                    break;
+>>>>>>> Support route constraints.
                 default:
                     break;
             }
@@ -439,6 +460,7 @@ inline atok_t_set_global_signal lex_attr_t_set_global_signal(const char* in, con
                     break;
             }
             break;
+<<<<<<< HEAD
         case 12:
             switch (*((triehash_uu64*)&in[0])) {
                 case onechar('n', 0, 64) | onechar('e', 8, 64) | onechar('t', 16, 64) | onechar('w', 24, 64) | onechar('o', 32, 64) | onechar('r', 40, 64) | onechar('k', 48, 64) | onechar('_', 56, 64):
@@ -454,6 +476,8 @@ inline atok_t_set_global_signal lex_attr_t_set_global_signal(const char* in, con
                     break;
             }
             break;
+=======
+>>>>>>> Support route constraints.
         default:
             break;
     }
@@ -948,11 +972,19 @@ inline void load_set_global_signal(const pugi::xml_node& root, T& out, Context& 
             case atok_t_set_global_signal::NAME:
                 out.set_set_global_signal_name(attr.value(), context);
                 break;
+<<<<<<< HEAD
             case atok_t_set_global_signal::NETWORK_NAME:
                 out.set_set_global_signal_network_name(attr.value(), context);
                 break;
             case atok_t_set_global_signal::ROUTE_MODEL:
                 /* Attribute route_model is already set */
+=======
+            case atok_t_set_global_signal::ROUTE_MODEL:
+                out.set_set_global_signal_route_model(attr.value(), context);
+                break;
+            case atok_t_set_global_signal::TYPE:
+                out.set_set_global_signal_type(attr.value(), context);
+>>>>>>> Support route constraints.
                 break;
             default:
                 break; /* Not possible. */
@@ -1013,10 +1045,14 @@ inline void load_global_route_constraints(const pugi::xml_node& root, T& out, Co
         state = next;
         switch (in) {
             case gtok_t_global_route_constraints::SET_GLOBAL_SIGNAL: {
+<<<<<<< HEAD
                 enum_route_model_type set_global_signal_route_model;
                 memset(&set_global_signal_route_model, 0, sizeof(set_global_signal_route_model));
                 load_set_global_signal_required_attributes(node, &set_global_signal_route_model, report_error);
                 auto child_context = out.add_global_route_constraints_set_global_signal(context, set_global_signal_route_model);
+=======
+                auto child_context = out.add_global_route_constraints_set_global_signal(context);
+>>>>>>> Support route constraints.
                 load_set_global_signal(node, out, child_context, report_error, offset_debug);
                 out.finish_global_route_constraints_set_global_signal(child_context);
             } break;
@@ -1070,7 +1106,11 @@ inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& co
                 break; /* Not possible. */
         }
     }
+<<<<<<< HEAD
     std::bitset<2> test_gstate = gstate | std::bitset<2>(0b11);
+=======
+    std::bitset<2> test_gstate = gstate | std::bitset<2>(0b00);
+>>>>>>> Support route constraints.
     if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_vpr_constraints, report_error);
 }
 
@@ -1092,10 +1132,13 @@ inline void write_partition(T& in, std::ostream& os, Context& context) {
         for (size_t i = 0, n = in.num_partition_add_region(context); i < n; i++) {
             auto child_context = in.get_partition_add_region(i, context);
             os << "<add_region";
+<<<<<<< HEAD
             if ((bool)in.get_add_region_layer_high(child_context))
                 os << " layer_high=\"" << in.get_add_region_layer_high(child_context) << "\"";
             if ((bool)in.get_add_region_layer_low(child_context))
                 os << " layer_low=\"" << in.get_add_region_layer_low(child_context) << "\"";
+=======
+>>>>>>> Support route constraints.
             if ((bool)in.get_add_region_subtile(child_context))
                 os << " subtile=\"" << in.get_add_region_subtile(child_context) << "\"";
             os << " x_high=\"" << in.get_add_region_x_high(child_context) << "\"";
@@ -1134,9 +1177,14 @@ inline void write_global_route_constraints(T& in, std::ostream& os, Context& con
             auto child_context = in.get_global_route_constraints_set_global_signal(i, context);
             os << "<set_global_signal";
             os << " name=\"" << in.get_set_global_signal_name(child_context) << "\"";
+<<<<<<< HEAD
             if ((bool)in.get_set_global_signal_network_name(child_context))
                 os << " network_name=\"" << in.get_set_global_signal_network_name(child_context) << "\"";
             os << " route_model=\"" << lookup_route_model_type[(int)in.get_set_global_signal_route_model(child_context)] << "\"";
+=======
+            os << " route_model=\"" << in.get_set_global_signal_route_model(child_context) << "\"";
+            os << " type=\"" << in.get_set_global_signal_type(child_context) << "\"";
+>>>>>>> Support route constraints.
             os << "/>\n";
         }
     }
@@ -1162,6 +1210,12 @@ inline void write_vpr_constraints(T& in, std::ostream& os, Context& context) {
             write_global_route_constraints(in, os, child_context);
             os << "</global_route_constraints>\n";
         }
+    }
+    {
+        auto child_context = in.get_vpr_constraints_global_route_constraints(context);
+        os << "<global_route_constraints>\n";
+        write_global_route_constraints(in, os, child_context);
+        os << "</global_route_constraints>\n";
     }
 }
 

@@ -45,6 +45,34 @@ class VprConstraints {
      */
     const UserRouteConstraints& route_constraints() const;
 
+    /**
+     * @brief add route constraint
+     *
+     *   @param net_name the route constraint 
+     */
+    void add_route_constraint(RouteConstraint rc);
+
+    /**
+     * @brief returns route constraint by index
+     *
+     *   @param index the constraint index 
+     */
+    RouteConstraint get_route_constraint_by_idx(std::size_t index) const;
+
+    /**
+     * @brief returns route constraint of a specific net
+     *
+     *   @param net_name the net name
+     */
+    RouteConstraint get_route_constraint_by_net_name(std::string net_name) const;
+
+    /**
+     * @brief returns number of route constraints
+     *
+     *   @param void
+     */
+    int get_route_constraint_num(void) const;
+
   private:
     UserRouteConstraints route_constraints_;
     UserPlaceConstraints placement_constraints_;

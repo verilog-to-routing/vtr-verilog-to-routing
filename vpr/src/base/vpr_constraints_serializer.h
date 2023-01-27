@@ -2,6 +2,7 @@
 #define VPR_CONSTRAINTS_SERIALIZER_H_
 
 #include "region.h"
+#include "route_constraint.h"
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "partition_region.h"

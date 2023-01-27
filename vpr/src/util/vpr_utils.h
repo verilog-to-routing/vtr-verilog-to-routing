@@ -193,7 +193,9 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
@@ -365,5 +367,9 @@ class PortPinToBlockPinConverter {
      */
     std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
 };
+
+// apply route constraints for route flow
+class VprConstraints;
+void apply_route_constraints(const VprConstraints& constraint);
 
 #endif

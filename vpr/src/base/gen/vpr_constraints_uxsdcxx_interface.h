@@ -4,9 +4,15 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
+<<<<<<< HEAD
  * Cmdline: uxsdcxx.py ../vpr_repos/vpr/src/base/vpr_constraints.xsd
  * Input file: /home/soheil/vpr_repos/vpr/src/base/vpr_constraints.xsd
  * md5sum of input file: ea99cd05d67036ef541872d9d77a83c5
+=======
+ * Cmdline: uxsdcxx.py /home/tao/works/dev/clock/test/xml_gen/vpr_constraints.xsd
+ * Input file: /home/tao/works/dev/clock/test/xml_gen/vpr_constraints.xsd
+ * md5sum of input file: 1ab0562dd315daffe9ac257ab683233e
+>>>>>>> Support route constraints.
  */
 
 #include <functional>
@@ -53,14 +59,15 @@ class VprConstraintsBase {
     virtual void finish_write() = 0;
     virtual void error_encountered(const char* file, int line, const char* message) = 0;
     /** Generated for complex type "add_atom":
-     * <xs:complexType name="add_atom">
-     *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
-     * </xs:complexType>
-     */
+	 * <xs:complexType name="add_atom">
+	 *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+	 * </xs:complexType>
+	*/
     virtual inline const char* get_add_atom_name_pattern(typename ContextTypes::AddAtomReadContext& ctx) = 0;
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
 
     /** Generated for complex type "add_region":
+<<<<<<< HEAD
      * <xs:complexType name="add_region">
      *   <xs:attribute name="x_low" type="xs:int" use="required" />
      *   <xs:attribute name="y_low" type="xs:int" use="required" />
@@ -73,6 +80,16 @@ class VprConstraintsBase {
      */
     virtual inline int get_add_region_layer_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline int get_add_region_layer_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+=======
+	 * <xs:complexType name="add_region">
+	 *   <xs:attribute name="x_low" type="xs:int" use="required" />
+	 *   <xs:attribute name="y_low" type="xs:int" use="required" />
+	 *   <xs:attribute name="x_high" type="xs:int" use="required" />
+	 *   <xs:attribute name="y_high" type="xs:int" use="required" />
+	 *   <xs:attribute name="subtile" type="xs:int" />
+	 * </xs:complexType>
+	*/
+>>>>>>> Support route constraints.
     virtual inline int get_add_region_subtile(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline void set_add_region_subtile(int subtile, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_x_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
@@ -81,16 +98,16 @@ class VprConstraintsBase {
     virtual inline int get_add_region_y_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
 
     /** Generated for complex type "partition":
-     * <xs:complexType name="partition">
-     *   <xs:sequence>
-     *      <xs:choice maxOccurs="unbounded">
-     *          <xs:element name="add_atom" type="add_atom" />
-     *          <xs:element name="add_region" type="add_region" />
-     *      </xs:choice>
-     *   </xs:sequence>
-     *   <xs:attribute name="name" type="xs:string" use="required" />
-     * </xs:complexType>
-     */
+	 * <xs:complexType name="partition">
+	 *   <xs:sequence>
+	 *      <xs:choice maxOccurs="unbounded">
+	 *          <xs:element name="add_atom" type="add_atom" />
+	 *          <xs:element name="add_region" type="add_region" />
+	 *      </xs:choice>
+	 *   </xs:sequence>
+	 *   <xs:attribute name="name" type="xs:string" use="required" />
+	 * </xs:complexType>
+	*/
     virtual inline const char* get_partition_name(typename ContextTypes::PartitionReadContext& ctx) = 0;
     virtual inline void set_partition_name(const char* name, typename ContextTypes::PartitionWriteContext& ctx) = 0;
     virtual inline void preallocate_partition_add_atom(typename ContextTypes::PartitionWriteContext& ctx, size_t size) = 0;
@@ -105,12 +122,21 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::AddRegionReadContext get_partition_add_region(int n, typename ContextTypes::PartitionReadContext& ctx) = 0;
 
     /** Generated for complex type "partition_list":
+<<<<<<< HEAD
      * <xs:complexType name="partition_list">
      *   <xs:sequence>
      *     <xs:element name="partition" type="partition" maxOccurs="unbounded" />
      *   </xs:sequence>
      * </xs:complexType>
      */
+=======
+	 * <xs:complexType name="partition_list">
+	 *   <xs:sequence>
+	 *     <xs:element name="partition" type="partition" maxOccurs="unbounded" />
+	 *   </xs:sequence>
+	 * </xs:complexType>
+	*/
+>>>>>>> Support route constraints.
     virtual inline void preallocate_partition_list_partition(typename ContextTypes::PartitionListWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::PartitionWriteContext add_partition_list_partition(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
     virtual inline void finish_partition_list_partition(typename ContextTypes::PartitionWriteContext& ctx) = 0;
@@ -118,6 +144,7 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::PartitionReadContext get_partition_list_partition(int n, typename ContextTypes::PartitionListReadContext& ctx) = 0;
 
     /** Generated for complex type "set_global_signal":
+<<<<<<< HEAD
      * <xs:complexType name="set_global_signal">
      *   <xs:attribute name="name" type="xs:string" use="required" />
      *   <xs:attribute name="route_model" type="route_model_type" use="required" />
@@ -139,11 +166,36 @@ class VprConstraintsBase {
      */
     virtual inline void preallocate_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::SetGlobalSignalWriteContext add_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, enum_route_model_type route_model) = 0;
+=======
+	 * <xs:complexType name="set_global_signal">
+	 *   <xs:attribute name="name" type="xs:string" use="required" />
+	 *   <xs:attribute name="type" type="xs:string" use="required" />
+	 *   <xs:attribute name="route_model" type="xs:string" use="required" />
+	 * </xs:complexType>
+	*/
+    virtual inline const char* get_set_global_signal_name(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
+    virtual inline void set_set_global_signal_name(const char* name, typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
+    virtual inline const char* get_set_global_signal_route_model(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
+    virtual inline void set_set_global_signal_route_model(const char* route_model, typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
+    virtual inline const char* get_set_global_signal_type(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
+    virtual inline void set_set_global_signal_type(const char* type, typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
+
+    /** Generated for complex type "global_route_constraints":
+	 * <xs:complexType name="global_route_constraints">
+	 *   <xs:sequence>
+	 *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
+	 *   </xs:sequence>
+	 * </xs:complexType>
+	*/
+    virtual inline void preallocate_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::SetGlobalSignalWriteContext add_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx) = 0;
+>>>>>>> Support route constraints.
     virtual inline void finish_global_route_constraints_set_global_signal(typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
     virtual inline size_t num_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsReadContext& ctx) = 0;
     virtual inline typename ContextTypes::SetGlobalSignalReadContext get_global_route_constraints_set_global_signal(int n, typename ContextTypes::GlobalRouteConstraintsReadContext& ctx) = 0;
 
     /** Generated for complex type "vpr_constraints":
+<<<<<<< HEAD
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
      *     <xs:all minOccurs="0">
      *       <xs:element name="partition_list" type="partition_list" />
@@ -152,16 +204,32 @@ class VprConstraintsBase {
      *     <xs:attribute name="tool_name" type="xs:string" />
      *   </xs:complexType>
      */
+=======
+	 * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	 *     <xs:all>
+	 *       <xs:element name="partition_list" type="partition_list" />
+	 *       <xs:element name="global_route_constraints" type="global_route_constraints" />
+	 *     </xs:all>
+	 *     <xs:attribute name="tool_name" type="xs:string" />
+	 *   </xs:complexType>
+	*/
+>>>>>>> Support route constraints.
     virtual inline const char* get_vpr_constraints_tool_name(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline void set_vpr_constraints_tool_name(const char* tool_name, typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::PartitionListWriteContext init_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
     virtual inline void finish_vpr_constraints_partition_list(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::PartitionListReadContext get_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+<<<<<<< HEAD
     virtual inline bool has_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline typename ContextTypes::GlobalRouteConstraintsWriteContext init_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
     virtual inline void finish_vpr_constraints_global_route_constraints(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::GlobalRouteConstraintsReadContext get_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline bool has_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+=======
+    virtual inline typename ContextTypes::GlobalRouteConstraintsWriteContext init_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
+    virtual inline void finish_vpr_constraints_global_route_constraints(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::GlobalRouteConstraintsReadContext get_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+>>>>>>> Support route constraints.
 };
 
 } /* namespace uxsd */
