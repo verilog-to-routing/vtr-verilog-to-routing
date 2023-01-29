@@ -1,0 +1,38 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog/koios
+
+# Path to directory of architectures to use
+archs_dir=arch/COFFE_22nm
+
+# Directory containing the verilog includes file(s)
+includes_dir=benchmarks/verilog/koios
+
+# Add circuits to list to sweep
+circuit_list_add=test.v
+
+# Add architectures to list to sweep
+arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
+
+# Add include files to the list.
+# Some benchmarks instantiate complex dsp blocks to implement features
+# like native floating point math, cascade chains, etc. This functionality
+# is guarded under the `complex_dsp` macro. The complex_dsp_include.v file 
+# defines this macro, thereby enabling instantiations of the complex dsp.
+include_list_add=complex_dsp_include.v
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+#Script parameters
+script_params=-track_memory_usage 

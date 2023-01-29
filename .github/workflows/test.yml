@@ -30,7 +30,7 @@ jobs:
           - {test: "vtr_reg_nightly_test1_odin", cores: "8",  options: "",          cmake: "-DWITH_ODIN=ON",                                extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
@@ -283,7 +283,7 @@ jobs:
 
     - name: Test
       env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on'
         BUILD_TYPE: debug
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
