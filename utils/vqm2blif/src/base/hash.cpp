@@ -3,10 +3,12 @@
 #include <algorithm> //For std::max
 #include "hash.h"
 #include "vtr_memory.h"
+#include<string>
 
 #define HASHSIZE 5000001
 
 static int hash_value(char *name);
+std::hash<std::string> hash_string;
 
 
 
@@ -108,8 +110,8 @@ insert_in_hash_table(struct s_hash **hash_table,
     int i;
     struct s_hash *h_ptr, *prev_ptr;
 
-    i = hash_value(name);
-    prev_ptr = NULL;
+    std::string name_str(name);
+    i = hash_string(name_str) % HASHSIZE;
     h_ptr = hash_table[i];
 
     while(h_ptr != NULL)
@@ -155,7 +157,8 @@ get_hash_entry(struct s_hash **hash_table,
     int i;
     struct s_hash *h_ptr;
 
-    i = hash_value(name);
+    std::string name_str(name);
+    i = hash_string(name_str) % HASHSIZE;
     h_ptr = hash_table[i];
 
     while(h_ptr != NULL)
