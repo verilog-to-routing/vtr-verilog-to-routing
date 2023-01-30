@@ -12,7 +12,7 @@ archs_dir=arch/noc/mesh_noc_topology
 circuit_list_add=complex_2_noc_1D_chain.blif
 
 # Add architectures to list to sweep
-arch_list_add=stratixiv_arch.timing_with_a_embedded_3X3_mesh_noc_topology_2.xml
+arch_list_add=stratixiv_arch.timing_small_with_a_embedded_mesh_noc_toplogy.xml
 
 # Parse info and how to parse
 parse_file=vpr_noc.txt
