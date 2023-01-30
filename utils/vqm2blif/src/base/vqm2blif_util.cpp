@@ -697,6 +697,13 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
     }
 
     /*
+     * Fracturable LUT
+     */
+    if(strcmp(vqm_node->type, "fourteennm_lcell_comb") == 0) {
+        generate_opname_stratix10_lut(vqm_node, mode_hash);  
+    }
+
+    /*
      * DSP Block - fixed point
      */
     if(strcmp(vqm_node->type, "fourteennm_mac") == 0) {
@@ -721,7 +728,6 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
 
     return mode_hash;
 }
-
 
 void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash, bool dsp_mode) {
     //
@@ -821,6 +827,61 @@ void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, 
             //Mark this primitive instance as having unregistered outputs
             mode_hash.append(".output_type{comb}");
         }   
+    }
+}
+
+//Generates an alphabetically continuous series of LUT input ports,
+// e.g. if the logical LUT has the inputs dataa, datac, and datad used
+// these inputs get remapped to dataa, datab, and datac ports
+// The 5-LUT physical primitive described in S10 arch 
+// has input ports dataa to datae.  
+// Without this remapping some of the 5-input logical primitives that use ports
+// such as dataf or datag cannot be mapped to the physical 5-LUT primitive
+// defined in the arch file
+void remap_lut_ports(t_node* vqm_node){
+    char lut_in_start_char = 'a';
+    int lut_input_idx = 0;
+    for(int i = 0; i < vqm_node->number_of_ports; ++i) {
+
+        t_node_port_association* vqm_port = vqm_node->array_of_ports[i];
+
+        // If the port name starts with data, then the port is a LUT input
+        if(strncmp(vqm_port->port_name, "data", 4) == 0) {
+            vqm_port->port_name[4] = lut_in_start_char + lut_input_idx;
+            lut_input_idx += 1;
+        }
+    }
+
+}
+
+void generate_opname_stratix10_lut (t_node* vqm_node, string& mode_hash) {
+    // Stratix 10 has a 6-input FLUT that can be configured either as a single 8-input
+    // LUT (under certain conditions the 6-input FLUT can implement up to 8-input functions 
+    // so in the primitive description there are 8 inputs rather than 6) or two 5-input LUTs with two shared inputs.
+    // To enable VPR to distinguish between 5-input LUTs (used in fractured mode) and 6-8 inputs LUTs (used in non-fractured mode)
+    // we convert the fourteennm_lcell_comb primitives to one of the fourteennm_lcell_comb5 or fourteennm_lcell_comb6
+    // based on the number of inputs
+
+    
+    VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_lcell_comb") == 0);
+
+    int num_of_inputs = 0;
+
+    for(int i = 0; i < vqm_node->number_of_ports; ++i) {
+        t_node_port_association* vqm_port = vqm_node->array_of_ports[i];
+
+        // If the port name starts with data, then the port is a LUT input
+        if(strncmp(vqm_port->port_name, "data", 4) == 0) {
+            num_of_inputs += 1;
+        }
+    }
+
+    if(num_of_inputs < 6) {
+        mode_hash = "fourteennm_lcell_comb5";
+        // remap the input ports of the logical primitive to the set of fourteennm_lcell_comb5 input ports described in the arch file
+        remap_lut_ports(vqm_node);
+    } else {
+        mode_hash = "fourteennm_lcell_comb6";
     }
 }
 
