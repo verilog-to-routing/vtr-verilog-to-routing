@@ -39,4 +39,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage -crit_path_router_iterations 100 -start yosys -parser yosys-plugin
+script_params=-track_memory_usage -crit_path_router_iterations 100 -mapper yosys -parser yosys-plugin
