@@ -244,11 +244,13 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
 
     //commit the move if succeeded or revert if failed
     VTR_ASSERT(mol_1_success && mol_2_success);
-    if(molecule_2->is_chain()) {
+    if(molecule_2->is_chain())
+    {
         free(clb_pb_1->name);
         cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
     }
-    if(molecule_1->is_chain()) {
+    if(molecule_1->is_chain())
+    {
         free(clb_pb_2->name);
         cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
     }

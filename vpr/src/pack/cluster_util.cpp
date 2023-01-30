@@ -1090,12 +1090,13 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
 -                        * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
                         cur_pb = atom_ctx.lookup.atom_pb(chain_root_blk_id)->parent_pb;
+                        /*
                         while (cur_pb != nullptr) {
                             free(cur_pb->name);
                             cur_pb->name = vtr::strdup(atom_ctx.nlist.block_name(chain_root_blk_id).c_str());
                             cur_pb = cur_pb->parent_pb;
                         }
-
+                        */
                         // if this molecule is part of a chain, mark the cluster as having a long chain
                         // molecule. Also check if it's the first molecule in the chain to be packed.
                         // If so, update the chain id for this chain of molecules to make sure all
