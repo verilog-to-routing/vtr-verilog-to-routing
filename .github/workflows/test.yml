@@ -242,9 +242,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - { name: 'Basic',  suite: 'vtr_reg_basic'  }
-        #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
+        include: [
+          {
+            name: 'Basic',
+            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic_odin',
+            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
+            suite: 'vtr_reg_basic_odin'
+          },
+          #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
+        ]
+        
+        
     name: 'S: ${{ matrix.name }}'
     steps:
 
@@ -258,7 +270,7 @@ jobs:
 
     - name: Test
       env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
+        CMAKE_PARAMS: ${{ matrix.params }}
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
