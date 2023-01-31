@@ -272,17 +272,18 @@ def run(
     architecture_dsp_full_path = str(vtr.paths.scripts_path / temp_dir / YOSYS_LIB_FILES["DSPBB"])
     architecture_file_path = str(vtr.paths.scripts_path / architecture_file)
 
-    # executing write_arch_bb to extract the black box definitions of the given arch file
-    command_runner.run_system_command(
-        [
-            write_arch_bb_exec,
-            str(vtr.paths.scripts_path / architecture_file),
-            architecture_dsp_full_path,
-        ],
-        temp_dir=temp_dir,
-        log_filename="write_arch_bb.log",
-        indent_depth=1,
-    )
+    if yosys_args["mapper"] == "yosys":
+        # executing write_arch_bb to extract the black box definitions of the given arch file
+        command_runner.run_system_command(
+            [
+                write_arch_bb_exec,
+                str(vtr.paths.scripts_path / architecture_file),
+                architecture_dsp_full_path,
+            ],
+            temp_dir=temp_dir,
+            log_filename="write_arch_bb.log",
+            indent_depth=1,
+        )
 
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
