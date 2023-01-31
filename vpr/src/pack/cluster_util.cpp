@@ -305,7 +305,7 @@ bool check_cluster_legality(const int& verbosity,
         if (is_cluster_legal) {
             VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
         } else {
-            VTR_LOGV(verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
+            VTR_LOGV(verbosity > 2, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
         }
     } else {
         is_cluster_legal = true;
