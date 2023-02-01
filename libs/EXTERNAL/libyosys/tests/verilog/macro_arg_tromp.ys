@@ -1,2 +1,0 @@
-logger -expect-no-warnings
-read_verilog -sv macro_arg_tromp.sv

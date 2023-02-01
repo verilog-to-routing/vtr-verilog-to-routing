@@ -1,12 +1,37 @@
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
 #include "config_t.h"
 #include "odin_types.h"
 #include "string_cache.h"
-#include "Hashtable.hpp"
+#include "hash_table.h"
 #include "read_xml_arch_file.h"
-#include "HardSoftLogicMixer.hpp"
+#include "hard_soft_logic_mixer.h"
 
 /**
  * The cutoff for the number of netlist nodes. 
@@ -67,8 +92,6 @@ extern bool coarsen_cleanup;
 
 extern const strbimap<file_type_e> file_extension_strmap;
 extern const strbimap<file_type_e> file_type_strmap;
-extern const strmap<elaborator_e> elaborator_strmap;
 extern const strmap<operation_list> odin_subckt_strmap;
-extern const strmap<operation_list> yosys_subckt_strmap;
 
 #endif

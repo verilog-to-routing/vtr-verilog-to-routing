@@ -1,3 +1,28 @@
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #ifndef AST_UTIL_H
 #define AST_UTIL_H
 
@@ -6,10 +31,8 @@
 void add_tag_data(ast_t* ast);
 
 ast_t* allocate_ast();
-ast_t* free_ast(ast_t* to_delete);
 void add_top_module_to_ast(ast_t* verilog_ast, ast_node_t* to_add);
 
-ast_node_t* create_node_w_type_no_count(ids id, loc_t loc);
 ast_node_t* create_node_w_type(ids id, loc_t loc);
 ast_node_t* create_tree_node_id(char* string, loc_t loc);
 
@@ -22,8 +45,6 @@ void allocate_children_to_node(ast_node_t* node, std::vector<ast_node_t*> childr
 void add_child_to_node(ast_node_t* node, ast_node_t* child);
 void add_child_to_node_at_index(ast_node_t* node, ast_node_t* child, int index);
 void remove_child_from_node_at_index(ast_node_t* node, int index);
-ast_node_t** expand_node_list_at(ast_node_t** list, long old_size, long to_add, long start_idx);
-void move_ast_node(ast_node_t* src, ast_node_t* dest, ast_node_t* node);
 ast_node_t* ast_node_deep_copy(ast_node_t* node);
 ast_node_t* ast_node_copy(ast_node_t* node);
 

@@ -1,4 +1,6 @@
-/**
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -19,34 +21,23 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: this file includes the instantiation process of Odin-II 
- * supported cells. Technically, the Odin-II partial mapper transforms 
- * netlist to a target device technology dependent cells. The partial
- * decides the hard/soft logic inference of logic blocks according to
- * the target architecture and specified threshold in command arguments.
  */
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <algorithm>
+
+#include <cstring>
+#include <cstdio>
+
 #include "odin_types.h"
 #include "odin_globals.h"
-
 #include "netlist_utils.h"
-#include "netlist_cleanup.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
-
 #include "partial_map.h"
-#include "multipliers.h"
 #include "hard_blocks.h"
-#include "math.h"
 #include "memories.h"
 #include "adders.h"
 #include "subtractions.h"
-#include "Multiplexer.hpp"
+#include "multiplexer.h"
+
 #include "vtr_memory.h"
 #include "vtr_util.h"
 
@@ -78,7 +69,7 @@ static void instantiate_variable_shift(nnode_t* node, operation_list type, short
  *-----------------------------------------------------------------------*/
 void partial_map_top(netlist_t* netlist) {
     /* depending on the output target choose how to do partial mapping */
-    if (configuration.output_file_type == file_type_e::_BLIF) {
+    if (configuration.output_file_type == file_type_e::BLIF) {
         /* do the partial map without any larger structures identified */
         depth_first_traversal_to_partial_map(PARTIAL_MAP_TRAVERSE_VALUE, netlist);
     }

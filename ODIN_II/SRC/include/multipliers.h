@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,9 +22,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #ifndef MULTIPLIERS_H
 #define MULTIPLIERS_H
 
+#include "odin_types.h"
 #include "read_xml_arch_file.h"
 
 struct t_multiplier {
@@ -49,14 +53,11 @@ extern void report_mult_distribution();
 extern void declare_hard_multiplier(nnode_t* node);
 extern void instantiate_hard_multiplier(nnode_t* node, short mark, netlist_t* netlist);
 extern void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* netlist);
-extern void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_list);
 extern void find_hard_multipliers();
 extern void add_the_blackbox_for_mults(FILE* out);
 extern void define_mult_function(nnode_t* node, FILE* out);
 extern void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* netlist);
 extern void iterate_multipliers(netlist_t* netlist);
-extern bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-extern void check_multiplier_port_size(nnode_t* node);
 extern bool is_ast_multiplier(ast_node_t* node);
 extern void clean_multipliers();
 extern void free_multipliers();

@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,12 +22,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #ifndef ADDERS_H
 #define ADDERS_H
 
+#include <vector>
+
 #include "read_xml_arch_file.h"
 #include "odin_types.h"
-#include <vector>
 
 struct t_adder {
     int size_a;
@@ -34,14 +38,6 @@ struct t_adder {
     int size_sumout;
     int size_cout;
     struct t_adder* next;
-};
-
-struct adder_signals {
-    signal_list_t* a;
-    signal_list_t* b;
-    signal_list_t* cin;
-    signal_list_t* cout;
-    signal_list_t* sumout;
 };
 
 extern t_model* hard_adders;
@@ -56,7 +52,6 @@ void init_add_distribution();
 void report_add_distribution();
 void declare_hard_adder(nnode_t* node);
 void instantiate_hard_adder(nnode_t* node, short mark, netlist_t* netlist);
-void instantiate_simple_soft_adder(nnode_t* node, short mark, netlist_t* netlist);
 void find_hard_adders();
 void add_the_blackbox_for_adds(FILE* out);
 void define_add_function(nnode_t* node, FILE* out);
@@ -77,6 +72,5 @@ int match_pins(nnode_t* node, nnode_t* next_node);
 
 void instantiate_add_w_carry_block(int* width, nnode_t* node, short mark, netlist_t* netlist, short subtraction);
 bool is_ast_adder(ast_node_t* node);
-nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 #endif // ADDERS_H

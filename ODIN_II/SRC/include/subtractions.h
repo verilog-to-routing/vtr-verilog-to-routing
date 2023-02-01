@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,6 +22,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #ifndef SUBS_H
 #define SUBS_H
 
@@ -29,7 +32,6 @@
 extern vtr::t_linked_vptr* sub_list;
 extern vtr::t_linked_vptr* sub_chain_list;
 
-extern void init_sub_distribution();
 extern void report_sub_distribution();
 extern void declare_hard_adder_for_sub(nnode_t* node);
 extern void instantiate_hard_adder_subtraction(nnode_t* node, short mark, netlist_t* netlist);

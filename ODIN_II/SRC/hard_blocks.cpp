@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -21,9 +23,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "odin_types.h"
 #include "odin_util.h"
@@ -273,7 +274,7 @@ void instantiate_hard_block(nnode_t* node, short mark, netlist_t* /*netlist*/) {
     /* Give names to the output pins */
     for (i = 0; i < node->num_output_pins; i++) {
         if (node->output_pins[i]->name == NULL)
-            node->output_pins[i]->name = make_full_ref_name(node->name, NULL, NULL, node->output_pins[i]->mapping, (configuration.elaborator_type == elaborator_e::_YOSYS) ? i : -1);
+            node->output_pins[i]->name = make_full_ref_name(node->name, NULL, NULL, node->output_pins[i]->mapping, -1);
 
         index++;
         if (node->output_port_sizes[port] == index) {

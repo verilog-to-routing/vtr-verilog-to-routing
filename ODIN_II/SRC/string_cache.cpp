@@ -1,10 +1,35 @@
-// Not PJs code, but very useful and used everywhere */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#include <cstdio>
+#include <cstring>
+
+#include "string_cache.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include "string_cache.h"
 
 unsigned long
 string_hash(STRING_CACHE* sc,
@@ -80,30 +105,6 @@ long sc_lookup_string(STRING_CACHE* sc,
     }
 }
 
-bool sc_remove_string(STRING_CACHE* sc,
-                      const char* string) {
-    long i, hash;
-
-    if (sc != NULL) {
-        hash = string_hash(sc, string) % sc->string_hash_size;
-        i = sc->string_hash[hash];
-        while (i >= 0) {
-            if (!strcmp(sc->string[i], string)) {
-                vtr::free(sc->string[i]);
-                if (sc->data[i] != NULL) {
-                    vtr::free(sc->data[i]);
-                    sc->data = NULL;
-                }
-                sc->string[i] = vtr::strdup("REMOVED_NAME_FROM_SC_CACHE");
-                return true;
-            }
-            i = sc->next_string[i];
-        }
-    }
-
-    return false;
-}
-
 long sc_add_string(STRING_CACHE* sc,
                    const char* string) {
     long i;
@@ -138,15 +139,6 @@ long sc_add_string(STRING_CACHE* sc,
     sc->next_string[i] = sc->string_hash[hash];
     sc->string_hash[hash] = i;
     return i;
-}
-
-int sc_valid_id(STRING_CACHE* sc,
-                long string_id) {
-    if (string_id < 0)
-        return 0;
-    if (string_id >= sc->free)
-        return 0;
-    return 1;
 }
 
 void* sc_do_alloc(long a,

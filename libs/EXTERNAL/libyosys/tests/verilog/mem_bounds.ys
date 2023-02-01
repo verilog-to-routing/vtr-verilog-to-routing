@@ -1,6 +1,0 @@
-read_verilog -sv -mem2reg mem_bounds.sv
-proc
-flatten
-opt -full
-select -module top
-sat -verify -seq 1 -tempinduct -prove-asserts -show-all -enable_undef

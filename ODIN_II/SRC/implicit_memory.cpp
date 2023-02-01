@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,6 +22,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
+#include <unordered_map>
+
 #include "odin_types.h"
 #include "odin_globals.h"
 #include "ast_util.h"
@@ -29,10 +34,9 @@
 #include "node_creation_library.h"
 #include "netlist_utils.h"
 #include "odin_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
-
-#include <unordered_map>
 
 // Hashes the implicit memory name to the implicit_memory structure.
 std::unordered_map<std::string, implicit_memory*> implicit_memories;
