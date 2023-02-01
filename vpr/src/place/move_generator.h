@@ -31,9 +31,9 @@ struct MoveOutcomeStats {
  */
 struct MoveTypeStat {
     std::vector<int> num_moves; // SARA_TODO: seems to be redundant
-    std::vector<std::vector<int>> blk_type_moves;
-    std::vector<std::vector<int>> accepted_moves;
-    std::vector<std::vector<int>> aborted_moves;
+    std::vector<int> blk_type_moves;
+    std::vector<int> accepted_moves;
+    std::vector<int> aborted_moves;
 };
 
 /**

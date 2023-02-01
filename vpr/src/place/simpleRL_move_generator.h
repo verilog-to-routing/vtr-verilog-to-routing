@@ -22,6 +22,7 @@ class KArmedBanditAgent {
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of arms of the karmed bandit problem (k)
     size_t num_available_types_;            //Number of types that each arm of the karmed bandit problem can pull with
+    bool propose_blk_type = false;          //Shows the intelligence level of the agent (Proposing blk_type, move_type)
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
     size_t last_action_ = 0;                //type of the last action (move type) proposed

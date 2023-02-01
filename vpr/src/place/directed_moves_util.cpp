@@ -50,7 +50,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
                 if (pin_id == sink_pin_id)
                     continue;
                 ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
-                if (timing_weights) {
+                if (timing_weights && criticalities != NULL) {
                     weight = criticalities->criticality(net_id, ipin);
                 } else {
                     weight = 1;
@@ -67,7 +67,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
         //else the pin is sink --> only care about its driver
         else {
             ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-            if (timing_weights) {
+            if (timing_weights && criticalities != NULL) {
                 weight = criticalities->criticality(net_id, ipin);
             } else {
                 weight = 1;
