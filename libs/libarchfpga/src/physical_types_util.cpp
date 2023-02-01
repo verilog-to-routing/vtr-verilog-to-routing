@@ -1387,7 +1387,6 @@ float get_edge_delay(t_physical_tile_type_ptr physical_type,
                      t_logical_block_type_ptr logical_block,
                      int src_pin_physical_num,
                      int sink_pin_physical_num) {
-    float delay = 0.;
     const t_pb_graph_pin* src_pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
                                                                         logical_block,
                                                                         src_pin_physical_num);
@@ -1395,22 +1394,10 @@ float get_edge_delay(t_physical_tile_type_ptr physical_type,
                                                                          logical_block,
                                                                          sink_pin_physical_num);
 
-    bool edge_found = false;
-    for (int out_edge_idx = 0; out_edge_idx < src_pb_pin->num_output_edges; out_edge_idx++) {
-        auto edge = src_pb_pin->output_edges[out_edge_idx];
-        for (int out_pin_idx = 0; out_pin_idx < edge->num_output_pins; out_pin_idx++) {
-            if (edge->output_pins[out_pin_idx] == sink_pb_pin) {
-                delay = edge->delay_max;
-                edge_found = true;
-                break;
-            }
-        }
-        if (edge_found) {
-            break;
-        }
-    }
+    int edge_idx = src_pb_pin->sink_pin_edge_idx_map.at(sink_pb_pin);
+    float delay = src_pb_pin->output_edges[edge_idx]->delay_max;
 
-    VTR_ASSERT(edge_found);
+
     return delay;
 }
 
