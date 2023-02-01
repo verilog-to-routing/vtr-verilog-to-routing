@@ -1,0 +1,53 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/titan_other_blif
+
+# Path to directory of SDC files
+sdc_dir=benchmarks/titan_other_blif
+
+# Path to directory of architectures to use
+archs_dir=arch/titan
+
+# Add circuits to list to sweep
+circuit_list_add=carpat_stratixiv_arch_timing.blif
+circuit_list_add=CH_DFSIN_stratixiv_arch_timing.blif
+circuit_list_add=CHERI_stratixiv_arch_timing.blif
+circuit_list_add=EKF-SLAM_Jacobians_stratixiv_arch_timing.blif
+circuit_list_add=fir_cascade_stratixiv_arch_timing.blif
+circuit_list_add=jacobi_stratixiv_arch_timing.blif
+circuit_list_add=JPEG_stratixiv_arch_timing.blif
+circuit_list_add=leon2_stratixiv_arch_timing.blif
+circuit_list_add=leon3mp_stratixiv_arch_timing.blif
+circuit_list_add=MCML_stratixiv_arch_timing.blif
+circuit_list_add=MMM_stratixiv_arch_timing.blif
+circuit_list_add=radar20_stratixiv_arch_timing.blif
+circuit_list_add=random_stratixiv_arch_timing.blif
+circuit_list_add=Reed_Solomon_stratixiv_arch_timing.blif
+circuit_list_add=smithwaterman_stratixiv_arch_timing.blif
+circuit_list_add=stap_steering_stratixiv_arch_timing.blif
+circuit_list_add=sudoku_check_stratixiv_arch_timing.blif
+circuit_list_add=SURF_desc_stratixiv_arch_timing.blif
+circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
+circuit_list_add=uoft_raytracer_stratixiv_arch_timing.blif
+circuit_list_add=wb_conmax_stratixiv_arch_timing.blif
+circuit_list_add=picosoc_stratixiv_arch_timing.blif
+circuit_list_add=murax_stratixiv_arch_timing.blif
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing.xml
+
+# Parse info and how to parse
+parse_file=vpr_titan.txt
+
+# How to parse QoR info
+qor_parse_file=qor_vpr_titan.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_vpr_titan.txt
+
+script_params=-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map
+
