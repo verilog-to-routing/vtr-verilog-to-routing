@@ -826,7 +826,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     if (conn_params_->has_choking_spot_ && is_flat_ && rr_graph_->node_type(RRNodeId(to_node)) == IPIN) {
         auto find_res = conn_params_->connection_choking_spots_.find(RRNodeId(to_node));
         if (find_res != conn_params_->connection_choking_spots_.end()) {
-            cong_cost = cong_cost / (float)find_res->second;
+            cong_cost = cong_cost / pow(2, (float)find_res->second);
         }
     }
 
