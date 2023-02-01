@@ -108,7 +108,7 @@ insert_in_hash_table(struct s_hash **hash_table,
  * created.                                                                 */
 
     int i;
-    struct s_hash *h_ptr, *prev_ptr;
+    struct s_hash *h_ptr = nullptr, *prev_ptr = nullptr;
 
     std::string name_str(name);
     i = hash_string(name_str) % HASHSIZE;
