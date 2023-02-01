@@ -598,7 +598,7 @@ void write_noc_placement_file(std::string file_name) {
     if (!noc_placement_file) {
         VTR_LOG_ERROR(
             "Failed to open the placement file '%s' to write out the NoC router placement information.\n",
-            file_name);
+            file_name.c_str());
     }
 
     // assume that the FPGA device has a single layer (2-D), so when we write the palcement file the layer value will be constant
