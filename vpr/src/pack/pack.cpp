@@ -125,7 +125,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
     t_allow_unrelated_clustering allow_unrelated_clustering = parse_unrelated_clustering_stat(packer_opts->allow_unrelated_clustering);
 
-
     bool balance_block_type_util = false;
     if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::ON) {
         balance_block_type_util = true;
@@ -171,14 +170,13 @@ bool try_pack(t_packer_opts* packer_opts,
             //
             //Turn it on to increase packing density
             std::vector<std::string> fixed_blocks;
-            for(auto& overused_block : overused_blocks) {
+            for (auto& overused_block : overused_blocks) {
                 e_unrel_clust_mode block_mode = allow_unrelated_clustering.get_block_mode(overused_block);
-                if(block_mode == e_unrel_clust_mode::FIXED){
+                if (block_mode == e_unrel_clust_mode::FIXED) {
                     // The user has explicitly set unrelated clustering status for this block type
                     // so we can't change it
                     fixed_blocks.push_back(overused_block);
-                }
-                else{
+                } else {
                     allow_unrelated_clustering.set_block_status(overused_block, std::make_pair(e_unrel_clust_stat::ON, block_mode));
                 }
             }
@@ -187,7 +185,7 @@ bool try_pack(t_packer_opts* packer_opts,
                 balance_block_type_util = true;
             }
 
-            if(fixed_blocks.size() > 0){
+            if (fixed_blocks.size() > 0) {
                 std::stringstream msg;
                 msg << "Packing failed to fit on device.\n"
                     << "The following block types were overused, but unrelated clustering was disabled for them:\n"
@@ -404,24 +402,22 @@ static std::vector<std::string> try_size_device_grid(const t_arch& arch, const s
 
 std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> parse_unrel_clust_from_str(std::string str) {
     std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> conv_value;
-    if (str == "on"){
+    if (str == "on") {
         conv_value.first = e_unrel_clust_stat::ON;
         conv_value.second = e_unrel_clust_mode::FIXED;
-    }
-    else if (str == "off"){
+    } else if (str == "off") {
         conv_value.first = e_unrel_clust_stat::OFF;
         conv_value.second = e_unrel_clust_mode::FIXED;
-    }
-    else if (str == "auto"){
+    } else if (str == "auto") {
         conv_value.first = e_unrel_clust_stat::OFF;
         conv_value.second = e_unrel_clust_mode::AUTO;
-    }
-    else {
+    } else {
         std::stringstream msg;
         msg << "Invalid conversion from '"
             << str
             << "' to e_unrel_clust_stat (expected one of: "
-            << "on, off, auto" << ")";
+            << "on, off, auto"
+            << ")";
         VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
     }
     return conv_value;
@@ -430,7 +426,7 @@ static bool block_type_found(std::string block_type_name) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto logical_block_types = device_ctx.logical_block_types;
 
-    for(auto block_type : logical_block_types) {
+    for (auto block_type : logical_block_types) {
         if (strcmp(block_type.name, block_type_name.c_str()) == 0) {
             return true;
         }
@@ -440,7 +436,7 @@ static bool block_type_found(std::string block_type_name) {
 
 static t_allow_unrelated_clustering parse_unrelated_clustering_stat(std::vector<std::string> specs) {
     // If no options is specified by the user, unrelated clustering is turned off at first and the mode is set to auto
-    t_allow_unrelated_clustering urel_clust_stat(e_unrel_clust_stat::OFF,e_unrel_clust_mode::AUTO);
+    t_allow_unrelated_clustering urel_clust_stat(e_unrel_clust_stat::OFF, e_unrel_clust_mode::AUTO);
 
     bool default_set = false;
     std::set<std::string> seen_block_types;
@@ -461,7 +457,6 @@ static t_allow_unrelated_clustering parse_unrelated_clustering_stat(std::vector<
             VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
         }
 
-        
         if (block_type.empty()) {
             //Default value
             if (default_set) {
@@ -471,13 +466,11 @@ static t_allow_unrelated_clustering parse_unrelated_clustering_stat(std::vector<
             }
             urel_clust_stat.set_default_status(block_status);
             default_set = true;
-        } 
-        else if(!block_type_found(block_type)){
+        } else if (!block_type_found(block_type)) {
             std::stringstream msg;
             msg << "Block type '" << block_type << "' not found";
             VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
-        }
-        else {
+        } else {
             if (seen_block_types.count(block_type)) {
                 std::stringstream msg;
                 msg << "Only one unrelated clustering status should be specified for block type '" << block_type << "'";

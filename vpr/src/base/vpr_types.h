@@ -140,9 +140,8 @@ enum class e_unrel_clust_stat {
 
 enum class e_unrel_clust_mode {
     FIXED, ///<Unrelated clustering status is given by the user and cannot be updated
-    AUTO ///<Unrelated clustering status can be updated by VPR throughout the packing flow
+    AUTO   ///<Unrelated clustering status can be updated by VPR throughout the packing flow
 };
-
 
 enum class e_balance_block_type_util {
     OFF,

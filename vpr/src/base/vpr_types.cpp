@@ -27,7 +27,7 @@ t_allow_unrelated_clustering::t_allow_unrelated_clustering(enum e_unrel_clust_st
     default_.first = default_stat;
     default_.second = default_mode;
 }
-enum e_unrel_clust_stat t_allow_unrelated_clustering::get_block_status(std::string block_type_name) const{
+enum e_unrel_clust_stat t_allow_unrelated_clustering::get_block_status(std::string block_type_name) const {
     auto itr = overrides_.find(block_type_name);
     if (itr != overrides_.end()) {
         std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status = itr->second;
@@ -36,7 +36,7 @@ enum e_unrel_clust_stat t_allow_unrelated_clustering::get_block_status(std::stri
     return default_.first;
 }
 
-enum e_unrel_clust_mode t_allow_unrelated_clustering::get_block_mode(std::string block_type_name) const{
+enum e_unrel_clust_mode t_allow_unrelated_clustering::get_block_mode(std::string block_type_name) const {
     auto itr = overrides_.find(block_type_name);
     if (itr != overrides_.end()) {
         std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status = itr->second;
@@ -51,7 +51,6 @@ void t_allow_unrelated_clustering::set_block_status(std::string block_type_name,
 void t_allow_unrelated_clustering::set_default_status(std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status) {
     default_ = status;
 }
-
 
 t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(int threshold)
     : default_(threshold) {}
