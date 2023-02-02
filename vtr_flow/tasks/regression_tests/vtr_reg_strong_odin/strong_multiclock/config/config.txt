@@ -24,5 +24,5 @@ qor_parse_file=qor_multiclock.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_multiclock.txt
 
-script_params=-starting_stage vpr -sdc_file tasks/regression_tests/vtr_reg_strong/strong_multiclock/config/multiclock.sdc
+script_params=-starting_stage vpr -sdc_file tasks/regression_tests/vtr_reg_strong_odin/strong_multiclock/config/multiclock.sdc
 
