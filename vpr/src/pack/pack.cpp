@@ -27,10 +27,14 @@
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
-static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
+static std::vector<std::string> try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
 
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
 static std::string target_external_pin_util_to_string(const t_ext_pin_util_targets& ext_pin_utils);
+
+static t_allow_unrelated_clustering parse_unrelated_clustering_stat(std::vector<std::string> specs);
+std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> parse_unrel_clust_from_str(std::string str);
+static bool block_type_found(std::string block_type_name);
 
 static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<std::string> specs);
 static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thresholds& hf_thresholds);
@@ -119,12 +123,8 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("Packing with pin utilization targets: %s\n", target_external_pin_util_to_string(helper_ctx.target_external_pin_util).c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds_to_string(high_fanout_thresholds).c_str());
 
-    bool allow_unrelated_clustering = false;
-    if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::ON) {
-        allow_unrelated_clustering = true;
-    } else if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::OFF) {
-        allow_unrelated_clustering = false;
-    }
+    t_allow_unrelated_clustering allow_unrelated_clustering = parse_unrelated_clustering_stat(packer_opts->allow_unrelated_clustering);
+
 
     bool balance_block_type_util = false;
     if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::ON) {
@@ -156,7 +156,7 @@ bool try_pack(t_packer_opts* packer_opts,
             clustering_data);
 
         //Try to size/find a device
-        bool fits_on_device = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
+        std::vector<std::string> overused_blocks = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
@@ -164,22 +164,38 @@ bool try_pack(t_packer_opts* packer_opts,
          */
         bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.mutable_floorplanning().constraints.get_num_partitions() > 0);
 
-        if (fits_on_device && !floorplan_regions_overfull) {
+        if (overused_blocks.empty() && !floorplan_regions_overfull) {
             break; //Done
         } else if (pack_iteration == 1 && !floorplan_not_fitting) {
             //1st pack attempt was unsucessful (i.e. not dense enough) and we have control of unrelated clustering
             //
             //Turn it on to increase packing density
-            if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
-                VTR_ASSERT(allow_unrelated_clustering == false);
-                allow_unrelated_clustering = true;
+            std::vector<std::string> fixed_blocks;
+            for(auto& overused_block : overused_blocks) {
+                e_unrel_clust_mode block_mode = allow_unrelated_clustering.get_block_mode(overused_block);
+                if(block_mode == e_unrel_clust_mode::FIXED){
+                    // The user has explicitly set unrelated clustering status for this block type
+                    // so we can't change it
+                    fixed_blocks.push_back(overused_block);
+                }
+                else{
+                    allow_unrelated_clustering.set_block_status(overused_block, std::make_pair(e_unrel_clust_stat::ON, block_mode));
+                }
             }
             if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::AUTO) {
                 VTR_ASSERT(balance_block_type_util == false);
                 balance_block_type_util = true;
             }
-            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
-                    (allow_unrelated_clustering ? "true" : "false"),
+
+            if(fixed_blocks.size() > 0){
+                std::stringstream msg;
+                msg << "Packing failed to fit on device.\n"
+                    << "The following block types were overused, but unrelated clustering was disabled for them:\n"
+                    << vtr::join(fixed_blocks, ",").c_str() << "\n";
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
+            }
+            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=true for block types=[%s] balance_block_type_util=%s\n",
+                    vtr::join(overused_blocks, ",").c_str(),
                     (balance_block_type_util ? "true" : "false"));
             /*
              * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
@@ -342,7 +358,7 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
     return (is_clock);
 }
 
-static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
+static std::vector<std::string> try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device
@@ -352,8 +368,7 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
      *Report on the device
      */
     VTR_LOG("FPGA sized to %zu x %zu (%s)\n", grid.width(), grid.height(), grid.name().c_str());
-
-    bool fits_on_device = true;
+    std::vector<std::string> overused_block_types;
 
     float device_utilization = calculate_device_utilization(grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
@@ -378,13 +393,103 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
         type_util[&type] = util;
 
         if (util > 1.) {
-            fits_on_device = false;
+            std::string block_name(type.name);
+            overused_block_types.push_back(block_name);
         }
         VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name);
     }
     VTR_LOG("\n");
+    return overused_block_types;
+}
 
-    return fits_on_device;
+std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> parse_unrel_clust_from_str(std::string str) {
+    std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> conv_value;
+    if (str == "on"){
+        conv_value.first = e_unrel_clust_stat::ON;
+        conv_value.second = e_unrel_clust_mode::FIXED;
+    }
+    else if (str == "off"){
+        conv_value.first = e_unrel_clust_stat::OFF;
+        conv_value.second = e_unrel_clust_mode::FIXED;
+    }
+    else if (str == "auto"){
+        conv_value.first = e_unrel_clust_stat::OFF;
+        conv_value.second = e_unrel_clust_mode::AUTO;
+    }
+    else {
+        std::stringstream msg;
+        msg << "Invalid conversion from '"
+            << str
+            << "' to e_unrel_clust_stat (expected one of: "
+            << "on, off, auto" << ")";
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
+    }
+    return conv_value;
+}
+static bool block_type_found(std::string block_type_name) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    auto logical_block_types = device_ctx.logical_block_types;
+
+    for(auto block_type : logical_block_types) {
+        if (strcmp(block_type.name, block_type_name.c_str()) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static t_allow_unrelated_clustering parse_unrelated_clustering_stat(std::vector<std::string> specs) {
+    // If no options is specified by the user, unrelated clustering is turned off at first and the mode is set to auto
+    t_allow_unrelated_clustering urel_clust_stat(e_unrel_clust_stat::OFF,e_unrel_clust_mode::AUTO);
+
+    bool default_set = false;
+    std::set<std::string> seen_block_types;
+
+    for (auto spec : specs) {
+        auto block_value = vtr::split(spec, ":");
+
+        std::string block_type;
+        std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> block_status;
+        if (block_value.size() == 2) {
+            block_type = block_value[0];
+            block_status = parse_unrel_clust_from_str(block_value[1]);
+        } else if (block_value.size() == 1) {
+            block_status = parse_unrel_clust_from_str(block_value[0]);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid unrelated clustering status specification '" << spec << "' (expected at most one ':' between block name and values";
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
+        }
+
+        
+        if (block_type.empty()) {
+            //Default value
+            if (default_set) {
+                std::stringstream msg;
+                msg << "Only one default unrelated clustering status should be specified";
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
+            }
+            urel_clust_stat.set_default_status(block_status);
+            default_set = true;
+        } 
+        else if(!block_type_found(block_type)){
+            std::stringstream msg;
+            msg << "Block type '" << block_type << "' not found";
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
+        }
+        else {
+            if (seen_block_types.count(block_type)) {
+                std::stringstream msg;
+                msg << "Only one unrelated clustering status should be specified for block type '" << block_type << "'";
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
+            }
+
+            urel_clust_stat.set_block_status(block_type, block_status);
+            seen_block_types.insert(block_type);
+        }
+    }
+
+    return urel_clust_stat;
 }
 
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs) {

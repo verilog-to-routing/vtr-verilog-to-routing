@@ -133,11 +133,16 @@ enum class e_const_gen_inference {
     COMB_SEQ ///<Both combinational and sequential constant generator inference
 };
 
-enum class e_unrelated_clustering {
+enum class e_unrel_clust_stat {
     OFF,
-    ON,
-    AUTO
+    ON
 };
+
+enum class e_unrel_clust_mode {
+    FIXED, ///<Unrelated clustering status is given by the user and cannot be updated
+    AUTO ///<Unrelated clustering status can be updated by VPR throughout the packing flow
+};
+
 
 enum class e_balance_block_type_util {
     OFF,
@@ -206,6 +211,42 @@ class t_ext_pin_util_targets {
   private:
     t_ext_pin_util defaults_;
     std::map<std::string, t_ext_pin_util> overrides_;
+};
+
+class t_allow_unrelated_clustering {
+  public:
+    t_allow_unrelated_clustering() = default;
+    t_allow_unrelated_clustering(enum e_unrel_clust_stat status, enum e_unrel_clust_mode mode);
+    /**
+     * @brief Returns the unrelated clustering status for the specified block type
+     */
+    enum e_unrel_clust_stat get_block_status(std::string block_type_name) const;
+    /**
+     * @brief Returns the unrelated clustering mode for the specified block type
+     */
+    enum e_unrel_clust_mode get_block_mode(std::string block_type_name) const;
+
+  public:
+    /**
+     * @brief Sets the unrelated clustering status for the specified block type
+     * 
+     * The unrelated clustering status is represented as a pair of booleans. 
+     * The first boolean incidcates whether unrelated clustering is turned on or off. 
+     * The second variable indicates whether the status of the variable is provided
+     * by the user(bool = false) or user let it to be automatically determined by VPR(bool = ture). 
+     * If provided by the user, the status cannot be overriden later, otherwise
+     * it can be adjusted by VPR throughout the flow as necessary.
+     */
+    void set_block_status(std::string block_type_name, std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status);
+    /**
+     * @brief Sets the default value for unrelated clustering status
+     * 
+     */
+    void set_default_status(std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status);
+
+  private:
+    std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> default_;
+    std::map<std::string, std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode>> overrides_;
 };
 
 class t_pack_high_fanout_thresholds {
@@ -840,7 +881,7 @@ struct t_packer_opts {
     float inter_cluster_net_delay;
     float target_device_utilization;
     bool auto_compute_inter_cluster_net_delay;
-    e_unrelated_clustering allow_unrelated_clustering;
+    std::vector<std::string> allow_unrelated_clustering;
     bool connection_driven;
     int pack_verbosity;
     bool enable_pin_feasibility_filter;

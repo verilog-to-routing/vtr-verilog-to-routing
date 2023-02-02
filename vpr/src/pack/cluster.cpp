@@ -91,7 +91,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          int num_models,
                                                          const std::unordered_set<AtomNetId>& is_clock,
                                                          const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
-                                                         bool allow_unrelated_clustering,
+                                                         t_allow_unrelated_clustering allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,
                                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                                                          const t_ext_pin_util_targets& ext_pin_util_targets,
@@ -300,11 +300,16 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
             }
+            bool allow_unrel_clust_cur_blk = false;
+            if (allow_unrelated_clustering.get_block_status(cluster_ctx.clb_nlist.block_type(clb_index)->name) == e_unrel_clust_stat::ON) {
+                allow_unrel_clust_cur_blk = true;
+            }
+
             cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,
-                                                     allow_unrelated_clustering,
+                                                     allow_unrel_clust_cur_blk,
                                                      packer_opts.prioritize_transitive_connectivity,
                                                      packer_opts.transitive_fanout_threshold,
                                                      packer_opts.feasible_block_array_size,
@@ -351,7 +356,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  detailed_routing_stage,
                                  attraction_groups,
                                  clb_inter_blk_nets,
-                                 allow_unrelated_clustering,
+                                 allow_unrel_clust_cur_blk,
                                  high_fanout_threshold,
                                  is_clock,
                                  timing_info,
