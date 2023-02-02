@@ -27,6 +27,7 @@
 #define ODIN_II_H
 
 #include "odin_types.h"
+
 /* Odin-II exit status enumerator */
 enum ODIN_ERROR_CODE {
     SUCCESS,

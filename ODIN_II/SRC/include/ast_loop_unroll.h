@@ -26,10 +26,11 @@
 #ifndef LOOP_UNROLL_AST_H
 #define LOOP_UNROLL_AST_H
 
+#include <cstdlib>
+#include <functional>
+
 #include "odin_globals.h"
 #include "odin_types.h"
-#include <stdlib.h>
-#include <functional>
 
 /* resolve_pre_condition error codes */
 #define UNSUPPORTED_PRE_CONDITION_NODE 1

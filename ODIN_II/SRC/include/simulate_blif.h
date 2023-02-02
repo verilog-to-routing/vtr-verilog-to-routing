@@ -25,27 +25,25 @@
 
 #ifndef SIMULATE_BLIF_H
 #define SIMULATE_BLIF_H
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
+
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
 #include <unordered_map>
-
-#define SIM_WAVE_LENGTH 16
-#define BUFFER_MAX_SIZE 1024
-
 #include <queue>
+
 #include "sim_block.h"
 #include "odin_types.h"
 #include "odin_globals.h"
-
 #include "netlist_utils.h"
 #include "odin_util.h"
-
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "odin_types.h"
 #include "memories.h"
+
+#define BUFFER_MAX_SIZE 1024
 
 /*
  * Number of values to store for each pin at one time.

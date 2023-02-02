@@ -23,25 +23,22 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "simulate_blif.h"
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
-#include <cmath>
-#include "vtr_util.h"
-#include "vtr_memory.h"
-#include "odin_buffer.hpp"
-#include "odin_util.h"
 #include <string>
 #include <sstream>
-#include <chrono>
 #include <dlfcn.h>
-#include <mutex>
-#include <unistd.h>
 #include <thread>
 
+#include "simulate_blif.h"
+#include "odin_buffer.h"
+#include "odin_util.h"
+
+#include "vtr_util.h"
+#include "vtr_memory.h"
+
 #define CLOCK_INITIAL_VALUE 1
-#define MAX_REPEAT_SIM 128
 
 static inline BitSpace::bit_value_t init_value(nnode_t* node) {
     // by default this is undefined
@@ -105,13 +102,6 @@ inline static BitSpace::bit_value_t get_Q(npin_t* Q, int cycle) {
 
 inline static BitSpace::bit_value_t compute_ff(bool trigger, BitSpace::bit_value_t D_val, BitSpace::bit_value_t Q_val, int /*cycle*/) {
     return (trigger) ? D_val : Q_val;
-}
-inline static BitSpace::bit_value_t compute_ff(bool trigger, npin_t* D, BitSpace::bit_value_t Q_val, int cycle) {
-    return compute_ff(trigger, get_D(D, cycle), Q_val, cycle);
-}
-
-inline static BitSpace::bit_value_t compute_ff(bool trigger, BitSpace::bit_value_t D_val, npin_t* Q, int cycle) {
-    return compute_ff(trigger, D_val, get_Q(Q, cycle), cycle);
 }
 
 inline static BitSpace::bit_value_t compute_ff(bool trigger, npin_t* D, npin_t* Q, int cycle) {
@@ -1371,7 +1361,7 @@ static void initialize_pin(npin_t* pin) {
 
     if (pin->net) {
         if (!pin->net->values) {
-            pin->net->values = std::make_shared<AtomicBuffer>(init_value(pin->node));
+            pin->net->values = std::make_shared<atomic_buffer>(init_value(pin->node));
         }
 
         pin->values = pin->net->values;
@@ -1380,7 +1370,7 @@ static void initialize_pin(npin_t* pin) {
             if (pin->net->fanout_pins[i])
                 pin->net->fanout_pins[i]->values = pin->net->values;
     } else {
-        pin->values = std::make_shared<AtomicBuffer>(init_value(pin->node));
+        pin->values = std::make_shared<atomic_buffer>(init_value(pin->node));
     }
 }
 

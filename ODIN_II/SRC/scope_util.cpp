@@ -24,6 +24,7 @@
  */
 
 #include "scope_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
@@ -48,22 +49,6 @@ void move_sc_scope_items(sc_scope** source_ref, sc_scope* destination) {
         source = NULL;
     }
     (*source_ref) = source;
-}
-
-void free_sc_scope(sc_scope** to_free_ref, STRING_CACHE** param, STRING_CACHE** defparam) {
-    sc_scope* to_free = (*to_free_ref);
-    if (to_free) {
-        *defparam = to_free->defparam_sc;
-        *param = to_free->param_sc;
-
-        to_free->defparam_sc = NULL;
-        to_free->param_sc = NULL;
-
-        vtr::free(to_free);
-        to_free = NULL;
-    }
-
-    (*to_free_ref) = to_free;
 }
 
 sc_scope* pop_scope() {

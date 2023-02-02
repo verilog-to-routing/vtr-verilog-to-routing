@@ -22,19 +22,20 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <cstdio>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+
 #include "odin_error.h"
 #include "odin_types.h"
 #include "odin_util.h"
 #include "odin_globals.h"
 #include "verilog_bison.h"
-#include "vtr_util.h"
 #include "scope_util.h"
 
-#include <stdio.h>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <string.h>
+#include "vtr_util.h"
 
 #define RECURSIVE_LIMIT 256
 

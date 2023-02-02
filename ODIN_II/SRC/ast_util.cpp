@@ -23,18 +23,17 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 #include <ctype.h>
-#include <stdarg.h>
-#include <math.h>
-#include <algorithm>
+#include <cmath>
+
 #include "odin_globals.h"
 #include "odin_types.h"
-
 #include "ast_util.h"
 #include "odin_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
@@ -105,15 +104,6 @@ ast_t* allocate_ast() {
     new_ast->top_modules_count = 0;
 
     return new_ast;
-}
-
-/*---------------------------------------------------------------------------
- * (function: free_ast)
- *-------------------------------------------------------------------------*/
-ast_t* free_ast(ast_t* to_delete) {
-    vtr::free(to_delete);
-    to_delete = NULL;
-    return to_delete;
 }
 
 /*---------------------------------------------------------------------------
@@ -390,23 +380,6 @@ void remove_child_from_node_at_index(ast_node_t* node, int index) {
     }
 
     node->num_children--;
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: expand_node_list_at)
- *-------------------------------------------------------------------------------------------*/
-ast_node_t** expand_node_list_at(ast_node_t** list, long old_size, long to_add, long start_idx) {
-    if (list) {
-        long new_size = old_size + to_add;
-        list = (ast_node_t**)vtr::realloc(list, sizeof(ast_node_t*) * new_size);
-
-        long i;
-        for (i = new_size - 1; i >= (start_idx + to_add); i--) {
-            list[i] = list[i - to_add];
-        }
-        return list;
-    }
-    return NULL;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -871,26 +844,6 @@ long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref) {
 
     oassert(assignment_size != 0);
     return assignment_size;
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: move_ast_node)
- * move node from src to dest
- *-------------------------------------------------------------------------------------------*/
-void move_ast_node(ast_node_t* src, ast_node_t* dest, ast_node_t* node) {
-    int i, j;
-    int number;
-    number = src->num_children;
-    for (i = 0; i < number; i++) {
-        if (src->children[i]->unique_count == node->unique_count) {
-            number = number - 1;
-            src->num_children = number;
-            for (j = i; j < number; j++) {
-                src->children[j] = src->children[j + 1];
-            }
-        }
-    }
-    add_child_to_node(dest, node);
 }
 
 /*---------------------------------------------------------------------------------------------
