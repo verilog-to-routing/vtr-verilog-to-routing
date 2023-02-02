@@ -203,10 +203,10 @@ void ClusteredNetlist::set_net_is_global(ClusterNetId net_id, bool state) {
 }
 
 void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
+    //find the block type, so we can remove it from blocks_per_type_ data structure
+    auto blk_type = block_type(blk_id);
     //Remove & invalidate pointers
     free_pb(block_pbs_[blk_id]);
-    auto blk_type = block_type(blk_id);
-
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);
