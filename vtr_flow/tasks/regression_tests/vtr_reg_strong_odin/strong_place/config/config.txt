@@ -28,4 +28,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params_common = -starting_stage vpr --net_file tasks/regression_tests/vtr_reg_strong_odin/strong_place/multiclock.net --verify_file_digests off --place
+script_params_common = -starting_stage vpr --net_file ../../../../multiclock.net --verify_file_digests off --place

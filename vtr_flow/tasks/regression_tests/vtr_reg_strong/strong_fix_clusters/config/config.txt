@@ -24,4 +24,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params =-starting_stage vpr --fix_clusters tasks/regression_tests/vtr_reg_strong/strong_fix_clusters/apex2_block_locations.place
+script_params =-starting_stage vpr --fix_clusters ../../../../apex2_block_locations.place
