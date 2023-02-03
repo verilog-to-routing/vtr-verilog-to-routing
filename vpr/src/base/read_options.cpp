@@ -1604,7 +1604,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "   '--allow_unrelated_clustering auto io:on'\n"
             "would turn on unrelated clustering for io blocks and\n"
             "dynamically determine enable/disable unrelated clustering,\n"
-            "for all all other blocks.\n")
+            "for all other blocks.\n")
 
         .nargs('+')
         .default_value({"auto"})
