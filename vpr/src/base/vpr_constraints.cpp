@@ -66,7 +66,7 @@ void VprConstraints::add_route_constraint(RouteConstraint rc) {
 
 RouteConstraint VprConstraints::get_route_constraint_by_net_name(std::string net_name) const {
     RouteConstraint rc;
-    auto const& rc_itr = route_constraints_.find(net_name); 
+    auto const& rc_itr = route_constraints_.find(net_name);
     if (rc_itr == route_constraints_.end()) {
         rc.set_net_name("INVALID");
         rc.set_net_type("INVALID");
@@ -88,9 +88,9 @@ RouteConstraint VprConstraints::get_route_constraint_by_idx(std::size_t idx) con
     } else {
         std::size_t i = 0;
         for (auto const& rc_itr : route_constraints_) {
-           if (i == idx) {
-               rc = rc_itr.second;
-           }
+            if (i == idx) {
+                rc = rc_itr.second;
+            }
         }
     }
     return rc;

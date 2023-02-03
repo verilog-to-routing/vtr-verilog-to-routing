@@ -306,12 +306,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /** Generated for complex type "set_global_signal":
-	 * <xs:complexType name="set_global_signal">
-	 *   <xs:attribute name="name" type="xs:string" use="required" />
-	 *   <xs:attribute name="type" type="xs:string" use="required" />
-	 *   <xs:attribute name="route_model" type="xs:string" use="required" />
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="set_global_signal">
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     *   <xs:attribute name="type" type="xs:string" use="required" />
+     *   <xs:attribute name="route_model" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
     virtual inline const char* get_set_global_signal_name(RouteConstraint& rc) final {
         return rc.get_net_name().c_str();
     }
@@ -335,12 +335,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /** Generated for complex type "global_route_constraints":
-	 * <xs:complexType name="global_route_constraints">
-	 *   <xs:sequence>
-	 *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="global_route_constraints">
+     *   <xs:sequence>
+     *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
     virtual inline void preallocate_global_route_constraints_set_global_signal(void*& /*ctx*/, size_t /*size*/) final {}
     virtual inline void* add_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
         return nullptr;
@@ -356,14 +356,14 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /** Generated for complex type "vpr_constraints":
-	 * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
-	 *     <xs:choice minOccurs="0" maxOccurs="unbounded">
-	 *       <xs:element name="partition_list" type="partition_list" />
-	 *       <xs:element name="global_route_constraints" type="global_route_constraints" />
-	 *     </xs:choice>
-	 *     <xs:attribute name="tool_name" type="xs:string" />
-	 *   </xs:complexType>
-	*/
+     * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
+     *     <xs:choice minOccurs="0" maxOccurs="unbounded">
+     *       <xs:element name="partition_list" type="partition_list" />
+     *       <xs:element name="global_route_constraints" type="global_route_constraints" />
+     *     </xs:choice>
+     *     <xs:attribute name="tool_name" type="xs:string" />
+     *   </xs:complexType>
+     */
     virtual inline const char* get_vpr_constraints_tool_name(void*& /*ctx*/) final {
         return temp_.c_str();
     }

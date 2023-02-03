@@ -786,7 +786,7 @@ int get_max_primitives_in_pb_type(t_pb_type* pb_type) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_size += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_primitives_in_pb_type(
-                                 &pb_type->modes[i].pb_type_children[j]);
+                                   &pb_type->modes[i].pb_type_children[j]);
             }
             if (temp_size > max_size) {
                 max_size = temp_size;
@@ -809,7 +809,7 @@ int get_max_nets_in_pb_type(const t_pb_type* pb_type) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_nets += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_nets_in_pb_type(
-                                 &pb_type->modes[i].pb_type_children[j]);
+                                   &pb_type->modes[i].pb_type_children[j]);
             }
             if (temp_nets > max_nets) {
                 max_nets = temp_nets;
@@ -1535,7 +1535,7 @@ void free_pb_stats(t_pb* pb) {
         pb->pb_stats->num_pins_of_net_in_pb.clear();
 
         if (pb->pb_stats->feasible_blocks) {
-            delete[] (pb->pb_stats->feasible_blocks);
+            delete[](pb->pb_stats->feasible_blocks);
         }
         if (!pb->parent_pb) {
             pb->pb_stats->transitive_fanout_candidates.clear();

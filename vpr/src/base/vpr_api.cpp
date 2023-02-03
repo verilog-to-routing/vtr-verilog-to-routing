@@ -351,7 +351,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     if (!filename_opts.read_vpr_constraints_file.empty()) {
         load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
 
-        // give a notificaiton on routing constraints overiding clock modeling 
+        // give a notificaiton on routing constraints overiding clock modeling
         if (g_vpr_ctx.routing().constraints.get_route_constraint_num() && options->clock_modeling.provenance() == argparse::Provenance::SPECIFIED) {
             VTR_LOG_WARN("Route constraint(s) detected and will override clock modeling setting.\n");
         }
