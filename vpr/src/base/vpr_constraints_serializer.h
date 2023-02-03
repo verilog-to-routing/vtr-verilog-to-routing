@@ -356,48 +356,66 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /** Generated for complex type "vpr_constraints":
-     * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
-     *     <xs:all>
-     *       <xs:element name="partition_list" type="partition_list" />
+	 * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	 *     <xs:choice minOccurs="0" maxOccurs="unbounded">
+	 *       <xs:element name="partition_list" type="partition_list" />
 	 *       <xs:element name="global_route_constraints" type="global_route_constraints" />
-     *     </xs:all>
-     *     <xs:attribute name="tool_name" type="xs:string" />
-     *   </xs:complexType>
-     */
+	 *     </xs:choice>
+	 *     <xs:attribute name="tool_name" type="xs:string" />
+	 *   </xs:complexType>
+	*/
     virtual inline const char* get_vpr_constraints_tool_name(void*& /*ctx*/) final {
         return temp_.c_str();
     }
 
-    virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {}
+    virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {
+    }
 
     virtual inline void set_vpr_constraints_constraints_comment(const char* /*constraints_comment*/, void*& /*ctx*/) final {}
 
     virtual inline const char* get_vpr_constraints_constraints_comment(void*& /*ctx*/) final {
         return temp_.c_str();
     }
-    virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final {
+
+    virtual inline void preallocate_vpr_constraints_partition_list(void*& /*ctx*/, size_t) final {
+    }
+
+    virtual inline void* add_vpr_constraints_partition_list(void*& /*ctx*/) final {
         return nullptr;
     }
 
     virtual inline void finish_vpr_constraints_partition_list(void*& /*ctx*/) final {
+        return;
     }
 
-    virtual inline void* get_vpr_constraints_partition_list(void*& /*ctx*/) final {
+    virtual inline size_t num_vpr_constraints_partition_list(void*& /*ctx*/) final {
+        return 0;
+    }
+
+    virtual inline void* get_vpr_constraints_partition_list(int, void*& /*ctx*/) final {
         return nullptr;
     }
 
-    virtual inline void* init_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+    virtual inline void preallocate_vpr_constraints_global_route_constraints(void*& /*ctx*/, size_t) final {
+    }
+
+    virtual inline void* add_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
         return nullptr;
     }
 
     virtual inline void finish_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+        return;
+    }
+    virtual inline size_t num_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+        return 0;
     }
 
-    virtual inline void* get_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+    virtual inline void* get_vpr_constraints_global_route_constraints(int, void*& /*cts*/) final {
         return nullptr;
     }
 
     virtual void finish_load() final {
+        return;
     }
 
     //temp data for writes
