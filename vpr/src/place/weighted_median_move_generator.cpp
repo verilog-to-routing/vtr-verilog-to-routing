@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "math.h"
 #include "place_constraints.h"
+#include "move_utils.h"
 
 #define CRIT_MULT_FOR_W_MEDIAN 10
 
@@ -17,6 +18,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     ClusterBlockId b_from;
     if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         b_from = pick_from_block();
+        blk_type.index = convert_logical_to_agent_block_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         b_from = pick_from_block(blk_type);
     }

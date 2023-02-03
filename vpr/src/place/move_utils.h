@@ -236,7 +236,9 @@ std::string e_move_result_to_string(e_move_result move_outcome);
 
 //SARA_TODO: find a better location for these
 extern std::unordered_map<int, int> logical_to_agent_map;
+extern std::unordered_map<int, int> agent_to_logical_map;
 int convert_agent_to_logical_block_type(int agent_block_type_index);
+int convert_logical_to_agent_block_type(int logical_block_type_index);
 int get_num_agent_types();
 
 #endif

@@ -1,6 +1,7 @@
 #include "uniform_move_generator.h"
 #include "globals.h"
 #include "place_constraints.h"
+#include "move_utils.h"
 
 e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -9,6 +10,7 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
     ClusterBlockId b_from;
     if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         b_from = pick_from_block();
+        blk_type.index = convert_logical_to_agent_block_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         b_from = pick_from_block(blk_type);
     }

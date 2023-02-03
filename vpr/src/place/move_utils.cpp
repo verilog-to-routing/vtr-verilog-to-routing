@@ -499,9 +499,19 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 }
 //SARA_TODO:
 std::unordered_map<int, int> logical_to_agent_map;
+std::unordered_map<int, int> agent_to_logical_map;
+
 int convert_agent_to_logical_block_type(int agent_block_type_index) {
     if (logical_to_agent_map.count(agent_block_type_index)) {
         return logical_to_agent_map[agent_block_type_index];
+    }
+    //invalid block type
+    return -1;
+}
+
+int convert_logical_to_agent_block_type(int logical_block_type_index){
+    if (agent_to_logical_map.count(logical_block_type_index)) {
+        return agent_to_logical_map[logical_block_type_index];
     }
     //invalid block type
     return -1;

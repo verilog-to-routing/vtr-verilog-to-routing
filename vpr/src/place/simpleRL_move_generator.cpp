@@ -305,7 +305,6 @@ void SoftmaxAgent::set_block_ratio() {
         auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
         block_type_ratio[i] = (float)num_blocks / num_total_blocks;
         block_type_ratio[i] /= num_available_moves_;
-//        block_type_ratio[i] = std::min(block_type_ratio[i], float(0.05));
     }
 }
 

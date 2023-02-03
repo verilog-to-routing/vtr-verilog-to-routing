@@ -1,13 +1,15 @@
 #include "weighted_centroid_move_generator.h"
 #include "globals.h"
-#include <algorithm>
 #include "directed_moves_util.h"
 #include "place_constraints.h"
+#include "move_utils.h"
 
 e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     ClusterBlockId b_from;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         b_from = pick_from_block();
+        blk_type.index = convert_logical_to_agent_block_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         b_from = pick_from_block(blk_type);
     }
@@ -18,7 +20,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+
 
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 

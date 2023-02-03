@@ -51,6 +51,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
             if (blk_per_type.size() != 0) {
                 logical_to_agent_map.insert(std::pair<int, int>(agent_type_index, itype.index));
+                agent_to_logical_map.insert(std::pair<int,int>(itype.index,agent_type_index));
                 agent_type_index++;
                 logical_blk_types_count++;
             }
@@ -65,7 +66,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_MOVE_TYPES,logical_blk_types_count, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_MOVE_TYPES, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             } else {
@@ -74,7 +75,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES,logical_blk_types_count, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             }
@@ -88,7 +89,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_MOVE_TYPES, logical_blk_types_count);
+                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_MOVE_TYPES);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             } else {
@@ -97,7 +98,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES, logical_blk_types_count);
+                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             }
