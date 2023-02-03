@@ -136,7 +136,7 @@ void EpsilonGreedyAgent::init_q_scores() {
         fflush(agent_info_file_);
     }
     set_epsilon_action_prob();
-//    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+    //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
@@ -256,11 +256,11 @@ void SoftmaxAgent::init_q_scores() {
         fprintf(agent_info_file_, "\n");
         fflush(agent_info_file_);
     }
-    if(propose_blk_type) {
+    if (propose_blk_type) {
         set_block_ratio();
     }
     set_action_prob();
-//    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+    //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 t_propose_action SoftmaxAgent::propose_action() {
@@ -318,21 +318,19 @@ void SoftmaxAgent::set_action_prob() {
     // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
         int blk_ratio_index = (int)i / num_available_moves_;
-        if(propose_blk_type) {
+        if (propose_blk_type) {
             action_prob_[i] = (exp_q_[i] / sum_q) * block_type_ratio[blk_ratio_index];
-        }
-        else{
+        } else {
             action_prob_[i] = (exp_q_[i] / sum_q);
         }
     }
 
     // normalize all the action probabilities to guarantee the sum(all action probs) = 1
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
-    if(propose_blk_type) {
+    if (propose_blk_type) {
         std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
                        bind2nd(std::multiplies<float>(), (1 / sum_prob)));
-    }
-    else{
+    } else {
         std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
                        [sum_prob, this](float x) { return x + ((1.0 - sum_prob) / this->num_available_moves_); });
     }

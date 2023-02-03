@@ -826,7 +826,7 @@ void try_place(const t_placer_opts& placer_opts,
             print_place_status(state, stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, tot_iter);
 
-//            save_proposed_move_per_temp();
+            //            save_proposed_move_per_temp();
 
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
@@ -3058,10 +3058,10 @@ static void print_placement_move_types_stats(
                 aborted = move_type_stat.aborted_moves[agent_type * move_type_stat.num_moves.size() + imove];
                 rejected = moves - (accepted + aborted);
                 VTR_LOG(
-                        "\t%.17s move with type %.17s: %2.6f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",
-                        move_name.c_str(), itype.name, 100 * moves / total_moves,
-                        100 * accepted / moves, 100 * rejected / moves,
-                        100 * aborted / moves);
+                    "\t%.17s move with type %.17s: %2.6f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",
+                    move_name.c_str(), itype.name, 100 * moves / total_moves,
+                    100 * accepted / moves, 100 * rejected / moves,
+                    100 * aborted / moves);
             }
         }
         agent_type++;

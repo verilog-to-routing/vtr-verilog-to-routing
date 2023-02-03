@@ -509,7 +509,7 @@ int convert_agent_to_logical_block_type(int agent_block_type_index) {
     return -1;
 }
 
-int convert_logical_to_agent_block_type(int logical_block_type_index){
+int convert_logical_to_agent_block_type(int logical_block_type_index) {
     if (agent_to_logical_map.count(logical_block_type_index)) {
         return agent_to_logical_map[logical_block_type_index];
     }

@@ -21,7 +21,6 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
