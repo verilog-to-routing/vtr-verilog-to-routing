@@ -97,8 +97,7 @@
       <xs:all minOccurs="0">
         <xs:element name="partition_list" type="partition_list"/>
         <xs:element name="global_route_constraints" type="global_route_constraints"/>
-      </xs:all>
-
+      </xs:choice>
       <xs:attribute name="tool_name" type="xs:string"/>
     </xs:complexType>
   </xs:element>
