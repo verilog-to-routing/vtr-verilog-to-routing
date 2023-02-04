@@ -36,7 +36,7 @@ def run(
     circuit_file,
     power_tech_file=None,
     include_files=None,
-    start_stage=VtrStage.ODIN,
+    start_stage=VtrStage.YOSYS,
     end_stage=VtrStage.VPR,
     command_runner=vtr.CommandRunner(),
     temp_dir=Path("./temp"),
@@ -254,7 +254,7 @@ def run(
         if should_run_stage(VtrStage.ACE, start_stage, end_stage):
             vtr.ace.run(
                 next_stage_netlist,
-                old_netlist=post_odin_netlist,
+                old_netlist=post_odin_netlist if start_stage==VtrStage.ODIN else post_yosys_netlist,
                 output_netlist=post_ace_netlist,
                 output_activity_file=post_ace_activity_file,
                 command_runner=command_runner,
