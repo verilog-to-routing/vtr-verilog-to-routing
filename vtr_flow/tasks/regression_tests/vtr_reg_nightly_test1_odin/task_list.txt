@@ -14,4 +14,3 @@ regression_tests/vtr_reg_nightly_test1_odin/arithmetic_tasks/open_cores_frac
 #regression_tests/vtr_reg_nightly_test1_odin/symbiflow
 regression_tests/vtr_reg_nightly_test1_odin/power_extended_arch_list
 regression_tests/vtr_reg_nightly_test1_odin/power_extended_circuit_list
-
