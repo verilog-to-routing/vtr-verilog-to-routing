@@ -2243,6 +2243,8 @@ struct ArchReader {
 
         for (auto name : packages) {
             t_grid_def grid_def;
+            grid_def.num_of_avail_dies = 1;
+            grid_def.layers.resize(grid_def.num_of_avail_dies);
             grid_def.width = grid_def.height = 0;
             for (auto tile : tiles) {
                 grid_def.width = std::max(grid_def.width, tile.getCol() + 1);
@@ -2293,7 +2295,7 @@ struct ArchReader {
 
                 single.owned_meta = std::make_unique<t_metadata_dict>(data);
                 single.meta = single.owned_meta.get();
-                grid_def.loc_defs.emplace_back(std::move(single));
+                grid_def.layers.at(grid_def.num_of_avail_dies-1).loc_defs.emplace_back(std::move(single));
             }
 
             // The constant source tile will be placed at (0, 0)
@@ -2304,7 +2306,7 @@ struct ArchReader {
             constant.x.end_expr = constant.x.start_expr + " + w - 1";
             constant.y.end_expr = constant.y.start_expr + " + h - 1";
 
-            grid_def.loc_defs.emplace_back(std::move(constant));
+            grid_def.layers.at(grid_def.num_of_avail_dies-1).loc_defs.emplace_back(std::move(constant));
 
             arch_->grid_layouts.emplace_back(std::move(grid_def));
         }
