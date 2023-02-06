@@ -945,8 +945,7 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                                            bool enable_pin_feasibility_filter,
                                            const int feasible_block_array_size,
                                            t_ext_pin_util max_external_pin_util,
-                                           PartitionRegion& temp_cluster_pr,
-                                           bool during_recluster) {
+                                           PartitionRegion& temp_cluster_pr) {
     int molecule_size, failed_location;
     int i;
     enum e_block_pack_status block_pack_status;
@@ -1089,19 +1088,20 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                     VTR_ASSERT(block_pack_status == BLK_PASSED);
                     if (molecule->is_chain()) {
                         /* Chained molecules often take up lots of area and are important,
--                        * if a chain is packed in, want to rename logic block to match chain name */
+                         * -                        * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
                         cur_pb = atom_ctx.lookup.atom_pb(chain_root_blk_id)->parent_pb;
-
+                        /* // Elgammal debugging
                         if(strcmp(atom_ctx.nlist.block_name(chain_root_blk_id).c_str(), "sv_chip2_hierarchy_no_mem.v_fltr_4_left.inst_fltr_compute_h3^ADD~334-0[0]") == 0)
                             VTR_LOG("rename: %s\n", cur_pb->name);
-
-                        while (!during_recluster && cur_pb != nullptr) {
+                        */
+                        while (cur_pb != nullptr) {
                             free(cur_pb->name);
                             cur_pb->name = vtr::strdup(atom_ctx.nlist.block_name(chain_root_blk_id).c_str());
+                            /* // Elgammal debugging
                             if(cur_pb->is_root() && strcmp(atom_ctx.nlist.block_name(chain_root_blk_id).c_str(), "sv_chip2_hierarchy_no_mem.v_fltr_4_left.inst_fltr_compute_h3^ADD~334-0[0]") == 0)
                                 VTR_LOG("\t %p\n", cur_pb);
-                            //VTR_LOG("$ %s\n", cur_pb->name);
+                            */
                             cur_pb = cur_pb->parent_pb;
                         }
 
@@ -1547,7 +1547,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                                           packer_opts.enable_pin_feasibility_filter,
                                           packer_opts.feasible_block_array_size,
                                           target_ext_pin_util,
-                                          temp_cluster_pr, false);
+                                          temp_cluster_pr);
 
     auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
     VTR_ASSERT(blk_id);
@@ -2152,7 +2152,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                                             enable_pin_feasibility_filter,
                                             feasible_block_array_size,
                                             FULL_EXTERNAL_PIN_UTIL,
-                                            temp_cluster_pr, false);
+                                            temp_cluster_pr);
 
             success = (pack_result == BLK_PASSED);
         }

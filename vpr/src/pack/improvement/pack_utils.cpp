@@ -15,6 +15,7 @@
 #include "vtr_time.h"
 //#include <mutex>
 #include <thread>
+void printProgressBar(double progress);
 void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats);
 void init_multithreading_locks();
 
@@ -144,6 +145,9 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
     }
 
     for (int i = 0; i < n; i++) {
+        if(thread_num == 0 && (i*10)%n == 0){
+            printProgressBar(double(i)/n);
+        }
         new_locs.clear();
         is_proposed = move_generator->propose_move(new_locs);
         if (!is_proposed) {
@@ -170,4 +174,20 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
     pack_stats.good_moves += num_good_moves;
     pack_stats.legal_moves += num_legal_moves;
     pack_stats.mu.unlock();
+}
+
+#include <iostream>
+#include <string>
+
+void printProgressBar(double progress) {
+  int barWidth = 70;
+
+  VTR_LOG("[");
+  int pos = barWidth * progress;
+  for (int i = 0; i < barWidth; ++i) {
+    if (i < pos) VTR_LOG("=");
+    else if (i == pos) VTR_LOG(">");
+    else VTR_LOG(" ");
+  }
+  VTR_LOG("] %zu %\n", int(progress * 100.0));
 }
