@@ -145,8 +145,8 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
     }
 
     for (int i = 0; i < n; i++) {
-        if(thread_num == 0 && (i*10)%n == 0){
-            printProgressBar(double(i)/n);
+        if (thread_num == 0 && (i * 10) % n == 0) {
+            printProgressBar(double(i) / n);
         }
         new_locs.clear();
         is_proposed = move_generator->propose_move(new_locs);
@@ -180,14 +180,17 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
 #include <string>
 
 void printProgressBar(double progress) {
-  int barWidth = 70;
+    int barWidth = 70;
 
-  VTR_LOG("[");
-  int pos = barWidth * progress;
-  for (int i = 0; i < barWidth; ++i) {
-    if (i < pos) VTR_LOG("=");
-    else if (i == pos) VTR_LOG(">");
-    else VTR_LOG(" ");
-  }
-  VTR_LOG("] %zu %\n", int(progress * 100.0));
+    VTR_LOG("[");
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos)
+            VTR_LOG("=");
+        else if (i == pos)
+            VTR_LOG(">");
+        else
+            VTR_LOG(" ");
+    }
+    VTR_LOG("] %zu %\n", int(progress * 100.0));
 }
