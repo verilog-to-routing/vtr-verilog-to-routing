@@ -764,7 +764,7 @@ std::pair<std::pair<ClusterBlockId, ClusterBlockId>, int> get_max_value_pair(con
 bool evaluate_move_based_on_terminals_outside(const std::vector<molMoveDescription>& new_locs) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    int pins_absorbed_before, pins_absorbed_after, pins_outside_before, pins_outside_after;
+    int pins_in1_before, pins_in2_before, pins_in1_after, pins_in2_after, pins_outside_before, pins_outside_after;
     double cost = 0;
     std::unordered_set<AtomBlockId> moving_atoms;
 
@@ -777,8 +777,8 @@ bool evaluate_move_based_on_terminals_outside(const std::vector<molMoveDescripti
     }
 
     // iterate over moves proposed (a swap is two moves)
+    std::unordered_set<AtomNetId> moving_nets;
     for (auto& new_loc : new_locs) {
-        std::unordered_set<AtomNetId> moving_nets;
         auto cur_clb = atom_to_cluster(new_loc.molecule_to_move->atom_block_ids[new_loc.molecule_to_move->root]);
         // iterate over atoms in the moving molcule
         for (auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
@@ -786,13 +786,18 @@ bool evaluate_move_based_on_terminals_outside(const std::vector<molMoveDescripti
                 // iterate over moving atom pins
                 for (auto& moving_atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
                     auto atom_net = atom_ctx.nlist.pin_net(moving_atom_pin);
+                    if (atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
+                        continue;
+
                     // Make sure that we didn't count this net before
                     if (moving_nets.count(atom_net))
                         continue;
 
                     moving_nets.insert(atom_net);
-                    pins_absorbed_before = 0;
-                    pins_absorbed_after = 0;
+                    pins_in1_before = 0;
+                    pins_in2_before = 0;
+                    pins_in1_after = 0;
+                    pins_in2_after = 0;
                     pins_outside_before = 0;
                     pins_outside_after = 0;
 
@@ -801,25 +806,26 @@ bool evaluate_move_based_on_terminals_outside(const std::vector<molMoveDescripti
                         auto cluster = atom_to_cluster(atom);
                         if (moving_atoms.count(atom)) {
                             if (cluster == cur_clb) {
-                                pins_absorbed_before++;
-                                pins_absorbed_after++;
+                                pins_in1_before++;
+                                pins_in2_after++;
                             } else {
-                                pins_outside_before++;
-                                pins_outside_after++;
+                                pins_in2_before++;
+                                pins_in1_after++;
                             }
                         } else {
                             if (cluster == cur_clb) {
-                                pins_absorbed_before++;
-                                pins_outside_after++;
+                                pins_in1_before++;
+                                pins_in1_after++;
+                            } else if (cluster == new_loc.new_clb) {
+                                pins_in2_before++;
+                                pins_in2_after++;
                             } else {
                                 pins_outside_before++;
-                                if (cluster == new_loc.new_clb) {
-                                    pins_absorbed_after++;
-                                }
+                                pins_outside_after++;
                             }
                         }
                     }
-                    cost += (double)pins_absorbed_after / (pins_outside_after + 1.) - (double)pins_absorbed_before / (pins_outside_before + 1.);
+                    cost += (double)std::max(pins_in1_after, pins_in2_after) / (pins_outside_after + std::min(pins_in1_after, pins_in2_after) + 1.) - (double)std::max(pins_in1_before, pins_in2_before) / (pins_outside_before + std::min(pins_in1_before, pins_in2_before) + 1.);
                 }
             }
         }
