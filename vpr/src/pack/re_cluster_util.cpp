@@ -154,7 +154,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule, const t_logical_block_
                                     enable_pin_feasibility_filter,
                                     0,
                                     FULL_EXTERNAL_PIN_UTIL,
-                                    temp_cluster_pr);
+                                    temp_cluster_pr, false);
 
     // If clustering succeeds, add it to the clb netlist
     if (pack_result == BLK_PASSED) {
@@ -220,7 +220,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule, int molecule_size, 
                                     //false,
                                     helper_ctx.feasible_block_array_size,
                                     target_ext_pin_util,
-                                    temp_cluster_pr);
+                                    temp_cluster_pr, false);
 
     // If clustering succeeds, add it to the clb netlist
     if (pack_result == BLK_PASSED) {
@@ -282,7 +282,7 @@ void revert_mol_move(const ClusterBlockId& old_clb,
                                                         helper_ctx.enable_pin_feasibility_filter,
                                                         helper_ctx.feasible_block_array_size,
                                                         helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(old_clb)->name),
-                                                        temp_cluster_pr_original);
+                                                        temp_cluster_pr_original, false);
 
     VTR_ASSERT(pack_result == BLK_PASSED);
     //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.

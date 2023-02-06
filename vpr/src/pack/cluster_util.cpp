@@ -6,6 +6,7 @@
 
 #include "vtr_math.h"
 #include "SetupGrid.h"
+#include "string.h"
 
 /**********************************/
 /* Global variables in clustering */
@@ -305,7 +306,7 @@ bool check_cluster_legality(const int& verbosity,
         if (is_cluster_legal) {
             VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
         } else {
-            VTR_LOGV(verbosity > 2, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
+            VTR_LOGV(verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
         }
     } else {
         is_cluster_legal = true;
@@ -944,7 +945,8 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                                            bool enable_pin_feasibility_filter,
                                            const int feasible_block_array_size,
                                            t_ext_pin_util max_external_pin_util,
-                                           PartitionRegion& temp_cluster_pr) {
+                                           PartitionRegion& temp_cluster_pr,
+                                           bool during_recluster) {
     int molecule_size, failed_location;
     int i;
     enum e_block_pack_status block_pack_status;
@@ -1090,13 +1092,19 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
 -                        * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
                         cur_pb = atom_ctx.lookup.atom_pb(chain_root_blk_id)->parent_pb;
-                        /*
-                        while (cur_pb != nullptr) {
+
+                        if(strcmp(atom_ctx.nlist.block_name(chain_root_blk_id).c_str(), "sv_chip2_hierarchy_no_mem.v_fltr_4_left.inst_fltr_compute_h3^ADD~334-0[0]") == 0)
+                            VTR_LOG("rename: %s\n", cur_pb->name);
+
+                        while (!during_recluster && cur_pb != nullptr) {
                             free(cur_pb->name);
                             cur_pb->name = vtr::strdup(atom_ctx.nlist.block_name(chain_root_blk_id).c_str());
+                            if(cur_pb->is_root() && strcmp(atom_ctx.nlist.block_name(chain_root_blk_id).c_str(), "sv_chip2_hierarchy_no_mem.v_fltr_4_left.inst_fltr_compute_h3^ADD~334-0[0]") == 0)
+                                VTR_LOG("\t %p\n", cur_pb);
+                            //VTR_LOG("$ %s\n", cur_pb->name);
                             cur_pb = cur_pb->parent_pb;
                         }
-                        */
+
                         // if this molecule is part of a chain, mark the cluster as having a long chain
                         // molecule. Also check if it's the first molecule in the chain to be packed.
                         // If so, update the chain id for this chain of molecules to make sure all
@@ -1229,6 +1237,7 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
 
         VTR_ASSERT(parent_pb->name == nullptr);
         parent_pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
+        //VTR_LOG("$$ %s\n", parent_pb->name);
         parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
         set_reset_pb_modes(router_data, parent_pb, true);
         const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
@@ -1280,6 +1289,7 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
         /* try pack to location */
         VTR_ASSERT(pb->name == nullptr);
         pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
+        //VTR_LOG("$$$ %s\n", pb->name);
 
         //Update the atom netlist mappings
         atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
@@ -1537,7 +1547,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                                           packer_opts.enable_pin_feasibility_filter,
                                           packer_opts.feasible_block_array_size,
                                           target_ext_pin_util,
-                                          temp_cluster_pr);
+                                          temp_cluster_pr, false);
 
     auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
     VTR_ASSERT(blk_id);
@@ -2142,7 +2152,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                                             enable_pin_feasibility_filter,
                                             feasible_block_array_size,
                                             FULL_EXTERNAL_PIN_UTIL,
-                                            temp_cluster_pr);
+                                            temp_cluster_pr, false);
 
             success = (pack_result == BLK_PASSED);
         }
@@ -2154,6 +2164,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                 free(pb->name);
             }
             pb->name = vtr::strdup(root_atom_name.c_str());
+            //VTR_LOG("$$$$ %s\n", pb->name);
             clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, type);
             break;
         } else {

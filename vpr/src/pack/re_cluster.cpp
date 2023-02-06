@@ -202,9 +202,13 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     }
 
     t_pb* clb_pb_1 = cluster_ctx.clb_nlist.block_pb(clb_1);
-    std::string clb_pb_1_name = (std::string)clb_pb_1->name + move_suffix;
+    std::string clb_pb_1_name = (std::string)clb_pb_1->name;
     t_pb* clb_pb_2 = cluster_ctx.clb_nlist.block_pb(clb_2);
-    std::string clb_pb_2_name = (std::string)clb_pb_2->name + move_suffix;
+    std::string clb_pb_2_name = (std::string)clb_pb_2->name;
+    if(clb_1 == ClusterBlockId(721))
+        VTR_LOG("before clb1: %p --> %s\n", cluster_ctx.clb_nlist.block_pb(clb_1), cluster_ctx.clb_nlist.block_pb(clb_1)->name);
+    if(clb_2 == ClusterBlockId(721))
+        VTR_LOG("before clb2: %p --> %s\n", cluster_ctx.clb_nlist.block_pb(clb_2), cluster_ctx.clb_nlist.block_pb(clb_2)->name);
 
     //remove the molecule from its current cluster
     remove_mol_from_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, false, old_1_router_data);
@@ -216,6 +220,9 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     //Add the atom to the new cluster
     mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);
     if (!mol_1_success) {
+        if(clb_1 ==  ClusterBlockId(721) || clb_2 == ClusterBlockId(721)) {
+            VTR_LOG("packing clb2 failed\n");
+        }
         mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
         mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);
 
@@ -224,11 +231,28 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         free_router_data(old_2_router_data);
         old_1_router_data = nullptr;
         old_2_router_data = nullptr;
+        /*
+        if(molecule_2->is_chain())
+        {
+            free(clb_pb_1->name);
+            cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+        }
+        if(molecule_1->is_chain())
+        {
+            free(clb_pb_2->name);
+            cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
+        }
+        */
         return false;
     }
-
+    if(clb_1 ==  ClusterBlockId(721) || clb_2 == ClusterBlockId(721)) {
+        VTR_LOG("packing clb2 success, %s\n", cluster_ctx.clb_nlist.block_pb(clb_2)->name);
+    }
     mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
     if (!mol_2_success) {
+        if(clb_1 == ClusterBlockId(721)) {
+            VTR_LOG("packing clb1 failed\n");
+        }
         remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, true, old_2_router_data);
         commit_mol_removal(molecule_1, molecule_1_size, clb_2, during_packing, old_2_router_data, clustering_data);
         mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
@@ -239,11 +263,27 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         free_router_data(old_2_router_data);
         old_1_router_data = nullptr;
         old_2_router_data = nullptr;
+        /*
+        if(molecule_2->is_chain())
+        {
+            free(clb_pb_1->name);
+            cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+        }
+        if(molecule_1->is_chain())
+        {
+            free(clb_pb_2->name);
+            cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
+        }
+         */
         return false;
+    }
+    if(clb_2 ==  ClusterBlockId(721) || clb_1 == ClusterBlockId(721)) {
+        VTR_LOG("packing clb1 succes, %s\n", cluster_ctx.clb_nlist.block_pb(clb_1)->name);
     }
 
     //commit the move if succeeded or revert if failed
     VTR_ASSERT(mol_1_success && mol_2_success);
+    /*
     if(molecule_2->is_chain())
     {
         free(clb_pb_1->name);
@@ -254,7 +294,11 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         free(clb_pb_2->name);
         cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
     }
-
+    */
+    if(clb_1 == ClusterBlockId(721))
+        VTR_LOG("after clb1: %p --> %s\n\n", cluster_ctx.clb_nlist.block_pb(clb_1), cluster_ctx.clb_nlist.block_pb(clb_1)->name);
+    if(clb_2 == ClusterBlockId(721))
+        VTR_LOG("after clb2: %p --> %s\n\n", cluster_ctx.clb_nlist.block_pb(clb_2), cluster_ctx.clb_nlist.block_pb(clb_2)->name);
 
     //If the move is done after packing not during it, some fixes need to be done on the clustered netlist
     if (!during_packing) {
