@@ -333,12 +333,7 @@ jobs:
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
 
   Compatibility:
-#    runs-on: ubuntu-18.04
-    if: ${{ github.repository_owner == 'verilog-to-routing' }}
-
-    container: ubuntu:bionic
-
-    runs-on: [ self-hosted, Linux, X64 ]
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
