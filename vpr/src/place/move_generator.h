@@ -23,17 +23,19 @@ struct MoveOutcomeStats {
 /**
  * @brief A Struct to hold statistics about the different move types
  *
- * num_moves:      save the number of proposed moves of each type (e.g. [0..NUM_PL_MOVE_TYPES-1])
- * blk_type_moves: save the block type index of each proposed move (e.g. [0..NUM_PL_MOVE_TYPES-1][0..t_logical_block_type.size()-2])
- *                 The RL agent will not perform any move with 'EMPTY' type, available block types wil be t_logical_block_type.size()-2.
- * accepted_moves: save the number of accepted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES-1][0..t_logical_block_type.size()-2] )
- * aborted_moves:  save the number of aborted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES-1][0..t_logical_block_type.size()-2] )
+ * num_moves:      save the number of proposed moves of each move type(e.g. [0..NUM_PL_MOVE_TYPES-1])
+ * blk_type_moves: save the block type index of each proposed move (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)])
+ * accepted_moves: save the number of accepted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)] )
+ * rejected_moves: save the number of rejected moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)] )
+ * aborted_moves:  save the number of aborted moves of each move (e.g. [0..NUM_PL_MOVE_TYPES-1] )
+ *                 Moves that are aborted might not have a specific block type
  */
 struct MoveTypeStat {
-    std::vector<int> num_moves; // SARA_TODO: seems to be redundant
+    std::vector<int> num_moves;
     std::vector<int> blk_type_moves;
     std::vector<int> accepted_moves;
     std::vector<int> aborted_moves;
+    std::vector<int> rejected_moves;
 };
 
 /**
