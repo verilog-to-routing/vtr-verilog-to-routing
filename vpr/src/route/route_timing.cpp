@@ -1079,16 +1079,13 @@ int get_max_pins_per_net(const Netlist<>& net_list) {
 
 struct Criticality_comp {
     const float* criticality;
-    bool greater_than_;
 
-    Criticality_comp(const float* calculated_criticalities, bool greater_than)
-        : criticality{calculated_criticalities}, greater_than_(greater_than) {}
+    Criticality_comp(const float* calculated_criticalities)
+        : criticality{calculated_criticalities} {
+    }
 
     bool operator()(int a, int b) const {
-        if(greater_than_)
-            return criticality[a] > criticality[b];
-        else
-            return criticality[a] < criticality[b];
+        return criticality[a] > criticality[b];
     }
 };
 
@@ -1171,9 +1168,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     }
 
     // compare the criticality of different sink nodes
-    std::sort(begin(remaining_targets), end(remaining_targets), Criticality_comp(pin_criticality, true));
-
-
+    sort(begin(remaining_targets), end(remaining_targets), Criticality_comp{pin_criticality});
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(num_sinks);
