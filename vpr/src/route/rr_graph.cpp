@@ -2582,6 +2582,9 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
     const auto& pin_chain_idx = nodes_to_collapse.pin_chain_idx;
     int sink_pin_num = chain_sinks[chain_idx];
 
+    bool pin_on_tile = is_pin_on_tile(physical_type, pin_physical_num);
+    bool primitive_pin = is_primitive_pin(physical_type, pin_physical_num);
+
     // The delay of the fan-in edges to the chain node is added to the delay of the chain node to the sink. Thus, the information in
     // all_sw_in needs to updated to reflect this change. In other words, if there isn't any edge with the new delay in all_sw_inf, a new member should
     // be added to all_sw_inf.
@@ -2598,15 +2601,18 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
     VTR_ASSERT(sink_rr_node_id != RRNodeId::INVALID());
 
     // None of the incoming/outgoing edges of the chain node, except for the chain sink pins, has been added in the previous functions.
-
+    // Incoming/outgoing edges from the chain sink pins have been added in the previous functions.
     if (pin_physical_num != sink_pin_num) {
+        auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_physical_num);
+
         // Since the pins on the tile are connected to channels, etc. we do not collpase them into the intra-cluster nodes.
         // Since the primitve pins are connected to SINK/SRC nodes later, we do not collapse them.
-        auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_physical_num);
-        if ((is_pin_on_tile(physical_type, pin_physical_num) && pin_type == e_pin_type::RECEIVER) ||
-            (is_primitive_pin(physical_type, pin_physical_num) && pin_type == e_pin_type::DRIVER)) {
-            // If this assertion fails, it means that in contrast to our assumption, even on-tile and primitive pins may have drivers in the cluster
-            VTR_ASSERT(get_src_pins_in_cluster(cluster_pins, physical_type, logical_block, pin_physical_num).empty());
+
+        if (primitive_pin || pin_on_tile) {
+            // Based on the previous checks, we put these assertions.
+            VTR_ASSERT(!primitive_pin || pin_type == e_pin_type::DRIVER);
+            VTR_ASSERT(!pin_on_tile || pin_type == e_pin_type::RECEIVER);
+
             float chain_delay = get_delay_directly_connected_pins(physical_type,
                                                                   logical_block,
                                                                   cluster_pins,
@@ -2633,6 +2639,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                     if((pin_chain_idx[src_pin] == chain_idx)) {
                         continue;
                     } else {
+                        // If it is located on other chain, src_pin should be the sink of that chain, otherwise the chain is not formed correctly.
                         VTR_ASSERT(src_pin == chain_sinks[pin_chain_idx[src_pin]]);
                     }
                 }
@@ -4287,10 +4294,6 @@ static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vecto
     std::vector<std::vector<t_pin_chain_node>> chains;
     for (auto pin_physical_num : cluster_pins) {
         auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_physical_num);
-        auto conn_src_pins = get_src_pins_in_cluster(cluster_pins_set,
-                                                     physical_type,
-                                                     logical_block,
-                                                     pin_physical_num);
         auto conn_sink_pins = get_sink_pins_in_cluster(cluster_pins_set,
                                                        physical_type,
                                                        logical_block,
@@ -4333,26 +4336,35 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
                                                      int pin_physical_num,
                                                      bool is_flat) {
     VTR_ASSERT(is_flat);
+    if(is_primitive_pin(physical_type, pin_physical_num)) {
+        return {pin_physical_num};
+    }
     std::vector<int> conn_node_chain;
     auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_physical_num);
 
     // Forward
     {
-        std::vector<int> conn_sink_pins;
-        conn_sink_pins.push_back(pin_physical_num);
-        do {
-            int conn_pin_num = conn_sink_pins[0];
-            conn_node_chain.push_back(conn_pin_num);
-            // In the RR Graph, primitive IPINs are also connected to SINK Node. Thus, when hit a primitive IPIN, the loop is stopped
-            if ((is_primitive_pin(physical_type, conn_pin_num) && get_pin_type_from_pin_physical_num(physical_type, conn_pin_num) == e_pin_type::RECEIVER) ||
-                pin_type != get_pin_type_from_pin_physical_num(physical_type, conn_pin_num)) {
+        conn_node_chain.push_back(pin_physical_num);
+        int last_pin_num = pin_physical_num;
+        auto sink_pins = get_sink_pins_in_cluster(pins_in_cluster,
+                                                  physical_type,
+                                                  logical_block,
+                                                  pin_physical_num);
+        while(sink_pins.size() == 1) {
+            last_pin_num = sink_pins[0];
+
+            if (is_primitive_pin(physical_type, last_pin_num) ||
+                pin_type != get_pin_type_from_pin_physical_num(physical_type, last_pin_num)) {
                 break;
             }
-            conn_sink_pins = get_sink_pins_in_cluster(pins_in_cluster,
-                                                      physical_type,
-                                                      logical_block,
-                                                      conn_pin_num);
-        } while (conn_sink_pins.size() == 1);
+
+            conn_node_chain.push_back(sink_pins[0]);
+
+            sink_pins = get_sink_pins_in_cluster(pins_in_cluster,
+                                                 physical_type,
+                                                 logical_block,
+                                                 last_pin_num);
+        }
     }
     return conn_node_chain;
 }
