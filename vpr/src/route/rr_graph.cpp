@@ -78,26 +78,6 @@ struct t_pin_spec {
     RRNodeId pin_rr_node_id;
 };
 
-struct t_pin_chain_node {
-    int pin_physical_num = OPEN;
-    int nxt_node_idx = OPEN;
-
-    t_pin_chain_node() = default;
-    t_pin_chain_node(int pin_num, int nxt_idx)
-        : pin_physical_num(pin_num)
-        , nxt_node_idx(nxt_idx) {}
-};
-
-struct t_cluster_pin_chain {
-    std::vector<int> pin_chain_idx;                    // [pin_physical_num] -> chain_num
-    std::vector<std::vector<t_pin_chain_node>> chains; // [chain_num] -> chain_node
-
-    t_cluster_pin_chain() = default;
-    t_cluster_pin_chain(std::vector<int> pin_chain_idx_, std::vector<std::vector<t_pin_chain_node>> chains_)
-        : pin_chain_idx(std::move(pin_chain_idx_))
-        , chains(std::move(chains_)) {}
-};
-
 /******************* Variables local to this module. ***********************/
 
 /********************* Subroutines local to this module. *******************/
@@ -213,9 +193,17 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
                                                   const int delayless_switch,
+                                                  const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                                  const vtr::vector<ClusterBlockId, std::unordered_set<int>>& chain_pin_nums,
                                                   float R_minW_nmos,
                                                   float R_minW_pmos,
                                                   bool is_flat);
+
+static void set_clusters_pin_chains (const ClusteredNetlist& clb_nlist,
+                           vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                           bool is_flat);
+
+static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains);
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  const std::vector<int>& class_num_vec,
@@ -305,6 +293,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                              t_rr_edge_info_set& rr_edges_to_create,
                                              const DeviceGrid& grid,
+                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& nodes_to_collapse,
                                              float R_minW_nmos,
                                              float R_minW_pmos,
                                              int& num_edges,
@@ -328,6 +317,7 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          float R_minW_nmos,
                                          float R_minW_pmos,
                                          t_rr_edge_info_set& rr_edges_to_create,
+                                         const t_cluster_pin_chain& nodes_to_collapse,
                                          const DeviceGrid& grid,
                                          bool is_flat);
 
@@ -341,7 +331,6 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          t_logical_block_type_ptr logical_block,
                          const t_pb* pb,
                          const t_cluster_pin_chain& nodes_to_collapse,
-                         const std::vector<int>& chain_sinks,
                          int rel_cap,
                          int i,
                          int j);
@@ -366,7 +355,6 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          t_logical_block_type_ptr logical_block,
                                          const std::vector<int>& cluster_pins,
                                          const t_cluster_pin_chain& nodes_to_collapse,
-                                         const std::vector<int>& chain_sink_pin,
                                          float R_minW_nmos,
                                          float R_minW_pmos,
                                          int i,
@@ -396,12 +384,11 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                         t_logical_block_type_ptr logical_block,
                                         const t_cluster_pin_chain& nodes_to_collapse,
                                         const std::unordered_set<int>& cluster_pins,
-                                        const std::vector<int>& chain_pins,
+                                        const std::unordered_set<int>& chain_pins,
                                         float R_minW_nmos,
                                         float R_minW_pmos,
                                         int chain_idx,
                                         int node_idx,
-                                        const std::vector<int>& chain_sinks,
                                         int i,
                                         int j);
 
@@ -418,9 +405,11 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
 static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
                                     t_logical_block_type_ptr logical_block,
                                     const std::unordered_set<int>& cluster_pins,
-                                    const std::vector<int>& chain_pins,
+                                    const std::unordered_set<int>& chain_pins,
                                     int pin_physical_num,
                                     int chain_sink_pin);
+
+static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chain);
 
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int i,
@@ -527,7 +516,7 @@ static bool is_node_chain_sorted(t_physical_tile_type_ptr physical_type,
                                  const std::vector<int>& pin_index_vec,
                                  const std::vector<std::vector<t_pin_chain_node>>& all_node_chain);
 
-static std::vector<int> get_node_chain_sinks(const t_cluster_pin_chain& cluster_chains);
+static std::vector<int> get_node_chain_sinks(const std::vector<std::vector<t_pin_chain_node>>& cluster_chains);
 
 static std::vector<int> get_sink_pins_in_cluster(const std::unordered_set<int>& pins_in_cluster,
                                                  t_physical_tile_type_ptr physical_type,
@@ -740,6 +729,7 @@ void create_rr_graph(const t_graph_type graph_type,
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                              t_rr_edge_info_set& rr_edges_to_create,
                                              const DeviceGrid& grid,
+                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& nodes_to_collapse,
                                              float R_minW_nmos,
                                              float R_minW_pmos,
                                              int& num_edges,
@@ -764,6 +754,7 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                      R_minW_nmos,
                                      R_minW_pmos,
                                      rr_edges_to_create,
+                                     nodes_to_collapse[cluster_blk_id],
                                      grid,
                                      is_flat);
         uniquify_edges(rr_edges_to_create);
@@ -1316,15 +1307,23 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          float R_minW_pmos,
                                          RRGraphBuilder& rr_graph_builder,
                                          bool is_flat) {
+    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     vtr::ScopedStartFinishTimer timer("Build intra-cluster routing resource graph");
 
     rr_graph_builder.reset_rr_graph_flags();
 
+    vtr::vector<ClusterBlockId, t_cluster_pin_chain> pin_chains(clb_nlist.blocks().size());
+    set_clusters_pin_chains(clb_nlist, pin_chains, is_flat);
+    vtr::vector<ClusterBlockId, std::unordered_set<int>> cluster_flat_chain_pins = get_pin_chains(pin_chains);
+
+
     int num_rr_nodes = rr_graph.num_nodes();
     alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder,
                                                  grid,
+                                                 pin_chains,
+                                                 cluster_flat_chain_pins,
                                                  &num_rr_nodes);
     size_t expected_node_count = num_rr_nodes;
     rr_graph_builder.resize_nodes(num_rr_nodes);
@@ -1332,6 +1331,8 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
     alloc_and_load_intra_cluster_rr_graph(rr_graph_builder,
                                           grid,
                                           delayless_switch,
+                                          pin_chains,
+                                          cluster_flat_chain_pins,
                                           R_minW_nmos,
                                           R_minW_pmos,
                                           is_flat);
@@ -2000,9 +2001,57 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     return update_chan_width;
 }
 
+static void set_clusters_pin_chains (const ClusteredNetlist& clb_nlist,
+                           vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                           bool is_flat) {
+    VTR_ASSERT(is_flat);
+
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    t_physical_tile_type_ptr physical_type;
+    t_logical_block_type_ptr logical_block;
+    const t_sub_tile* sub_tile;
+    int rel_cap;
+
+    for (auto cluster_blk_id : clb_nlist.blocks()) {
+        auto block_loc = place_ctx.block_locs[cluster_blk_id].loc;
+        int abs_cap = block_loc.sub_tile;
+        std::tie(physical_type, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk_id);
+
+        auto cluster_pins = get_cluster_block_pins(physical_type,
+                                                   cluster_blk_id,
+                                                   abs_cap);
+        // Get the chains of nodes - Each chain would collapse into a single node
+        t_cluster_pin_chain nodes_to_collapse = get_cluster_directly_connected_nodes(cluster_pins,
+                                                                                     physical_type,
+                                                                                     logical_block,
+                                                                                     is_flat);
+        pin_chains[cluster_blk_id] = std::move(nodes_to_collapse);
+    }
+
+}
+
+static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains) {
+    vtr::vector<ClusterBlockId, std::unordered_set<int>> chain_pin_nums(pin_chains.size());
+
+    for (int cluster_id_num = 0; cluster_id_num < (int)pin_chains.size(); cluster_id_num++) {
+        auto cluster_id = ClusterBlockId(cluster_id_num);
+        const auto& cluster_pin_chain_num = pin_chains[cluster_id].pin_chain_idx;
+        chain_pin_nums[cluster_id].reserve(cluster_pin_chain_num.size());
+        for(int pin_num = 0; pin_num < (int)cluster_pin_chain_num.size(); pin_num++) {
+            if(cluster_pin_chain_num[pin_num] != OPEN) {
+                chain_pin_nums[cluster_id].insert(pin_num);
+            }
+        }
+    }
+
+    return chain_pin_nums;
+}
 static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
                                                   const int delayless_switch,
+                                                  const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                                  const vtr::vector<ClusterBlockId, std::unordered_set<int>>& chain_pin_nums,
                                                   float R_minW_nmos,
                                                   float R_minW_pmos,
                                                   bool is_flat) {
@@ -2015,7 +2064,11 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
                 class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(i, j, physical_tile);
-                pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(i, j, physical_tile);
+                pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(i,
+                                                                         j,
+                                                                         pin_chains,
+                                                                         chain_pin_nums,
+                                                                         physical_tile);
                 add_classes_rr_graph(rr_graph_builder,
                                      class_num_vec,
                                      i,
@@ -2053,6 +2106,7 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
         add_intra_cluster_edges_rr_graph(rr_graph_builder,
                                          rr_edges_to_create,
                                          grid,
+                                         pin_chains,
                                          R_minW_nmos,
                                          R_minW_pmos,
                                          num_edges,
@@ -2385,8 +2439,10 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          float R_minW_nmos,
                                          float R_minW_pmos,
                                          t_rr_edge_info_set& rr_edges_to_create,
+                                         const t_cluster_pin_chain& nodes_to_collapse,
                                          const DeviceGrid& grid,
                                          bool is_flat) {
+    VTR_ASSERT(is_flat);
     /* Internal edges are added from the start tile */
     VTR_ASSERT(grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0);
 
@@ -2403,12 +2459,6 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
     auto cluster_pins = get_cluster_block_pins(physical_type,
                                                cluster_blk_id,
                                                abs_cap);
-    // Get the chains of nodes - Each chain would collapse into a single node
-    auto nodes_to_collapse = get_cluster_directly_connected_nodes(cluster_pins,
-                                                                  physical_type,
-                                                                  logical_block,
-                                                                  is_flat);
-    auto chain_sinks = get_node_chain_sinks(nodes_to_collapse);
 
     const t_pb* pb = cluster_net_list.block_pb(cluster_blk_id);
     std::list<const t_pb*> pb_q;
@@ -2425,7 +2475,6 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                      logical_block,
                      pb,
                      nodes_to_collapse,
-                     chain_sinks,
                      rel_cap,
                      i,
                      j);
@@ -2441,7 +2490,6 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                                          logical_block,
                                                          cluster_pins,
                                                          nodes_to_collapse,
-                                                         chain_sinks,
                                                          R_minW_nmos,
                                                          R_minW_pmos,
                                                          i,
@@ -2455,7 +2503,6 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          t_logical_block_type_ptr logical_block,
                          const t_pb* pb,
                          const t_cluster_pin_chain& nodes_to_collapse,
-                         const std::vector<int>& chain_sinks,
                          int rel_cap,
                          int i,
                          int j) {
@@ -2464,6 +2511,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                      logical_block,
                                      pb,
                                      rel_cap);
+    const auto& chain_sinks = nodes_to_collapse.chain_sink;
     const auto& pin_chain_idx = nodes_to_collapse.pin_chain_idx;
     for (auto pin_physical_num = pin_num_range.low; pin_physical_num <= pin_num_range.high; pin_physical_num++) {
         // The pin belongs to a chain - outgoing edges from this pin will be added later unless it is the sink of the chain
@@ -2514,7 +2562,6 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          t_logical_block_type_ptr logical_block,
                                          const std::vector<int>& cluster_pins,
                                          const t_cluster_pin_chain& nodes_to_collapse,
-                                         const std::vector<int>& chain_sink_pin,
                                          float R_minW_nmos,
                                          float R_minW_pmos,
                                          int i,
@@ -2525,21 +2572,11 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
     int num_collapsed_pins = 0;
     int num_chain = (int)nodes_to_collapse.chains.size();
 
-    std::vector<std::vector<int>> chain_pins(num_chain);
-
-    // Cache the sink for each chain and store the pin number of the pins in a chain
-    for (int chain_idx = 0; chain_idx < num_chain; chain_idx++) {
-        const auto& chain = nodes_to_collapse.chains[chain_idx];
-        int num_nodes = (int)chain.size();
-        for (int node_idx = 0; node_idx < num_nodes; node_idx++) {
-            chain_pins[chain_idx].push_back(chain[node_idx].pin_physical_num);
-        }
-    }
-
     for (int chain_idx = 0; chain_idx < num_chain; chain_idx++) {
         const auto& chain = nodes_to_collapse.chains[chain_idx];
         int num_nodes = (int)chain.size();
         VTR_ASSERT(num_nodes > 1);
+        std::unordered_set<int> chain_pins = get_chain_pins(nodes_to_collapse.chains[chain_idx]);
         for (int node_idx = 0; node_idx < num_nodes; node_idx++) {
             add_chain_node_fan_in_edges(rr_graph_builder,
                                         rr_edges_to_create,
@@ -2548,12 +2585,11 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                         logical_block,
                                         nodes_to_collapse,
                                         cluster_pins_set,
-                                        chain_pins[chain_idx],
+                                        chain_pins,
                                         R_minW_nmos,
                                         R_minW_pmos,
                                         chain_idx,
                                         node_idx,
-                                        chain_sink_pin,
                                         i,
                                         j);
         }
@@ -2568,19 +2604,18 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                         t_logical_block_type_ptr logical_block,
                                         const t_cluster_pin_chain& nodes_to_collapse,
                                         const std::unordered_set<int>& cluster_pins,
-                                        const std::vector<int>& chain_pins,
+                                        const std::unordered_set<int>& chain_pins,
                                         float R_minW_nmos,
                                         float R_minW_pmos,
                                         int chain_idx,
                                         int node_idx,
-                                        const std::vector<int>& chain_sinks,
                                         int i,
                                         int j) {
 
     // Chain node pin physical number
     int pin_physical_num = nodes_to_collapse.chains[chain_idx][node_idx].pin_physical_num;
     const auto& pin_chain_idx = nodes_to_collapse.pin_chain_idx;
-    int sink_pin_num = chain_sinks[chain_idx];
+    int sink_pin_num = nodes_to_collapse.chain_sink[chain_idx];
 
     bool pin_on_tile = is_pin_on_tile(physical_type, pin_physical_num);
     bool primitive_pin = is_primitive_pin(physical_type, pin_physical_num);
@@ -2640,7 +2675,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                         continue;
                     } else {
                         // If it is located on other chain, src_pin should be the sink of that chain, otherwise the chain is not formed correctly.
-                        VTR_ASSERT(src_pin == chain_sinks[pin_chain_idx[src_pin]]);
+                        VTR_ASSERT(src_pin == nodes_to_collapse.chain_sink[pin_chain_idx[src_pin]]);
                     }
                 }
                 float delay = get_min_delay_to_chain(physical_type,
@@ -2680,7 +2715,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
 static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
                                     t_logical_block_type_ptr logical_block,
                                     const std::unordered_set<int>& cluster_pins,
-                                    const std::vector<int>& chain_pins,
+                                    const std::unordered_set<int>& chain_pins,
                                     int pin_physical_num,
                                     int chain_sink_pin) {
     VTR_ASSERT(std::find(chain_pins.begin(), chain_pins.end(), pin_physical_num) == chain_pins.end());
@@ -2691,7 +2726,7 @@ static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
                                               pin_physical_num);
     bool sink_pin_found = false;
     for (auto sink_pin : sink_pins) {
-        // If the sink is not a chain pin, then we do not need to consider it.
+        // If the sink is not on the chain, then we do not need to consider it.
         if (std::find(chain_pins.begin(), chain_pins.end(), sink_pin) == chain_pins.end()) {
             continue;
         }
@@ -2707,6 +2742,14 @@ static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
     // We assume that the given pin has a sink in the chain.
     VTR_ASSERT(sink_pin_found);
     return min_delay;
+}
+
+static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chain) {
+    std::unordered_set<int> chain_pins;
+    for (auto node : chain) {
+        chain_pins.insert(node.pin_physical_num);
+    }
+    return chain_pins;
 }
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
@@ -4321,13 +4364,15 @@ static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vecto
         }
     }
 
+    auto chain_sinks = get_node_chain_sinks(chains);
+
     VTR_ASSERT(is_node_chain_sorted(physical_type,
                                     logical_block,
                                     cluster_pins_set,
                                     pin_index_vec,
                                     chains));
 
-    return {pin_index_vec, chains};
+    return {pin_index_vec, chains, chain_sinks};
 }
 
 static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr physical_type,
@@ -4398,12 +4443,12 @@ static bool is_node_chain_sorted(t_physical_tile_type_ptr physical_type,
     return true;
 }
 
-static std::vector<int> get_node_chain_sinks(const t_cluster_pin_chain& cluster_chains) {
-    int num_chain = (int)cluster_chains.chains.size();
+static std::vector<int> get_node_chain_sinks(const std::vector<std::vector<t_pin_chain_node>>& cluster_chains) {
+    int num_chain = (int)cluster_chains.size();
     std::vector<int> chain_sink_pin(num_chain);
 
     for (int chain_idx = 0; chain_idx < num_chain; chain_idx++) {
-        const auto& chain = cluster_chains.chains[chain_idx];
+        const auto& chain = cluster_chains[chain_idx];
         int num_nodes = (int)chain.size();
 
         bool sink_node_found = false;

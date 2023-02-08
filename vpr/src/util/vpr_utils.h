@@ -285,6 +285,8 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
 
 std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
                                                             const int j,
+                                                            const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                                            const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
 
 std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,

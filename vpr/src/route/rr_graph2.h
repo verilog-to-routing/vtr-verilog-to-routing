@@ -37,6 +37,8 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
+                                                  const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                                  const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index);
 
 bool verify_rr_node_indices(const DeviceGrid& grid,

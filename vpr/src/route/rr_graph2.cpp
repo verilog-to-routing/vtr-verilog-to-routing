@@ -1328,6 +1328,8 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
+                                                  const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                                  const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index) {
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
@@ -1341,6 +1343,8 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                 class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(x, y, physical_type);
                 pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(x,
                                                                          y,
+                                                                         pin_chains,
+                                                                         pin_chains_num,
                                                                          physical_type);
                 add_classes_spatial_lookup(rr_graph_builder,
                                            physical_type,

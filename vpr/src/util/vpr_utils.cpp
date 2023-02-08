@@ -2392,6 +2392,8 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
 
 std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
                                                             const int j,
+                                                            const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                                            const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto grid_block = place_ctx.grid_blocks[i][j];
@@ -2404,13 +2406,28 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
 
         if (grid_block.subtile_empty(abs_cap)) {
             continue;
-        } else {
-            auto cluster_blk_id = grid_block.blocks[abs_cap];
-            VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
-
-            cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);
         }
-        pin_num_vec.insert(pin_num_vec.end(), cluster_internal_pins.begin(), cluster_internal_pins.end());
+        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() && cluster_blk_id != EMPTY_BLOCK_ID);
+
+        cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);
+        const auto& cluster_pin_chains = pin_chains_num[cluster_blk_id];
+        const auto& cluster_chain_sinks = pin_chains[cluster_blk_id].chain_sink;
+        const auto& cluster_pin_chain_idx = pin_chains[cluster_blk_id].pin_chain_idx;
+        // remove common elements betweeen cluster_pin_chains.
+        for(auto pin : cluster_internal_pins) {
+            auto it = std::find(cluster_pin_chains.begin(), cluster_pin_chains.end(), pin);
+            if (it == cluster_pin_chains.end()) {
+                pin_num_vec.push_back(pin);
+            } else {
+                VTR_ASSERT(cluster_pin_chain_idx[pin] != OPEN);
+                if(is_pin_on_tile(physical_type, pin) ||
+                    is_primitive_pin(physical_type, pin) ||
+                    cluster_chain_sinks[cluster_pin_chain_idx[pin]] == pin) {
+                    pin_num_vec.push_back(pin);
+                }
+            }
+        }
     }
 
     pin_num_vec.shrink_to_fit();
