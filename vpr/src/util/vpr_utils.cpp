@@ -2415,15 +2415,13 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
         const auto& cluster_chain_sinks = pin_chains[cluster_blk_id].chain_sink;
         const auto& cluster_pin_chain_idx = pin_chains[cluster_blk_id].pin_chain_idx;
         // remove common elements betweeen cluster_pin_chains.
-        for(auto pin : cluster_internal_pins) {
+        for (auto pin : cluster_internal_pins) {
             auto it = std::find(cluster_pin_chains.begin(), cluster_pin_chains.end(), pin);
             if (it == cluster_pin_chains.end()) {
                 pin_num_vec.push_back(pin);
             } else {
                 VTR_ASSERT(cluster_pin_chain_idx[pin] != OPEN);
-                if(is_pin_on_tile(physical_type, pin) ||
-                    is_primitive_pin(physical_type, pin) ||
-                    cluster_chain_sinks[cluster_pin_chain_idx[pin]] == pin) {
+                if (is_pin_on_tile(physical_type, pin) || is_primitive_pin(physical_type, pin) || cluster_chain_sinks[cluster_pin_chain_idx[pin]] == pin) {
                     pin_num_vec.push_back(pin);
                 }
             }

@@ -383,7 +383,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         std::unique_ptr<RouterLookahead> mut_router_lookahead(route_ctx.cached_router_lookahead_.release());
         VTR_ASSERT(mut_router_lookahead);
         route_ctx.cached_router_lookahead_.clear();
-        if(!router_opts.read_intra_cluster_router_lookahead.empty()) {
+        if (!router_opts.read_intra_cluster_router_lookahead.empty()) {
             mut_router_lookahead->read_intra_cluster(router_opts.read_intra_cluster_router_lookahead);
         } else {
             mut_router_lookahead->compute_intra_tile();
@@ -395,7 +395,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                                                        router_opts.read_router_lookahead,
                                                        segment_inf,
                                                        is_flat);
-        if(!router_opts.write_intra_cluster_router_lookahead.empty()) {
+        if (!router_opts.write_intra_cluster_router_lookahead.empty()) {
             router_lookahead->write_intra_cluster(router_opts.write_intra_cluster_router_lookahead);
         }
     }
@@ -1160,7 +1160,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                                             pin,
                                                             is_flat);
 
-
         } else {
             //No timing info, implies we want a min delay routing, so use criticality of 1.
             pin_criticality[ipin] = 1.;
@@ -1808,7 +1807,7 @@ static float get_net_pin_criticality(const std::shared_ptr<SetupHoldTimingInfo> 
     float pin_criticality = 0.0;
     const auto& route_ctx = g_vpr_ctx.routing();
 
-    if(route_ctx.is_clock_net[net_id]) {
+    if (route_ctx.is_clock_net[net_id]) {
         pin_criticality = max_criticality;
     } else {
         pin_criticality = calculate_clb_net_pin_criticality(*timing_info,
@@ -1817,13 +1816,12 @@ static float get_net_pin_criticality(const std::shared_ptr<SetupHoldTimingInfo> 
                                                             is_flat);
     }
 
-
     /* Pin criticality is between 0 and 1.
-             * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
-             * so shift down by 0.01) and cut off at 0.  This means that all pins with small
-             * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything
-             * else becomes a bit less critical. This effect becomes more pronounced if
-             * max_criticality is set lower. */
+     * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
+     * so shift down by 0.01) and cut off at 0.  This means that all pins with small
+     * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything
+     * else becomes a bit less critical. This effect becomes more pronounced if
+     * max_criticality is set lower. */
     // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
     pin_criticality = std::max(pin_criticality - (1.0 - max_criticality), 0.0);
 

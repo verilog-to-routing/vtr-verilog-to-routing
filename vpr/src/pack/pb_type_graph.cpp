@@ -226,7 +226,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     const int index,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster) {
-
     int i, j, k, i_input, i_output, i_clockport;
 
     pb_graph_node->placement_index = index;
@@ -389,14 +388,14 @@ static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node) {
 
     pb_graph_node_list.push_back(pb_graph_node);
 
-    while(!pb_graph_node_list.empty()) {
+    while (!pb_graph_node_list.empty()) {
         auto curr_pb_graph_node = pb_graph_node_list.front();
         pb_graph_node_list.pop_front();
         store_pin_sinks_edge_id(curr_pb_graph_node);
 
-        for(int mode_num = 0; mode_num < curr_pb_graph_node->pb_type->num_modes; mode_num++) {
-            for(int child_pb_type_num = 0; child_pb_type_num < curr_pb_graph_node->pb_type->modes[mode_num].num_pb_type_children; child_pb_type_num++) {
-                for(int child_pb_num = 0; child_pb_num < curr_pb_graph_node->pb_type->modes[mode_num].pb_type_children[child_pb_type_num].num_pb; child_pb_num++) {
+        for (int mode_num = 0; mode_num < curr_pb_graph_node->pb_type->num_modes; mode_num++) {
+            for (int child_pb_type_num = 0; child_pb_type_num < curr_pb_graph_node->pb_type->modes[mode_num].num_pb_type_children; child_pb_type_num++) {
+                for (int child_pb_num = 0; child_pb_num < curr_pb_graph_node->pb_type->modes[mode_num].pb_type_children[child_pb_type_num].num_pb; child_pb_num++) {
                     pb_graph_node_list.push_back(&curr_pb_graph_node->child_pb_graph_nodes[mode_num][child_pb_type_num][child_pb_num]);
                 }
             }
@@ -840,14 +839,13 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
 }
 
 static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node) {
-
     static int NUM_PORT_TYPES = 3;
 
-    for(int port_type = 0; port_type < NUM_PORT_TYPES; port_type++) {
+    for (int port_type = 0; port_type < NUM_PORT_TYPES; port_type++) {
         int num_ports = 0;
         int* num_pins = nullptr;
         t_pb_graph_pin** pins = nullptr;
-        switch(port_type) {
+        switch (port_type) {
             case 0:
                 num_ports = pb_graph_node->num_input_ports;
                 num_pins = pb_graph_node->num_input_pins;
@@ -881,7 +879,6 @@ static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node) {
             }
         }
     }
-
 }
 
 /**

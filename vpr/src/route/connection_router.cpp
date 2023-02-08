@@ -1063,8 +1063,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 RRNodeId rr_node_to_add = RRNodeId(rt_node->inode);
 
                 //Put the node onto the heap
-                if(is_flat_) {
-                    if(!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node_id))
+                if (is_flat_) {
+                    if (!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node_id))
                         continue;
                 }
 
@@ -1075,7 +1075,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
                 highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
                 highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
-                if(is_flat_) {
+                if (is_flat_) {
                     if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                         chan_nodes_added++;
                     }

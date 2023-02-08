@@ -1397,7 +1397,6 @@ float get_edge_delay(t_physical_tile_type_ptr physical_type,
     int edge_idx = src_pb_pin->sink_pin_edge_idx_map.at(sink_pb_pin);
     float delay = src_pb_pin->output_edges[edge_idx]->delay_max;
 
-
     return delay;
 }
 

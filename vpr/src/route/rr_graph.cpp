@@ -199,9 +199,9 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                                                   float R_minW_pmos,
                                                   bool is_flat);
 
-static void set_clusters_pin_chains (const ClusteredNetlist& clb_nlist,
-                           vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
-                           bool is_flat);
+static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
+                                    vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                    bool is_flat);
 
 static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains);
 
@@ -1318,7 +1318,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
     set_clusters_pin_chains(clb_nlist, pin_chains, is_flat);
     vtr::vector<ClusterBlockId, std::unordered_set<int>> cluster_flat_chain_pins = get_pin_chains(pin_chains);
 
-
     int num_rr_nodes = rr_graph.num_nodes();
     alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder,
                                                  grid,
@@ -2001,9 +2000,9 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     return update_chan_width;
 }
 
-static void set_clusters_pin_chains (const ClusteredNetlist& clb_nlist,
-                           vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
-                           bool is_flat) {
+static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
+                                    vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                    bool is_flat) {
     VTR_ASSERT(is_flat);
 
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -2028,7 +2027,6 @@ static void set_clusters_pin_chains (const ClusteredNetlist& clb_nlist,
                                                                                      is_flat);
         pin_chains[cluster_blk_id] = std::move(nodes_to_collapse);
     }
-
 }
 
 static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains) {
@@ -2038,8 +2036,8 @@ static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains(const
         auto cluster_id = ClusterBlockId(cluster_id_num);
         const auto& cluster_pin_chain_num = pin_chains[cluster_id].pin_chain_idx;
         chain_pin_nums[cluster_id].reserve(cluster_pin_chain_num.size());
-        for(int pin_num = 0; pin_num < (int)cluster_pin_chain_num.size(); pin_num++) {
-            if(cluster_pin_chain_num[pin_num] != OPEN) {
+        for (int pin_num = 0; pin_num < (int)cluster_pin_chain_num.size(); pin_num++) {
+            if (cluster_pin_chain_num[pin_num] != OPEN) {
                 chain_pin_nums[cluster_id].insert(pin_num);
             }
         }
@@ -2611,7 +2609,6 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                         int node_idx,
                                         int i,
                                         int j) {
-
     // Chain node pin physical number
     int pin_physical_num = nodes_to_collapse.chains[chain_idx][node_idx].pin_physical_num;
     const auto& pin_chain_idx = nodes_to_collapse.pin_chain_idx;
@@ -2671,7 +2668,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
             for (auto src_pin : src_pins) {
                 // If the source pin is located on the current chain no edge should be added since the nodes should be collapsed.
                 if (pin_chain_idx[src_pin] != OPEN) {
-                    if((pin_chain_idx[src_pin] == chain_idx)) {
+                    if ((pin_chain_idx[src_pin] == chain_idx)) {
                         continue;
                     } else {
                         // If it is located on other chain, src_pin should be the sink of that chain, otherwise the chain is not formed correctly.
@@ -2732,8 +2729,7 @@ static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
         }
         sink_pin_found = true;
         // Delay to the sink is equal to the delay to chain + chain's delay
-        float delay = get_delay_directly_connected_pins(physical_type, logical_block, cluster_pins, sink_pin, chain_sink_pin) +
-                      get_edge_delay(physical_type, logical_block, pin_physical_num, sink_pin);
+        float delay = get_delay_directly_connected_pins(physical_type, logical_block, cluster_pins, sink_pin, chain_sink_pin) + get_edge_delay(physical_type, logical_block, pin_physical_num, sink_pin);
         if (delay < min_delay) {
             min_delay = delay;
         }
@@ -4381,7 +4377,7 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
                                                      int pin_physical_num,
                                                      bool is_flat) {
     VTR_ASSERT(is_flat);
-    if(is_primitive_pin(physical_type, pin_physical_num)) {
+    if (is_primitive_pin(physical_type, pin_physical_num)) {
         return {pin_physical_num};
     }
     std::vector<int> conn_node_chain;
@@ -4395,11 +4391,10 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
                                                   physical_type,
                                                   logical_block,
                                                   pin_physical_num);
-        while(sink_pins.size() == 1) {
+        while (sink_pins.size() == 1) {
             last_pin_num = sink_pins[0];
 
-            if (is_primitive_pin(physical_type, last_pin_num) ||
-                pin_type != get_pin_type_from_pin_physical_num(physical_type, last_pin_num)) {
+            if (is_primitive_pin(physical_type, last_pin_num) || pin_type != get_pin_type_from_pin_physical_num(physical_type, last_pin_num)) {
                 break;
             }
 

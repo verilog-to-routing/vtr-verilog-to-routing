@@ -1298,7 +1298,7 @@ class t_pb_graph_pin {
     int num_input_edges = 0;
     // This map is initialized only if flat_routing is enabled
     std::unordered_map<const t_pb_graph_pin*, int> sink_pin_edge_idx_map; /* [t_pb_graph_pin*] -> edge_idx - This is the index of the corresponding edge stored in output_edges vector */
-    
+
     std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
 

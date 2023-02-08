@@ -1443,7 +1443,7 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<t_physical_ti
 static void write_intra_cluster_router_lookahead(const std::string& /*file*/,
                                                  const std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& /*inter_tile_pin_primitive_pin_delay*/,
                                                  const std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& /*tile_min_cost*/) {
-        VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write_intra_cluster_router_lookahead " DISABLE_ERROR);
+    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write_intra_cluster_router_lookahead " DISABLE_ERROR);
 }
 
 #else /* VTR_ENABLE_CAPNPROTO */
@@ -1463,7 +1463,6 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<t_physical_ti
                             tile_min_cost,
                             g_vpr_ctx.device().physical_tile_types,
                             map);
-
 }
 
 static void write_intra_cluster_router_lookahead(const std::string& file,
@@ -1479,9 +1478,6 @@ static void write_intra_cluster_router_lookahead(const std::string& file,
                               g_vpr_ctx.device().physical_tile_types);
 
     writeMessageToFile(file, &builder);
-
-
-
 }
 
 static void ToCostEntry(Cost_Entry* out, const VprMapCostEntry::Reader& in) {
