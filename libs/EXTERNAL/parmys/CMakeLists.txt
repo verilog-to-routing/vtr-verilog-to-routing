@@ -20,10 +20,10 @@ add_library(parmys SHARED
     ${LIB_SOURCES_O}
 )
 target_include_directories(parmys PUBLIC ${LIB_INCLUDE_DIRS})
-target_include_directories(parmys PUBLIC ${VTR_SOURCE_DIR}/Yosys/share/yosys/include)
+target_include_directories(parmys PUBLIC ${VTR_SOURCE_DIR}/yosys/share/include)
 
 add_definitions("-D_YOSYS_")
-add_dependencies(parmys libyosys)
+add_dependencies(parmys yosys)
 target_link_libraries(parmys
     liblog
     libarchfpga
@@ -48,9 +48,9 @@ add_custom_target(parmys-plugin ALL
 
 #install(DIRECTORY DESTINATION "${VTR_SOURCE_DIR}/Yosys/share/yosys/plugins")
 
-file(MAKE_DIRECTORY ${VTR_SOURCE_DIR}/Yosys/share/yosys/plugins)
-install(TARGETS parmys DESTINATION ${VTR_SOURCE_DIR}/Yosys/share/yosys/plugins)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/plugins)
+install(TARGETS parmys DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/plugins)
 
-file(MAKE_DIRECTORY ${VTR_SOURCE_DIR}/Yosys/share/yosys/parmys)
-install(FILES ${LIB_VERILOGS} DESTINATION ${VTR_SOURCE_DIR}/Yosys/share/yosys/parmys)
-install(FILES "third_party/vtr_flow/primitives.v" DESTINATION ${VTR_SOURCE_DIR}/Yosys/share/yosys/parmys RENAME vtr_primitives.v)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/parmys)
+install(FILES ${LIB_VERILOGS} DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/parmys)
+install(FILES "third_party/vtr_flow/primitives.v" DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/parmys RENAME vtr_primitives.v)

@@ -54,4 +54,9 @@
         internal_path="vtr_flow/benchmarks/system_verilog/fx68k"
         external_url="https://github.com/ijor/fx68k.git"
         default_external_ref="master"/>
+    <subtree
+            name="yosys"
+            internal_path="yosys"
+            external_url="https://github.com/YosysHQ/yosys.git"
+            default_external_ref="yosys-0.26"/>
 </subtrees>

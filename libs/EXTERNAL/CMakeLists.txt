@@ -21,53 +21,53 @@ endif ()
 # Yosys is compiled only if the user ask for it
 if (${WITH_YOSYS})
     # handle make program with both ninja and unix style
-    set(MAKE_PROGRAM "$(MAKE)")
-    if (${CMAKE_GENERATOR} STREQUAL "Ninja")
-        set(MAKE_PROGRAM "make")
-    endif ()
+#    set(MAKE_PROGRAM "$(MAKE)")
+#    if (${CMAKE_GENERATOR} STREQUAL "Ninja")
+#        set(MAKE_PROGRAM "make")
+#    endif ()
 
-    ExternalProject_Add(libyosys
-            # root directory for the Yosys
-            PREFIX "libyosys"
-
-            GIT_REPOSITORY https://github.com/YosysHQ/yosys.git
-            GIT_TAG yosys-0.25
-            GIT_PROGRESS TRUE
-
-            # setting source, build and install directories
-            SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libyosys"
-            BUILD_IN_SOURCE FALSE
-            INSTALL_DIR ""
-            # BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libyosys"
-
-            CONFIGURE_COMMAND ""
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
-            -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
-            -k "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
-            PREFIX=${VTR_SOURCE_DIR}/Yosys
-            -j${CMAKE_BUILD_PARALLEL_LEVEL}
-
-            INSTALL_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
-            -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
-            install "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
-            PREFIX=${VTR_SOURCE_DIR}/Yosys
-            -j${CMAKE_BUILD_PARALLEL_LEVEL}
-
-            # redirect logs to a logfile
-            LOG_BUILD ON
-            LOG_UPDATE ON
-            LOG_INSTALL ON
-            LOG_CONFIGURE ON
-            LOG_OUTPUT_ON_FAILURE ON
-
-            )
+#    ExternalProject_Add(libyosys
+#            # root directory for the Yosys
+#            PREFIX "libyosys"
+#
+#            GIT_REPOSITORY https://github.com/YosysHQ/yosys.git
+#            GIT_TAG yosys-0.25
+#            GIT_PROGRESS TRUE
+#
+#            # setting source, build and install directories
+#            SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libyosys"
+#            BUILD_IN_SOURCE FALSE
+#            INSTALL_DIR ""
+#            # BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libyosys"
+#
+#            CONFIGURE_COMMAND ""
+#            BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
+#            -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
+#            -k "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
+#            PREFIX=${VTR_SOURCE_DIR}/Yosys
+#            -j${CMAKE_BUILD_PARALLEL_LEVEL}
+#
+#            INSTALL_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
+#            -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
+#            install "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
+#            PREFIX=${VTR_SOURCE_DIR}/Yosys
+#            -j${CMAKE_BUILD_PARALLEL_LEVEL}
+#
+#            # redirect logs to a logfile
+#            LOG_BUILD ON
+#            LOG_UPDATE ON
+#            LOG_INSTALL ON
+#            LOG_CONFIGURE ON
+#            LOG_OUTPUT_ON_FAILURE ON
+#
+#            )
 
     # add_subdirectory(libyosys)
 
     # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets
     if (${YOSYS_SV_UHDM_PLUGIN})
         # keep record of the yosys DAT dir
-        set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys)
+        # set(YOSYS_DATDIR ${CMAKE_BINARY_DIR}/share)
         # keep record of the yosys-uhdm-plugin-integration path
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
         set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
@@ -90,7 +90,7 @@ if (${WITH_YOSYS})
                 # define Surelog cache values
                 CMAKE_CACHE_ARGS
                 "-DCMAKE_BUILD_TYPE:STRING=Release"
-                "-DCMAKE_INSTALL_PREFIX:PATH=${VTR_SOURCE_DIR}/Yosys"
+                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
                 "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON"
                 "-DCMAKE_WARN_DEPRECATED:BOOL=OFF"
 
@@ -102,7 +102,7 @@ if (${WITH_YOSYS})
                 LOG_OUTPUT_ON_FAILURE ON
 
                 # dependency
-                DEPENDS libyosys
+                DEPENDS yosys
                 )
 
         ExternalProject_Add(f4pga-plugins
@@ -121,12 +121,12 @@ if (${WITH_YOSYS})
                 INSTALL_COMMAND ""
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND ${MAKE_PROGRAM} -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
-                PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
-                UHDM_INSTALL_DIR=${VTR_SOURCE_DIR}/Yosys
+                PATH=${CMAKE_BINARY_DIR}/bin/:$ENV{PATH}
+                UHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}
                 BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins/$(NAME) # NAME will be resolved by yosys-f4pga-plugins Make
-                YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
+                YOSYS_PATH=${CMAKE_BINARY_DIR}
                 PLUGIN_LIST=systemverilog #fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
-                install -j${CMAKE_BUILD_PARALLEL_LEVEL}
+                install -j${CUSTOM_BUILD_PARALLEL_LEVEL}
 
                 # redirect logs to a logfile
                 LOG_BUILD ON
@@ -136,7 +136,7 @@ if (${WITH_YOSYS})
                 LOG_OUTPUT_ON_FAILURE ON
 
                 # dependency
-                DEPENDS surelog libyosys
+                DEPENDS surelog yosys
                 )
     endif ()
 

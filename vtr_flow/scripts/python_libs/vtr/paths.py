@@ -17,8 +17,8 @@ odin_benchmark_path = odin_path / "regression_test" / "benchmark"
 odin_output_on_error_path = odin_path / "regression_test" / ".library" / "output_on_error.conf"
 
 # YOSYS paths
-yosys_path = root_path / "Yosys"
-yosys_exe_path = yosys_path / "bin" / "yosys"
+yosys_path = root_path / "build" / "bin"
+yosys_exe_path = yosys_path / "yosys"
 yosys_lib_path = vtr_flow_path / "misc" / "yosyslib"
 yosys_script_path = yosys_lib_path / "synthesis.tcl"
 yosys_parmys_script_path = yosys_lib_path / "synthesis_parmys.tcl"

@@ -391,6 +391,23 @@ endif()
 if(${WITH_ABC})
     add_subdirectory(abc)
 endif()
+
+if(${WITH_YOSYS}) # define cmake params to compile Yosys
+    add_definitions("-D_YOSYS_")
+
+    set(MAKE_PROGRAM "$(MAKE)")
+    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+        set(MAKE_PROGRAM "make")
+    endif()
+
+    if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
+        set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
+    else()
+        set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    endif()
+    add_subdirectory(yosys)
+endif()
+
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
 
 #Add the various tools
@@ -402,10 +419,7 @@ if(${WITH_ABC})
     add_subdirectory(ace2)
 endif()
 add_subdirectory(utils)
-# define cmake params to compile Yosys
-if(${WITH_YOSYS})
-    add_definitions("-D_YOSYS_")
-endif()
+
 if(${WITH_ODIN})
     add_subdirectory(ODIN_II)
     # blifexplorer depends on odin
