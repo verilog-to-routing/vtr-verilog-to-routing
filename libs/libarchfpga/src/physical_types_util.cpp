@@ -1408,7 +1408,7 @@ float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
                                                                     pin_physical_num);
     VTR_ASSERT(pb_pin->is_primitive_pin());
 
-    auto it = std::min_element(pb_pin->pin_timing_del_max.begin(), pb_pin->pin_timing_del_max.end());
+    auto it = std::max_element(pb_pin->pin_timing_del_max.begin(), pb_pin->pin_timing_del_max.end());
 
     if (it == pb_pin->pin_timing_del_max.end()) {
         return 0.;

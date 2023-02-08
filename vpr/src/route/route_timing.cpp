@@ -2452,8 +2452,9 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                                                              blk_loc.loc.x,
                                                              blk_loc.loc.y,
                                                              pin_physical_num);
-                    VTR_ASSERT(pin_rr_node_id != RRNodeId::INVALID());
-                    choking_spots[net_id][pin_count].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
+                    if (pin_rr_node_id != RRNodeId::INVALID()) {
+                        choking_spots[net_id][pin_count].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
+                    }
                 }
             }
             pin_count++;
