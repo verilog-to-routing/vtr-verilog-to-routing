@@ -827,7 +827,7 @@ void try_place(const t_placer_opts& placer_opts,
             print_place_status(state, stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, tot_iter);
 
-            save_proposed_move_per_temp();
+//          save_proposed_move_per_temp();
 
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
@@ -3089,7 +3089,6 @@ static void print_placement_move_types_stats(
                 100 * num_of_aborted_moves / num_of_move_proposed);
     }
     VTR_LOG("\n");
-
 }
 
 static void calculate_reward_and_process_outcome(

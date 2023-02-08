@@ -11,14 +11,17 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
     ClusterBlockId b_from;
     int pin_from;
 
-    if (blk_type.index == -1) { //If the block type is unspecified, choose any random highly critical block to be swapped with another random block
+    if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         b_from = pick_from_highly_critical_block(net_from, pin_from);
-        if (!b_from) {
-            return e_create_move::ABORT; //No movable block found
+        if (b_from) {//if a movable block found, set the block type since the agent only proposed the move type
+            blk_type.index = convert_logical_to_agent_block_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
         }
-        blk_type.index = convert_logical_to_agent_block_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
-    } else { //If the block type is specified, choose a random highly critical with blk_type to be swapped with another random block
+    } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         b_from = pick_from_highly_critical_block(net_from, pin_from, blk_type);
+    }
+
+    if (!b_from) { //No movable block found
+        return e_create_move::ABORT;
     }
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;

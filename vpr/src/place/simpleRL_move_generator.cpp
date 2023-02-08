@@ -136,7 +136,7 @@ void EpsilonGreedyAgent::init_q_scores() {
         fflush(agent_info_file_);
     }
     set_epsilon_action_prob();
-    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+//    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
@@ -260,7 +260,7 @@ void SoftmaxAgent::init_q_scores() {
         set_block_ratio();
     }
     set_action_prob();
-    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+//    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 t_propose_action SoftmaxAgent::propose_action() {
