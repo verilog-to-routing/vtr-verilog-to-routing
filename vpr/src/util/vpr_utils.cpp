@@ -2416,7 +2416,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
         const auto& cluster_pin_chain_idx = pin_chains[cluster_blk_id].pin_chain_idx;
         // remove common elements betweeen cluster_pin_chains.
         for (auto pin : cluster_internal_pins) {
-            auto it = std::find(cluster_pin_chains.begin(), cluster_pin_chains.end(), pin);
+            auto it = cluster_pin_chains.find(pin);
             if (it == cluster_pin_chains.end()) {
                 pin_num_vec.push_back(pin);
             } else {
