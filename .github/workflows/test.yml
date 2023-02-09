@@ -29,19 +29,19 @@ jobs:
           - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                                             extra_pkgs: "" }
+          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: "" }
           - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: "" }
+          - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: "" }
           - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test8",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
-          # - {test: "vtr_reg_strong",             cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON",                extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong",             cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON",                extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_yosys",              cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_yosys_parmys",       cores: "16", options: "",          cmake: "-DYOSYS_SV_UHDM_PLUGIN=ON",                                    extra_pkgs: ""}
+          - {test: "vtr_reg_parmys",       cores: "16", options: "",          cmake: "-DYOSYS_SV_UHDM_PLUGIN=ON",                                    extra_pkgs: ""}
           - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
 
     env:
