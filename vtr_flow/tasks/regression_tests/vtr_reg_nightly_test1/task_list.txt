@@ -1,5 +1,5 @@
 #Refer to Issue #1770 for details. 
-#regression_tests/vtr_reg_nightly_test1/arithmetic_tasks/adder_trees
+regression_tests/vtr_reg_nightly_test1/arithmetic_tasks/adder_trees
 
 regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc_equiv
 regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc
