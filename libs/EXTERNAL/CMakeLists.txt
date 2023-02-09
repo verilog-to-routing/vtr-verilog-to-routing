@@ -18,62 +18,13 @@ if (VPR_USE_EZGL STREQUAL "on")
 endif ()
 
 # The VTR root CMakeFile initializes the WITH_YOSYS
-# Yosys is compiled only if the user ask for it
 if (${WITH_YOSYS})
-    # handle make program with both ninja and unix style
-#    set(MAKE_PROGRAM "$(MAKE)")
-#    if (${CMAKE_GENERATOR} STREQUAL "Ninja")
-#        set(MAKE_PROGRAM "make")
-#    endif ()
-
-#    ExternalProject_Add(libyosys
-#            # root directory for the Yosys
-#            PREFIX "libyosys"
-#
-#            GIT_REPOSITORY https://github.com/YosysHQ/yosys.git
-#            GIT_TAG yosys-0.25
-#            GIT_PROGRESS TRUE
-#
-#            # setting source, build and install directories
-#            SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libyosys"
-#            BUILD_IN_SOURCE FALSE
-#            INSTALL_DIR ""
-#            # BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libyosys"
-#
-#            CONFIGURE_COMMAND ""
-#            BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
-#            -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
-#            -k "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
-#            PREFIX=${VTR_SOURCE_DIR}/Yosys
-#            -j${CMAKE_BUILD_PARALLEL_LEVEL}
-#
-#            INSTALL_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
-#            -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
-#            install "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
-#            PREFIX=${VTR_SOURCE_DIR}/Yosys
-#            -j${CMAKE_BUILD_PARALLEL_LEVEL}
-#
-#            # redirect logs to a logfile
-#            LOG_BUILD ON
-#            LOG_UPDATE ON
-#            LOG_INSTALL ON
-#            LOG_CONFIGURE ON
-#            LOG_OUTPUT_ON_FAILURE ON
-#
-#            )
-
-    # add_subdirectory(libyosys)
-
     # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets
     if (${YOSYS_SV_UHDM_PLUGIN})
-        # keep record of the yosys DAT dir
-        # set(YOSYS_DATDIR ${CMAKE_BINARY_DIR}/share)
-        # keep record of the yosys-uhdm-plugin-integration path
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
         set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
         set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
 
-        # Surelog
         ExternalProject_Add(surelog
                 # root directory for Surelog project
                 PREFIX "surelog"
