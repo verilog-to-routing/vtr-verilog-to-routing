@@ -2535,6 +2535,8 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
         for (auto conn_pin_physical_num : conn_pins_physical_num) {
             // The pin belongs to a chain - incoming edges to this pin will be added later unless it is the sink of the chain
             int conn_pin_chain_num = pin_chain_idx[conn_pin_physical_num];
+            primitive_pin = is_primitive_pin(physical_type, conn_pin_physical_num);
+            pin_on_tile = is_pin_on_tile(physical_type, conn_pin_physical_num);
             if (conn_pin_chain_num != OPEN && chain_sinks[conn_pin_chain_num] != conn_pin_physical_num && !primitive_pin && !pin_on_tile) {
                 continue;
             }
@@ -2648,6 +2650,11 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
             // Based on the previous checks, we put these assertions.
             VTR_ASSERT(!primitive_pin || pin_type == e_pin_type::DRIVER);
             VTR_ASSERT(!pin_on_tile || pin_type == e_pin_type::RECEIVER);
+            if (pin_on_tile && is_primitive_pin(physical_type, sink_pin_num)) {
+                return;
+            } else if (primitive_pin && is_pin_on_tile(physical_type, sink_pin_num)) {
+                return;
+            }
 
             float chain_delay = get_delay_directly_connected_pins(physical_type,
                                                                   logical_block,
