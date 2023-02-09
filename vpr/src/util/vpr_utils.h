@@ -283,6 +283,15 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
                                                                const int j,
                                                                t_physical_tile_type_ptr physical_type);
 
+/**
+ * @brief Returns the list of pins inside the tile located at (i, j), except fo the ones which are on a chain
+ * @param i
+ * @param j
+ * @param pin_chains
+ * @param pin_chains_num
+ * @param physical_type
+ * @return
+ */
 std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
                                                             const int j,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,

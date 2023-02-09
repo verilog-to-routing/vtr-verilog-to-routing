@@ -2513,8 +2513,12 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
     const auto& pin_chain_idx = nodes_to_collapse.pin_chain_idx;
     for (auto pin_physical_num = pin_num_range.low; pin_physical_num <= pin_num_range.high; pin_physical_num++) {
         // The pin belongs to a chain - outgoing edges from this pin will be added later unless it is the sink of the chain
+        // If a pin is on tile or it is a primitive pin, then it is not collapsed. Hence, we need to add it's connections. The only connection
+        // outgoing from these pins is the connection to the chain sink which will be added later
         int chain_num = pin_chain_idx[pin_physical_num];
-        if (chain_num != OPEN && chain_sinks[chain_num] != pin_physical_num) {
+        bool primitive_pin = is_primitive_pin(physical_type, pin_physical_num);
+        bool pin_on_tile = is_pin_on_tile(physical_type, pin_physical_num);
+        if (chain_num != OPEN && chain_sinks[chain_num] != pin_physical_num && !primitive_pin && !pin_on_tile) {
             continue;
         }
         auto parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
@@ -2531,7 +2535,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
         for (auto conn_pin_physical_num : conn_pins_physical_num) {
             // The pin belongs to a chain - incoming edges to this pin will be added later unless it is the sink of the chain
             int conn_pin_chain_num = pin_chain_idx[conn_pin_physical_num];
-            if (conn_pin_chain_num != OPEN && chain_sinks[conn_pin_chain_num] != conn_pin_physical_num) {
+            if (conn_pin_chain_num != OPEN && chain_sinks[conn_pin_chain_num] != conn_pin_physical_num && !primitive_pin && !pin_on_tile) {
                 continue;
             }
             auto conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
