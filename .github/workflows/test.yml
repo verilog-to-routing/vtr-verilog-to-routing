@@ -48,7 +48,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
@@ -65,7 +65,7 @@ jobs:
         VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
         NUM_CORES: ${{ matrix.cores }}
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       if: ${{ always() }}
       with:
         path: |
@@ -86,13 +86,13 @@ jobs:
         - { build_type: 'debug',   verbose: '1' }
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -114,10 +114,10 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -129,10 +129,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -146,13 +146,13 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -214,13 +214,13 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -231,7 +231,7 @@ jobs:
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
     - name: Upload regression run files
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -242,7 +242,7 @@ jobs:
           vtr_flow/**/*.r
 
     - name: Upload regression results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -267,13 +267,13 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -292,13 +292,13 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -315,13 +315,13 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -348,13 +348,13 @@ jobs:
     name: 'B: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -381,13 +381,13 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.6
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
