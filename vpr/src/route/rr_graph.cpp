@@ -203,7 +203,7 @@ static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
                                     vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                     bool is_flat);
 
-static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains);
+static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains_flat(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains);
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  const std::vector<int>& class_num_vec,
@@ -1316,7 +1316,7 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 
     vtr::vector<ClusterBlockId, t_cluster_pin_chain> pin_chains(clb_nlist.blocks().size());
     set_clusters_pin_chains(clb_nlist, pin_chains, is_flat);
-    vtr::vector<ClusterBlockId, std::unordered_set<int>> cluster_flat_chain_pins = get_pin_chains(pin_chains);
+    vtr::vector<ClusterBlockId, std::unordered_set<int>> cluster_flat_chain_pins = get_pin_chains_flat(pin_chains);
 
     int num_rr_nodes = rr_graph.num_nodes();
     alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder,
@@ -2029,7 +2029,7 @@ static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
     }
 }
 
-static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains) {
+static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains_flat(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains) {
     vtr::vector<ClusterBlockId, std::unordered_set<int>> chain_pin_nums(pin_chains.size());
 
     for (int cluster_id_num = 0; cluster_id_num < (int)pin_chains.size(); cluster_id_num++) {
