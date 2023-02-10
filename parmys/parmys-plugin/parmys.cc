@@ -33,7 +33,7 @@
 
 #include "netlist_visualizer.h"
 
-#include "parmys_resolve.hpp"
+#include "parmys_resolve.h"
 
 #include "adder.h"
 #include "arch_util.h"
@@ -48,8 +48,8 @@
 #include "subtractor.h"
 
 #include "ast_util.h"
-#include "parmys_update.hpp"
-#include "parmys_utils.hpp"
+#include "parmys_update.h"
+#include "parmys_utils.h"
 
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN

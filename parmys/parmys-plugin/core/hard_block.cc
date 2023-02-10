@@ -26,7 +26,7 @@
 
 #include "kernel/yosys.h"
 
-#include "../parmys_utils.hpp"
+#include "parmys_utils.h"
 
 STRING_CACHE *hard_block_names = NULL;
 

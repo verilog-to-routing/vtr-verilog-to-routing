@@ -30,8 +30,8 @@
 #include "multiplier.h"
 
 #include "kernel/rtlil.h"
-#include "parmys_update.hpp"
-#include "parmys_utils.hpp"
+#include "parmys_update.h"
+#include "parmys_utils.h"
 
 USING_YOSYS_NAMESPACE
 

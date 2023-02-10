@@ -28,7 +28,7 @@
 #include "vtr_memory.h"
 #include "vtr_util.h"
 
-#include "../parmys_utils.hpp"
+#include "parmys_utils.h"
 
 using vtr::t_linked_vptr;
 
@@ -364,11 +364,8 @@ void define_add_function_yosys(nnode_t *node, Yosys::Module *module, Yosys::Desi
 
 /*-----------------------------------------------------------------------
  * (function: init_split_adder)
- * ##################################
- * TODO the soft logic adders can now be splitted at the source, we could tap onto that and merge these function for
- * simplicicity and would also make sure to keep the allocation at one place
  *###################################
- *	Create a carry chain adder when spliting. Inputs are connected
+ *	Create a carry chain adder when splitting. Inputs are connected
  *	to original pins, output pins are set to NULL for later connecting
  *	flag = 0: all adders are hard logic block; flag = 1: the last adder in the chain is soft logic block
  *---------------------------------------------------------------------*/

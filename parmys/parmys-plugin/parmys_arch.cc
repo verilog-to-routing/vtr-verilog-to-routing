@@ -20,7 +20,7 @@
 #include "arch_util.h"
 #include "echo_arch.h"
 #include "odin_types.h"
-#include "parmys_utils.hpp"
+#include "parmys_utils.h"
 #include "read_xml_arch_file.h"
 
 USING_YOSYS_NAMESPACE

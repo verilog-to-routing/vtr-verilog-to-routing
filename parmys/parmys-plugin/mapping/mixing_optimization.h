@@ -17,7 +17,8 @@
  */
 #ifndef _MIXING_OPTIMIZATION_H_
 #define _MIXING_OPTIMIZATION_H_
-#include "odin_types.h" // netlist_t, config_t
+
+#include "odin_types.h"
 
 class HardSoftLogicMixer;
 /**
