@@ -16,36 +16,34 @@
 
 PLUGIN_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
-ODIN_II_DIR=src
-
 NAME = parmys
 SOURCES = parmys.cc \
 		  parmys_arch.cc \
 		  parmys_update.cc \
 		  parmys_utils.cc \
 		  parmys_resolve.cc \
-		  ${ODIN_II_DIR}/adder.cc \
-		  ${ODIN_II_DIR}/enum_str.cc \
-		  ${ODIN_II_DIR}/mixing_optimization.cc \
-		  ${ODIN_II_DIR}/read_xml_config_file.cc \
-		  ${ODIN_II_DIR}/odin_error.cc \
-		  ${ODIN_II_DIR}/odin_util.cc \
-		  ${ODIN_II_DIR}/netlist_statistic.cc \
-		  ${ODIN_II_DIR}/netlist_utils.cc \
-		  ${ODIN_II_DIR}/netlist_cleanup.cc \
-		  ${ODIN_II_DIR}/node_utils.cc \
-		  ${ODIN_II_DIR}/multiplier.cc \
-		  ${ODIN_II_DIR}/subtractor.cc \
-		  ${ODIN_II_DIR}/hard_soft_logic_mixer.cc \
-		  ${ODIN_II_DIR}/odin_ii.cc \
-		  ${ODIN_II_DIR}/string_cache.cc \
-		  ${ODIN_II_DIR}/partial_map.cc \
-		  ${ODIN_II_DIR}/hard_block.cc \
-		  ${ODIN_II_DIR}/block_memory.cc \
-		  ${ODIN_II_DIR}/memory.cc \
-		  ${ODIN_II_DIR}/netlist_visualizer.cc \
-		  ${ODIN_II_DIR}/hash_table.cc \
-		  ${ODIN_II_DIR}/ast_util.cc
+		  core/adder.cc \
+		  utils/enum_str.cc \
+		  mapping/mixing_optimization.cc \
+		  utils/read_xml_config_file.cc \
+		  utils/odin_error.cc \
+		  utils/odin_util.cc \
+		  netlist/netlist_statistic.cc \
+		  netlist/netlist_utils.cc \
+		  netlist/netlist_cleanup.cc \
+		  netlist/netlist_visualizer.cc \
+		  netlist/node_utils.cc \
+		  core/multiplier.cc \
+		  core/subtractor.cc \
+		  mapping/hard_soft_logic_mixer.cc \
+		  mapping/odin_ii.cc \
+		  utils/string_cache.cc \
+		  mapping/partial_map.cc \
+		  core/hard_block.cc \
+		  core/block_memory.cc \
+		  core/memory.cc \
+		  utils/hash_table.cc \
+		  utils/ast_util.cc
 
 VTR_INSTALL_DIR ?= /usr/local
 
@@ -54,7 +52,11 @@ include ../Makefile_plugin.common
 CXXFLAGS += -std=c++14 -Wall -W -Wextra \
             -Wno-deprecated-declarations \
             -Wno-unused-parameter \
-			-I${ODIN_II_DIR}/include \
+            -I. \
+			-Icore \
+			-Imapping \
+			-Inetlist \
+			-Iutils \
 			-I${VTR_INSTALL_DIR}/include/libarchfpga \
 			-I${VTR_INSTALL_DIR}/include/liblog \
 			-I${VTR_INSTALL_DIR}/include/libpugiutil \

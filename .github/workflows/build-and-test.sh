@@ -19,12 +19,22 @@ set -e
 
 source .github/workflows/common.sh
 
+if [ -z "${PLUGIN_NAME}" ]; then
+	echo "Missing \${PLUGIN_NAME} env value"
+	exit 1
+fi
+
 ##########################################################################
 
 start_section Building
 
+if [ "$PLUGIN_NAME" == "xdc" ] || [ "$PLUGIN_NAME" == "sdc" ]; then 
+    make design_introspection.so -j`nproc`
+	make install_design_introspection -j`nproc`
+fi 
+
 export CXXFLAGS=-Werror
-make UHDM_INSTALL_DIR=`pwd`/env/conda/envs/yosys-plugins/ VTR_INSTALL_DIR=`pwd`/env/conda/envs/yosys-plugins plugins -j`nproc`
+make UHDM_INSTALL_DIR=`pwd`/env/conda/envs/yosys-plugins/ VTR_INSTALL_DIR=`pwd`/env/conda/envs/yosys-plugins ${PLUGIN_NAME}.so -j`nproc`
 unset CXXFLAGS
 
 end_section
@@ -32,19 +42,19 @@ end_section
 ##########################################################################
 
 start_section Installing
-make install -j`nproc`
+make install_${PLUGIN_NAME} -j`nproc`
 end_section
 
 ##########################################################################
 
 start_section Testing
-make test -j`nproc`
+make test_${PLUGIN_NAME} -j`nproc`
 end_section
 
 ##########################################################################
 
 start_section Cleanup
-make plugins_clean -j`nproc`
+make clean_${PLUGIN_NAME} -j`nproc`
 end_section
 
 ##########################################################################

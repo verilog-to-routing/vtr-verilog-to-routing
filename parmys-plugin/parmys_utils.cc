@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "parmys_utils.hpp"
+#include "parmys_utils.h"
 
 USING_YOSYS_NAMESPACE
 

@@ -26,7 +26,7 @@
 #include "block_memory.h"
 #include "memory.h"
 #include "multiplier.h"
-#include "parmys_resolve.hpp"
+#include "parmys_resolve.h"
 #include "subtractor.h"
 
 #include "vtr_util.h"
