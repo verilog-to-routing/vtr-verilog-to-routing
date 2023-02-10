@@ -63,5 +63,5 @@
         name="parmys"
         internal_path="parmys"
         external_url="https://github.com/CAS-Atlantic/parmys-plugin.git"
-        default_external_ref="v2.0"/>
+        default_external_ref="v3.0"/>
 </subtrees>
