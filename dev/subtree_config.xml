@@ -55,8 +55,13 @@
         external_url="https://github.com/ijor/fx68k.git"
         default_external_ref="master"/>
     <subtree
-            name="yosys"
-            internal_path="yosys"
-            external_url="https://github.com/YosysHQ/yosys.git"
-            default_external_ref="yosys-0.26"/>
+        name="yosys"
+        internal_path="yosys"
+        external_url="https://github.com/YosysHQ/yosys.git"
+        default_external_ref="yosys-0.26"/>
+    <subtree
+        name="parmys"
+        internal_path="parmys"
+        external_url="https://github.com/CAS-Atlantic/parmys-plugin.git"
+        default_external_ref="v2.0"/>
 </subtrees>
