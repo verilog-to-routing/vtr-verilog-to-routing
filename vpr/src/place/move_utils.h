@@ -22,8 +22,8 @@ enum e_move_result {
 enum class e_move_type {
     UNIFORM,
     MEDIAN,
-    W_CENTROID,
     CENTROID,
+    W_CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
