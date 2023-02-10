@@ -40,7 +40,7 @@ set_target_properties(parmys PROPERTIES PREFIX "") # Avoid extra 'lib' prefix
 add_custom_target(parmys-plugin ALL
 		DEPENDS parmys
 		COMMAND ${CMAKE_COMMAND}
-		--install ${CMAKE_BINARY_DIR}/libs
+		--install ${CMAKE_BINARY_DIR}/parmys
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 #install(TARGETS parmys DESTINATION bin)
