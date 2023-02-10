@@ -410,6 +410,16 @@ endif()
 
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
 
+# check YOSYS_PARMYS_PLUGIN flag
+if(${YOSYS_PARMYS_PLUGIN})
+    if(NOT ${WITH_YOSYS})
+        message(SEND_ERROR "Using YOSYS_PARMYS_PLUGIN requires activating Yosys frontend. Please set WITH_YOSYS.")
+    endif()
+    # if (${YOSYS_PARMYS_PLUGIN})
+    add_subdirectory(parmys)
+    # endif ()
+endif()
+
 #Add the various tools
 add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
 add_compile_options(${ADDITIONAL_FLAGS})
@@ -433,13 +443,6 @@ if(${YOSYS_SV_UHDM_PLUGIN})
     # avoid compiling plugins in case the Yosys frontend is not active
     if(NOT ${WITH_YOSYS})
         message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Yosys frontend. Please set WITH_YOSYS.")
-    endif()
-endif()
-
-# check YOSYS_PARMYS_PLUGIN flag
-if(${YOSYS_PARMYS_PLUGIN})
-    if(NOT ${WITH_YOSYS})
-        message(SEND_ERROR "Using YOSYS_PARMYS_PLUGIN requires activating Yosys frontend. Please set WITH_YOSYS.")
     endif()
 endif()
 

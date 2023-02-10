@@ -91,9 +91,9 @@ if (${WITH_YOSYS})
                 )
     endif ()
 
-    if (${YOSYS_PARMYS_PLUGIN})
-        add_subdirectory(parmys)
-    endif ()
+    # if (${YOSYS_PARMYS_PLUGIN})
+    #     add_subdirectory(parmys)
+    # endif ()
 
 endif ()
 
