@@ -28,6 +28,7 @@ enum class e_move_type {
     CRIT_UNIFORM,
     FEASIBLE_REGION,
     MANUAL_MOVE,
+    NUMBER_OF_MOVES,
 };
 
 enum class e_create_move {

@@ -15,25 +15,29 @@ static float scaled_clipped_exp(float x) { return std::exp(std::min(1000000 * x,
  *                                     *
  *                                     */
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
-    avail_moves.emplace_back(std::make_unique<UniformMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<MedianMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<CentroidMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<WeightedCentroidMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<WeightedMedianMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<CriticalUniformMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<FeasibleRegionMoveGenerator>());
+    avail_moves.resize((int)e_move_type::NUMBER_OF_MOVES);
+
+    avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
+    avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
+    avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
 
     karmed_bandit_agent = std::move(agent);
 }
 
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent) {
-    avail_moves.emplace_back(std::make_unique<UniformMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<MedianMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<CentroidMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<WeightedCentroidMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<WeightedMedianMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<CriticalUniformMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<FeasibleRegionMoveGenerator>());
+    avail_moves.resize((int)e_move_type::NUMBER_OF_MOVES);
+
+    avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
+    avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
+    avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
 
     karmed_bandit_agent = std::move(agent);
 }
