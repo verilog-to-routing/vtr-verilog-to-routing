@@ -36,6 +36,7 @@ static std::string target_external_pin_util_to_string(const t_ext_pin_util_targe
 /* parse_unrelated_clustering_stat parses the status of unrelated clustering from a list of specifications provided as an input. */
 static t_allow_unrelated_clustering parse_unrelated_clustering_stat(std::vector<std::string> specs);
 std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> parse_unrel_clust_from_str(std::string str);
+/*  */
 static bool block_type_found(std::string block_type_name);
 
 static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<std::string> specs);
@@ -469,7 +470,11 @@ std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> parse_unrel_clust_fr
     }
     return conv_value;
 }
+
+
 static bool block_type_found(std::string block_type_name) {
+    /*The function takes as input the name of a block type and 
+    checks if it exists in the list of logical block types in the device context.*/
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto logical_block_types = device_ctx.logical_block_types;
 
