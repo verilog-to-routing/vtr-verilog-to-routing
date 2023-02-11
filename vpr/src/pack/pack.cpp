@@ -27,6 +27,7 @@
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
+/* Checks whether the packed circuit can fit on the target device */
 static std::vector<std::string> try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
 
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
@@ -39,6 +40,14 @@ static bool block_type_found(std::string block_type_name);
 
 static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<std::string> specs);
 static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thresholds& hf_thresholds);
+
+bool determine_packing_status(int pack_iteration,  
+                              t_packer_opts* packer_opts,
+                              bool floorplan_regions_overfull, 
+                              std::vector<std::string> overused_blocks, 
+                              t_allow_unrelated_clustering& allow_unrelated_clustering, 
+                              bool& balance_block_type_util, 
+                              AttractionInfo& attraction_groups);
 
 bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,
@@ -158,106 +167,17 @@ bool try_pack(t_packer_opts* packer_opts,
         //Try to size/find a device
         std::vector<std::string> overused_blocks = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
 
-        /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
-         * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
-         * of the floorplan not fitting, so attraction groups are turned on for later iterations.
-         */
-        bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.mutable_floorplanning().constraints.get_num_partitions() > 0);
+        bool packing_done = determine_packing_status(pack_iteration, 
+            packer_opts,
+            floorplan_regions_overfull, 
+            overused_blocks, 
+            allow_unrelated_clustering, 
+            balance_block_type_util, 
+            attraction_groups);
 
-        if (overused_blocks.empty() && !floorplan_regions_overfull) {
-            break; //Done
-        } else if (pack_iteration == 1 && !floorplan_not_fitting) {
-            //1st pack attempt was unsucessful (i.e. not dense enough) and we have control of unrelated clustering
-            //
-            //Turn it on to increase packing density
-            std::vector<std::string> fixed_blocks;
-            for (auto& overused_block : overused_blocks) {
-                e_unrel_clust_mode block_mode = allow_unrelated_clustering.get_block_mode(overused_block);
-                if (block_mode == e_unrel_clust_mode::FIXED) {
-                    // The user has explicitly set unrelated clustering status for this block type
-                    // so we can't change it
-                    fixed_blocks.push_back(overused_block);
-                } else {
-                    allow_unrelated_clustering.set_block_status(overused_block, std::make_pair(e_unrel_clust_stat::ON, block_mode));
-                }
-            }
-            if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::AUTO) {
-                VTR_ASSERT(balance_block_type_util == false);
-                balance_block_type_util = true;
-            }
-
-            if (fixed_blocks.size() > 0) {
-                std::stringstream msg;
-                msg << "Packing failed to fit on device.\n"
-                    << "The following block types were overused, but unrelated clustering cannot be changed for them:\n"
-                    << vtr::join(fixed_blocks, ",").c_str() << "\n";
-                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
-            }
-            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=true for block types=[%s] balance_block_type_util=%s\n",
-                    vtr::join(overused_blocks, ",").c_str(),
-                    (balance_block_type_util ? "true" : "false"));
-            /*
-             * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
-             * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
-             * cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
-             * densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
-             * of every iteration if any floorplan regions are overfull. In the first iteration, we run
-             * with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
-             * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
-             * until the last iteration, when we create attraction groups for every partition, if needed.
-             */
-        } else if (pack_iteration == 1 && floorplan_not_fitting) {
-            VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
-            attraction_groups.create_att_groups_for_overfull_regions();
-            attraction_groups.set_att_group_pulls(1);
-
-        } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
-            if (pack_iteration == 2) {
-                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
-                attraction_groups.create_att_groups_for_overfull_regions();
-                VTR_LOG("Pack iteration is %d\n", pack_iteration);
-            } else if (pack_iteration == 3) {
-                attraction_groups.create_att_groups_for_all_regions();
-                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
-                VTR_LOG("Pack iteration is %d\n", pack_iteration);
-            } else if (pack_iteration == 4) {
-                attraction_groups.create_att_groups_for_all_regions();
-                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
-                VTR_LOG("Pack iteration is %d\n", pack_iteration);
-                attraction_groups.set_att_group_pulls(4);
-                t_ext_pin_util pin_util(1.0, 1.0);
-                helper_ctx.target_external_pin_util.set_block_pin_util("clb", pin_util);
-            }
-
-        } else {
-            //Unable to pack densely enough: Give Up
-
-            if (floorplan_regions_overfull) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Failed to find pack clusters densely enough to fit in the designated floorplan regions.\n"
-                                "The floorplan regions may need to be expanded to run successfully. \n");
-            }
-
-            //No suitable device found
-            std::string resource_reqs;
-            std::string resource_avail;
-            auto& grid = g_vpr_ctx.device().grid;
-            for (auto iter = helper_ctx.num_used_type_instances.begin(); iter != helper_ctx.num_used_type_instances.end(); ++iter) {
-                if (iter != helper_ctx.num_used_type_instances.begin()) {
-                    resource_reqs += ", ";
-                    resource_avail += ", ";
-                }
-
-                resource_reqs += std::string(iter->first->name) + ": " + std::to_string(iter->second);
-
-                int num_instances = 0;
-                for (auto type : iter->first->equivalent_tiles)
-                    num_instances += grid.num_instances(type);
-
-                resource_avail += std::string(iter->first->name) + ": " + std::to_string(num_instances);
-            }
-
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
+        if(packing_done)
+        {
+            break;
         }
 
         //Reset clustering for re-packing
@@ -356,6 +276,127 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 
     return (is_clock);
 }
+
+
+/* This function determines whether packing is done or not. If returned true, the packer will exit.
+ If packing fails it will print out a message explaining the cause of failure and and take the appropriate action to try to resolve it.
+ If no further action can be taken in case of failure, this function will throw an error*/
+bool determine_packing_status(int pack_iteration,  
+                              t_packer_opts* packer_opts,
+                              bool floorplan_regions_overfull, 
+                              std::vector<std::string> overused_blocks, 
+                              t_allow_unrelated_clustering& allow_unrelated_clustering, 
+                              bool& balance_block_type_util, 
+                              AttractionInfo& attraction_groups){
+
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+
+    /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
+        * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
+        * of the floorplan not fitting, so attraction groups are turned on for later iterations.
+        */
+    bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.mutable_floorplanning().constraints.get_num_partitions() > 0);
+
+    if (overused_blocks.empty() && !floorplan_regions_overfull) {
+        return true; //Done
+    } else if (pack_iteration == 1 && !floorplan_not_fitting) {
+        //1st pack attempt was unsucessful (i.e. not dense enough) and we have control of unrelated clustering
+        //
+        //Turn it on to increase packing density
+        std::vector<std::string> fixed_blocks;
+        for (auto& overused_block : overused_blocks) {
+            e_unrel_clust_mode block_mode = allow_unrelated_clustering.get_block_mode(overused_block);
+            if (block_mode == e_unrel_clust_mode::FIXED) {
+                // The user has explicitly set unrelated clustering status for this block type
+                // so we can't change it
+                fixed_blocks.push_back(overused_block);
+            } else {
+                allow_unrelated_clustering.set_block_status(overused_block, std::make_pair(e_unrel_clust_stat::ON, block_mode));
+            }
+        }
+        if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::AUTO) {
+            VTR_ASSERT(balance_block_type_util == false);
+            balance_block_type_util = true;
+        }
+
+        if (fixed_blocks.size() > 0) {
+            std::stringstream msg;
+            msg << "Packing failed to fit on device.\n"
+                << "The following block types were overused, but unrelated clustering cannot be changed for them:\n"
+                << vtr::join(fixed_blocks, ",").c_str() << "\n";
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
+        }
+        VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=true for block types=[%s] balance_block_type_util=%s\n",
+                vtr::join(overused_blocks, ",").c_str(),
+                (balance_block_type_util ? "true" : "false"));
+        /*
+            * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
+            * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
+            * cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
+            * densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
+            * of every iteration if any floorplan regions are overfull. In the first iteration, we run
+            * with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
+            * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
+            * until the last iteration, when we create attraction groups for every partition, if needed.
+            */
+    } else if (pack_iteration == 1 && floorplan_not_fitting) {
+        VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
+        attraction_groups.create_att_groups_for_overfull_regions();
+        attraction_groups.set_att_group_pulls(1);
+
+    } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
+        if (pack_iteration == 2) {
+            VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
+            attraction_groups.create_att_groups_for_overfull_regions();
+            VTR_LOG("Pack iteration is %d\n", pack_iteration);
+        } else if (pack_iteration == 3) {
+            attraction_groups.create_att_groups_for_all_regions();
+            VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
+            VTR_LOG("Pack iteration is %d\n", pack_iteration);
+        } else if (pack_iteration == 4) {
+            attraction_groups.create_att_groups_for_all_regions();
+            VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
+            VTR_LOG("Pack iteration is %d\n", pack_iteration);
+            attraction_groups.set_att_group_pulls(4);
+            t_ext_pin_util pin_util(1.0, 1.0);
+            helper_ctx.target_external_pin_util.set_block_pin_util("clb", pin_util);
+        }
+
+    } else {
+        //Unable to pack densely enough: Give Up
+
+        if (floorplan_regions_overfull) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Failed to find pack clusters densely enough to fit in the designated floorplan regions.\n"
+                            "The floorplan regions may need to be expanded to run successfully. \n");
+        }
+
+        //No suitable device found
+        std::string resource_reqs;
+        std::string resource_avail;
+        auto& grid = g_vpr_ctx.device().grid;
+        for (auto iter = helper_ctx.num_used_type_instances.begin(); iter != helper_ctx.num_used_type_instances.end(); ++iter) {
+            if (iter != helper_ctx.num_used_type_instances.begin()) {
+                resource_reqs += ", ";
+                resource_avail += ", ";
+            }
+
+            resource_reqs += std::string(iter->first->name) + ": " + std::to_string(iter->second);
+
+            int num_instances = 0;
+            for (auto type : iter->first->equivalent_tiles)
+                num_instances += grid.num_instances(type);
+
+            resource_avail += std::string(iter->first->name) + ": " + std::to_string(num_instances);
+        }
+
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
+    }
+
+    return false;
+
+}
+
 
 static std::vector<std::string> try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
     /* Checks whether the packed circuit can fit on the target device 
