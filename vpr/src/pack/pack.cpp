@@ -42,12 +42,12 @@ static bool block_type_found(std::string block_type_name);
 static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<std::string> specs);
 static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thresholds& hf_thresholds);
 
-bool determine_packing_status(int pack_iteration,  
+bool determine_packing_status(int pack_iteration,
                               t_packer_opts* packer_opts,
-                              bool floorplan_regions_overfull, 
-                              std::vector<std::string> overused_blocks, 
-                              t_allow_unrelated_clustering& allow_unrelated_clustering, 
-                              bool& balance_block_type_util, 
+                              bool floorplan_regions_overfull,
+                              std::vector<std::string> overused_blocks,
+                              t_allow_unrelated_clustering& allow_unrelated_clustering,
+                              bool& balance_block_type_util,
                               AttractionInfo& attraction_groups);
 
 bool try_pack(t_packer_opts* packer_opts,
@@ -168,16 +168,15 @@ bool try_pack(t_packer_opts* packer_opts,
         //Try to size/find a device
         std::vector<std::string> overused_blocks = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
 
-        bool packing_done = determine_packing_status(pack_iteration, 
-            packer_opts,
-            floorplan_regions_overfull, 
-            overused_blocks, 
-            allow_unrelated_clustering, 
-            balance_block_type_util, 
-            attraction_groups);
+        bool packing_done = determine_packing_status(pack_iteration,
+                                                     packer_opts,
+                                                     floorplan_regions_overfull,
+                                                     overused_blocks,
+                                                     allow_unrelated_clustering,
+                                                     balance_block_type_util,
+                                                     attraction_groups);
 
-        if(packing_done)
-        {
+        if (packing_done) {
             break;
         }
 
@@ -278,24 +277,22 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
     return (is_clock);
 }
 
-
 /* This function determines whether packing is done or not. If returned true, the packer will exit.
- If packing fails it will print out a message explaining the cause of failure and and take the appropriate action to try to resolve it.
- If no further action can be taken in case of failure, this function will throw an error*/
-bool determine_packing_status(int pack_iteration,  
+ * If packing fails it will print out a message explaining the cause of failure and and take the appropriate action to try to resolve it.
+ * If no further action can be taken in case of failure, this function will throw an error*/
+bool determine_packing_status(int pack_iteration,
                               t_packer_opts* packer_opts,
-                              bool floorplan_regions_overfull, 
-                              std::vector<std::string> overused_blocks, 
-                              t_allow_unrelated_clustering& allow_unrelated_clustering, 
-                              bool& balance_block_type_util, 
-                              AttractionInfo& attraction_groups){
-
+                              bool floorplan_regions_overfull,
+                              std::vector<std::string> overused_blocks,
+                              t_allow_unrelated_clustering& allow_unrelated_clustering,
+                              bool& balance_block_type_util,
+                              AttractionInfo& attraction_groups) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
     /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
-        * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
-        * of the floorplan not fitting, so attraction groups are turned on for later iterations.
-        */
+     * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
+     * of the floorplan not fitting, so attraction groups are turned on for later iterations.
+     */
     bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.mutable_floorplanning().constraints.get_num_partitions() > 0);
 
     if (overused_blocks.empty() && !floorplan_regions_overfull) {
@@ -331,15 +328,15 @@ bool determine_packing_status(int pack_iteration,
                 vtr::join(overused_blocks, ",").c_str(),
                 (balance_block_type_util ? "true" : "false"));
         /*
-            * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
-            * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
-            * cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
-            * densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
-            * of every iteration if any floorplan regions are overfull. In the first iteration, we run
-            * with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
-            * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
-            * until the last iteration, when we create attraction groups for every partition, if needed.
-            */
+         * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
+         * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
+         * cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
+         * densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
+         * of every iteration if any floorplan regions are overfull. In the first iteration, we run
+         * with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
+         * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
+         * until the last iteration, when we create attraction groups for every partition, if needed.
+         */
     } else if (pack_iteration == 1 && floorplan_not_fitting) {
         VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
         attraction_groups.create_att_groups_for_overfull_regions();
@@ -395,16 +392,14 @@ bool determine_packing_status(int pack_iteration,
     }
 
     return false;
-
 }
-
 
 static std::vector<std::string> try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
     /* Checks whether the packed circuit can fit on the target device 
-        num_type_instances: lists the number of used blocks for each pb_type */
+     * num_type_instances: lists the number of used blocks for each pb_type */
 
     /* The function returns a list of block types that were overutilized.
-        Therefore, if the design fits on the device the returning list will be empty */
+     * Therefore, if the design fits on the device the returning list will be empty */
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device
@@ -471,10 +466,9 @@ std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> parse_unrel_clust_fr
     return conv_value;
 }
 
-
 static bool block_type_found(std::string block_type_name) {
     /* The function takes as input the name of a block type and 
-    checks if it exists in the list of logical block types in the device context. */
+     * checks if it exists in the list of logical block types in the device context. */
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto logical_block_types = device_ctx.logical_block_types;
 
