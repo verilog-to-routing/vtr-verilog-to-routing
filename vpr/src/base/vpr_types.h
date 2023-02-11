@@ -134,8 +134,8 @@ enum class e_const_gen_inference {
 };
 
 enum class e_unrel_clust_stat {
-    OFF,
-    ON
+    OFF,  ///<unrelated clustering is turned off
+    ON ///<unrelated clustering is turned on 
 };
 
 enum class e_unrel_clust_mode {
@@ -229,12 +229,15 @@ class t_allow_unrelated_clustering {
     /**
      * @brief Sets the unrelated clustering status for the specified block type
      * 
-     * The unrelated clustering status is represented as a pair of booleans. 
-     * The first boolean incidcates whether unrelated clustering is turned on or off. 
-     * The second variable indicates whether the status of the variable is provided
-     * by the user(bool = false) or user let it to be automatically determined by VPR(bool = ture). 
-     * If provided by the user, the status cannot be overriden later, otherwise
-     * it can be adjusted by VPR throughout the flow as necessary.
+     * @param block_type_name
+     *              The pb_type name of the block for which we want to set the unrelated clustering status
+     * @param status
+     *              A pair of status control variables. The first variable indicates whether 
+     *              unrelated clustering is turned on or off. The second variable indicates
+     *              whether the status of the variable is provided by the user
+     *              (bool = false) or user lets it to be automatically determined by VPR
+     *              (bool = true). If provided by the user, the status cannot be overriden
+     *              later, otherwise it can be adjusted by VPR throughout the flow as necessary.
      */
     void set_block_status(std::string block_type_name, std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status);
     /**
@@ -244,7 +247,15 @@ class t_allow_unrelated_clustering {
     void set_default_status(std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status);
 
   private:
+    /**
+     * @brief The default value of unrelated clustering status for all block types
+     */
     std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> default_;
+     /**
+     * @brief Overrides the default value of unrelated clustering status for specific block types. Each entry
+     * is associated with a certain block type and determines whether unrelated cluster is on or off,
+     * and whether its status is set by the user or automatically determined by VPR.
+     */
     std::map<std::string, std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode>> overrides_;
 };
 

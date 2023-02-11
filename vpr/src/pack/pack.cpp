@@ -32,6 +32,7 @@ static std::vector<std::string> try_size_device_grid(const t_arch& arch, const s
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
 static std::string target_external_pin_util_to_string(const t_ext_pin_util_targets& ext_pin_utils);
 
+/* parse_unrelated_clustering_stat parses the status of unrelated clustering from a list of specifications provided as an input. */
 static t_allow_unrelated_clustering parse_unrelated_clustering_stat(std::vector<std::string> specs);
 std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> parse_unrel_clust_from_str(std::string str);
 static bool block_type_found(std::string block_type_name);
@@ -188,7 +189,7 @@ bool try_pack(t_packer_opts* packer_opts,
             if (fixed_blocks.size() > 0) {
                 std::stringstream msg;
                 msg << "Packing failed to fit on device.\n"
-                    << "The following block types were overused, but unrelated clustering was disabled for them:\n"
+                    << "The following block types were overused, but unrelated clustering cannot be changed for them:\n"
                     << vtr::join(fixed_blocks, ",").c_str() << "\n";
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
@@ -357,6 +358,11 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 }
 
 static std::vector<std::string> try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
+    /* Checks whether the packed circuit can fit on the target device 
+        num_type_instances: lists the number of used blocks for each pb_type */
+
+    /* The function returns a list of block types that were overutilized.
+        Therefore, if the design fits on the device the returning list will be empty */
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device
