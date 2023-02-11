@@ -1,12 +1,12 @@
-PROJECT_NAME           = "Verilog to Routing - ODIN_II"
-OUTPUT_DIRECTORY       = ../_build/doxygen/ODIN_II
+PROJECT_NAME           = "Verilog to Routing - odin_ii"
+OUTPUT_DIRECTORY       = ../_build/doxygen/odin_ii
 FULL_PATH_NAMES        = NO
 OPTIMIZE_OUTPUT_FOR_C  = YES
 EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = YES
 EXTRACT_STATIC         = YES
 WARN_IF_UNDOCUMENTED   = NO
-INPUT                  = ../../ODIN_II
+INPUT                  = ../../odin_ii
 RECURSIVE              = YES
 GENERATE_HTML          = NO
 GENERATE_LATEX         = NO

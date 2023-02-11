@@ -834,7 +834,7 @@ struct ParMYSPass : public Pass {
 
     static void log_time(double time) { log("%.1fms", time * 1000); }
 
-    ParMYSPass() : Pass("parmys", "ODIN_II partial mapper for Yosys") {}
+    ParMYSPass() : Pass("parmys", "odin_ii partial mapper for Yosys") {}
     void help() override
     {
         log("\n");

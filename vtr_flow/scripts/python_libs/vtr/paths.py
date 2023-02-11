@@ -9,8 +9,8 @@ root_path = pathlib.Path(__file__).absolute().parent.parent.parent.parent.parent
 vtr_flow_path = root_path / "vtr_flow"
 
 # ODIN paths
-odin_path = root_path / "ODIN_II"
-odin_exe_path = odin_path / "odin_II"
+odin_path = root_path / "odin_ii"
+odin_exe_path = odin_path / "odin_ii"
 odin_cfg_path = vtr_flow_path / "misc" / "basic_odin_config_split.xml"
 odin_verify_path = odin_path / "verify_odin.sh"
 odin_benchmark_path = odin_path / "regression_test" / "benchmark"
@@ -19,13 +19,8 @@ odin_output_on_error_path = odin_path / "regression_test" / ".library" / "output
 # YOSYS paths
 yosys_path = root_path / "build" / "bin"
 yosys_exe_path = yosys_path / "yosys"
-yosys_lib_path = vtr_flow_path / "misc" / "yosyslib"
-yosys_script_path = yosys_lib_path / "synthesis.tcl"
-yosys_parmys_script_path = yosys_lib_path / "synthesis_parmys.tcl"
-
-# ARCHFPGA paths
-archfpga_path = root_path / "ArchFPGA"
-write_arch_bb_exe_path = root_path / "build/libs/libarchfpga/write_arch_bb"
+yosys_tcl_path = vtr_flow_path / "misc" / "yosys"
+yosys_script_path = yosys_tcl_path / "synthesis.tcl"
 
 # ABC paths
 abc_path = root_path / "abc"

@@ -17,8 +17,8 @@ blifexplorer:
  - blifexplorer/*
  - blifexplorer/**/*
 Odin:
- - ODIN_II/*
- - ODIN_II/**/*
+ - odin_ii/*
+ - odin_ii/**/*
  - odin2_helper/*
  - odin2_helper/**/*
 VPR:

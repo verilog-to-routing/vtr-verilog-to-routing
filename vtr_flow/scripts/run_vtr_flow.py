@@ -19,7 +19,7 @@ import vtr
 
 BASIC_VERBOSITY = 1
 
-VTR_STAGES = ["odin", "yosys", "abc", "ace", "vpr"]
+VTR_STAGES = ["odin", "parmys", "abc", "ace", "vpr"]
 
 # pylint: disable=too-few-public-methods
 class VtrStageArgparseAction(argparse.Action):
@@ -30,8 +30,8 @@ class VtrStageArgparseAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
         if value == "odin":
             setattr(namespace, self.dest, vtr.VtrStage.ODIN)
-        elif value == "yosys":
-            setattr(namespace, self.dest, vtr.VtrStage.YOSYS)
+        elif value == "parmys":
+            setattr(namespace, self.dest, vtr.VtrStage.PARMYS)
         elif value == "abc":
             setattr(namespace, self.dest, vtr.VtrStage.ABC)
         elif value == "vpr":
@@ -112,7 +112,7 @@ def vtr_command_argparser(prog=None):
         "-start",
         "-starting_stage",
         choices=VTR_STAGES,
-        default=vtr.VtrStage.YOSYS,
+        default=vtr.VtrStage.PARMYS,
         action=VtrStageArgparseAction,
         help="Starting stage of the VTR flow.",
     )
@@ -339,29 +339,23 @@ def vtr_command_argparser(prog=None):
         help="Specify the name of the module in the design that should be considered as top",
     )
     #
-    # YOSYS arguments
+    # PARMYS arguments
     #
-    yosys = parser.add_argument_group("Yosys", description="Arguments to be passed to Yosys")
-    yosys.add_argument(
+    parmys = parser.add_argument_group("Parmys", description="Arguments to be passed to Parmys")
+    parmys.add_argument(
         "-yosys_script",
         default=None,
         dest="yosys_script",
         help="Supplies Yosys with a .ys script file (similar to Tcl script)"
         + ", including synthesis steps.",
     )
-    yosys.add_argument(
+    parmys.add_argument(
         "-parser",
-        default="yosys",
+        default="default",
         dest="parser",
-        help="Specify a parser for the Yosys synthesizer [yosys (Verilog-2005), surelog (UHDM), "
-        + "yosys-plugin (SystemVerilog)]. The script used the Yosys conventional Verilog"
+        help="Specify a parser for the Yosys synthesizer [default (Verilog-2005), surelog (UHDM), "
+        + "system-verilog]. The script used the Yosys conventional Verilog"
         + " parser if this argument is not specified.",
-    )
-    yosys.add_argument(
-        "-mapper",
-        default="parmys",
-        dest="mapper",
-        help="Choose the partial mapper fot VTR flow with Yosys frontend between [parmys, yosys].",
     )
     #
     # VPR arguments
@@ -443,15 +437,15 @@ def get_max_memory_usage(temp_dir):
     """
     cnt = 0
     output_files = {
-        "yosys": Path(temp_dir / "yosys.out"),
+        "parmys": Path(temp_dir / "parmys.out"),
         "odin": Path(temp_dir / "odin.out"),
         "abc": Path(temp_dir / "abc{}.out".format(cnt)),
         "vpr": Path(temp_dir / "vpr.out"),
     }
-    memory_usages = {"yosys": -1, "odin": -1, "abc": -1, "vpr": -1}
+    memory_usages = {"parmys": -1, "odin": -1, "abc": -1, "vpr": -1}
 
-    if output_files["yosys"].is_file():
-        memory_usages["yosys"] = get_memory_usage(output_files["yosys"])
+    if output_files["parmys"].is_file():
+        memory_usages["parmys"] = get_memory_usage(output_files["parmys"])
 
     if output_files["odin"].is_file():
         memory_usages["odin"] = get_memory_usage(output_files["odin"])
@@ -540,7 +534,7 @@ def vtr_command_main(arg_list, prog=None):
             vpr_args=vpr_args,
             abc_args=process_abc_args(args),
             odin_args=process_odin_args(args),
-            yosys_args=process_yosys_args(args),
+            parmys_args=process_parmys_args(args),
             keep_intermediate_files=args.keep_intermediate_files,
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
@@ -695,15 +689,14 @@ def process_odin_args(args):
     return odin_args
 
 
-def process_yosys_args(args):
+def process_parmys_args(args):
     """
-    Finds arguments needed in the YOSYS stage of the flow
+    Finds arguments needed in the PARMYS stage of the flow
     """
-    yosys_args = OrderedDict()
-    yosys_args["parser"] = args.parser
-    yosys_args["mapper"] = args.mapper
+    parmys_args = OrderedDict()
+    parmys_args["parser"] = args.parser
 
-    return yosys_args
+    return parmys_args
 
 
 def process_vpr_args(args, prog, temp_dir, vpr_args):

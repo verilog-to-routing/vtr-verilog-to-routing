@@ -9,8 +9,7 @@ export VTR_DIR=$(pwd)
 source $SCRIPT_DIR/hostsetup.sh
 
 if ! { [ $VTR_TEST == "vtr_reg_strong" ] || [ $VTR_TEST == "odin_reg_strong" ] \
-|| [ $VTR_TEST == "vtr_reg_yosys" ] \
-|| [ $VTR_TEST == "vtr_reg_yosys_parmys" ]; }; then
+|| [ $VTR_TEST == "vtr_reg_parmys" ]; }; then
 	source $SCRIPT_DIR/vtr-full-setup.sh
 fi
 

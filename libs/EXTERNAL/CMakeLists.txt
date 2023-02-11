@@ -17,8 +17,8 @@ if (VPR_USE_EZGL STREQUAL "on")
     add_subdirectory(libezgl)
 endif ()
 
-# The VTR root CMakeFile initializes the WITH_YOSYS
-if (${WITH_YOSYS})
+# The VTR root CMakeFile initializes the WITH_PARMYS
+if (${WITH_PARMYS})
     # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets
     if (${YOSYS_SV_UHDM_PLUGIN})
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
@@ -90,10 +90,6 @@ if (${WITH_YOSYS})
                 DEPENDS surelog yosys
                 )
     endif ()
-
-    # if (${YOSYS_PARMYS_PLUGIN})
-    #     add_subdirectory(parmys)
-    # endif ()
 
 endif ()
 
