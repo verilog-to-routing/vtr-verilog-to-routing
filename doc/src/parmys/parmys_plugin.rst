@@ -6,7 +6,7 @@ Parmys Plugin
 Parmys (Partial Mapper for Yosys) is a Yosys plugin that performs intelligent partial mapping (inference, binding, and hard/soft logic trade-offs) from Odin-II.
 Please see `Parmys-Plugin GitHub <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ repository for more information.
 
-Available parameters are:
+Available parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. option:: -a ARCHITECTURE_FILE

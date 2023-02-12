@@ -63,10 +63,10 @@ They will cause VPR to perform only :ref:`packing and placement <general_options
 .. code-block:: bash
 
     # Using the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file>
 
     # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -start yosys
+    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser system-verilog
 
 Running the VTR flow with the default configuration using the Yosys standalone front-end.
 The parser for these runs is considered the Yosys conventional Verilog/SystemVerilog parser (i.e., ``read_verilog -sv``), as the parser is not explicitly specified.
@@ -77,7 +77,7 @@ The parser for these runs is considered the Yosys conventional Verilog/SystemVer
     ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser system-verilog
 
     # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
-    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -start yosys -parser surelog
+    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -parser surelog
 
 Running the default VTR flow using the Parmys standalone front-end.
 The Yosys HDL parser is considered as Yosys-SystemVerilog plugin (i.e., ``read_systemverilog``) and Yosys UHDM plugin (i.e., ``read_uhdm``), respectively.
@@ -86,7 +86,7 @@ Utilizing Yosys plugins requires passing the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compi
 .. code-block:: bash
 
     # Using the Parmys (Partial Mapper for Yosys) plugin as partial mapper
-    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file>
 
 Will run the VTR flow (default configuration) with Yosys frontend using Parmys plugin as partial mapper. To utilize the Parmys plugin, the ``-DYOSYS_PARMYS_PLUGIN=ON`` compile flag should be passed while building the VTR project with Yosys as a frontend.
 

@@ -1,5 +1,5 @@
 """
-    Module to run YOSYS with its various arguments
+    Module to run Parmys with its various arguments
 """
 import os
 import shutil
@@ -82,11 +82,11 @@ def init_config_file(
     min_hard_mult_size,
     min_hard_adder_size,
 ):
-    """initializing the raw odin config file"""
+    """initializing the raw xml config file"""
     # specify the input files type
     file_extension = os.path.splitext(circuit_list[0])[-1]
     if file_extension not in FILE_TYPES:
-        raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
+        raise vtr.VtrError("Invalid input file type '{}'".format(file_extension))
     input_file_type = FILE_TYPES[file_extension]
 
     # Update the config file
@@ -135,7 +135,7 @@ def run(
     min_hard_adder_size=1,
 ):
     """
-    Runs YOSYS on the specified architecture file and circuit file
+    Runs Yosys on the specified architecture file and circuit
 
     .. note :: Usage: vtr.parmys.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
 
@@ -162,16 +162,16 @@ def run(
             Directory to run in (created if non-existent)
 
         parmys_args:
-            A dictionary of keyword arguments to pass on to PARMYS
+            A dictionary of keyword arguments to pass on to Parmys
 
         log_filename :
             File to log result to
 
         yosys_exec:
-            YOSYS executable to be run
+            Yosys executable to be run
 
         yosys_script:
-            The YOSYS script file
+            The Yosys script file
 
     """
     temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
