@@ -1,10 +1,10 @@
-.. _Parmys:
+.. _parmys:
 
 #####
 Parmys
 #####
 
-Parmys utilizes Yosys which is a framework for Verilog RTL synthesis and Parmys plugin as partial mapper.
+Parmys frontend utilizes Yosys which is a framework for Verilog RTL synthesis and Parmys-plugin as partial mapper.
 
 .. toctree::
    :glob:
@@ -16,11 +16,18 @@ Parmys utilizes Yosys which is a framework for Verilog RTL synthesis and Parmys 
 .. toctree::
    :glob:
    :maxdepth: 2
-   :Caption: Verilog Support
+   :Caption: Yosys
 
-   verilog_support
+   yosys
 
-   .. toctree::
+.. toctree::
+   :glob:
+   :maxdepth: 2
+   :Caption: Parmys Plugin
+
+   parmys_plugin
+
+.. toctree::
    :glob:
    :maxdepth: 2
    :Caption: Structure

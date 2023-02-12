@@ -18,7 +18,7 @@ sudo make install
 ```
 
 ## Parameters
-Available paramters are:
+Available parameters are:
 ```
     -a ARCHITECTURE_FILE
         VTR FPGA architecture description file (XML)
