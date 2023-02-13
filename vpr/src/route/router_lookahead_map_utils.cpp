@@ -710,11 +710,15 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
         RRNodeId node;
 
         bool operator<(const t_pq_entry& rhs) const {
+            return this->delay < rhs.delay;
+        }
+
+        bool operator>(const t_pq_entry& rhs) const {
             return this->delay > rhs.delay;
         }
     };
 
-    std::priority_queue<t_pq_entry> pq;
+    std::priority_queue<t_pq_entry, std::vector<t_pq_entry>, std::greater<t_pq_entry>> pq;
 
     t_pq_entry root;
     root.congestion = 0.;
