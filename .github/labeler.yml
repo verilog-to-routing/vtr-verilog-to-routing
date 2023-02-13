@@ -21,6 +21,11 @@ Odin:
  - odin_ii/**/*
  - odin2_helper/*
  - odin2_helper/**/*
+Parmys:
+ - parmys/*
+ - parmys/**/*
+ - yosys/*
+ - yosys/**/*
 VPR:
  - vpr/*
  - vpr/**/*

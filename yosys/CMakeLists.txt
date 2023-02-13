@@ -16,14 +16,14 @@ endif()
 
 # how to build the result of the library
 add_custom_command(OUTPUT yosys-bin
-        COMMAND ${MAKE_PROGRAM} "ENABLE_ABC=0"
+        COMMAND ${MAKE_PROGRAM} ENABLE_ABC=0
 #            -C ${CMAKE_CURRENT_BINARY_DIR}
 #            -f ${CMAKE_CURRENT_SOURCE_DIR}/Makefile #(out-of-tree) build directory
             PREFIX=${CMAKE_BINARY_DIR}
             -j${CUSTOM_BUILD_PARALLEL_LEVEL}
             > /dev/null
 
-        COMMAND ${MAKE_PROGRAM} install
+        COMMAND ${MAKE_PROGRAM} install ENABLE_ABC=0
 #            -C ${CMAKE_CURRENT_BINARY_DIR}
 #            -f ${CMAKE_CURRENT_SOURCE_DIR}/Makefile #(out-of-tree) build directory
             PREFIX=${CMAKE_BINARY_DIR}
