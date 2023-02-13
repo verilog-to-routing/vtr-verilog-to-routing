@@ -1,9 +1,0 @@
-regression_tests/vtr_reg_parmys/vtr_benchmarks/
-regression_tests/vtr_reg_parmys/koios/
-regression_tests/vtr_reg_parmys/ultraembedded/
-regression_tests/vtr_reg_parmys/vexriscv/
-regression_tests/vtr_reg_parmys/freecores/
-regression_tests/vtr_reg_parmys/system_verilog/f4pga_button_controller/
-regression_tests/vtr_reg_parmys/system_verilog/f4pga_pulse_width_led/
-regression_tests/vtr_reg_parmys/system_verilog/f4pga_timer/
-regression_tests/vtr_reg_parmys/hdl_include

@@ -81,7 +81,7 @@ The parser for these runs is considered the Yosys conventional Verilog/SystemVer
 
 Running the default VTR flow using the Parmys standalone front-end.
 The Yosys HDL parser is considered as Yosys-SystemVerilog plugin (i.e., ``read_systemverilog``) and Yosys UHDM plugin (i.e., ``read_uhdm``), respectively.
-Utilizing Yosys plugins requires passing the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to build and install the plugins for the Parmys front-end.
+Utilizing Yosys plugins requires passing the ``-DYOSYS_F4PGA_PLUGINS=ON`` compile flag to build and install the plugins for the Parmys front-end.
 
 .. code-block:: bash
 

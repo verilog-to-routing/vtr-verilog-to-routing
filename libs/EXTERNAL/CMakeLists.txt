@@ -20,7 +20,7 @@ endif ()
 # The VTR root CMakeFile initializes the WITH_PARMYS
 if (${WITH_PARMYS})
     # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets
-    if (${YOSYS_SV_UHDM_PLUGIN})
+    if (${YOSYS_F4PGA_PLUGINS})
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
         set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
         set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
@@ -76,7 +76,7 @@ if (${WITH_PARMYS})
                 UHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}
                 BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins/$(NAME) # NAME will be resolved by yosys-f4pga-plugins Make
                 YOSYS_PATH=${CMAKE_BINARY_DIR}
-                PLUGIN_LIST=systemverilog #fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
+                PLUGIN_LIST=fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
                 install -j${CUSTOM_BUILD_PARALLEL_LEVEL}
 
                 # redirect logs to a logfile

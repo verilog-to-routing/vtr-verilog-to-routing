@@ -39,7 +39,7 @@ jobs:
           - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_parmys",       cores: "16", options: "",          cmake: "-DYOSYS_SV_UHDM_PLUGIN=ON",                                    extra_pkgs: ""}
+          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
           - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
 
     env:
@@ -286,6 +286,29 @@ jobs:
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
 
 
+  Parmys:
+    name: 'Parmys Basic Test'
+    runs-on: ubuntu-18.04
+    steps:
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.6
+      - uses: actions/checkout@v3
+      - run: ./.github/scripts/install_dependencies.sh
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+
+      - name: Test
+        env:
+          CMAKE_PARAMS: '-DVTR_IPO_BUILD=off'
+          BUILD_TYPE: debug
+        run: |
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          ./.github/scripts/build.sh
+          ./run_reg_test.py parmys_reg_basic -show_failures -j4
+
+
   ODINII:
     name: 'ODIN-II Basic Test'
     runs-on: ubuntu-18.04
@@ -374,6 +397,7 @@ jobs:
       - Warnings
       - Regression
       - Sanitized
+      - Parmys
       - ODINII
       - VQM2BLIF
       - Compatibility
