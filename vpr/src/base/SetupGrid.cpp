@@ -359,8 +359,8 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
     FormulaParser p;
     std::set<t_physical_tile_type_ptr> seen_types;
-    for(int i = 0; i < grid_def.num_of_avail_dies; i++){
-        for (const auto& grid_loc_def : grid_def.layers.at(i).loc_defs) {
+//    for(int i = 0; i < grid_def.num_of_avail_dies; i++){
+        for (const auto& grid_loc_def : grid_def.layers.at(0).loc_defs) {
             //Fill in the block types according to the specification
 
             auto type = find_tile_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
@@ -512,7 +512,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
                 }
             }
         }
-    }
+//    }
 
 
     //Warn if any types were not specified in the grid layout

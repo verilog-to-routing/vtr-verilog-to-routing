@@ -2440,23 +2440,27 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
     }
 
     auto layer_tag_specified = layout_type_tag.children("layer");
-    grid_def.num_of_avail_dies = std::distance(layer_tag_specified.begin(),layer_tag_specified.end());
-    grid_def.layers.resize(grid_def.num_of_avail_dies);//add layers specified in the arch file to grid specification
-    int die_number = 0;
+
+
 
     //No layer tag is specified (only one die is specified in the arch file)
     //Need to process layout_type_tag children to get block types locations in the grid
     if(grid_def.num_of_avail_dies == 0){
         grid_def.num_of_avail_dies = 1; //if no tag specified, meaning that we only have on layer specification
+        int die_number = 0;
+        grid_def.layers.resize(grid_def.num_of_avail_dies);//add layers specified in the arch file to grid specification
         ProcessBlockTypeLocs(grid_def,die_number,strings,layout_type_tag,loc_data);
     }
     else {
+        grid_def.num_of_avail_dies = std::distance(layer_tag_specified.begin(),layer_tag_specified.end());
+        grid_def.layers.resize(grid_def.num_of_avail_dies);
         //One or more than one layer tag is specified
         for (auto layer_child: layer_tag_specified) {
+            int die_number;
             //Only one layer tag is specified, the die attribute must be 0 or unspecified
             //Need to process <layer> tag children to get block types locations in the grid
             if (grid_def.num_of_avail_dies == 1) {
-                int die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+                die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
                 VTR_ASSERT_MSG(die_number != 0, "If only one layer tag is specified, die number should be 0!");
 
             }
