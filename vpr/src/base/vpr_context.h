@@ -32,6 +32,7 @@
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
 
+class SetupTimingInfo;
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -344,6 +345,9 @@ struct ClusteringHelperContext : public Context {
     // Only blocks that have connections between each others are added to this hash table
     // This may be useful for some type of packing moves.
     std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash> clb_conn_counts;
+
+    std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
+    std::shared_ptr<SetupTimingInfo> timing_info;
 };
 
 /**

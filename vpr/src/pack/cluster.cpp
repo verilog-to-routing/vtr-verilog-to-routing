@@ -130,7 +130,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     const int verbosity = packer_opts.pack_verbosity;
 
     int unclustered_list_head_size;
-    std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
+    //std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
 
     cluster_stats.num_molecules_processed = 0;
     cluster_stats.mols_since_last_print = 0;
@@ -153,7 +153,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     helper_ctx.feasible_block_array_size = packer_opts.feasible_block_array_size;
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
-    std::shared_ptr<SetupTimingInfo> timing_info;
+    //std::shared_ptr<SetupTimingInfo> timing_info;
 
     // this data structure tracks the number of Logic Elements (LEs) used. It is
     // populated only for architectures which has LEs. The architecture is assumed
@@ -200,7 +200,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 	check_for_duplicate_inputs ();
 #endif
     alloc_and_init_clustering(packer_opts, max_molecule_stats, molecule_head,
-                              clustering_data, net_output_feeds_driving_block_input,
+                              clustering_data, helper_ctx.net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
@@ -220,7 +220,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     if (packer_opts.timing_driven) {
         calc_init_packing_timing(packer_opts, analysis_opts, expected_lowest_cost_pb_gnode,
-                                 clustering_delay_calc, timing_info, atom_criticality);
+                                 clustering_delay_calc, helper_ctx.timing_info, atom_criticality);
     }
 
     auto seed_atoms = initialize_seed_atoms(packer_opts.cluster_seed_type, max_molecule_stats, atom_criticality);
@@ -289,9 +289,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  packer_opts.alpha, packer_opts.beta,
                                  packer_opts.timing_driven, packer_opts.connection_driven,
                                  high_fanout_threshold,
-                                 *timing_info,
+                                 *(helper_ctx.timing_info),
                                  attraction_groups,
-                                 net_output_feeds_driving_block_input);
+                                 helper_ctx.net_output_feeds_driving_block_input);
             helper_ctx.total_clb_num++;
 
             if (packer_opts.timing_driven) {
@@ -353,14 +353,14 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  allow_unrelated_clustering,
                                  high_fanout_threshold,
                                  is_clock,
-                                 timing_info,
+                                 helper_ctx.timing_info,
                                  router_data,
                                  target_ext_pin_util,
                                  temp_cluster_pr,
                                  block_pack_status,
                                  clustering_data.unclustered_list_head,
                                  unclustered_list_head_size,
-                                 net_output_feeds_driving_block_input,
+                                 helper_ctx.net_output_feeds_driving_block_input,
                                  primitive_candidate_block_types);
             }
 

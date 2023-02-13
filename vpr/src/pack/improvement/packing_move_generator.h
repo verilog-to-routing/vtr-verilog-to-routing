@@ -181,4 +181,30 @@ class quasiDirectedSameSizeTerminalOutsidePackingSwap : public quasiDirectedSame
   public:
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
 };
+
+/************ Moves that evaluate on Packing cost function *********************/
+class randomCostEvaluationPackingSwap : public randomPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedCostEvaluationPackingSwap : public quasiDirectedPackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameTypeCostEvaluationPackingSwap : public quasiDirectedSameTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedCompatibleTypeCostEvaluationPackingSwap : public quasiDirectedCompatibleTypePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
+
+class quasiDirectedSameSizeCostEvaluationPackingSwap : public quasiDirectedSameSizePackingSwap {
+  public:
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs) override;
+};
 #endif //VTR_PACKINGMOVEGENERATOR_H

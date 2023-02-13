@@ -7,6 +7,7 @@
 #include <string.h>
 #include "re_cluster_util.h"
 #include "pack_move_utils.h"
+#include "packing_cost.h"
 
 const int MAX_ITERATIONS = 10;
 
@@ -290,4 +291,24 @@ bool quasiDirectedCompatibleTypeTerminalOutsidePackingSwap::evaluate_move(const 
 
 bool quasiDirectedSameSizeTerminalOutsidePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
     return (evaluate_move_based_on_terminals_outside(new_locs));
+}
+
+bool randomCostEvaluationPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_attraction(new_locs));
+}
+
+bool quasiDirectedCostEvaluationPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_attraction(new_locs));
+}
+
+bool quasiDirectedSameTypeCostEvaluationPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_attraction(new_locs));
+}
+
+bool quasiDirectedCompatibleTypeCostEvaluationPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_attraction(new_locs));
+}
+
+bool quasiDirectedSameSizeCostEvaluationPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return (evaluate_move_based_on_attraction(new_locs));
 }
