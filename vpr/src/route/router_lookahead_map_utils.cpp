@@ -740,14 +740,14 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
         auto curr_type = rr_graph.node_type(curr.node);
         VTR_ASSERT(curr_type != t_rr_type::CHANX && curr_type != t_rr_type::CHANY);
         if (curr_type != SINK) {
-            auto cost_index = rr_graph.node_cost_index(curr.node);
-            float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
-                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
-                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
-
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
+                auto cost_index = rr_graph.node_cost_index(next_node);
+                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
+
+                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
+                float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost;
 
                 t_pq_entry next;
                 next.congestion = curr.congestion + incr_cong; //Of current node
