@@ -76,7 +76,6 @@ if (${WITH_PARMYS})
                 UHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}
                 BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins/$(NAME) # NAME will be resolved by yosys-f4pga-plugins Make
                 YOSYS_PATH=${CMAKE_BINARY_DIR}
-                PLUGIN_LIST=fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
                 install -j${CUSTOM_BUILD_PARALLEL_LEVEL}
 
                 # redirect logs to a logfile
