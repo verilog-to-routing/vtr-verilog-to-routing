@@ -256,7 +256,7 @@ jobs:
       matrix:
         include: [
           {
-            name: 'Basic_odin',
+            name: 'Basic',
             params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           }
@@ -307,7 +307,7 @@ jobs:
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           ./.github/scripts/build.sh
-          ./run_reg_test.py parmys_reg_basic -show_failures -j4
+          ./run_reg_test.py parmys_reg_basic -show_failures -j2
 
 
   ODINII:
@@ -381,7 +381,7 @@ jobs:
 
     - name: Test
       env:
-        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on"
         MATRIX_EVAL: ${{ matrix.eval }}
         BUILD_TYPE: release
       run: |
