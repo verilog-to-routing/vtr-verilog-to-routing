@@ -34,7 +34,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     bool found_perimeter_meta = false;
     bool found_single_meta = false;
     for (const auto& grid_def : arch.grid_layouts) {
-        for (const auto& loc_def : grid_def.loc_defs) {
+        for (const auto& loc_def : grid_def.layers.at(0).loc_defs) {
             if (loc_def.block_type == "io") {
                 REQUIRE(loc_def.meta != nullptr);
                 REQUIRE(loc_def.meta->has(type_str));
