@@ -54,7 +54,6 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
         }
     }
     VTR_LOG("Read in '%d' constraint file(s) successfully.\n", num_file_read);
-    freeTokens(tokens, num_tokens);
 
     //Update the floorplanning constraints in the floorplanning constraints context
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
@@ -63,7 +62,11 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
     routing_ctx.constraints = reader.constraints_.route_constraints();
 
-    const auto& ctx_constraints = floorplanning_ctx.constraints;
+    // update vpr constraints for routing
+    auto& routing_ctx = g_vpr_ctx.mutable_routing();
+    routing_ctx.constraints = reader.constraints_;
+
+    VprConstraints ctx_constraints = floorplanning_ctx.constraints;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_VPR_CONSTRAINTS)) {
         echo_constraints(getEchoFileName(E_ECHO_VPR_CONSTRAINTS), ctx_constraints);

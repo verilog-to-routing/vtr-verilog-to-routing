@@ -82,4 +82,6 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints,
                                                int horizontal_cutpoints,
                                                int vertical_cutpoints);
 
+void write_vpr_route_constraints(const VprConstraints& constraints, const char* file_name);
+
 #endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */

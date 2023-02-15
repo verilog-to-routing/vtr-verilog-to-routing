@@ -150,7 +150,8 @@ class VprConstraintsBase {
      */
     virtual inline const char* get_vpr_constraints_tool_name(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline void set_vpr_constraints_tool_name(const char* tool_name, typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
-    virtual inline typename ContextTypes::PartitionListWriteContext init_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
+    virtual inline void preallocate_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::PartitionListWriteContext add_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
     virtual inline void finish_vpr_constraints_partition_list(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::PartitionListReadContext get_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline bool has_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;

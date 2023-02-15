@@ -1052,13 +1052,13 @@ inline void load_vpr_constraints(const pugi::xml_node &root, T &out, Context &co
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         *offset_debug = node.offset_debug();
         gtok_t_vpr_constraints in = lex_node_t_vpr_constraints(node.name(), report_error);
-        if (gstate[(int)in] == 0)
-            gstate[(int)in] = 1;
-        else
-            noreturn_report(report_error, ("Duplicate element " + std::string(node.name()) + " in <vpr_constraints>.").c_str());
+        next = gstate_t_vpr_constraints[state][(int)in];
+        if (next == -1)
+            dfa_error(gtok_lookup_t_vpr_constraints[(int)in], gstate_t_vpr_constraints[state], gtok_lookup_t_vpr_constraints, 2, report_error);
+        state = next;
         switch (in) {
             case gtok_t_vpr_constraints::PARTITION_LIST: {
-                auto child_context = out.init_vpr_constraints_partition_list(context);
+                auto child_context = out.add_vpr_constraints_partition_list(context);
                 load_partition_list(node, out, child_context, report_error, offset_debug);
                 out.finish_vpr_constraints_partition_list(child_context);
             } break;

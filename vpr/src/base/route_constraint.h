@@ -18,7 +18,7 @@ class RouteConstraint {
     /**
      * @brief get net name
      */
-    std::string net_name() const;
+    std::string get_net_name() const;
 
     /**
      * @brief set net name
@@ -28,7 +28,7 @@ class RouteConstraint {
     /**
      * @brief get net type
      */
-    std::string net_type() const;
+    std::string get_net_type() const;
 
     /**
      * @brief set net type
@@ -38,7 +38,7 @@ class RouteConstraint {
     /**
      * @brief get route model
      */
-    std::string route_model() const;
+    std::string get_route_model() const;
 
     /**
      * @brief set route model
@@ -53,7 +53,7 @@ class RouteConstraint {
     /**
      * @brief get is valid 
      */
-    bool is_valid() const;
+    bool get_is_valid() const;
 
   private:
     std::string net_name_;

@@ -372,4 +372,8 @@ class PortPinToBlockPinConverter {
 class VprConstraints;
 void apply_route_constraints(VprConstraints& constraint);
 
+// apply route constraints for route flow
+class VprConstraints;
+void apply_route_constraints(VprConstraints& constraint);
+
 #endif

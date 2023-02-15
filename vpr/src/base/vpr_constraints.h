@@ -1,8 +1,16 @@
 #ifndef VPR_CONSTRAINTS_H
 #define VPR_CONSTRAINTS_H
 
+<<<<<<< HEAD
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
+=======
+#include "vtr_vector.h"
+#include "vpr_utils.h"
+#include "partition.h"
+#include "partition_region.h"
+#include "route_constraint.h"
+>>>>>>> Route constraint for local clock and reset.
 
 /**
  * @brief This file defines the VprConstraints class, which encapsulates user-specified placement and routing constraints
