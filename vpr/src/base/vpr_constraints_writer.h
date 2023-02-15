@@ -47,4 +47,6 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
 
 void create_partition(Partition& part, std::string part_name, int xmin, int ymin, int xmax, int ymax);
 
+void write_vpr_route_constraints(const VprConstraints& constraints, const char* file_name);
+
 #endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */

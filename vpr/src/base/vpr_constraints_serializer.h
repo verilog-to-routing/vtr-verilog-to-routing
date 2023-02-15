@@ -2,6 +2,7 @@
 #define VPR_CONSTRAINTS_SERIALIZER_H_
 
 #include "region.h"
+#include "route_constraint.h"
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "partition_region.h"
@@ -69,11 +70,15 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
     using AddRegionReadContext = Region;
     using PartitionReadContext = partition_info;
     using PartitionListReadContext = void*;
+    using SetGlobalSignalReadContext = RouteConstraint;
+    using GlobalRouteConstraintsReadContext = void*;
     using VprConstraintsReadContext = void*;
     using AddAtomWriteContext = void*;
     using AddRegionWriteContext = void*;
     using PartitionWriteContext = void*;
     using PartitionListWriteContext = void*;
+    using SetGlobalSignalWriteContext = void*;
+    using GlobalRouteConstraintsWriteContext = void*;
     using VprConstraintsWriteContext = void*;
 };
 
@@ -300,11 +305,62 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return part_info;
     }
 
+    /** Generated for complex type "set_global_signal":
+     * <xs:complexType name="set_global_signal">
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     *   <xs:attribute name="type" type="xs:string" use="required" />
+     *   <xs:attribute name="route_model" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_set_global_signal_name(RouteConstraint& rc) final {
+        return rc.get_net_name().c_str();
+    }
+    virtual inline void set_set_global_signal_name(const char* name, void*& /*ctx*/) final {
+        std::string net_name = std::string(name);
+        loaded_route_constraint.set_net_name(net_name);
+        return;
+    }
+    virtual inline const char* get_set_global_signal_route_model(RouteConstraint& rc) final {
+        return rc.get_route_model().c_str();
+    }
+    virtual inline void set_set_global_signal_route_model(const char* route_model, void*& /*ctx*/) final {
+        loaded_route_constraint.set_route_model(std::string(route_model));
+        loaded_route_constraint.set_is_valid(true);
+    }
+    virtual inline const char* get_set_global_signal_type(RouteConstraint& rc) final {
+        return rc.get_net_type().c_str();
+    }
+    virtual inline void set_set_global_signal_type(const char* type, void*& /*ctx*/) final {
+        loaded_route_constraint.set_net_type(std::string(type));
+    }
+
+    /** Generated for complex type "global_route_constraints":
+     * <xs:complexType name="global_route_constraints">
+     *   <xs:sequence>
+     *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
+    virtual inline void preallocate_global_route_constraints_set_global_signal(void*& /*ctx*/, size_t /*size*/) final {}
+    virtual inline void* add_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
+        return nullptr;
+    }
+    virtual inline void finish_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
+        constraints_.add_route_constraint(loaded_route_constraint);
+    }
+    virtual inline size_t num_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
+        return constraints_.get_route_constraint_num();
+    }
+    virtual inline RouteConstraint get_global_route_constraints_set_global_signal(int n, void*& /*ctx*/) final {
+        return constraints_.get_route_constraint_by_idx((std::size_t)n);
+    }
+
     /** Generated for complex type "vpr_constraints":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
-     *     <xs:all>
+     *     <xs:choice minOccurs="0" maxOccurs="unbounded">
      *       <xs:element name="partition_list" type="partition_list" />
-     *     </xs:all>
+     *       <xs:element name="global_route_constraints" type="global_route_constraints" />
+     *     </xs:choice>
      *     <xs:attribute name="tool_name" type="xs:string" />
      *   </xs:complexType>
      */
@@ -312,25 +368,54 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return temp_.c_str();
     }
 
-    virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {}
+    virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {
+    }
 
     virtual inline void set_vpr_constraints_constraints_comment(const char* /*constraints_comment*/, void*& /*ctx*/) final {}
 
     virtual inline const char* get_vpr_constraints_constraints_comment(void*& /*ctx*/) final {
         return temp_.c_str();
     }
-    virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final {
+
+    virtual inline void preallocate_vpr_constraints_partition_list(void*& /*ctx*/, size_t) final {
+    }
+
+    virtual inline void* add_vpr_constraints_partition_list(void*& /*ctx*/) final {
         return nullptr;
     }
 
     virtual inline void finish_vpr_constraints_partition_list(void*& /*ctx*/) final {
+        return;
     }
 
-    virtual inline void* get_vpr_constraints_partition_list(void*& /*ctx*/) final {
+    virtual inline size_t num_vpr_constraints_partition_list(void*& /*ctx*/) final {
+        return 0;
+    }
+
+    virtual inline void* get_vpr_constraints_partition_list(int, void*& /*ctx*/) final {
+        return nullptr;
+    }
+
+    virtual inline void preallocate_vpr_constraints_global_route_constraints(void*& /*ctx*/, size_t) final {
+    }
+
+    virtual inline void* add_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+        return nullptr;
+    }
+
+    virtual inline void finish_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+        return;
+    }
+    virtual inline size_t num_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+        return 0;
+    }
+
+    virtual inline void* get_vpr_constraints_global_route_constraints(int, void*& /*cts*/) final {
         return nullptr;
     }
 
     virtual void finish_load() final {
+        return;
     }
 
     //temp data for writes
@@ -350,6 +435,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     Region loaded_region;
     Partition loaded_partition;
     PartitionRegion loaded_part_region;
+    RouteConstraint loaded_route_constraint;
 
     //temp string used when a method must return a const char*
     std::string temp_ = "vpr";

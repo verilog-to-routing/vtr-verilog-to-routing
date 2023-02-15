@@ -5,6 +5,7 @@
 #include "vpr_utils.h"
 #include "partition.h"
 #include "partition_region.h"
+#include "route_constraint.h"
 
 /**
  * @file
@@ -87,6 +88,34 @@ class VprConstraints {
      */
     PartitionRegion get_partition_pr(PartitionId part_id);
 
+    /**
+     * @brief add route constraint
+     *
+     *   @param net_name the route constraint 
+     */
+    void add_route_constraint(RouteConstraint rc);
+
+    /**
+     * @brief returns route constraint by index
+     *
+     *   @param index the constraint index 
+     */
+    RouteConstraint get_route_constraint_by_idx(std::size_t index) const;
+
+    /**
+     * @brief returns route constraint of a specific net
+     *
+     *   @param net_name the net name
+     */
+    RouteConstraint get_route_constraint_by_net_name(std::string net_name);
+
+    /**
+     * @brief returns number of route constraints
+     *
+     *   @param void
+     */
+    int get_route_constraint_num(void) const;
+
   private:
     /**
      * Store all constrained atoms
@@ -97,6 +126,11 @@ class VprConstraints {
      * Store all partitions
      */
     vtr::vector<PartitionId, Partition> partitions;
+
+    /**
+     * store all route constraints 
+     */
+    std::unordered_map<std::string, RouteConstraint> route_constraints_;
 };
 
 ///@brief used to print floorplanning constraints data from a VprConstraints object

@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx.py vpr_constraints.xsd
- * Input file: /home/khalid88/Documents/uxsdcxx/vpr_constraints.xsd
- * md5sum of input file: 6b6011a6e6446347b234da82e517422e
+ * Cmdline: uxsdcxx.py /home/tao/works/dev/clock/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * Input file: /home/tao/works/dev/clock/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * md5sum of input file: 2d6f442d8044f76e8f1b1d276b7358da
  */
 
 #include <functional>
@@ -25,8 +25,6 @@
 #include "pugixml.hpp"
 
 #include "vpr_constraints_uxsdcxx_interface.h"
-#include "region.h"
-
 /* All uxsdcxx functions and structs live in this namespace. */
 namespace uxsd {
 
@@ -52,6 +50,10 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
 template<class T, typename Context>
 inline void load_partition_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
+inline void load_set_global_signal(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+template<class T, typename Context>
+inline void load_global_route_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+template<class T, typename Context>
 inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 
 /* Declarations for internal write functions for the complex types. */
@@ -59,6 +61,8 @@ template<class T>
 inline void write_partition(T& in, std::ostream& os, const void* data, void* iter);
 template<class T>
 inline void write_partition_list(T& in, std::ostream& os, const void* data, void* iter);
+template<class T>
+inline void write_global_route_constraints(T& in, std::ostream& os, const void* data, void* iter);
 template<class T>
 inline void write_vpr_constraints(T& in, std::ostream& os, const void* data, void* iter);
 
@@ -142,8 +146,17 @@ constexpr const char* atok_lookup_t_partition[] = {"name"};
 
 enum class gtok_t_partition_list { PARTITION };
 constexpr const char* gtok_lookup_t_partition_list[] = {"partition"};
-enum class gtok_t_vpr_constraints { PARTITION_LIST };
-constexpr const char* gtok_lookup_t_vpr_constraints[] = {"partition_list"};
+
+enum class atok_t_set_global_signal { NAME,
+                                      ROUTE_MODEL,
+                                      TYPE };
+constexpr const char* atok_lookup_t_set_global_signal[] = {"name", "route_model", "type"};
+
+enum class gtok_t_global_route_constraints { SET_GLOBAL_SIGNAL };
+constexpr const char* gtok_lookup_t_global_route_constraints[] = {"set_global_signal"};
+enum class gtok_t_vpr_constraints { PARTITION_LIST,
+                                    GLOBAL_ROUTE_CONSTRAINTS };
+constexpr const char* gtok_lookup_t_vpr_constraints[] = {"partition_list", "global_route_constraints"};
 enum class atok_t_vpr_constraints { TOOL_NAME };
 constexpr const char* atok_lookup_t_vpr_constraints[] = {"tool_name"};
 
@@ -348,6 +361,84 @@ inline gtok_t_partition_list lex_node_t_partition_list(const char* in, const std
     noreturn_report(report_error, ("Found unrecognized child " + std::string(in) + " of <partition_list>.").c_str());
 }
 
+inline atok_t_set_global_signal lex_attr_t_set_global_signal(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 4:
+            switch (*((triehash_uu32*)&in[0])) {
+                case onechar('n', 0, 32) | onechar('a', 8, 32) | onechar('m', 16, 32) | onechar('e', 24, 32):
+                    return atok_t_set_global_signal::NAME;
+                    break;
+                case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
+                    return atok_t_set_global_signal::TYPE;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 11:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('r', 0, 64) | onechar('o', 8, 64) | onechar('u', 16, 64) | onechar('t', 24, 64) | onechar('e', 32, 64) | onechar('_', 40, 64) | onechar('m', 48, 64) | onechar('o', 56, 64):
+                    switch (in[8]) {
+                        case onechar('d', 0, 8):
+                            switch (in[9]) {
+                                case onechar('e', 0, 8):
+                                    switch (in[10]) {
+                                        case onechar('l', 0, 8):
+                                            return atok_t_set_global_signal::ROUTE_MODEL;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <set_global_signal>.").c_str());
+}
+
+inline gtok_t_global_route_constraints lex_node_t_global_route_constraints(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 17:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('s', 0, 64) | onechar('e', 8, 64) | onechar('t', 16, 64) | onechar('_', 24, 64) | onechar('g', 32, 64) | onechar('l', 40, 64) | onechar('o', 48, 64) | onechar('b', 56, 64):
+                    switch (*((triehash_uu64*)&in[8])) {
+                        case onechar('a', 0, 64) | onechar('l', 8, 64) | onechar('_', 16, 64) | onechar('s', 24, 64) | onechar('i', 32, 64) | onechar('g', 40, 64) | onechar('n', 48, 64) | onechar('a', 56, 64):
+                            switch (in[16]) {
+                                case onechar('l', 0, 8):
+                                    return gtok_t_global_route_constraints::SET_GLOBAL_SIGNAL;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized child " + std::string(in) + " of <global_route_constraints>.").c_str());
+}
+
 inline gtok_t_vpr_constraints lex_node_t_vpr_constraints(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
@@ -365,6 +456,27 @@ inline gtok_t_vpr_constraints lex_node_t_vpr_constraints(const char* in, const s
                                         default:
                                             break;
                                     }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 24:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('g', 0, 64) | onechar('l', 8, 64) | onechar('o', 16, 64) | onechar('b', 24, 64) | onechar('a', 32, 64) | onechar('l', 40, 64) | onechar('_', 48, 64) | onechar('r', 56, 64):
+                    switch (*((triehash_uu64*)&in[8])) {
+                        case onechar('o', 0, 64) | onechar('u', 8, 64) | onechar('t', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('c', 40, 64) | onechar('o', 48, 64) | onechar('n', 56, 64):
+                            switch (*((triehash_uu64*)&in[16])) {
+                                case onechar('s', 0, 64) | onechar('t', 8, 64) | onechar('r', 16, 64) | onechar('a', 24, 64) | onechar('i', 32, 64) | onechar('n', 40, 64) | onechar('t', 48, 64) | onechar('s', 56, 64):
+                                    return gtok_t_vpr_constraints::GLOBAL_ROUTE_CONSTRAINTS;
                                     break;
                                 default:
                                     break;
@@ -413,12 +525,6 @@ inline atok_t_vpr_constraints lex_attr_t_vpr_constraints(const char* in, const s
 [[noreturn]] inline void dfa_error(const char* wrong, const int* states, const char* const* lookup, int len, const std::function<void(const char*)>* report_error);
 
 /**
- * Internal error function for xs:all validators.
- */
-template<std::size_t N>
-[[noreturn]] inline void all_error(std::bitset<N> gstate, const char* const* lookup, const std::function<void(const char*)>* report_error);
-
-/**
  * Internal error function for attribute validators.
  */
 template<std::size_t N>
@@ -427,8 +533,6 @@ template<std::size_t N>
 /* Internal loading functions, which validate and load a PugiXML DOM tree into memory. */
 inline int load_int(const char* in, const std::function<void(const char*)>* report_error) {
     int out;
-    // global variable, must set to 0 before using it to avoid changed by other errors
-    errno = 0;
     out = std::strtol(in, NULL, 10);
     if (errno != 0)
         noreturn_report(report_error, ("Invalid value `" + std::string(in) + "` when loading into a int.").c_str());
@@ -675,6 +779,102 @@ inline void load_partition_list(const pugi::xml_node& root, T& out, Context& con
 }
 
 template<class T, typename Context>
+inline void load_set_global_signal(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
+
+    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
+        atok_t_set_global_signal in = lex_attr_t_set_global_signal(attr.name(), report_error);
+        switch (in) {
+            case atok_t_set_global_signal::NAME:
+                out.set_set_global_signal_name(attr.value(), context);
+                break;
+            case atok_t_set_global_signal::ROUTE_MODEL:
+                out.set_set_global_signal_route_model(attr.value(), context);
+                break;
+            case atok_t_set_global_signal::TYPE:
+                out.set_set_global_signal_type(attr.value(), context);
+                break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+
+    if (root.first_child().type() == pugi::node_element)
+        noreturn_report(report_error, "Unexpected child element in <set_global_signal>.");
+}
+
+constexpr int NUM_T_GLOBAL_ROUTE_CONSTRAINTS_STATES = 2;
+constexpr const int NUM_T_GLOBAL_ROUTE_CONSTRAINTS_INPUTS = 1;
+constexpr int gstate_t_global_route_constraints[NUM_T_GLOBAL_ROUTE_CONSTRAINTS_STATES][NUM_T_GLOBAL_ROUTE_CONSTRAINTS_INPUTS] = {
+    {0},
+    {0},
+};
+template<class T, typename Context>
+inline void load_global_route_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
+
+    if (root.first_attribute())
+        noreturn_report(report_error, "Unexpected attribute in <global_route_constraints>.");
+
+    // Preallocate arrays by counting child nodes (if any)
+    size_t set_global_signal_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            *offset_debug = node.offset_debug();
+            gtok_t_global_route_constraints in = lex_node_t_global_route_constraints(node.name(), report_error);
+            next = gstate_t_global_route_constraints[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_global_route_constraints[(int)in], gstate_t_global_route_constraints[state], gtok_lookup_t_global_route_constraints, 1, report_error);
+            state = next;
+            switch (in) {
+                case gtok_t_global_route_constraints::SET_GLOBAL_SIGNAL:
+                    set_global_signal_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_global_route_constraints_set_global_signal(context, set_global_signal_count);
+    }
+    int next, state = 1;
+    for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+        *offset_debug = node.offset_debug();
+        gtok_t_global_route_constraints in = lex_node_t_global_route_constraints(node.name(), report_error);
+        next = gstate_t_global_route_constraints[state][(int)in];
+        if (next == -1)
+            dfa_error(gtok_lookup_t_global_route_constraints[(int)in], gstate_t_global_route_constraints[state], gtok_lookup_t_global_route_constraints, 1, report_error);
+        state = next;
+        switch (in) {
+            case gtok_t_global_route_constraints::SET_GLOBAL_SIGNAL: {
+                auto child_context = out.add_global_route_constraints_set_global_signal(context);
+                load_set_global_signal(node, out, child_context, report_error, offset_debug);
+                out.finish_global_route_constraints_set_global_signal(child_context);
+            } break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+    if (state != 0) dfa_error("end of input", gstate_t_global_route_constraints[state], gtok_lookup_t_global_route_constraints, 1, report_error);
+}
+
+constexpr int NUM_T_VPR_CONSTRAINTS_STATES = 1;
+constexpr const int NUM_T_VPR_CONSTRAINTS_INPUTS = 2;
+constexpr int gstate_t_vpr_constraints[NUM_T_VPR_CONSTRAINTS_STATES][NUM_T_VPR_CONSTRAINTS_INPUTS] = {
+    {0, 0},
+};
+template<class T, typename Context>
 inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
@@ -694,26 +894,57 @@ inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& co
         }
     }
 
-    std::bitset<1> gstate = 0;
+    // Preallocate arrays by counting child nodes (if any)
+    size_t partition_list_count = 0;
+    size_t global_route_constraints_count = 0;
+    {
+        int next, state = 0;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            *offset_debug = node.offset_debug();
+            gtok_t_vpr_constraints in = lex_node_t_vpr_constraints(node.name(), report_error);
+            next = gstate_t_vpr_constraints[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_vpr_constraints[(int)in], gstate_t_vpr_constraints[state], gtok_lookup_t_vpr_constraints, 2, report_error);
+            state = next;
+            switch (in) {
+                case gtok_t_vpr_constraints::PARTITION_LIST:
+                    partition_list_count += 1;
+                    break;
+                case gtok_t_vpr_constraints::GLOBAL_ROUTE_CONSTRAINTS:
+                    global_route_constraints_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_vpr_constraints_partition_list(context, partition_list_count);
+        out.preallocate_vpr_constraints_global_route_constraints(context, global_route_constraints_count);
+    }
+    int next, state = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         *offset_debug = node.offset_debug();
         gtok_t_vpr_constraints in = lex_node_t_vpr_constraints(node.name(), report_error);
-        if (gstate[(int)in] == 0)
-            gstate[(int)in] = 1;
-        else
-            noreturn_report(report_error, ("Duplicate element " + std::string(node.name()) + " in <vpr_constraints>.").c_str());
+        next = gstate_t_vpr_constraints[state][(int)in];
+        if (next == -1)
+            dfa_error(gtok_lookup_t_vpr_constraints[(int)in], gstate_t_vpr_constraints[state], gtok_lookup_t_vpr_constraints, 2, report_error);
+        state = next;
         switch (in) {
             case gtok_t_vpr_constraints::PARTITION_LIST: {
-                auto child_context = out.init_vpr_constraints_partition_list(context);
+                auto child_context = out.add_vpr_constraints_partition_list(context);
                 load_partition_list(node, out, child_context, report_error, offset_debug);
                 out.finish_vpr_constraints_partition_list(child_context);
+            } break;
+            case gtok_t_vpr_constraints::GLOBAL_ROUTE_CONSTRAINTS: {
+                auto child_context = out.add_vpr_constraints_global_route_constraints(context);
+                load_global_route_constraints(node, out, child_context, report_error, offset_debug);
+                out.finish_vpr_constraints_global_route_constraints(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    std::bitset<1> test_gstate = gstate | std::bitset<1>(0b0);
-    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_vpr_constraints, report_error);
+    if (state != 0) dfa_error("end of input", gstate_t_vpr_constraints[state], gtok_lookup_t_vpr_constraints, 2, report_error);
 }
 
 /* Internal writing functions, which uxsdcxx uses to write out a class. */
@@ -734,7 +965,7 @@ inline void write_partition(T& in, std::ostream& os, Context& context) {
         for (size_t i = 0, n = in.num_partition_add_region(context); i < n; i++) {
             auto child_context = in.get_partition_add_region(i, context);
             os << "<add_region";
-            if (in.get_add_region_subtile(child_context) != NO_SUBTILE)
+            if ((bool)in.get_add_region_subtile(child_context))
                 os << " subtile=\"" << in.get_add_region_subtile(child_context) << "\"";
             os << " x_high=\"" << in.get_add_region_x_high(child_context) << "\"";
             os << " x_low=\"" << in.get_add_region_x_low(child_context) << "\"";
@@ -763,15 +994,42 @@ inline void write_partition_list(T& in, std::ostream& os, Context& context) {
 }
 
 template<class T, typename Context>
+inline void write_global_route_constraints(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_global_route_constraints_set_global_signal(context); i < n; i++) {
+            auto child_context = in.get_global_route_constraints_set_global_signal(i, context);
+            os << "<set_global_signal";
+            os << " name=\"" << in.get_set_global_signal_name(child_context) << "\"";
+            os << " route_model=\"" << in.get_set_global_signal_route_model(child_context) << "\"";
+            os << " type=\"" << in.get_set_global_signal_type(child_context) << "\"";
+            os << "/>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
 inline void write_vpr_constraints(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
     (void)context;
     {
-        auto child_context = in.get_vpr_constraints_partition_list(context);
-        os << "<partition_list>\n";
-        write_partition_list(in, os, child_context);
-        os << "</partition_list>\n";
+        for (size_t i = 0, n = in.num_vpr_constraints_partition_list(context); i < n; i++) {
+            auto child_context = in.get_vpr_constraints_partition_list(i, context);
+            os << "<partition_list>\n";
+            write_partition_list(in, os, child_context);
+            os << "</partition_list>\n";
+        }
+    }
+    {
+        for (size_t i = 0, n = in.num_vpr_constraints_global_route_constraints(context); i < n; i++) {
+            auto child_context = in.get_vpr_constraints_global_route_constraints(i, context);
+            os << "<global_route_constraints>\n";
+            write_global_route_constraints(in, os, child_context);
+            os << "</global_route_constraints>\n";
+        }
     }
 }
 
@@ -786,20 +1044,6 @@ inline void dfa_error(const char* wrong, const int* states, const char* const* l
         expected_or += std::string(" or ") + expected[i];
 
     noreturn_report(report_error, ("Expected " + expected_or + ", found " + std::string(wrong)).c_str());
-}
-
-template<std::size_t N>
-inline void all_error(std::bitset<N> gstate, const char* const* lookup, const std::function<void(const char*)>* report_error) {
-    std::vector<std::string> missing;
-    for (unsigned int i = 0; i < N; i++) {
-        if (gstate[i] == 0) missing.push_back(lookup[i]);
-    }
-
-    std::string missing_and = missing[0];
-    for (unsigned int i = 1; i < missing.size(); i++)
-        missing_and += std::string(", ") + missing[i];
-
-    noreturn_report(report_error, ("Didn't find required elements " + missing_and + ".").c_str());
 }
 
 template<std::size_t N>
