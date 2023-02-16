@@ -214,3 +214,29 @@ void create_partition(Partition& part, std::string part_name, int xmin, int ymin
     part_pr.set_partition_region(part_regions);
     part.set_part_region(part_pr);
 }
+
+void write_vpr_route_constraints(const VprConstraints& constraints, const char* file_name) {
+    VprConstraints write_constraints;
+    for (int i = 0; i < constraints.get_route_constraint_num(); i++) {
+        RouteConstraint rc = constraints.get_route_constraint_by_idx(i);
+        if (rc.get_is_valid()) {
+            write_constraints.add_route_constraint(rc);
+        }
+    }
+
+    VprConstraintsSerializer writer(write_constraints);
+
+    if (vtr::check_file_name_extension(file_name, ".xml")) {
+        std::fstream fp;
+        fp.open(file_name, std::fstream::out | std::fstream::trunc);
+        fp.precision(std::numeric_limits<float>::max_digits10);
+        void* context;
+        uxsd::write_vpr_constraints_xml(writer, context, fp);
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Unknown extension on output %s",
+                        file_name);
+    }
+
+    return;
+}

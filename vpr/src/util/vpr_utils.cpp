@@ -20,6 +20,7 @@
 #include "pack_types.h"
 #include "device_grid.h"
 #include "timing_fail_error.h"
+#include "route_constraint.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -2188,6 +2189,22 @@ bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
         } else {
             VTR_ASSERT(node_type == SINK || node_type == SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
+        }
+    }
+}
+
+void apply_route_constraints(VprConstraints& vpr_constraint) {
+    ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
+    for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
+        std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
+        RouteConstraint rc = vpr_constraint.get_route_constraint_by_net_name(net_name);
+        if (rc.get_is_valid()) {
+            mutable_cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
+            if (rc.get_route_model() == "route") {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, false);
+            } else {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, true);
+            }
         }
     }
 }

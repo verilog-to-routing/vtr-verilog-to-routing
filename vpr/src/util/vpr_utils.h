@@ -191,4 +191,8 @@ bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
                      t_rr_type node_type,
                      int node_ptc);
 
+// apply route constraints for route flow
+class VprConstraints;
+void apply_route_constraints(VprConstraints& constraint);
+
 #endif
