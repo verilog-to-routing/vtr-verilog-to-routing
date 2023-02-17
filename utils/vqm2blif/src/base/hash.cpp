@@ -7,7 +7,6 @@
 
 #define HASHSIZE 5000001
 
-static int hash_value(char *name);
 std::hash<std::string> hash_string;
 
 
@@ -170,26 +169,4 @@ get_hash_entry(struct s_hash **hash_table,
 	}
 
     return (NULL);
-}
-
-
-static int
-hash_value(char *name)
-{
-/* Creates a hash key from a character string.  Only the first character and *
- * the last 8 characters of the string are used -- that may be dumb.         */
-
-    int i, k;
-    int val = 0, mult = 1;
-
-	i = strlen(name);
-    k = std::max(i - 8, 0);
-    for(i = strlen(name) - 1; i >= k; i--)
-	{
-	    val += mult * ((int)name[i]);
-	    mult *= 7;
-	}
-    val += (int)name[0];
-    val %= HASHSIZE;
-    return (val);
 }
