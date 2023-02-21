@@ -1700,9 +1700,9 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
     /* Since we share nodes within a large block, only
      * start tile can initialize sinks, sources, and pins */
-    int width_offset = grid.get_width_offset(i, j);
-    int height_offset = grid.get_height_offset(i, j);
-    if (width_offset > 0 || height_offset > 0)
+    int tile_width_offset = grid.get_width_offset(i, j);
+    int tile_height_offset = grid.get_height_offset(i, j);
+    if (tile_width_offset > 0 || tile_height_offset > 0)
         return;
 
     auto type = grid.get_physical_type(i, j);
@@ -1891,7 +1891,7 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
              * pins on the border of the tile */
             VTR_ASSERT(pin >= type->num_pins);
             add_internal_rr_ipin_and_opin(rr_graph_builder,
-                                          physical_tile,
+                                          type,
                                           pin,
                                           i,
                                           j,

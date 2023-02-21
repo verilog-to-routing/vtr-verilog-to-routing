@@ -1259,7 +1259,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                     switch (rr_type) {
                         case IPIN:
                         case OPIN:
-                            if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
+                            if (is_io_type(device_ctx.grid.get_physical_type(ilow, jlow))) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Pin: ");
@@ -1273,7 +1273,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
                         case SOURCE:
                         case SINK:
-                            if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
+                            if (is_io_type(device_ctx.grid.get_physical_type(ilow, jlow))) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Class: ");
@@ -1289,11 +1289,11 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
                     fprintf(fp, "%d  ", rr_graph.node_ptc_num(rr_node));
 
-                    auto physical_tile = device_ctx.grid[ilow][jlow].type;
+                    auto physical_tile = device_ctx.grid.get_physical_type(ilow, jlow);
                     if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
                         int pin_num = rr_graph.node_pin_num(rr_node);
-                        int xoffset = device_ctx.grid[ilow][jlow].width_offset;
-                        int yoffset = device_ctx.grid[ilow][jlow].height_offset;
+                        int xoffset = device_ctx.grid.get_width_offset(ilow, jlow);
+                        int yoffset = device_ctx.grid.get_height_offset(ilow, jlow);
                         int sub_tile_offset = physical_tile->get_sub_tile_loc_from_pin(pin_num);
 
                         ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[sub_tile_offset];

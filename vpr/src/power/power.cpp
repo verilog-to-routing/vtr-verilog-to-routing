@@ -610,10 +610,12 @@ static void power_usage_blocks(t_power_usage* power_usage) {
     /* Loop through all grid locations */
     for (size_t x = 0; x < device_ctx.grid.width(); x++) {
         for (size_t y = 0; y < device_ctx.grid.height(); y++) {
-            auto physical_tile = device_ctx.grid[x][y].type;
+            auto physical_tile = device_ctx.grid.get_physical_type(x, y);
+            int width_offset = device_ctx.grid.get_width_offset(x, y);
+            int height_offset = device_ctx.grid.get_height_offset(x, y);
 
-            if ((device_ctx.grid[x][y].width_offset != 0)
-                || (device_ctx.grid[x][y].height_offset != 0)
+            if ((width_offset != 0)
+                || (height_offset != 0)
                 || is_empty_type(physical_tile)) {
                 continue;
             }

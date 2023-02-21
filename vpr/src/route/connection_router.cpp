@@ -497,7 +497,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
         t_rr_type to_type = rr_graph_->node_type(to_node);
         if (to_type == IPIN || to_type == OPIN) {
             int node_ptc = rr_graph_->node_ptc_num(to_node);
-            auto type = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;
+            auto type = g_vpr_ctx.device().grid.get_physical_type(to_xlow, to_ylow);
             if (!is_pin_on_tile(type, node_ptc))
                 return;
         }

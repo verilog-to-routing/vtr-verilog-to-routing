@@ -222,7 +222,7 @@ static void check_source(RRNodeId inode, ClusterNetId net_id) {
     int ptc_num = rr_graph.node_class_num(inode);
     /* First node_block for net is the source */
     ClusterBlockId blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    auto type = device_ctx.grid[i][j].type;
+    auto type = device_ctx.grid.get_physical_type(i, j);
 
     if (place_ctx.block_locs[blk_id].loc.x != i || place_ctx.block_locs[blk_id].loc.y != j) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -354,8 +354,8 @@ static bool check_adjacent(int from_node, int to_node) {
                 && from_ylow <= to_ylow
                 && from_xhigh >= to_xhigh
                 && from_yhigh >= to_yhigh) {
-                from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
-                to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
+                from_grid_type = device_ctx.grid.get_physical_type(from_xlow, from_ylow);
+                to_grid_type = device_ctx.grid.get_physical_type(to_xlow, to_ylow);
                 VTR_ASSERT(from_grid_type == to_grid_type);
 
                 iclass = to_grid_type->pin_class[to_ptc];
@@ -386,8 +386,8 @@ static bool check_adjacent(int from_node, int to_node) {
                 && from_ylow >= to_ylow
                 && from_xhigh <= to_xhigh
                 && from_yhigh <= to_yhigh) {
-                from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
-                to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
+                from_grid_type = device_ctx.grid.get_physical_type(from_xlow, from_ylow);
+                to_grid_type = device_ctx.grid.get_physical_type(to_xlow, to_ylow);
                 VTR_ASSERT(from_grid_type == to_grid_type);
 
                 iclass = from_grid_type->pin_class[from_ptc];
