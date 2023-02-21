@@ -1448,26 +1448,28 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline void preallocate_grid_locs_grid_loc(void*& /*ctx*/, size_t size) final {
-        if (grid_.matrix().size() != size) {
+        if (grid_.grid_size() != size) {
             report_error(
                 "Architecture file contains %zu grid locations, rr graph contains %zu grid locations.",
-                grid_.matrix().size(), size);
+                grid_.grid_size(), size);
         }
     }
     inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) final {
-        const t_grid_tile& grid_tile = grid_[x][y];
+        const auto& type = grid_.get_physical_type(x, y);
+        int grid_width_offset = grid_.get_width_offset(x, y);
+        int grid_height_offset = grid_.get_height_offset(x, y);
 
-        if (grid_tile.type->index != block_type_id) {
+        if (type->index != block_type_id) {
             report_error(
                 "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
-                (grid_tile.type->index), block_type_id);
+                (type->index), block_type_id);
         }
-        if (grid_tile.width_offset != width_offset) {
+        if (grid_width_offset != width_offset) {
             report_error(
                 "Architecture file does not match RR graph's width_offset at (%d, %d)", x, y);
         }
 
-        if (grid_tile.height_offset != height_offset) {
+        if (grid_height_offset != height_offset) {
             report_error(
                 "Architecture file does not match RR graph's height_offset at (%d, %d)", x, y);
         }
@@ -1493,7 +1495,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_grid_loc_x(const t_grid_tile*& grid_loc) final {
         auto diff = grid_loc - &grid_.matrix().get(0);
 
-        return diff / grid_.matrix().dim_size(1);
+        return diff / grid_.grid_dim_size(1);
     }
     inline int get_grid_loc_y(const t_grid_tile*& grid_loc) final {
         auto diff = grid_loc - &grid_.matrix().get(0);
@@ -1501,7 +1503,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return diff % grid_.matrix().dim_size(1);
     }
     inline size_t num_grid_locs_grid_loc(void*& /*iter*/) final {
-        return grid_.matrix().size();
+        return grid_.grid_size();
     }
     inline const t_grid_tile* get_grid_locs_grid_loc(int n, void*& /*ctx*/) final {
         return &grid_.matrix().get(n);

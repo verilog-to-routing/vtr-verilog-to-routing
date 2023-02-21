@@ -33,9 +33,18 @@ class DeviceGrid {
         return grid_[layer_num];
     }
 
+    inline size_t grid_size(int layer_num = 0) const {
+        return grid_[layer_num].size();
+    }
+
+    inline size_t grid_dim_size(int dim, int layer_num = 0) const {
+        return grid_[layer_num].dim_size(dim);
+    }
+
+
     void clear();
 
-    size_t num_instances(t_physical_tile_type_ptr type) const;
+    size_t num_instances(t_physical_tile_type_ptr type, int layer_num = 0) const;
 
     /**
      * @brief Returns the block types which limits the device size (may be empty if
@@ -43,19 +52,19 @@ class DeviceGrid {
      */
     std::vector<t_logical_block_type_ptr> limiting_resources() const { return limiting_resources_; }
 
-    t_physical_tile_type_ptr get_physical_type(size_t x, size_t y, int layer_num = 0) const {
+    inline t_physical_tile_type_ptr get_physical_type(size_t x, size_t y, int layer_num = 0) const {
         return grid_[layer_num][x][y].type;
     }
 
-    int get_width_offset(size_t x, size_t y, int layer_num = 0) const {
+    inline int get_width_offset(size_t x, size_t y, int layer_num = 0) const {
         return grid_[layer_num][x][y].width_offset;
     }
 
-    int get_height_offset(size_t x, size_t y, int layer_num = 0) const {
+    inline int get_height_offset(size_t x, size_t y, int layer_num = 0) const {
         return grid_[layer_num][x][y].height_offset;
     }
 
-    const t_metadata_dict* get_metadata(size_t x, size_t y, int layer_num = 0) const {
+    inline const t_metadata_dict* get_metadata(size_t x, size_t y, int layer_num = 0) const {
         return grid_[layer_num][x][y].meta;
     }
 
@@ -64,12 +73,14 @@ class DeviceGrid {
 
     std::string name_;
 
+    int num_layers_ = 1;
+
     //Note that vtr::Matrix operator[] returns and intermediate type
     //which can be used or indexing in the second dimension, allowing
     //traditional 2-d indexing to be used
     std::vector<vtr::Matrix<t_grid_tile>> grid_;
 
-    std::map<t_physical_tile_type_ptr, size_t> instance_counts_;
+    std::vector<std::map<t_physical_tile_type_ptr, size_t>> instance_counts_;
 
     std::vector<t_logical_block_type_ptr> limiting_resources_;
 };
