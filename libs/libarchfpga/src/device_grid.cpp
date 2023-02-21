@@ -1,6 +1,6 @@
 #include "device_grid.h"
 
-DeviceGrid::DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid)
+DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid)
     : name_(grid_name)
     , grid_(grid) {
     count_instances();

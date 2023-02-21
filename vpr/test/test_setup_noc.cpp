@@ -131,7 +131,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
+        DeviceGrid test_device = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
 
         // call the test function
         identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
@@ -248,7 +248,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
+        DeviceGrid test_device = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
 
         // call the test function
         identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
@@ -365,7 +365,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
+        DeviceGrid test_device = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
 
         // call the test function
         identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
@@ -912,7 +912,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
             }
         }
 
-        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
+        device_ctx.grid = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
     }
@@ -963,7 +963,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         noc_info.router_list.clear();
 
-        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
+        device_ctx.grid = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
