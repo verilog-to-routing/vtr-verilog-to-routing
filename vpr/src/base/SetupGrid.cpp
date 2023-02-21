@@ -522,7 +522,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         }
     }
 
-    auto device_grid = DeviceGrid(grid_def.name, grid, limiting_resources);
+    auto device_grid = DeviceGrid(grid_def.name, std::vector<vtr::Matrix<t_grid_tile>> {grid}, limiting_resources);
 
     CheckGrid(device_grid);
 

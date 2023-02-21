@@ -18,7 +18,7 @@ class DeviceGrid {
   public:
     DeviceGrid() = default;
     DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid);
-    DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid, std::vector<t_logical_block_type_ptr> limiting_res);
+    DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid, std::vector<t_logical_block_type_ptr> limiting_res);
 
     const std::string& name() const { return name_; }
 
