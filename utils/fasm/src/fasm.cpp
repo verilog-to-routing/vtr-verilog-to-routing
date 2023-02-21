@@ -58,9 +58,9 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     int x = place_ctx.block_locs[blk_id].loc.x;
     int y = place_ctx.block_locs[blk_id].loc.y;
     int sub_tile = place_ctx.block_locs[blk_id].loc.sub_tile;
-    auto &grid_loc = device_ctx.grid[x][y];
-    physical_tile_ = grid_loc.type;
+    physical_tile_ = device_ctx.grid.get_physical_type(x, y);
     logical_block_ = cluster_ctx.clb_nlist.block_type(blk_id);
+    const auto& grid_meta = device_ctx.grid.get_metadata(x, y);
 
     blk_prefix_ = "";
     clb_prefix_ = "";
@@ -68,8 +68,8 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     // Get placeholder list (if provided)
     tags_.clear();
-    if(grid_loc.meta != nullptr && grid_loc.meta->has(fasm_placeholders)) {
-      auto* value = grid_loc.meta->get(fasm_placeholders);
+    if(grid_meta != nullptr && grid_meta->has(fasm_placeholders)) {
+      auto* value = grid_meta->get(fasm_placeholders);
       VTR_ASSERT(value != nullptr);
 
       // Parse placeholder definition
@@ -95,8 +95,8 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     }
 
     std::string grid_prefix;
-    if(grid_loc.meta != nullptr && grid_loc.meta->has(fasm_prefix)) {
-      auto* value = grid_loc.meta->get(fasm_prefix);
+    if(grid_meta != nullptr && grid_meta->has(fasm_prefix)) {
+      auto* value = grid_meta->get(fasm_prefix);
       VTR_ASSERT(value != nullptr);
       std::string prefix_unsplit = value->front().as_string().get(strings_);
       std::vector<std::string> fasm_prefixes = vtr::split(prefix_unsplit, " \t\n");
