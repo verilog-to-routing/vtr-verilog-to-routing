@@ -15,7 +15,7 @@ static float scaled_clipped_exp(float x) { return std::exp(std::min(1000000 * x,
  *                                     *
  *                                     */
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
-    avail_moves.resize((int)e_move_type::NUMBER_OF_MOVES);
+    avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
     avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
@@ -29,7 +29,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
 }
 
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent) {
-    avail_moves.resize((int)e_move_type::NUMBER_OF_MOVES);
+    avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
     avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
