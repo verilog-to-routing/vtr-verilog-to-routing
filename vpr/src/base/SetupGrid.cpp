@@ -663,45 +663,49 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
 static void CheckGrid(const DeviceGrid& grid) {
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            auto type = grid[i][j].type;
+            auto type = grid.get_physical_type(i, j);
             if (nullptr == type) {
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has no type.\n", i, j);
             }
 
-            if ((grid[i][j].width_offset < 0)
-                || (grid[i][j].width_offset >= type->width)) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, grid[i][j].width_offset);
+            int width_offset = grid.get_width_offset(i, j);
+            int height_offset = grid.get_height_offset(i ,j);
+            if ((width_offset < 0)
+                || (width_offset >= type->width)) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, width_offset);
             }
-            if ((grid[i][j].height_offset < 0)
-                || (grid[i][j].height_offset >= type->height)) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid height offset (%d).\n", i, j, grid[i][j].height_offset);
+            if ((height_offset < 0)
+                || (height_offset >= type->height)) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid height offset (%d).\n", i, j, height_offset);
             }
 
             //Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
-            if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
+            if (width_offset == 0 && height_offset == 0) {
                 //From the root block check that all other blocks are correct
                 for (size_t x = i; x < i + type->width; ++x) {
                     int x_offset = x - i;
                     for (size_t y = j; y < j + type->height; ++y) {
                         int y_offset = y - j;
 
-                        auto& tile = grid[x][y];
-                        if (tile.type != type) {
+                        const auto& tile_type = grid.get_physical_type(x, y);
+                        int tile_width_offset = grid.get_width_offset(x, y);
+                        int tile_height_offset = grid.get_height_offset(x, y);
+                        if (tile_type != type) {
                             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                                             "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
-                                            i, j, type->name, tile.type->name);
+                                            i, j, type->name, tile_type->name);
                         }
 
-                        if (tile.width_offset != x_offset) {
+                        if (tile_width_offset != x_offset) {
                             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                                             "Grid Location (%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n",
-                                            i, j, type->name, x_offset, tile.width_offset);
+                                            i, j, type->name, x_offset, tile_width_offset);
                         }
 
-                        if (tile.height_offset != y_offset) {
+                        if (tile_height_offset != y_offset) {
                             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                                             "Grid Location (%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n",
-                                            i, j, type->name, y_offset, tile.height_offset);
+                                            i, j, type->name, y_offset, tile_height_offset);
                         }
                     }
                 }
@@ -715,9 +719,11 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_bl
     std::map<t_physical_tile_type_ptr, size_t> grid_resources;
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
-            const auto& grid_tile = grid[x][y];
-            if (grid_tile.width_offset == 0 && grid_tile.height_offset == 0) {
-                ++grid_resources[grid_tile.type];
+            int width_offset = grid.get_width_offset(x, y);
+            int height_offset = grid.get_height_offset(x, y);
+            if (width_offset == 0 && height_offset == 0) {
+                const auto& type = grid.get_physical_type(x, y);
+                ++grid_resources[type];
             }
         }
     }

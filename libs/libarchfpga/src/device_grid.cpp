@@ -13,7 +13,7 @@ DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_til
     limiting_resources_ = limiting_res;
 }
 
-size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num = 0) const {
+size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
     size_t count = 0;
 
     if(layer_num == -1) {
