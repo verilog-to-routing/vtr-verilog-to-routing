@@ -25,10 +25,6 @@ class DeviceGrid {
     size_t width(int layer_num = 0) const { return grid_[layer_num].dim_size(0); }
     size_t height(int layer_num = 0) const { return grid_[layer_num].dim_size(1); }
 
-    //Note: supports 2-d indexing [0..width()-1][0..height()-1] yielding a t_grid_tile
-    auto operator[](size_t index) const { return grid_[index]; }
-    auto operator[](size_t index) { return grid_[index]; }
-
     const vtr::Matrix<t_grid_tile>& matrix(int layer_num = 0) const {
         return grid_[layer_num];
     }

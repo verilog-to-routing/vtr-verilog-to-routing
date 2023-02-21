@@ -37,14 +37,16 @@ void draw_noc(ezgl::renderer* g) {
     // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anythign as the NoC tile wont be drawn
     /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capcity of a noc router tile
      */
-    int num_subtiles = device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type->capacity;
+    const auto& type= device_ctx.grid.get_physical_type(router_list.begin()->get_router_grid_position_x(),
+                                                         router_list.begin()->get_router_grid_position_y());
+    int num_subtiles = type->capacity;
 
     if (num_subtiles == 0) {
         return;
     }
 
     // get the logical type of a noc router tile
-    t_logical_block_type_ptr noc_router_logical_type = pick_logical_type(device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type);
+    t_logical_block_type_ptr noc_router_logical_type = pick_logical_type(type);
 
     // Now construct the coordinates for the markers that represent the connections between links (relative to the noc router tile position)
     ezgl::rectangle noc_connection_marker_bbox = get_noc_connection_marker_bbox(noc_router_logical_type);

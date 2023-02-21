@@ -39,6 +39,7 @@ size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) c
 void DeviceGrid::clear() {
     grid_.clear();
     instance_counts_.clear();
+    num_layers_ = 1;
 }
 
 void DeviceGrid::count_instances() {
