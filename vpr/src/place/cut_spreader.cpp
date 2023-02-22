@@ -1109,7 +1109,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
             // ensure the target location has compatible tile
             auto blk_t = clb_nlist.block_type(blk);
-            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid[target.x][target.y].type);
+            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid.get_physical_type(target.x, target.y));
             if (result == blk_t->equivalent_tiles.end()) {
                 placement_impossible = true;
                 break;
