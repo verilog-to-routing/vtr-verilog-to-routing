@@ -1493,20 +1493,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return grid_loc->width_offset;
     }
     inline int get_grid_loc_x(const t_grid_tile*& grid_loc) final {
-        auto diff = grid_loc - &grid_.matrix().get(0);
-
-        return diff / grid_.grid_dim_size(1);
+        return grid_.get_grid_loc_x(grid_loc);
     }
     inline int get_grid_loc_y(const t_grid_tile*& grid_loc) final {
-        auto diff = grid_loc - &grid_.matrix().get(0);
-
-        return diff % grid_.matrix().dim_size(1);
+        return grid_.get_grid_loc_y(grid_loc);
     }
     inline size_t num_grid_locs_grid_loc(void*& /*iter*/) final {
         return grid_.grid_size();
     }
     inline const t_grid_tile* get_grid_locs_grid_loc(int n, void*& /*ctx*/) final {
-        return &grid_.matrix().get(n);
+        return grid_.get_grid_locs_grid_loc(n);
     }
 
     /** Generated for complex type "rr_graph":

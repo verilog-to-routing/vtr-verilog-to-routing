@@ -25,8 +25,20 @@ class DeviceGrid {
     size_t width(int layer_num = 0) const { return grid_[layer_num].dim_size(0); }
     size_t height(int layer_num = 0) const { return grid_[layer_num].dim_size(1); }
 
-    const vtr::Matrix<t_grid_tile>& matrix(int layer_num = 0) const {
-        return grid_[layer_num];
+    inline int get_grid_loc_x(const t_grid_tile*& grid_loc, int layer_num = 0) const {
+        auto diff = grid_loc - &grid_[layer_num].get(0);
+
+        return diff / grid_[layer_num].dim_size(1);
+    }
+
+    inline int get_grid_loc_y(const t_grid_tile*& grid_loc, int layer_num = 0) const {
+        auto diff = grid_loc - &grid_[layer_num].get(0);
+
+        return diff % grid_[layer_num].dim_size(1);
+    }
+
+    inline const t_grid_tile* get_grid_locs_grid_loc(int n, int layer_num = 0) const {
+        return &grid_[layer_num].get(n);
     }
 
     inline size_t grid_size(int layer_num = 0) const {
