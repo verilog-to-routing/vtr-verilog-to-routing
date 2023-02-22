@@ -416,13 +416,13 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
         auto blk = cut_blks.at(0);
         auto& tiles_type = clb_nlist.block_type(blk)->equivalent_tiles;
         auto loc = ap->blk_locs[blk].loc;
-        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid[loc.x][loc.y].type) == tiles_type.end()) {
+        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type(loc.x, loc.y)) == tiles_type.end()) {
             // logic block type doesn't match tile type
             // exhaustive search for tile of right type
             // this search should be fast as region must be small at this point (only 1 logic block left)
             for (int x = r.bb.xmin(); x <= r.bb.xmax(); x++)
                 for (int y = r.bb.ymin(); y <= r.bb.ymax(); y++) {
-                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid[x][y].type) != tiles_type.end()) {
+                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type(x, y)) != tiles_type.end()) {
                         VTR_ASSERT(blks_at_location[x][y].empty());
                         ap->blk_locs[blk].rawx = x;
                         ap->blk_locs[blk].rawy = y;
