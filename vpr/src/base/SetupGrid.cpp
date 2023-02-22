@@ -522,7 +522,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         }
     }
 
-    auto device_grid = DeviceGrid(grid_def.name, std::vector<vtr::Matrix<t_grid_tile>> {grid}, limiting_resources);
+    auto device_grid = DeviceGrid(grid_def.name, std::vector<vtr::Matrix<t_grid_tile>>{grid}, limiting_resources);
 
     CheckGrid(device_grid);
 
@@ -669,7 +669,7 @@ static void CheckGrid(const DeviceGrid& grid) {
             }
 
             int width_offset = grid.get_width_offset(i, j);
-            int height_offset = grid.get_height_offset(i ,j);
+            int height_offset = grid.get_height_offset(i, j);
             if ((width_offset < 0)
                 || (width_offset >= type->width)) {
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, width_offset);

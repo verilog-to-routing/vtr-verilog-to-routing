@@ -15,14 +15,14 @@ DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_til
 
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
     size_t count = 0;
-    if(instance_counts_.size() == 0) {
+    if (instance_counts_.size() == 0) {
         //No instances counted
         return count;
     }
 
-    if(layer_num == -1) {
+    if (layer_num == -1) {
         //Count all layers
-        for(int curr_layer_num = 0; curr_layer_num < num_layers_; ++curr_layer_num) {
+        for (int curr_layer_num = 0; curr_layer_num < num_layers_; ++curr_layer_num) {
             auto iter = instance_counts_[curr_layer_num].find(type);
             if (iter != instance_counts_[curr_layer_num].end()) {
                 count += iter->second;
