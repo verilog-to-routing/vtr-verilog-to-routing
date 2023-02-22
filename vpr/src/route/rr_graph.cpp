@@ -2242,11 +2242,11 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
             }
             if (class_type == DRIVER) {
                 VTR_ASSERT(pin_type == DRIVER);
-                rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, sw_id);
+                rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch);
             } else {
                 VTR_ASSERT(class_type == RECEIVER);
                 VTR_ASSERT(pin_type == RECEIVER);
-                rr_edges_to_create.emplace_back(pin_rr_node_id, class_rr_node_id, sw_id);
+                rr_edges_to_create.emplace_back(pin_rr_node_id, class_rr_node_id, delayless_switch);
             }
         }
     }
