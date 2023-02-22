@@ -1857,7 +1857,8 @@ static WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_
         if (!net_list.net_is_ignored(net_id)
             && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, wirelength, segments;
-            get_num_bends_and_length(net_id, &bends, &wirelength, &segments);
+            bool is_absorbed;
+            get_num_bends_and_length(net_id, &bends, &wirelength, &segments, &is_absorbed);
 
             used_wirelength += wirelength;
         }

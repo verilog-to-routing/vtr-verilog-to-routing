@@ -19,7 +19,7 @@ void print_wirelen_prob_dist(bool is_flat);
 
 void print_lambda();
 
-void get_num_bends_and_length(ParentNetId inet, int* bends, int* length, int* segments);
+void get_num_bends_and_length(ParentNetId inet, int* bends, int* length, int* segments, bool* is_absorbed_ptr);
 
 int count_netlist_clocks();
 

@@ -119,7 +119,9 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int length, total_length, max_length;
     int segments, total_segments, max_segments;
     float av_bends, av_length, av_segments;
-    int num_global_nets, num_clb_opins_reserved;
+    int num_global_nets, num_clb_opins_reserved, num_absorbed_nets;
+
+    bool is_absorbed;
 
     max_bends = 0;
     total_bends = 0;
@@ -129,10 +131,11 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     total_segments = 0;
     num_global_nets = 0;
     num_clb_opins_reserved = 0;
+    num_absorbed_nets = 0;
 
     for (auto net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
-            get_num_bends_and_length(net_id, &bends, &length, &segments);
+            get_num_bends_and_length(net_id, &bends, &length, &segments, &is_absorbed);
 
             total_bends += bends;
             max_bends = std::max(bends, max_bends);
@@ -142,6 +145,10 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
 
             total_segments += segments;
             max_segments = std::max(segments, max_segments);
+
+            if(is_absorbed) {
+                num_absorbed_nets++;
+            }
         } else if (net_list.net_is_ignored(net_id)) {
             num_global_nets++;
         } else if (!is_flat) {
@@ -168,6 +175,10 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     VTR_LOG("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
     VTR_LOG("\tMaximum segments used by a net: %d\n", max_segments);
     VTR_LOG("\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
+
+    VTR_LOG("Total number of nets absorbed: %d\n", num_absorbed_nets);
+
+
 }
 
 ///@brief Determines how many tracks are used in each channel.
@@ -284,7 +295,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
  * @brief Counts and returns the number of bends, wirelength, and number of routing
  *        resource segments in net inet's routing.
  */
-void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr) {
+void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr, bool* is_absorbed_ptr) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -293,6 +304,8 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
     int inode;
     t_rr_type curr_type, prev_type;
     int bends, length, segments;
+
+    bool is_absorbed = true;
 
     bends = 0;
     length = 0;
@@ -321,6 +334,7 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
         }
 
         else if (curr_type == CHANX || curr_type == CHANY) {
+            is_absorbed = false;
             segments++;
             length += rr_graph.node_length(RRNodeId(inode));
 
@@ -335,6 +349,7 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
     *bends_ptr = bends;
     *len_ptr = length;
     *segments_ptr = segments;
+    *is_absorbed_ptr = is_absorbed;
 }
 
 /**
@@ -350,6 +365,7 @@ void print_wirelen_prob_dist(bool is_flat) {
     int bends, length, segments, index;
     float av_length;
     int prob_dist_size, incr;
+    bool is_absorbed;
 
     prob_dist_size = device_ctx.grid.width() + device_ctx.grid.height() + 10;
     std::vector<float> prob_dist(prob_dist_size, 0.0);
@@ -358,7 +374,7 @@ void print_wirelen_prob_dist(bool is_flat) {
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
-            get_num_bends_and_length(par_net_id, &bends, &length, &segments);
+            get_num_bends_and_length(par_net_id, &bends, &length, &segments, &is_absorbed);
 
             /*  Assign probability to two integer lengths proportionately -- i.e.  *
              *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *
