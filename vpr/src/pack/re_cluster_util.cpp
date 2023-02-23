@@ -65,10 +65,20 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              t_lb_router_data*& router_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
+
+    for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
+        if (molecule->atom_block_ids[i_atom]) {
+            auto it = old_clb_atoms->find(molecule->atom_block_ids[i_atom]);
+            if (it != old_clb_atoms->end())
+                old_clb_atoms->erase(molecule->atom_block_ids[i_atom]);
+        }
+    }
+
+
     //re-build router_data structure for this cluster
     if (!router_data_ready)
         router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, old_clb, old_clb_atoms);
-
+    /*
     //remove atom from router_data
     for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
         if (molecule->atom_block_ids[i_atom]) {
@@ -78,6 +88,7 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
                 old_clb_atoms->erase(molecule->atom_block_ids[i_atom]);
         }
     }
+    */
     update_cluster_pb_stats(molecule, molecule_size, old_clb, false);
 }
 
@@ -100,6 +111,7 @@ void commit_mol_move(const ClusterBlockId& old_clb,
 t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const ClusterBlockId& clb_index, const std::unordered_set<AtomBlockId>* clb_atoms) {
     //build data structures used by intra-logic block router
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
     auto block_type = cluster_ctx.clb_nlist.block_type(clb_index);
     t_lb_router_data* router_data = alloc_and_load_router_data(&lb_type_rr_graphs[block_type->index], block_type);
 
@@ -109,6 +121,11 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 
     for (auto atom_id : *clb_atoms) {
         add_atom_as_target(router_data, atom_id);
+        const t_pb* pb = atom_ctx.lookup.atom_pb(atom_id);
+        while(pb) {
+            set_reset_pb_modes(router_data, pb, true);
+            pb = pb->parent_pb;
+        }
     }
     return (router_data);
 }
@@ -203,8 +220,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule, int molecule_size, 
         return false;
 
     //re-build router_data structure for this cluster
-    if (!is_swap)
-        router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
+    router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
 
     pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[thread_id][block_type->index]),
                                     molecule,
