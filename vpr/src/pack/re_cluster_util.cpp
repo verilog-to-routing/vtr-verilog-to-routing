@@ -65,7 +65,6 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              t_lb_router_data*& router_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
-
     for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
         if (molecule->atom_block_ids[i_atom]) {
             auto it = old_clb_atoms->find(molecule->atom_block_ids[i_atom]);
@@ -73,22 +72,11 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
                 old_clb_atoms->erase(molecule->atom_block_ids[i_atom]);
         }
     }
-
 
     //re-build router_data structure for this cluster
     if (!router_data_ready)
         router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, old_clb, old_clb_atoms);
-    /*
-    //remove atom from router_data
-    for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
-        if (molecule->atom_block_ids[i_atom]) {
-            remove_atom_from_target(router_data, molecule->atom_block_ids[i_atom]);
-            auto it = old_clb_atoms->find(molecule->atom_block_ids[i_atom]);
-            if (it != old_clb_atoms->end())
-                old_clb_atoms->erase(molecule->atom_block_ids[i_atom]);
-        }
-    }
-    */
+
     update_cluster_pb_stats(molecule, molecule_size, old_clb, false);
 }
 
@@ -122,7 +110,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
     for (auto atom_id : *clb_atoms) {
         add_atom_as_target(router_data, atom_id);
         const t_pb* pb = atom_ctx.lookup.atom_pb(atom_id);
-        while(pb) {
+        while (pb) {
             set_reset_pb_modes(router_data, pb, true);
             pb = pb->parent_pb;
         }
@@ -130,7 +118,18 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
     return (router_data);
 }
 
-bool start_new_cluster_for_mol(t_pack_molecule* molecule, const t_logical_block_type_ptr& type, const int mode, const int feasible_block_array_size, bool enable_pin_feasibility_filter, ClusterBlockId clb_index, bool during_packing, int verbosity, t_clustering_data& clustering_data, t_lb_router_data** router_data, PartitionRegion& temp_cluster_pr, int thread_id) {
+bool start_new_cluster_for_mol(t_pack_molecule* molecule,
+                               const t_logical_block_type_ptr& type,
+                               const int mode,
+                               const int feasible_block_array_size,
+                               bool enable_pin_feasibility_filter,
+                               ClusterBlockId clb_index,
+                               bool during_packing,
+                               int verbosity,
+                               t_clustering_data& clustering_data,
+                               t_lb_router_data** router_data,
+                               PartitionRegion& temp_cluster_pr,
+                               int thread_id) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
@@ -184,6 +183,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule, const t_logical_block_
         pb->name = vtr::strdup(new_name.c_str());
         clb_index = cluster_ctx.clb_nlist.create_block(new_name.c_str(), pb, type);
         helper_ctx.total_clb_num++;
+        int molecule_size = get_array_size_of_molecule(molecule);
+        update_cluster_pb_stats(molecule, molecule_size, clb_index, true);
 
         //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.
         if (during_packing) {
@@ -657,7 +658,6 @@ void commit_mol_removal(const t_pack_molecule* molecule,
                         t_lb_router_data*& router_data,
                         t_clustering_data& clustering_data) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-
     for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
         if (molecule->atom_block_ids[i_atom]) {
             revert_place_atom_block(molecule->atom_block_ids[i_atom], router_data);
