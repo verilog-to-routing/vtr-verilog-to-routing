@@ -2441,21 +2441,18 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
 
     auto layer_tag_specified = layout_type_tag.children("layer");
 
-
-
     //No layer tag is specified (only one die is specified in the arch file)
     //Need to process layout_type_tag children to get block types locations in the grid
-    if(grid_def.num_of_avail_dies == 0){
+    if (grid_def.num_of_avail_dies == 0) {
         grid_def.num_of_avail_dies = 1; //if no tag specified, meaning that we only have on layer specification
         int die_number = 0;
-        grid_def.layers.resize(grid_def.num_of_avail_dies);//add layers specified in the arch file to grid specification
-        ProcessBlockTypeLocs(grid_def,die_number,strings,layout_type_tag,loc_data);
-    }
-    else {
-        grid_def.num_of_avail_dies = std::distance(layer_tag_specified.begin(),layer_tag_specified.end());
+        grid_def.layers.resize(grid_def.num_of_avail_dies); //add layers specified in the arch file to grid specification
+        ProcessBlockTypeLocs(grid_def, die_number, strings, layout_type_tag, loc_data);
+    } else {
+        grid_def.num_of_avail_dies = std::distance(layer_tag_specified.begin(), layer_tag_specified.end());
         grid_def.layers.resize(grid_def.num_of_avail_dies);
         //One or more than one layer tag is specified
-        for (auto layer_child: layer_tag_specified) {
+        for (auto layer_child : layer_tag_specified) {
             int die_number;
             //Only one layer tag is specified, the die attribute must be 0 or unspecified
             //Need to process <layer> tag children to get block types locations in the grid
@@ -2464,8 +2461,8 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
                 VTR_ASSERT_MSG(die_number != 0, "If only one layer tag is specified, die number should be 0!");
 
             }
-                //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
-                //Need to process each <layer> tag children to get block types locations for each grid
+            //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
+            //Need to process each <layer> tag children to get block types locations for each grid
             else {
                 die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
             }
@@ -2475,7 +2472,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
     return grid_def;
 }
 
-static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data){
+static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
     for (auto loc_spec_tag : layout_block_type_tag.children()) {
         auto loc_type = loc_spec_tag.name();
@@ -2650,10 +2647,10 @@ static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::stri
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(row));
         } else if (loc_type == std::string("region")) {
             expect_only_attributes(loc_spec_tag,
-                                    {"type", "priority",
+                                   {"type", "priority",
                                     "startx", "endx", "repeatx", "incrx",
                                     "starty", "endy", "repeaty", "incry"},
-                                    loc_data);
+                                   loc_data);
             t_grid_loc_def region(type_name, priority);
 
             auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
@@ -2702,7 +2699,7 @@ static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::stri
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(region));
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
-                            "Unrecognized grid location specification type '%s'\n", loc_type);
+                           "Unrecognized grid location specification type '%s'\n", loc_type);
         }
     }
 }

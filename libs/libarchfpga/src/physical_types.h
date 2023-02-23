@@ -372,7 +372,7 @@ enum GridDefType {
     FIXED
 };
 
-struct t_layer_def{
+struct t_layer_def {
     std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
 };
 
@@ -389,8 +389,6 @@ struct t_grid_def {
     std::vector<t_layer_def> layers;
     int num_of_avail_dies = 0; //Specify how many dies, the grid specification has
 };
-
-
 
 /************************* POWER ***********************************/
 

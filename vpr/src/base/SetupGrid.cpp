@@ -359,161 +359,160 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
     FormulaParser p;
     std::set<t_physical_tile_type_ptr> seen_types;
-//    for(int i = 0; i < grid_def.num_of_avail_dies; i++){
-        for (const auto& grid_loc_def : grid_def.layers.at(0).loc_defs) {
-            //Fill in the block types according to the specification
+    //    for(int i = 0; i < grid_def.num_of_avail_dies; i++){
+    for (const auto& grid_loc_def : grid_def.layers.at(0).loc_defs) {
+        //Fill in the block types according to the specification
 
-            auto type = find_tile_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
+        auto type = find_tile_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
 
-            if (!type) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "Failed to find block type '%s' for grid location specification",
-                                grid_loc_def.block_type.c_str());
+        if (!type) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Failed to find block type '%s' for grid location specification",
+                            grid_loc_def.block_type.c_str());
+        }
+
+        seen_types.insert(type);
+
+        t_formula_data vars;
+        vars.set_var_value("W", grid_width);
+        vars.set_var_value("H", grid_height);
+        vars.set_var_value("w", type->width);
+        vars.set_var_value("h", type->height);
+
+        //Load the x specification
+        auto& xspec = grid_loc_def.x;
+
+        VTR_ASSERT_MSG(!xspec.start_expr.empty(), "x start position must be specified");
+        VTR_ASSERT_MSG(!xspec.end_expr.empty(), "x end position must be specified");
+        VTR_ASSERT_MSG(!xspec.incr_expr.empty(), "x increment must be specified");
+        VTR_ASSERT_MSG(!xspec.repeat_expr.empty(), "x repeat must be specified");
+
+        size_t startx = p.parse_formula(xspec.start_expr, vars);
+        size_t endx = p.parse_formula(xspec.end_expr, vars);
+        size_t incrx = p.parse_formula(xspec.incr_expr, vars);
+        size_t repeatx = p.parse_formula(xspec.repeat_expr, vars);
+
+        //Load the y specification
+        auto& yspec = grid_loc_def.y;
+
+        VTR_ASSERT_MSG(!yspec.start_expr.empty(), "y start position must be specified");
+        VTR_ASSERT_MSG(!yspec.end_expr.empty(), "y end position must be specified");
+        VTR_ASSERT_MSG(!yspec.incr_expr.empty(), "y increment must be specified");
+        VTR_ASSERT_MSG(!yspec.repeat_expr.empty(), "y repeat must be specified");
+
+        size_t starty = p.parse_formula(yspec.start_expr, vars);
+        size_t endy = p.parse_formula(yspec.end_expr, vars);
+        size_t incry = p.parse_formula(yspec.incr_expr, vars);
+        size_t repeaty = p.parse_formula(yspec.repeat_expr, vars);
+
+        //Check start against the device dimensions
+        // Start locations outside the device will never create block instances
+        if (startx > grid_width - 1) {
+            if (warn_out_of_range) {
+                VTR_LOG_WARN("Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
+                             type->name, xspec.start_expr.c_str(), startx, 0, grid_width - 1);
             }
+            continue; //No instances will be created
+        }
 
-            seen_types.insert(type);
-
-            t_formula_data vars;
-            vars.set_var_value("W", grid_width);
-            vars.set_var_value("H", grid_height);
-            vars.set_var_value("w", type->width);
-            vars.set_var_value("h", type->height);
-
-            //Load the x specification
-            auto& xspec = grid_loc_def.x;
-
-            VTR_ASSERT_MSG(!xspec.start_expr.empty(), "x start position must be specified");
-            VTR_ASSERT_MSG(!xspec.end_expr.empty(), "x end position must be specified");
-            VTR_ASSERT_MSG(!xspec.incr_expr.empty(), "x increment must be specified");
-            VTR_ASSERT_MSG(!xspec.repeat_expr.empty(), "x repeat must be specified");
-
-            size_t startx = p.parse_formula(xspec.start_expr, vars);
-            size_t endx = p.parse_formula(xspec.end_expr, vars);
-            size_t incrx = p.parse_formula(xspec.incr_expr, vars);
-            size_t repeatx = p.parse_formula(xspec.repeat_expr, vars);
-
-            //Load the y specification
-            auto& yspec = grid_loc_def.y;
-
-            VTR_ASSERT_MSG(!yspec.start_expr.empty(), "y start position must be specified");
-            VTR_ASSERT_MSG(!yspec.end_expr.empty(), "y end position must be specified");
-            VTR_ASSERT_MSG(!yspec.incr_expr.empty(), "y increment must be specified");
-            VTR_ASSERT_MSG(!yspec.repeat_expr.empty(), "y repeat must be specified");
-
-            size_t starty = p.parse_formula(yspec.start_expr, vars);
-            size_t endy = p.parse_formula(yspec.end_expr, vars);
-            size_t incry = p.parse_formula(yspec.incr_expr, vars);
-            size_t repeaty = p.parse_formula(yspec.repeat_expr, vars);
-
-            //Check start against the device dimensions
-            // Start locations outside the device will never create block instances
-            if (startx > grid_width - 1) {
-                if (warn_out_of_range) {
-                    VTR_LOG_WARN("Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                                 type->name, xspec.start_expr.c_str(), startx, 0, grid_width - 1);
-                }
-                continue; //No instances will be created
+        if (starty > grid_height - 1) {
+            if (warn_out_of_range) {
+                VTR_LOG_WARN("Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
+                             type->name, yspec.start_expr.c_str(), starty, 0, grid_height - 1);
             }
+            continue; //No instances will be created
+        }
 
-            if (starty > grid_height - 1) {
-                if (warn_out_of_range) {
-                    VTR_LOG_WARN("Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
-                                 type->name, yspec.start_expr.c_str(), starty, 0, grid_height - 1);
-                }
-                continue; //No instances will be created
+        //Check end against the device dimensions
+        if (endx > grid_width - 1) {
+            if (warn_out_of_range) {
+                VTR_LOG_WARN("Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
+                             type->name, xspec.end_expr.c_str(), endx, 0, grid_width - 1);
             }
+        }
 
-            //Check end against the device dimensions
-            if (endx > grid_width - 1) {
-                if (warn_out_of_range) {
-                    VTR_LOG_WARN("Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                                 type->name, xspec.end_expr.c_str(), endx, 0, grid_width - 1);
-                }
+        if (endy > grid_height - 1) {
+            if (warn_out_of_range) {
+                VTR_LOG_WARN("Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
+                             type->name, yspec.end_expr.c_str(), endy, 0, grid_height - 1);
             }
+        }
 
-            if (endy > grid_height - 1) {
-                if (warn_out_of_range) {
-                    VTR_LOG_WARN("Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
-                                 type->name, yspec.end_expr.c_str(), endy, 0, grid_height - 1);
-                }
-            }
+        //The end must fall after (or equal) to the start
+        if (endx < startx) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Grid location specification endx (%s = %d) can not come before startx (%s = %d) for block type '%s'",
+                            xspec.end_expr.c_str(), endx, xspec.start_expr.c_str(), startx, type->name);
+        }
 
-            //The end must fall after (or equal) to the start
-            if (endx < startx) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "Grid location specification endx (%s = %d) can not come before startx (%s = %d) for block type '%s'",
-                                xspec.end_expr.c_str(), endx, xspec.start_expr.c_str(), startx, type->name);
-            }
+        if (endy < starty) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Grid location specification endy (%s = %d) can not come before starty (%s = %d) for block type '%s'",
+                            yspec.end_expr.c_str(), endy, yspec.start_expr.c_str(), starty, type->name);
+        }
 
-            if (endy < starty) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "Grid location specification endy (%s = %d) can not come before starty (%s = %d) for block type '%s'",
-                                yspec.end_expr.c_str(), endy, yspec.start_expr.c_str(), starty, type->name);
-            }
+        //The minimum increment is the block dimension
+        VTR_ASSERT(type->width > 0);
+        if (incrx < size_t(type->width)) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Grid location specification incrx for block type '%s' must be at least"
+                            " block width (%d) to avoid overlapping instances (was %s = %d)",
+                            type->name, type->width, xspec.incr_expr.c_str(), incrx);
+        }
 
-            //The minimum increment is the block dimension
-            VTR_ASSERT(type->width > 0);
-            if (incrx < size_t(type->width)) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "Grid location specification incrx for block type '%s' must be at least"
-                                " block width (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name, type->width, xspec.incr_expr.c_str(), incrx);
-            }
+        VTR_ASSERT(type->height > 0);
+        if (incry < size_t(type->height)) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Grid location specification incry for block type '%s' must be at least"
+                            " block height (%d) to avoid overlapping instances (was %s = %d)",
+                            type->name, type->height, yspec.incr_expr.c_str(), incry);
+        }
 
-            VTR_ASSERT(type->height > 0);
-            if (incry < size_t(type->height)) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "Grid location specification incry for block type '%s' must be at least"
-                                " block height (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name, type->height, yspec.incr_expr.c_str(), incry);
-            }
+        //The minimum repeat is the region dimension
+        size_t region_width = endx - startx + 1; //+1 since start/end are both inclusive
+        if (repeatx < region_width) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Grid location specification repeatx for block type '%s' must be at least"
+                            " the region width (%d) to avoid overlapping instances (was %s = %d)",
+                            type->name, region_width, xspec.repeat_expr.c_str(), repeatx);
+        }
 
-            //The minimum repeat is the region dimension
-            size_t region_width = endx - startx + 1; //+1 since start/end are both inclusive
-            if (repeatx < region_width) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "Grid location specification repeatx for block type '%s' must be at least"
-                                " the region width (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name, region_width, xspec.repeat_expr.c_str(), repeatx);
-            }
+        size_t region_height = endy - starty + 1; //+1 since start/end are both inclusive
+        if (repeaty < region_height) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Grid location specification repeaty for block type '%s' must be at least"
+                            " the region height (%d) to avoid overlapping instances (was %s = %d)",
+                            type->name, region_height, xspec.repeat_expr.c_str(), repeaty);
+        }
 
-            size_t region_height = endy - starty + 1; //+1 since start/end are both inclusive
-            if (repeaty < region_height) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "Grid location specification repeaty for block type '%s' must be at least"
-                                " the region height (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name, region_height, xspec.repeat_expr.c_str(), repeaty);
-            }
+        //VTR_LOG("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n",
+        //            type->name, grid_loc_def.priority,
+        //            xspec.start_expr.c_str(), startx, xspec.end_expr.c_str(), endx,
+        //            yspec.start_expr.c_str(), starty, yspec.end_expr.c_str(), endy);
 
-            //VTR_LOG("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n",
-            //            type->name, grid_loc_def.priority,
-            //            xspec.start_expr.c_str(), startx, xspec.end_expr.c_str(), endx,
-            //            yspec.start_expr.c_str(), starty, yspec.end_expr.c_str(), endy);
+        size_t x_end = 0;
+        for (size_t kx = 0; x_end < grid_width; ++kx) { //Repeat in x direction
+            size_t x_start = startx + kx * repeatx;
+            x_end = endx + kx * repeatx;
 
-            size_t x_end = 0;
-            for (size_t kx = 0; x_end < grid_width; ++kx) { //Repeat in x direction
-                size_t x_start = startx + kx * repeatx;
-                x_end = endx + kx * repeatx;
+            size_t y_end = 0;
+            for (size_t ky = 0; y_end < grid_height; ++ky) { //Repeat in y direction
+                size_t y_start = starty + ky * repeaty;
+                y_end = endy + ky * repeaty;
 
-                size_t y_end = 0;
-                for (size_t ky = 0; y_end < grid_height; ++ky) { //Repeat in y direction
-                    size_t y_start = starty + ky * repeaty;
-                    y_end = endy + ky * repeaty;
+                size_t x_max = std::min(x_end, grid_width - 1);
+                size_t y_max = std::min(y_end, grid_height - 1);
 
-                    size_t x_max = std::min(x_end, grid_width - 1);
-                    size_t y_max = std::min(y_end, grid_height - 1);
-
-                    //Fill in the region
-                    for (size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
-                        for (size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
-                            set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities, grid_loc_def.meta);
-                        }
+                //Fill in the region
+                for (size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
+                    for (size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
+                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities, grid_loc_def.meta);
                     }
                 }
             }
         }
-//    }
-
+    }
+    //    }
 
     //Warn if any types were not specified in the grid layout
     for (auto const& type : device_ctx.physical_tile_types) {
