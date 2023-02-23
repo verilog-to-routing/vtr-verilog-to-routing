@@ -252,6 +252,7 @@ if (VPR_USE_SIGNAL_HANDLER)
 endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION include/libvpr)
 
 
 #

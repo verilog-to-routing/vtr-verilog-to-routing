@@ -20,3 +20,4 @@ target_link_libraries(libpugiutil
                         libpugixml)
 
 install(TARGETS libpugiutil DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION include/libpugiutil)
