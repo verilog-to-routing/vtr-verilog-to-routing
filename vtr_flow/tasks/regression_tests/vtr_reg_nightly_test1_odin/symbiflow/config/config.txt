@@ -1,0 +1,42 @@
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/symbiflow
+
+# SDC directory
+sdc_dir=benchmarks/symbiflow/sdc
+
+# Place constraints directory
+place_constr_dir=benchmarks/symbiflow/place_constr
+
+# Path to directory of architectures to use
+archs_dir=arch/symbiflow
+
+#Large benchmarks
+circuit_list_add=picosoc_basys3_full_100.eblif
+circuit_list_add=picosoc_basys3_full_50.eblif
+circuit_list_add=linux_arty.eblif
+circuit_list_add=minilitex_arty.eblif
+circuit_list_add=minilitex_ddr_arty.eblif
+circuit_list_add=minilitex_ddr_eth_arty.eblif
+
+# Add architectures to list to sweep
+arch_list_add=arch.timing.xml
+
+# Add additional required architectural data files
+additional_files_list_add=--read_rr_graph,rr_graph_xc7a50t_test.rr_graph.real.bin
+additional_files_list_add=--read_router_lookahead,rr_graph_xc7a50t_test.lookahead.bin
+additional_files_list_add=--read_placement_delay_lookup,rr_graph_xc7a50t_test.place_delay.bin
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+script_params=-starting_stage vpr --max_router_iterations 500 --routing_failure_predictor off --router_high_fanout_threshold 1000 --constant_net_method route --route_chan_width 500 --router_heap bucket --clock_modeling route --place_delta_delay_matrix_calculation_method dijkstra --place_delay_model delta_override --router_lookahead extended_map --check_route quick --strict_checks off --allow_dangling_combinational_nodes on --disable_errors check_unbuffered_edges:check_route --congested_routing_iteration_threshold 0.8 --incremental_reroute_delay_ripup off --base_cost_type delay_normalized_length_bounded --bb_factor 10 --initial_pres_fac 4.0 --check_rr_graph off

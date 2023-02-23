@@ -1,0 +1,175 @@
+# -*- Makefile -*-
+# Each plugin shall have a directory named 'test' that contains test cases
+# directories and a Makefile which includes this Makefile template.
+# The test Makefile specifies which tests to execute and how to verify them.
+# The test to execute should be explicitly specified in the TESTS variable.
+# Each test needs a verification step define in the name_of_test_verify variable.
+# A simple diff verification template have been defined in the template Makefile
+# diff_test performs a simple diff and takes name of file and its extension
+# Example of a test Makefile is given below:
+#
+# include $(shell pwd)/../../Makefile_test.common
+# TESTS = test1 test2
+# test1_verify = $(call diff_test,test1,ext) && test $$(grep "PASS" test1/test1.txt | wc -l) -eq 2
+# test2_verify = $(call diff_test,test2,ext)
+#
+
+SHELL := /usr/bin/env bash
+
+# Either find yosys in system and use its path or use the given path
+YOSYS_PATH ?= $(realpath $(dir $(shell command -v yosys))/..)
+
+# Find yosys-config, throw an error if not found
+YOSYS_CONFIG = $(YOSYS_PATH)/bin/yosys-config
+ifeq (,$(wildcard $(YOSYS_CONFIG)))
+$(error "Didn't find 'yosys-config' under '$(YOSYS_PATH)'")
+endif
+
+GTEST_DIR ?= $(abspath ../../third_party/googletest)
+CXX ?= $(shell $(YOSYS_CONFIG) --cxx)
+CXXFLAGS ?= $(shell $(YOSYS_CONFIG) --cxxflags) -I.. -I$(GTEST_DIR)/googletest/include
+LDLIBS ?= $(shell $(YOSYS_CONFIG) --ldlibs) -L$(GTEST_DIR)/build/lib -lgtest -lgtest_main -lpthread
+LDFLAGS ?= $(shell $(YOSYS_CONFIG) --ldflags)
+TEST_UTILS ?= $(abspath ../../test-utils/test-utils.tcl)
+
+define test_tpl =
+$(1): $(1)/ok
+	@set +e; \
+	$$($$(subst /,-,$(1)_verify)); \
+	if [ $$$$? -eq 0 ]; then \
+		printf "Test %-20s \e[32mPASSED\e[0m @ %s\n" $(1) $(CURDIR); \
+		touch $$<; \
+		true; \
+	else \
+		printf "Test %-20s \e[31;1mFAILED\e[0m @ %s\n" $(1) $(CURDIR); \
+		false; \
+	fi
+
+$(1)/ok: $(1)/$$(notdir $(1).v)
+	@set +e; \
+	cd $(1); \
+	echo "source $(TEST_UTILS)" > run-$$(notdir $(1)).tcl ;\
+	echo "source $$(notdir $(1)).tcl" >> run-$$(notdir $(1)).tcl ;\
+	DESIGN_TOP=$$(notdir $(1)) TEST_OUTPUT_PREFIX=./ \
+	yosys -c "run-$$(notdir $(1)).tcl" -q -q -l $$(notdir $(1)).log; \
+	RETVAL=$$$$?; \
+	rm -f run-$$(notdir $(1)).tcl; \
+	if [ ! -z "$$($(1)_negative)" ] && [ $$($(1)_negative) -eq 1 ]; then \
+		if [ $$$$RETVAL -ne 0 ]; then \
+			printf "Negative test %-20s \e[32mPASSED\e[0m @ %s\n" $(1) $(CURDIR); \
+			true; \
+		else \
+			printf "Negative test %-20s \e[31;1mFAILED\e[0m @ %s\n" $(1) $(CURDIR); \
+			false; \
+		fi \
+	else \
+		if [ $$$$RETVAL -ne 0 ]; then \
+			echo "Unexpected runtime error"; \
+		    printf "Test %-20s \e[31;1mFAILED\e[0m @ %s\n" $(1) $(CURDIR); \
+			false; \
+		fi \
+	fi
+
+endef
+
+DEV = $(shell echo $(1) | cut -d "/" -f 1)
+SIM_LIBS = $(shell find ../$(DEV) -name "*.v" -not -name "*map.v" -not -name "cells_sim.v")
+define test_sim_tpl =
+$(1): $(1)/ok
+	@printf "Test %-18s \e[32mPASSED\e[0m @ %s\n" $(1) $(CURDIR);
+
+$(1)/$$(notdir $(1).vvp): $(1)/$$(notdir $(1).v)
+	@iverilog -vvvv -g2005 -o $$@ $$< $(SIM_LIBS) -I../ -DVCD_FILE=\"$(1)/$$(notdir $(1).vcd)\" >$(1)/$$(notdir $(1).vvp.log) 2>&1; \
+	if [ $$$$? -ne 0 ]; then \
+		printf "Test %-18s \e[31;1mFAILED\e[0m @ %s\n" $(1) $(CURDIR); \
+		false; \
+	fi
+
+$(1)/ok: $(1)/$$(notdir $(1).vvp) $(1)/$$(notdir $(1).v)
+	@vvp -vvvv $$< >$(1)/$$(notdir $(1).log) 2>&1; \
+	if [ $$$$? -ne 0 ]; then \
+		printf "Test %-18s \e[31;1mFAILED\e[0m @ %s\n" $(1) $(CURDIR); \
+		false; \
+	else \
+		touch $$@; \
+		true; \
+	fi
+
+endef
+
+define test_post_synth_sim_tpl =
+$(1): $(1)/ok
+	@printf "Test %-18s \e[32mPASSED\e[0m @ %s\n" $(1) $(CURDIR);
+
+$(1)/ok: $(1)/synth
+	@make -C $(1)/sim sim; \
+	if [ $$$$? -ne 0 ]; then \
+		printf "Test %-18s \e[31;1mFAILED\e[0m @ %s\n" $(1) $(CURDIR); \
+		false; \
+	else \
+		touch $$@; \
+		true; \
+	fi
+
+$(1)/synth: $(1)/$$(notdir $(1).v)
+	@set +e; \
+	cd $(1); \
+	echo "source $(TEST_UTILS)" > run-$$(notdir $(1)).tcl ;\
+	echo "source $$(notdir $(1)).tcl" >> run-$$(notdir $(1)).tcl ;\
+	DESIGN_TOP=$$(notdir $(1)) TEST_OUTPUT_PREFIX=./ \
+	yosys -c "run-$$(notdir $(1)).tcl" -q -q -l $$(notdir $(1)).log; \
+	RETVAL=$$$$?; \
+	rm -f run-$$(notdir $(1)).tcl; \
+	if [ ! -z "$$($(1)_negative)" ] && [ $$($(1)_negative) -eq 1 ]; then \
+		if [ $$$$RETVAL -ne 0 ]; then \
+			printf "Negative test %-20s \e[32mPASSED\e[0m @ %s\n" $(1) $(CURDIR); \
+			true; \
+		else \
+			printf "Negative test %-20s \e[31;1mFAILED\e[0m @ %s\n" $(1) $(CURDIR); \
+			false; \
+		fi \
+	else \
+		if [ $$$$RETVAL -ne 0 ]; then \
+			echo "Unexpected runtime error"; \
+		    printf "Test %-20s \e[31;1mFAILED\e[0m @ %s\n" $(1) $(CURDIR); \
+			false; \
+		fi \
+	fi
+
+endef
+
+define unit_test_tpl =
+$(1): $(1)/$(1).test
+	@$$<
+
+$(1)/$(1).test: $(1)/$(1).test.o $$(GTEST_DIR)/build/lib/libgtest.a
+	@$(CXX) $(LDFLAGS) -o $$@ $$< $(LDLIBS)
+
+$(1)/$(1).test.o: $(1)/$(1).test.cc
+	@$(CXX) $(CXXFLAGS) $(LDFLAGS) -c $$< -o $$@
+
+endef
+
+diff_test = diff $(1)/$(1).golden.$(2) $(1)/$(1).$(2)
+
+all: $(TESTS) $(SIM_TESTS) $(POST_SYNTH_SIM_TESTS) $(UNIT_TESTS)
+
+$(GTEST_DIR)/build/lib/libgtest.a $(GTEST_DIR)/build/lib/libgtest_main.a:
+	@mkdir -p $(GTEST_DIR)/build
+	@cd $(GTEST_DIR)/build; \
+	cmake ..; \
+	make
+
+.PHONY: all clean $(TESTS) $(SIM_TESTS) $(UNIT_TESTS)
+
+$(foreach test,$(TESTS),$(eval $(call test_tpl,$(test))))
+$(foreach test,$(SIM_TESTS),$(eval $(call test_sim_tpl,$(test))))
+$(foreach test,$(POST_SYNTH_SIM_TESTS),$(eval $(call test_post_synth_sim_tpl,$(test))))
+$(foreach test,$(UNIT_TESTS),$(eval $(call unit_test_tpl,$(test))))
+
+clean:
+	@rm -rf $(foreach test,$(TESTS),$(test)/$(test).sdc $(test)/$(test)_[0-9].sdc $(test)/$(test).txt $(test)/$(test).eblif $(test)/$(test).json)
+	@rm -rf $(foreach test,$(SIM_TESTS),$(test)/*.vvp $(test)/*.vcd)
+	@rm -rf $(foreach test,$(POST_SYNTH_SIM_TESTS),$(test)/sim/*.vvp $(test)/sim/*.vcd $(test)/sim/*post_synth.v)
+	@rm -rf $(foreach test,$(UNIT_TESTS),$(test)/$(test).test.o $(test)/$(test).test.d $(test)/$(test).test)
+	@find . -name "ok" -or -name "*.log" | xargs rm -rf
