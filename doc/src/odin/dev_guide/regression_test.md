@@ -161,7 +161,7 @@ This folder is where the synthesis results and simulation results will be stored
 The task diplay name and the verilog file group should share the same title.
 
 ```bash
-└── ODIN_II
+└── odin_ii
       └── regression_test
               └── benchmark
                     ├── task
@@ -182,7 +182,7 @@ The task cmd_line_args is an example of this.
 If that is the case, each configuration file will still need its own folder, however these folders should be placed in a parent folder.
 
 ```bash
-└── ODIN_II
+└── odin_ii
       └── regression_test
               └── benchmark
                     ├── task
@@ -208,7 +208,7 @@ In the diagram below you can see the structure of the suite.
 The suite contains a configuration file that calls upon the different tasks named **task_list.conf**.
 
 ```bash
-└── ODIN_II
+└── odin_ii
       └── regression_test
               └── benchmark
                     ├── suite

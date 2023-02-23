@@ -1,0 +1,7 @@
+read_verilog ../common/lutram.v
+hierarchy -top lutram_1w1r
+synth_efinix
+cd lutram_1w1r
+select -assert-count 1 t:EFX_GBUFCE
+select -assert-count 1 t:EFX_RAM_5K
+select -assert-none t:EFX_GBUFCE t:EFX_RAM_5K %% t:* %D
