@@ -346,7 +346,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     grid.resize(grid_def.num_of_avail_dies);
     grid_priorities.resize(grid_def.num_of_avail_dies);
 
-    for (size_t layer = 0; layer < grid_def.num_of_avail_dies; layer++) {
+    for (int layer = 0; layer < grid_def.num_of_avail_dies; layer++) {
         //Track the current priority for each grid location
         // Note that we initialize it to the lowest (i.e. most negative) possible value, so
         // any user-specified priority will override the default empty grid
@@ -357,7 +357,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     //Initialize the device to all empty blocks
     auto empty_type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
     VTR_ASSERT(empty_type != nullptr);
-    for (size_t layer = 0; layer < grid_def.num_of_avail_dies; ++layer) {
+    for (int layer = 0; layer < grid_def.num_of_avail_dies; ++layer) {
         for (size_t x = 0; x < grid_width; ++x) {
             for (size_t y = 0; y < grid_height; ++y) {
                 set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
@@ -671,7 +671,7 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
 
 ///@brief Check grid is valid
 static void CheckGrid(const DeviceGrid& grid) {
-    for (size_t layer = 0; layer < grid.get_num_layers(); layer++) { //Check each die individually
+    for (int layer = 0; layer < grid.get_num_layers(); layer++) { //Check each die individually
         for (size_t i = 0; i < grid.width(); ++i) {
             for (size_t j = 0; j < grid.height(); ++j) {
                 auto type = grid.get_physical_type(i, j);
