@@ -1,5 +1,18 @@
 #include "device_grid.h"
 
+
+struct gridDimComp {
+    int dim_;
+    bool is_greater_;
+    gridDimComp(int dim, bool is_greater)
+        : dim_(dim)
+        , is_greater_(is_greater) {}
+
+    bool operator()(const vtr::Matrix<t_grid_tile>& lhs, const vtr::Matrix<t_grid_tile>& rhs) {
+        return is_greater_ ? lhs.dim_size(dim_) > rhs.dim_size(dim_) : lhs.dim_size(dim_) < rhs.dim_size(dim_);
+    }
+};
+
 DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid)
     : name_(grid_name)
     , grid_(grid) {
@@ -11,6 +24,30 @@ DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_til
     : DeviceGrid(grid_name, grid) {
     num_layers_ = grid_.size();
     limiting_resources_ = limiting_res;
+}
+
+size_t DeviceGrid::max_width() {
+    const int dim = 0;
+    const bool is_greater = true;
+    return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
+}
+size_t DeviceGrid::max_height() {
+    const int dim = 1;
+    const bool is_greater = true;
+    return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
+}
+
+size_t DeviceGrid::min_width() {
+    const int dim = 0;
+    const bool is_greater = false;
+    return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
+
+}
+size_t DeviceGrid::min_height() {
+    const int dim = 1;
+    const bool is_greater = false;
+    return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
+
 }
 
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
