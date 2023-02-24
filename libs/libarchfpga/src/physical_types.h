@@ -387,7 +387,7 @@ struct t_grid_def {
     float aspect_ratio = 1.; //Aspect ratio for auto-sized devices (only valid for
                              //grid_type == AUTO)
     std::vector<t_layer_def> layers;
-    int num_of_avail_dies = 0; //Specify how many dies, the grid specification has
+    int num_of_avail_dies = 1; //Specify how many dies, the grid specification has
 };
 
 /************************* POWER ***********************************/

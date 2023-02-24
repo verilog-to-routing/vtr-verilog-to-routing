@@ -227,7 +227,7 @@
     </pb_type>
   </complexblocklist>
   <layout>
-    <auto_layout>
+    <fixed_layout name="3d_grid" width="3" height="3">
         <layer die="0">
             <fill type="pass_through_tile" priority="1"/>
             <perimeter type="io_tile" priority="2"/>
@@ -238,7 +238,7 @@
             <perimeter type="io_tile" priority="2"/>
             <corners type="EMPTY" priority="3"/>
         </layer>
-    </auto_layout>
+    </fixed_layout>
   </layout>
   <device>
     <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>

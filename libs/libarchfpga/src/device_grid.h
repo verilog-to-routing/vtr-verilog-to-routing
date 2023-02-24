@@ -25,6 +25,10 @@ class DeviceGrid {
     size_t width(int layer_num = 0) const { return grid_[layer_num].dim_size(0); }
     size_t height(int layer_num = 0) const { return grid_[layer_num].dim_size(1); }
 
+    inline int get_num_layers() const {
+        return num_layers_;
+    }
+
     inline int get_grid_loc_x(const t_grid_tile*& grid_loc, int layer_num = 0) const {
         auto diff = grid_loc - &grid_[layer_num].get(0);
 
@@ -48,7 +52,6 @@ class DeviceGrid {
     inline size_t grid_dim_size(int dim, int layer_num = 0) const {
         return grid_[layer_num].dim_size(dim);
     }
-
     void clear();
 
     size_t num_instances(t_physical_tile_type_ptr type, int layer_num = 0) const;
