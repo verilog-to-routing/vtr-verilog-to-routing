@@ -723,8 +723,12 @@ void try_place(const t_placer_opts& placer_opts,
     /* Set the temperature low to ensure that initial placement quality will be preserved */
     first_t = EPSILON;
 
-    t_annealing_state state(annealing_sched, first_t, first_rlim,
-                            first_move_lim, first_crit_exponent);
+    t_annealing_state state(annealing_sched,
+                            first_t,
+                            first_rlim,
+                            first_move_lim,
+                            first_crit_exponent,
+                            device_ctx.grid.get_num_layers());
 
     /* Update the starting temperature for placement annealing to a more appropriate value */
     state.t = starting_t(&state, &costs, annealing_sched,

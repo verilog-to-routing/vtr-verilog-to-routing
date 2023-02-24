@@ -76,7 +76,8 @@ t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
                                      float first_t,
                                      float first_rlim,
                                      int first_move_lim,
-                                     float first_crit_exponent) {
+                                     float first_crit_exponent,
+                                     int num_laters) {
     num_temps = 0;
     alpha = annealing_sched.alpha_min;
     t = first_t;
@@ -91,6 +92,8 @@ t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
     } else {
         move_lim = move_lim_max;
     }
+
+    NUM_LAYERS = num_laters;
 
     /* Store this inverse value for speed when updating crit_exponent. */
     INVERSE_DELTA_RLIM = 1 / (first_rlim - FINAL_RLIM);

@@ -128,13 +128,15 @@ class t_annealing_state {
     float UPPER_RLIM;
     float FINAL_RLIM = 1.;
     float INVERSE_DELTA_RLIM;
+    int NUM_LAYERS = 1;
 
   public: //Constructor
     t_annealing_state(const t_annealing_sched& annealing_sched,
                       float first_t,
                       float first_rlim,
                       int first_move_lim,
-                      float first_crit_exponent);
+                      float first_crit_exponent,
+                      int num_layers);
 
   public: //Mutator
     bool outer_loop_update(float success_rate,
