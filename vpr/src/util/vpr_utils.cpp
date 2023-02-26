@@ -2193,7 +2193,7 @@ bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
     }
 }
 
-void apply_route_constraints(const VprConstraints& vpr_constraint) {
+void apply_route_constraints(VprConstraints& vpr_constraint) {
     ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
     for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
         std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);

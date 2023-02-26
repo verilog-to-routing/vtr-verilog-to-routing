@@ -349,7 +349,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     //Initialize vpr floorplanning and routing constraints
     auto& filename_opts = vpr_setup->FileNameOpts;
     if (!filename_opts.read_vpr_constraints_file.empty()) {
-        load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
+        load_vpr_constraints_files(filename_opts.read_vpr_constraints_file.c_str());
 
         // give a notificaiton on routing constraints overiding clock modeling
         if (g_vpr_ctx.routing().constraints.get_route_constraint_num() && options->clock_modeling.provenance() == argparse::Provenance::SPECIFIED) {
@@ -773,7 +773,8 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_f
     } else { //Do or load
 
         // apply route constraints
-        apply_route_constraints(g_vpr_ctx.routing().constraints);
+        // use mutable routing context here to apply change on the constraints when binding the constraint to real net
+        apply_route_constraints(g_vpr_ctx.mutable_routing().constraints);
 
         int chan_width = router_opts.fixed_channel_width;
 
