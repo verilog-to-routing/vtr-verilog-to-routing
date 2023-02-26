@@ -349,7 +349,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     //Initialize vpr floorplanning and routing constraints
     auto& filename_opts = vpr_setup->FileNameOpts;
     if (!filename_opts.read_vpr_constraints_file.empty()) {
-        load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
+        load_vpr_constraints_files(filename_opts.read_vpr_constraints_file.c_str());
 
         // Check if there are route constraints specified, and if the clock modeling setting is explicitly specified
         // If both conditions are met, issue a warning that the route constraints will override the clock modeling setting.

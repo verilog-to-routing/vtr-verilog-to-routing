@@ -64,7 +64,7 @@ class VprConstraints {
      *
      *   @param net_name the net name
      */
-    RouteConstraint get_route_constraint_by_net_name(std::string net_name) const;
+    RouteConstraint get_route_constraint_by_net_name(std::string net_name);
 
     /**
      * @brief returns number of route constraints
