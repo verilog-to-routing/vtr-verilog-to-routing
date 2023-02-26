@@ -7,7 +7,7 @@ VTR is a collection of tools that perform the full FPGA CAD flow from Verilog to
 
 The design flow consists of:
 
-* :ref:`odin_ii` (Logic Synthesis)
+* :ref:`parmys` (Logic Synthesis & Partial Mapping)
 * :ref:`abc` (Logic Optimization & Technology Mapping)
 * :ref:`vpr` (Pack, Place & Route)
 

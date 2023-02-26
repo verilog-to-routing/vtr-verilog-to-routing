@@ -47,7 +47,7 @@ option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
 option(WITH_ABC "Enable building abc" ON)
-option(WITH_ODIN "Enable building odin" ON)
+option(WITH_ODIN "Enable building odin" OFF)
 option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
 option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
 option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
@@ -55,9 +55,8 @@ option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
-option(WITH_YOSYS "Enable building Yosys" OFF)
-option(YOSYS_SV_UHDM_PLUGIN "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
-option(YOSYS_PARMYS_PLUGIN "Enable building and installing Parmys (Partial Mapper for Yosys) plugin" OFF)
+option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
+option(YOSYS_F4PGA_PLUGINS "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 1)
@@ -90,9 +89,9 @@ add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}")
 include(CheckCXXCompilerFlag)
 
 #
-# We require c++14 support
+# We require c++17 support
 #
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF) #No compiler specific extensions
 
@@ -116,6 +115,8 @@ elseif(VTR_IPO_BUILD STREQUAL "auto")
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
     else()
         message(STATUS "Building with IPO: off (auto)")
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fPIC")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC")
     endif()
 else()
     message(STATUS "Building with IPO: off")
@@ -135,6 +136,9 @@ if(NOT MSVC)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
 endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 #
 # Warning flags
@@ -387,7 +391,28 @@ endif()
 if(${WITH_ABC})
     add_subdirectory(abc)
 endif()
+
+if(${WITH_PARMYS}) # define cmake params to compile Yosys
+    add_definitions("-D_YOSYS_")
+
+    set(MAKE_PROGRAM "$(MAKE)")
+    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+        set(MAKE_PROGRAM "make")
+    endif()
+
+    if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
+        set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
+    else()
+        set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    endif()
+    add_subdirectory(yosys)
+endif()
+
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
+
+if(${WITH_PARMYS})
+    add_subdirectory(parmys)
+endif()
 
 #Add the various tools
 add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
@@ -398,11 +423,9 @@ if(${WITH_ABC})
     add_subdirectory(ace2)
 endif()
 add_subdirectory(utils)
-# define cmake params to compile Yosys
-if(${WITH_YOSYS})
-    add_definitions("-D_YOSYS_")
-elseif(${WITH_ODIN})
-    add_subdirectory(ODIN_II)
+
+if(${WITH_ODIN})
+    add_subdirectory(odin_ii)
     # blifexplorer depends on odin
     if(${WITH_BLIFEXPLORER})
         add_subdirectory(blifexplorer)
@@ -410,17 +433,10 @@ elseif(${WITH_ODIN})
 endif()
 
 # handle cmake params to compile Yosys SystemVerilog/UHDM plugins
-if(${YOSYS_SV_UHDM_PLUGIN})
-    # avoid compiling plugins in case the Yosys frontend is not active
-    if(NOT ${WITH_YOSYS})
-        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Yosys frontend. Please set WITH_YOSYS.")
-    endif()
-endif()
-
-# check YOSYS_PARMYS_PLUGIN flag
-if(${YOSYS_PARMYS_PLUGIN})
-    if(NOT ${WITH_YOSYS})
-        message(SEND_ERROR "Using YOSYS_PARMYS_PLUGIN requires activating Yosys frontend. Please set WITH_YOSYS.")
+if(${YOSYS_F4PGA_PLUGINS})
+    # avoid compiling plugins in case the Parmys frontend is not active
+    if(NOT ${WITH_PARMYS})
+        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Parmys frontend. Please set WITH_PARMYS.")
     endif()
 endif()
 
@@ -465,11 +481,11 @@ list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libvtrutil")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libpugiutil")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/liblog")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/librtlnumber")
-list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/odin_ii")
 
 include(AutoClangFormat)
 
-list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")
+list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/odin_ii")
 list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/ace2")
 list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/dev")
 list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/doc")

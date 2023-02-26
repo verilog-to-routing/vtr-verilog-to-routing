@@ -1,0 +1,3 @@
+regression_tests/vtr_reg_system_verilog/f4pga_button_controller/
+regression_tests/vtr_reg_system_verilog/f4pga_pulse_width_led/
+regression_tests/vtr_reg_system_verilog/f4pga_timer/

@@ -6,7 +6,7 @@ TEX_OPTS := -file-line-error -halt-on-error -interaction=errorstopmode -shell-es
 # -use-make tells latexmk to call make for generating missing files.
 LATEXMK_OPTS := -pdf -pdflatex="$(TEX) $(TEX_OPTS)" -recorder -use-make
 
-FIG_TARGETS := vtr_flow_fig.pdf vtr_flow_fig.svg
+FIG_TARGETS := vtr_flow_fig.pdf vtr_flow_fig.svg vtr_task_fig.pdf vtr_task_fig.svg
 
 .PHONY: clean distclean
 
