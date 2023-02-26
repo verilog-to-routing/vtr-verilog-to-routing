@@ -30,7 +30,7 @@ class DeviceGrid {
 
     size_t min_width() const;
     size_t min_height() const;
-    
+
     inline int get_num_layers() const {
         return num_layers_;
     }

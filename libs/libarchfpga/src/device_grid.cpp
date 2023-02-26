@@ -1,6 +1,5 @@
 #include "device_grid.h"
 
-
 struct gridDimComp {
     int dim_;
     bool is_greater_;
@@ -41,13 +40,11 @@ size_t DeviceGrid::min_width() const {
     const int dim = 0;
     const bool is_greater = false;
     return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
-
 }
 size_t DeviceGrid::min_height() const {
     const int dim = 1;
     const bool is_greater = false;
     return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
-
 }
 
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
