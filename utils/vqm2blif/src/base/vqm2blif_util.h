@@ -46,7 +46,6 @@
 #include <regex>
 
 #include "vqm_dll.h"	//VQM Parser
-#include "hash.h"				//Hash Table Functions
 
 #include "read_xml_arch_file.h"	//Architecture Parser
 
