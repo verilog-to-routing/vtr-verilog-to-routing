@@ -86,7 +86,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
     std::vector<float> action_prob_;      //The probability of choosing each action
     std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
-    std::vector<float> block_type_ratio;  //The probability of choosing each block type depends on its ratio in the netlist
+    std::vector<float> block_type_ratio_; //The probability of choosing each block type depends on its ratio in the netlist
 };
 
 /**

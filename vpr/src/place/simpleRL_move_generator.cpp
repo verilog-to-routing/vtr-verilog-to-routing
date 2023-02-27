@@ -246,7 +246,7 @@ void SoftmaxAgent::init_q_scores() {
     exp_q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
     num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
     action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
-    block_type_ratio = std::vector<float>(num_available_types_, 0.);
+    block_type_ratio_ = std::vector<float>(num_available_types_, 0.);
     cumm_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_);
 
     if (agent_info_file_) {
@@ -307,8 +307,8 @@ void SoftmaxAgent::set_block_ratio() {
         t_logical_block_type blk_type;
         blk_type.index = convert_agent_to_logical_block_type(i);
         auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-        block_type_ratio[i] = (float)num_blocks / num_total_blocks;
-        block_type_ratio[i] /= num_available_moves_;
+        block_type_ratio_[i] = (float)num_blocks / num_total_blocks;
+        block_type_ratio_[i] /= num_available_moves_;
     }
 }
 
@@ -323,7 +323,7 @@ void SoftmaxAgent::set_action_prob() {
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
         int blk_ratio_index = (int)i / num_available_moves_;
         if (propose_blk_type) {
-            action_prob_[i] = (exp_q_[i] / sum_q) * block_type_ratio[blk_ratio_index];
+            action_prob_[i] = (exp_q_[i] / sum_q) * block_type_ratio_[blk_ratio_index];
         } else {
             action_prob_[i] = (exp_q_[i] / sum_q);
         }
