@@ -827,7 +827,7 @@ void try_place(const t_placer_opts& placer_opts,
             print_place_status(state, stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, tot_iter);
 
-//          save_proposed_move_per_temp();
+            //          save_proposed_move_per_temp();
 
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
@@ -1391,9 +1391,9 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     ++move_type_stat.num_moves[(int)move_type];
-    if(move_blk_type.index != -1) { //if the agent proposed the blcok type, then collect the block type stat
-        ++move_type_stat.blk_type_moves[(move_blk_type.index * (move_type_stat.num_moves.size())) + (int) move_type];
-        ++proposed_move_per_temp[(move_blk_type.index * (move_type_stat.num_moves.size())) + (int) move_type];
+    if (move_blk_type.index != -1) { //if the agent proposed the blcok type, then collect the block type stat
+        ++move_type_stat.blk_type_moves[(move_blk_type.index * (move_type_stat.num_moves.size())) + (int)move_type];
+        ++proposed_move_per_temp[(move_blk_type.index * (move_type_stat.num_moves.size())) + (int)move_type];
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
@@ -3076,17 +3076,17 @@ static void print_placement_move_types_stats(
 
     //Print the abortion rate for each move type (Meaning that no specific block type has been found by the agent)
     VTR_LOG("Percentage of different move types that was aborted:\n");
-    for(auto imove = 0; imove < move_type_stat.num_moves.size(); imove++){
-        if(move_type_stat.num_moves[imove] == 0){
+    for (auto imove = 0; imove < move_type_stat.num_moves.size(); imove++) {
+        if (move_type_stat.num_moves[imove] == 0) {
             continue;
         }
         move_name = move_type_to_string(e_move_type(imove));
         float num_of_move_proposed = move_type_stat.num_moves[imove];
         float num_of_aborted_moves = move_type_stat.aborted_moves[imove];
         VTR_LOG(
-                "\t%.17s move: %2.6f %% (aborted=%2.2f %%)\n",
-                move_name.c_str(), 100 * num_of_move_proposed / total_moves,
-                100 * num_of_aborted_moves / num_of_move_proposed);
+            "\t%.17s move: %2.6f %% (aborted=%2.2f %%)\n",
+            move_name.c_str(), 100 * num_of_move_proposed / total_moves,
+            100 * num_of_aborted_moves / num_of_move_proposed);
     }
     VTR_LOG("\n");
 }

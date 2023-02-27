@@ -84,7 +84,7 @@
 
     \matrix [row sep=0.6cm, column sep=0.9cm] {
         \node (arch) [device] {FPGA \\ Architecture}; & & \node (hdl) [design] {HDL}; & \\
-        & \node (odin_synth) [process] {Odin II}; & \node (quartus_map) [process] {Quartus \\ Map}; & \node (yosys_frontend) [] {Yosys}; \\
+        & \node (parmys_synth) [process] {Parmys}; & \node (quartus_map) [process] {Quartus \\ Map}; & \node (yosys_frontend) [] {Yosys}; \\
         & & \node (vqm2blif) [process] {VQM to BLIF}; & \node (abc_yosys) [process_no_shadow] {ABC}; \\
         & \node (abc_synth) [process] {ABC}; & & \\
         & & \node (techmapped_netlist) [design] {Tech. Mapped \\ Netlist}; & & \\
@@ -109,17 +109,17 @@
     \node (power) [metric, right=0.1cm of timing] {Power \\ Metrics};
     \node (post_impl_netlist) [design, left=0.8cm of area] {Post-Impl. \\ Netlist};
 
-    \draw [arrow] (arch) |- (odin_synth);
+    \draw [arrow] (arch) |- (parmys_synth);
     \draw [arrow] (arch) |- (vpr_pack.west);
     \draw [arrow] (arch) |- ([yshift=\arrowshift]vpr_place.west);
     \draw [arrow] (arch) |- ([yshift=\arrowshift]vpr_route.west);
     \draw [arrow] (arch) |- ([yshift=\arrowshift]vpr_analysis.west);
     \draw [arrow] (arch) |- ([yshift=\arrowshift]vpr_analysis.west);
 
-    \draw [arrow] (hdl) -- (odin_synth.north);
+    \draw [arrow] (hdl) -- (parmys_synth.north);
     \draw [arrow] (hdl) -- (quartus_map);
     \draw [arrow] (hdl) -- (yosys.north);
-    \draw[arrow] (odin_synth) -- (abc_synth);
+    \draw[arrow] (parmys_synth) -- (abc_synth);
     \draw[arrow] (quartus_map) -- (vqm2blif);
     \draw[arrow] (yosys) |- ([yshift=\arrowshift,xshift=\arrowxshift]techmapped_netlist.east);
     \draw[arrow] (vqm2blif) -- (abc_synth);
@@ -160,7 +160,7 @@
     \begin{scope}[on background layer]
         %VTR Callout
         \draw[vtr_callout]
-            ([xshift=-\vtroffset,yshift=\vtroffset]odin_synth.north west)
+            ([xshift=-\vtroffset,yshift=\vtroffset]parmys_synth.north west)
          -- ([xshift=-\vtroffset,yshift=-\vtroffset]vpr_analysis.south west)
          -- ([xshift=\vtroffset,yshift=-\vtroffset]vpr_analysis.south east)
          -- ([xshift=\vtroffset,yshift=-\vtroffset]vpr_pack.north east)
@@ -169,7 +169,7 @@
          -- ([xshift=\vtroffset,yshift=\vtroffset]techmapped_netlist.top right corner)
          -- ([xshift=\vtroffset,yshift=\vtroffset]techmapped_netlist.top left corner-|abc_synth.south east)
          -- ([xshift=\vtroffset,yshift=\vtroffset]abc_synth.south east)
-         -- ([xshift=\vtroffset,yshift=\vtroffset]odin_synth.north east)
+         -- ([xshift=\vtroffset,yshift=\vtroffset]parmys_synth.north east)
          -- cycle;
 
         %Titan Callout

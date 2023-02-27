@@ -151,7 +151,7 @@ if shutil.which("doxygen"):
         "vtr": "../_build/doxygen/vtr/xml",
         "abc": "../_build/doxygen/abc/xml",
         "ace2": "../_build/doxygen/ace2/xml",
-        "ODIN_II": "../_build/doxygen/ODIN_II/xml",
+        "odin_ii": "../_build/doxygen/odin_ii/xml",
         "blifexplorer": "../_build/doxygen/blifexplorer/xml",
         "librrgraph": "../_build/doxygen/librrgraph/xml",
     }

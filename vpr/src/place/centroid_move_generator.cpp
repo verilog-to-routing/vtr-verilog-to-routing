@@ -11,7 +11,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
     if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         b_from = pick_from_block();
-        if (b_from) {//if a movable block found, set the block type since the agent only proposed the move type
+        if (b_from) { //if a movable block found, set the block type since the agent only proposed the move type
             blk_type.index = convert_logical_to_agent_block_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block

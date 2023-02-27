@@ -2,7 +2,7 @@
 VTR Quick Start
 ###############
 
-This is a quick introduction to VTR which covers how to run VTR and some if its associated tools (:ref:`VPR`, :ref:`odin_II`, :ref:`ABC`).
+This is a quick introduction to VTR which covers how to run VTR and some if its associated tools (:ref:`VPR`, :ref:`odin_ii`, :ref:`ABC`).
 
 Setting Up VTR
 ==============
@@ -224,7 +224,7 @@ Lets start by making a fresh directory for us to work in:
 
 Next we need to run the three main sets of tools:
 
-* :ref:`odin_II` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
+* :ref:`odin_ii` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
 * :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA, and
 * :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targetted FPGA architecture.
 
@@ -241,7 +241,7 @@ The resulting command is:
 
 .. code-block:: bash
 
-    > $VTR_ROOT/ODIN_II/odin_II \
+    > $VTR_ROOT/odin_ii/odin_ii \
         -a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
         -V $VTR_ROOT/doc/src/quickstart/blink.v \
         -o blink.odin.blif

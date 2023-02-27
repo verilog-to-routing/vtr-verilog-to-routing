@@ -22,13 +22,13 @@ enum e_move_result {
 enum class e_move_type {
     UNIFORM,
     MEDIAN,
-    W_CENTROID,
     CENTROID,
+    W_CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
-    MANUAL_MOVE,
-
+    NUMBER_OF_AUTO_MOVES,
+    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES
 };
 
 enum class e_create_move {

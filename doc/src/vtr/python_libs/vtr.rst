@@ -9,6 +9,12 @@ VTR flow
 .. automodule:: vtr.flow
     :members: run
 
+Parmys
+=======
+
+.. automodule:: vtr.parmys.parmys
+    :members:
+
 ODIN II
 =======
 

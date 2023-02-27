@@ -16,7 +16,7 @@ sudo apt-get install -y \
     libgtk-3-dev \
     libx11-dev
 
-# Required for yosys front-end
+# Required for parmys front-end
 sudo apt-get install -y \
     clang \
     tcl-dev \
