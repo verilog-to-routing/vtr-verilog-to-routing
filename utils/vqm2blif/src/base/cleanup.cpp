@@ -8,18 +8,18 @@
 //			INTERNAL FUNCTION DECLARATIONS
 //============================================================================================
 //Cleanup Functions
-void build_netlist (t_module* module, busvec* buses, std::unordered_map<char*, int> & hash_table);
-void init_nets (t_pin_def** pins, int num_pins, busvec* buses, std::unordered_map<char*, int> & hash_table);
-void set_net_assigns (t_assign** assignments, int num_assigns, busvec* buses, std::unordered_map<char*, int> & hash_table);
-void add_subckts (t_node** nodes, int num_nodes, busvec* buses, std::unordered_map<char*, int> & hash_table);
-void remove_one_lut_nodes ( busvec* buses, std::unordered_map<char*, int> & hash_table, t_module* module );
-void clean_netlist ( busvec* buses, std::unordered_map<char*, int> & hash_table, t_node** nodes, int num_nodes );
+void build_netlist (t_module* module, busvec* buses, std::unordered_map<std::string, int> & hash_table);
+void init_nets (t_pin_def** pins, int num_pins, busvec* buses, std::unordered_map<std::string, int> & hash_table);
+void set_net_assigns (t_assign** assignments, int num_assigns, busvec* buses, std::unordered_map<std::string, int> & hash_table);
+void add_subckts (t_node** nodes, int num_nodes, busvec* buses, std::unordered_map<std::string, int> & hash_table);
+void remove_one_lut_nodes ( busvec* buses, std::unordered_map<std::string, int> & hash_table, t_module* module );
+void clean_netlist ( busvec* buses, std::unordered_map<std::string, int> & hash_table, t_node** nodes, int num_nodes );
 void reassign_net_source (t_net* net);
-void print_to_module ( t_module* module, busvec* buses, std::unordered_map<char*, int> & hash_table );
+void print_to_module ( t_module* module, busvec* buses, std::unordered_map<std::string, int> & hash_table );
 
-netvec* get_bus_from_hash (std::unordered_map<char*, int> & hash_table, char* temp_name, busvec* buses);
+netvec* get_bus_from_hash (std::unordered_map<std::string, int> & hash_table, char* temp_name, busvec* buses);
 
-void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unordered_map<char*, int> & hash_table);
+void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unordered_map<std::string, int> & hash_table);
 void print_all_nets ( busvec* buses, const char* filename );
 
 bool is_feeder_onelut ( t_node* node );
@@ -29,7 +29,7 @@ bool is_feeder_onelut ( t_node* node );
 
 void netlist_cleanup (t_module* module){
 
-	std::unordered_map<char*, int> hash_table;
+	std::unordered_map<std::string, int> hash_table;
 	busvec buses;
 
 	cout << "\t>> Building netlist...\n" ;
@@ -68,7 +68,7 @@ void netlist_cleanup (t_module* module){
 //============================================================================================
 //============================================================================================
 
-void build_netlist (t_module* module, busvec* buses, std::unordered_map<char*, int> & hash_table){
+void build_netlist (t_module* module, busvec* buses, std::unordered_map<std::string, int> & hash_table){
 
 	//Initialize all nets
 	init_nets(module->array_of_pins, module->number_of_pins, buses, hash_table);
@@ -101,7 +101,7 @@ void build_netlist (t_module* module, busvec* buses, std::unordered_map<char*, i
 //============================================================================================
 //============================================================================================
 
-void init_nets (t_pin_def** pins, int num_pins, busvec* buses, std::unordered_map<char*, int> & hash_table){
+void init_nets (t_pin_def** pins, int num_pins, busvec* buses, std::unordered_map<std::string, int> & hash_table){
 
 	t_net temp_net;
 	netvec temp_bus;
@@ -109,7 +109,9 @@ void init_nets (t_pin_def** pins, int num_pins, busvec* buses, std::unordered_ma
 	for (int i = 0; i < num_pins; i++){
 		temp_bus.clear();	//reset the temporary bus 
 
-		hash_table[pins[i]->name] = i; //place the net in the hash table - the value is the bus index
+		std::string pin_name(pins[i]->name);
+
+		hash_table[pin_name] = i; //place the net in the hash table - the value is the bus index
 
 		temp_net.pin = pins[i];	//each bus corresponds to a pin
 
@@ -136,7 +138,7 @@ void init_nets (t_pin_def** pins, int num_pins, busvec* buses, std::unordered_ma
 //============================================================================================
 //============================================================================================
 
-void set_net_assigns (t_assign** assignments, int num_assigns, busvec* buses, std::unordered_map<char*, int> & hash_table){
+void set_net_assigns (t_assign** assignments, int num_assigns, busvec* buses, std::unordered_map<std::string, int> & hash_table){
 
 	t_net* temp_net;
 	netvec* temp_bus;
@@ -193,7 +195,7 @@ void set_net_assigns (t_assign** assignments, int num_assigns, busvec* buses, st
 //============================================================================================
 //============================================================================================
 
-void add_subckts (t_node** nodes, int num_nodes, busvec* buses, std::unordered_map<char*, int> & hash_table){
+void add_subckts (t_node** nodes, int num_nodes, busvec* buses, std::unordered_map<std::string, int> & hash_table){
 
 	t_net* temp_net;
 	netvec* temp_bus;
@@ -234,7 +236,7 @@ void add_subckts (t_node** nodes, int num_nodes, busvec* buses, std::unordered_m
 //============================================================================================
 //============================================================================================
 
-void remove_one_lut_nodes ( busvec* buses, std::unordered_map<char*, int> & hash_table, t_module* module ){
+void remove_one_lut_nodes ( busvec* buses, std::unordered_map<std::string, int> & hash_table, t_module* module ){
 /*
         Quartus fitter may have introduced some one-LUTs in the post-fit netlist that makes it harder for VPR to place and route.
         Generally, these one-LUTs are inserted by the Quartus router in order to pass a signal through a LUT to the FF in the same
@@ -373,7 +375,7 @@ void remove_one_lut_nodes ( busvec* buses, std::unordered_map<char*, int> & hash
 //============================================================================================
 //============================================================================================
 
-void clean_netlist ( busvec* buses, std::unordered_map<char*, int> & hash_table, t_node** nodes, int num_nodes ){
+void clean_netlist ( busvec* buses, std::unordered_map<std::string, int> & hash_table, t_node** nodes, int num_nodes ){
 	netvec* temp_bus;
 
 	t_net* temp_net;
@@ -526,7 +528,7 @@ void reassign_net_source (t_net* net){
 //============================================================================================
 //============================================================================================
 
-void print_to_module ( t_module* module, busvec* buses, std::unordered_map<char*, int> & hash_table ){
+void print_to_module ( t_module* module, busvec* buses, std::unordered_map<std::string, int> & hash_table ){
 
 	t_net* target_net;
 	t_net* source_net;
@@ -608,10 +610,11 @@ void print_to_module ( t_module* module, busvec* buses, std::unordered_map<char*
 
 //============================================================================================
 //============================================================================================
+#include <fstream>
+netvec* get_bus_from_hash (std::unordered_map<std::string, int> & hash_table, char* bus_name, busvec* buses){
 
-netvec* get_bus_from_hash (std::unordered_map<char*, int> & hash_table, char* bus_name, busvec* buses){
-
-    auto hash_entry = hash_table.find(bus_name);
+	std::string bus_name_str(bus_name);
+    auto hash_entry = hash_table.find(bus_name_str);
 
 	VTR_ASSERT(hash_entry != hash_table.end());
 	VTR_ASSERT((unsigned int)hash_entry->second < buses->size());
@@ -622,7 +625,7 @@ netvec* get_bus_from_hash (std::unordered_map<char*, int> & hash_table, char* bu
 //============================================================================================
 //============================================================================================
 
-void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unordered_map<char*, int> & hash_table){
+void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unordered_map<std::string, int> & hash_table){
 
 	netvec* temp_bus;
 
