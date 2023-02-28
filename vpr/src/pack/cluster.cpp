@@ -151,6 +151,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     helper_ctx.enable_pin_feasibility_filter = packer_opts.enable_pin_feasibility_filter;
     helper_ctx.feasible_block_array_size = packer_opts.feasible_block_array_size;
+    helper_ctx.timing_driven = packer_opts.timing_driven;
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
     //std::shared_ptr<SetupTimingInfo> timing_info;

@@ -348,6 +348,8 @@ struct ClusteringHelperContext : public Context {
 
     std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
     std::shared_ptr<SetupTimingInfo> timing_info;
+    t_pack_high_fanout_thresholds high_fanout_thresholds;
+    bool timing_driven;
 };
 
 /**
