@@ -11,14 +11,11 @@ struct t_packing_attraction {
 
 const int HIGH_FANOUT_NET_THRESHOLD = 5;
 
-float calculate_gain_from_attractions(const t_packing_attraction& attraction,
-                                      AtomBlockId atom);
-
-float calculate_atom_attraction_to_cluster(const std::unordered_set<AtomBlockId>& moving_atoms,
-                                           AtomBlockId atom,
-                                           ClusterBlockId clb);
+float calculate_gain_from_attractions(const t_packing_attraction& attractions,
+                                      const t_pack_molecule* molecule);
 
 float calculate_molecule_attraction_to_cluster(const std::unordered_set<AtomBlockId>& moving_atoms,
+                                               const std::unordered_set<AtomNetId>& moving_nets,
                                                const t_pack_molecule* molecule,
                                                ClusterBlockId clb);
 
