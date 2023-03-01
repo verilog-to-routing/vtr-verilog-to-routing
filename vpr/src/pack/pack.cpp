@@ -271,44 +271,44 @@ bool try_pack(t_packer_opts* packer_opts,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     // Elgammal debugging
     /*
-    for (auto& clb : cluster_ctx.clb_nlist.blocks()) {
-        VTR_LOG("### block: %zu --> %s\n", clb, cluster_ctx.clb_nlist.block_pb(clb)->name);
-    }
-    */
+     * for (auto& clb : cluster_ctx.clb_nlist.blocks()) {
+     * VTR_LOG("### block: %zu --> %s\n", clb, cluster_ctx.clb_nlist.block_pb(clb)->name);
+     * }
+     */
     /*
-    auto rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(44));
-    t_pack_molecule* mol = rng.first->second;
-    VTR_LOG("Pack move is starting:\n\n");
-    bool moved = move_mol_to_new_cluster(mol, true, 0, clustering_data, 0);
-    if (moved)
-        VTR_LOG("Move is Done :)\n");
-    else
-        VTR_LOG("Move failed! :((\n");
-
-    rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(55));
-    mol = rng.first->second;
-    moved = move_mol_to_existing_cluster(mol,
-                                         ClusterBlockId(43),
-                                         true,
-                                         0,
-                                         clustering_data,
-                                         0);
-    if (moved)
-        VTR_LOG("Move is Done :)\n");
-    else
-        VTR_LOG("Move failed! :((\n");
-
-
-    rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(44));
-    mol = rng.first->second;
-    auto rng2 = atom_ctx.atom_molecules.equal_range(AtomBlockId(77));
-    t_pack_molecule* mol2 = rng2.first->second;
-    moved = swap_two_molecules(mol, mol2, true, 0, clustering_data, 0);
-    if (moved)
-        VTR_LOG("Move is Done :)\n");
-    else
-        VTR_LOG("Move failed! :((\n");
-    */
+     * auto rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(44));
+     * t_pack_molecule* mol = rng.first->second;
+     * VTR_LOG("Pack move is starting:\n\n");
+     * bool moved = move_mol_to_new_cluster(mol, true, 0, clustering_data, 0);
+     * if (moved)
+     * VTR_LOG("Move is Done :)\n");
+     * else
+     * VTR_LOG("Move failed! :((\n");
+     *
+     * rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(55));
+     * mol = rng.first->second;
+     * moved = move_mol_to_existing_cluster(mol,
+     * ClusterBlockId(43),
+     * true,
+     * 0,
+     * clustering_data,
+     * 0);
+     * if (moved)
+     * VTR_LOG("Move is Done :)\n");
+     * else
+     * VTR_LOG("Move failed! :((\n");
+     *
+     *
+     * rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(44));
+     * mol = rng.first->second;
+     * auto rng2 = atom_ctx.atom_molecules.equal_range(AtomBlockId(77));
+     * t_pack_molecule* mol2 = rng2.first->second;
+     * moved = swap_two_molecules(mol, mol2, true, 0, clustering_data, 0);
+     * if (moved)
+     * VTR_LOG("Move is Done :)\n");
+     * else
+     * VTR_LOG("Move failed! :((\n");
+     */
 
     auto rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(3));
     t_pack_molecule* mol = rng.first->second;
@@ -321,17 +321,17 @@ bool try_pack(t_packer_opts* packer_opts,
         VTR_LOG("Move failed! :((\n");
 
     /*
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        VTR_LOG("\n# block id = %d\n", blk_id);
-        VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
-        for (auto atom : *cluster_to_atoms(blk_id)) {
-            VTR_LOG("\tatom = %d\n", atom);
-            for (auto atom_pin : atom_ctx.nlist.block_pins(atom)) {
-                VTR_LOG("\t\tatom_pin = %d, type = %d, atom_net=%d, cluster_net=%d\n", atom_pin, atom_ctx.nlist.pin_type(atom_pin), atom_ctx.nlist.pin_net(atom_pin), atom_ctx.lookup.clb_net(atom_ctx.nlist.pin_net(atom_pin)));
-            }
-        }
-    }
-    */
+     * for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+     * VTR_LOG("\n# block id = %d\n", blk_id);
+     * VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
+     * for (auto atom : *cluster_to_atoms(blk_id)) {
+     * VTR_LOG("\tatom = %d\n", atom);
+     * for (auto atom_pin : atom_ctx.nlist.block_pins(atom)) {
+     * VTR_LOG("\t\tatom_pin = %d, type = %d, atom_net=%d, cluster_net=%d\n", atom_pin, atom_ctx.nlist.pin_type(atom_pin), atom_ctx.nlist.pin_net(atom_pin), atom_ctx.lookup.clb_net(atom_ctx.nlist.pin_net(atom_pin)));
+     * }
+     * }
+     * }
+     */
 
     VTR_LOG("Start the iterative improvement process\n");
     iteratively_improve_packing(*packer_opts, clustering_data, 2);
