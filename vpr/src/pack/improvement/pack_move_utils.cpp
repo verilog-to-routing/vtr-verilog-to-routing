@@ -40,56 +40,55 @@ int calculate_cutsize_of_clb(ClusterBlockId clb_index) {
 int calculate_cutsize_change(const std::vector<molMoveDescription>& new_locs) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    // initialize the old and new cut sizes
-    int change_cutsize = 0;
+    std::unordered_set<AtomBlockId> moving_atoms;
+    std::unordered_set<AtomNetId> moving_nets;
+    int cutsize_change = 0;
 
-    // define some temporary
-    AtomBlockId cur_atom;
-    ClusterBlockId cur_clb;
-    std::set<ClusterBlockId> net_blocks;
-    std::map<AtomNetId, int> nets_between_old_new_blks;
+    auto clb_1 = new_locs[0].new_clb;
+    auto clb_2 = new_locs[1].new_clb;
 
     for (auto& new_loc : new_locs) {
-        ClusterBlockId new_block_id = new_loc.new_clb;
-        ClusterBlockId old_block_id = atom_to_cluster(new_loc.molecule_to_move->atom_block_ids[new_loc.molecule_to_move->root]);
-
-        for (auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
-            if (!moving_atom)
-                continue;
-            for (auto& atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
-                AtomNetId atom_net = atom_ctx.nlist.pin_net(atom_pin);
-                if (atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
-                    continue;
-
-                net_blocks.clear();
-                for (auto& net_pin : atom_ctx.nlist.net_pins(atom_net)) {
-                    cur_atom = atom_ctx.nlist.pin_block(net_pin);
-                    if (cur_atom == moving_atom)
-                        continue;
-
-                    cur_clb = atom_to_cluster(cur_atom);
-                    net_blocks.insert(cur_clb);
-                }
-                if (net_blocks.size() == 1 && *(net_blocks.begin()) == old_block_id)
-                    change_cutsize += 1;
-                else if (net_blocks.size() == 1 && *(net_blocks.begin()) == new_block_id) {
-                    change_cutsize -= 1;
-                    if (nets_between_old_new_blks.find(atom_net) == nets_between_old_new_blks.end())
-                        nets_between_old_new_blks.insert(std::make_pair(atom_net, 1));
-                    else
-                        nets_between_old_new_blks[atom_net]++;
+        for (auto& atom : new_loc.molecule_to_move->atom_block_ids) {
+            if (atom) {
+                moving_atoms.insert(atom);
+                for (auto& atom_pin : atom_ctx.nlist.block_pins(atom)) {
+                    auto atom_net = atom_ctx.nlist.pin_net(atom_pin);
+                    if (atom_net && atom_ctx.nlist.net_pins(atom_net).size() < LARGE_FANOUT_LIMIT)
+                        moving_nets.insert(atom_net);
                 }
             }
         }
     }
 
-    for (auto& direct_conn : nets_between_old_new_blks) {
-        if (direct_conn.second > 1)
-            change_cutsize += 2;
-    }
-    return change_cutsize;
-}
+    for (auto& net_id : moving_nets) {
+        bool net_has_pin_outside = false;
+        std::unordered_set<ClusterBlockId> clbs_before;
+        std::unordered_set<ClusterBlockId> clbs_after;
 
+        for (auto& pin_id : atom_ctx.nlist.net_pins(net_id)) {
+            if (net_has_pin_outside)
+                break;
+
+            auto atom_blk_id = atom_ctx.nlist.pin_block(pin_id);
+            auto clb = atom_to_cluster(atom_blk_id);
+            if (moving_atoms.count(atom_blk_id) == 0) { // this atom is NOT one of the moving blocks
+                clbs_before.insert(clb);
+                clbs_after.insert(clb);
+            } else { // this atom is one of the moving blocks
+                clbs_before.insert(clb);
+                if (clb == clb_1)
+                    clbs_after.insert(clb_2);
+                else
+                    clbs_after.insert(clb_1);
+            }
+        }
+        if (clbs_before.size() == 1 && clbs_after.size() > 1)
+            cutsize_change++;
+        else if (clbs_before.size() > 1 && clbs_after.size() == 1)
+            cutsize_change--;
+    }
+    return cutsize_change;
+}
 int absorbed_conn_change(const std::vector<molMoveDescription>& new_locs) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
