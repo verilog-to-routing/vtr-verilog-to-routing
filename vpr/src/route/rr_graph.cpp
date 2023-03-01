@@ -1979,8 +1979,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     }
     VTR_LOG("CHAN->CHAN type edge count:%d\n", num_edges);
     num_edges = 0;
-    std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) {
-    };
+    std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) noexcept {};
     if (clock_modeling == DEDICATED_NETWORK) {
         ClockRRGraphBuilder builder(chan_width, grid, &L_rr_node, &rr_graph_builder);
         builder.create_and_append_clock_rr_graph(num_seg_types_x, &rr_edges_to_create);

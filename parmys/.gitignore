@@ -1,0 +1,6 @@
+*.d
+*.o
+*.so
+*.swp
+*.log
+/*/build

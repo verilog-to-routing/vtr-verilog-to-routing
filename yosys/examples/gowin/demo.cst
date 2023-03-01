@@ -1,0 +1,10 @@
+IO_LOC "clk" 35;
+//IO_LOC "rst_n" 77;
+IO_LOC "leds[0]" 79;
+IO_LOC "leds[1]" 80;
+IO_LOC "leds[2]" 81;
+IO_LOC "leds[3]" 82;
+IO_LOC "leds[4]" 83;
+IO_LOC "leds[5]" 84;
+IO_LOC "leds[6]" 85;
+IO_LOC "leds[7]" 86;

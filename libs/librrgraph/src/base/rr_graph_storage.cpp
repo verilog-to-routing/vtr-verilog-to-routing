@@ -167,6 +167,11 @@ class edge_sort_iterator {
         return *this;
     }
 
+    edge_sort_iterator& operator-=(ssize_t n) {
+        swapper_.idx_ -= n;
+        return *this;
+    }
+
     edge_sort_iterator& operator++() {
         ++swapper_.idx_;
         return *this;
