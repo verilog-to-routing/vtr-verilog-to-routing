@@ -146,7 +146,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
             total_segments += segments;
             max_segments = std::max(segments, max_segments);
 
-            if(is_absorbed) {
+            if (is_absorbed) {
                 num_absorbed_nets++;
             }
         } else if (net_list.net_is_ignored(net_id)) {
@@ -177,8 +177,6 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     VTR_LOG("\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
 
     VTR_LOG("Total number of nets absorbed: %d\n", num_absorbed_nets);
-
-
 }
 
 ///@brief Determines how many tracks are used in each channel.

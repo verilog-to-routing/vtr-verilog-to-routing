@@ -2203,7 +2203,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
 }
 
 static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
-                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
+                                          std::map<int, t_arch_switch_inf>& /*arch_sw_inf_map*/,
                                           const std::vector<int>& class_num_vec,
                                           const int i,
                                           const int j,
@@ -2215,8 +2215,8 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, class_num);
         VTR_ASSERT(class_rr_node_id != RRNodeId::INVALID());
-        bool is_primitive = is_primitive_pin(physical_type_ptr, pin_list[0]);
-        t_logical_block_type_ptr logical_block = is_primitive ? get_logical_block_from_pin_physical_num(physical_type_ptr, pin_list[0]) : nullptr;
+        //bool is_primitive = is_primitive_pin(physical_type_ptr, pin_list[0]);
+        //t_logical_block_type_ptr logical_block = is_primitive ? get_logical_block_from_pin_physical_num(physical_type_ptr, pin_list[0]) : nullptr;
         for (auto pin_num : pin_list) {
             RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, pin_num);
             if (pin_rr_node_id == RRNodeId::INVALID()) {
@@ -2228,17 +2228,17 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                 continue;
             }
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
-            int sw_id = -1;
-            if (is_primitive || pin_type == RECEIVER) {
-                VTR_ASSERT(logical_block != nullptr);
-                float primitive_comb_delay = get_pin_primitive_comb_delay(physical_type_ptr,
-                                                                          logical_block,
-                                                                          pin_num);
-                sw_id = find_create_intra_cluster_sw_arch_idx(arch_sw_inf_map,
-                                                              primitive_comb_delay);
-            } else {
-                sw_id = delayless_switch;
-            }
+            /*int sw_id = -1;
+             * if (is_primitive || pin_type == RECEIVER) {
+             * VTR_ASSERT(logical_block != nullptr);
+             * float primitive_comb_delay = get_pin_primitive_comb_delay(physical_type_ptr,
+             * logical_block,
+             * pin_num);
+             * sw_id = find_create_intra_cluster_sw_arch_idx(arch_sw_inf_map,
+             * primitive_comb_delay);
+             * } else {
+             * sw_id = delayless_switch;
+             * }*/
             if (class_type == DRIVER) {
                 VTR_ASSERT(pin_type == DRIVER);
                 rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch);

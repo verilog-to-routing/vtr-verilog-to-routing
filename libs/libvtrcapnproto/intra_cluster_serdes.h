@@ -17,6 +17,15 @@
 #include "router_lookahead_map_utils.h"
 
 
+void ToIntraClusterLookahead(std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
+                             std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
+                             const std::vector<t_physical_tile_type>& physical_tile_types,
+                             const VprIntraClusterLookahead::Reader& intra_cluster_lookahead_builder);
+
+void FromIntraClusterLookahead(VprIntraClusterLookahead::Builder& intra_cluster_lookahead_builder,
+                               const std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
+                               const std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
+                               const std::vector<t_physical_tile_type>& physical_tile_types);
 // Generic function to convert from Matrix capnproto message to vtr::NdMatrix.
 //
 // Template arguments:

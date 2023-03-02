@@ -740,7 +740,6 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
         auto curr_type = rr_graph.node_type(curr.node);
         VTR_ASSERT(curr_type != t_rr_type::CHANX && curr_type != t_rr_type::CHANY);
         if (curr_type != SINK) {
-
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 auto cost_index = rr_graph.node_cost_index(next_node);
