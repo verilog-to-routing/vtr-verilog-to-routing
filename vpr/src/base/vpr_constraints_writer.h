@@ -26,6 +26,14 @@
 #define VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 
 /**
+ * @brief Write out vpr constratins to an XML file based on current placement and 
+ * route constraint settings
+ * 
+ *   @param vpr_setup   VPR setup information
+*/
+void write_vpr_constraints(t_vpr_setup& vpr_setup);
+
+/**
  * @brief Write out floorplan constraints to an XML file based on current placement
  *
  *   @param file_name   The name of the file that the constraints will be written to

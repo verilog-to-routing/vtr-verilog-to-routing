@@ -112,6 +112,7 @@ RouteConstraint VprConstraints::get_route_constraint_by_idx(std::size_t idx) con
         for (auto const& rc_itr : route_constraints_) {
             if (i == idx) {
                 rc = rc_itr.second;
+                break;
             }
         }
     }
