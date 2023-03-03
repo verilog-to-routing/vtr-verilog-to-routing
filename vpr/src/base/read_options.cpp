@@ -2686,34 +2686,34 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design."
             "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength, a value of 1 would mean noc placement is considered equal to timing and wirelength and a value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
-        .default_value("1")
+        .default_value("0.6")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_constraints_weighting")
         .help(
             "Controls the importance of meeting all the NoC traffic flow latency constraints."
-            "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement, a value of 1 would mean the latency constriants are equally considered to all other placement parameters and a value greater than 1 would mean the placement is increasingly dominated by meeting the latency constraints of the traffic flows.")
+            "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement, a value of 1 would mean the latency constraints are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by meeting the latency constraints of the traffic flows.")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_latency_weighting, "--noc_latency_weighting")
         .help(
             "Controls the importance of reducing the latencies of the NoC traffic flows."
-            "This value can be >=0, where 0 would mean the latencies have no relevance to placement, a value of 1 would mean the latencies  are equally considered to all other placement parameters and a value greater than 1 would mean the placement is increasingly dominated by reducing the latencies of the traffic flows.")
-        .default_value("1")
+            "This value can be >=0, where 0 would mean the latencies have no relevance to placement, a value of 1 would mean the latencies  are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by reducing the latencies of the traffic flows.")
+        .default_value("0.05")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
         .help(
-            "Controls the number of NoC router block swap attemps relative to the total number of swaps attempted by the placer."
-            "This value is an integer ranging from 0-100. 0 means that no swaps attempted are NoC router blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
-        .default_value("0")
+            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
+            "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
+        .default_value("40")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
         .help(
-            "Is the name of the output file that contains the NoC placement information."
-            "The default name for this file would be 'vpr_noc_placement_output.txt'")
+            "Name of the output file that contains the NoC placement information."
+            "The default name is 'vpr_noc_placement_output.txt'")
         .default_value("vpr_noc_placement_output.txt")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
