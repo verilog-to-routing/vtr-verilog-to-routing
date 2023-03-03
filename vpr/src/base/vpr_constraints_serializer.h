@@ -493,6 +493,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline size_t num_vpr_constraints_partition_list(void*& /*ctx*/) final {
+        // only one or zero partion list is supported
+        if (constraints_.get_num_partitions()) {
+            return 1;
+        }
         return 0;
     }
 
