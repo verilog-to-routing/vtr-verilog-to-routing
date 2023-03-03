@@ -64,7 +64,7 @@ void write_vpr_constraints(t_vpr_setup& vpr_setup) {
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "Unknown extension on output %s",
-                            file_name);
+                            file_name.c_str());
         }
     }
     return;
