@@ -30,7 +30,7 @@
  * route constraint settings
  * 
  *   @param vpr_setup   VPR setup information
-*/
+ */
 void write_vpr_constraints(t_vpr_setup& vpr_setup);
 
 /**
