@@ -196,7 +196,7 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
     //Check the move type to be a valid move
     VTR_ASSERT(move_type < num_available_moves_);
     //Check the block type index to be valid type if the agent is supposed to propose block type
-    VTR_ASSERT(blk_type.index < num_available_types_ || !propose_blk_type);
+    VTR_ASSERT((size_t)blk_type.index < num_available_types_ || !propose_blk_type);
 
     //Mark the q_table location that agent used to update its value after processing the move outcome
     last_action_ = (!propose_blk_type) ? move_type : move_type + (blk_type.index * num_available_moves_);
@@ -293,7 +293,7 @@ t_propose_action SoftmaxAgent::propose_action() {
     }
 
     //To take care that the last element in cumm_action_prob_ might be less than 1 by a small value
-    if (action_type_q_pos == num_available_moves_ * num_available_types_) {
+    if ((size_t)action_type_q_pos == num_available_moves_ * num_available_types_) {
         move_type = num_available_moves_ - 1;
         if (propose_blk_type) { //calculate block type index only if agent is supposed to propose both move and block type
             blk_type.index = num_available_types_ - 1;
@@ -303,7 +303,7 @@ t_propose_action SoftmaxAgent::propose_action() {
     //Check the move type to be a valid move
     VTR_ASSERT(move_type < num_available_moves_);
     //Check the block type index to be valid type if the agent is supposed to propose block type
-    VTR_ASSERT(blk_type.index < num_available_types_ || !propose_blk_type);
+    VTR_ASSERT((size_t)blk_type.index < num_available_types_ || !propose_blk_type);
 
     //Mark the q_table location that agent used to update its value after processing the move outcome
     last_action_ = (!propose_blk_type) ? move_type : move_type + (blk_type.index * num_available_moves_);

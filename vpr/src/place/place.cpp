@@ -155,12 +155,6 @@ static int num_swap_accepted = 0;
 static int num_swap_aborted = 0;
 static int num_ts_called = 0;
 
-/* This variable keeps track of each move type and block type frequency
- * proposed by the RL agent at any specific temperature.*/
-//SARA_TODO: MAKE THIS OPTIONAL WITH COMMAND-LINE OPTION
-static std::vector<int> proposed_move_per_temp;
-static FILE* proposed_move_agent_per_temp;
-
 /* Expected crossing counts for nets with different #'s of pins.  From *
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   *
  * Multiplied to bounding box of a net to better estimate wire length  *
@@ -422,9 +416,6 @@ static void print_placement_swaps_stats(const t_annealing_state& state);
 
 static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat);
-
-//SARA_TODO: delete these functions in the final version
-static void save_proposed_move_per_temp();
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -717,17 +708,12 @@ void try_place(const t_placer_opts& placer_opts,
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
-    move_type_stat.num_moves.resize(placer_opts.place_static_move_prob.size(),
-                                    0);
-    move_type_stat.aborted_moves.resize(placer_opts.place_static_move_prob.size(), 0);
-
+    move_type_stat.num_moves.resize(placer_opts.place_static_move_prob.size(), 0);
     move_type_stat.blk_type_moves.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
+
+    move_type_stat.aborted_moves.resize(placer_opts.place_static_move_prob.size(), 0);
     move_type_stat.accepted_moves.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
     move_type_stat.rejected_moves.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
-
-    //allocate move type statistics vector performed by the agent for each temperature
-    proposed_move_per_temp.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
-    proposed_move_agent_per_temp = vtr::fopen("agent_move_info.txt", "w");
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
@@ -826,8 +812,6 @@ void try_place(const t_placer_opts& placer_opts,
 
             print_place_status(state, stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, tot_iter);
-
-            //          save_proposed_move_per_temp();
 
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
@@ -998,8 +982,6 @@ void try_place(const t_placer_opts& placer_opts,
                        pre_quench_timing_stats);
     print_timing_stats("Placement Total ", timing_ctx.stats,
                        pre_place_timing_stats);
-
-    fclose(proposed_move_agent_per_temp);
 
     VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n",
             p_runtime_ctx.f_update_td_costs_connections_elapsed_sec,
@@ -1273,7 +1255,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
 
     /* Set the initial temperature to the standard of deviation divided by 64 */
     /* so that the initial temperature adjusts according to the circuit */
-    /* and also keep the initial placement qaulity (not destroying it completely) */
+    /* and also keep the initial placement quality (not destroying it completely) */
     /* and fine-tune the initial placement with the anneal*/
     float init_temp = (std_dev / 64);
 
@@ -1391,9 +1373,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     ++move_type_stat.num_moves[(int)move_type];
-    if (move_blk_type.index != -1) { //if the agent proposed the blcok type, then collect the block type stat
+    if (move_blk_type.index != -1) { //if the agent proposed the block type, then collect the block type stat
         ++move_type_stat.blk_type_moves[(move_blk_type.index * (move_type_stat.num_moves.size())) + (int)move_type];
-        ++proposed_move_per_temp[(move_blk_type.index * (move_type_stat.num_moves.size())) + (int)move_type];
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
@@ -2897,16 +2878,6 @@ void print_clb_placement(const char* fname) {
 }
 #endif
 
-static void save_proposed_move_per_temp() {
-    if (proposed_move_agent_per_temp) {
-        for (auto iaction = 0; iaction < proposed_move_per_temp.size(); iaction++) {
-            fprintf(proposed_move_agent_per_temp, "%d\t", proposed_move_per_temp[iaction]);
-            proposed_move_per_temp[iaction] = 0;
-        }
-        fprintf(proposed_move_agent_per_temp, "\n");
-    }
-}
-
 static void free_try_swap_arrays() {
     g_vpr_ctx.mutable_placement().compressed_block_grids.clear();
 }
@@ -3041,6 +3012,7 @@ static void print_placement_swaps_stats(const t_annealing_state& state) {
 static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat) {
     float moves, accepted, rejected, aborted;
+
     float total_moves = std::accumulate(move_type_stat.num_moves.begin(),
                                         move_type_stat.num_moves.end(), 0.0);
 
@@ -3048,6 +3020,7 @@ static void print_placement_move_types_stats(
     auto& cluster_ctx = g_vpr_ctx.clustering();
     std::string move_name;
     int agent_type = 0;
+
     VTR_LOG("\n\nPercentage of different move types and block types:\n");
     //Print placement information for each block type
     for (auto itype : device_ctx.logical_block_types) {
@@ -3076,7 +3049,7 @@ static void print_placement_move_types_stats(
 
     //Print the abortion rate for each move type (Meaning that no specific block type has been found by the agent)
     VTR_LOG("Percentage of different move types that was aborted:\n");
-    for (auto imove = 0; imove < move_type_stat.num_moves.size(); imove++) {
+    for (size_t imove = 0; imove < move_type_stat.num_moves.size(); imove++) {
         if (move_type_stat.num_moves[imove] == 0) {
             continue;
         }
