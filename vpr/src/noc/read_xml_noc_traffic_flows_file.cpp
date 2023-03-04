@@ -118,6 +118,8 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
 double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
     double traffic_flow_bandwidth;
     // holds the bandwidth value as a string so that it can be used to convert to a floating point value (this is done so that scientific notation is supported)
+    // there is no default value since this is a required attribute
+    // Either it is provided or an error is thrown is not provided or it is an illegal value
     std::string traffic_flow_bandwidth_intermediate_val = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_string();
 
     // now convert the value to double
@@ -127,7 +129,7 @@ double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil
 }
 
 double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
-    // default latency constraint is the maximum double val (indicating that there is no constraint)
+    // "set to large value, indicating no constraint
     double max_traffic_flow_latency = DEFAULT_MAX_TRAFFIC_FLOW_LATENCY;
 
     // holds the latency value as a string so that it can be used to convert to a floating point value (this is done so that scientific notation is supported)

@@ -3,7 +3,7 @@
 
 /**
  *  @brief The purpose of this file is to read and parse an xml file that has 
- *         then a '.flows' extension. This file contains the description of
+ *         a '.flows' extension. This file contains the description of
  *         a number of traffic flows within the NoC. A traffic flow describes
  *         the communication between two routers in the NoC.
  * 
@@ -90,7 +90,7 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
  * an error is thrown. If the value provided was not an number then it is 
  * assigned to an illegal value. 
  * 
- * @param single_flow_tag A xml tag that contains the traffic flow information.
+ * @param single_flow_tag An xml tag that contains the traffic flow information.
  * @param loc_data Contains location data about the current line in the xml
  *                 file.
  * @return double The bandwidth for the currently processed
@@ -100,9 +100,9 @@ double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil
 
 /**
  * @brief Retrieves the user provided maximum allowed latency for the traffic
- * flow currently being processed. If a maxmum latency is not provided, then 
- * it is set to DOUBLE_MAX to indicate that there are no constraints on the
- * latency. If the value provided was not an number then it is assigned to
+ * flow currently being processed. If a maximum latency is not provided, then 
+ * it is set to 1 to indicate that there are no constraints on the
+ * latency. If the value provided was not a number then it is assigned to
  * an illegal value.
  * 
  * @param single_flow_tag A xml tag that contains the traffic flow information.
@@ -145,10 +145,9 @@ int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::lo
 void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
- * @brief Ensures that the a given traffic flows bandwidth and
- *        latency constraints are not negative or 0. Also checks that
- *        the traffic flow priorities are not negative or 0. An error
- *        is thrown if the above conditions are not met.
+ * @brief Ensures the traffic flow's bandwidth, latency constraint and 
+ *        priority are all non-negative. An error is thrown if the
+ *        above conditions are not met.
  * 
  * @param traffic_flow_bandwidth The transmission size betwee the two routers
  *                               in the traffic flow.
