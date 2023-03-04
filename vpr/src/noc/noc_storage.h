@@ -267,7 +267,7 @@ class NocStorage {
      * 
      * @param hard_router_location A struct that contains the grid location
      * of an arbirtary hard router block on the FPGA.
-     * @return NocRouterId The hard router block   
+     * @return NocRouterId The hard router block "id"  
      * located at the given grid location. 
      */
     NocRouterId get_router_at_grid_location(const t_pl_loc& hard_router_location) const;

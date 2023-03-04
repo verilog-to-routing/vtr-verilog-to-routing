@@ -60,7 +60,7 @@ struct t_noc_traffic_flow {
     /** The maximum allowable time to transmit data between thw two routers, in seconds. This parameter will be used to evaluate a router traffic flow.*/
     double max_traffic_flow_latency;
 
-    /** Indicates the importance of the traffic flow. Higher priority traffic flows will have more importance and will be more likely to have their latency reduced and constriants met.*/
+    /** Indicates the importance of the traffic flow. Higher priority traffic flows will have more importance and will be more likely to have their latency reduced and constriants met. Range: [0-inf) */
     int traffic_flow_priority;
 
     /** Constructor initializes all variables*/
@@ -188,7 +188,7 @@ class NocTrafficFlows {
     int get_number_of_routers_used_in_traffic_flows(void);
 
     /**
-     * @brief Gets the routed path of traffic flow. THis cannot be
+     * @brief Gets the routed path of traffic flow. This cannot be
      * modified externally.
      * 
      * @param traffic_flow_id A unique identifier that represents a 
@@ -205,7 +205,7 @@ class NocTrafficFlows {
      * @param traffic_flow_id A unique identifier that represents a 
      * traffic flow.
      * @return std::vector<NocLinkId>& A reference to the provided
-     * traffic flow's routed path.
+     * traffic flow's vector of links used from the src to dst.
      */
     std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
@@ -247,7 +247,7 @@ class NocTrafficFlows {
      * @brief Indicates that the class has been fully constructed, meaning
      * that all the traffic flows have been added and cannot be added anymore.
      * This function should be called only after adding all the traffic flows
-     * provided by the user. Addiiotnally, creates the storage space for storing
+     * provided by the user. Additionally, creates the storage space for storing
      * the routed paths for all traffic flows.
      * 
      */
