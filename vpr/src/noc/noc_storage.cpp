@@ -118,6 +118,11 @@ void NocStorage::set_noc_router_latency(double router_latency) {
     return;
 }
 
+void NocStorage::set_device_grid_width(int grid_width) {
+    device_grid_width = grid_width;
+    return;
+}
+
 bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_id) {
     // This status variable is used to report externally whether the link was removed or not
     bool link_removed_status = false;
@@ -218,7 +223,7 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
 
 int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const {
     // calculate the key value
-    return (10 * grid_position_y + grid_position_x);
+    return (device_grid_width * grid_position_y + grid_position_x);
 }
 
 void NocStorage::echo_noc(char* file_name) const {

@@ -46,6 +46,9 @@ void setup_noc(const t_arch& arch) {
     noc_ctx.noc_model.set_noc_link_latency(arch.noc->link_latency);
     noc_ctx.noc_model.set_noc_router_latency(arch.noc->router_latency);
 
+    // store the reference to device grid with
+    noc_ctx.noc_model.set_device_grid_width((int)device_ctx.grid.width());
+
     // echo the noc info
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_MODEL)) {
         noc_ctx.noc_model.echo_noc(getEchoFileName(E_ECHO_NOC_MODEL));
