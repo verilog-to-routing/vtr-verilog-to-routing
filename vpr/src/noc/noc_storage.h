@@ -78,17 +78,26 @@ class NocStorage {
     std::unordered_map<int, NocRouterId> router_id_conversion_table;
 
     /**
-     * @brief Associates the hard routers on the device to their grid
+     * @brief Associates the hard (physical) routers on the device to their grid
      * location. During placement, when logical routers are moved to
      * different hard routers, only the grid location of where the
      * logical router was moved is known.
      * Using this datastructure, the grid location can be used to
      * identify the corresponding hard router block positioned at that grid 
-     * location.It is important to know the specific hard router block because 
+     * location. The NocROuterId uniqely identifies hard router blocks and 
+     * can be used to retrieve the hard router block information using
+     * the router_storage datastructurre above. This can also be used to
+     * access the connectivity graph datastructure above.
+     * 
+     * It is important to know the specific hard router block because 
      * without it we cannot determine the starting/end points of the traffic
      * flows associated to the moved logical router. We need this
      * so that we can re-route all traffic flows and evaluate the
      * the placement cost of the moved logical router block.
+     * 
+     * The intended use is when trying to re-route a traffic flow. The current
+     * location of a logical router block can be used in conjuction with this
+     * datastructure to identify the corresponding hard router block.
      * 
      */
     std::unordered_map<int, NocRouterId> grid_location_to_router_id;
@@ -120,6 +129,15 @@ class NocStorage {
      * seconds))
      */
     double noc_router_latency;
+
+    /**
+     * @brief Internal reference to the device grid width. This is necessary
+     * to compute a unique key for a given grid location which we can then use
+     * to get the corresponding physical (hard) router at the given grid
+     * location using 'grid_location_to_router_id'. 
+     * 
+     */
+    int device_grid_width;
 
     // prevent "copying" of this object
     NocStorage(const NocStorage&) = delete;
@@ -310,6 +328,14 @@ class NocStorage {
 
     void set_noc_router_latency(double router_latency);
 
+    /**
+     * @brief Set the internal reference to the device
+     * grid width.
+     * 
+     */
+
+    void set_device_grid_width(int grid_width);
+
     // general utiliy functions
     /**
      * @brief The link is removed from the outgoing vector of links for
@@ -403,7 +429,7 @@ class NocStorage {
      * datastructure.
      * 
      * The key will be generated as follows:
-     * key = 10*y + x
+     * key = y * device_grid.width() + x
      * 
      * @param grid_position_x The horizontal position on the FPGA of the phyical
      * tile that this router represents.
