@@ -25,28 +25,6 @@ DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_til
     limiting_resources_ = limiting_res;
 }
 
-size_t DeviceGrid::max_width() const {
-    const int dim = 0;
-    const bool is_greater = true;
-    return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
-}
-size_t DeviceGrid::max_height() const {
-    const int dim = 1;
-    const bool is_greater = true;
-    return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
-}
-
-size_t DeviceGrid::min_width() const {
-    const int dim = 0;
-    const bool is_greater = false;
-    return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
-}
-size_t DeviceGrid::min_height() const {
-    const int dim = 1;
-    const bool is_greater = false;
-    return std::max_element(grid_.begin(), grid_.end(), gridDimComp(dim, is_greater))->dim_size(dim);
-}
-
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
     size_t count = 0;
     if (instance_counts_.size() == 0) {
