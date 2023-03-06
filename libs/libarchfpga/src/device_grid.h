@@ -25,12 +25,6 @@ class DeviceGrid {
     size_t width(int layer_num = 0) const { return grid_[layer_num].dim_size(0); }
     size_t height(int layer_num = 0) const { return grid_[layer_num].dim_size(1); }
 
-    size_t max_width() const;
-    size_t max_height() const;
-
-    size_t min_width() const;
-    size_t min_height() const;
-    
     inline int get_num_layers() const {
         return num_layers_;
     }

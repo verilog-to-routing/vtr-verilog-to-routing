@@ -675,7 +675,7 @@ struct t_pl_loc {
     int x = OPEN;
     int y = OPEN;
     int sub_tile = OPEN;
-    int layer = OPEN;
+    int layer = 0;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
         x += rhs.x;
