@@ -6,17 +6,8 @@
 #include "move_utils.h"
 
 e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
-    ClusterBlockId b_from;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
-        b_from = pick_from_block();
-        if (b_from) { //if a movable block found, set the block type since the agent only proposed the move type
-            blk_type.index = convert_logical_to_agent_block_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
-        }
-    } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
-        b_from = pick_from_block(blk_type);
-    }
+    //Find a movable block based on blk_type
+    ClusterBlockId b_from = propose_block_type(blk_type, false, NULL, NULL);
 
     if (!b_from) { //No movable block found
         return e_create_move::ABORT;
@@ -24,7 +15,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
-
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;

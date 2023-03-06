@@ -110,6 +110,18 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
 std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);
 
 /**
+ * @brief Propose block for the RL agent based on required block type.
+ *
+ *  @param blk_type: the agent type of the moving block.
+ *  @param highly_crit_block: block should be chosen from highly critical blocks.
+ *  @param net_from: if block is chosen from highly critical blocks, should store its net id.
+ *  @param pin_from: if block is chosen from highly critical blocks, should save its critical pin id.
+ *
+ * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
+ */
+ClusterBlockId propose_block_type(t_logical_block_type& blk_type ,bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+
+/**
  * @brief Select a random block to be swapped with another block
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
@@ -119,7 +131,7 @@ ClusterBlockId pick_from_block();
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param blk_type: the logical type of the moving block.
+ *  @param blk_type: the agent type of the moving block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
@@ -135,7 +147,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param blk_type: the logical type of the moving block.
+ *  @param blk_type: the agent type of the moving block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
