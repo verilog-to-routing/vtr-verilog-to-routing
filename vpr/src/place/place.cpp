@@ -1560,7 +1560,6 @@ static e_move_result try_swap(const t_annealing_state* state,
                                (move_outcome ? "ACCEPTED" : "REJECTED"), "");
     }
     move_outcome_stats.outcome = move_outcome;
-    //SARA_TODO: fix delta cost value!
     calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                          delta_c /*/costs->cost*/, timing_bb_factor, move_generator);
 

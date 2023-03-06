@@ -49,7 +49,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 
-    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
         return e_create_move::ABORT;
     }

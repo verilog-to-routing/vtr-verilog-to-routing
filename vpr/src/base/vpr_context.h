@@ -378,6 +378,14 @@ struct PlacementContext : public Context {
      * Used for unique identification and consistency checking
      */
     std::string placement_id;
+
+    /**
+     * @brief Map available logical block types to RLplace agent block types
+     *
+     * Used to efficiently convert agent (logical) block types to logical (agent) block type.
+     */
+    std::unordered_map<int, int> logical_to_agent_map;
+    std::unordered_map<int, int> agent_to_logical_map;
 };
 
 /**
