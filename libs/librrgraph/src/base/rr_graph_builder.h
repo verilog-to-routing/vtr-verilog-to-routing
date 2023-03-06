@@ -337,7 +337,7 @@ class RRGraphBuilder {
     }
 
     /* Unlock storage; required to modify an routing resource graph after edge is read */
-    inline void unlock_storage() { node_storage_.edges_read_ = false; }
+    inline void unlock_storage() { node_storage_.edges_read_ = false; node_storage_.partitioned_ = false; }
 
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
