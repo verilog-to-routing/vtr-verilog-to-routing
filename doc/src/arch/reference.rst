@@ -1537,9 +1537,29 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
 
         Mux interconnect example.
 
+.. arch:tag:: <partial name="string" input="string" output="string" fout="string">
+
+    :req_param name: Identifier for the interconnect.
+    :req_param input: Pins that are inputs to this interconnect. Different data lines are separated by a space.
+    :req_param output: Pins that are outputs of this interconnect.
+    :req_param fout: Number of outgoing edges for desired for each input pin.
+
+    Describes a partial (sparse) crossbar between input and output pins.
+    
+    **Example:**
+
+    .. code-block:: xml
+
+        <partial input="Top.In" output="Child.in" fout="2">
+
+    .. figure:: partial_example.*
+
+        Partial interconnect example.
 
 
-A ``<complete>``, ``<direct>``, or ``<mux>`` tag may take an additional, optional, tag called ``<pack_pattern>`` that is used to describe *molecules*.
+
+
+A ``<complete>``, ``<direct>``, ``<mux>``, or ``<partial>`` tag may take an additional, optional, tag called ``<pack_pattern>`` that is used to describe *molecules*.
 A pack pattern is a power user feature directing that the CAD tool should group certain netlist atoms (eg. LUTs, FFs, carry chains) together during the CAD flow.
 This allows the architect to help the CAD tool recognize structures that have limited flexibility so that netlist atoms that fit those structures be kept together as though they are one unit.
 This tag impacts the CAD tool only, there is no architectural impact from defining molecules.

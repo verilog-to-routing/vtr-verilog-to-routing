@@ -63,7 +63,6 @@
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
 
-#include "physical_types.h"
 #include "physical_types_util.h"
 
 using namespace std::string_literals;

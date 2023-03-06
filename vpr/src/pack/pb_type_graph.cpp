@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cinttypes>
+#include <map>
 #include <queue>
 
 #include "vtr_util.h"
@@ -722,11 +723,10 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
             }
 
             /* Input Pins */
-            interc_pins->input_pins = (t_pb_graph_pin***)vtr::calloc(interconnect->interconnect_power->num_input_ports, sizeof(t_pb_graph_pin**));
+            interc_pins->input_pins = new t_pb_graph_pin**[interconnect->interconnect_power->num_input_ports];
             for (port_idx = 0; port_idx < interconnect->interconnect_power->num_input_ports;
                  port_idx++) {
-                interc_pins->input_pins[port_idx] = (t_pb_graph_pin**)vtr::calloc(interconnect->interconnect_power->num_pins_per_port,
-                                                                                  sizeof(t_pb_graph_pin*));
+                interc_pins->input_pins[port_idx] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
             }
 
             num_ports = 0;
@@ -737,11 +737,9 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
             }
 
             /* Output Pins */
-            interc_pins->output_pins = (t_pb_graph_pin***)vtr::calloc(interconnect->interconnect_power->num_output_ports,
-                                                                      sizeof(t_pb_graph_pin**));
+            interc_pins->output_pins = new t_pb_graph_pin**[interconnect->interconnect_power->num_output_ports];
             for (port_idx = 0; port_idx < interconnect->interconnect_power->num_output_ports; port_idx++) {
-                interc_pins->output_pins[port_idx] = (t_pb_graph_pin**)vtr::calloc(interconnect->interconnect_power->num_pins_per_port,
-                                                                                   sizeof(t_pb_graph_pin*));
+                interc_pins->output_pins[port_idx] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
             }
             num_ports = 0;
             for (set_idx = 0; set_idx < num_output_sets; set_idx++) {
@@ -1221,7 +1219,12 @@ static void alloc_and_load_partial_interc_edges(t_interconnect* interconnect,
     int in_count, out_count;
     t_pb_graph_edge* edges;
     int i_edge;
+    int starting_output_pin;
     vtr::t_linked_vptr* cur;
+    std::map<t_pb_graph_pin*, std::vector<t_pb_graph_pin*>> cross_bar_conn;
+    std::vector<t_pb_graph_pin*> output_pin_arr;
+    /* Map to hold set and pin number of each input pin */
+    std::map<t_pb_graph_pin*, std::pair<int, int>> input_pin_map;
 
     VTR_ASSERT(interconnect->infer_annotations == false);
 
@@ -1236,8 +1239,14 @@ static void alloc_and_load_partial_interc_edges(t_interconnect* interconnect,
         out_count += num_output_ptrs[i_outset];
     }
 
-    edges = new t_pb_graph_edge[in_count * fout];
-    for (int i = 0; i < (in_count * fout); i++)
+    /* If fout == out_count, it is essentially a complete crossbar */
+    if (fout > out_count) {
+        fout = out_count;
+    }
+
+    int total_edges = in_count * fout;
+    edges = new t_pb_graph_edge[total_edges];
+    for (int i = 0; i < (total_edges); i++)
         edges[i] = t_pb_graph_edge();
     cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
@@ -1246,99 +1255,76 @@ static void alloc_and_load_partial_interc_edges(t_interconnect* interconnect,
     cur = new vtr::t_linked_vptr;
     cur->next = num_edges_head;
     num_edges_head = cur;
-    cur->data_vptr = (void*)((intptr_t)in_count * fout);
-
-    for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
-            input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges.resize(
-                input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges
-                + fout);
-        }
-    }
-
-    /* If fout == out_count, it is essentially a complete crossbar */
-    if (fout > out_count) {
-        fout = out_count;
-    }
+    cur->data_vptr = (void*)((intptr_t)total_edges);
 
     i_edge = 0;
 
-    int base_counter = 0;
-    i_outpin = 0;
-    std::vector<std::pair<t_pb_graph_pin*, std::vector<t_pb_graph_pin*>>> pin_vector;
-
-    int my_num = 0;
     for (i_outset = 0; i_outset < num_output_sets; i_outset++) {
         for (i_outpin = 0; i_outpin < num_output_ptrs[i_outset]; i_outpin++) {
-            std::vector<t_pb_graph_pin*> new_vec;
-            pin_vector.push_back(std::make_pair(output_pb_graph_node_pin_ptrs[i_outset][i_outpin], new_vec));
+            output_pin_arr.push_back(output_pb_graph_node_pin_ptrs[i_outset][i_outpin]);
         }
     }
 
     i_outpin = 0;
+    starting_output_pin = 0;
 
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
         for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
-            i_outpin = base_counter;
+            /* Resize input pin edges */
+            input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges.resize(
+                input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges
+                + fout);
+            /* Fill input_pin_map */
+            input_pin_map[input_pb_graph_node_pin_ptrs[i_inset][i_inpin]] = std::make_pair(i_inset, i_inpin);
+            i_outpin = starting_output_pin;
+
+            /* Fill cross_bar_con map */
             for (int i = 0; i < fout; i++) {
                 if (i_outpin >= out_count) {
                     i_outpin = i_outpin % out_count;
                 }
-                pin_vector.at(i_outpin).second.push_back(input_pb_graph_node_pin_ptrs[i_inset][i_inpin]);
+                cross_bar_conn[output_pin_arr.at(i_outpin)].push_back(input_pb_graph_node_pin_ptrs[i_inset][i_inpin]);
                 i_outpin = i_outpin + (out_count / fout);
             }
-            base_counter++;
+            starting_output_pin++;
         }
     }
 
-    base_counter = 0;
-    i_outpin = 0;
-
-    my_num = 0;
+    /* Resize output pin edges */
     for (i_outset = 0; i_outset < num_output_sets; i_outset++) {
         for (i_outpin = 0; i_outpin < num_output_ptrs[i_outset]; i_outpin++) {
             output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->input_edges.resize(
                 output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->num_input_edges
-                + pin_vector.at(my_num).second.size());
-            my_num++;
+                + cross_bar_conn.at(output_pb_graph_node_pin_ptrs[i_outset][i_outpin]).size());
         }
     }
-
-    base_counter = 0;
-    i_outpin = 0;
 
     /* Load connections between pins and record these updates in the edges */
-    for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
-            i_outpin = base_counter;
-            for (int i = 0; i < fout; i++) {
-                if (i_outpin >= out_count) {
-                    i_outpin = i_outpin % out_count;
-                }
-                input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges[input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges] = &edges[i_edge];
-                input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges++;
+    for (auto const& entry : cross_bar_conn) {
+        auto output_pin = entry.first;
+        auto input_pin_vector = entry.second;
+        for (const auto& input_pin : input_pin_vector) {
+            input_pin->output_edges[input_pin->num_output_edges] = &edges[i_edge];
+            input_pin->num_output_edges++;
+            output_pin->input_edges[output_pin->num_input_edges] = &edges[i_edge];
+            output_pin->num_input_edges++;
 
-                pin_vector.at(i_outpin).first->input_edges[pin_vector.at(i_outpin).first->num_input_edges] = &edges[i_edge];
-                pin_vector.at(i_outpin).first->num_input_edges++;
+            edges[i_edge].num_input_pins = 1;
+            edges[i_edge].input_pins = new t_pb_graph_pin*[1];
+            edges[i_edge].input_pins[0] = input_pin;
+            edges[i_edge].num_output_pins = 1;
+            edges[i_edge].output_pins = new t_pb_graph_pin*[1];
+            edges[i_edge].output_pins[0] = output_pin;
 
-                edges[i_edge].num_input_pins = 1;
-                edges[i_edge].input_pins = new t_pb_graph_pin*[1];
-                edges[i_edge].input_pins[0] = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
-                edges[i_edge].num_output_pins = 1;
-                edges[i_edge].output_pins = new t_pb_graph_pin*[1];
-                edges[i_edge].output_pins[0] = pin_vector.at(i_outpin).first;
+            edges[i_edge].interconnect = interconnect;
+            edges[i_edge].driver_set = input_pin_map[input_pin].first;
+            edges[i_edge].driver_pin = input_pin_map[input_pin].second;
 
-                edges[i_edge].interconnect = interconnect;
-                edges[i_edge].driver_set = i_inset;
-                edges[i_edge].driver_pin = i_inpin;
-
-                i_edge++;
-                i_outpin = i_outpin + (out_count / fout);
-            }
-            base_counter++;
+            i_edge++;
         }
     }
-    VTR_ASSERT(i_edge == (in_count * fout));
+
+    VTR_ASSERT(i_edge == (total_edges));
 }
 
 /**
