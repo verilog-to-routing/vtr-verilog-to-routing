@@ -1,0 +1,47 @@
+ram block $__NX_DP16K_ {
+	abits 14;
+	widths 1 2 4 9 18 per_port;
+	byte 9;
+	cost 129;
+	init no_undef;
+	port srsw "A" "B" {
+		clock posedge;
+		clken;
+		wrbe_separate;
+		rdwr no_change;
+		portoption "RESETMODE" "SYNC" {
+			rdsrst zero gated_clken;
+		}
+		portoption "RESETMODE" "ASYNC" {
+			rdarst zero;
+		}
+		rdinit zero;
+	}
+}
+
+ram block $__NX_PDP16K_ {
+	abits 14;
+	widths 1 2 4 9 18 36 per_port;
+	byte 9;
+	option "SAME_CLOCK" 1 cost 128;
+	option "SAME_CLOCK" 0 cost 129;
+	init no_undef;
+	port sr "R" {
+		option "SAME_CLOCK" 1 clock posedge "C";
+		option "SAME_CLOCK" 0 clock posedge;
+		clken;
+		portoption "RESETMODE" "SYNC" {
+			rdsrst zero gated_clken;
+		}
+		portoption "RESETMODE" "ASYNC" {
+			rdarst zero;
+		}
+		rdinit zero;
+	}
+	port sw "W" {
+		option "SAME_CLOCK" 1 clock posedge "C";
+		option "SAME_CLOCK" 0 clock posedge;
+		clken;
+		option "SAME_CLOCK" 1 wrtrans all old;
+	}
+}
