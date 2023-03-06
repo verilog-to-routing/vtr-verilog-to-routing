@@ -548,35 +548,51 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
-
-    //Determine the rlim in each dimension
-    int rlim_x = std::min<int>(compressed_block_grid.compressed_to_grid_x.size(), rlim);
-    int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const int layer_num = from.layer;
 
     //Determine the coordinates in the compressed grid space of the current block
-    int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from.x);
-    int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from.y);
+    std::vector<t_compressed_loc> compressed_locs = get_compressed_loc(compressed_block_grid,
+                                                                       from,
+                                                                       num_layers);
 
     //Determine the valid compressed grid location ranges
-    int min_cx = std::max(0, cx_from - rlim_x);
-    int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
-    int delta_cx = max_cx - min_cx;
+    std::vector<t_search_range> search_range = get_compressed_grid_search_range(compressed_block_grid,
+                                                                               compressed_locs,
+                                                                               rlim,
+                                                                               num_layers);
+    int delta_cx = search_range[layer_num].xmax_ - search_range[layer_num].xmin_;
 
-    int min_cy = std::max(0, cy_from - rlim_y);
-    int max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
 
     int cx_to = OPEN;
     int cy_to = OPEN;
     bool legal = false;
 
+    //TODO: contstraints should be adapted to 3d archtiecture
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
+        bool intersect = intersect_range_limit_with_floorplan_constraints(type,
+                                                                          b_from,
+                                                                          search_range[layer_num].xmin_,
+                                                                          search_range[layer_num].ymin_,
+                                                                          search_range[layer_num].xmax_,
+                                                                          search_range[layer_num].ymax_,
+                                                                          delta_cx);
         if (!intersect) {
             return false;
         }
     }
-
-    legal = find_compatible_compressed_loc_in_range(type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
+    //TODO: For now, we only move the blocks on the same tile
+    legal = find_compatible_compressed_loc_in_range(type,
+                                                    search_range[layer_num].xmin_,
+                                                    search_range[layer_num].xmax_,
+                                                    search_range[layer_num].ymin_,
+                                                    search_range[layer_num].ymax_,
+                                                    delta_cx,
+                                                    compressed_locs[layer_num].x_,
+                                                    compressed_locs[layer_num].y_,
+                                                    cx_to,
+                                                    cy_to,
+                                                    false);
 
     if (!legal) {
         //No valid position found
@@ -872,6 +888,47 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
         }
     }
     return legal;
+}
+
+std::vector<t_compressed_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
+                                                    t_pl_loc grid_loc,
+                                                    int num_layers) {
+    //TODO: This function currently only determine the compressed location for the same layer as grid_loc - it should be updated to cover all layers
+    std::vector<t_compressed_loc> compressed_locs(num_layers);
+
+    for(int layer_num = 0; layer_num < num_layers; ++layer_num) {
+        if(layer_num != grid_loc.layer) {
+            continue;
+        }
+        compressed_locs[layer_num].x_ = compressed_block_grid.grid_x_to_cx(grid_loc.x, layer_num);
+        compressed_locs[layer_num].y_ = compressed_block_grid.grid_y_to_cy(grid_loc.y, layer_num);
+    }
+
+    return compressed_locs;
+}
+
+std::vector<t_search_range> get_compressed_grid_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                                             const std::vector<t_compressed_loc>& compressed_locs,
+                                                             float rlim,
+                                                             int num_layers) {
+    std::vector<t_search_range> search_ranges(num_layers, t_search_range());
+    for(int layer_num = 0; layer_num < num_layers; ++layer_num) {
+        const auto& layer_loc = compressed_locs[layer_num];
+        if(layer_loc.x_ == OPEN || layer_loc.y_ == OPEN) {
+            //No valid compressed location for this layer
+            continue;
+        }
+        int rlim_x_max_range = std::min<int>((int)compressed_block_grid.get_num_columns(layer_num), rlim);
+        int rlim_y_max_range = std::min<int>((int)compressed_block_grid.get_num_rows(layer_num), rlim); /* for aspect_ratio != 1 case. */
+
+        search_ranges[layer_num].xmin_ = std::max(0, layer_loc.x_ - rlim_x_max_range);
+        search_ranges[layer_num].xmax_ = std::min<int>(compressed_block_grid.get_num_columns(layer_num) - 1, layer_loc.x_ + rlim_x_max_range);
+
+        search_ranges[layer_num].ymin_ = std::max(0, layer_loc.y_ - rlim_y_max_range);
+        search_ranges[layer_num].ymax_ = std::min<int>(compressed_block_grid.get_num_rows(layer_num) - 1, layer_loc.y_ + rlim_y_max_range);
+    }
+
+    return search_ranges;
 }
 
 bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type, ClusterBlockId b_from, int& min_cx, int& min_cy, int& max_cx, int& max_cy, int& delta_cx) {

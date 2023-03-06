@@ -36,6 +36,30 @@ enum class e_create_move {
     ABORT, //Unable to perform move
 };
 
+struct t_compressed_loc {
+    t_compressed_loc() = default;
+    t_compressed_loc(int x, int y)
+        : x_(x)
+        , y_(y) {}
+
+    int x_ = OPEN;
+    int y_ = OPEN;
+};
+
+struct t_search_range {
+    t_search_range() = default;
+    t_search_range(int xmin, int xmax, int ymin, int ymax)
+        : xmin_(xmin)
+        , xmax_(xmax)
+        , ymin_(ymin)
+        , ymax_(ymax) {}
+
+    int xmin_ = OPEN;
+    int xmax_ = OPEN;
+    int ymin_ = OPEN;
+    int ymax_ = OPEN;
+};
+
 /**
  * @brief Stores a bounding box edge of a net with the timing
  *        criticality of the net terminal that caused this edge
@@ -173,6 +197,15 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  * is_median: true if this is called from find_to_loc_median
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
+
+std::vector<t_compressed_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
+                                                    t_pl_loc grid_loc,
+                                                    int num_layers);
+
+std::vector<t_search_range> get_compressed_grid_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                                             const std::vector<t_compressed_loc>& compressed_locs,
+                                                             float rlim,
+                                                             int num_layers);
 
 /*
  * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords

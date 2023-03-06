@@ -21,6 +21,7 @@ struct t_type_loc {
 };
 
 struct t_compressed_block_grid {
+    //TODO: compressed_to_grid_x/y should become a 2d vector
     //If 'cx' is an index in the compressed grid space, then
     //'compressed_to_grid_x[cx]' is the corresponding location in the
     //full (uncompressed) device grid.
@@ -38,6 +39,30 @@ struct t_compressed_block_grid {
     //  - key: physical tile index
     //  - value: vector of compatible sub tiles for the physical tile/logical block pair
     std::unordered_map<int, std::vector<int>> compatible_sub_tiles_for_tile;
+
+    size_t get_num_columns(int /*layer_num*/) const {
+        return compressed_to_grid_x.size();
+    }
+
+    size_t get_num_rows(int /*layer_num*/) const {
+        return compressed_to_grid_y.size();
+    }
+
+    int grid_x_to_cx(int x, int /*layer_num*/) const {
+        auto itr = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), x);
+        VTR_ASSERT(*itr == x);
+
+        return std::distance(compressed_to_grid_x.begin(), itr);
+    }
+
+    int grid_y_to_cy(int y, int /*layer_num*/) const {
+        auto itr = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), y);
+        VTR_ASSERT(*itr == y);
+
+        return std::distance(compressed_to_grid_y.begin(), itr);
+    }
+
+
 };
 
 //Compressed grid space for each block type
