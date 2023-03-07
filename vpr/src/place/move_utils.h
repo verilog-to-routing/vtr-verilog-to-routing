@@ -202,10 +202,20 @@ std::vector<t_compressed_loc> get_compressed_loc(const t_compressed_block_grid& 
                                                     t_pl_loc grid_loc,
                                                     int num_layers);
 
-std::vector<t_search_range> get_compressed_grid_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                             const std::vector<t_compressed_loc>& compressed_locs,
-                                                             float rlim,
-                                                             int num_layers);
+std::vector<t_compressed_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
+                                                        t_pl_loc grid_loc,
+                                                        int num_layers);
+
+std::vector<t_search_range> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                                                    const std::vector<t_compressed_loc>& compressed_locs,
+                                                                    float rlim,
+                                                                    int num_layers);
+
+std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                                                     const std::vector<t_compressed_loc>& from_compressed_loc,
+                                                                     const std::vector<t_compressed_loc>& target_compressed_loc,
+                                                                     float rlim,
+                                                                     int num_layers);
 
 /*
  * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords
