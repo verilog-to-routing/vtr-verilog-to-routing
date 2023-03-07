@@ -629,42 +629,66 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         const t_bb* limit_coords,
                         t_pl_loc& to_loc,
                         ClusterBlockId b_from) {
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    int from_layer_num = from_loc.layer;
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
     //Determine the coordinates in the compressed grid space of the current block
     int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from_loc.x);
     int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from_loc.y);
 
+    std::vector<t_compressed_loc> from_compressed_locs = get_compressed_loc(compressed_block_grid,
+                                                                            from_loc,
+                                                                            g_vpr_ctx.device().grid.get_num_layers());
+
     VTR_ASSERT(limit_coords->xmin <= limit_coords->xmax);
     VTR_ASSERT(limit_coords->ymin <= limit_coords->ymax);
 
     //Determine the valid compressed grid location ranges
-    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, limit_coords->xmin);
-    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, limit_coords->xmax);
+    std::vector<t_compressed_loc> min_compressed_loc = get_compressed_loc_approx(compressed_block_grid,
+                                                                                 {limit_coords->xmin, limit_coords->ymin, 0, from_layer_num},
+                                                                                 num_layers);
+    std::vector<t_compressed_loc> max_compressed_loc = get_compressed_loc_approx(compressed_block_grid,
+                                                                                 {limit_coords->xmax, limit_coords->ymax, 0, from_layer_num},
+                                                                                 num_layers);
 
-    VTR_ASSERT(min_cx >= 0);
-    VTR_ASSERT(static_cast<int>(compressed_block_grid.compressed_to_grid_x.size()) - 1 - max_cx >= 0);
-    VTR_ASSERT(max_cx >= min_cx);
-    int delta_cx = max_cx - min_cx;
+    VTR_ASSERT(min_compressed_loc[from_layer_num].x_ >= 0);
+    VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_columns(from_layer_num)) - 1 - max_compressed_loc[from_layer_num].x_ >= 0);
+    VTR_ASSERT(max_compressed_loc[from_layer_num].x_ >= min_compressed_loc[from_layer_num].x_);
+    int delta_cx = max_compressed_loc[from_layer_num].x_ - min_compressed_loc[from_layer_num].x_;
 
-    int min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, limit_coords->ymin);
-    int max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, limit_coords->ymax);
-    VTR_ASSERT(min_cy >= 0);
-    VTR_ASSERT(static_cast<int>(compressed_block_grid.compressed_to_grid_y.size()) - 1 - max_cy >= 0);
-    VTR_ASSERT(max_cy >= min_cy);
+    VTR_ASSERT(min_compressed_loc[from_layer_num].y_ >= 0);
+    VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_rows(from_layer_num)) - 1 - max_compressed_loc[from_layer_num].y_ >= 0);
+    VTR_ASSERT(max_compressed_loc[from_layer_num].y_ >= min_compressed_loc[from_layer_num].y_);
 
     int cx_to = OPEN;
     int cy_to = OPEN;
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
+        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type,
+                                                                          b_from,
+                                                                          min_compressed_loc[from_layer_num].x_,
+                                                                          min_compressed_loc[from_layer_num].y_,
+                                                                          max_compressed_loc[from_layer_num].x_,
+                                                                          max_compressed_loc[from_layer_num].y_,
+                                                                          delta_cx);
         if (!intersect) {
             return false;
         }
     }
 
-    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, true);
+    legal = find_compatible_compressed_loc_in_range(blk_type,
+                                                    min_compressed_loc[from_layer_num].x_,
+                                                    max_compressed_loc[from_layer_num].x_,
+                                                    min_compressed_loc[from_layer_num].y_,
+                                                    max_compressed_loc[from_layer_num].y_,
+                                                    delta_cx,
+                                                    cx_from,
+                                                    cy_from,
+                                                    cx_to,
+                                                    cy_to,
+                                                    true);
 
     if (!legal) {
         //No valid position found
