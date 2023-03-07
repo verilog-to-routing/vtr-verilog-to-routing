@@ -175,7 +175,9 @@ std::string move_type_to_string(e_move_type);
  * cy: the y coordinate of the compressed location
  * loc: the uncompressed output location (returned in reference)
  */
-void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t_pl_loc& loc);
+void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
+                            t_type_loc compressed_loc,
+                            t_pl_loc& to_loc);
 /**
  * @brief find compressed location in a compressed range for a specific type
  * 
@@ -186,7 +188,12 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
  * is_median: true if this is called from find_to_loc_median
  */
-bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
+bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
+                                             const t_search_range& search_range,
+                                             const int delta_cx,
+                                             const t_type_loc& from_loc,
+                                             t_type_loc& to_loc,
+                                             bool is_median);
 
 std::vector<t_type_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
                                                     t_pl_loc grid_loc,

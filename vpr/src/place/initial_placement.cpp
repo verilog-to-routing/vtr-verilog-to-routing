@@ -314,18 +314,24 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     delta_cx = max_cx - min_cx;
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
-    int cx_from = -1;
-    int cy_from = -1;
+    int cx_from = OPEN;
+    int cy_from = OPEN;
+    int layer_from = OPEN;
 
-    int cx_to, cy_to;
+    t_type_loc to_compressed_loc;
 
-    bool legal = find_compatible_compressed_loc_in_range(block_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
+    bool legal = find_compatible_compressed_loc_in_range(block_type,
+                                                         {min_cx, max_cx, min_cy, max_cy},
+                                                         delta_cx,
+                                                         {cx_from, cy_from, layer_from},
+                                                         to_compressed_loc,
+                                                         false);
 
     if (!legal) {
         return false;
     }
 
-    compressed_grid_to_loc(block_type, cx_to, cy_to, centroid_loc);
+    compressed_grid_to_loc(block_type, to_compressed_loc, centroid_loc);
 
     return legal;
 }
@@ -589,15 +595,21 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
 
     int cx_to;
     int cy_to;
+    t_type_loc to_compressed_loc;
 
     bool legal;
-    legal = find_compatible_compressed_loc_in_range(block_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
+    legal = find_compatible_compressed_loc_in_range(block_type,
+                                                    {min_cx, max_cx, min_cy, max_cy},
+                                                    delta_cx,
+                                                    {cx_from, cy_from},
+                                                    to_compressed_loc,
+                                                    false);
     if (!legal) {
         //No valid position found
         return false;
     }
 
-    compressed_grid_to_loc(block_type, cx_to, cy_to, loc);
+    compressed_grid_to_loc(block_type, to_compressed_loc, loc);
 
     auto& device_ctx = g_vpr_ctx.device();
 

@@ -87,7 +87,7 @@ struct t_compressed_block_grid {
     }
 
     inline t_type_loc compressed_loc_to_grid_loc(t_type_loc compressed_loc) const {
-        return {compressed_to_grid_x[compressed_loc.x], compressed_to_grid_y[compressed_loc.y]};
+        return {compressed_to_grid_x[compressed_loc.x], compressed_to_grid_y[compressed_loc.y], compressed_loc.layer_num};
     }
 
 
