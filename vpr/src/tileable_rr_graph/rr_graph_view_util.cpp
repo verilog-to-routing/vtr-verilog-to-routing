@@ -110,7 +110,7 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
         /* Skip those pins have been ignored during rr_graph build-up */
         if (true == device_grid[x][y].type->is_ignored_pin[pin]) {
             /* If specified, force to include all the clock pins */
-            if (!include_clock || std::find(device_grid[x][y].type->get_clock_pin_indeces().begin(), device_grid[x][y].type->get_clock_pin_indeces().end(), pin) != device_grid[x][y].type->get_clock_pin_indeces().end()) {
+            if (!include_clock || std::find(device_grid[x][y].type->get_clock_pin_indices().begin(), device_grid[x][y].type->get_clock_pin_indeces().end(), pin) != device_grid[x][y].type->get_clock_pin_indeces().end()) {
                 continue;
             }
         }
