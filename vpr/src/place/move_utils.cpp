@@ -729,8 +729,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                                                       num_layers);
 
     //Determine the valid compressed grid location ranges
-    int min_cx, max_cx, delta_cx;
-    int min_cy, max_cy;
+    int delta_cx;
     std::vector<t_search_range> search_range;
 
     // If we are early in the anneal and the range limit still big enough --> search around the center location that the move proposed
@@ -754,7 +753,13 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
+        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type,
+                                                                          b_from,
+                                                                          search_range[from_layer_num].xmin_,
+                                                                          search_range[from_layer_num].ymin_,
+                                                                          search_range[from_layer_num].xmax_,
+                                                                          search_range[from_layer_num].ymax_,
+                                                                          delta_cx);
         if (!intersect) {
             return false;
         }
