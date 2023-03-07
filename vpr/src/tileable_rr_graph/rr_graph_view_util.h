@@ -29,6 +29,7 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
                                                const int& x,
                                                const int& y,
                                                const t_rr_type& rr_type,
-                                               const e_side& side);
+                                               const e_side& side,
+                                               bool include_clock = false);
 
 #endif
