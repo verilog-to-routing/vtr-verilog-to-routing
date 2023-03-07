@@ -1,7 +1,9 @@
 #include "device_grid.h"
 
 struct gridDimComp {
+    // The dimension to compare
     int dim_;
+    // Whether to compare in ascending or descending order
     bool is_greater_;
     gridDimComp(int dim, bool is_greater)
         : dim_(dim)
