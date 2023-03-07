@@ -630,7 +630,7 @@ class t_rr_graph_storage {
         return side_tt[size_t(side)];
     }
 
-  private:
+  public:
     friend struct edge_swapper;
     friend class edge_sort_iterator;
     friend class edge_compare_dest_node;
