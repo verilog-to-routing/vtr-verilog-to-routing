@@ -634,9 +634,6 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
     //Determine the coordinates in the compressed grid space of the current block
-    int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from_loc.x);
-    int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from_loc.y);
-
     std::vector<t_compressed_loc> from_compressed_locs = get_compressed_loc(compressed_block_grid,
                                                                             from_loc,
                                                                             g_vpr_ctx.device().grid.get_num_layers());
@@ -684,8 +681,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                                                     min_compressed_loc[from_layer_num].y_,
                                                     max_compressed_loc[from_layer_num].y_,
                                                     delta_cx,
-                                                    cx_from,
-                                                    cy_from,
+                                                    from_compressed_locs[from_layer_num].x_,
+                                                    from_compressed_locs[from_layer_num].y_,
                                                     cx_to,
                                                     cy_to,
                                                     true);
