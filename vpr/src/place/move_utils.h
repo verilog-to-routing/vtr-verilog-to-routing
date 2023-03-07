@@ -36,16 +36,6 @@ enum class e_create_move {
     ABORT, //Unable to perform move
 };
 
-struct t_compressed_loc {
-    t_compressed_loc() = default;
-    t_compressed_loc(int x, int y)
-        : x_(x)
-        , y_(y) {}
-
-    int x_ = OPEN;
-    int y_ = OPEN;
-};
-
 struct t_search_range {
     t_search_range() = default;
     t_search_range(int xmin, int xmax, int ymin, int ymax)
@@ -198,22 +188,22 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
 
-std::vector<t_compressed_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
+std::vector<t_type_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
                                                     t_pl_loc grid_loc,
                                                     int num_layers);
 
-std::vector<t_compressed_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
+std::vector<t_type_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
                                                         t_pl_loc grid_loc,
                                                         int num_layers);
 
 std::vector<t_search_range> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                                    const std::vector<t_compressed_loc>& compressed_locs,
+                                                                    const std::vector<t_type_loc>& compressed_locs,
                                                                     float rlim,
                                                                     int num_layers);
 
 std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                                     const std::vector<t_compressed_loc>& from_compressed_loc,
-                                                                     const std::vector<t_compressed_loc>& target_compressed_loc,
+                                                                     const std::vector<t_type_loc>& from_compressed_loc,
+                                                                     const std::vector<t_type_loc>& target_compressed_loc,
                                                                      float rlim,
                                                                      int num_layers);
 

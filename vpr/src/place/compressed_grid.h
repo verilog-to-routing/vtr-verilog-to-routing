@@ -10,6 +10,8 @@ struct t_type_loc {
     int x = OPEN;
     int y = OPEN;
 
+    t_type_loc() = default;
+
     t_type_loc(int x_val, int y_val)
         : x(x_val)
         , y(y_val) {}
@@ -48,32 +50,38 @@ struct t_compressed_block_grid {
         return compressed_to_grid_y.size();
     }
 
-    inline int grid_x_to_cx(int x, int /*layer_num*/) const {
-        auto itr = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), x);
-        VTR_ASSERT(*itr == x);
+    inline t_type_loc grid_loc_to_compressed_loc(int x, int y, int /*layer_num*/) const {
+        int cx = OPEN;
+        int cy = OPEN;
 
-        return std::distance(compressed_to_grid_x.begin(), itr);
+        auto itr_x = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), x);
+        VTR_ASSERT(*itr_x == x);
+        cx = std::distance(compressed_to_grid_x.begin(), itr_x);
+
+        auto itr_y = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), y);
+        VTR_ASSERT(*itr_y == y);
+        cy = std::distance(compressed_to_grid_y.begin(), itr_y);
+
+        return {cx, cy};
     }
 
-    inline int grid_y_to_cy(int y, int /*layer_num*/) const {
-        auto itr = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), y);
-        VTR_ASSERT(*itr == y);
+    inline t_type_loc grid_loc_to_compressed_loc_approx(int x, int y, int /*layer_num*/) const {
+        int cx = OPEN;
+        int cy = OPEN;
 
-        return std::distance(compressed_to_grid_y.begin(), itr);
-    }
+        auto itr_x = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), x);
+        if (itr_x == compressed_to_grid_x.end())
+            cx = std::distance(compressed_to_grid_x.begin(), itr_x - 1);
+        else
+            cx = std::distance(compressed_to_grid_x.begin(), itr_x);
 
-    inline int grid_x_to_cx_approx(int x, int /*layer_num*/) const {
-        auto itr = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), x);
-        if (itr == compressed_to_grid_x.end())
-            return std::distance(compressed_to_grid_x.begin(), itr - 1);
-        return std::distance(compressed_to_grid_x.begin(), itr);
-    }
+        auto itr_y = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), y);
+        if (itr_y == compressed_to_grid_y.end())
+            cy = std::distance(compressed_to_grid_y.begin(), itr_y - 1);
+        else
+            cy = std::distance(compressed_to_grid_y.begin(), itr_y);
 
-    inline int grid_y_to_cy_approx(int y, int /*layer_num*/) const {
-        auto itr = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), y);
-        if (itr == compressed_to_grid_y.end())
-            return std::distance(compressed_to_grid_y.begin(), itr - 1);
-        return std::distance(compressed_to_grid_y.begin(), itr);
+        return {cx, cy};
     }
 
 
