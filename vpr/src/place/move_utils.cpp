@@ -917,8 +917,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
 }
 
 std::vector<t_type_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
-                                                 t_pl_loc grid_loc,
-                                                 int num_layers) {
+                                           t_pl_loc grid_loc,
+                                           int num_layers) {
     //TODO: This function currently only determine the compressed location for the same layer as grid_loc - it should be updated to cover all layers
     std::vector<t_type_loc> compressed_locs(num_layers);
 
@@ -926,7 +926,7 @@ std::vector<t_type_loc> get_compressed_loc(const t_compressed_block_grid& compre
         if(layer_num != grid_loc.layer) {
             continue;
         }
-        compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc(grid_loc.x, grid_loc.y, layer_num);
+        compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc({grid_loc.x, grid_loc.y, layer_num});
     }
 
     return compressed_locs;
@@ -942,7 +942,7 @@ std::vector<t_type_loc> get_compressed_loc_approx(const t_compressed_block_grid&
         if(layer_num != grid_loc.layer) {
             continue;
         }
-        compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc_approx(grid_loc.x, grid_loc.y, layer_num);
+        compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc_approx({grid_loc.x, grid_loc.y, layer_num});
     }
 
     return compressed_locs;
