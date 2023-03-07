@@ -40,25 +40,39 @@ struct t_compressed_block_grid {
     //  - value: vector of compatible sub tiles for the physical tile/logical block pair
     std::unordered_map<int, std::vector<int>> compatible_sub_tiles_for_tile;
 
-    size_t get_num_columns(int /*layer_num*/) const {
+    inline size_t get_num_columns(int /*layer_num*/) const {
         return compressed_to_grid_x.size();
     }
 
-    size_t get_num_rows(int /*layer_num*/) const {
+    inline size_t get_num_rows(int /*layer_num*/) const {
         return compressed_to_grid_y.size();
     }
 
-    int grid_x_to_cx(int x, int /*layer_num*/) const {
+    inline int grid_x_to_cx(int x, int /*layer_num*/) const {
         auto itr = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), x);
         VTR_ASSERT(*itr == x);
 
         return std::distance(compressed_to_grid_x.begin(), itr);
     }
 
-    int grid_y_to_cy(int y, int /*layer_num*/) const {
+    inline int grid_y_to_cy(int y, int /*layer_num*/) const {
         auto itr = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), y);
         VTR_ASSERT(*itr == y);
 
+        return std::distance(compressed_to_grid_y.begin(), itr);
+    }
+
+    inline int grid_x_to_cx_approx(int x, int /*layer_num*/) const {
+        auto itr = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), x);
+        if (itr == compressed_to_grid_y.end())
+            return std::distance(compressed_to_grid_y.begin(), itr - 1);
+        return std::distance(compressed_to_grid_y.begin(), itr);
+    }
+
+    inline int grid_y_to_cy_approx(int y, int /*layer_num*/) const {
+        auto itr = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), y);
+        if (itr == compressed_to_grid_y.end())
+            return std::distance(compressed_to_grid_y.begin(), itr - 1);
         return std::distance(compressed_to_grid_y.begin(), itr);
     }
 
