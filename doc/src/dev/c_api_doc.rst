@@ -64,7 +64,7 @@ Example of this configuration structure is presented below::
         "vpr"          : "../_build/doxygen/vpr/xml",
         "abc"          : "../_build/doxygen/abc/xml",
         "ace2"         : "../_build/doxygen/ace2/xml",
-        "ODIN_II"      : "../_build/doxygen/ODIN_II/xml",
+        "odin_ii"      : "../_build/doxygen/odin_ii/xml",
         "blifexplorer" : "../_build/doxygen/blifexplorer/xml",
     }
 

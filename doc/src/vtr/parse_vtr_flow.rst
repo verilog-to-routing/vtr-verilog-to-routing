@@ -21,7 +21,7 @@ Typical usage is::
 
 where:
 
-  * ``<parse_path>`` is the directory path that contains the files to be parsed (e.g. ``vpr.out``, ``odin.out``, etc).
+  * ``<parse_path>`` is the directory path that contains the files to be parsed (e.g. ``vpr.out``, ``parmys.out``, etc).
   * ``<parse_config_file>`` is the path to the :ref:`vtr_parse_config` file.
 
 Output

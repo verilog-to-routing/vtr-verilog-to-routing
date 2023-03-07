@@ -1,0 +1,52 @@
+// yosys -- Yosys Open SYnthesis Suite
+//
+// Copyright (C) 2012  Claire Xenia Wolf <claire@yosyshq.com>
+// Copyright (C) 2022  CAS—Atlantic (University of New Brunswick, CASA)
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+// ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+// OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// Modified version of adff2dff for alddf
+//
+// SPDX-License-Identifier: ISC
+
+(* techmap_celltype = "$aldff" *)
+module aldff2dff (CLK, ALOAD, AD, D, Q);
+	parameter WIDTH = 1;
+	parameter CLK_POLARITY = 1;
+	parameter ALOAD_POLARITY = 1;
+
+	input CLK, ALOAD;
+    (* force_downto *)
+	input [WIDTH-1:0] AD;
+	(* force_downto *)
+	input [WIDTH-1:0] D;
+	(* force_downto *)
+	output reg [WIDTH-1:0] Q;
+	(* force_downto *)
+	reg [WIDTH-1:0] NEXT_Q;
+
+	wire [1023:0] _TECHMAP_DO_ = "proc;;";
+
+	always @*
+		if (ALOAD == ALOAD_POLARITY)
+			NEXT_Q <= AD;
+		else
+			NEXT_Q <= D;
+
+	if (CLK_POLARITY)
+		always @(posedge CLK)
+			Q <= NEXT_Q;
+	else
+		always @(negedge CLK)
+			Q <= NEXT_Q;
+endmodule
