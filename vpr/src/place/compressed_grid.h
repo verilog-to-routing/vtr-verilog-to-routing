@@ -63,10 +63,10 @@ struct t_compressed_block_grid {
     }
 
     inline int grid_x_to_cx_approx(int x, int /*layer_num*/) const {
-        auto itr = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), x);
-        if (itr == compressed_to_grid_y.end())
-            return std::distance(compressed_to_grid_y.begin(), itr - 1);
-        return std::distance(compressed_to_grid_y.begin(), itr);
+        auto itr = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), x);
+        if (itr == compressed_to_grid_x.end())
+            return std::distance(compressed_to_grid_x.begin(), itr - 1);
+        return std::distance(compressed_to_grid_x.begin(), itr);
     }
 
     inline int grid_y_to_cy_approx(int y, int /*layer_num*/) const {
