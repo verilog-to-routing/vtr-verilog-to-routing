@@ -650,14 +650,16 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_rows(from_layer_num)) - 1 - max_compressed_loc[from_layer_num].y >= 0);
     VTR_ASSERT(max_compressed_loc[from_layer_num].y >= min_compressed_loc[from_layer_num].y);
 
+    t_search_range search_range = {min_compressed_loc[from_layer_num].x, max_compressed_loc[from_layer_num].x,
+                                   min_compressed_loc[from_layer_num].y, max_compressed_loc[from_layer_num].y};
+
     t_type_loc to_compressed_loc;
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type,
                                                                           b_from,
-                                                                          {min_compressed_loc[from_layer_num].x, max_compressed_loc[from_layer_num].x,
-                                                                           min_compressed_loc[from_layer_num].y, max_compressed_loc[from_layer_num].y},
+                                                                          search_range,
                                                                           delta_cx,
                                                                           from_layer_num);
         if (!intersect) {
@@ -666,8 +668,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     }
 
     legal = find_compatible_compressed_loc_in_range(blk_type,
-                                                    {min_compressed_loc[from_layer_num].x, max_compressed_loc[from_layer_num].x,
-                                                     min_compressed_loc[from_layer_num].y, max_compressed_loc[from_layer_num].y},
+                                                    search_range,
                                                     delta_cx,
                                                     from_compressed_locs[from_layer_num],
                                                     to_compressed_loc,

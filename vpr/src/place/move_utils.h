@@ -42,7 +42,10 @@ struct t_search_range {
         : xmin_(xmin)
         , xmax_(xmax)
         , ymin_(ymin)
-        , ymax_(ymax) {}
+        , ymax_(ymax) {
+        VTR_ASSERT(xmax >= xmin);
+        VTR_ASSERT(ymax >= ymin);
+    }
 
     int xmin_ = OPEN;
     int xmax_ = OPEN;

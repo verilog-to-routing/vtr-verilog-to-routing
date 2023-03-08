@@ -600,8 +600,6 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
 
     int delta_cx = max_compressed_loc.x - min_compressed_loc.x;
 
-    int cx_to;
-    int cy_to;
     t_type_loc to_compressed_loc;
 
     bool legal;
