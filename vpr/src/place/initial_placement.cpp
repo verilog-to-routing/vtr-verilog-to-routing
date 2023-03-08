@@ -290,28 +290,24 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
 
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const int centroid_loc_layer_num = centroid_loc.layer;
 
     //Determine centroid location in the compressed space of the current block
-    int cx_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, centroid_loc.x);
-    int cy_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, centroid_loc.y);
+    auto compressed_centroid_loc = get_compressed_loc_approx(compressed_block_grid,
+                                                             {centroid_loc.x, centroid_loc.y, centroid_loc.layer},
+                                                             num_layers);
 
     //range limit (rlim) set a limit for the neighbor search in the centroid placement
     //the neighbor location should be within the defined range to calculated centroid location
     int first_rlim = 15;
-    int rlim_x = std::min<int>(compressed_block_grid.compressed_to_grid_x.size(), first_rlim);
-    int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), first_rlim);
 
-    //Determine the valid compressed grid location ranges
-    int min_cx, max_cx, delta_cx;
-    int min_cy, max_cy;
+    auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
+                                                                compressed_centroid_loc,
+                                                                first_rlim,
+                                                                num_layers);
 
-    min_cx = std::max(0, cx_centroid - rlim_x);
-    max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_centroid + rlim_x);
-
-    min_cy = std::max(0, cy_centroid - rlim_y);
-    max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_centroid + rlim_y);
-
-    delta_cx = max_cx - min_cx;
+    int delta_cx = search_range[centroid_loc_layer_num].xmax_ - search_range[centroid_loc_layer_num].xmin_;
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
     int cx_from = OPEN;
@@ -321,7 +317,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     t_type_loc to_compressed_loc;
 
     bool legal = find_compatible_compressed_loc_in_range(block_type,
-                                                         {min_cx, max_cx, min_cy, max_cy},
+                                                         search_range[centroid_loc_layer_num],
                                                          delta_cx,
                                                          {cx_from, cy_from, layer_from},
                                                          to_compressed_loc,
