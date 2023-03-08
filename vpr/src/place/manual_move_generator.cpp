@@ -44,7 +44,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     const auto& compressed_block_grid = place_ctx.compressed_block_grids[cluster_from_type->index];
     //Checking if the block has a compatible subtile.
     auto to_type = device_ctx.grid.get_physical_type(to.x, to.y);
-    auto& compatible_subtiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
+    auto& compatible_subtiles = compressed_block_grid.compatible_sub_tile_num(to_type->index);
 
     //No compatible subtile is found.
     if (std::find(compatible_subtiles.begin(), compatible_subtiles.end(), to.sub_tile) == compatible_subtiles.end()) {

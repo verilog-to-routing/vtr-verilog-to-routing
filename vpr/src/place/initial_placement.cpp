@@ -441,7 +441,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     if (!neighbor_legal_loc) {
         const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
         const auto& type = device_ctx.grid.get_physical_type(centroid_loc.x, centroid_loc.y);
-        auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(type->index);
+        const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
         centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
     }
     int width_offset = device_ctx.grid.get_width_offset(centroid_loc.x, centroid_loc.y);

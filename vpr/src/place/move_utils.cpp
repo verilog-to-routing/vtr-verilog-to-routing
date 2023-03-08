@@ -804,7 +804,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
     auto to_type = grid.get_physical_type(grid_loc.x, grid_loc.y);
 
     //Each x/y location contains only a single type, so we can pick a random z (capcity) location
-    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(to_type->index);
     int sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     to_loc = t_pl_loc(grid_loc.x, grid_loc.y, sub_tile, grid_loc.layer_num);
