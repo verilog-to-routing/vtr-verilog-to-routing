@@ -92,11 +92,11 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vect
 
             //The index of an x-position in x_locs corresponds to it's compressed
             //x-coordinate (similarly for y)
-            compressed_grid.compressed_to_grid_x[layer_num] = std::move(layer_x_locs);
-            compressed_grid.compressed_to_grid_y[layer_num] = std::move(layer_y_locs);
             if(layer_x_locs.size() != 0) {
                 compressed_grid.compressed_to_grid_layer.push_back(layer_num);
             }
+            compressed_grid.compressed_to_grid_x[layer_num] = std::move(layer_x_locs);
+            compressed_grid.compressed_to_grid_y[layer_num] = std::move(layer_y_locs);
         }
     }
 
