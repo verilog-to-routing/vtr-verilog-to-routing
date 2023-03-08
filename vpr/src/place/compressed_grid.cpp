@@ -70,8 +70,8 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vect
     }
 
     {
-        std::vector<std::vector<int>> x_locs;
-        std::vector<std::vector<int>> y_locs;
+        std::vector<std::vector<int>> x_locs(num_layers);
+        std::vector<std::vector<int>> y_locs(num_layers);
         compressed_grid.compressed_to_grid_x.resize(num_layers);
         compressed_grid.compressed_to_grid_y.resize(num_layers);
         for(int layer_num = 0; layer_num < num_layers; layer_num++) {
