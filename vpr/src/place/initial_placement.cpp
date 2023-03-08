@@ -536,14 +536,15 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
         //traverse all column and store their empty locations in block_type_empty_locs
         for (int x_loc = min_cx; x_loc <= max_cx; x_loc++) {
             t_grid_empty_locs_block_type empty_loc;
-            auto first_avail_loc = compressed_block_grid.grid[x_loc].begin()->second;
+            const auto& block_rows = compressed_block_grid.get_column_block_map(x_loc, layer_num);
+            auto first_avail_loc = block_rows.begin()->second;
             empty_loc.first_avail_loc.x = first_avail_loc.x;
             empty_loc.first_avail_loc.y = first_avail_loc.y;
             empty_loc.first_avail_loc.layer = first_avail_loc.layer_num;
             const auto& physical_type = grid.get_physical_type(first_avail_loc.x, first_avail_loc.y, first_avail_loc.layer_num);
             const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(physical_type->index);
             empty_loc.first_avail_loc.sub_tile = *std::min_element(compatible_sub_tiles.begin(), compatible_sub_tiles.end());
-            empty_loc.num_of_empty_locs_in_y_axis = compressed_block_grid.grid[x_loc].size();
+            empty_loc.num_of_empty_locs_in_y_axis = block_rows.size();
             block_type_empty_locs.push_back(empty_loc);
         }
     }
@@ -646,63 +647,64 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
     t_pl_loc to_loc;
 
     for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
-        //TODO: Since the contraints are placement are not adapted to 3d yet, we assume that they apply to all layers
-        for(int layer_num = 0; layer_num < num_layers; layer_num++) {
-            vtr::Rect<int> rect = regions[reg].get_region_rect();
+        //TODO: The contraints are placement are not adapted to 3d yet
+        VTR_ASSERT(num_layers == 1);
+        int layer_num = 0;
+        vtr::Rect<int> rect = regions[reg].get_region_rect();
 
-            int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({rect.xmin(), OPEN, layer_num}).x;
-            int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({rect.xmax(), OPEN, layer_num}).x;
+        int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({rect.xmin(), OPEN, layer_num}).x;
+        int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({rect.xmax(), OPEN, layer_num}).x;
 
-            for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
-                auto y_lower_iter = compressed_block_grid.grid[cx].begin();
-                auto y_upper_iter = compressed_block_grid.grid[cx].end();
+        for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
+            const auto& block_rows = compressed_block_grid.get_column_block_map(cx, layer_num);
+            auto y_lower_iter = block_rows.begin();
+            auto y_upper_iter = block_rows.end();
 
-                int y_range = std::distance(y_lower_iter, y_upper_iter);
+            int y_range = std::distance(y_lower_iter, y_upper_iter);
 
-                VTR_ASSERT(y_range >= 0);
+            VTR_ASSERT(y_range >= 0);
 
-                for (int dy = 0; dy < y_range && placed == false; dy++) {
-                    int cy = (y_lower_iter + dy)->first;
+            for (int dy = 0; dy < y_range && placed == false; dy++) {
+                int cy = (y_lower_iter + dy)->first;
 
-                    auto grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({cx, cy, layer_num});
-                    to_loc.x = grid_loc.x;
-                    to_loc.y = grid_loc.y;
-                    to_loc.layer = grid_loc.layer_num;
+                auto grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({cx, cy, layer_num});
+                to_loc.x = grid_loc.x;
+                to_loc.y = grid_loc.y;
+                to_loc.layer = grid_loc.layer_num;
 
-                    auto& grid = g_vpr_ctx.device().grid;
-                    auto tile_type = grid.get_physical_type(to_loc.x, to_loc.y, layer_num);
+                auto& grid = g_vpr_ctx.device().grid;
+                auto tile_type = grid.get_physical_type(to_loc.x, to_loc.y, layer_num);
 
-                    if (regions[reg].get_sub_tile() != NO_SUBTILE) {
-                        int subtile = regions[reg].get_sub_tile();
+                if (regions[reg].get_sub_tile() != NO_SUBTILE) {
+                    int subtile = regions[reg].get_sub_tile();
 
-                        to_loc.sub_tile = subtile;
-                        if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
-                            placed = try_place_macro(pl_macro, to_loc);
+                    to_loc.sub_tile = subtile;
+                    if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                        placed = try_place_macro(pl_macro, to_loc);
 
-                            if (placed) {
-                                fix_IO_block_types(pl_macro, to_loc, pad_loc_type);
-                            }
+                        if (placed) {
+                            fix_IO_block_types(pl_macro, to_loc, pad_loc_type);
                         }
-                    } else {
-                        for (const auto& sub_tile : tile_type->sub_tiles) {
-                            if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
-                                int st_low = sub_tile.capacity.low;
-                                int st_high = sub_tile.capacity.high;
+                    }
+                } else {
+                    for (const auto& sub_tile : tile_type->sub_tiles) {
+                        if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
+                            int st_low = sub_tile.capacity.low;
+                            int st_high = sub_tile.capacity.high;
 
-                                for (int st = st_low; st <= st_high && placed == false; st++) {
-                                    to_loc.sub_tile = st;
-                                    if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
-                                        placed = try_place_macro(pl_macro, to_loc);
-                                        if (placed) {
-                                            fix_IO_block_types(pl_macro, to_loc, pad_loc_type);
-                                        }
+                            for (int st = st_low; st <= st_high && placed == false; st++) {
+                                to_loc.sub_tile = st;
+                                if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                                    placed = try_place_macro(pl_macro, to_loc);
+                                    if (placed) {
+                                        fix_IO_block_types(pl_macro, to_loc, pad_loc_type);
                                     }
                                 }
                             }
+                        }
 
-                            if (placed) {
-                                break;
-                            }
+                        if (placed) {
+                            break;
                         }
                     }
                 }

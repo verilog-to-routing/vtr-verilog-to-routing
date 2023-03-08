@@ -64,7 +64,7 @@ struct t_compressed_block_grid {
         VTR_ASSERT(*itr_y == grid_loc.y);
         cy = std::distance(compressed_to_grid_y.begin(), itr_y);
 
-        return {cx, cy};
+        return {cx, cy, grid_loc.layer_num};
     }
 
     inline t_type_loc grid_loc_to_compressed_loc_approx(t_type_loc grid_loc) const {
@@ -83,7 +83,7 @@ struct t_compressed_block_grid {
         else
             cy = std::distance(compressed_to_grid_y.begin(), itr_y);
 
-        return {cx, cy};
+        return {cx, cy, grid_loc.layer_num};
     }
 
     inline t_type_loc compressed_loc_to_grid_loc(t_type_loc compressed_loc) const {
@@ -92,6 +92,10 @@ struct t_compressed_block_grid {
 
     inline const std::vector<int>& compatible_sub_tile_num(int physical_type_index) const {
         return compatible_sub_tiles_for_tile.at(physical_type_index);
+    }
+
+    inline const vtr::flat_map2<int, t_type_loc>& get_column_block_map(int cx, int /*layer_num*/) const {
+        return grid[cx];
     }
 
     inline std::vector<int> get_layer_nums() const {
