@@ -54,6 +54,7 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
         }
     }
     VTR_LOG("Read in '%d' constraint file(s) successfully.\n", num_file_read);
+    freeTokens(tokens, num_tokens);
 
     //Update the floorplanning constraints in the floorplanning constraints context
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
