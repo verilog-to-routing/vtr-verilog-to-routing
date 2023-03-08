@@ -517,26 +517,32 @@ static int get_blk_type_first_loc(t_pl_loc& loc, t_pl_macro pl_macro, std::vecto
 static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(int block_type_index) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type_index];
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
+    int num_layers = grid.get_num_layers();
 
     //create a vector to store all columns containing block_type_index with their lowest y and number of remaining blocks
     std::vector<t_grid_empty_locs_block_type> block_type_empty_locs;
 
-    //create a region the size of grid to find out first location with a specific block type
-    Region reg;
-    reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-    reg.set_sub_tile(NO_SUBTILE);
+    for(int layer_num = 0; layer_num < num_layers; layer_num++) {
+        //create a region the size of grid to find out first location with a specific block type
+        Region reg;
+        reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+        reg.set_sub_tile(NO_SUBTILE);
 
-    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, reg.get_region_rect().xmin());
-    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, reg.get_region_rect().xmax());
+        int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg.get_region_rect().xmin(), OPEN, layer_num}).x;
+        int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg.get_region_rect().xmax(), OPEN, layer_num}).x;
 
-    //traverse all column and store their empty locations in block_type_empty_locs
-    for (int x_loc = min_cx; x_loc <= max_cx; x_loc++) {
-        t_grid_empty_locs_block_type empty_loc;
-        empty_loc.first_avail_loc.x = compressed_block_grid.grid[x_loc].at(0).x;
-        empty_loc.first_avail_loc.y = compressed_block_grid.grid[x_loc].at(0).y;
-        empty_loc.first_avail_loc.sub_tile = 0;
-        empty_loc.num_of_empty_locs_in_y_axis = compressed_block_grid.grid[x_loc].size();
-        block_type_empty_locs.push_back(empty_loc);
+        //traverse all column and store their empty locations in block_type_empty_locs
+        for (int x_loc = min_cx; x_loc <= max_cx; x_loc++) {
+            t_grid_empty_locs_block_type empty_loc;
+            auto first_avail_loc = compressed_block_grid.grid[x_loc].begin()->second;
+            empty_loc.first_avail_loc.x = first_avail_loc.x;
+            empty_loc.first_avail_loc.y = first_avail_loc.y;
+            const auto& physical_type = grid.get_physical_type(first_avail_loc.x, first_avail_loc.y, first_avail_loc.layer_num);
+            empty_loc.first_avail_loc.sub_tile = compressed_block_grid.compatible_sub_tiles_for_tile.at(physical_type->index)[0];
+            empty_loc.num_of_empty_locs_in_y_axis = compressed_block_grid.grid[x_loc].size();
+            block_type_empty_locs.push_back(empty_loc);
+        }
     }
 
     return block_type_empty_locs;
