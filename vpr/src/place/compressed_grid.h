@@ -29,14 +29,15 @@ struct t_compressed_block_grid {
     //If 'cx' is an index in the compressed grid space, then
     //'compressed_to_grid_x[cx]' is the corresponding location in the
     //full (uncompressed) device grid.
-    std::vector<int> compressed_to_grid_x;
-    std::vector<int> compressed_to_grid_y;
+    std::vector<std::vector<int>> compressed_to_grid_x;
+    std::vector<std::vector<int>> compressed_to_grid_y;
+    std::vector<int> compressed_to_grid_layer;
 
     //The grid is stored with a full/dense x-dimension (since only
     //x values which exist are considered), while the y-dimension is
     //stored sparsely, since we may not have full columns of blocks.
     //This makes it easy to check whether there exist
-    std::vector<vtr::flat_map2<int, t_type_loc>> grid;
+    std::vector<std::vector<vtr::flat_map2<int, t_type_loc>>> grid;
 
     //The sub type compatibility for a given physical tile and a compressed block grid
     //corresponding to the possible placement location for a given logical block
@@ -44,63 +45,76 @@ struct t_compressed_block_grid {
     //  - value: vector of compatible sub tiles for the physical tile/logical block pair
     std::unordered_map<int, std::vector<int>> compatible_sub_tiles_for_tile;
 
-    inline size_t get_num_columns(int /*layer_num*/) const {
-        return compressed_to_grid_x.size();
+    inline size_t get_num_columns(int layer_num) const {
+        return compressed_to_grid_x[layer_num].size();
     }
 
-    inline size_t get_num_rows(int /*layer_num*/) const {
-        return compressed_to_grid_y.size();
+    inline size_t get_num_rows(int layer_num) const {
+        return compressed_to_grid_y[layer_num].size();
     }
 
     inline t_type_loc grid_loc_to_compressed_loc(t_type_loc grid_loc) const {
         int cx = OPEN;
         int cy = OPEN;
+        int layer_num = grid_loc.layer_num;
 
-        auto itr_x = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), grid_loc.x);
+        auto itr_x = std::lower_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
         VTR_ASSERT(*itr_x == grid_loc.x);
-        cx = std::distance(compressed_to_grid_x.begin(), itr_x);
+        cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
 
-        auto itr_y = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), grid_loc.y);
+        auto itr_y = std::lower_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
         VTR_ASSERT(*itr_y == grid_loc.y);
-        cy = std::distance(compressed_to_grid_y.begin(), itr_y);
+        cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
 
-        return {cx, cy, grid_loc.layer_num};
+        return {cx, cy, layer_num};
     }
 
+    /**
+     * @brief  find the nearest location in the compressed grid.
+     *
+     * Useful when the point is of a different block type from coords.
+     *
+     *   @param point represents a coordinate in one dimension of the point
+     *   @param coords represents vector of coordinate values of a single type only
+     *
+     * Hence, the exact point coordinate will not be found in coords if they are of different block types. In this case the function will return
+     * the nearest compressed location to point by rounding it down
+     */
     inline t_type_loc grid_loc_to_compressed_loc_approx(t_type_loc grid_loc) const {
         int cx = OPEN;
         int cy = OPEN;
+        int layer_num = grid_loc.layer_num;
 
-        auto itr_x = std::lower_bound(compressed_to_grid_x.begin(), compressed_to_grid_x.end(), grid_loc.x);
-        if (itr_x == compressed_to_grid_x.end())
-            cx = std::distance(compressed_to_grid_x.begin(), itr_x - 1);
+        auto itr_x = std::lower_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
+        if (itr_x == compressed_to_grid_x[layer_num].end())
+            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x - 1);
         else
-            cx = std::distance(compressed_to_grid_x.begin(), itr_x);
+            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
 
-        auto itr_y = std::lower_bound(compressed_to_grid_y.begin(), compressed_to_grid_y.end(), grid_loc.y);
-        if (itr_y == compressed_to_grid_y.end())
-            cy = std::distance(compressed_to_grid_y.begin(), itr_y - 1);
+        auto itr_y = std::lower_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
+        if (itr_y == compressed_to_grid_y[layer_num].end())
+            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y - 1);
         else
-            cy = std::distance(compressed_to_grid_y.begin(), itr_y);
+            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
 
-        return {cx, cy, grid_loc.layer_num};
+        return {cx, cy, layer_num};
     }
 
     inline t_type_loc compressed_loc_to_grid_loc(t_type_loc compressed_loc) const {
-        return {compressed_to_grid_x[compressed_loc.x], compressed_to_grid_y[compressed_loc.y], compressed_loc.layer_num};
+        int layer_num = compressed_loc.layer_num;
+        return {compressed_to_grid_x[layer_num][compressed_loc.x], compressed_to_grid_y[layer_num][compressed_loc.y], layer_num};
     }
 
     inline const std::vector<int>& compatible_sub_tile_num(int physical_type_index) const {
         return compatible_sub_tiles_for_tile.at(physical_type_index);
     }
 
-    inline const vtr::flat_map2<int, t_type_loc>& get_column_block_map(int cx, int /*layer_num*/) const {
-        return grid[cx];
+    inline const vtr::flat_map2<int, t_type_loc>& get_column_block_map(int cx, int layer_num) const {
+        return grid[layer_num][cx];
     }
 
     inline std::vector<int> get_layer_nums() const {
-        //TODO: A member should be added to store the compressed layer numbers
-        return {0};
+        return compressed_to_grid_layer;
     }
 
 
@@ -113,22 +127,7 @@ typedef std::vector<t_compressed_block_grid> t_compressed_block_grids;
 
 std::vector<t_compressed_block_grid> create_compressed_block_grids();
 
-t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Point<int>>& locations);
-
-int grid_to_compressed(const std::vector<int>& coords, int point);
-
-/**
- * @brief  find the nearest location in the compressed grid.
- *
- * Useful when the point is of a different block type from coords.
- * 
- *   @param point represents a coordinate in one dimension of the point
- *   @param coords represents vector of coordinate values of a single type only
- *
- * Hence, the exact point coordinate will not be found in coords if they are of different block types. In this case the function will return 
- * the nearest compressed location to point by rounding it down 
- */
-int grid_to_compressed_approx(const std::vector<int>& coords, int point);
+t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vector<vtr::Point<int>>>& locations, int num_layers);
 
 /**
  * @brief  print the contents of the compressed grids to an echo file
