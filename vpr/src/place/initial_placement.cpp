@@ -587,15 +587,17 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
     }
     Region reg = regions[region_index];
 
+    //TODO: We assume that 3d is not used here. This function needs to be updated
+    VTR_ASSERT(g_vpr_ctx.device().grid.get_num_layers() == 1);
+    int layer_num = 0;
+
     vtr::Rect<int> rect = reg.get_region_rect();
 
-    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-    int min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymin());
+    auto min_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({rect.xmin(), rect.ymin(), layer_num});
 
-    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
-    int max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymax());
+    auto max_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({rect.xmax(), rect.ymax(), layer_num});
 
-    int delta_cx = max_cx - min_cx;
+    int delta_cx = max_compressed_loc.x - min_compressed_loc.x;
 
     int cx_to;
     int cy_to;
@@ -603,7 +605,8 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
 
     bool legal;
     legal = find_compatible_compressed_loc_in_range(block_type,
-                                                    {min_cx, max_cx, min_cy, max_cy},
+                                                    {min_compressed_loc.x, max_compressed_loc.x,
+                                                     min_compressed_loc.y, max_compressed_loc.y},
                                                     delta_cx,
                                                     {cx_from, cy_from},
                                                     to_compressed_loc,

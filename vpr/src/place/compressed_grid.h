@@ -94,6 +94,11 @@ struct t_compressed_block_grid {
         return compatible_sub_tiles_for_tile.at(physical_type_index);
     }
 
+    inline std::vector<int> get_layer_nums() const {
+        //TODO: A member should be added to store the compressed layer numbers
+        return {0};
+    }
+
 
 };
 
