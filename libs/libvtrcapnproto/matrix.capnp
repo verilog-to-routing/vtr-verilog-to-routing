@@ -1,4 +1,4 @@
-@0xafffc9c1f309bc00;
+@0xc894c3b3707f5c6b;
 
 # Cap'n proto representation of vtr::NdMatrix
 #

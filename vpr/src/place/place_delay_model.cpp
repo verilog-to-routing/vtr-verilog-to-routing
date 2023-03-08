@@ -305,7 +305,8 @@ void OverrideDelayModel::write(const std::string& file) const {
 #endif
 
 ///@brief Initialize the placer delay model.
-std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(t_chan_width_dist chan_width_dist,
+std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
+                                                               t_chan_width_dist chan_width_dist,
                                                                const t_placer_opts& placer_opts,
                                                                const t_router_opts& router_opts,
                                                                t_det_routing_arch* det_routing_arch,
@@ -313,7 +314,7 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(t_chan_width_dist
                                                                const t_direct_inf* directs,
                                                                const int num_directs,
                                                                bool is_flat) {
-    return compute_place_delay_model(placer_opts, router_opts, det_routing_arch, segment_inf,
+    return compute_place_delay_model(placer_opts, router_opts, net_list, det_routing_arch, segment_inf,
                                      chan_width_dist, directs, num_directs, is_flat);
 }
 
@@ -361,9 +362,9 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
             VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
                       "in comp_td_single_connection_delay: Delay is less than 0\n",
-                      block_type_pin_index_to_name(physical_tile_type(source_block), source_block_ipin).c_str(),
+                      block_type_pin_index_to_name(physical_tile_type(source_block), source_block_ipin, false).c_str(),
                       source_x, source_y,
-                      block_type_pin_index_to_name(physical_tile_type(sink_block), sink_block_ipin).c_str(),
+                      block_type_pin_index_to_name(physical_tile_type(sink_block), sink_block_ipin, false).c_str(),
                       sink_x, sink_y,
                       delay_source_to_sink);
         }
