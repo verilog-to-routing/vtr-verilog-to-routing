@@ -90,6 +90,10 @@ struct t_compressed_block_grid {
         return {compressed_to_grid_x[compressed_loc.x], compressed_to_grid_y[compressed_loc.y], compressed_loc.layer_num};
     }
 
+    inline const std::vector<int>& compatible_sub_tile_num(int physical_type_index) const {
+        return compatible_sub_tiles_for_tile.at(physical_type_index);
+    }
+
 
 };
 
