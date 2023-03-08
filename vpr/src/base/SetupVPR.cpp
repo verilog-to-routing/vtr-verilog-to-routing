@@ -1,6 +1,7 @@
 #include <cstring>
 #include <vector>
 #include <sstream>
+#include <list>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -46,7 +47,29 @@ static void SetupSwitches(const t_arch& Arch,
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
-static void alloc_and_load_intra_cluster_resources();
+// Fill the data structures used when flat_routing is enabled to speed-up routing
+static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
+static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type);
+// Fill the pin_num to pb_pin map in physical_type
+static void add_logical_pin_to_physical_tile(int physical_pin_offset,
+                                             t_logical_block_type_ptr logical_block_ptr,
+                                             t_physical_tile_type* physical_type);
+static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
+                                               int physical_class_num,
+                                               t_physical_tile_type* physical_tile);
+static void add_intra_tile_switches();
+
+/**
+ * Identify the pins that can directly reach class_inf
+ * @param physical_tile
+ * @param logical_block
+ * @param class_inf
+ * @param physical_class_num
+ */
+static void do_reachability_analysis(t_physical_tile_type* physical_tile,
+                                     t_logical_block_type* logical_block,
+                                     t_class* class_inf,
+                                     int physical_class_num);
 
 /**
  * @brief Sets VPR parameters and defaults.
@@ -254,7 +277,11 @@ void SetupVPR(const t_options* Options,
     }
 
     if (RouterOpts->flat_routing) {
-        alloc_and_load_intra_cluster_resources();
+        vtr::ScopedStartFinishTimer timer("Allocate intra-cluster resources");
+        // The following two functions should be called when the data structured related to t_pb_graph_node, t_pb_type,
+        // and t_pb_graph_edge are initialized
+        alloc_and_load_intra_cluster_resources(RouterOpts->has_choking_spot);
+        add_intra_tile_switches();
     }
 
     if ((Options->clock_modeling == ROUTED_CLOCK) || (Options->clock_modeling == DEDICATED_NETWORK)) {
@@ -303,22 +330,25 @@ static void SetupSwitches(const t_arch& Arch,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = NumArchSwitches;
-    device_ctx.num_arch_switches = NumArchSwitches;
+    int num_arch_switches = NumArchSwitches;
 
     RoutingArch->wire_to_arch_ipin_switch = find_ipin_cblock_switch_index(Arch);
 
     /* Depends on device_ctx.num_arch_switches */
-    RoutingArch->delayless_switch = device_ctx.num_arch_switches++;
+    RoutingArch->delayless_switch = num_arch_switches++;
 
     /* Alloc the list now that we know the final num_arch_switches value */
-    device_ctx.arch_switch_inf = new t_arch_switch_inf[device_ctx.num_arch_switches];
+    device_ctx.arch_switch_inf.resize(num_arch_switches);
     for (int iswitch = 0; iswitch < switches_to_copy; iswitch++) {
         device_ctx.arch_switch_inf[iswitch] = ArchSwitches[iswitch];
+        // TODO: AM: Since I am not sure whether replacing arch_switch_in with all_sw_inf, which contains the
+        //  information about intra-tile switched, would not break anything, for the time being, I decided to not remove it
+        device_ctx.all_sw_inf[iswitch] = ArchSwitches[iswitch];
     }
 
     /* Delayless switch for connecting sinks and sources with their pins. */
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_type(SwitchType::MUX);
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = vtr::strdup(VPR_DELAYLESS_SWITCH_NAME);
+    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
@@ -330,7 +360,11 @@ static void SetupSwitches(const t_arch& Arch,
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].configurable(), "Delayless switch expected to be configurable");
 
+    device_ctx.all_sw_inf[RoutingArch->delayless_switch] = device_ctx.arch_switch_inf[RoutingArch->delayless_switch];
+
     RoutingArch->global_route_switch = RoutingArch->delayless_switch;
+
+    device_ctx.delayless_switch_idx = RoutingArch->delayless_switch;
 
     //Warn about non-zero Cout values for the ipin switch, since these values have no effect.
     //VPR do not model the R/C's of block internal routing connectsion.
@@ -423,6 +457,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->write_router_lookahead = Options.write_router_lookahead;
     RouterOpts->read_router_lookahead = Options.read_router_lookahead;
 
+    RouterOpts->write_intra_cluster_router_lookahead = Options.write_intra_cluster_router_lookahead;
+    RouterOpts->read_intra_cluster_router_lookahead = Options.read_intra_cluster_router_lookahead;
+
     RouterOpts->router_heap = Options.router_heap;
     RouterOpts->exit_after_first_routing_iteration = Options.exit_after_first_routing_iteration;
 
@@ -432,6 +469,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->max_logged_overused_rr_nodes = Options.max_logged_overused_rr_nodes;
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
+    RouterOpts->has_choking_spot = Options.has_choking_spot;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -699,46 +737,209 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     return ipin_cblock_switch_index;
 }
 
-static void alloc_and_load_intra_cluster_resources() {
+static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     for (auto& physical_type : device_ctx.physical_tile_types) {
+        set_root_pin_to_pb_pin_map(&physical_type);
+        // Physical number of pins and classes in the clusters start from the number of pins and classes on the cluster
+        // to avoid collision between intra-cluster pins and classes with root-level ones
         int physical_pin_offset = physical_type.num_pins;
         int physical_class_offset = (int)physical_type.class_inf.size();
+        physical_type.primitive_class_starting_idx = physical_class_offset;
         for (auto& sub_tile : physical_type.sub_tiles) {
-            sub_tile.starting_internal_class_idx.resize(sub_tile.capacity.total());
-            sub_tile.starting_internal_pin_idx.resize(sub_tile.capacity.total());
+            sub_tile.primitive_class_range.resize(sub_tile.capacity.total());
+            sub_tile.intra_pin_range.resize(sub_tile.capacity.total());
             for (int sub_tile_inst = 0; sub_tile_inst < sub_tile.capacity.total(); sub_tile_inst++) {
                 for (auto logic_block_ptr : sub_tile.equivalent_sites) {
-                    sub_tile.starting_internal_class_idx[sub_tile_inst].insert(
-                        std::make_pair(logic_block_ptr, physical_class_offset));
-                    sub_tile.starting_internal_pin_idx[sub_tile_inst].insert(
-                        std::make_pair(logic_block_ptr, physical_pin_offset));
+                    int num_classes = (int)logic_block_ptr->primitive_logical_class_inf.size();
+                    int num_pins = (int)logic_block_ptr->pin_logical_num_to_pb_pin_mapping.size();
+                    int logical_block_idx = logic_block_ptr->index;
+                    t_logical_block_type* mutable_logical_block = &device_ctx.logical_block_types[logical_block_idx];
+                    VTR_ASSERT(mutable_logical_block == logic_block_ptr);
+                    // Continuous ranges are assigned to make passing them more memory-efficient
+                    sub_tile.primitive_class_range[sub_tile_inst].insert(
+                        std::make_pair(logic_block_ptr, t_class_range(physical_class_offset,
+                                                                      physical_class_offset + num_classes - 1)));
+                    sub_tile.intra_pin_range[sub_tile_inst].insert(
+                        std::make_pair(logic_block_ptr, t_pin_range(physical_pin_offset,
+                                                                    physical_pin_offset + num_pins - 1)));
+                    add_logical_pin_to_physical_tile(physical_pin_offset, logic_block_ptr, &physical_type);
 
-                    auto logical_classes = logic_block_ptr->logical_class_inf;
+                    std::vector<t_class> logical_classes = logic_block_ptr->primitive_logical_class_inf;
+                    // Change the pin numbers in a class pin list from logical number to physical number
                     std::for_each(logical_classes.begin(), logical_classes.end(),
-                                  [&physical_pin_offset](t_class& l_class) { for(auto &pin : l_class.pinlist) {
-                        pin += physical_pin_offset;} });
+                                  [&physical_pin_offset](t_class& l_class) {
+                                      for (auto& pin : l_class.pinlist) {
+                                          pin += physical_pin_offset;
+                                      }
+                                  });
 
                     int physical_class_num = physical_class_offset;
                     for (auto& logic_class : logical_classes) {
-                        auto result = physical_type.internal_class_inf.insert(std::make_pair(physical_class_num, logic_class));
+                        auto result = physical_type.primitive_class_inf.insert(std::make_pair(physical_class_num, logic_class));
+                        add_primitive_pin_to_physical_tile(logic_class.pinlist,
+                                                           physical_class_num,
+                                                           &physical_type);
                         VTR_ASSERT(result.second);
+                        if (reachability_analysis && logic_class.type == e_pin_type::RECEIVER) {
+                            do_reachability_analysis(&physical_type,
+                                                     mutable_logical_block,
+                                                     &logic_class,
+                                                     physical_class_num);
+                        }
                         physical_class_num++;
                     }
 
-                    vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
-                    for (auto pin_to_pb_pin_map : logic_block_ptr->pin_logical_num_to_pb_pin_mapping) {
-                        int physical_pin_num = pin_to_pb_pin_map.first + physical_pin_offset;
-                        int class_logical_num = logic_block_ptr->pb_pin_to_class_logical_num_mapping.at(pin_to_pb_pin_map.second);
+                    // Add the number of seen pins and classes to the relevant offsets
+                    physical_pin_offset += num_pins;
+                    physical_class_offset += num_classes;
+                }
+            }
+        }
+    }
+}
 
-                        auto result = physical_type.internal_pin_class.insert(
-                            std::make_pair(physical_pin_num, class_logical_num + physical_class_offset));
-                        VTR_ASSERT(result.second);
+static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
+    for (int sub_tile_idx = 0; sub_tile_idx < (int)physical_type->sub_tiles.size(); sub_tile_idx++) {
+        auto& sub_tile = physical_type->sub_tiles[sub_tile_idx];
+        int inst_num_pin = sub_tile.num_phy_pins / sub_tile.capacity.total();
+        // Later in the code, I've assumed that pins of a subtile are mapped in a continuous fashion to
+        // the tile pins - Usage case: vpr_utils.cpp:get_pb_pins
+        VTR_ASSERT(sub_tile.sub_tile_to_tile_pin_indices[0] + sub_tile.num_phy_pins - 1 == sub_tile.sub_tile_to_tile_pin_indices[sub_tile.num_phy_pins - 1]);
+        for (int sub_tile_pin_num = 0; sub_tile_pin_num < sub_tile.num_phy_pins; sub_tile_pin_num++) {
+            for (auto& eq_site : sub_tile.equivalent_sites) {
+                t_physical_pin sub_tile_physical_pin = t_physical_pin(sub_tile_pin_num % inst_num_pin);
+                int physical_pin_num = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_num];
+                auto direct_map = physical_type->tile_block_pin_directs_map.at(eq_site->index).at(sub_tile.index);
+                auto find_res = direct_map.find(sub_tile_physical_pin);
+                VTR_ASSERT(find_res != direct_map.inverse_end());
+                t_logical_pin logical_pin = find_res->second;
+                t_pb_graph_pin* pb_pin = eq_site->pin_logical_num_to_pb_pin_mapping.at(logical_pin.pin);
+
+                auto map_find_res = physical_type->on_tile_pin_num_to_pb_pin.find(physical_pin_num);
+                if (map_find_res == physical_type->on_tile_pin_num_to_pb_pin.end()) {
+                    physical_type->on_tile_pin_num_to_pb_pin.insert(std::make_pair(physical_pin_num,
+                                                                                   std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>()));
+                }
+                auto insert_res = physical_type->on_tile_pin_num_to_pb_pin.at(physical_pin_num).insert(std::make_pair(eq_site, pb_pin));
+                VTR_ASSERT(insert_res.second);
+            }
+        }
+    }
+}
+
+static void add_logical_pin_to_physical_tile(int physical_pin_offset,
+                                             t_logical_block_type_ptr logical_block_ptr,
+                                             t_physical_tile_type* physical_type) {
+    for (auto logical_pin_pair : logical_block_ptr->pin_logical_num_to_pb_pin_mapping) {
+        auto pin_logical_num = logical_pin_pair.first;
+        auto pb_pin = logical_pin_pair.second;
+        physical_type->pin_num_to_pb_pin.insert(std::make_pair(pin_logical_num + physical_pin_offset, pb_pin));
+    }
+}
+
+static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
+                                               int physical_class_num,
+                                               t_physical_tile_type* physical_tile) {
+    for (auto pin_num : pin_list) {
+        physical_tile->primitive_pin_class.insert(std::make_pair(pin_num, physical_class_num));
+    }
+}
+
+static void add_intra_tile_switches() {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    std::unordered_map<float, int> pb_edge_delays;
+
+    VTR_ASSERT(device_ctx.all_sw_inf.size() == device_ctx.arch_switch_inf.size());
+
+    for (auto& logical_block : device_ctx.logical_block_types) {
+        if (logical_block.is_empty()) {
+            continue;
+        }
+        t_pb_graph_node* pb_graph_node = logical_block.pb_graph_head;
+
+        int switch_type_id = -1;
+
+        std::list<t_pb_graph_node*> pb_graph_node_q;
+
+        pb_graph_node_q.push_back(pb_graph_node);
+        while (!pb_graph_node_q.empty()) {
+            pb_graph_node = pb_graph_node_q.front();
+            pb_graph_node_q.pop_front();
+            auto pb_pins = get_mutable_pb_graph_node_pb_pins(pb_graph_node);
+
+            for (t_pb_graph_pin* pb_pin : pb_pins) {
+                for (int out_edge_idx = 0; out_edge_idx < pb_pin->num_output_edges; out_edge_idx++) {
+                    t_pb_graph_edge* pb_graph_edge = pb_pin->output_edges[out_edge_idx];
+                    float max_delay = pb_graph_edge->delay_max;
+
+                    if (pb_edge_delays.find(max_delay) == pb_edge_delays.end()) {
+                        switch_type_id = (int)device_ctx.all_sw_inf.size();
+                        pb_edge_delays.insert(std::make_pair(max_delay, switch_type_id));
+                        t_arch_switch_inf arch_switch_inf = create_internal_arch_sw(max_delay);
+                        // AM: In the function that arch_sw to rr_swith remapping takes place, we assumed that the delay of the intra-cluster
+                        // switches is fixed, and it is not dependent on the fan-in.
+                        VTR_ASSERT_MSG(arch_switch_inf.fixed_Tdel(), "Intra-cluster switch is expected to have a fixed delay");
+                        VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Intra-cluster switch is expected to be buffered (isolating)");
+                        VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Intra-cluster switch is expected to be configurable");
+
+                        device_ctx.all_sw_inf.insert(std::make_pair(switch_type_id, arch_switch_inf));
+                    } else {
+                        switch_type_id = pb_edge_delays.at(max_delay);
                     }
 
-                    physical_pin_offset += (int)logic_block_ptr->pin_logical_num_to_pb_pin_mapping.size();
-                    physical_class_offset += (int)logic_block_ptr->logical_class_inf.size();
+                    // The data type of the number of switches is short - We add this assertion to make sure that overflow doesn't happen
+                    VTR_ASSERT(switch_type_id <= std::numeric_limits<short>::max());
+                    pb_graph_edge->switch_type_idx = switch_type_id;
+                }
+            }
+
+            t_pb_type* pb_type = pb_graph_node->pb_type;
+            for (int mode_num = 0; mode_num < pb_type->num_modes; mode_num++) {
+                t_mode* modes = pb_type->modes;
+                for (int pb_type_idx = 0; pb_type_idx < modes[mode_num].num_pb_type_children; pb_type_idx++) {
+                    t_pb_type* child_pb_type = &modes[mode_num].pb_type_children[pb_type_idx];
+                    for (int pb_num = 0; pb_num < child_pb_type->num_pb; pb_num++) {
+                        t_pb_graph_node* child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode_num][pb_type_idx][pb_num];
+                        pb_graph_node_q.push_back(child_pb_graph_node);
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void do_reachability_analysis(t_physical_tile_type* physical_tile,
+                                     t_logical_block_type* logical_block,
+                                     t_class* class_inf,
+                                     int physical_class_num) {
+    VTR_ASSERT(class_inf->type == e_pin_type::RECEIVER);
+    std::list<int> pin_list;
+    pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
+
+    std::set<t_pb_graph_pin*> seen_pb_pins;
+    while (!pin_list.empty()) {
+        int curr_pin_physical_num = pin_list.front();
+        pin_list.pop_front();
+
+        t_pb_graph_pin* curr_pb_graph_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
+        if (curr_pb_graph_pin->port->type != PORTS::IN_PORT) {
+            continue;
+        } else {
+            auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
+            // Make sure that we are visiting each pin once.
+            if (insert_res.second) {
+                curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
+                auto driving_pins = get_physical_pin_src_pins(physical_tile,
+                                                              logical_block,
+                                                              curr_pin_physical_num);
+                for (auto driving_pin_physical_num : driving_pins) {
+                    // Since we define reachable class as a class which is connected to a pin through a series of IPINs, only IPINs are added to the list
+                    if (get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num) == e_pin_type::RECEIVER) {
+                        pin_list.push_back(driving_pin_physical_num);
+                    }
                 }
             }
         }
