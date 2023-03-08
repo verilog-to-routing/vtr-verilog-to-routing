@@ -321,7 +321,8 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
                                                          delta_cx,
                                                          {cx_from, cy_from, layer_from},
                                                          to_compressed_loc,
-                                                         false);
+                                                         false,
+                                                         centroid_loc_layer_num);
 
     if (!legal) {
         return false;
@@ -610,7 +611,8 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
                                                     delta_cx,
                                                     {cx_from, cy_from},
                                                     to_compressed_loc,
-                                                    false);
+                                                    false,
+                                                    layer_num);
     if (!legal) {
         //No valid position found
         return false;

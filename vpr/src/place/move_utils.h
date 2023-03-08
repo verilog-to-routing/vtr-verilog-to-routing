@@ -193,7 +193,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
                                              const t_type_loc& from_loc,
                                              t_type_loc& to_loc,
-                                             bool is_median);
+                                             bool is_median,
+                                             int to_layer_num);
 
 std::vector<t_type_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
                                                     t_pl_loc grid_loc,
@@ -229,7 +230,11 @@ std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_com
  * complicated case to get correct functionality during place moves.
  *
  */
-bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type, ClusterBlockId b_from, int& min_cx, int& min_cy, int& max_cx, int& max_cy, int& delta_cx);
+bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
+                                                      ClusterBlockId b_from,
+                                                      t_search_range& search_range,
+                                                      int& delta_cx,
+                                                      int layer_num);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
 
