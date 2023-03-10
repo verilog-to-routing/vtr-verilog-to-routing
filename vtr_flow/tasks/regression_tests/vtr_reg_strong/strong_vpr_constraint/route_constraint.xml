@@ -1,0 +1,6 @@
+<vpr_constraints tool_name="vpr">
+<global_route_constraints>
+  <!-- specify route method for a global pin that needs to be connected globally -->
+  <set_global_signal name="(pclk)(.*)" type="clock" route_model="route"/>
+</global_route_constraints>
+</vpr_constraints>
