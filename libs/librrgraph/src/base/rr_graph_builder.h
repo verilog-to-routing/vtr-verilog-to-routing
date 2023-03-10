@@ -97,8 +97,7 @@ class RRGraphBuilder {
      */
     inline RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info) {
         //Allocate an ID
-        RRSwitchId switch_id = RRSwitchId(switch_ids_.size());
-        switch_ids_.push_back(switch_id);
+        RRSwitchId switch_id = RRSwitchId(rr_switch_inf_.size());
 
         rr_switch_inf_.push_back(switch_info);
 
@@ -255,10 +254,9 @@ class RRGraphBuilder {
     /** @brief Counts the number of rr switches needed based on fan in to support mux
      * size dependent switch delays. */
     inline size_t count_rr_switches(
-        size_t num_arch_switches,
-        t_arch_switch_inf* arch_switch_inf,
+        const std::vector<t_arch_switch_inf>& arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins) {
-        return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+        return node_storage_.count_rr_switches(arch_switch_inf, arch_switch_fanins);
     }
 
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
@@ -273,7 +271,6 @@ class RRGraphBuilder {
         this->rr_segments_.reserve(num_segments);
     }
     inline void reserve_switches(size_t num_switches) {
-        this->switch_ids_.reserve(num_switches);
         this->rr_switch_inf_.reserve(num_switches);
     }
     /** @brief This function resize node storage to accomidate size RR nodes. */
@@ -309,8 +306,17 @@ class RRGraphBuilder {
         node_storage_.init_fan_in();
     }
 
-    inline void reset_partitioned_flat() {
+    /** @brief Disable the flags which would prevent adding adding extra-resources, when flat-routing
+     * is enabled, to the RR Graph
+     * @note
+     * When flat-routing is enabled, intra-cluster resources are added to the RR Graph after global rosources
+     * are already added. This function disables the flags which would prevent adding extra-resources to the RR Graph
+     */
+    inline void reset_rr_graph_flags() {
+        node_storage_.edges_read_ = false;
         node_storage_.partitioned_ = false;
+        node_storage_.remapped_edges_ = false;
+        node_storage_.clear_node_first_edge();
     }
 
     /* -- Internal data storage -- */
@@ -339,7 +345,6 @@ class RRGraphBuilder {
      *  - Each rr_switch contains the detailed information of a routing switch interconnecting two routing resource nodes.
      *  - We use a fly-weight data structure here, in the same philosophy as the rr_indexed_data. See detailed explanation in the t_rr_switch_inf data structure
      */
-    vtr::vector<RRSwitchId, RRSwitchId> switch_ids_;
     /* Detailed information about the switches, which are used in the RRGraph */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 

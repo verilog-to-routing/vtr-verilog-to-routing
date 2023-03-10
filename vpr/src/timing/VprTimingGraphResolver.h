@@ -9,7 +9,11 @@
 
 class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
   public:
-    VprTimingGraphResolver(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const tatum::TimingGraph& timing_graph, const AnalysisDelayCalculator& delay_calc);
+    VprTimingGraphResolver(const AtomNetlist& netlist,
+                           const AtomLookup& netlist_lookup,
+                           const tatum::TimingGraph& timing_graph,
+                           const AnalysisDelayCalculator& delay_calc,
+                           bool is_flat);
 
     std::string node_name(tatum::NodeId node) const override;
     std::string node_type_name(tatum::NodeId node) const override;
@@ -22,7 +26,7 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
     e_timing_report_detail detail_level() const;
     std::vector<tatum::DelayComponent> interconnect_delay_breakdown(tatum::EdgeId edge, DelayType) const;
 
-    void get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, ClusterNetId net_id, ClusterPinId sink_pin) const;
+    void get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, ParentNetId net_id, ParentPinId sink_pin) const;
     void get_detailed_interconnect_components_helper(std::vector<tatum::DelayComponent>& components, t_rt_node* node) const;
 
     const AtomNetlist& netlist_;
@@ -30,6 +34,7 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
     const tatum::TimingGraph& timing_graph_;
     const AnalysisDelayCalculator& delay_calc_;
     e_timing_report_detail detail_level_ = e_timing_report_detail::NETLIST;
+    bool is_flat_;
 };
 
 #endif

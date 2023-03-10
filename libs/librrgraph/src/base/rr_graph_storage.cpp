@@ -8,6 +8,7 @@ void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_src_node_.reserve(num_edges);
     edge_dest_node_.reserve(num_edges);
     edge_switch_.reserve(num_edges);
+    edge_remapped_.reserve(num_edges);
 }
 
 void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
@@ -16,6 +17,7 @@ void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short ed
     edge_src_node_.emplace_back(src);
     edge_dest_node_.emplace_back(dest);
     edge_switch_.emplace_back(edge_switch);
+    edge_remapped_.emplace_back(false);
 }
 
 // Typical node to edge ratio.  This allows a preallocation guess for the edges
@@ -39,6 +41,7 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         edge_src_node_.reserve(new_capacity);
         edge_dest_node_.reserve(new_capacity);
         edge_switch_.reserve(new_capacity);
+        edge_remapped_.reserve(new_capacity);
     }
 
     for (const auto& new_edge : *rr_edges_to_create) {
@@ -81,6 +84,7 @@ struct edge_swapper {
         storage_->edge_src_node_[edge] = storage_->edge_src_node_[other_edge];
         storage_->edge_dest_node_[edge] = storage_->edge_dest_node_[other_edge];
         storage_->edge_switch_[edge] = storage_->edge_switch_[other_edge];
+        storage_->edge_remapped_[edge] = storage_->edge_remapped_[other_edge];
         return *this;
     }
 
@@ -90,6 +94,7 @@ struct edge_swapper {
         storage_->edge_src_node_[RREdgeId(idx_)] = RRNodeId(edge.from_node);
         storage_->edge_dest_node_[RREdgeId(idx_)] = RRNodeId(edge.to_node);
         storage_->edge_switch_[RREdgeId(idx_)] = edge.switch_type;
+        storage_->edge_remapped_[RREdgeId(idx_)] = edge.remapped;
         return *this;
     }
 
@@ -98,7 +103,8 @@ struct edge_swapper {
         t_rr_edge_info info(
             storage_->edge_src_node_[RREdgeId(idx_)],
             storage_->edge_dest_node_[RREdgeId(idx_)],
-            storage_->edge_switch_[RREdgeId(idx_)]);
+            storage_->edge_switch_[RREdgeId(idx_)],
+            storage_->edge_remapped_[RREdgeId(idx_)]);
 
         return info;
     }
@@ -114,6 +120,7 @@ struct edge_swapper {
         std::swap(a.storage_->edge_src_node_[a_edge], a.storage_->edge_src_node_[b_edge]);
         std::swap(a.storage_->edge_dest_node_[a_edge], a.storage_->edge_dest_node_[b_edge]);
         std::swap(a.storage_->edge_switch_[a_edge], a.storage_->edge_switch_[b_edge]);
+        std::swap(a.storage_->edge_remapped_[a_edge], a.storage_->edge_remapped_[b_edge]);
     }
 
     friend void swap(edge_swapper& a, edge_swapper& b) {
@@ -337,6 +344,7 @@ void t_rr_graph_storage::assign_first_edges() {
     size_t num_edges = edge_src_node_.size();
     VTR_ASSERT(edge_dest_node_.size() == num_edges);
     VTR_ASSERT(edge_switch_.size() == num_edges);
+    VTR_ASSERT(edge_remapped_.size() == num_edges);
     while (true) {
         VTR_ASSERT(first_id < num_edges);
         VTR_ASSERT(second_id < num_edges);
@@ -345,10 +353,10 @@ void t_rr_graph_storage::assign_first_edges() {
             // All edges belonging to node_id are assigned.
             while (node_id < current_node_id) {
                 // Store any edges belongs to node_id.
+                VTR_ASSERT(node_id < node_first_edge_.size());
                 node_first_edge_[RRNodeId(node_id)] = RREdgeId(first_id);
                 first_id = second_id;
                 node_id += 1;
-                VTR_ASSERT(node_first_edge_.size());
             }
 
             VTR_ASSERT(node_id == current_node_id);
@@ -390,17 +398,22 @@ void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
     edges_read_ = true;
     node_fan_in_.resize(node_storage_.size(), 0);
+    // This array is used to avoid initializing fan-in of the nodes which are already seen.
+    // This would reduce the run-time of flat rr graph generation since this function is called twice.
+    seen_edge_.resize(edge_dest_node_.size(), false);
     node_fan_in_.shrink_to_fit();
-
+    seen_edge_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
-    for (const auto& dest_node : edge_dest_node_) {
-        node_fan_in_[dest_node] += 1;
+    for(const auto& edge_id : edge_dest_node_.keys()) {
+        if(!seen_edge_[edge_id]) {
+            node_fan_in_[edge_dest_node_[edge_id]] += 1;
+            seen_edge_[edge_id] = true;
+        }
     }
 }
 
 size_t t_rr_graph_storage::count_rr_switches(
-    size_t num_arch_switches,
-    t_arch_switch_inf* arch_switch_inf,
+    const std::vector<t_arch_switch_inf>& arch_switch_inf,
     t_arch_switch_fanin& arch_switch_fanins) {
     VTR_ASSERT(!partitioned_);
     VTR_ASSERT(!remapped_edges_);
@@ -420,7 +433,7 @@ size_t t_rr_graph_storage::count_rr_switches(
     //Collect the fan-in per switch type for each node in the graph
     //Record the unique switch type/fanin combinations
     std::vector<int> arch_switch_counts;
-    arch_switch_counts.resize(num_arch_switches, 0);
+    arch_switch_counts.resize(arch_switch_inf.size(), 0);
     auto first_edge = edge_dest_node_.begin();
     do {
         RRNodeId node = *first_edge;
@@ -444,7 +457,7 @@ size_t t_rr_graph_storage::count_rr_switches(
             }
 
             auto fanin = arch_switch_counts[iswitch];
-            VTR_ASSERT_SAFE(iswitch < num_arch_switches);
+            VTR_ASSERT_SAFE(iswitch < arch_switch_inf.size());
 
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
                 //If delay is independent of fanin drop the unique fanin info
@@ -460,6 +473,17 @@ size_t t_rr_graph_storage::count_rr_switches(
 
     } while (first_edge != edge_dest_node_.end());
 
+    // We assign a rr switch for other arch switches. This is done mainly for flat-routing,
+    // to avoid allocating switches again. We assume that internal switches' delay are not
+    // dependent on their fan-in
+    for(size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
+        if(arch_switch_fanins[iswitch].empty()){
+            if(arch_switch_inf[iswitch].fixed_Tdel()){
+                arch_switch_fanins[iswitch][UNDEFINED] = num_rr_switches++;
+            }
+        }
+    }
+
     return num_rr_switches;
 }
 
@@ -469,6 +493,9 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
     VTR_ASSERT(!remapped_edges_);
     for (size_t i = 0; i < edge_src_node_.size(); ++i) {
         RREdgeId edge(i);
+        if(edge_remapped_[edge]) {
+            continue;
+        }
 
         RRNodeId to_node = edge_dest_node_[edge];
         int switch_index = edge_switch_[edge];
@@ -484,6 +511,7 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
         int rr_switch_index = itr->second;
 
         edge_switch_[edge] = rr_switch_index;
+        edge_remapped_[edge] = true;
     }
     remapped_edges_ = true;
 }
@@ -794,6 +822,8 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         auto old_edge_src_node = edge_src_node_;
         auto old_edge_dest_node = edge_dest_node_;
         auto old_edge_switch = edge_switch_;
+        auto old_edge_remapped = edge_remapped_;
+        auto old_seen_edge = seen_edge_;
         RREdgeId cur_edge(0);
 
         // Reorder edges by source node
@@ -806,6 +836,8 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                 edge_src_node_[cur_edge] = order[old_edge_src_node[e]]; // == n?
                 edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
                 edge_switch_[cur_edge] = old_edge_switch[e];
+                edge_remapped_[cur_edge] = old_edge_remapped[e];
+                seen_edge_[cur_edge] = old_seen_edge[e];
                 cur_edge = RREdgeId(size_t(cur_edge) + 1);
             }
         }
