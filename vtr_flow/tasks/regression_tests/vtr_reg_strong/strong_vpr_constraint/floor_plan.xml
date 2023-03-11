@@ -2,7 +2,7 @@
 <partition_list>
 <partition name="part0">
 <add_atom name_pattern="d_o"/>
-<add_region x_high="11" x_low="1" y_high="4" y_low="1"/>
+<add_region x_high="1" x_low="1" y_high="1" y_low="1"/>
 </partition>
 </partition_list>
 </vpr_constraints>
