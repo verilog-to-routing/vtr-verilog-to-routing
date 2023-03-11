@@ -78,8 +78,9 @@ RouteConstraint VprConstraints::get_route_constraint_by_net_name(std::string net
 
                     // mark as invalid so write constraint function will not write constraint
                     // of regexpr name
-                    // instead a matched constraint is inerted in
+                    // instead a matched constraint is inserted in
                     constraint.second.set_is_valid(false);
+                    rc.set_net_name(net_name);
                     rc.set_is_valid(true);
                     route_constraints_.insert({net_name, rc});
 
