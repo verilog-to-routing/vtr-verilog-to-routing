@@ -379,7 +379,7 @@ Use the options below to override this default naming behaviour.
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
 
-.. option:: --read_vpr_constraints <file>
+.. option:: --read_vpr_constraints <file1>:<file2>:...:<fileN>
 
     Reads the :ref:`VPR constraints <vpr_constraints>` that the flow must respect from the specified XML file.
 
