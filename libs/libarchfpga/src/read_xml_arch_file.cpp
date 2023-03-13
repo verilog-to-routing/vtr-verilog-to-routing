@@ -174,7 +174,8 @@ static void ProcessPb_Type(vtr::string_internment* strings,
                            t_mode* mode,
                            const bool timing_enabled,
                            const t_arch& arch,
-                           const pugiutil::loc_data& loc_data);
+                           const pugiutil::loc_data& loc_data,
+                           int& pb_idx);
 static void ProcessPb_TypePort(pugi::xml_node Parent,
                                t_port* port,
                                e_power_estimation_method power_method,
@@ -185,7 +186,13 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
                                        t_pb_type* parent_pb_type,
                                        const pugiutil::loc_data& loc_data);
 static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const pugiutil::loc_data& loc_data);
-static void ProcessMode(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data);
+static void ProcessMode(vtr::string_internment* strings,
+                        pugi::xml_node Parent,
+                        t_mode* mode,
+                        const bool timing_enabled,
+                        const t_arch& arch,
+                        const pugiutil::loc_data& loc_data,
+                        int& parent_pb_idx);
 static t_metadata_dict ProcessMetadata(vtr::string_internment* strings, pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node,
@@ -1096,7 +1103,14 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_ty
 }
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
-static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data) {
+static void ProcessPb_Type(vtr::string_internment* strings,
+                           pugi::xml_node Parent,
+                           t_pb_type* pb_type,
+                           t_mode* mode,
+                           const bool timing_enabled,
+                           const t_arch& arch,
+                           const pugiutil::loc_data& loc_data,
+                           int& pb_idx) {
     int num_ports, i, j, k, num_annotations;
     const char* Prop;
     pugi::xml_node Cur;
@@ -1144,6 +1158,7 @@ static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Paren
         num_T_setup, num_T_cq, num_T_hold;
 
     pb_type->parent_mode = mode;
+    pb_type->index_in_logical_block = pb_idx;
     if (mode != nullptr && mode->parent_pb_type != nullptr) {
         pb_type->depth = mode->parent_pb_type->depth + 1;
         Prop = get_attribute(Parent, "name", loc_data).value();
@@ -1351,7 +1366,7 @@ static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Paren
             pb_type->modes = new t_mode[pb_type->num_modes];
             pb_type->modes[i].parent_pb_type = pb_type;
             pb_type->modes[i].index = i;
-            ProcessMode(strings, Parent, &pb_type->modes[i], timing_enabled, arch, loc_data);
+            ProcessMode(strings, Parent, &pb_type->modes[i], timing_enabled, arch, loc_data, pb_idx);
             i++;
         } else {
             pb_type->modes = new t_mode[pb_type->num_modes];
@@ -1361,7 +1376,7 @@ static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Paren
                 if (0 == strcmp(Cur.name(), "mode")) {
                     pb_type->modes[i].parent_pb_type = pb_type;
                     pb_type->modes[i].index = i;
-                    ProcessMode(strings, Cur, &pb_type->modes[i], timing_enabled, arch, loc_data);
+                    ProcessMode(strings, Cur, &pb_type->modes[i], timing_enabled, arch, loc_data, pb_idx);
 
                     ret_mode_names = mode_names.insert(std::pair<std::string, int>(pb_type->modes[i].name, 0));
                     if (!ret_mode_names.second) {
@@ -1733,7 +1748,13 @@ static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node 
     VTR_ASSERT(i == num_interconnect);
 }
 
-static void ProcessMode(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data) {
+static void ProcessMode(vtr::string_internment* strings,
+                        pugi::xml_node Parent,
+                        t_mode* mode,
+                        const bool timing_enabled,
+                        const t_arch& arch,
+                        const pugiutil::loc_data& loc_data,
+                        int& parent_pb_idx) {
     int i;
     const char* Prop;
     pugi::xml_node Cur;
@@ -1776,7 +1797,8 @@ static void ProcessMode(vtr::string_internment* strings, pugi::xml_node Parent, 
         Cur = get_first_child(Parent, "pb_type", loc_data);
         while (Cur != nullptr) {
             if (0 == strcmp(Cur.name(), "pb_type")) {
-                ProcessPb_Type(strings, Cur, &mode->pb_type_children[i], mode, timing_enabled, arch, loc_data);
+                parent_pb_idx++;
+                ProcessPb_Type(strings, Cur, &mode->pb_type_children[i], mode, timing_enabled, arch, loc_data, parent_pb_idx);
 
                 ret_pb_types = pb_type_names.insert(
                     std::pair<std::string, int>(mode->pb_type_children[i].name, 0));
@@ -3486,6 +3508,8 @@ static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node
 
     CurBlockType = Node.first_child();
     while (CurBlockType) {
+        int pb_type_idx = 0;
+
         check_node(CurBlockType, "pb_type", loc_data);
 
         t_logical_block_type LogicalBlockType;
@@ -3505,7 +3529,7 @@ static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node
         /* Load pb_type info to assign to the Logical Block Type */
         LogicalBlockType.pb_type = new t_pb_type;
         LogicalBlockType.pb_type->name = vtr::strdup(LogicalBlockType.name);
-        ProcessPb_Type(strings, CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data);
+        ProcessPb_Type(strings, CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data, pb_type_idx);
 
         LogicalBlockType.index = index;
 
@@ -3658,7 +3682,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name)) {
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
                     break; /* End loop so j is where we want it */
                 }
             }
@@ -3681,7 +3705,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name)) {
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
                     break; /* End loop so j is where we want it */
                 }
             }
@@ -3695,7 +3719,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name)) {
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
                     break; /* End loop so j is where we want it */
                 }
             }
@@ -3909,13 +3933,13 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
         /* Check for switch name collisions */
         for (j = 0; j < i; ++j) {
-            if (0 == strcmp((*Switches)[j].name, switch_name)) {
+            if (0 == strcmp((*Switches)[j].name.c_str(), switch_name)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                                "Two switches with the same name '%s' were found.\n",
                                switch_name);
             }
         }
-        arch_switch.name = vtr::strdup(switch_name);
+        arch_switch.name = std::string(switch_name);
 
         /* Figure out the type of switch */
         /* As noted above, due to their configuration of pass transistors feeding into a buffer,
@@ -3997,6 +4021,8 @@ static void ProcessSwitches(pugi::xml_node Parent,
                 arch_switch.power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
                 arch_switch.power_buffer_size = (float)vtr::atof(power_buf_size);
             }
+
+            arch_switch.intra_tile = false;
         }
 
         //Load the Tdel (which may be specfied with sub-tags)
@@ -4138,7 +4164,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* N
         if (switch_name != nullptr) {
             //Look-up the user defined switch
             for (j = 0; j < NumSwitches; j++) {
-                if (0 == strcmp(switch_name, Switches[j].name)) {
+                if (0 == strcmp(switch_name, Switches[j].name.c_str())) {
                     break; //Found the switch
                 }
             }
@@ -4354,7 +4380,7 @@ static void ProcessClockSwitchPoints(pugi::xml_node parent,
             const char* switch_name = get_attribute(curr_switch, "switch_name", loc_data).value();
             int switch_idx;
             for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
-                if (0 == strcmp(switch_name, switches[switch_idx].name)) {
+                if (0 == strcmp(switch_name, switches[switch_idx].name.c_str())) {
                     break; // switch_idx has been found
                 }
             }
@@ -4426,7 +4452,7 @@ static void ProcessClockRouting(pugi::xml_node parent,
 
         int switch_idx;
         for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
-            if (0 == strcmp(switch_name, switches[switch_idx].name)) {
+            if (0 == strcmp(switch_name, switches[switch_idx].name.c_str())) {
                 break; // switch_idx has been found
             }
         }

@@ -152,11 +152,6 @@ void free_arch(t_arch* arch) {
         return;
     }
 
-    for (int i = 0; i < arch->num_switches; ++i) {
-        if (arch->Switches->name != nullptr) {
-            vtr::free(arch->Switches[i].name);
-        }
-    }
     delete[] arch->Switches;
     arch->Switches = nullptr;
 

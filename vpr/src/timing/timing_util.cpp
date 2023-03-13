@@ -151,8 +151,10 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     return histogram;
 }
 
-std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo& setup_timing,
+std::vector<HistogramBucket> create_criticality_histogram(const Netlist<>& net_list,
+                                                          const SetupTimingInfo& setup_timing,
                                                           const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                          bool is_flat,
                                                           size_t num_bins) {
     std::vector<HistogramBucket> histogram;
     float step = 1. / num_bins;
@@ -175,12 +177,11 @@ std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo&
     };
 
     //Count the criticalities into the buckets
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        auto sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
+    for (auto net_id : net_list.nets()) {
+        auto sinks = net_list.net_sinks(net_id);
 
         for (auto pin : sinks) {
-            float crit = calculate_clb_net_pin_criticality(setup_timing, netlist_pin_lookup, pin);
+            float crit = calculate_clb_net_pin_criticality(setup_timing, netlist_pin_lookup, pin, is_flat);
 
             auto iter = std::lower_bound(histogram.begin(), histogram.end(), crit, cmp);
             VTR_ASSERT(iter != histogram.end());
@@ -692,15 +693,22 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
  * @brief Returns the criticality of a net's pin in the CLB netlist.
  *        Assumes that the timing graph is correct and up to date.
  */
-float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin) {
-    //There may be multiple atom netlist pins connected to this CLB pin
-    float clb_pin_crit = 0.;
-    for (const auto atom_pin : pin_lookup.connected_atom_pins(clb_pin)) {
-        //Take the maximum of the atom pin criticality as the CLB pin criticality
-        clb_pin_crit = std::max(clb_pin_crit, timing_info.setup_pin_criticality(atom_pin));
+float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
+                                        const ClusteredPinAtomPinsLookup& pin_lookup,
+                                        const ParentPinId& pin_id,
+                                        bool is_flat) {
+    float pin_crit = 0.;
+    if (is_flat) {
+        pin_crit = timing_info.setup_pin_criticality(convert_to_atom_pin_id(pin_id));
+    } else {
+        //There may be multiple atom netlist pins connected to this CLB pin
+        for (const auto atom_pin : pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
+            //Take the maximum of the atom pin criticality as the CLB pin criticality
+            pin_crit = std::max(pin_crit, timing_info.setup_pin_criticality(atom_pin));
+        }
     }
 
-    return clb_pin_crit;
+    return pin_crit;
 }
 
 /**
@@ -737,7 +745,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
                                const std::map<DomainPair, float>& domains_worst_slack,
                                const tatum::TimingTags::tag_range tags) {
     //Allowable round-off tolerance during criticality calculation
-    constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 1e-4;
+    constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 5e-4;
 
     //Record the maximum criticality over all the tags
     float max_crit = 0.;
