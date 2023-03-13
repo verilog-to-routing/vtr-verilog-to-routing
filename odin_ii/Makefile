@@ -18,7 +18,7 @@ endif
 #    debug
 BUILD_TYPE ?= release
 MAKEFLAGS := -s
-CMAKE_ARGS = -DVTR_IPO_BUILD=off $(CMAKE_PARAMS)
+CMAKE_ARGS = -DVTR_IPO_BUILD=off -DWITH_ODIN=on $(CMAKE_PARAMS)
 
 BUILD_DIR=../build
 ODIN_BUILD_DIR=$(BUILD_DIR)/odin_ii
