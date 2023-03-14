@@ -3,6 +3,7 @@
 #include "vtr_random.h"
 #include "vtr_util.h"
 #include "vtr_error.h"
+#include "specrand.h"
 
 #define CHECK_RAND
 
