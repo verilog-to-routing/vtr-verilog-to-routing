@@ -21,6 +21,10 @@ static RandState random_state = 0;
  */
 void srandom(int seed) {
     random_state = (unsigned int)seed;
+#ifdef SPEC_CPU
+    /* SPEC CPU requires a different random number generator */
+    spec_init_genrand((unsigned long)seed);
+#endif
 }
 
 /* returns the random_state value */
@@ -29,6 +33,10 @@ RandState get_random_state() {
 }
 
 int irand(int imax, RandState& state) {
+#ifdef SPEC_CPU
+    /* SPEC CPU requires a different random number generator */
+    return (int)(spec_genrand_int31() % (imax + 1));
+#else
     /* Creates a random integer between 0 and imax, inclusive.  i.e. [0..imax] */
     int ival;
 
@@ -49,6 +57,7 @@ int irand(int imax, RandState& state) {
 #endif
 
     return ival;
+#endif
 }
 
 int irand(int imax) {
@@ -57,7 +66,10 @@ int irand(int imax) {
 
 float frand() {
     /* Creates a random float between 0 and 1.  i.e. [0..1).        */
-
+#ifdef SPEC_CPU
+    /* SPEC CPU requires a different random number generator */
+    return (float)spec_genrand_real2();
+#else
     float fval;
     int ival;
 
@@ -72,6 +84,7 @@ float frand() {
 #endif
 
     return (fval);
+#endif
 }
 
 } // namespace vtr
