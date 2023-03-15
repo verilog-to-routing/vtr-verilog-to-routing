@@ -359,8 +359,20 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
     }
 }
 TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
-    // The golden set of router ids that constain the location of each router
-    // The index represents the grid location (both x and y since they will be the same) and the id at the index is the specific router located at the grid location
+    /**
+     * This unit test verifies whether the function which determines the 
+     * physical router located an a given grid location works correctly.
+     * 
+     * We start by creating a NoC model and adding routers to it. We
+     * store the router location to its id inside a golden set. Then
+     * we execute the test function and verify that the routers it 
+     * returns for a given grid location matches our golden set.
+     */
+    
+    
+    // will store all routers in a given design
+    // The index represents the x and y location of the router found at the given index
+    // We will use this test to verify if the test function is returning the correct router for a given grid location 
     std::vector<NocRouterId> golden_set;
 
     // individual router parameters
@@ -381,10 +393,10 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
         router_grid_position_y = router_number;
 
         // add the current router_id to the golden vector (the id is determined similiar to how it is done in add_router())
-        // this vector is built so that the index represents the grid location of the curren router
+        // this vector is built so that the index represents the grid location of the current router
         golden_set.emplace_back((NocRouterId)router_number);
 
-        // add tje router to the noc
+        // add the router to the noc
         test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
     }
 

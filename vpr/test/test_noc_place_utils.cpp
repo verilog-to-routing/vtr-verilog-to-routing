@@ -415,8 +415,6 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     }
 }
 
-// need to add tets that checks whether this works properly when one router or two routers involved in a move dont have traffic flows associated with them
-
 TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_costs, test_recompute_noc_costs", "[noc_place_utils]") {
     // setup random number generation
     std::random_device device;

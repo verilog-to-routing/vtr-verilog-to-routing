@@ -6,7 +6,7 @@
  * during move assessment*/
 static vtr::vector<NocTrafficFlowId, double> traffic_flow_aggregate_bandwidth_cost, proposed_traffic_flow_aggregate_bandwidth_cost, traffic_flow_latency_cost, proposed_traffic_flow_latency_cost;
 
-/* Keeps track of traffic flows that have been updated at each placement iteration*/
+/* Keeps track of traffic flows that have been updated at each attempted placement move*/
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
@@ -26,7 +26,7 @@ void initial_noc_placement(void) {
 
     /* We need all the traffic flow ids to be able to access them. The range
      * of traffic flow ids go from 0 to the total number of traffic flows within
-     * within the NoC. So get the upper range here.*/
+     * the NoC. So get the upper range here.*/
     int number_of_traffic_flows = noc_traffic_flows_storage->get_number_of_traffic_flows();
 
     // go through all the traffic flows and route them. Then once routed, update the links used in the routed traffic flows with their usages
@@ -35,7 +35,7 @@ void initial_noc_placement(void) {
         NocTrafficFlowId conv_traffic_flow_id = (NocTrafficFlowId)traffic_flow_id;
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(conv_traffic_flow_id);
 
-        // go and update the traffic flow route based on where the router cluster blocks are placed
+        // update the traffic flow route based on where the router cluster blocks are placed
         std::vector<NocLinkId>& curr_traffic_flow_route = get_traffic_flow_route(conv_traffic_flow_id, noc_ctx.noc_model, *noc_traffic_flows_storage, noc_ctx.noc_flows_router, place_ctx.block_locs);
 
         // update the links used in the found traffic flow route
@@ -124,7 +124,7 @@ std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id,
 }
 
 void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, link_usage_update_state how_to_update_links, double traffic_flow_bandwidth) {
-    // go through the links within the traffic flow route and update their bandwidht usage
+    // go through the links within the traffic flow route and update their bandwidth usage
     for (auto& link_in_route_id : traffic_flow_route) {
         // get the link to update and its current bandwdith
         NocLink& curr_link = noc_model.get_single_mutable_noc_link(link_in_route_id);
@@ -235,7 +235,8 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
 
     return;
 }
-// might need to set the values to 0 here first
+
+
 void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_noc_latency_cost) {
     int number_of_traffic_flows = g_vpr_ctx.noc().noc_traffic_flows_storage.get_number_of_traffic_flows();
 
@@ -344,7 +345,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     // stores a temporarily found route for a traffic flow
     std::vector<NocLinkId> temp_found_noc_route;
 
-    // go through all the traffic flows and find route for them based on where the routers are placed within the NoC
+    // go through all the traffic flows and find a route for them based on where the routers are placed within the NoC
     for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
         // get the traffic flow with the current id
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
@@ -489,7 +490,12 @@ void free_noc_placement_structs(void) {
 
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
 bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
-    // generate random number between 0-99 and compare it to the user supplied value
+    /* A random number between 0-100 is generated here and compared to the user
+    * supplied value. If the random number is less than the user supplied
+    * value we indicate that a router block should be swapped. By doing this
+    * we now only swap router blocks for the percentage of time the user
+    * supplied.
+    * */
     return (vtr::irand(99) < user_supplied_noc_router_swap_percentage) ? true : false;
 }
 
@@ -545,7 +551,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 /* Below are functions related to modifying and printing the NoC placement
  * statistical data */
 void initialize_noc_placement_stats(const t_placer_opts& placer_opts) {
-    // initially there are not router blocks moved
+    // initially there are no router blocks moved
     noc_place_stats.number_of_noc_router_moves = 0;
 
     // allocate the space to keep track of how many of each move type caused a router block to move
@@ -629,7 +635,7 @@ void write_noc_placement_file(std::string file_name) {
         //get the placement location of the curren router cluster block
         const t_block_loc& cluster_location = clustered_block_placed_locations[single_cluster_id];
 
-        // now get the corresping physical router block id the cluster is located on
+        // now get the corresponding physical router block id the cluster is located on
         NocRouterId physical_router_cluster_is_placed_on = noc_model.get_router_at_grid_location(cluster_location.loc);
 
         // write the current cluster information to the output file
