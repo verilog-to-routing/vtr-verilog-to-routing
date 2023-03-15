@@ -317,9 +317,9 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     t_type_loc to_compressed_loc;
 
     bool legal = find_compatible_compressed_loc_in_range(block_type,
-                                                         search_range[centroid_loc_layer_num],
                                                          delta_cx,
                                                          {cx_from, cy_from, layer_from},
+                                                         search_range[centroid_loc_layer_num],
                                                          to_compressed_loc,
                                                          false,
                                                          centroid_loc_layer_num);
@@ -524,7 +524,7 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
     //create a vector to store all columns containing block_type_index with their lowest y and number of remaining blocks
     std::vector<t_grid_empty_locs_block_type> block_type_empty_locs;
 
-    for(int layer_num = 0; layer_num < num_layers; layer_num++) {
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         //create a region the size of grid to find out first location with a specific block type
         Region reg;
         reg.set_region_rect(0, 0, device_ctx.grid.width(layer_num) - 1, device_ctx.grid.height(layer_num) - 1);
@@ -605,10 +605,10 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
 
     bool legal;
     legal = find_compatible_compressed_loc_in_range(block_type,
-                                                    {min_compressed_loc.x, max_compressed_loc.x,
-                                                     min_compressed_loc.y, max_compressed_loc.y},
                                                     delta_cx,
                                                     {cx_from, cy_from},
+                                                    {min_compressed_loc.x, max_compressed_loc.x,
+                                                     min_compressed_loc.y, max_compressed_loc.y},
                                                     to_compressed_loc,
                                                     false,
                                                     layer_num);

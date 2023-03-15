@@ -16,7 +16,7 @@ struct t_type_loc {
     t_type_loc(int x_val, int y_val, int layer_num_val = 0)
         : x(x_val)
         , y(y_val)
-        , layer_num(layer_num_val){}
+        , layer_num(layer_num_val) {}
 
     //Returns true if this type location has valid x/y values
     operator bool() const {
@@ -116,8 +116,6 @@ struct t_compressed_block_grid {
     inline std::vector<int> get_layer_nums() const {
         return compressed_to_grid_layer;
     }
-
-
 };
 
 //Compressed grid space for each block type

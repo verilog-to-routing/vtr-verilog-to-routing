@@ -192,20 +192,20 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
  * is_median: true if this is called from find_to_loc_median
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
-                                             const t_search_range& search_range,
                                              const int delta_cx,
                                              const t_type_loc& from_loc,
+                                             t_search_range search_range,
                                              t_type_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num);
 
 std::vector<t_type_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
-                                                    t_pl_loc grid_loc,
-                                                    int num_layers);
+                                           t_pl_loc grid_loc,
+                                           int num_layers);
 
 std::vector<t_type_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
-                                                        t_pl_loc grid_loc,
-                                                        int num_layers);
+                                                  t_pl_loc grid_loc,
+                                                  int num_layers);
 
 std::vector<t_search_range> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
                                                                     const std::vector<t_type_loc>& compressed_locs,

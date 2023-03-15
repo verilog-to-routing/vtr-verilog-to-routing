@@ -670,7 +670,7 @@ struct t_pl_loc {
         : x(xloc)
         , y(yloc)
         , sub_tile(sub_tile_loc)
-        , layer(layer_num){}
+        , layer(layer_num) {}
 
     int x = OPEN;
     int y = OPEN;

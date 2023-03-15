@@ -1,6 +1,5 @@
 #include "device_grid.h"
 
-
 struct gridDimComp {
     int dim_;
     bool is_greater_;
