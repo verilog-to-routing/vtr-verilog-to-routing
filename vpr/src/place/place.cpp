@@ -1330,10 +1330,9 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
 
     float init_temp = 0.0;
 
-    /*There were some issues with PR#2175 where the reduced initial
-     * temperature caused problems with the NoC placement. Current fix is
-     * to change the initial temperature back to its orignal value when
-     * NoC placement is turned on, otherwise use the reduced temperature.*/
+    /* We use a constructive initial placement and a low starting temperature 
+     * by default, but that can cause problems with NoCs as the initial logical
+     * locations are random. Use a higher starting T in that case.*/
     if (noc_opts.noc) {
         init_temp = 20. * std_dev;
     } else {
@@ -1552,7 +1551,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         if (noc_opts.noc) {
             number_of_affected_noc_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
 
-            // Noc include the NoC delata costs in the total cost change for this swap
+            // Include the NoC delata costs in the total cost change for this swap
             delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c * costs->noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);
         }
 
@@ -1676,7 +1675,10 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
     move_outcome_stats.outcome = move_outcome;
 
-    // dont update the move generator state if we force a router block move
+    // If we force a router block move then it was not proposed by the 
+    // move generator so we should not calculate the reward and update
+    // the move generators status since this outcome is not a direct 
+    // consequence of the move generator
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
@@ -1693,7 +1695,8 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
-    //Check that each accepted swap yields a valid placement
+    // Check that each accepted swap yields a valid placement. This will
+    // greatly slow the placer, but can debug some issues.
     check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts);
 #endif
 
