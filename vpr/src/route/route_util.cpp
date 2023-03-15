@@ -1,7 +1,7 @@
 #include "route_util.h"
 #include "globals.h"
 
-vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
+vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat) {
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -14,7 +14,8 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
     //Collect all the in-use RR nodes
     std::set<int> rr_nodes;
     for (auto net : cluster_ctx.clb_nlist.nets()) {
-        t_trace* tptr = route_ctx.trace[net].head;
+        auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net, is_flat);
+        t_trace* tptr = route_ctx.trace[par_net_id].head;
         while (tptr != nullptr) {
             int inode = tptr->index;
 

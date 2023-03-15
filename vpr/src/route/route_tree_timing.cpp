@@ -53,19 +53,28 @@ static void free_linked_rt_edge(t_linked_rt_edge* rt_edge);
 
 static t_rt_node* add_subtree_to_route_tree(t_heap* hptr,
                                             int target_net_pin_index,
-                                            t_rt_node** sink_rt_node_ptr);
+                                            t_rt_node** sink_rt_node_ptr,
+                                            bool is_flat);
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited);
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node,
+                                                     const bool reached_by_non_configurable_edge,
+                                                     std::unordered_set<int>& visited,
+                                                     bool is_flat);
 
 static t_rt_node* update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_subtree_rt_node);
 
 bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes);
 
-static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested, std::vector<int>* non_config_node_set_usage);
+static t_rt_node* prune_route_tree_recurr(t_rt_node* node,
+                                          CBRR& connections_inf,
+                                          bool force_prune,
+                                          std::vector<int>* non_config_node_set_usage);
 
-static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage);
+static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage, bool is_flat);
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
+
+//static ClusterPinId get_connected_cluster_pin_id(const ClusteredPinAtomPinsLookup& pin_look_up, ParentPinId pin, bool is_flat);
 
 void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tuple<int, int, int>>& connections);
 
@@ -182,7 +191,7 @@ static void free_linked_rt_edge(t_linked_rt_edge* rt_edge) {
 
 /* Initializes the routing tree to just the net source, and returns the root
  * node of the rt_tree (which is just the net source).                       */
-t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
+t_rt_node* init_route_tree_to_source(const ParentNetId& inet) {
     t_rt_node* rt_root;
     int inode;
 
@@ -213,7 +222,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
  * is the heap pointer of the SINK that was reached, and target_net_pin_index
  * is the net pin index corresponding to the SINK that was reached. This routine
  * returns a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup) {
+t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
     t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
     t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
     float Tdel_start;
@@ -222,7 +231,10 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     //Create a new subtree from the target in hptr to existing routing
-    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, target_net_pin_index, &sink_rt_node);
+    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr,
+                                                             target_net_pin_index,
+                                                             &sink_rt_node,
+                                                             is_flat);
 
     //Propagate R_upstream down into the new subtree
     load_new_subtree_R_upstream(start_of_new_subtree_rt_node);
@@ -290,7 +302,10 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 static t_rt_node*
-add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** sink_rt_node_ptr) {
+add_subtree_to_route_tree(t_heap* hptr,
+                          int target_net_pin_index,
+                          t_rt_node** sink_rt_node_ptr,
+                          bool is_flat) {
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;
 
@@ -312,7 +327,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     sink_rt_node->net_pin_index = target_net_pin_index; //hptr is the heap pointer of the SINK that was reached, which corresponds to the target pin
     rr_node_to_rt_node[inode] = sink_rt_node;
 
-    /* In the code below I'm marking SINKs and IPINs as not to be re-expanded.
+    /* In the code below I'm marking SINKs and IPINs(If flat routing is not enabled) as not to be re-expanded.
      * It makes the code more efficient (though not vastly) to prune this way
      * when there aren't route-throughs or ipin doglegs.                        */
 
@@ -355,8 +370,8 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
         rt_node->net_pin_index = OPEN; //net pin index is invalid for non-SINK nodes
 
         rr_node_to_rt_node[inode] = rt_node;
-
-        if (rr_graph.node_type(RRNodeId(inode)) == IPIN) {
+        // If is_flat is enabled, IPINs should be added, since they are used for intra-cluster routing
+        if (rr_graph.node_type(RRNodeId(inode)) == IPIN && !is_flat) {
             rt_node->re_expand = false;
         } else {
             rt_node->re_expand = true;
@@ -386,14 +401,17 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     //non-configurably connected nodes
     //Sink is not included, so no need to pass in the node's ipin value.
     for (int rr_node : main_branch_visited) {
-        add_non_configurable_to_route_tree(rr_node, false, all_visited);
+        add_non_configurable_to_route_tree(rr_node, false, all_visited, is_flat);
     }
 
     *sink_rt_node_ptr = sink_rt_node;
     return (downstream_rt_node);
 }
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited) {
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node,
+                                                     const bool reached_by_non_configurable_edge,
+                                                     std::unordered_set<int>& visited,
+                                                     bool is_flat) {
     t_rt_node* rt_node = nullptr;
 
     if (!visited.count(rr_node) || !reached_by_non_configurable_edge) {
@@ -415,7 +433,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 rt_node->inode = rr_node;
                 rt_node->net_pin_index = OPEN;
 
-                if (rr_graph.node_type(RRNodeId(rr_node)) == IPIN) {
+                if (rr_graph.node_type(RRNodeId(rr_node)) == IPIN && !is_flat) {
                     rt_node->re_expand = false;
                 } else {
                     rt_node->re_expand = true;
@@ -430,7 +448,10 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
             int to_rr_node = size_t(rr_graph.edge_sink_node(RRNodeId(rr_node), iedge));
 
             //Recurse
-            t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
+            t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node,
+                                                                          true,
+                                                                          visited,
+                                                                          is_flat);
 
             if (!child_rt_node) continue;
             int iswitch = rr_graph.edge_switch(RRNodeId(rr_node), iedge);
@@ -719,23 +740,21 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
 }
 
 void update_net_delays_from_route_tree(float* net_delay,
+                                       const Netlist<>& net_list,
                                        const t_rt_node* const* rt_node_of_sink,
-                                       ClusterNetId inet,
+                                       ParentNetId inet,
                                        TimingInfo* timing_info,
-                                       ClusteredPinTimingInvalidator* pin_timing_invalidator) {
+                                       NetPinTimingInvalidator* pin_timing_invalidator) {
     /* Goes through all the sinks of this net and copies their delay values from
      * the route_tree to the net_delay array.                                    */
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
-
-    for (unsigned int isink = 1; isink < cluster_ctx.clb_nlist.net_pins(inet).size(); isink++) {
+    for (unsigned int isink = 1; isink < net_list.net_pins(inet).size(); isink++) {
         float new_delay = rt_node_of_sink[isink]->Tdel;
 
         if (pin_timing_invalidator && new_delay != net_delay[isink]) {
             //Delay changed, invalidate for incremental timing update
             VTR_ASSERT_SAFE(timing_info);
-            ClusterPinId pin = clb_nlist.net_pin(inet, isink);
+            ParentPinId pin = net_list.net_pin(inet, isink);
             pin_timing_invalidator->invalidate_connection(pin, timing_info);
         }
 
@@ -744,20 +763,23 @@ void update_net_delays_from_route_tree(float* net_delay,
 }
 
 /***************  Conversion between traceback and route tree *******************/
-t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage) {
-    auto& route_ctx = g_vpr_ctx.routing();
-    return traceback_to_route_tree(route_ctx.trace[inet].head, non_config_node_set_usage);
+t_rt_node* traceback_to_route_tree(ParentNetId inet, std::vector<int>* non_config_node_set_usage, bool is_flat) {
+    return traceback_to_route_tree(g_vpr_ctx.routing().trace[inet].head, non_config_node_set_usage, is_flat);
 }
 
-t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
-    return traceback_to_route_tree(inet, nullptr);
+t_rt_node* traceback_to_route_tree(ParentNetId inet, bool is_flat) {
+    return traceback_to_route_tree(inet, nullptr, is_flat);
 }
 
-t_rt_node* traceback_to_route_tree(t_trace* head) {
-    return traceback_to_route_tree(head, nullptr);
+t_rt_node* traceback_to_route_tree(t_trace* head, bool is_flat) {
+    return traceback_to_route_tree(head,
+                                   nullptr,
+                                   is_flat);
 }
 
-t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage) {
+t_rt_node* traceback_to_route_tree(t_trace* head,
+                                   std::vector<int>* non_config_node_set_usage,
+                                   bool is_flat) {
     /* Builds a skeleton route tree from a traceback
      * does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)
      * returns the root of the converted route tree
@@ -773,7 +795,7 @@ t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_n
 
     t_trace* trace = head;
     while (trace) { //Each branch
-        trace = traceback_to_route_tree_branch(trace, rr_node_to_rt, non_config_node_set_usage);
+        trace = traceback_to_route_tree_branch(trace, rr_node_to_rt, non_config_node_set_usage, is_flat);
     }
     // Due to the recursive nature of traceback_to_route_tree_branch,
     // the source node is not properly configured.
@@ -792,7 +814,8 @@ t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_n
 //Returns the t_trace defining the start of the next branch
 static t_trace* traceback_to_route_tree_branch(t_trace* trace,
                                                std::map<int, t_rt_node*>& rr_node_to_rt,
-                                               std::vector<int>* non_config_node_set_usage) {
+                                               std::vector<int>* non_config_node_set_usage,
+                                               bool is_flat) {
     t_trace* next = nullptr;
 
     if (trace) {
@@ -823,7 +846,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             node->Tdel = std::numeric_limits<float>::quiet_NaN();
 
             auto node_type = rr_graph.node_type(RRNodeId(inode));
-            if (node_type == IPIN || node_type == SINK)
+            if ((node_type == IPIN && !is_flat) || node_type == SINK)
                 node->re_expand = false;
             else
                 node->re_expand = true;
@@ -862,7 +885,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             }
 
             //Recursively construct the remaining branch
-            next = traceback_to_route_tree_branch(next, rr_node_to_rt, non_config_node_set_usage);
+            next = traceback_to_route_tree_branch(next, rr_node_to_rt, non_config_node_set_usage, is_flat);
 
             //Get the created child
             itr = rr_node_to_rt.find(trace->next->index);
@@ -939,7 +962,23 @@ static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* h
     return {head, tail};
 }
 
-t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_routed_sinks) {
+//static ClusterPinId get_connected_cluster_pin_id(const ClusteredPinAtomPinsLookup& pin_look_up, ParentPinId pin, bool is_flat) {
+//    ClusterPinId cluster_pin_id = ClusterPinId::INVALID();
+//    if(is_flat) {/* Pin is in atom netlist */
+//        AtomPinId atom_pin_id = convert_to_atom_pin_id(pin);
+//        cluster_pin_id = pin_look_up.connected_clb_pin(atom_pin_id);
+//
+//
+//    } else { /* Pin is in cluster netlist */
+//        cluster_pin_id = convert_to_cluster_pin_id(pin);
+//    }
+//
+//    return cluster_pin_id;
+//}
+
+t_trace* traceback_from_route_tree(ParentNetId inet,
+                                   const t_rt_node* root,
+                                   int num_routed_sinks) {
     /* Creates the traceback for net inet from the route tree rooted at root
      * properly sets route_ctx.trace_head and route_ctx.trace_tail for this net
      * returns the trace head for inet 					 					 */
@@ -979,7 +1018,10 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 //Prunes a route tree (recursively) based on congestion and the 'force_prune' argument
 //
 //Returns true if the current node was pruned
-static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage) {
+static t_rt_node* prune_route_tree_recurr(t_rt_node* node,
+                                          CBRR& connections_inf,
+                                          bool force_prune,
+                                          std::vector<int>* non_config_node_set_usage) {
     //Recursively traverse the route tree rooted at node and remove any congested
     //sub-trees
 
@@ -1169,7 +1211,9 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf) {
     return prune_route_tree(rt_root, connections_inf, nullptr);
 }
 
-t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage) {
+t_rt_node* prune_route_tree(t_rt_node* rt_root,
+                            CBRR& connections_inf,
+                            std::vector<int>* non_config_node_set_usage) {
     /* Prune a skeleton route tree of illegal branches - when there is at least 1 congested node on the path to a sink
      * This is the top level function to be called with the SOURCE node as root.
      * Returns true if the entire tree has been pruned.
@@ -1556,7 +1600,7 @@ void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tu
     }
 }
 
-t_rt_node* find_sink_rt_node(t_rt_node* rt_root, ClusterNetId net_id, ClusterPinId sink_pin) {
+t_rt_node* find_sink_rt_node(const Netlist<>& net_list, t_rt_node* rt_root, ParentNetId net_id, ParentPinId sink_pin) {
     //Given the net_id and the sink_pin, this two-step function finds a pointer to the
     //route tree sink corresponding to sink_pin. This function constitutes the first step,
     //in which, we loop through the pins of the net and terminate the search once the mapping
@@ -1566,10 +1610,9 @@ t_rt_node* find_sink_rt_node(t_rt_node* rt_root, ClusterNetId net_id, ClusterPin
     //recursively traverse the route tree until we reach the sink node that corresponds
     //to sink_rr_inode.
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    int ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin);
+    int ipin = net_list.pin_net_index(sink_pin);
     int sink_rr_inode = route_ctx.net_rr_terminals[net_id][ipin]; //obtain the value of the routing resource sink
 
     t_rt_node* sink_rt_node = find_sink_rt_node_recurr(rt_root, sink_rr_inode); //find pointer to route tree node corresponding to sink_rr_inode

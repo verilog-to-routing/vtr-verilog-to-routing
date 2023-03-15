@@ -9,10 +9,12 @@
 #include "globals.h"
 
 /******* Subroutines in route_common used only by other router modules ******/
+vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
+                                             int bb_factor);
 
-vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor);
-
-t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
+t_bb load_net_route_bb(const Netlist<>& net_list,
+                       ParentNetId net_id,
+                       int bb_factor);
 
 void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_sub);
 
@@ -25,7 +27,9 @@ float update_pres_fac(float new_pres_fac);
 /* Pass in the hptr starting at a SINK with target_net_pin_index, which is the net pin index corresonding *
  * to the sink (ranging from 1 to fanout). Returns a pointer to the first "new" node in the traceback     *
  * (node not previously in trace).                                                                        */
-t_trace* update_traceback(t_heap* hptr, int target_net_pin_index, ClusterNetId net_id);
+t_trace* update_traceback(t_heap* hptr,
+                          int target_net_pin_index,
+                          ParentNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 
@@ -89,34 +93,40 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
     return cost;
 }
 
-void mark_ends(ClusterNetId net_id);
-void mark_remaining_ends(ClusterNetId net_id, const std::vector<int>& remaining_sinks);
+void mark_ends(const Netlist<>& net_list, ParentNetId net_id);
 
-void free_traceback(ClusterNetId net_id);
-void drop_traceback_tail(ClusterNetId net_id);
+void mark_remaining_ends(ParentNetId net_id, const std::vector<int>& remaining_sinks);
+
+void free_traceback(ParentNetId net_id);
+
+void drop_traceback_tail(ParentNetId net_id);
+
 void free_traceback(t_trace* tptr);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
 
-void init_route_structs(int bb_factor);
+void init_route_structs(const Netlist<>& net_list,
+                        int bb_factor,
+                        bool has_choking_point,
+                        bool is_flat);
 
 void alloc_and_load_rr_node_route_structs();
 
 void reset_rr_node_route_structs();
 
-void free_trace_structs();
+void free_trace_structs(const Netlist<>& net_list);
 
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins);
+void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
 
 void free_chunk_memory_trace();
 
 bool validate_traceback(t_trace* trace);
-void print_traceback(ClusterNetId net_id);
+void print_traceback(ParentNetId net_id);
 void print_traceback(const t_trace* trace);
 
 void print_rr_node_route_inf();
 void print_rr_node_route_inf_dot();
-void print_invalid_routing_info(bool is_flat);
+void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat);
 
 t_trace* alloc_trace_data();
 void free_trace_data(t_trace* trace);
@@ -124,6 +134,19 @@ void free_trace_data(t_trace* trace);
 bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
 
 std::string describe_unrouteable_connection(const int source_node, const int sink_node, bool is_flat);
+
+/* If flat_routing isn't enabled, this function would simply pass from_node and to_node to the router_lookahead.
+ * However, if flat_routing is enabled, we can not do the same. For the time being, router lookahead is not aware
+ * of internal nodes, thus if we pass an intra-cluster node to it, it would raise an error. Thus, we choose one
+ * node on the same tile of that internal node and pass it to the router lookahead.
+ */
+float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
+                              const RRGraphView& rr_graph_view,
+                              RRNodeId from_node,
+                              RRNodeId to_node,
+                              float R_upstream,
+                              const t_conn_cost_params cost_params,
+                              bool is_flat);
 
 /* Creates a new t_heap object to be placed on the heap, if the new cost    *
  * given is lower than the current path_cost to this channel segment.  The  *
