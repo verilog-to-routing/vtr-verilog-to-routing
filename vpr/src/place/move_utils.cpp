@@ -855,11 +855,6 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
 
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax_);
 
-        if (y_lower_iter == y_upper_iter) {
-            //No valid blocks at this x-location
-            continue;
-        }
-
         if (y_lower_iter->first > search_range.ymin_) {
             //No valid blocks at this x location which are within rlim_y
             //
