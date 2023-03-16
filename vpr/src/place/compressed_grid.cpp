@@ -16,10 +16,10 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         for (size_t x = 0; x < grid.width(layer_num); ++x) {
             for (size_t y = 0; y < grid.height(layer_num); ++y) {
-                int width_offset = grid.get_width_offset(x, y, layer_num);
-                int height_offset = grid.get_height_offset(x, y, layer_num);
+                int width_offset = grid.get_width_offset(t_physical_tile_loc(x, y, layer_num));
+                int height_offset = grid.get_height_offset(t_physical_tile_loc(x, y, layer_num));
                 if (width_offset == 0 && height_offset == 0) {
-                    const auto& type = grid.get_physical_type(x, y, layer_num);
+                    const auto& type = grid.get_physical_type(t_physical_tile_loc(x, y, layer_num));
                     auto equivalent_sites = get_equivalent_sites_set(type);
 
                     for (auto& block : equivalent_sites) {
@@ -92,7 +92,7 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vect
 
             //The index of an x-position in x_locs corresponds to it's compressed
             //x-coordinate (similarly for y)
-            if (layer_x_locs.size() != 0) {
+            if (!layer_x_locs.empty()) {
                 compressed_grid.compressed_to_grid_layer.push_back(layer_num);
             }
             compressed_grid.compressed_to_grid_x[layer_num] = std::move(layer_x_locs);
@@ -132,7 +132,7 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vect
             VTR_ASSERT(layer_compressed_x_locs[cx] == point.x());
             VTR_ASSERT(layer_compressed_y_locs[cy] == point.y());
 
-            auto result = layer_compressed_grid[cx].insert(std::make_pair(cy, t_type_loc(point.x(), point.y())));
+            auto result = layer_compressed_grid[cx].insert(std::make_pair(cy, t_physical_tile_loc(point.x(), point.y())));
 
             VTR_ASSERT_MSG(result.second, "Duplicates should not exist in compressed grid space");
         }

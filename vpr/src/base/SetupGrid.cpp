@@ -663,13 +663,13 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
 static void CheckGrid(const DeviceGrid& grid) {
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            auto type = grid.get_physical_type(i, j);
+            auto type = grid.get_physical_type(t_physical_tile_loc(i, j));
             if (nullptr == type) {
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has no type.\n", i, j);
             }
 
-            int width_offset = grid.get_width_offset(i, j);
-            int height_offset = grid.get_height_offset(i, j);
+            int width_offset = grid.get_width_offset(t_physical_tile_loc(i, j));
+            int height_offset = grid.get_height_offset(t_physical_tile_loc(i, j));
             if ((width_offset < 0)
                 || (width_offset >= type->width)) {
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, width_offset);
@@ -687,9 +687,9 @@ static void CheckGrid(const DeviceGrid& grid) {
                     for (size_t y = j; y < j + type->height; ++y) {
                         int y_offset = y - j;
 
-                        const auto& tile_type = grid.get_physical_type(x, y);
-                        int tile_width_offset = grid.get_width_offset(x, y);
-                        int tile_height_offset = grid.get_height_offset(x, y);
+                        const auto& tile_type = grid.get_physical_type(t_physical_tile_loc(x, y));
+                        int tile_width_offset = grid.get_width_offset(t_physical_tile_loc(x, y));
+                        int tile_height_offset = grid.get_height_offset(t_physical_tile_loc(x, y));
                         if (tile_type != type) {
                             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                                             "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
@@ -719,10 +719,10 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_bl
     std::map<t_physical_tile_type_ptr, size_t> grid_resources;
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
-            int width_offset = grid.get_width_offset(x, y);
-            int height_offset = grid.get_height_offset(x, y);
+            int width_offset = grid.get_width_offset(t_physical_tile_loc(x, y));
+            int height_offset = grid.get_height_offset(t_physical_tile_loc(x, y));
             if (width_offset == 0 && height_offset == 0) {
-                const auto& type = grid.get_physical_type(x, y);
+                const auto& type = grid.get_physical_type(t_physical_tile_loc(x, y));
                 ++grid_resources[type];
             }
         }

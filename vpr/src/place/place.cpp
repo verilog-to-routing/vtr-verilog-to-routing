@@ -2773,7 +2773,7 @@ static int check_block_placement_consistency() {
     /* Step through device grid and placement. Check it against blocks */
     for (size_t i = 0; i < device_ctx.grid.width(); i++)
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
+            const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
             if (place_ctx.grid_blocks[i][j].usage
                 > type->capacity) {
                 VTR_LOG_ERROR(
@@ -2976,7 +2976,7 @@ static void print_resources_utilization() {
         auto block_loc = place_ctx.block_locs[blk_id];
         auto loc = block_loc.loc;
 
-        auto physical_tile = device_ctx.grid.get_physical_type(loc.x, loc.y);
+        auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y));
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
         num_type_instances[logical_block]++;

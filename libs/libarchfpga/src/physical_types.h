@@ -811,6 +811,27 @@ struct t_physical_pin {
     }
 };
 
+/**
+* @brief Describes the location of a physical tile
+ */
+struct t_physical_tile_loc {
+    int x = OPEN;
+    int y = OPEN;
+    int layer_num = 0;
+
+    t_physical_tile_loc() = default;
+
+    t_physical_tile_loc(int x_val, int y_val, int layer_num_val = 0)
+        : x(x_val)
+        , y(y_val)
+        , layer_num(layer_num_val) {}
+
+    //Returns true if this type location has valid x/y values
+    operator bool() const {
+        return !(x == OPEN || y == OPEN || layer_num == OPEN);
+    }
+};
+
 /** Describes I/O and clock ports of a physical tile type
  *
  *  It corresponds to <port/> tags in the FPGA architecture description

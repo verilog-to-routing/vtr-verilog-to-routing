@@ -592,7 +592,7 @@ void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = node.id();
-    t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));
+    t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node)));
 
     //Number of classes (i.e. src/sinks) we need to draw
     float num_class = tile_type->class_inf.size();
@@ -685,9 +685,9 @@ int draw_check_rr_node_hit(float click_x, float click_y) {
             case OPIN: {
                 int i = rr_graph.node_xlow(rr_id);
                 int j = rr_graph.node_ylow(rr_id);
-                t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(i, j);
-                int width_offset = device_ctx.grid.get_width_offset(i, j);
-                int height_offset = device_ctx.grid.get_height_offset(i, j);
+                t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
+                int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(i, j));
+                int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(i, j));
                 int ipin = rr_graph.node_pin_num(rr_id);
                 float xcen, ycen;
                 for (const e_side& iside : SIDES) {
@@ -857,7 +857,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
     yc = draw_coords->tile_y[j];
 
     ipin = rr_graph.node_pin_num(rr_node);
-    type = device_ctx.grid.get_physical_type(i, j);
+    type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
     pins_per_sub_tile = type->num_pins / type->capacity;
     k = ipin / pins_per_sub_tile;
 

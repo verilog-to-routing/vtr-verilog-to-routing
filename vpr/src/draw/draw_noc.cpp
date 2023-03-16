@@ -37,8 +37,8 @@ void draw_noc(ezgl::renderer* g) {
     // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anythign as the NoC tile wont be drawn
     /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capcity of a noc router tile
      */
-    const auto& type = device_ctx.grid.get_physical_type(router_list.begin()->get_router_grid_position_x(),
-                                                         router_list.begin()->get_router_grid_position_y());
+    const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(router_list.begin()->get_router_grid_position_x(),
+                                                         router_list.begin()->get_router_grid_position_y()));
     int num_subtiles = type->capacity;
 
     if (num_subtiles == 0) {

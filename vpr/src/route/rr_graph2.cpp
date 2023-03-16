@@ -665,9 +665,9 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    type = device_ctx.grid.get_physical_type(i, j);
-    int width_offset = device_ctx.grid.get_width_offset(i, j);
-    int height_offset = device_ctx.grid.get_height_offset(i, j);
+    type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
+    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(i, j));
+    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(i, j));
 
     num_conn = 0;
 
@@ -1098,8 +1098,8 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
             //Process each block from it's root location
-            if (grid.get_width_offset(x, y) == 0 && grid.get_height_offset(x, y) == 0) {
-                t_physical_tile_type_ptr physical_type = grid.get_physical_type(x, y);
+            if (grid.get_width_offset(t_physical_tile_loc(x, y)) == 0 && grid.get_height_offset(t_physical_tile_loc(x, y)) == 0) {
+                t_physical_tile_type_ptr physical_type = grid.get_physical_type(t_physical_tile_loc(x, y));
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
                 std::vector<int> class_num_vec;
@@ -1333,8 +1333,8 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
             //Process each block from it's root location
-            if (grid.get_width_offset(x, y) == 0 && grid.get_height_offset(x, y) == 0) {
-                t_physical_tile_type_ptr physical_type = grid.get_physical_type(x, y);
+            if (grid.get_width_offset(t_physical_tile_loc(x, y)) == 0 && grid.get_height_offset(t_physical_tile_loc(x, y)) == 0) {
+                t_physical_tile_type_ptr physical_type = grid.get_physical_type(t_physical_tile_loc(x, y));
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
                 std::vector<int> class_num_vec;
@@ -1579,7 +1579,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                 }
 
                 /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
-                auto type = device_ctx.grid.get_physical_type(x, y);
+                auto type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
                 if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
                     continue;
 
@@ -1592,8 +1592,8 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
 
                 /* We need the type to find the ipin map for this type */
 
-                int width_offset = device_ctx.grid.get_width_offset(x, y);
-                int height_offset = device_ctx.grid.get_height_offset(x, y);
+                int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(x, y));
+                int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(x, y));
 
                 max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].size();
                 for (iconn = 0; iconn < max_conn; iconn++) {
@@ -2722,9 +2722,9 @@ static int should_create_switchblock(const DeviceGrid& grid, int from_chan_coord
         x_coord = from_chan_coord;
     }
 
-    auto blk_type = grid.get_physical_type(x_coord, y_coord);
-    int width_offset = grid.get_width_offset(x_coord, y_coord);
-    int height_offset = grid.get_height_offset(x_coord, y_coord);
+    auto blk_type = grid.get_physical_type(t_physical_tile_loc(x_coord, y_coord));
+    int width_offset = grid.get_width_offset(t_physical_tile_loc(x_coord, y_coord));
+    int height_offset = grid.get_height_offset(t_physical_tile_loc(x_coord, y_coord));
 
     e_sb_type sb_type = blk_type->switchblock_locations[width_offset][height_offset];
     auto switch_override = blk_type->switchblock_switch_overrides[width_offset][height_offset];

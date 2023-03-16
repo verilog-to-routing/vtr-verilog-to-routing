@@ -301,7 +301,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
 
     for (int x = rb.xmin(); x <= rb.xmax(); x++) {
         for (int y = rb.ymin(); y <= rb.ymax(); y++) {
-            const auto& tile = device_ctx.grid.get_physical_type(x, y);
+            const auto& tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
 
             /*
              * If the tile at the grid location is not compatible with the cluster block

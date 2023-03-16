@@ -1371,7 +1371,7 @@ void print_route(const Netlist<>& net_list,
                     switch (rr_type) {
                         case IPIN:
                         case OPIN:
-                            if (is_io_type(device_ctx.grid.get_physical_type(ilow, jlow))) {
+                            if (is_io_type(device_ctx.grid.get_physical_type(t_physical_tile_loc(ilow, jlow)))) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Pin: ");
@@ -1385,7 +1385,7 @@ void print_route(const Netlist<>& net_list,
 
                         case SOURCE:
                         case SINK:
-                            if (is_io_type(device_ctx.grid.get_physical_type(ilow, jlow))) {
+                            if (is_io_type(device_ctx.grid.get_physical_type(t_physical_tile_loc(ilow, jlow)))) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Class: ");
@@ -1401,11 +1401,11 @@ void print_route(const Netlist<>& net_list,
 
                     fprintf(fp, "%d  ", rr_graph.node_ptc_num(rr_node));
 
-                    auto physical_tile = device_ctx.grid.get_physical_type(ilow, jlow);
+                    auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(ilow, jlow));
                     if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
                         int pin_num = rr_graph.node_pin_num(rr_node);
-                        int xoffset = device_ctx.grid.get_width_offset(ilow, jlow);
-                        int yoffset = device_ctx.grid.get_height_offset(ilow, jlow);
+                        int xoffset = device_ctx.grid.get_width_offset(t_physical_tile_loc(ilow, jlow));
+                        int yoffset = device_ctx.grid.get_height_offset(t_physical_tile_loc(ilow, jlow));
                         const t_sub_tile* sub_tile;
                         int sub_tile_rel_cap;
                         std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);

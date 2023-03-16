@@ -1865,8 +1865,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            if (grid.get_width_offset(i, j) == 0 && grid.get_height_offset(i, j) == 0) {
-                t_physical_tile_type_ptr physical_tile = grid.get_physical_type(i, j);
+            if (grid.get_width_offset(t_physical_tile_loc(i, j)) == 0 && grid.get_height_offset(t_physical_tile_loc(i, j)) == 0) {
+                t_physical_tile_type_ptr physical_tile = grid.get_physical_type(t_physical_tile_loc(i, j));
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
                 class_num_vec = get_tile_root_classes(physical_tile);
@@ -2056,8 +2056,8 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
     int num_edges = 0;
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            if (grid.get_width_offset(i, j) == 0 && grid.get_height_offset(i, j) == 0) {
-                t_physical_tile_type_ptr physical_tile = grid.get_physical_type(i, j);
+            if (grid.get_width_offset(t_physical_tile_loc(i, j)) == 0 && grid.get_height_offset(t_physical_tile_loc(i, j)) == 0) {
+                t_physical_tile_type_ptr physical_tile = grid.get_physical_type(t_physical_tile_loc(i, j));
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
                 class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(i, j, physical_tile);
@@ -2363,9 +2363,9 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         return;
     }
 
-    auto type = grid.get_physical_type(i, j);
-    int width_offset = grid.get_width_offset(i, j);
-    int height_offset = grid.get_height_offset(i, j);
+    auto type = grid.get_physical_type(t_physical_tile_loc(i, j));
+    int width_offset = grid.get_width_offset(t_physical_tile_loc(i, j));
+    int height_offset = grid.get_height_offset(t_physical_tile_loc(i, j));
 
     const vtr::Matrix<int>& Fc = Fc_out[type->index];
 
@@ -2441,8 +2441,8 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          bool is_flat) {
     VTR_ASSERT(is_flat);
     /* Internal edges are added from the start tile */
-    int width_offset = grid.get_width_offset(i, j);
-    int height_offset = grid.get_height_offset(i, j);
+    int width_offset = grid.get_width_offset(t_physical_tile_loc(i, j));
+    int height_offset = grid.get_height_offset(t_physical_tile_loc(i, j));
     VTR_ASSERT(width_offset == 0 && height_offset == 0);
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
@@ -3751,10 +3751,10 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
      */
     *Fc_clipped = false;
 
-    auto type = grid.get_physical_type(i, j);
+    auto type = grid.get_physical_type(t_physical_tile_loc(i, j));
 
-    int width_offset = grid.get_width_offset(i, j);
-    int height_offset = grid.get_height_offset(i, j);
+    int width_offset = grid.get_width_offset(t_physical_tile_loc(i, j));
+    int height_offset = grid.get_height_offset(t_physical_tile_loc(i, j));
 
     /* Go through each pin and find its fanout. */
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
@@ -3976,12 +3976,12 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        const t_clb_to_clb_directs* clb_to_clb_directs) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_physical_tile_type_ptr curr_type = device_ctx.grid.get_physical_type(x, y);
+    t_physical_tile_type_ptr curr_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
 
     int num_pins = 0;
 
-    int width_offset = device_ctx.grid.get_width_offset(x, y);
-    int height_offset = device_ctx.grid.get_height_offset(x, y);
+    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(x, y));
+    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(x, y));
     if (!curr_type->pinloc[width_offset][height_offset][side][opin]) {
         return num_pins; //No source pin on this side
     }
@@ -4004,7 +4004,8 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                 && y + directs[i].y_offset < int(device_ctx.grid.height() - 1)
                 && y + directs[i].y_offset > 0) {
                 //Only add connections if the target clb type matches the type in the direct specification
-                t_physical_tile_type_ptr target_type = device_ctx.grid.get_physical_type(x + directs[i].x_offset, y + directs[i].y_offset);
+                t_physical_tile_type_ptr target_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x + directs[i].x_offset,
+                                                                                                             y + directs[i].y_offset));
 
                 if (clb_to_clb_directs[i].to_clb_type == target_type
                     && z + directs[i].sub_tile_offset < int(target_type->capacity)

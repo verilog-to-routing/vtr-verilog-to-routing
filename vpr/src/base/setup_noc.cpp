@@ -71,9 +71,9 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
     for (int i = 0; i < grid_width; i++) {
         for (int j = 0; j < grid_height; j++) {
             // get some information from the current tile
-            const auto& type = device_grid.get_physical_type(i, j);
-            int width_offset = device_grid.get_width_offset(i, j);
-            int height_offset = device_grid.get_height_offset(i, j);
+            const auto& type = device_grid.get_physical_type(t_physical_tile_loc(i, j));
+            int width_offset = device_grid.get_width_offset(t_physical_tile_loc(i, j));
+            int height_offset = device_grid.get_height_offset(t_physical_tile_loc(i, j));
 
             curr_tile_name.assign(type->name);
             curr_tile_width_offset = width_offset;

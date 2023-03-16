@@ -61,7 +61,7 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
     /* Handle each pin */
     auto logical_block = clustering_ctx.clb_nlist.block_type(blk_id);
-    auto physical_tile = device_ctx.grid.get_physical_type(grid_coord.x(), grid_coord.y());
+    auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(grid_coord.x(), grid_coord.y()));
 
     /* Narrow down side search for grids
      *   The wanted side depends on the location of the grid.

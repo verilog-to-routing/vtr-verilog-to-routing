@@ -29,8 +29,8 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
                                    seg_index);
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
-        auto type = grid.get_physical_type(rr_graph.node_xlow(RRNodeId(inode)),
-                                           rr_graph.node_ylow(RRNodeId(inode)));
+        auto type = grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(RRNodeId(inode)),
+                                           rr_graph.node_ylow(RRNodeId(inode))));
 
         std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(RRNodeId(inode)), is_flat);
 

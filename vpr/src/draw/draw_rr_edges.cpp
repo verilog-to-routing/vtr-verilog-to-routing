@@ -412,9 +412,9 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     auto pin_rr = RRNodeId(pin_node);
     auto chan_rr = RRNodeId(chan_node);
 
-    const auto& grid_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(pin_rr), rr_graph.node_ylow(pin_rr));
-    int width_offset = device_ctx.grid.get_width_offset(rr_graph.node_xlow(pin_rr), rr_graph.node_ylow(pin_rr));
-    int height_offset = device_ctx.grid.get_height_offset(rr_graph.node_xlow(pin_rr), rr_graph.node_ylow(pin_rr));
+    const auto& grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(pin_rr), rr_graph.node_ylow(pin_rr)));
+    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(rr_graph.node_xlow(pin_rr), rr_graph.node_ylow(pin_rr)));
+    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(rr_graph.node_xlow(pin_rr), rr_graph.node_ylow(pin_rr)));
     ;
 
     float x1 = 0, y1 = 0;

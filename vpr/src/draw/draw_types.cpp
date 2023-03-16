@@ -90,7 +90,7 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block
 
     // if getting clb bbox, apply location info.
     if (pb_gnode.is_root()) {
-        const auto& type = device_ctx.grid.get_physical_type(grid_x, grid_y);
+        const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(grid_x, grid_y));
         float sub_blk_offset = this->tile_width * (sub_block_index / (float)type->capacity);
 
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
@@ -110,7 +110,7 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block
 
     // if getting clb bbox, apply location info.
     if (pb_gnode.is_root()) {
-        const auto& type = device_ctx.grid.get_physical_type(grid_x, grid_y);
+        const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(grid_x, grid_y));
         float sub_blk_offset = this->tile_width * (sub_block_index / (float)type->capacity);
 
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
@@ -144,7 +144,7 @@ ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_in
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& type = device_ctx.grid.get_physical_type(grid_x, grid_y);
+    const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(grid_x, grid_y));
     return get_pb_bbox(grid_x, grid_y, sub_block_index, pick_logical_type(type));
 }
 

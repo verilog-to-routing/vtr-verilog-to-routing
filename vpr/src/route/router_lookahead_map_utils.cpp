@@ -536,7 +536,8 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(next_node), rr_graph.node_ylow(next_node));
+                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(next_node),
+                                                                                           rr_graph.node_ylow(next_node)));
                 if (!is_inter_cluster_node(physical_type,
                                            rr_graph.node_type(next_node),
                                            rr_graph.node_ptc_num(next_node))) {
@@ -608,7 +609,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
             int node_x = rr_graph.node_xlow(curr.node);
             int node_y = rr_graph.node_ylow(curr.node);
 
-            auto tile_type = device_ctx.grid.get_physical_type(node_x, node_y);
+            auto tile_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(node_x, node_y));
             int itile = tile_type->index;
 
             int ptc = rr_graph.node_ptc_num(curr.node);
@@ -671,7 +672,7 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
             if (y < 0) continue;
 
             //VTR_LOG("   y: %d\n", y);
-            if (grid.get_physical_type(x, y) == tile_type) {
+            if (grid.get_physical_type(t_physical_tile_loc(x, y)) == tile_type) {
                 loc.set_x(x);
                 loc.set_y(y);
                 break;

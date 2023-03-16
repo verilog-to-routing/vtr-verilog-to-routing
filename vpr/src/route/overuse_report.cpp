@@ -117,8 +117,8 @@ void report_overused_nodes(const Netlist<>& net_list,
                                           node_id,
                                           rr_node_to_net_map);
                 report_sinks = true;
-                x -= g_vpr_ctx.device().grid.get_physical_type(x, y)->width;
-                y -= g_vpr_ctx.device().grid.get_physical_type(x, y)->width;
+                x -= g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(x, y))->width;
+                y -= g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(x, y))->width;
                 break;
             case CHANX:
             case CHANY:
@@ -209,23 +209,24 @@ static void report_overused_ipin_opin(std::ostream& os,
         grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
         "Non-track RR node should not span across multiple grid blocks.");
 
-    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type(grid_x, grid_y);
+    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(grid_x, grid_y));
 
     os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
     if (is_inter_cluster_node(physical_tile, rr_graph.node_type(node_id), rr_graph.node_ptc_num(node_id))) {
         os << "On Tile Pin"
            << "\n";
     } else {
-        auto pb_type_name = get_pb_graph_node_from_pin_physical_num(device_ctx.grid.get_physical_type(grid_x, grid_y),
+        auto pb_type_name = get_pb_graph_node_from_pin_physical_num(device_ctx.grid.get_physical_type(t_physical_tile_loc(grid_x, grid_y)),
                                                                     rr_graph.node_ptc_num(node_id))
                                 ->pb_type->name;
-        auto pb_pin = get_pb_pin_from_pin_physical_num(device_ctx.grid.get_physical_type(grid_x, grid_y), rr_graph.node_ptc_num(node_id));
+        auto pb_pin = get_pb_pin_from_pin_physical_num(device_ctx.grid.get_physical_type(t_physical_tile_loc(grid_x, grid_y)),
+                                                       rr_graph.node_ptc_num(node_id));
         os << "Intra-Tile Pin - Port : " << pb_pin->port->name << " - PB Type : " << std::string(pb_type_name) << "\n";
     }
     print_block_pins_nets(os,
-                          device_ctx.grid.get_physical_type(grid_x, grid_y),
-                          grid_x - device_ctx.grid.get_width_offset(grid_x, grid_y),
-                          grid_y - device_ctx.grid.get_height_offset(grid_x, grid_y),
+                          device_ctx.grid.get_physical_type(t_physical_tile_loc(grid_x, grid_y)),
+                          grid_x - device_ctx.grid.get_width_offset(t_physical_tile_loc(grid_x, grid_y)),
+                          grid_y - device_ctx.grid.get_height_offset(t_physical_tile_loc(grid_x, grid_y)),
                           rr_graph.node_ptc_num(node_id),
                           rr_node_to_net_map);
     os << "Side = " << rr_graph.node_side_string(node_id) << "\n\n";
@@ -325,11 +326,13 @@ static void report_congested_nets(const Netlist<>& net_list,
                     cluster_block_id = convert_to_cluster_block_id(net_list.pin_block(sink_id));
                 }
                 auto cluster_loc = g_vpr_ctx.placement().block_locs[cluster_block_id];
-                auto physical_type = g_vpr_ctx.device().grid.get_physical_type(x, y);
-                int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type(cluster_loc.loc.x, cluster_loc.loc.y)->width;
-                int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid.get_physical_type(cluster_loc.loc.x, cluster_loc.loc.y)->height;
+                auto physical_type = g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(x, y));
+                int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(cluster_loc.loc.x,
+                                                                                                                  cluster_loc.loc.y))->width;
+                int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(cluster_loc.loc.x,
+                                                                                                                  cluster_loc.loc.y))->height;
                 if (cluster_x == x && cluster_y == y) {
-                    VTR_ASSERT(physical_type == g_vpr_ctx.device().grid.get_physical_type(cluster_x, cluster_y));
+                    VTR_ASSERT(physical_type == g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(cluster_x, cluster_y)));
                     os << "Sink in the same location = "
                        << "\n";
                     if (is_flat) {
@@ -366,7 +369,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     const auto& route_ctx = g_vpr_ctx.routing();
     int x = rr_graph.node_xlow(node_id);
     int y = rr_graph.node_ylow(node_id);
-    auto physical_blk = device_ctx.grid.get_physical_type(x, y);
+    auto physical_blk = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
 
     //Determines if direction or side is available for printing
     auto node_type = rr_graph.node_type(node_id);

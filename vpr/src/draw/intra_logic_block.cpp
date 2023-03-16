@@ -157,9 +157,9 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             /* Only the first block of a group should control drawing */
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
-            int width_offset = device_ctx.grid.get_width_offset(i, j);
-            int height_offset = device_ctx.grid.get_height_offset(i, j);
+            const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
+            int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(i, j));
+            int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(i, j));
 
             if (width_offset > 0 || height_offset > 0)
                 continue;
@@ -282,7 +282,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     double left, bot, right, top;
 
     int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
-    const auto& type = device_ctx.grid.get_physical_type(1, 0);
+    const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(1, 0));
     if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks[1][0].usage != 0
         && type_descrip_index == type->index) {
         // that should test for io blocks, and setting capacity_divisor > 1

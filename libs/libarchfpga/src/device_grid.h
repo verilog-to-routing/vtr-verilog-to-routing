@@ -63,20 +63,20 @@ class DeviceGrid {
      */
     std::vector<t_logical_block_type_ptr> limiting_resources() const { return limiting_resources_; }
 
-    inline t_physical_tile_type_ptr get_physical_type(size_t x, size_t y, int layer_num = 0) const {
-        return grid_[layer_num][x][y].type;
+    inline t_physical_tile_type_ptr get_physical_type(const t_physical_tile_loc& tile_loc) const {
+        return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].type;
     }
 
-    inline int get_width_offset(size_t x, size_t y, int layer_num = 0) const {
-        return grid_[layer_num][x][y].width_offset;
+    inline int get_width_offset(const t_physical_tile_loc& tile_loc) const {
+        return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].width_offset;
     }
 
-    inline int get_height_offset(size_t x, size_t y, int layer_num = 0) const {
-        return grid_[layer_num][x][y].height_offset;
+    inline int get_height_offset(const t_physical_tile_loc& tile_loc) const {
+        return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].height_offset;
     }
 
-    inline const t_metadata_dict* get_metadata(size_t x, size_t y, int layer_num = 0) const {
-        return grid_[layer_num][x][y].meta;
+    inline const t_metadata_dict* get_metadata(const t_physical_tile_loc& tile_loc) const {
+        return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].meta;
     }
 
   private:

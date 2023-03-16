@@ -59,9 +59,9 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     int x = place_ctx.block_locs[blk_id].loc.x;
     int y = place_ctx.block_locs[blk_id].loc.y;
     int sub_tile = place_ctx.block_locs[blk_id].loc.sub_tile;
-    physical_tile_ = device_ctx.grid.get_physical_type(x, y);
+    physical_tile_ = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
     logical_block_ = cluster_ctx.clb_nlist.block_type(blk_id);
-    const auto& grid_meta = device_ctx.grid.get_metadata(x, y);
+    const auto& grid_meta = device_ctx.grid.get_metadata(t_physical_tile_loc(x, y));
 
     blk_prefix_ = "";
     clb_prefix_ = "";

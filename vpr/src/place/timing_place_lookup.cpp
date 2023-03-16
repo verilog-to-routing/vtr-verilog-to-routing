@@ -361,8 +361,8 @@ static float route_connection_delay(
     bool successfully_routed = false;
 
     //Get the rr nodes to route between
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type(source_x, source_y));
-    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type(sink_x, sink_y));
+    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type(t_physical_tile_loc(source_x, source_y)));
+    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type(t_physical_tile_loc(sink_x, sink_y)));
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
@@ -432,7 +432,7 @@ static void generic_compute_matrix_dijkstra_expansion(
     bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type(source_x, source_y);
+    t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(source_x, source_y));
     bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
     if (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE || !is_allowed_type) {
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
@@ -459,7 +459,7 @@ static void generic_compute_matrix_dijkstra_expansion(
 
     vtr::Matrix<bool> found_matrix({matrix.dim_size(0), matrix.dim_size(1)}, false);
 
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type(source_x, source_y));
+    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type(t_physical_tile_loc(source_x, source_y)));
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
@@ -479,7 +479,7 @@ static void generic_compute_matrix_dijkstra_expansion(
                     continue;
                 }
 
-                t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type(sink_x, sink_y);
+                t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(sink_x, sink_y));
                 if (sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                     if (matrix[delta_x][delta_y].empty()) {
                         //Only set empty target if we don't already have a valid delta delay
@@ -495,7 +495,7 @@ static void generic_compute_matrix_dijkstra_expansion(
                     }
                 } else {
                     bool found_a_sink = false;
-                    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type(sink_x, sink_y));
+                    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type(t_physical_tile_loc(sink_x, sink_y)));
                     for (int sink_ptc : best_sink_ptcs) {
                         VTR_ASSERT(sink_ptc != OPEN);
 
@@ -578,8 +578,8 @@ static void generic_compute_matrix_iterative_astar(
             delta_x = abs(sink_x - source_x);
             delta_y = abs(sink_y - source_y);
 
-            t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type(source_x, source_y);
-            t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type(sink_x, sink_y);
+            t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(source_x, source_y));
+            t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(sink_x, sink_y));
 
             bool src_or_target_empty = (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE
                                         || sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE);
@@ -692,7 +692,7 @@ static vtr::Matrix<float> compute_delta_delays(
     t_physical_tile_type_ptr src_type = nullptr;
     for (x = 0; x < grid.width(); ++x) {
         for (y = 0; y < grid.height(); ++y) {
-            auto type = grid.get_physical_type(x, y);
+            auto type = grid.get_physical_type(t_physical_tile_loc(x, y));
 
             if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
@@ -735,7 +735,7 @@ static vtr::Matrix<float> compute_delta_delays(
     src_type = nullptr;
     for (y = 0; y < grid.height(); ++y) {
         for (x = 0; x < grid.width(); ++x) {
-            auto type = grid.get_physical_type(x, y);
+            auto type = grid.get_physical_type(t_physical_tile_loc(x, y));
 
             if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
@@ -1006,7 +1006,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
         if (to_x < 0 || to_x >= (int)grid.width()) continue;
 
         for (from_y = 0; from_y < (int)grid.height(); ++from_y) {
-            if (grid.get_physical_type(from_x, from_y) != from_type) continue;
+            if (grid.get_physical_type(t_physical_tile_loc(from_x, from_y)) != from_type) continue;
 
             //Check that the from pin exists at this from location
             //(with multi-width/height blocks pins may not exist at all locations)
@@ -1022,7 +1022,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             to_y = from_y + direct->y_offset;
 
             if (to_y < 0 || to_y >= (int)grid.height()) continue;
-            if (grid.get_physical_type(to_x, to_y) != to_type) continue;
+            if (grid.get_physical_type(t_physical_tile_loc(to_x, to_y)) != to_type) continue;
 
             //Check that the from pin exists at this from location
             //(with multi-width/height blocks pins may not exist at all locations)
@@ -1053,10 +1053,10 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     }
 
     //Now have a legal instance of this direct connect
-    VTR_ASSERT(grid.get_physical_type(from_x, from_y) == from_type);
+    VTR_ASSERT(grid.get_physical_type(t_physical_tile_loc(from_x, from_y)) == from_type);
     VTR_ASSERT(from_sub_tile < from_type->capacity);
 
-    VTR_ASSERT(grid.get_physical_type(to_x, to_y) == to_type);
+    VTR_ASSERT(grid.get_physical_type(t_physical_tile_loc(to_x, to_y)) == to_type);
     VTR_ASSERT(to_sub_tile < to_type->capacity);
 
     VTR_ASSERT(from_x + direct->x_offset == to_x);

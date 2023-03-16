@@ -179,7 +179,7 @@ std::string move_type_to_string(e_move_type);
  * loc: the uncompressed output location (returned in reference)
  */
 void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
-                            t_type_loc compressed_loc,
+                            t_physical_tile_loc compressed_loc,
                             t_pl_loc& to_loc);
 /**
  * @brief find compressed location in a compressed range for a specific type
@@ -193,28 +193,28 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
-                                             const t_type_loc& from_loc,
+                                             const t_physical_tile_loc& from_loc,
                                              t_search_range search_range,
-                                             t_type_loc& to_loc,
+                                             t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num);
 
-std::vector<t_type_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
+std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
                                            t_pl_loc grid_loc,
                                            int num_layers);
 
-std::vector<t_type_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
+std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
                                                   t_pl_loc grid_loc,
                                                   int num_layers);
 
 std::vector<t_search_range> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                                    const std::vector<t_type_loc>& compressed_locs,
+                                                                    const std::vector<t_physical_tile_loc>& compressed_locs,
                                                                     float rlim,
                                                                     int num_layers);
 
 std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                                     const std::vector<t_type_loc>& from_compressed_loc,
-                                                                     const std::vector<t_type_loc>& target_compressed_loc,
+                                                                     const std::vector<t_physical_tile_loc>& from_compressed_loc,
+                                                                     const std::vector<t_physical_tile_loc>& target_compressed_loc,
                                                                      float rlim,
                                                                      int num_layers);
 

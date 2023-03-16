@@ -6,24 +6,6 @@
 #include "vtr_geometry.h"
 #include "vtr_flat_map.h"
 
-struct t_type_loc {
-    int x = OPEN;
-    int y = OPEN;
-    int layer_num = 0;
-
-    t_type_loc() = default;
-
-    t_type_loc(int x_val, int y_val, int layer_num_val = 0)
-        : x(x_val)
-        , y(y_val)
-        , layer_num(layer_num_val) {}
-
-    //Returns true if this type location has valid x/y values
-    operator bool() const {
-        return !(x == OPEN || y == OPEN || layer_num == OPEN);
-    }
-};
-
 struct t_compressed_block_grid {
     //TODO: compressed_to_grid_x/y should become a 2d vector
     //If 'cx' is an index in the compressed grid space, then
@@ -37,7 +19,7 @@ struct t_compressed_block_grid {
     //x values which exist are considered), while the y-dimension is
     //stored sparsely, since we may not have full columns of blocks.
     //This makes it easy to check whether there exist
-    std::vector<std::vector<vtr::flat_map2<int, t_type_loc>>> grid;
+    std::vector<std::vector<vtr::flat_map2<int, t_physical_tile_loc>>> grid;
 
     //The sub type compatibility for a given physical tile and a compressed block grid
     //corresponding to the possible placement location for a given logical block
@@ -53,7 +35,7 @@ struct t_compressed_block_grid {
         return compressed_to_grid_y[layer_num].size();
     }
 
-    inline t_type_loc grid_loc_to_compressed_loc(t_type_loc grid_loc) const {
+    inline t_physical_tile_loc grid_loc_to_compressed_loc(t_physical_tile_loc grid_loc) const {
         int cx = OPEN;
         int cy = OPEN;
         int layer_num = grid_loc.layer_num;
@@ -80,7 +62,7 @@ struct t_compressed_block_grid {
      * Hence, the exact point coordinate will not be found in coords if they are of different block types. In this case the function will return
      * the nearest compressed location to point by rounding it down
      */
-    inline t_type_loc grid_loc_to_compressed_loc_approx(t_type_loc grid_loc) const {
+    inline t_physical_tile_loc grid_loc_to_compressed_loc_approx(t_physical_tile_loc grid_loc) const {
         int cx = OPEN;
         int cy = OPEN;
         int layer_num = grid_loc.layer_num;
@@ -100,7 +82,7 @@ struct t_compressed_block_grid {
         return {cx, cy, layer_num};
     }
 
-    inline t_type_loc compressed_loc_to_grid_loc(t_type_loc compressed_loc) const {
+    inline t_physical_tile_loc compressed_loc_to_grid_loc(t_physical_tile_loc compressed_loc) const {
         int layer_num = compressed_loc.layer_num;
         return {compressed_to_grid_x[layer_num][compressed_loc.x], compressed_to_grid_y[layer_num][compressed_loc.y], layer_num};
     }
@@ -109,7 +91,7 @@ struct t_compressed_block_grid {
         return compatible_sub_tiles_for_tile.at(physical_type_index);
     }
 
-    inline const vtr::flat_map2<int, t_type_loc>& get_column_block_map(int cx, int layer_num) const {
+    inline const vtr::flat_map2<int, t_physical_tile_loc>& get_column_block_map(int cx, int layer_num) const {
         return grid[layer_num][cx];
     }
 

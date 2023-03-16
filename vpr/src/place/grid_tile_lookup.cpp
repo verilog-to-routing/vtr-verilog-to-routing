@@ -15,9 +15,9 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::
      */
     for (int i_col = type_count.dim_size(0) - 1; i_col >= 0; i_col--) {
         for (int j_row = type_count.dim_size(1) - 1; j_row >= 0; j_row--) {
-            const auto& tile = device_ctx.grid.get_physical_type(i_col, j_row);
-            int height_offset = device_ctx.grid.get_height_offset(i_col, j_row);
-            int width_offset = device_ctx.grid.get_width_offset(i_col, j_row);
+            const auto& tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(i_col, j_row));
+            int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(i_col, j_row));
+            int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(i_col, j_row));
             type_count[i_col][j_row] = 0;
 
             if (is_tile_compatible(tile, block_type) && height_offset == 0 && width_offset == 0) {
@@ -122,7 +122,7 @@ int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block
 
     for (int i = xmax; i >= xmin; i--) {
         for (int j = ymax; j >= ymin; j--) {
-            const auto& tile = device_ctx.grid.get_physical_type(i, j);
+            const auto& tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
             if (is_sub_tile_compatible(tile, block_type, subtile)) {
                 num_sub_tiles++;
             }

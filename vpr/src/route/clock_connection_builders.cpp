@@ -256,15 +256,15 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                 continue;
             }
 
-            auto type = grid.get_physical_type(x, y);
+            auto type = grid.get_physical_type(t_physical_tile_loc(x, y));
 
             // Skip EMPTY type
             if (is_empty_type(type)) {
                 continue;
             }
 
-            auto width_offset = grid.get_width_offset(x, y);
-            auto height_offset = grid.get_height_offset(x, y);
+            auto width_offset = grid.get_width_offset(t_physical_tile_loc(x, y));
+            auto height_offset = grid.get_height_offset(t_physical_tile_loc(x, y));
 
             // Ignore grid locations that do not have blocks
             bool has_pb_type = false;

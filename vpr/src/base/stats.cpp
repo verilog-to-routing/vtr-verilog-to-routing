@@ -71,9 +71,9 @@ void routing_stats(const Netlist<>& net_list,
     area = 0;
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            auto type = device_ctx.grid.get_physical_type(i, j);
-            int width_offset = device_ctx.grid.get_width_offset(i, j);
-            int height_offset = device_ctx.grid.get_height_offset(i, j);
+            auto type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
+            int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(i, j));
+            int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(i, j));
             if (width_offset == 0
                 && height_offset == 0
                 && !is_io_type(type)

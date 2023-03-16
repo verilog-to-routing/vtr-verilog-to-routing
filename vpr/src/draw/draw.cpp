@@ -1018,7 +1018,7 @@ static void highlight_blocks(double x, double y) {
                 break; // we've gone to far in the y direction
             }
             // iterate over sub_blocks
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
+            const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
             for (int k = 0; k < type->capacity; ++k) {
                 clb_index = place_ctx.grid_blocks[i][j].blocks[k];
                 if (clb_index != EMPTY_BLOCK_ID) {
