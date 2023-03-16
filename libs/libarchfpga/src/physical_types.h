@@ -812,7 +812,7 @@ struct t_physical_pin {
 };
 
 /**
-* @brief Describes the location of a physical tile
+ * @brief Describes the location of a physical tile
  */
 struct t_physical_tile_loc {
     int x = OPEN;

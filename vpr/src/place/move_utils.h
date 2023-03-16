@@ -200,12 +200,12 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int to_layer_num);
 
 std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
-                                           t_pl_loc grid_loc,
-                                           int num_layers);
+                                                    t_pl_loc grid_loc,
+                                                    int num_layers);
 
 std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
-                                                  t_pl_loc grid_loc,
-                                                  int num_layers);
+                                                           t_pl_loc grid_loc,
+                                                           int num_layers);
 
 std::vector<t_search_range> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
                                                                     const std::vector<t_physical_tile_loc>& compressed_locs,

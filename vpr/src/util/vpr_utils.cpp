@@ -1334,8 +1334,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     auto& loc = place_ctx.block_locs[cluster_blk_id].loc;
     int cap = loc.sub_tile;
     const auto& physical_type = grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y, loc.layer));
-    VTR_ASSERT(grid.get_width_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0 &&
-               grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0);
+    VTR_ASSERT(grid.get_width_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0 && grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0);
     VTR_ASSERT(cap < physical_type->capacity);
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;

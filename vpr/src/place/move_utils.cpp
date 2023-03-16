@@ -553,8 +553,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //Determine the coordinates in the compressed grid space of the current block
     std::vector<t_physical_tile_loc> compressed_locs = get_compressed_loc(compressed_block_grid,
-                                                                 from,
-                                                                 num_layers);
+                                                                          from,
+                                                                          num_layers);
 
     //Determine the valid compressed grid location ranges
     std::vector<t_search_range> search_range = get_compressed_grid_target_search_range(compressed_block_grid,
@@ -626,19 +626,19 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
 
     //Determine the coordinates in the compressed grid space of the current block
     std::vector<t_physical_tile_loc> from_compressed_locs = get_compressed_loc(compressed_block_grid,
-                                                                      from_loc,
-                                                                      g_vpr_ctx.device().grid.get_num_layers());
+                                                                               from_loc,
+                                                                               g_vpr_ctx.device().grid.get_num_layers());
 
     VTR_ASSERT(limit_coords->xmin <= limit_coords->xmax);
     VTR_ASSERT(limit_coords->ymin <= limit_coords->ymax);
 
     //Determine the valid compressed grid location ranges
     std::vector<t_physical_tile_loc> min_compressed_loc = get_compressed_loc_approx(compressed_block_grid,
-                                                                           {limit_coords->xmin, limit_coords->ymin, 0, from_layer_num},
-                                                                           num_layers);
+                                                                                    {limit_coords->xmin, limit_coords->ymin, 0, from_layer_num},
+                                                                                    num_layers);
     std::vector<t_physical_tile_loc> max_compressed_loc = get_compressed_loc_approx(compressed_block_grid,
-                                                                           {limit_coords->xmax, limit_coords->ymax, 0, from_layer_num},
-                                                                           num_layers);
+                                                                                    {limit_coords->xmax, limit_coords->ymax, 0, from_layer_num},
+                                                                                    num_layers);
 
     VTR_ASSERT(min_compressed_loc[from_layer_num].x >= 0);
     VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_columns(from_layer_num)) - 1 - max_compressed_loc[from_layer_num].x >= 0);
@@ -706,13 +706,13 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     std::vector<t_physical_tile_loc> from_compressed_loc = get_compressed_loc(compressed_block_grid,
-                                                                     from_loc,
-                                                                     num_layers);
+                                                                              from_loc,
+                                                                              num_layers);
 
     //Determine the coordinates in the compressed grid space of the current block
     std::vector<t_physical_tile_loc> centroid_compressed_loc = get_compressed_loc_approx(compressed_block_grid,
-                                                                                centroid,
-                                                                                num_layers);
+                                                                                         centroid,
+                                                                                         num_layers);
 
     //Determine the valid compressed grid location ranges
     int delta_cx;
@@ -904,8 +904,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
 }
 
 std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
-                                           t_pl_loc grid_loc,
-                                           int num_layers) {
+                                                    t_pl_loc grid_loc,
+                                                    int num_layers) {
     //TODO: This function currently only determine the compressed location for the same layer as grid_loc - it should be updated to cover all layers
     std::vector<t_physical_tile_loc> compressed_locs(num_layers);
 
@@ -920,8 +920,8 @@ std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_gri
 }
 
 std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
-                                                  t_pl_loc grid_loc,
-                                                  int num_layers) {
+                                                           t_pl_loc grid_loc,
+                                                           int num_layers) {
     //TODO: This function currently only determine the compressed location for the same layer as grid_loc - it should be updated to cover all layers
     std::vector<t_physical_tile_loc> compressed_locs(num_layers);
 

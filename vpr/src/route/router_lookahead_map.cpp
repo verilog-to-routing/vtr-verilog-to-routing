@@ -271,7 +271,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     const auto& rr_graph = device_ctx.rr_graph;
 
     t_physical_tile_type_ptr from_physical_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(current_node),
-                                                                                    rr_graph.node_ylow(current_node)));
+                                                                                                        rr_graph.node_ylow(current_node)));
     t_rr_type from_rr_type = rr_graph.node_type(current_node);
     int from_node_ptc_num = rr_graph.node_ptc_num(current_node);
 
@@ -853,7 +853,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
         t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(child_node),
-                                                                                   rr_graph.node_ylow(child_node)));
+                                                                                                       rr_graph.node_ylow(child_node)));
 
         if (!is_inter_cluster_node(physical_type,
                                    rr_graph.node_type(child_node),

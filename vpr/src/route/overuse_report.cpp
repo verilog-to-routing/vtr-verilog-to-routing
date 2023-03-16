@@ -327,10 +327,8 @@ static void report_congested_nets(const Netlist<>& net_list,
                 }
                 auto cluster_loc = g_vpr_ctx.placement().block_locs[cluster_block_id];
                 auto physical_type = g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(x, y));
-                int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(cluster_loc.loc.x,
-                                                                                                                  cluster_loc.loc.y))->width;
-                int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(cluster_loc.loc.x,
-                                                                                                                  cluster_loc.loc.y))->height;
+                int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(cluster_loc.loc.x, cluster_loc.loc.y))->width;
+                int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(cluster_loc.loc.x, cluster_loc.loc.y))->height;
                 if (cluster_x == x && cluster_y == y) {
                     VTR_ASSERT(physical_type == g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(cluster_x, cluster_y)));
                     os << "Sink in the same location = "
