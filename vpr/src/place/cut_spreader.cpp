@@ -416,13 +416,13 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
         auto blk = cut_blks.at(0);
         auto& tiles_type = clb_nlist.block_type(blk)->equivalent_tiles;
         auto loc = ap->blk_locs[blk].loc;
-        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type(loc.x, loc.y)) == tiles_type.end()) {
+        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y, loc.layer))) == tiles_type.end()) {
             // logic block type doesn't match tile type
             // exhaustive search for tile of right type
             // this search should be fast as region must be small at this point (only 1 logic block left)
             for (int x = r.bb.xmin(); x <= r.bb.xmax(); x++)
                 for (int y = r.bb.ymin(); y <= r.bb.ymax(); y++) {
-                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type(x, y)) != tiles_type.end()) {
+                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y))) != tiles_type.end()) {
                         VTR_ASSERT(blks_at_location[x][y].empty());
                         ap->blk_locs[blk].rawx = x;
                         ap->blk_locs[blk].rawy = y;
@@ -1109,7 +1109,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
             // ensure the target location has compatible tile
             auto blk_t = clb_nlist.block_type(blk);
-            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid.get_physical_type(target.x, target.y));
+            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(target.x, target.y, target.layer)));
             if (result == blk_t->equivalent_tiles.end()) {
                 placement_impossible = true;
                 break;
