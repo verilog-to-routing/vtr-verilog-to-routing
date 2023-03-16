@@ -142,8 +142,12 @@ struct DeviceContext : public Context {
      * Physical FPGA architecture
      *********************************************************************/
 
-    DeviceGrid grid; ///<FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1]
-
+    /**
+     * @brief The device grid
+     *
+     * This represents the physical layout of the device. To get the physical tile at each location (x, y, z) the helper function in this data structure should be used.cture
+     */
+    DeviceGrid grid;
     /*
      * Empty types
      */
