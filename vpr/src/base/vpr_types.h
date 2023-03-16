@@ -1299,6 +1299,9 @@ struct t_router_opts {
     std::string write_router_lookahead;
     std::string read_router_lookahead;
 
+    std::string write_intra_cluster_router_lookahead;
+    std::string read_intra_cluster_router_lookahead;
+
     e_heap_type router_heap;
     bool exit_after_first_routing_iteration;
 
@@ -1309,6 +1312,7 @@ struct t_router_opts {
     bool generate_rr_node_overuse_report;
 
     bool flat_routing;
+    bool has_choking_spot;
 
     // Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
@@ -1615,26 +1619,61 @@ class t_net_routing_status {
         is_fixed_.resize(number_nets);
         is_fixed_.fill(false);
     }
-    void set_is_routed(ClusterNetId net, bool is_routed) {
+    void set_is_routed(ParentNetId net, bool is_routed) {
         is_routed_.set(index(net), is_routed);
     }
-    bool is_routed(ClusterNetId net) const {
+    bool is_routed(ParentNetId net) const {
         return is_routed_.get(index(net));
     }
-    void set_is_fixed(ClusterNetId net, bool is_fixed) {
+    void set_is_fixed(ParentNetId net, bool is_fixed) {
         is_fixed_.set(index(net), is_fixed);
     }
-    bool is_fixed(ClusterNetId net) const {
+    bool is_fixed(ParentNetId net) const {
         return is_fixed_.get(index(net));
     }
 
   private:
-    ClusterNetId index(ClusterNetId net) const {
-        VTR_ASSERT_SAFE(net != ClusterNetId::INVALID());
+    ParentNetId index(ParentNetId net) const {
+        VTR_ASSERT_SAFE(net != ParentNetId::INVALID());
         return net;
     }
-    vtr::dynamic_bitset<ClusterNetId> is_routed_; ///<Whether the net has been legally routed
-    vtr::dynamic_bitset<ClusterNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
+    vtr::dynamic_bitset<ParentNetId> is_routed_; ///<Whether the net has been legally routed
+    vtr::dynamic_bitset<ParentNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
+};
+
+class t_atom_net_routing_status {
+  public:
+    void clear() {
+        is_routed_.clear();
+        is_fixed_.clear();
+    }
+
+    void resize(size_t number_nets) {
+        is_routed_.resize(number_nets);
+        is_routed_.fill(false);
+        is_fixed_.resize(number_nets);
+        is_fixed_.fill(false);
+    }
+    void set_is_routed(AtomNetId net, bool is_routed) {
+        is_routed_.set(index(net), is_routed);
+    }
+    bool is_routed(AtomNetId net) const {
+        return is_routed_.get(index(net));
+    }
+    void set_is_fixed(AtomNetId net, bool is_fixed) {
+        is_fixed_.set(index(net), is_fixed);
+    }
+    bool is_fixed(AtomNetId net) const {
+        return is_fixed_.get(index(net));
+    }
+
+  private:
+    AtomNetId index(AtomNetId net) const {
+        VTR_ASSERT_SAFE(net != AtomNetId::INVALID());
+        return net;
+    }
+    vtr::dynamic_bitset<AtomNetId> is_routed_; ///<Whether the net has been legally routed
+    vtr::dynamic_bitset<AtomNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
 };
 
 struct t_node_edge {

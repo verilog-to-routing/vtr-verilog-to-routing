@@ -1062,10 +1062,10 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     //if any blocks remain unplaced, print an error
     check_initial_placement_legality();
 
-#ifdef VERBOSE
-    VTR_LOG("At end of initial_placement.\n");
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
-        print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
-    }
-#endif
+    //#ifdef VERBOSE
+    //    VTR_LOG("At end of initial_placement.\n");
+    //    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
+    //        print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
+    //    }
+    //#endif
 }

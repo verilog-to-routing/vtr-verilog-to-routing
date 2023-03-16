@@ -12,7 +12,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
                             const PlaceDelayModel* delay_model,
                             PlacerCriticalities* criticalities,
                             PlacerSetupSlacks* setup_slacks,
-                            ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                            NetPinTimingInvalidator* pin_timing_invalidator,
                             SetupTimingInfo* timing_info,
                             t_placer_costs* costs);
 
@@ -21,7 +21,7 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 const PlaceDelayModel* delay_model,
                                 PlacerCriticalities* criticalities,
                                 PlacerSetupSlacks* setup_slacks,
-                                ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                NetPinTimingInvalidator* pin_timing_invalidator,
                                 SetupTimingInfo* timing_info,
                                 t_placer_costs* costs);
 
@@ -30,7 +30,7 @@ void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
-                           ClusteredPinTimingInvalidator* pin_timing_invalidator);
+                           NetPinTimingInvalidator* pin_timing_invalidator);
 
 ///@brief Updates the timing driven (td) costs.
 void update_timing_cost(const PlaceDelayModel* delay_model,

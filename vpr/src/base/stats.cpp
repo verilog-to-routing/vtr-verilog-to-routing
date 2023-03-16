@@ -29,11 +29,13 @@
 
 /********************** Subroutines local to this module *********************/
 
-static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ);
+static void load_channel_occupancies(const Netlist<>& net_list,
+                                     vtr::Matrix<int>& chanx_occ,
+                                     vtr::Matrix<int>& chany_occ);
 
-static void length_and_bends_stats();
+static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
-static void get_channel_occupancy_stats();
+static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/);
 
 /************************* Subroutine definitions ****************************/
 
@@ -42,7 +44,8 @@ static void get_channel_occupancy_stats();
  *
  * Both a routing and an rr_graph must exist when you call this routine.
  */
-void routing_stats(bool full_stats,
+void routing_stats(const Netlist<>& net_list,
+                   bool full_stats,
                    enum e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
@@ -59,9 +62,9 @@ void routing_stats(bool full_stats,
 
     int num_rr_switch = rr_graph.num_rr_switches();
 
-    length_and_bends_stats();
-    print_channel_stats();
-    get_channel_occupancy_stats();
+    length_and_bends_stats(net_list, is_flat);
+    print_channel_stats(is_flat);
+    get_channel_occupancy_stats(net_list, is_flat);
 
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
@@ -106,21 +109,21 @@ void routing_stats(bool full_stats,
     }
 
     if (full_stats == true)
-        print_wirelen_prob_dist();
+        print_wirelen_prob_dist(is_flat);
 }
 
 /**
  * @brief Figures out maximum, minimum and average number of bends
  *        and net length in the routing.
  */
-void length_and_bends_stats() {
+void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int bends, total_bends, max_bends;
     int length, total_length, max_length;
     int segments, total_segments, max_segments;
     float av_bends, av_length, av_segments;
-    int num_global_nets, num_clb_opins_reserved;
+    int num_global_nets, num_clb_opins_reserved, num_absorbed_nets;
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    bool is_absorbed;
 
     max_bends = 0;
     total_bends = 0;
@@ -130,10 +133,11 @@ void length_and_bends_stats() {
     total_segments = 0;
     num_global_nets = 0;
     num_clb_opins_reserved = 0;
+    num_absorbed_nets = 0;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
-            get_num_bends_and_length(net_id, &bends, &length, &segments);
+    for (auto net_id : net_list.nets()) {
+        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
+            get_num_bends_and_length(net_id, &bends, &length, &segments, &is_absorbed);
 
             total_bends += bends;
             max_bends = std::max(bends, max_bends);
@@ -143,35 +147,42 @@ void length_and_bends_stats() {
 
             total_segments += segments;
             max_segments = std::max(segments, max_segments);
-        } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+
+            if (is_absorbed) {
+                num_absorbed_nets++;
+            }
+        } else if (net_list.net_is_ignored(net_id)) {
             num_global_nets++;
-        } else {
+        } else if (!is_flat) {
+            /* If flat_routing is enabled, we don't need to count the number of reserved opins*/
             num_clb_opins_reserved++;
         }
     }
 
-    av_bends = (float)total_bends / (float)((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+    av_bends = (float)total_bends / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("\n");
     VTR_LOG("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
     VTR_LOG("\n");
 
-    av_length = (float)total_length / (float)((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+    av_length = (float)total_length / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Number of global nets: %d\n", num_global_nets);
-    VTR_LOG("Number of routed nets (nonglobal): %d\n", (int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+    VTR_LOG("Number of routed nets (nonglobal): %d\n", (int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Wire length results (in units of 1 clb segments)...\n");
     VTR_LOG("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
     VTR_LOG("\tMaximum net length: %d\n", max_length);
     VTR_LOG("\n");
 
-    av_segments = (float)total_segments / (float)((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+    av_segments = (float)total_segments / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Wire length results in terms of physical segments...\n");
     VTR_LOG("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
     VTR_LOG("\tMaximum segments used by a net: %d\n", max_segments);
     VTR_LOG("\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
+
+    VTR_LOG("Total number of nets absorbed: %d\n", num_absorbed_nets);
 }
 
 ///@brief Determines how many tracks are used in each channel.
-static void get_channel_occupancy_stats() {
+static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
     auto& device_ctx = g_vpr_ctx.device();
 
     auto chanx_occ = vtr::Matrix<int>({{
@@ -185,7 +196,7 @@ static void get_channel_occupancy_stats() {
                                           device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
                                       }},
                                       0);
-    load_channel_occupancies(chanx_occ, chany_occ);
+    load_channel_occupancies(net_list, chanx_occ, chany_occ);
 
     VTR_LOG("\n");
     VTR_LOG("X - Directed channels:   j max occ ave occ capacity\n");
@@ -231,14 +242,15 @@ static void get_channel_occupancy_stats() {
  * @brief Loads the two arrays passed in with the total occupancy at each of the
  *        channel segments in the FPGA.
  */
-static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ) {
+static void load_channel_occupancies(const Netlist<>& net_list,
+                                     vtr::Matrix<int>& chanx_occ,
+                                     vtr::Matrix<int>& chany_occ) {
     int i, j, inode;
     t_trace* tptr;
     t_rr_type rr_type;
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
     /* First set the occupancy of everything to zero. */
@@ -246,9 +258,9 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
     chany_occ.fill(0);
 
     /* Now go through each net and count the tracks and pins used everywhere */
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (auto net_id : net_list.nets()) {
         /* Skip global and empty nets. */
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
+        if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0)
             continue;
 
         tptr = route_ctx.trace[net_id].head;
@@ -283,7 +295,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
  * @brief Counts and returns the number of bends, wirelength, and number of routing
  *        resource segments in net inet's routing.
  */
-void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr) {
+void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr, bool* is_absorbed_ptr) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -292,6 +304,8 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
     int inode;
     t_rr_type curr_type, prev_type;
     int bends, length, segments;
+
+    bool is_absorbed = true;
 
     bends = 0;
     length = 0;
@@ -320,6 +334,7 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
         }
 
         else if (curr_type == CHANX || curr_type == CHANY) {
+            is_absorbed = false;
             segments++;
             length += rr_graph.node_length(RRNodeId(inode));
 
@@ -334,6 +349,7 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
     *bends_ptr = bends;
     *len_ptr = length;
     *segments_ptr = segments;
+    *is_absorbed_ptr = is_absorbed;
 }
 
 /**
@@ -341,7 +357,7 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
  *        input pins on a net -- i.e. simulates 2-point net length probability
  *        distribution.
  */
-void print_wirelen_prob_dist() {
+void print_wirelen_prob_dist(bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -349,14 +365,16 @@ void print_wirelen_prob_dist() {
     int bends, length, segments, index;
     float av_length;
     int prob_dist_size, incr;
+    bool is_absorbed;
 
     prob_dist_size = device_ctx.grid.width() + device_ctx.grid.height() + 10;
     std::vector<float> prob_dist(prob_dist_size, 0.0);
     norm_fac = 0.;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
-            get_num_bends_and_length(net_id, &bends, &length, &segments);
+            get_num_bends_and_length(par_net_id, &bends, &length, &segments, &is_absorbed);
 
             /*  Assign probability to two integer lengths proportionately -- i.e.  *
              *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *

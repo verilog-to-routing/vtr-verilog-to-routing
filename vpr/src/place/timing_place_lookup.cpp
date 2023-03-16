@@ -162,6 +162,7 @@ static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y,
 
 std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
+                                                           const Netlist<>& net_list,
                                                            t_det_routing_arch* det_routing_arch,
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
@@ -174,25 +175,26 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
+    //TODO: is_flat flag should not be set here - It should be passed to the function.
     alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
-                          directs, num_directs);
+                          directs, num_directs, is_flat);
 
-    const RouterLookahead* router_lookahead = get_cached_router_lookahead(
-        router_opts.lookahead_type,
-        router_opts.write_router_lookahead,
-        router_opts.read_router_lookahead,
-        segment_inf,
-        is_flat);
-    RouterDelayProfiler route_profiler(router_lookahead, is_flat);
+    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+                                                                          router_opts.lookahead_type,
+                                                                          router_opts.write_router_lookahead,
+                                                                          router_opts.read_router_lookahead,
+                                                                          segment_inf,
+                                                                          is_flat);
+    RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 
     int longest_length = get_longest_segment_length(segment_inf);
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
-        place_delay_model = std::make_unique<DeltaDelayModel>(false);
+        place_delay_model = std::make_unique<DeltaDelayModel>(is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        place_delay_model = std::make_unique<OverrideDelayModel>(false);
+        place_delay_model = std::make_unique<OverrideDelayModel>(is_flat);
     } else {
         VTR_ASSERT_MSG(false, "Invalid placer delay model");
     }
@@ -208,7 +210,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
     }
 
     /*free all data structures that are no longer needed */
-    free_routing_structs();
+    free_routing_structs(net_list);
 
     return place_delay_model;
 }

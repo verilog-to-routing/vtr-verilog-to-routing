@@ -4,6 +4,9 @@
 crit_path_route_success_iteration;vpr.out;Successfully routed after (\d+) routing iterations
 
 #VPR Analysis (final implementation) Timing Metrics
+num_rr_graph_nodes;vpr.out;\s*RR Graph Nodes: (\d+)
+num_rr_graph_edges;vpr.out;\s*RR Graph Edges: (\d+)
+collapsed_nodes;vpr.out;Number of collapsed nodes: (\d+)
 critical_path_delay;vpr.out;Final critical path delay \(least slack\): (.*) ns
 geomean_nonvirtual_intradomain_critical_path_delay;vpr.out;Final geomean non-virtual intra-domain period: (.*) ns
 setup_TNS;vpr.out;Final setup Total Negative Slack \(sTNS\): (.*) ns
@@ -11,6 +14,9 @@ setup_WNS;vpr.out;Final setup Worst Negative Slack \(sWNS\): (.*) ns
 hold_TNS;vpr.out;Final hold Total Negative Slack \(hTNS\): (.*) ns
 hold_WNS;vpr.out;Final hold Worst Negative Slack \(hWNS\): (.*) ns
 
+create_rr_graph_time;vpr.out;\s.*Build routing resource graph took (.*) seconds
+create_intra_cluster_rr_graph_time;vpr.out;\s.*Build intra-cluster routing resource graph took (.*) seconds
+adding_internal_edges;vpr.out;\s.*Adding Internal Edges took (.*) seconds
 route_mem;vpr.out;.*Routing took.*\(max_rss (.*), .*\)
 crit_path_route_time;vpr.out;\s*Routing took (.*) seconds
 
@@ -19,4 +25,5 @@ crit_path_total_sta_time;vpr.out;Flow timing analysis took .* seconds \((.*) STA
 
 #Run-time Metrics
 router_lookahead_mem;vpr.out;.*router lookahead map took.*\(max_rss (.*), .*\)
+tile_lookahead_computation_time;vpr.out;\s*Computing tile lookahead took (.*) seconds
 router_lookahead_computation_time;vpr.out;\s*Computing router lookahead map took (.*) seconds
