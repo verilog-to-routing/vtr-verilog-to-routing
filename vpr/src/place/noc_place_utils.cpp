@@ -258,12 +258,6 @@ void update_noc_normalization_factors(t_placer_costs& costs, const t_placer_opts
     costs.noc_aggregate_bandwidth_cost_norm = std::min(1 / costs.noc_aggregate_bandwidth_cost, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
     costs.noc_latency_cost_norm = std::min(1 / costs.noc_latency_cost, MAX_INV_NOC_LATENCY_COST);
 
-    // reset the placement cost to 1 (similiar to timing driven mode). if placement algorithm is in bounding box mode this would not have been done by default.
-    //This is needed now since with a NoC we have two different factors contributing to the placement costs
-    if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
-        costs.cost = 1;
-    }
-
     return;
 }
 
