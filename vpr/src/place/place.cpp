@@ -352,6 +352,8 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
 static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
+static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
+
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
 static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_edges);
@@ -624,14 +626,12 @@ void try_place(const t_placer_opts& placer_opts,
          * here would fail the golden results of strong_sdc benchmark                */
         costs.timing_cost_norm = 1 / costs.timing_cost;
         costs.bb_cost_norm = 1 / costs.bb_cost;
-        costs.cost = 1;
     } else {
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
         /* Total cost is the same as wirelength cost normalized*/
         costs.bb_cost = comp_bb_cost(NORMAL);
         costs.bb_cost_norm = 1 / costs.bb_cost;
-        costs.cost = 1;
 
         /* Timing cost and normalization factors are not used */
         costs.timing_cost = INVALID_COST;
@@ -651,6 +651,9 @@ void try_place(const t_placer_opts& placer_opts,
         // initialize all the noc normalization factors
         update_noc_normalization_factors(costs, placer_opts);
     }
+
+    // set the starting total placement cost
+    costs.cost = get_total_cost(&costs, placer_opts, noc_opts);
 
     //Sanity check that initial placement is legal
     check_place(costs, place_delay_model.get(), placer_criticalities.get(),
@@ -1948,7 +1951,41 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
         update_noc_normalization_factors(*costs, placer_opts);
     }
 
+    // update the current total placement cost
+    costs->cost = get_total_cost(costs, placer_opts, noc_opts);
+
     return;
+}
+
+/**
+ * @brief Compute the total normalized cost for a given placement. This
+ * computation will vary depending on the placement modes.
+ * 
+ * @param costs The current placement cost components and their normalization
+ * factors
+ * @param placer_opts Determines the placement mode
+ * @param noc_opts Determines if placement includes the NoC
+ * @return double The computed total cost of the current placement
+ */
+static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
+
+    double total_cost = 0.0;
+
+    if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
+        // in bounding box mode we only care about wirelength
+        total_cost = costs->bb_cost * costs->bb_cost_norm;
+    }
+    else if (placer_opts.place_algorithm.is_timing_driven()) {
+        // in timing mode we include both wirelength and timing costs
+        total_cost = (1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm);
+    }
+    
+    if (noc_opts.noc) {
+        // in noc mode we include noc agggregate bandwidth and noc latency
+        total_cost += (noc_opts.noc_placement_weighting) * ((costs->noc_aggregate_bandwidth_cost * costs->noc_aggregate_bandwidth_cost_norm) + (costs->noc_latency_cost * costs->noc_latency_cost_norm));
+    }
+
+    return total_cost;
 }
 
 /**
