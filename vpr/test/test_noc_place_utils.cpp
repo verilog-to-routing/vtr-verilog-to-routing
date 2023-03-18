@@ -1060,8 +1060,6 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         costs.noc_aggregate_bandwidth_cost = 0.;
         costs.noc_latency_cost = 1.;
 
-        placer_opts.place_algorithm = e_place_algorithm::SLACK_TIMING_PLACE;
-
         // run the test function
         update_noc_normalization_factors(costs, placer_opts);
 
@@ -1072,8 +1070,6 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     SECTION("Test case where the latency cost is 0") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 0.;
-
-        placer_opts.place_algorithm = e_place_algorithm::SLACK_TIMING_PLACE;
 
         // run the test function
         update_noc_normalization_factors(costs, placer_opts);
@@ -1086,8 +1082,6 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         costs.noc_aggregate_bandwidth_cost = 1.e9;
         costs.noc_latency_cost = 0.;
 
-        placer_opts.place_algorithm = e_place_algorithm::SLACK_TIMING_PLACE;
-
         // run the test function
         update_noc_normalization_factors(costs, placer_opts);
 
@@ -1098,8 +1092,6 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     SECTION("Test case where the latency cost is an expected value") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 50.e-12;
-
-        placer_opts.place_algorithm = e_place_algorithm::SLACK_TIMING_PLACE;
 
         // run the test function
         update_noc_normalization_factors(costs, placer_opts);
@@ -1112,51 +1104,12 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 999.e-15;
 
-        placer_opts.place_algorithm = e_place_algorithm::SLACK_TIMING_PLACE;
-
         // run the test function
         update_noc_normalization_factors(costs, placer_opts);
 
         // verify the latency normalized cost
         // this should not be trimmed
         REQUIRE(costs.noc_latency_cost_norm == 1.e12);
-    }
-    SECTION("Test case where the placement algorithm is timing based") {
-        costs.noc_aggregate_bandwidth_cost = 1.;
-        costs.noc_latency_cost = 1.;
-
-        costs.cost = 10.;
-
-        placer_opts.place_algorithm = e_place_algorithm::SLACK_TIMING_PLACE;
-
-        // run the test function
-        update_noc_normalization_factors(costs, placer_opts);
-
-        // cost should not be updated
-        REQUIRE(costs.cost == 10.);
-
-        // try the other timing algorithm
-        placer_opts.place_algorithm = e_place_algorithm::CRITICALITY_TIMING_PLACE;
-
-        // run the test function
-        update_noc_normalization_factors(costs, placer_opts);
-
-        // cost should not be updated
-        REQUIRE(costs.cost == 10.);
-    }
-    SECTION("Test case where the placement algorithm is not timing based") {
-        costs.noc_aggregate_bandwidth_cost = 1.;
-        costs.noc_latency_cost = 1.;
-
-        costs.cost = 10.;
-
-        placer_opts.place_algorithm = e_place_algorithm::BOUNDING_BOX_PLACE;
-
-        // run the test function
-        update_noc_normalization_factors(costs, placer_opts);
-
-        // cost should be updated
-        REQUIRE(costs.cost == 1.);
     }
 }
 TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
