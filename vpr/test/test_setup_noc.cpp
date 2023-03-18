@@ -610,6 +610,10 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
     // create the noc model (to store the routers)
     NocStorage noc_model;
 
+    // store the reference to device grid with
+    // this will be set to the device grid width
+    noc_model.set_device_grid_width((int)3);
+
     // create the logical router list
     t_noc_inf noc_info;
 

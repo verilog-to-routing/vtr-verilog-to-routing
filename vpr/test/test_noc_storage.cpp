@@ -30,6 +30,10 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
     // testing datastructure
     NocStorage test_noc;
 
+    // store the reference to device grid with
+    // this will be set to the total number of routers (and should be set before adding routers)
+    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+
     NocRouterId converted_id;
 
     // add all the routers to noc_storage and populate the golden router set
@@ -78,6 +82,10 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
     // testing datastructure
     NocStorage test_noc;
 
+    // store the reference to device grid with
+    // this will be set to the total number of routers (and should be set before adding routers)
+    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+
     NocRouterId converted_id;
 
     // add all the routers to noc_storage and populate the golden router set
@@ -120,6 +128,10 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
     // testing datastructure
     NocStorage test_noc;
+
+    // store the reference to device grid with
+    // this will be set to the total number of routers (and should be set before adding routers)
+    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
 
     // keeps track of the number of links created
     int total_num_of_links = 0;
@@ -195,6 +207,10 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
     // testing datastructure
     NocStorage test_noc;
 
+    // store the reference to device grid with
+    // this will be set to the total number of routers (and should be set before adding routers)
+    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+
     // need to assign
 
     int curr_link_number = 0;
@@ -265,6 +281,10 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
     // create the NoC
     NocStorage test_noc;
+
+    // store the reference to device grid with
+    // this will be set to the total number of routers (and should be set before adding routers)
+    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
 
     // temp variables that hold the routers involved within a link
     NocRouterId source;
@@ -382,6 +402,10 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
 
     // testing datastructure
     NocStorage test_noc;
+
+    // store the reference to device grid with
+    // this will be set to the total number of routers (and should be set before adding routers)
+    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
 
     NocRouterId converted_id;
 

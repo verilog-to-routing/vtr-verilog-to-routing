@@ -47,6 +47,11 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
     // Create the NoC datastructure
     NocStorage noc_model;
 
+    // store the reference to device grid with
+    // this will be set to the device grid width
+    noc_model.set_device_grid_width((int)4);
+    
+
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -215,6 +220,10 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
 
     // Create the NoC datastructure
     NocStorage noc_model;
+    
+    // store the reference to device grid with
+    // this will be set to the device grid width
+    noc_model.set_device_grid_width((int)4);
 
     // add all the routers
     for (int i = 0; i < 4; i++) {
@@ -304,7 +313,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * Creating a test FPGA device below. The NoC itself will be
      * a 3 router design. The purpose of this design is to verify the case where the routing algorithm is stuck in a loop trying to go back and forth between two routers while trying to get to the destination.
      *
-     * For example, looking at the example below, suppose we are trying to route between routers 3 and 4. The XY routing algorithm will first traverse to router 0 as it is towards the direction of router 1.
+     * For example, looking at the example below, suppose we are trying to route between routers 3 and 1. The XY routing algorithm will first traverse to router 0 as it is towards the direction of router 1.
      * But then at router 0 the algorithm will go towards router 3 as its now
      * in the direction of router 1. But then the algorithm will infinitely
      * just pinpong between routers 0 and 3.
@@ -320,6 +329,10 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
 
     // Create the NoC datastructure
     NocStorage noc_model;
+
+    // store the reference to device grid with
+    // this will be set to the device grid width
+    noc_model.set_device_grid_width((int)4);
 
     noc_model.add_router(0, 0, 0);
     noc_model.add_router(1, 2, 2);

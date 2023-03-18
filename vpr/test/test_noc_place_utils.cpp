@@ -36,6 +36,10 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
 
+    // store the reference to device grid with
+    // the grid width will be the size of the noc mesh
+    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+
     // individual router parameters
     int curr_router_id;
     int router_grid_position_x;
@@ -205,6 +209,10 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
+
+    // store the reference to device grid with
+    // the grid width will be the size of the noc mesh
+    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
 
     // individual router parameters
     int curr_router_id;
@@ -437,6 +445,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
+
+    // store the reference to device grid with
+    // the grid width will be the size of the noc mesh
+    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
 
     // individual router parameters
     int curr_router_id;
@@ -1170,6 +1182,10 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
 
+    // store the reference to device grid with
+    // the grid width will be the size of the noc mesh
+    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+
     // individual router parameters
     int curr_router_id;
     int router_grid_position_x;
@@ -1472,6 +1488,10 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
+
+    // store the reference to device grid with
+    // the grid width will be the size of the noc mesh
+    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
 
     // individual router parameters
     int curr_router_id;
