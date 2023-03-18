@@ -268,7 +268,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
             VTR_LOG("packing clb1 failed\n");
         }
         */
-        remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, true, old_2_router_data);
+        remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, false, old_2_router_data);
         commit_mol_removal(molecule_1, molecule_1_size, clb_2, during_packing, old_2_router_data, clustering_data);
         mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
         mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);

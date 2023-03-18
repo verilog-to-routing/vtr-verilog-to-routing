@@ -354,6 +354,11 @@ bool try_pack(t_packer_opts* packer_opts,
     // Free Data Structures
     free_clustering_data(*packer_opts, clustering_data);
 
+    for (int i = 0; i < packer_opts->pack_num_threads; i++) {
+        free_cluster_placement_stats(helper_ctx.cluster_placement_stats[i]);
+        delete[] helper_ctx.primitives_list[i];
+    }
+
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
     VTR_LOG("\n");

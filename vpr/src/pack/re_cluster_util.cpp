@@ -205,7 +205,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
     return (pack_result == BLK_PASSED);
 }
 
-bool pack_mol_in_existing_cluster(t_pack_molecule* molecule, int molecule_size, const ClusterBlockId new_clb, std::unordered_set<AtomBlockId>* new_clb_atoms, bool during_packing, bool is_swap, t_clustering_data& clustering_data, t_lb_router_data*& router_data, int thread_id) {
+bool pack_mol_in_existing_cluster(t_pack_molecule* molecule, int molecule_size, const ClusterBlockId new_clb, std::unordered_set<AtomBlockId>* new_clb_atoms, bool during_packing, bool /*is_swap*/, t_clustering_data& clustering_data, t_lb_router_data*& router_data, int thread_id) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -259,11 +259,9 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule, int molecule_size, 
         update_cluster_pb_stats(molecule, molecule_size, new_clb, true);
     }
 
-    if (!is_swap) {
-        //Free clustering router data
-        free_router_data(router_data);
-        router_data = nullptr;
-    }
+    //Free clustering router data
+    free_router_data(router_data);
+    router_data = nullptr;
 
     return (pack_result == BLK_PASSED);
 }
@@ -675,6 +673,7 @@ void commit_mol_removal(const t_pack_molecule* molecule,
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
     }
+    free_router_data(router_data);
 }
 
 bool check_type_and_mode_compitability(const ClusterBlockId& old_clb,

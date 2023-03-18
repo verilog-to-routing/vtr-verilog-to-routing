@@ -18,6 +18,7 @@
 void printProgressBar(double progress);
 void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats);
 void init_multithreading_locks();
+void free_multithreading_locks();
 
 void init_multithreading_locks() {
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
@@ -26,6 +27,13 @@ void init_multithreading_locks() {
     packing_multithreading_ctx.mu.resize(helper_ctx.total_clb_num);
     for (auto& m : packing_multithreading_ctx.mu) {
         m = new std::mutex;
+    }
+}
+
+void free_multithreading_locks() {
+    auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+    for (auto& m : packing_multithreading_ctx.mu) {
+        delete m;
     }
 }
 
@@ -67,6 +75,9 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
             packer_opts.pack_num_moves,
             pack_stats.good_moves,
             pack_stats.legal_moves);
+
+    delete[] my_threads;
+    free_multithreading_locks();
 }
 
 void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats) {
