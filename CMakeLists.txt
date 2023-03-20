@@ -304,7 +304,7 @@ endif()
 #
 set(SPEC_CPU_FLAGS "")
 if(SPEC_CPU)
-    #Enable gcov
+    # Enable SPEC CPU flag - Maximizes portability of code and minimizing the variation in how much work we do on different platforms
     set(SPEC_CPU_FLAGS "-DSPEC_CPU")
     message(STATUS "SPEC CPU FLAGS: ${SPEC_CPU_FLAGS}")
 endif()

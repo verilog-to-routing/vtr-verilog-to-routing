@@ -83,7 +83,7 @@ add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
 #
 # Source files and library
 #
-file(GLOB_RECURSE LIB_SOURCES src/*.cpp src/*.c)
+file(GLOB_RECURSE LIB_SOURCES src/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*.hpp src/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 

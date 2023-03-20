@@ -1,4 +1,11 @@
-/* 
+#ifndef VPR_SPEC_RAND_H
+#define VPR_SPEC_RAND_H
+/*
+ * For inclusion in the SPEC cpu benchmarks
+ * This file implements the random number generation necessary for the SPEC cpu benchmarks. The functions
+ * defined here are used in vtr_random.h/cpp
+ *
+ *
  * A C-program for MT19937, with initialization improved 2002/1/26.
  * Coded by Takuji Nishimura and Makoto Matsumoto.
  *
@@ -45,13 +52,9 @@
 /* Slightly modified for use in SPEC CPU by Cloyce D. Spradling (5 Nov 2009)
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void spec_srand(int seed);
-double spec_rand(void);
-long spec_lrand48(void);
+double spec_rand();
+long spec_lrand48();
 
 /* initializes mt[N] with a seed */
 void spec_init_genrand(unsigned long s);
@@ -63,23 +66,21 @@ void spec_init_genrand(unsigned long s);
 void spec_init_by_array(unsigned long init_key[], int key_length);
 
 /* generates a random number on [0,0xffffffff]-interval */
-unsigned long spec_genrand_int32(void);
+unsigned long spec_genrand_int32();
 
 /* generates a random number on [0,0x7fffffff]-interval */
-long spec_genrand_int31(void);
+long spec_genrand_int31();
 
 /* generates a random number on [0,1]-real-interval */
-double spec_genrand_real1(void);
+double spec_genrand_real1();
 
 /* generates a random number on [0,1)-real-interval */
-double spec_genrand_real2(void);
+double spec_genrand_real2();
 
 /* generates a random number on (0,1)-real-interval */
-double spec_genrand_real3(void);
+double spec_genrand_real3();
 
 /* generates a random number on [0,1) with 53-bit resolution*/
-double spec_genrand_res53(void);
+double spec_genrand_res53();
 
-#ifdef __cplusplus
-}
 #endif

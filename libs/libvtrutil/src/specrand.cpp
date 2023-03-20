@@ -1,4 +1,9 @@
-/* 
+/*
+ * * For inclusion in the SPEC cpu benchmarks
+* This file implements the random number generation necessary for the SPEC cpu benchmarks. The functions
+* defined here are used in vtr_random.h/cpp
+
+
    A C-program for MT19937, with initialization improved 2002/1/26.
    Coded by Takuji Nishimura and Makoto Matsumoto.
 
@@ -45,14 +50,7 @@
 /* Slightly modified for use in SPEC CPU by Cloyce D. Spradling (5 Nov 2009)
  */
 
-#include <stdio.h>
 #include "specrand.h"
-
-#ifdef __cplusplus
-# define CLINK extern "C"
-#else
-# define CLINK
-#endif
 
 /* Period parameters */  
 #define N 624
@@ -64,22 +62,22 @@
 static unsigned long mt[N]; /* the array for the state vector  */
 static int mti=N+1; /* mti==N+1 means mt[N] is not initialized */
 
-CLINK void spec_srand(int seed) {
+void spec_srand(int seed) {
   spec_init_genrand((unsigned long) seed);
 }
 
 /* Just a copy of spec_genrand_real2() */
-CLINK double spec_rand(void) {
+double spec_rand() {
     return spec_genrand_int32()*(1.0/4294967296.0); 
 }
 
 /* Just a copy of spec_genrand_int31() */
-CLINK long spec_lrand48(void) {
+long spec_lrand48() {
     return (long)(spec_genrand_int32()>>1);
 }
 
 /* initializes mt[N] with a seed */
-CLINK void spec_init_genrand(unsigned long s)
+void spec_init_genrand(unsigned long s)
 {
     mt[0]= s & 0xffffffffUL;
     for (mti=1; mti<N; mti++) {
@@ -98,7 +96,7 @@ CLINK void spec_init_genrand(unsigned long s)
 /* init_key is the array for initializing keys */
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
-CLINK void spec_init_by_array(unsigned long init_key[], int key_length)
+void spec_init_by_array(unsigned long init_key[], int key_length)
 {
     int i, j, k;
     spec_init_genrand(19650218UL);
@@ -124,7 +122,7 @@ CLINK void spec_init_by_array(unsigned long init_key[], int key_length)
 }
 
 /* generates a random number on [0,0xffffffff]-interval */
-CLINK unsigned long spec_genrand_int32(void)
+unsigned long spec_genrand_int32()
 {
     unsigned long y;
     static unsigned long mag01[2]={0x0UL, MATRIX_A};
@@ -162,34 +160,34 @@ CLINK unsigned long spec_genrand_int32(void)
 }
 
 /* generates a random number on [0,0x7fffffff]-interval */
-CLINK long spec_genrand_int31(void)
+long spec_genrand_int31()
 {
     return (long)(spec_genrand_int32()>>1);
 }
 
 /* generates a random number on [0,1]-real-interval */
-CLINK double spec_genrand_real1(void)
+double spec_genrand_real1()
 {
     return spec_genrand_int32()*(1.0/4294967295.0); 
     /* divided by 2^32-1 */ 
 }
 
 /* generates a random number on [0,1)-real-interval */
-CLINK double spec_genrand_real2(void)
+double spec_genrand_real2()
 {
     return spec_genrand_int32()*(1.0/4294967296.0); 
     /* divided by 2^32 */
 }
 
 /* generates a random number on (0,1)-real-interval */
-CLINK double spec_genrand_real3(void)
+double spec_genrand_real3()
 {
     return (((double)spec_genrand_int32()) + 0.5)*(1.0/4294967296.0); 
     /* divided by 2^32 */
 }
 
 /* generates a random number on [0,1) with 53-bit resolution*/
-CLINK double spec_genrand_res53(void) 
+double spec_genrand_res53()
 { 
     unsigned long a=spec_genrand_int32()>>5, b=spec_genrand_int32()>>6; 
     return(a*67108864.0+b)*(1.0/9007199254740992.0); 
