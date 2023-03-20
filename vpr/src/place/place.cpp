@@ -1690,9 +1690,9 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
     move_outcome_stats.outcome = move_outcome;
 
-    // If we force a router block move then it was not proposed by the 
+    // If we force a router block move then it was not proposed by the
     // move generator so we should not calculate the reward and update
-    // the move generators status since this outcome is not a direct 
+    // the move generators status since this outcome is not a direct
     // consequence of the move generator
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
@@ -1980,18 +1980,16 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
  * @return double The computed total cost of the current placement
  */
 static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
-
     double total_cost = 0.0;
 
     if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
         // in bounding box mode we only care about wirelength
         total_cost = costs->bb_cost * costs->bb_cost_norm;
-    }
-    else if (placer_opts.place_algorithm.is_timing_driven()) {
+    } else if (placer_opts.place_algorithm.is_timing_driven()) {
         // in timing mode we include both wirelength and timing costs
         total_cost = (1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm);
     }
-    
+
     if (noc_opts.noc) {
         // in noc mode we include noc agggregate bandwidth and noc latency
         total_cost += (noc_opts.noc_placement_weighting) * ((costs->noc_aggregate_bandwidth_cost * costs->noc_aggregate_bandwidth_cost_norm) + (costs->noc_latency_cost * costs->noc_latency_cost_norm));

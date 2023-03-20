@@ -236,7 +236,6 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
     return;
 }
 
-
 void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_noc_latency_cost) {
     int number_of_traffic_flows = g_vpr_ctx.noc().noc_traffic_flows_storage.get_number_of_traffic_flows();
 
@@ -485,11 +484,11 @@ void free_noc_placement_structs(void) {
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
 bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
     /* A random number between 0-100 is generated here and compared to the user
-    * supplied value. If the random number is less than the user supplied
-    * value we indicate that a router block should be swapped. By doing this
-    * we now only swap router blocks for the percentage of time the user
-    * supplied.
-    * */
+     * supplied value. If the random number is less than the user supplied
+     * value we indicate that a router block should be swapped. By doing this
+     * we now only swap router blocks for the percentage of time the user
+     * supplied.
+     * */
     return (vtr::irand(99) < user_supplied_noc_router_swap_percentage) ? true : false;
 }
 
