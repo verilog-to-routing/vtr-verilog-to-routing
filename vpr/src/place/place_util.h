@@ -63,6 +63,9 @@ class t_placer_costs {
   public: //Mutator
     void update_norm_factors();
 
+  public: //getter
+    double get_max_inv_timing_cost(void);
+
   private:
     double MAX_INV_TIMING_COST = 1.e9;
     t_place_algorithm place_algorithm;

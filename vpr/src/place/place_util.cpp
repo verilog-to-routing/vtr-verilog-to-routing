@@ -70,6 +70,18 @@ void t_placer_costs::update_norm_factors() {
     }
 }
 
+/**
+ * @brief Get the maximum timing cost normalization factor.
+ * 
+ * We use this in the total cost computation at the beginning of each
+ * termperature to verify whether the normalized timing cost can be
+ * computed.
+ * 
+ */
+double t_placer_costs::get_max_inv_timing_cost(void) {
+    return MAX_INV_TIMING_COST;
+}
+
 ///@brief Constructor: Initialize all annealing state variables and macros.
 t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
                                      float first_t,

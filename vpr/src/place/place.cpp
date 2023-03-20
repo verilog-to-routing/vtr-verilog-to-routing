@@ -1975,12 +1975,50 @@ static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_
         total_cost = costs->bb_cost * costs->bb_cost_norm;
     } else if (placer_opts.place_algorithm.is_timing_driven()) {
         // in timing mode we include both wirelength and timing costs
-        total_cost = (1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm);
+        double curr_bb_cost = (costs->bb_cost * costs->bb_cost_norm);
+        double curr_timing_cost = 0.0;
+
+        // before computing timing cost we need to check if the
+        // timing cost normalization factor was capped
+        if (costs->timing_cost_norm == costs->get_max_inv_timing_cost()) {
+            /* if the timing cost normalization factor was capped then we 
+             * cannot compute the normalized timing cost 
+             * since the normalization factor is not the inverse of the timing
+             * cost. As a result we set the normalized timing cost to 1 since it
+             * is the expected value.
+             */
+            curr_timing_cost = 1.0;
+        } else {
+            // compute timing cost normally here
+            curr_timing_cost = costs->timing_cost * costs->timing_cost_norm;
+        }
+
+        total_cost = (1 - placer_opts.timing_tradeoff) * curr_bb_cost + (placer_opts.timing_tradeoff) * curr_timing_cost;
     }
 
     if (noc_opts.noc) {
         // in noc mode we include noc agggregate bandwidth and noc latency
-        total_cost += (noc_opts.noc_placement_weighting) * ((costs->noc_aggregate_bandwidth_cost * costs->noc_aggregate_bandwidth_cost_norm) + (costs->noc_latency_cost * costs->noc_latency_cost_norm));
+        double curr_noc_aggregate_bandwidth_cost = 0.0;
+        double curr_noc_latency_cost = 0.0;
+
+        /* if the NoC aggregate bandwidth and latency normalization factors 
+         * were capped then we cannot compute the normalized NoC aggregate
+         * bandwidth and timing cost since the normalization factors are not
+         * inverse of the NoC aggregate bandwidth and latency costs.
+         * As a result we set the normalized NoC aggregate bandwidth and latency costs to 1 since it is the expected value.
+         */
+        if (costs->noc_aggregate_bandwidth_cost_norm == MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST) {
+            curr_noc_aggregate_bandwidth_cost = 1.0;
+        } else {
+            curr_noc_aggregate_bandwidth_cost = costs->noc_aggregate_bandwidth_cost * costs->noc_aggregate_bandwidth_cost_norm;
+        }
+        if (costs->noc_latency_cost_norm == MAX_INV_NOC_LATENCY_COST) {
+            curr_noc_latency_cost = 1.0;
+        } else {
+            curr_noc_latency_cost = costs->noc_latency_cost * costs->noc_latency_cost_norm;
+        }
+
+        total_cost += (noc_opts.noc_placement_weighting) * (curr_noc_aggregate_bandwidth_cost + curr_noc_latency_cost);
     }
 
     return total_cost;
