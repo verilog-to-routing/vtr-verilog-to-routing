@@ -50,7 +50,6 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
     // store the reference to device grid with
     // this will be set to the device grid width
     noc_model.set_device_grid_width((int)4);
-    
 
     // add all the routers
     for (int i = 0; i < 4; i++) {
@@ -220,7 +219,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
 
     // Create the NoC datastructure
     NocStorage noc_model;
-    
+
     // store the reference to device grid with
     // this will be set to the device grid width
     noc_model.set_device_grid_width((int)4);

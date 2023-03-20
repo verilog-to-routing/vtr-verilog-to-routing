@@ -388,11 +388,10 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
      * we execute the test function and verify that the routers it 
      * returns for a given grid location matches our golden set.
      */
-    
-    
+
     // will store all routers in a given design
     // The index represents the x and y location of the router found at the given index
-    // We will use this test to verify if the test function is returning the correct router for a given grid location 
+    // We will use this test to verify if the test function is returning the correct router for a given grid location
     std::vector<NocRouterId> golden_set;
 
     // individual router parameters

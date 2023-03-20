@@ -398,7 +398,6 @@ int get_number_of_traffic_flows_with_latency_cons_met(void);
  */
 bool check_recomputed_noc_latency_cost(float recomputed_cost);
 
-
 /**
  * @brief There are a number of static datastructures which are local
  * to 'noc_place_utils.cpp'. THe purpose of these datastructures is
