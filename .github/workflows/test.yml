@@ -18,7 +18,7 @@ jobs:
     # Prevents from running on forks where no custom runners are available
     if: ${{ github.repository_owner == 'verilog-to-routing' }}
 
-    container: ubuntu:bionic
+    container: ubuntu:jammy
 
     runs-on: [self-hosted, Linux, X64]
 
