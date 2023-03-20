@@ -549,7 +549,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    const int layer_num = from.layer;
+    const int from_layer_num = from.layer;
 
     //Determine the coordinates in the compressed grid space of the current block
     std::vector<t_physical_tile_loc> compressed_locs = get_compressed_loc(compressed_block_grid,
@@ -561,18 +561,18 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                                        compressed_locs,
                                                                                        rlim,
                                                                                        num_layers);
-    int delta_cx = search_range[layer_num].xmax_ - search_range[layer_num].xmin_;
+    int delta_cx = search_range[from_layer_num].xmax_ - search_range[from_layer_num].xmin_;
 
     t_physical_tile_loc to_compressed_loc;
     bool legal = false;
 
-    //TODO: contstraints should be adapted to 3d archtiecture
+    //TODO: constraints should be adapted to 3D architecture
     if (is_cluster_constrained(b_from)) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(type,
                                                                           b_from,
-                                                                          search_range[layer_num],
+                                                                          search_range[from_layer_num],
                                                                           delta_cx,
-                                                                          layer_num);
+                                                                          from_layer_num);
         if (!intersect) {
             return false;
         }
@@ -580,11 +580,11 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //TODO: For now, we only move the blocks on the same tile
     legal = find_compatible_compressed_loc_in_range(type,
                                                     delta_cx,
-                                                    compressed_locs[layer_num],
-                                                    search_range[layer_num],
+                                                    compressed_locs[from_layer_num],
+                                                    search_range[from_layer_num],
                                                     to_compressed_loc,
                                                     false,
-                                                    layer_num);
+                                                    from_layer_num);
 
     if (!legal) {
         //No valid position found
@@ -748,6 +748,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
         }
     }
 
+    //TODO: For now, we only move the blocks on the same tile
     legal = find_compatible_compressed_loc_in_range(blk_type,
                                                     delta_cx,
                                                     from_compressed_loc[from_layer_num],
@@ -816,6 +817,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num) {
+    //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
+    VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     to_loc.layer_num = to_layer_num;
     std::unordered_set<int> tried_cx_to;
@@ -942,7 +945,8 @@ std::vector<t_search_range> get_compressed_grid_target_search_range(const t_comp
     std::vector<t_search_range> search_ranges(num_layers, t_search_range());
     for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
         const auto& layer_loc = compressed_locs[layer_num];
-        if (layer_loc.x == OPEN || layer_loc.y == OPEN) {
+        //TODO: This if condition is added because blocks are only moved in the same layer. After the update, this condition should be replaced with an assertion
+        if (layer_loc.x == OPEN || layer_loc.y == OPEN || layer_loc.layer_num == OPEN) {
             //No valid compressed location for this layer
             continue;
         }
@@ -969,6 +973,13 @@ std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_com
     int min_cx, max_cx, min_cy, max_cy;
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        //TODO: This if condition is added because blocks are only moved in the same layer. After the update, this condition should be replaced with an assertion
+        if(from_compressed_loc[layer_num].x == OPEN || from_compressed_loc[layer_num].y == OPEN || from_compressed_loc[layer_num].layer_num == OPEN) {
+            continue;
+        }
+        VTR_ASSERT(from_compressed_loc[layer_num].layer_num == layer_num);
+        VTR_ASSERT(target_compressed_loc[layer_num].layer_num == layer_num);
+
         int rlim_x_max_range = std::min<int>(compressed_block_grid.get_num_columns(layer_num), rlim);
         int rlim_y_max_range = std::min<int>(compressed_block_grid.get_num_rows(layer_num), rlim); /* for aspect_ratio != 1 case. */
 

@@ -182,7 +182,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_physical_tile_loc compressed_loc,
                             t_pl_loc& to_loc);
 /**
- * @brief find compressed location in a compressed range for a specific type
+ * @brief find compressed location in a compressed range for a specific type in the giver layer (to_layer_num)
  * 
  * type: defines the moving block type
  * min_cx, max_cx: the minimum and maximum x coordinates of the range in the compressed grid
@@ -190,6 +190,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
  * cx_from, cy_from: the x and y coordinates of the old location 
  * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
  * is_median: true if this is called from find_to_loc_median
+ * to_layer_num: the layer number of the new location (set by the caller)
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
