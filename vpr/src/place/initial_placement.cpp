@@ -312,7 +312,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
     int cx_from = OPEN;
     int cy_from = OPEN;
-    int layer_from = OPEN;
+    int layer_from = centroid_loc_layer_num;
 
     t_physical_tile_loc to_compressed_loc;
 
@@ -606,7 +606,7 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
     bool legal;
     legal = find_compatible_compressed_loc_in_range(block_type,
                                                     delta_cx,
-                                                    {cx_from, cy_from},
+                                                    {cx_from, cy_from, layer_num},
                                                     {min_compressed_loc.x, max_compressed_loc.x,
                                                      min_compressed_loc.y, max_compressed_loc.y},
                                                     to_compressed_loc,

@@ -800,9 +800,6 @@ class GridBlock {
         grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
     }
 
-    GridBlock(const std::vector<vtr::Matrix<t_grid_blocks>>& grid_blocks)
-        : grid_blocks_(grid_blocks) {}
-
     inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {
         grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile] = blk_id;
     }
