@@ -416,7 +416,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
         auto blk = cut_blks.at(0);
         auto& tiles_type = clb_nlist.block_type(blk)->equivalent_tiles;
         auto loc = ap->blk_locs[blk].loc;
-        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y, loc.layer))) == tiles_type.end()) {
+        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer})) == tiles_type.end()) {
             // logic block type doesn't match tile type
             // exhaustive search for tile of right type
             // this search should be fast as region must be small at this point (only 1 logic block left)
@@ -958,8 +958,8 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
     VTR_ASSERT(place_ctx.block_locs[blk].is_fixed == false);
     place_ctx.grid_blocks.set_block_at_location(sub_tile, blk);
     place_ctx.block_locs[blk].loc = sub_tile;
-    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num},
-                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num}) + 1);
+    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
+                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
     ap->blk_locs[blk].loc = sub_tile;
 }
 
@@ -974,8 +974,8 @@ void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
     VTR_ASSERT(place_ctx.block_locs[blk].is_fixed == false);
     place_ctx.block_locs[blk].loc = t_pl_loc{};
     place_ctx.grid_blocks.set_block_at_location(sub_tile, EMPTY_BLOCK_ID);
-    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num},
-                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num}) - 1);
+    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
+                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
 }
 
 /*
@@ -1111,7 +1111,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
             // ensure the target location has compatible tile
             auto blk_t = clb_nlist.block_type(blk);
-            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(target.x, target.y, target.layer)));
+            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid.get_physical_type({target.x, target.y, target.layer}));
             if (result == blk_t->equivalent_tiles.end()) {
                 placement_impossible = true;
                 break;
