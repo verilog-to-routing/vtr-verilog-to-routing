@@ -366,7 +366,7 @@ void zero_initialize_grid_blocks() {
 
     /* Initialize all occupancy to zero. */
 
-    for(int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
         for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
             for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                 place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
@@ -408,7 +408,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
     }
 
     //load the legal placement positions
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
             for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                 auto tile = device_ctx.grid.get_physical_type({i, j, layer_num});
@@ -422,8 +422,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
                         }
                         // If this is the anchor position of a block, add it to the legal_pos.
                         // Otherwise don't, so large blocks aren't added multiple times.
-                        if (device_ctx.grid.get_width_offset({i, j, layer_num}) == 0 &&
-                            device_ctx.grid.get_height_offset({i, j, layer_num}) == 0) {
+                        if (device_ctx.grid.get_width_offset({i, j, layer_num}) == 0 && device_ctx.grid.get_height_offset({i, j, layer_num}) == 0) {
                             int itype = tile->index;
                             int isub_tile = sub_tile.index;
                             t_pl_loc temp_loc;

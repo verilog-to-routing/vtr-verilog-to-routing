@@ -609,7 +609,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
     t_logical_block_type_ptr logical_block;
 
     /* Loop through all grid locations */
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         for (int x = 0; x < (int)device_ctx.grid.width(); x++) {
             for (int y = 0; y < (int)device_ctx.grid.height(); y++) {
                 auto physical_tile = device_ctx.grid.get_physical_type({x, y, layer_num});

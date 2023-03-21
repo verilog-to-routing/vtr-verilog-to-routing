@@ -981,7 +981,7 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
     /* We'll use the grid to record where everything goes. Initialize to the grid has no
      * blocks placed anywhere.
      */
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
             for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                 const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));

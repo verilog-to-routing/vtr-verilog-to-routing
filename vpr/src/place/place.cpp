@@ -2771,7 +2771,7 @@ static int check_block_placement_consistency() {
         cluster_ctx.clb_nlist.blocks().size(), 0);
 
     /* Step through device grid and placement. Check it against blocks */
-    for(int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
         for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
             for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                 const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});

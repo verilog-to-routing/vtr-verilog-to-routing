@@ -974,7 +974,7 @@ std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_com
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         //TODO: This if condition is added because blocks are only moved in the same layer. After the update, this condition should be replaced with an assertion
-        if(from_compressed_loc[layer_num].x == OPEN || from_compressed_loc[layer_num].y == OPEN || from_compressed_loc[layer_num].layer_num == OPEN) {
+        if (from_compressed_loc[layer_num].x == OPEN || from_compressed_loc[layer_num].y == OPEN || from_compressed_loc[layer_num].layer_num == OPEN) {
             continue;
         }
         VTR_ASSERT(from_compressed_loc[layer_num].layer_num == layer_num);

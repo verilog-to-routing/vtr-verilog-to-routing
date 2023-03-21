@@ -788,8 +788,7 @@ class GridBlock {
   public:
     GridBlock() = default;
 
-    GridBlock(size_t width, size_t height, size_t layers)
-    {
+    GridBlock(size_t width, size_t height, size_t layers) {
         grid_blocks_.resize(layers);
         for (size_t i = 0; i < layers; ++i) {
             grid_blocks_[i] = vtr::Matrix<t_grid_blocks>({width, height});
@@ -825,11 +824,10 @@ class GridBlock {
     }
 
     inline void clear() {
-        for(int layer_num = 0; layer_num < (int)grid_blocks_.size(); layer_num++) {
+        for (int layer_num = 0; layer_num < (int)grid_blocks_.size(); layer_num++) {
             grid_blocks_[layer_num].clear();
         }
     }
-
 
   private:
     std::vector<vtr::Matrix<t_grid_blocks>> grid_blocks_;

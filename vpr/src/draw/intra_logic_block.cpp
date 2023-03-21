@@ -171,8 +171,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
             int num_sub_tiles = type->capacity;
             for (int k = 0; k < num_sub_tiles; ++k) {
                 /* Don't draw if block is empty. */
-                if (place_ctx.grid_blocks.block_at_location({i, j, k}) == EMPTY_BLOCK_ID ||
-                    place_ctx.grid_blocks.block_at_location({i, j, k}) == INVALID_BLOCK_ID)
+                if (place_ctx.grid_blocks.block_at_location({i, j, k}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k}) == INVALID_BLOCK_ID)
                     continue;
 
                 /* Get block ID */

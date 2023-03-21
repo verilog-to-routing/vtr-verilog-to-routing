@@ -135,12 +135,11 @@ void sync_grid_to_blocks() {
                                       device_ctx.grid.get_num_layers());
     auto& grid_blocks = place_ctx.grid_blocks;
 
-    for(int layer_num = 0; layer_num < num_layers; layer_num++) {
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         for (int x = 0; x < (int)device_grid.width(); ++x) {
             for (int y = 0; y < (int)device_grid.height(); ++y) {
                 const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
-
             }
         }
     }
@@ -198,7 +197,8 @@ void sync_grid_to_blocks() {
                                                  blk_layer},
                                                 place_ctx.grid_blocks.get_usage({blk_x + width,
                                                                                  blk_y + height,
-                                                                                 blk_layer}) + 1);
+                                                                                 blk_layer})
+                                                    + 1);
                 VTR_ASSERT(device_ctx.grid.get_width_offset({blk_x + width, blk_y + height, blk_layer}) == width);
                 VTR_ASSERT(device_ctx.grid.get_height_offset({blk_x + width, blk_y + height, blk_layer}) == height);
             }

@@ -336,7 +336,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                     int capacity, relative_pin;
                     std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
 
-                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x, y-height_offset, capacity});
+                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x, y - height_offset, capacity});
 
                     t_pb_graph_pin* pb_pin;
 
