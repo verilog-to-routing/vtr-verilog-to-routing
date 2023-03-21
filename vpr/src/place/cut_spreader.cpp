@@ -959,7 +959,7 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
     place_ctx.grid_blocks.set_block_at_location(sub_tile, blk);
     place_ctx.block_locs[blk].loc = sub_tile;
     place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num},
-                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num})+1);
+                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num}) + 1);
     ap->blk_locs[blk].loc = sub_tile;
 }
 
@@ -975,7 +975,7 @@ void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
     place_ctx.block_locs[blk].loc = t_pl_loc{};
     place_ctx.grid_blocks.set_block_at_location(sub_tile, EMPTY_BLOCK_ID);
     place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num},
-                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num})-1);
+                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer_num}) - 1);
 }
 
 /*
@@ -1034,7 +1034,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     }
 
     // if exploration limit is not met or a candidate sub_tile is not found yet
-    for (auto sub_t : subtiles_at_location[nx][ny]) {                                              // for each available sub_tile at random location
+    for (auto sub_t : subtiles_at_location[nx][ny]) {                              // for each available sub_tile at random location
         ClusterBlockId bound_blk = place_ctx.grid_blocks.block_at_location(sub_t); // logic blk at [nx, ny]
         if (bound_blk == EMPTY_BLOCK_ID
             || ripup_radius_met

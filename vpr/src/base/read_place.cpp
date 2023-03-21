@@ -200,8 +200,7 @@ void read_place_body(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) ||
-                   (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
+        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) || (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
             //Load the block location
             //
             // If the place file corresponds to a 3D architecture, it should contain 5 tokens of actual data, with an optional 6th (commented) token indicating VPR's internal block number.
@@ -226,7 +225,7 @@ void read_place_body(std::ifstream& placement_file,
             int block_y = vtr::atoi(tokens[block_y_index]);
             int sub_tile_index = vtr::atoi(tokens[sub_tile_index_index]);
             int block_layer;
-            if(block_layer_index != -1) {
+            if (block_layer_index != -1) {
                 block_layer = vtr::atoi(tokens[block_layer_index]);
             } else {
                 block_layer = 0;
@@ -251,10 +250,7 @@ void read_place_body(std::ifstream& placement_file,
 
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
-                if (block_x != place_ctx.block_locs[blk_id].loc.x ||
-                    block_y != place_ctx.block_locs[blk_id].loc.y ||
-                    sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile ||
-                    block_layer != place_ctx.block_locs[blk_id].loc.layer) {
+                if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile || block_layer != place_ctx.block_locs[blk_id].loc.layer) {
                     std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
                               "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"
