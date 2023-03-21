@@ -458,6 +458,7 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     place_ctx.block_locs[blk_id].loc.x = location.x;
     place_ctx.block_locs[blk_id].loc.y = location.y;
     place_ctx.block_locs[blk_id].loc.sub_tile = location.sub_tile;
+    place_ctx.block_locs[blk_id].loc.layer = location.layer;
 
     //Check if block is at an illegal location
     auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(location.x, location.y, location.layer));
