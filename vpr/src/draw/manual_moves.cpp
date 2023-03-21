@@ -168,7 +168,7 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     }
 
     //If the destination block is user constrained, abort this swap
-    auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
+    auto b_to = place_ctx.grid_blocks.block_at_location(to);
     if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
         if (place_ctx.block_locs[b_to].is_fixed) {
             invalid_breakpoint_entry_window("Block is fixed");

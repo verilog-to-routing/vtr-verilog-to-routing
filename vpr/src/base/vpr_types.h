@@ -708,18 +708,22 @@ struct t_pl_loc {
     }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return t_pl_offset(lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile);
+        VTR_ASSERT(lhs.layer == rhs.layer);
+        return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile};
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        VTR_ASSERT(lhs.layer == rhs.layer);
         return std::tie(lhs.x, lhs.y, lhs.sub_tile) < std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        VTR_ASSERT(lhs.layer == rhs.layer);
         return std::tie(lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        VTR_ASSERT(lhs.layer == rhs.layer);
         return !(lhs == rhs);
     }
 };
@@ -778,6 +782,60 @@ struct t_grid_blocks {
     inline bool subtile_empty(size_t isubtile) const {
         return blocks[isubtile] == EMPTY_BLOCK_ID;
     }
+};
+
+class GridBlock {
+  public:
+    GridBlock() = default;
+
+    GridBlock(size_t width, size_t height, size_t layers)
+    {
+        grid_blocks_.resize(layers);
+        for (size_t i = 0; i < layers; ++i) {
+            grid_blocks_[i] = vtr::Matrix<t_grid_blocks>({width, height});
+        }
+    }
+
+    inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
+        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
+    }
+
+    GridBlock(const std::vector<vtr::Matrix<t_grid_blocks>>& grid_blocks)
+        : grid_blocks_(grid_blocks) {}
+
+    inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {
+        grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile] = blk_id;
+    }
+
+    inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
+        return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
+    }
+
+    inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
+    }
+
+    inline int set_usage(const t_physical_tile_loc loc, int usage) {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage = usage;
+    }
+
+    inline int get_usage(const t_physical_tile_loc loc) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage;
+    }
+
+    inline bool is_sub_tile_empty(const t_physical_tile_loc loc, int sub_tile) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].subtile_empty(sub_tile);
+    }
+
+    inline void clear() {
+        for(int layer_num = 0; layer_num < (int)grid_blocks_.size(); layer_num++) {
+            grid_blocks_[layer_num].clear();
+        }
+    }
+
+
+  private:
+    std::vector<vtr::Matrix<t_grid_blocks>> grid_blocks_;
 };
 
 ///@brief Names of various files

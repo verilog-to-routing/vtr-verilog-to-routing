@@ -233,20 +233,20 @@ static void report_overused_ipin_opin(std::ostream& os,
 
     //Add block type for IPINs/OPINs in overused rr-node report
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& grid_info = place_ctx.grid_blocks[grid_x][grid_y];
+    const auto& grid_info = place_ctx.grid_blocks;
 
     os << "Grid location: X = " << grid_x << ", Y = " << grid_y << '\n';
-    os << "Number of blocks currently occupying this grid location = " << grid_info.usage << '\n';
+    os << "Number of blocks currently occupying this grid location = " << grid_info.get_usage({grid_x, grid_y}) << '\n';
 
     size_t iblock = 0;
-    for (size_t isubtile = 0; isubtile < grid_info.blocks.size(); ++isubtile) {
+    for (int isubtile = 0; isubtile < (int)grid_info.num_blocks_at_location({grid_x, grid_y}); ++isubtile) {
         //Check if there is a valid block at this subtile location
-        if (grid_info.subtile_empty(isubtile)) {
+        if (grid_info.is_sub_tile_empty({grid_x, grid_y}, isubtile)) {
             continue;
         }
 
         //Print out the block index, name and type
-        ClusterBlockId block_id = grid_info.blocks[isubtile];
+        ClusterBlockId block_id = grid_info.block_at_location({grid_x, grid_y, isubtile});
         os << "Block #" << iblock << ": ";
         os << "Block name = " << clb_nlist.block_pb(block_id)->name << ", ";
         os << "Block type = " << clb_nlist.block_type(block_id)->name << '\n';

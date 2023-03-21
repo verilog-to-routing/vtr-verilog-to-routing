@@ -127,17 +127,20 @@ void sync_grid_to_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& device_grid = device_ctx.grid;
 
-    /* Reset usage and allocate blocks list if needed */
-    auto& grid_blocks = place_ctx.grid_blocks;
-    grid_blocks.resize({device_grid.width(), device_grid.height()});
-    for (size_t x = 0; x < device_grid.width(); ++x) {
-        for (size_t y = 0; y < device_grid.height(); ++y) {
-            auto& grid_block = grid_blocks[x][y];
-            const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
-            grid_block.blocks.resize(type->capacity);
+    int num_layers = device_ctx.grid.get_num_layers();
 
-            for (int z = 0; z < type->capacity; ++z) {
-                grid_block.blocks[z] = EMPTY_BLOCK_ID;
+    /* Reset usage and allocate blocks list if needed */
+    place_ctx.grid_blocks = GridBlock(device_grid.width(),
+                                      device_grid.height(),
+                                      device_ctx.grid.get_num_layers());
+    auto& grid_blocks = place_ctx.grid_blocks;
+
+    for(int layer_num = 0; layer_num < num_layers; layer_num++) {
+        for (int x = 0; x < (int)device_grid.width(); ++x) {
+            for (int y = 0; y < (int)device_grid.height(); ++y) {
+                const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
+                grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
+
             }
         }
     }
@@ -149,6 +152,7 @@ void sync_grid_to_blocks() {
         int blk_x = place_ctx.block_locs[blk_id].loc.x;
         int blk_y = place_ctx.block_locs[blk_id].loc.y;
         int blk_z = place_ctx.block_locs[blk_id].loc.sub_tile;
+        int blk_layer = place_ctx.block_locs[blk_id].loc.layer;
 
         auto type = physical_tile_type(blk_id);
 
@@ -170,8 +174,8 @@ void sync_grid_to_blocks() {
         }
 
         /* Check already in use */
-        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])
-            && (INVALID_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])) {
+        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))
+            && (INVALID_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n",
                             blk_x, blk_y, blk_z);
         }
@@ -184,10 +188,19 @@ void sync_grid_to_blocks() {
         /* Set the block */
         for (int width = 0; width < type->width; ++width) {
             for (int height = 0; height < type->height; ++height) {
-                place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = blk_id;
-                place_ctx.grid_blocks[blk_x + width][blk_y + height].usage++;
-                VTR_ASSERT(device_ctx.grid.get_width_offset(t_physical_tile_loc(blk_x + width, blk_y + height)) == width);
-                VTR_ASSERT(device_ctx.grid.get_height_offset(t_physical_tile_loc(blk_x + width, blk_y + height)) == height);
+                place_ctx.grid_blocks.set_block_at_location({blk_x + width,
+                                                             blk_y + height,
+                                                             blk_z,
+                                                             blk_layer},
+                                                            blk_id);
+                place_ctx.grid_blocks.set_usage({blk_x + width,
+                                                 blk_y + height,
+                                                 blk_layer},
+                                                place_ctx.grid_blocks.get_usage({blk_x + width,
+                                                                                 blk_y + height,
+                                                                                 blk_layer}) + 1);
+                VTR_ASSERT(device_ctx.grid.get_width_offset({blk_x + width, blk_y + height, blk_layer}) == width);
+                VTR_ASSERT(device_ctx.grid.get_height_offset({blk_x + width, blk_y + height, blk_layer}) == height);
             }
         }
     }
@@ -2366,16 +2379,16 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
 
     const auto& place_ctx = g_vpr_ctx.placement();
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    const auto& grid_block = place_ctx.grid_blocks[i][j];
+    const auto& grid_block = place_ctx.grid_blocks;
 
     class_num_vec.reserve(physical_type->primitive_class_inf.size());
 
     //iterate over different sub tiles inside a tile
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        if (grid_block.subtile_empty(abs_cap)) {
+        if (grid_block.is_sub_tile_empty({i, j}, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
 
         auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
@@ -2396,7 +2409,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type) {
     auto& place_ctx = g_vpr_ctx.placement();
-    auto grid_block = place_ctx.grid_blocks[i][j];
+    auto grid_block = place_ctx.grid_blocks;
 
     std::vector<int> pin_num_vec;
     pin_num_vec.reserve(get_tile_num_internal_pin(physical_type));
@@ -2404,10 +2417,10 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
         std::vector<int> cluster_internal_pins;
 
-        if (grid_block.subtile_empty(abs_cap)) {
+        if (grid_block.is_sub_tile_empty({i, j}, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() && cluster_blk_id != EMPTY_BLOCK_ID);
 
         cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);

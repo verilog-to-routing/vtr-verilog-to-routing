@@ -679,7 +679,7 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
                     int subtile = regions[reg].get_sub_tile();
 
                     to_loc.sub_tile = subtile;
-                    if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                    if (place_ctx.grid_blocks.block_at_location(to_loc) == EMPTY_BLOCK_ID) {
                         placed = try_place_macro(pl_macro, to_loc);
 
                         if (placed) {
@@ -694,7 +694,7 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
 
                             for (int st = st_low; st <= st_high && placed == false; st++) {
                                 to_loc.sub_tile = st;
-                                if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                                if (place_ctx.grid_blocks.block_at_location(to_loc) == EMPTY_BLOCK_ID) {
                                     placed = try_place_macro(pl_macro, to_loc);
                                     if (placed) {
                                         fix_IO_block_types(pl_macro, to_loc, pad_loc_type);
@@ -750,7 +750,7 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
     bool macro_placed = false;
 
     // If that location is occupied, do nothing.
-    if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.sub_tile] != EMPTY_BLOCK_ID) {
+    if (place_ctx.grid_blocks.block_at_location(head_pos) != EMPTY_BLOCK_ID) {
         return (macro_placed);
     }
 
@@ -981,15 +981,17 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
     /* We'll use the grid to record where everything goes. Initialize to the grid has no
      * blocks placed anywhere.
      */
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
-            itype = type->index;
-            if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
-                place_ctx.grid_blocks[i][j].usage = 0;
-                for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                    if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
-                        place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID;
+    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
+                itype = type->index;
+                if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
+                    place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
+                    for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
+                        if (place_ctx.grid_blocks.block_at_location({i, j, k}) != INVALID_BLOCK_ID) {
+                            place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) = EMPTY_BLOCK_ID;
+                        }
                     }
                 }
             }

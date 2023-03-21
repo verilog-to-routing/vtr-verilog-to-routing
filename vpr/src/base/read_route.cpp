@@ -331,12 +331,13 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                 if (!is_io_type(type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
-                    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(x, y));
+                    int height_offset = device_ctx.grid.get_height_offset({x, y});
 
                     int capacity, relative_pin;
                     std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
 
-                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[capacity];
+                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x, y-height_offset, capacity});
+
                     t_pb_graph_pin* pb_pin;
 
                     pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);

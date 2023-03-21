@@ -21,7 +21,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
         return e_block_move_result::ABORT;
     }
 
-    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
+    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
 
     // Sets up the blocks moved
     int imoved_blk = blocks_affected.num_moved_blocks;
@@ -66,17 +66,17 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         t_pl_loc from = blocks_affected.moved_blocks[iblk].old_loc;
 
         //Remove from old location only if it hasn't already been updated by a previous block update
-        if (place_ctx.grid_blocks[from.x][from.y].blocks[from.sub_tile] == blk) {
-            place_ctx.grid_blocks[from.x][from.y].blocks[from.sub_tile] = EMPTY_BLOCK_ID;
-            --place_ctx.grid_blocks[from.x][from.y].usage;
+        if (place_ctx.grid_blocks.block_at_location(from) == blk) {
+            place_ctx.grid_blocks.set_block_at_location(from, EMPTY_BLOCK_ID);
+            place_ctx.grid_blocks.set_usage({from.x, from.y}, place_ctx.grid_blocks.get_usage({from.x, from.y}) - 1);
         }
 
         //Add to new location
-        if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
+        if (place_ctx.grid_blocks.block_at_location(to) == EMPTY_BLOCK_ID) {
             //Only need to increase usage if previously unused
-            ++place_ctx.grid_blocks[to.x][to.y].usage;
+            place_ctx.grid_blocks.set_usage({to.x, to.y}, place_ctx.grid_blocks.get_usage({to.x, to.y}) + 1);
         }
-        place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk;
+        place_ctx.grid_blocks.set_block_at_location(to, blk);
 
     } // Finish updating clb for all blocks
 }
@@ -99,7 +99,7 @@ void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
             place_sync_external_block_connections(blk);
         }
 
-        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[old.x][old.y].blocks[old.sub_tile] == blk, "Grid blocks should only have been updated if swap commited (not reverted)");
+        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks.block_at_location(old) == blk, "Grid blocks should only have been updated if swap commited (not reverted)");
     }
 }
 

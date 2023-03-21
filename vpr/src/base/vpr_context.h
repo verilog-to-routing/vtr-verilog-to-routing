@@ -364,7 +364,7 @@ struct PlacementContext : public Context {
     vtr::vector_map<ClusterPinId, int> physical_pins;
 
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
+    GridBlock grid_blocks;
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
