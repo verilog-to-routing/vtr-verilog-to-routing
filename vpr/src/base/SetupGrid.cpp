@@ -671,7 +671,7 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
 
 ///@brief Check grid is valid
 static void CheckGrid(const DeviceGrid& grid) {
-    for(int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         for (int i = 0; i < (int)grid.width(); ++i) {
             for (int j = 0; j < (int)grid.height(); ++j) {
                 const t_physical_tile_loc tile_loc(i, j, layer_num);
