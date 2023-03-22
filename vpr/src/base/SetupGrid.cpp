@@ -679,21 +679,23 @@ static void CheckGrid(const DeviceGrid& grid) {
                 int width_offset = grid.get_width_offset({i, j});
                 int height_offset = grid.get_height_offset({i, j});
                 if (nullptr == type) {
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has no type.\n", i, j);
+                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has no type.\n", i, j);
                 }
 
                 if ((grid.get_width_offset(tile_loc) < 0)
                     || (grid.get_width_offset(tile_loc) >= type->width)) {
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid width offset (%d).\n",
+                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has invalid width offset (%d).\n",
                                     i,
                                     j,
+                                    layer_num,
                                     width_offset);
                 }
                 if ((grid.get_height_offset(tile_loc) < 0)
                     || (grid.get_height_offset(tile_loc) >= type->height)) {
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid height offset (%d).\n",
+                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has invalid height offset (%d).\n",
                                     i,
                                     j,
+                                    layer_num,
                                     height_offset);
                 }
 
@@ -705,25 +707,25 @@ static void CheckGrid(const DeviceGrid& grid) {
                         for (int y = j; y < j + type->height; ++y) {
                             int y_offset = y - j;
 
-                            const auto& tile_type = grid.get_physical_type(t_physical_tile_loc(x, y));
-                            int tile_width_offset = grid.get_width_offset(t_physical_tile_loc(x, y));
-                            int tile_height_offset = grid.get_height_offset(t_physical_tile_loc(x, y));
+                            const auto& tile_type = grid.get_physical_type({x, y});
+                            int tile_width_offset = grid.get_width_offset({x, y});
+                            int tile_height_offset = grid.get_height_offset({x, y});
                             if (tile_type != type) {
                                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                                "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
-                                                i, j, type->name, type->name);
+                                                "Grid Location (%d,%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
+                                                i, j, layer_num, type->name, type->name);
                             }
 
                             if (tile_width_offset != x_offset) {
                                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                                "Grid Location (%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n",
-                                                i, j, type->name, x_offset, tile_width_offset);
+                                                "Grid Location (%d,%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n",
+                                                i, j, layer_num, type->name, x_offset, tile_width_offset);
                             }
 
                             if (tile_height_offset != y_offset) {
                                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                                "Grid Location (%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n",
-                                                i, j, type->name, y_offset, tile_height_offset);
+                                                "Grid Location (%d,%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n",
+                                                i, j, layer_num, type->name, y_offset, tile_height_offset);
                             }
                         }
                     }
