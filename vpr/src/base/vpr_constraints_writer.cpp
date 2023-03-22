@@ -49,7 +49,7 @@ void write_vpr_constraints(t_vpr_setup& vpr_setup) {
                 // note: route constraints with regexpr in input constraint file
                 // is now replaced with the real net name and will not be written
                 // into output file
-                if (rc.get_is_valid()) {
+                if (rc.is_valid()) {
                     constraints.add_route_constraint(rc);
                 }
             }

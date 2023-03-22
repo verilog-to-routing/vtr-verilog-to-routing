@@ -1,8 +1,10 @@
 
-VPR Placement Constraints
+VPR Route Constraints
 =========================
 .. _vpr_constraints_file:
 VPR supports running flows with route constraints. Route constraints are set on global signals to specify if they should be routed or not. For example, a user may want to route a specific internal clock even clock modeling option is set to not route it.
+
+.. note:: The constraint specified in this file overrides the setting of option "--clock_modeling" if it is specified. A message will be issued in such case: "Route constraint(s) detected and will override clock modeling setting". 
 
 The route constraints should be specified by the user using an XML constraints file format, as described in the section below. 
 
@@ -18,10 +20,13 @@ A Constraints File Example
                         <!-- specify route method for a global pin that needs to be connected globally -->
                         <set_global_signal name="(int_clk)(.*)" type="clock" route_model="route"/>
                         <set_global_signal name="clk_ni" type="clock" route_model="ideal"/>
+                        <set_global_signal name="rst" type="reset" route_model="ideal"/>
                 </global_route_constraints>
 	</vpr_constraints>
 
 .. _end:
+
+.. note:: The "route_model" in constraint specified in this file only support "ideal" and "route" only.
 
 Constraints File Format
 -----------------------

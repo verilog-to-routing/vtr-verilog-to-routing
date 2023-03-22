@@ -57,14 +57,14 @@ class VprConstraints {
      *
      *   @param index the constraint index 
      */
-    RouteConstraint get_route_constraint_by_idx(std::size_t index) const;
+    const RouteConstraint get_route_constraint_by_idx(std::size_t index) const;
 
     /**
      * @brief returns route constraint of a specific net
      *
      *   @param net_name the net name
      */
-    RouteConstraint get_route_constraint_by_net_name(std::string net_name);
+    const RouteConstraint get_route_constraint_by_net_name(std::string net_name);
 
     /**
      * @brief returns number of route constraints
