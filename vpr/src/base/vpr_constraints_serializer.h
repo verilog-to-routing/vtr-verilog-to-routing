@@ -313,7 +313,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline const char* get_set_global_signal_name(RouteConstraint& rc) final {
-        temp_name_string_ = rc.get_net_name();
+        temp_name_string_ = rc.net_name();
         return temp_name_string_.c_str();
     }
     virtual inline void set_set_global_signal_name(const char* name, void*& /*ctx*/) final {
@@ -322,7 +322,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return;
     }
     virtual inline const char* get_set_global_signal_route_model(RouteConstraint& rc) final {
-        temp_name_string_ = rc.get_route_model();
+        temp_name_string_ = rc.route_model();
         return temp_name_string_.c_str();
     }
     virtual inline void set_set_global_signal_route_model(const char* route_model, void*& /*ctx*/) final {
@@ -330,7 +330,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         loaded_route_constraint.set_is_valid(true);
     }
     virtual inline const char* get_set_global_signal_type(RouteConstraint& rc) final {
-        temp_name_string_ = rc.get_net_type();
+        temp_name_string_ = rc.net_type();
         return temp_name_string_.c_str();
     }
     virtual inline void set_set_global_signal_type(const char* type, void*& /*ctx*/) final {

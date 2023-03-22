@@ -61,11 +61,11 @@ PartitionRegion VprConstraints::get_partition_pr(PartitionId part_id) {
 }
 
 void VprConstraints::add_route_constraint(RouteConstraint rc) {
-    route_constraints_.insert({rc.get_net_name(), rc});
+    route_constraints_.insert({rc.net_name(), rc});
     return;
 }
 
-RouteConstraint VprConstraints::get_route_constraint_by_net_name(std::string net_name) {
+const RouteConstraint VprConstraints::get_route_constraint_by_net_name(std::string net_name) {
     RouteConstraint rc;
     auto const& rc_itr = route_constraints_.find(net_name);
     if (rc_itr == route_constraints_.end()) {
@@ -73,20 +73,18 @@ RouteConstraint VprConstraints::get_route_constraint_by_net_name(std::string net
         bool found_thru_regex = false;
         for (auto constraint : route_constraints_) {
             if (std::regex_match(net_name, std::regex(constraint.first))) {
-                {
-                    rc = constraint.second;
+                rc = constraint.second;
 
-                    // mark as invalid so write constraint function will not write constraint
-                    // of regexpr name
-                    // instead a matched constraint is inserted in
-                    constraint.second.set_is_valid(false);
-                    rc.set_net_name(net_name);
-                    rc.set_is_valid(true);
-                    route_constraints_.insert({net_name, rc});
+                // mark as invalid so write constraint function will not write constraint
+                // of regexpr name
+                // instead a matched constraint is inserted in
+                constraint.second.set_is_valid(false);
+                rc.set_net_name(net_name);
+                rc.set_is_valid(true);
+                route_constraints_.insert({net_name, rc});
 
-                    found_thru_regex = true;
-                    break;
-                }
+                found_thru_regex = true;
+                break;
             }
         }
         if (!found_thru_regex) {
@@ -101,7 +99,7 @@ RouteConstraint VprConstraints::get_route_constraint_by_net_name(std::string net
     return rc;
 }
 
-RouteConstraint VprConstraints::get_route_constraint_by_idx(std::size_t idx) const {
+const RouteConstraint VprConstraints::get_route_constraint_by_idx(std::size_t idx) const {
     RouteConstraint rc;
     if ((route_constraints_.size() == 0) || (idx > route_constraints_.size() - 1)) {
         rc.set_net_name("INVALID");
