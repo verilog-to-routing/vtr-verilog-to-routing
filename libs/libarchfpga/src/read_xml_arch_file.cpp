@@ -2394,16 +2394,19 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     }
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
+    int max_num_layers = 1;
     for (auto layout_type_tag : layout_tag.children()) {
         t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data);
 
-        arch->grid_layouts.emplace_back(std::move(grid_def));
-
-        //If a layout is specified in die_number > 0, should keep track of how many dies is available in the arch file
-        if (grid_def.num_of_avail_dies > 1) {
-            arch->number_of_dies = grid_def.num_of_avail_dies;
+        //If a layout is specified in die_number > 0, should keep track of how many dice is available in the arch file
+        if (grid_def.num_of_avail_dies > max_num_layers) {
+            max_num_layers = grid_def.num_of_avail_dies;
         }
+
+        arch->grid_layouts.emplace_back(std::move(grid_def));
     }
+
+    arch->number_of_dies = max_num_layers;
 }
 
 static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
