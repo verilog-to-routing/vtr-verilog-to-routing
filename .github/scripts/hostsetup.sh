@@ -26,7 +26,6 @@ apt-get install -y \
     automake \
     bison \
     ccache \
-    cmake \
     exuberant-ctags \
     curl \
     doxygen \
