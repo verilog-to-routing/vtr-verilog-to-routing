@@ -216,6 +216,7 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
+static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node Node, std::vector<t_logical_block_type>& LogicalBlockTypes, t_arch& arch, const bool timing_enabled, const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
@@ -2415,11 +2416,19 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     }
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
+    int max_num_layers = 1;
     for (auto layout_type_tag : layout_tag.children()) {
         t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data);
 
+        //If a layout is specified in die_number > 0, should keep track of how many dice is available in the arch file
+        if (grid_def.num_of_avail_dies > max_num_layers) {
+            max_num_layers = grid_def.num_of_avail_dies;
+        }
+
         arch->grid_layouts.emplace_back(std::move(grid_def));
     }
+
+    arch->number_of_dies = max_num_layers;
 }
 
 static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
@@ -2455,8 +2464,44 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
                        layout_type_tag.name());
     }
 
+    auto layer_tag_specified = layout_type_tag.children("layer");
+    grid_def.num_of_avail_dies = std::distance(layer_tag_specified.begin(), layer_tag_specified.end());
+    //No layer tag is specified (only one die is specified in the arch file)
+    //Need to process layout_type_tag children to get block types locations in the grid
+    if (grid_def.num_of_avail_dies == 0) {
+        grid_def.num_of_avail_dies = 1; //if no tag specified, meaning that we only have on layer specification
+        int die_number = 0;
+        grid_def.layers.resize(grid_def.num_of_avail_dies);
+        ProcessBlockTypeLocs(grid_def, die_number, strings, layout_type_tag, loc_data);
+    } else {
+        grid_def.layers.resize(grid_def.num_of_avail_dies);
+        std::set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
+        //One or more than one layer tag is specified
+        for (auto layer_child : layer_tag_specified) {
+            int die_number;
+            //Only one layer tag is specified, the die attribute must be 0 or unspecified
+            //Need to process <layer> tag children to get block types locations in the grid
+            if (grid_def.num_of_avail_dies == 1) {
+                die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+                VTR_ASSERT_MSG(die_number == 0, "If only one layer tag is specified, die number should be 0!");
+
+            }
+            //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
+            //Need to process each <layer> tag children to get block types locations for each grid
+            else {
+                die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+                VTR_ASSERT_MSG(!seen_die_numbers.count(die_number), "Two different layers with a same die number may have been specified in the Architecture file");
+                seen_die_numbers.insert(die_number);
+            }
+            ProcessBlockTypeLocs(grid_def, die_number, strings, layer_child, loc_data);
+        }
+    }
+    return grid_def;
+}
+
+static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
-    for (auto loc_spec_tag : layout_type_tag.children()) {
+    for (auto loc_spec_tag : layout_block_type_tag.children()) {
         auto loc_type = loc_spec_tag.name();
         auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
@@ -2496,10 +2541,10 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
             top_edge.meta = left_edge.owned_meta.get();
             bottom_edge.meta = left_edge.owned_meta.get();
 
-            grid_def.loc_defs.emplace_back(std::move(left_edge));
-            grid_def.loc_defs.emplace_back(std::move(right_edge));
-            grid_def.loc_defs.emplace_back(std::move(top_edge));
-            grid_def.loc_defs.emplace_back(std::move(bottom_edge));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(left_edge));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(right_edge));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_edge));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_edge));
 
         } else if (loc_type == std::string("corners")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
@@ -2535,10 +2580,10 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
             bottom_right.meta = bottom_left.owned_meta.get();
             top_right.meta = bottom_left.owned_meta.get();
 
-            grid_def.loc_defs.emplace_back(std::move(bottom_left));
-            grid_def.loc_defs.emplace_back(std::move(top_left));
-            grid_def.loc_defs.emplace_back(std::move(bottom_right));
-            grid_def.loc_defs.emplace_back(std::move(top_right));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_left));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_left));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_right));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_right));
 
         } else if (loc_type == std::string("fill")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
@@ -2552,7 +2597,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
             fill.owned_meta = std::make_unique<t_metadata_dict>(meta);
             fill.meta = fill.owned_meta.get();
 
-            grid_def.loc_defs.emplace_back(std::move(fill));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(fill));
 
         } else if (loc_type == std::string("single")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
@@ -2566,7 +2611,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
             single.owned_meta = std::make_unique<t_metadata_dict>(meta);
             single.meta = single.owned_meta.get();
 
-            grid_def.loc_defs.emplace_back(std::move(single));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(single));
 
         } else if (loc_type == std::string("col")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
@@ -2596,7 +2641,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
             col.owned_meta = std::make_unique<t_metadata_dict>(meta);
             col.meta = col.owned_meta.get();
 
-            grid_def.loc_defs.emplace_back(std::move(col));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(col));
 
         } else if (loc_type == std::string("row")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
@@ -2626,7 +2671,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
             row.owned_meta = std::make_unique<t_metadata_dict>(meta);
             row.meta = row.owned_meta.get();
 
-            grid_def.loc_defs.emplace_back(std::move(row));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(row));
         } else if (loc_type == std::string("region")) {
             expect_only_attributes(loc_spec_tag,
                                    {"type", "priority",
@@ -2678,16 +2723,12 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
             region.owned_meta = std::make_unique<t_metadata_dict>(meta);
             region.meta = region.owned_meta.get();
 
-            grid_def.loc_defs.emplace_back(std::move(region));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(region));
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
                            "Unrecognized grid location specification type '%s'\n", loc_type);
         }
     }
-
-    //Warn if any type has no grid location specifed
-
-    return grid_def;
 }
 
 /* Takes in node pointing to <device> and loads all the

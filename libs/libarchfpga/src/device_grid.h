@@ -52,7 +52,6 @@ class DeviceGrid {
     inline size_t grid_dim_size(int dim, int layer_num = 0) const {
         return grid_[layer_num].dim_size(dim);
     }
-
     void clear();
 
     size_t num_instances(t_physical_tile_type_ptr type, int layer_num = 0) const;
