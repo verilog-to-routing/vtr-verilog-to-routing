@@ -76,7 +76,7 @@ jobs:
 
   Build:
     name: 'B: Building VtR'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -103,7 +103,7 @@ jobs:
 
 
   Format:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -126,7 +126,7 @@ jobs:
 
   UniTests:
     name: 'U: C++ Unit Tests'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
@@ -143,7 +143,7 @@ jobs:
 
   Warnings:
     name: 'W: Check Compilation Warnings'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
@@ -165,7 +165,7 @@ jobs:
 
 
   Regression:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -250,7 +250,7 @@ jobs:
           vtr_flow/**/parse_results*.txt
 
   Sanitized:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -289,7 +289,7 @@ jobs:
 
   Parmys:
     name: 'Parmys Basic Test'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
       - uses: actions/setup-python@v4
@@ -312,7 +312,7 @@ jobs:
 
   ODINII:
     name: 'ODIN-II Basic Test'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
@@ -335,7 +335,7 @@ jobs:
 
   VQM2BLIF:
     name: 'VQM2BLIF Basic Tests'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
@@ -355,7 +355,7 @@ jobs:
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
 
   Compatibility:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -402,7 +402,7 @@ jobs:
       - ODINII
       - VQM2BLIF
       - Compatibility
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
