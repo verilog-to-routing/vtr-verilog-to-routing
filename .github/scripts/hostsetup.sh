@@ -20,60 +20,76 @@ echo "========================================"
 echo "Host install packages"
 echo "----------------------------------------"
 
-apt-get update
-apt-get install -y \
-    autoconf \
-    automake \
-    bison \
-    ccache \
-    exuberant-ctags \
-    curl \
-    doxygen \
-    flex \
-    fontconfig \
-    gdb \
-    git \
-    gperf \
-    iverilog \
-    libc6-dev \
-    libcairo2-dev \
-    libevent-dev \
-    libffi-dev \
-    libfontconfig1-dev \
-    liblist-moreutils-perl \
-    libncurses5-dev \
-    libreadline-dev \
-    libreadline8 \
-    libx11-dev \
-    libxft-dev \
-    libxml++2.6-dev \
-    make \
-    perl \
-    pkg-config \
-    python3 \
-    python3-setuptools \
-    python3-lxml \
-    python3-pip \
-    qtbase5-dev \
-    tcllib \
-    tcl8.6-dev \
-    texinfo \
-    time \
-    valgrind \
-    wget \
-    zip \
-    swig \
-    expect \
-    g++-9 \
-    gcc-9 \
-    g++-10 \
-    gcc-10 \
-    g++-11 \
-    gcc-11 \
-    clang \
-    clang-12 \
-    clang-format-12 \
-    libxml2-utils
+apt install -y \
+  autoconf \
+  automake \
+  bash \
+  bison \
+  binutils \
+  binutils-gold \
+  build-essential \
+  capnproto \
+  ccache \
+  clang \
+  clang-12 \
+  clang-format-12
+  ctags \
+  curl \
+  doxygen \
+  expect \
+  exuberant-ctags \
+  flex \
+  fontconfig \
+  gdb \
+  git \
+  gperf \
+  gzip \
+  libc6-dev \
+  libcairo2-dev \
+  libcapnp-dev \
+  libgtk-3-dev \
+  libevent-dev \
+  libfontconfig1-dev \
+  liblist-moreutils-perl \
+  libncurses5-dev \
+  libreadline8 \
+  libx11-dev \
+  libxft-dev \
+  libxml++2.6-dev \
+  libreadline-dev \
+  libxml2-utils \
+  make \
+  pkg-config \
+  python \
+  python3 \
+  python3-dev \
+  python3-pip \
+  python3-virtualenv \
+  python3-yaml \
+  python3-setuptools \
+  python3-lxml \
+  swig \
+  tcl-dev \
+  tcl8.6-dev \
+  tcllib \
+  libffi-dev \
+  perl \
+  texinfo \
+  time \
+  valgrind \
+  zip \
+  qt5-default \
+  uuid-dev \
+  default-jdk \
+  qtbase5-dev \
+  g++-9 \
+  gcc-9 \
+  g++-10 \
+  gcc-10 \
+  g++-11 \
+  gcc-11 \
+  wget \
+  libtbb-dev
 
 # installing the latest version of cmake
 apt install -y apt-transport-https ca-certificates gnupg
