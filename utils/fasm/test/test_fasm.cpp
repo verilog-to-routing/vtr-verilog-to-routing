@@ -291,13 +291,12 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
                        &device_ctx.chan_width,
-                       device_ctx.num_arch_switches,
                        kRrGraphFile,
                        device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
                        echo_file_name,
                        is_flat);
-        vpr_free_all(arch, vpr_setup);
+        vpr_free_all((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
     }
 
     t_vpr_setup vpr_setup;
@@ -328,8 +327,10 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     /* Sync netlist to the actual routing (necessary if there are block
        ports with equivalent pins) */
     if (flow_succeeded) {
-        sync_netlists_to_routing(g_vpr_ctx.device(),
+        sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
+                                 g_vpr_ctx.device(),
                                  g_vpr_ctx.mutable_atom(),
+                                 g_vpr_ctx.atom().lookup,
                                  g_vpr_ctx.mutable_clustering(),
                                  g_vpr_ctx.placement(),
                                  g_vpr_ctx.routing(),
@@ -338,7 +339,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     }
 
     std::stringstream fasm_string;
-    fasm::FasmWriterVisitor visitor(&arch.strings, fasm_string);
+    fasm::FasmWriterVisitor visitor(&arch.strings, fasm_string, false);
     NetlistWalker nl_walker(visitor);
     nl_walker.walk();
 
@@ -633,7 +634,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     CHECK(found_mux3);
     CHECK(found_mux4);
 
-    vpr_free_all(arch, vpr_setup);
+
+    vpr_free_all((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
 }
 
 } // namespace

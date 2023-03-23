@@ -49,7 +49,9 @@ static float comp_width(t_chan* chan, float x, float separation);
  *        tracks per channel required to successfully route a circuit, and returns
  *        that minimum width_fac.
  */
-int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
+int binary_search_place_and_route(const Netlist<>& placement_net_list,
+                                  const Netlist<>& router_net_list,
+                                  const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
@@ -59,11 +61,12 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   int min_chan_width_hint,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
-                                  ClbNetPinsMatrix<float>& net_delay,
+                                  NetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc,
                                   bool is_flat) {
-    vtr::vector<ClusterNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
+    vtr::vector<ParentNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
+
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
     bool using_minw_hint = false;
@@ -96,7 +99,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
-    best_routing = alloc_saved_routing();
+    best_routing = alloc_saved_routing(router_net_list);
 
     VTR_ASSERT(net_delay.size());
 
@@ -177,7 +180,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
-            try_place(placer_opts,
+            try_place(placement_net_list,
+                      placer_opts,
                       annealing_sched,
                       router_opts,
                       analysis_opts,
@@ -188,7 +192,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                       arch->num_directs,
                       false);
         }
-        success = try_route(current,
+        success = try_route(router_net_list,
+                            current,
                             router_opts,
                             analysis_opts,
                             det_routing_arch, segment_inf,
@@ -200,6 +205,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                             arch->num_directs,
                             (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
                             is_flat);
+
         attempt_count++;
         fflush(stdout);
 
@@ -218,7 +224,10 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
             }
 
             /* Save routing in case it is best. */
-            save_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
+            save_routing(router_net_list,
+                         best_routing,
+                         route_ctx.clb_opins_used_locally,
+                         saved_clb_opins_used_locally);
 
             //If the user gave us a minW hint (and we routed successfully at that width)
             //make the initial guess closer to the current value instead of the standard guess.
@@ -318,29 +327,36 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                 break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
+                try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->Directs, arch->num_directs,
                           false);
             }
-            success = try_route(current,
+
+            success = try_route(router_net_list,
+                                current,
                                 router_opts,
                                 analysis_opts,
-                                det_routing_arch,
-                                segment_inf, net_delay,
+                                det_routing_arch, segment_inf,
+                                net_delay,
                                 timing_info,
                                 delay_calc,
-                                arch->Chans, arch->Directs, arch->num_directs,
+                                arch->Chans,
+                                arch->Directs,
+                                arch->num_directs,
                                 ScreenUpdatePriority::MINOR,
                                 is_flat);
 
             if (success && Fc_clipped == false) {
                 final = current;
-                save_routing(best_routing, route_ctx.clb_opins_used_locally,
+                save_routing(router_net_list,
+                             best_routing,
+                             route_ctx.clb_opins_used_locally,
                              saved_clb_opins_used_locally);
 
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
+                    // Cluster-based net_list is used for placement
                     print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
                                 filename_opts.PlaceFile.c_str());
                 }
@@ -366,7 +382,6 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                     device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
-                    device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
@@ -379,18 +394,27 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();
 
-    init_route_structs(router_opts.bb_factor);
+    init_route_structs(router_net_list,
+                       router_opts.bb_factor,
+                       router_opts.has_choking_spot,
+                       is_flat);
 
-    restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
+    restore_routing(router_net_list,
+                    best_routing,
+                    route_ctx.clb_opins_used_locally,
+                    saved_clb_opins_used_locally);
 
     if (Fc_clipped) {
         VTR_LOG_WARN("Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
     }
     VTR_LOG("Best routing used a channel width factor of %d.\n", final);
 
-    print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
+    print_route(router_net_list,
+                filename_opts.PlaceFile.c_str(),
+                filename_opts.RouteFile.c_str(),
+                is_flat);
 
-    free_saved_routing(best_routing);
+    free_saved_routing(router_net_list, best_routing);
     fflush(stdout);
 
     return (final);
@@ -556,6 +580,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
 void post_place_sync() {
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    // Cluster-based netlist is used for placement
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
         place_sync_external_block_connections(block_id);
     }

@@ -2425,7 +2425,7 @@ struct ArchReader {
                                "Switch name '%s' is a reserved name for VPR internal usage!", switch_name.c_str());
             }
 
-            as->name = vtr::strdup(switch_name.c_str());
+            as->name = switch_name;
             as->set_type(type);
             as->mux_trans_size = as->type() == SwitchType::MUX ? 1 : 0;
 

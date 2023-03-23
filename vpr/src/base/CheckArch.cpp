@@ -38,14 +38,14 @@ static void CheckSwitches(const t_arch& Arch) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
                           "Switch %s R value (%g) is greater than 2 * R_minW_nmos (%g).\n"
                           "Refer to switchlist section of '%s'\n",
-                          CurSwitch->name, CurSwitch->R, (2 * Arch.R_minW_nmos));
+                          CurSwitch->name.c_str(), CurSwitch->R, (2 * Arch.R_minW_nmos));
             }
         } else { /* Pass transistor switch */
             if (CurSwitch->R > Arch.R_minW_nmos) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
                           "Switch %s R value (%g) is greater than R_minW_nmos (%g).\n"
                           "Refer to switchlist section of '%s'\n",
-                          CurSwitch->name, CurSwitch->R, Arch.R_minW_nmos, get_arch_file_name());
+                          CurSwitch->name.c_str(), CurSwitch->R, Arch.R_minW_nmos, get_arch_file_name());
             }
         }
 

@@ -59,7 +59,9 @@ constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
 constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
-static void do_one_route(int source_node,
+static void do_one_route(const Netlist<>& net_list,
+                         const t_det_routing_arch& det_routing_arch,
+                         int source_node,
                          int sink_node,
                          const t_router_opts& router_opts,
                          const std::vector<t_segment_inf>& segment_inf,
@@ -89,17 +91,16 @@ static void do_one_route(int source_node,
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    route_budgets budgeting_inf;
+    route_budgets budgeting_inf(net_list, is_flat);
 
 
     RouterStats router_stats;
-    auto router_lookahead = make_router_lookahead(
-            router_opts.lookahead_type,
-            router_opts.write_router_lookahead,
-            router_opts.read_router_lookahead,
-            segment_inf,
-            is_flat
-            );
+    auto router_lookahead = make_router_lookahead(det_routing_arch,
+                                                  router_opts.lookahead_type,
+                                                  router_opts.write_router_lookahead,
+                                                  router_opts.read_router_lookahead,
+                                                  segment_inf,
+                                                  is_flat);
 
     ConnectionRouter<BinaryHeap> router(
             device_ctx.grid,
@@ -110,15 +111,24 @@ static void do_one_route(int source_node,
             device_ctx.rr_graph.rr_switch(),
             g_vpr_ctx.mutable_routing().rr_node_route_inf,
             is_flat);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
+    enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
     t_heap cheapest;
-    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
+    ConnectionParameters conn_params(ParentNetId::INVALID(),
+                                     -1,
+                                     false,
+                                     std::unordered_map<RRNodeId, int>());
+    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
+                                                                                           sink_node,
+                                                                                           cost_params,
+                                                                                           bounding_box,
+                                                                                           router_stats,
+                                                                                           conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr, router_opts.flat_routing);
 
         //find delay
         float net_delay = rt_node_of_sink->Tdel;
@@ -139,7 +149,9 @@ static void do_one_route(int source_node,
     router.reset_path_costs();
 }
 
-static void profile_source(int source_rr_node,
+static void profile_source(const Netlist<>& net_list,
+                           const t_det_routing_arch& det_routing_arch,
+                           int source_rr_node,
                            const t_router_opts& router_opts,
                            const std::vector<t_segment_inf>& segment_inf,
                            bool is_flat) {
@@ -147,13 +159,13 @@ static void profile_source(int source_rr_node,
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
-    auto router_lookahead = make_router_lookahead(
-            router_opts.lookahead_type,
-            router_opts.write_router_lookahead,
-            router_opts.read_router_lookahead,
-            segment_inf,
-            is_flat);
-    RouterDelayProfiler profiler(router_lookahead.get(), is_flat);
+    auto router_lookahead = make_router_lookahead(det_routing_arch,
+                                                  router_opts.lookahead_type,
+                                                  router_opts.write_router_lookahead,
+                                                  router_opts.read_router_lookahead,
+                                                  segment_inf,
+                                                  is_flat);
+    RouterDelayProfiler profiler(net_list, router_lookahead.get(), is_flat);
 
     int start_x = 0;
     int end_x = grid.width() - 1;
@@ -301,37 +313,44 @@ int main(int argc, const char **argv) {
 
         vpr_setup_clock_networks(vpr_setup, Arch);
 
+        bool is_flat = vpr_setup.RouterOpts.flat_routing;
+
+        const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist :
+                                            (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+
         t_chan_width chan_width = setup_chan_width(
                 vpr_setup.RouterOpts,
                 Arch.Chans);
-        bool is_flat = vpr_setup.RouterOpts.flat_routing;
+
         alloc_routing_structs(
-                chan_width,
-                vpr_setup.RouterOpts,
-                &vpr_setup.RoutingArch,
-                vpr_setup.Segments,
-                Arch.Directs,
-                Arch.num_directs
-                );
+            chan_width,
+            vpr_setup.RouterOpts,
+            &vpr_setup.RoutingArch,
+            vpr_setup.Segments,
+            Arch.Directs,
+            Arch.num_directs,
+            is_flat);
 
         if(route_options.profile_source) {
-            profile_source(
-                route_options.source_rr_node,
-                vpr_setup.RouterOpts,
-                vpr_setup.Segments,
-                is_flat);
+            profile_source(net_list,
+                           vpr_setup.RoutingArch,
+                           route_options.source_rr_node,
+                           vpr_setup.RouterOpts,
+                           vpr_setup.Segments,
+                           is_flat);
         } else {
-            do_one_route(
-                    route_options.source_rr_node, 
-                    route_options.sink_rr_node,
-                    vpr_setup.RouterOpts,
-                    vpr_setup.Segments,
-                    is_flat);
+            do_one_route(net_list,
+                         vpr_setup.RoutingArch,
+                         route_options.source_rr_node,
+                         route_options.sink_rr_node,
+                         vpr_setup.RouterOpts,
+                         vpr_setup.Segments,
+                         is_flat);
         }
-        free_routing_structs();
+        free_routing_structs(net_list);
 
         /* free data structures */
-        vpr_free_all(Arch, vpr_setup);
+        vpr_free_all(net_list, Arch, vpr_setup);
 
     } catch (const tatum::Error& tatum_error) {
         vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());

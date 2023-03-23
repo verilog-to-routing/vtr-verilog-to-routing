@@ -3,7 +3,8 @@
 
 #include "vpr_types.h"
 
-void try_place(const t_placer_opts& placer_opts,
+void try_place(const Netlist<>& net_list,
+               const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
                const t_router_opts& router_opts,
                const t_analysis_opts& analysis_opts,

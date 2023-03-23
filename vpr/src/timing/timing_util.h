@@ -43,8 +43,10 @@ float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, ta
 std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins = 10);
 
 //Returns a criticality histogram
-std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo& setup_timing,
+std::vector<HistogramBucket> create_criticality_histogram(const Netlist<>& net_list,
+                                                          const SetupTimingInfo& setup_timing,
                                                           const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                          bool is_flat,
                                                           size_t num_bins = 10);
 
 //Print a useful summary of timing information
@@ -87,41 +89,54 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
 //For efficiency, it pre-calculates and stores the mapping from ClusterPinId -> tatum::EdgeIds,
 //and tracks whether a particular ClusterPinId has been already invalidated (to avoid the expense
 //of invalidating it multiple times)
-class ClusteredPinTimingInvalidator {
+class NetPinTimingInvalidator {
   public:
     typedef vtr::Range<const tatum::EdgeId*> tedge_range;
 
   public:
-    ClusteredPinTimingInvalidator(const ClusteredNetlist& clb_nlist,
-                                  const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
-                                  const AtomNetlist& atom_nlist,
-                                  const AtomLookup& atom_lookup,
-                                  const tatum::TimingGraph& timing_graph) {
-        pin_first_edge_.reserve(clb_nlist.pins().size() + 1); //Exact
-        timing_edges_.reserve(clb_nlist.pins().size() + 1);   //Lower bound
-
-        for (ClusterPinId clb_pin : clb_nlist.pins()) {
+    NetPinTimingInvalidator(const Netlist<>& net_list,
+                            const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
+                            const AtomNetlist& atom_nlist,
+                            const AtomLookup& atom_lookup,
+                            const tatum::TimingGraph& timing_graph,
+                            bool is_flat) {
+        size_t num_pins = net_list.pins().size();
+        pin_first_edge_.reserve(num_pins + 1); //Exact
+        timing_edges_.reserve(num_pins + 1);   //Lower bound
+        for (ParentPinId pin_id : net_list.pins()) {
             pin_first_edge_.push_back(timing_edges_.size());
-
-            for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(clb_pin)) {
-                tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
+            if (is_flat) {
+                tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
 
                 if (!tedge) {
                     continue;
                 }
 
                 timing_edges_.push_back(tedge);
+            } else {
+                auto cluster_pin_id = convert_to_cluster_pin_id(pin_id);
+                auto atom_pins = clb_atom_pin_lookup.connected_atom_pins(cluster_pin_id);
+                for (const AtomPinId atom_pin : atom_pins) {
+                    tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
+
+                    if (!tedge) {
+                        continue;
+                    }
+
+                    timing_edges_.push_back(tedge);
+                }
             }
         }
+
         //Sentinels
         timing_edges_.push_back(tatum::EdgeId::INVALID());
         pin_first_edge_.push_back(timing_edges_.size());
 
-        VTR_ASSERT(pin_first_edge_.size() == clb_nlist.pins().size() + 1);
+        VTR_ASSERT(pin_first_edge_.size() == net_list.pins().size() + 1);
     }
 
     //Returns the set of timing edges associated with the specified cluster pin
-    tedge_range pin_timing_edges(ClusterPinId pin) const {
+    tedge_range pin_timing_edges(ParentPinId pin) const {
         int ipin = size_t(pin);
         return vtr::make_range(&timing_edges_[pin_first_edge_[ipin]],
                                &timing_edges_[pin_first_edge_[ipin + 1]]);
@@ -130,7 +145,7 @@ class ClusteredPinTimingInvalidator {
     //Invalidates all timing edges associated with the clustered netlist connection
     //driving the specified pin
     template<class TimingInfo>
-    void invalidate_connection(ClusterPinId pin, TimingInfo* timing_info) {
+    void invalidate_connection(ParentPinId pin, TimingInfo* timing_info) {
         if (invalidated_pins_.count(pin)) return; //Already invalidated
 
         for (tatum::EdgeId edge : pin_timing_edges(pin)) {
@@ -146,7 +161,10 @@ class ClusteredPinTimingInvalidator {
     }
 
   private:
-    tatum::EdgeId atom_pin_to_timing_edge(const tatum::TimingGraph& timing_graph, const AtomNetlist& atom_nlist, const AtomLookup& atom_lookup, const AtomPinId atom_pin) {
+    tatum::EdgeId atom_pin_to_timing_edge(const tatum::TimingGraph& timing_graph,
+                                          const AtomNetlist& atom_nlist,
+                                          const AtomLookup& atom_lookup,
+                                          const AtomPinId atom_pin) {
         tatum::NodeId pin_tnode = atom_lookup.atom_pin_tnode(atom_pin);
         VTR_ASSERT_SAFE(pin_tnode);
 
@@ -173,7 +191,7 @@ class ClusteredPinTimingInvalidator {
   private:
     std::vector<int> pin_first_edge_; //Indicies into timing_edges corresponding
     std::vector<tatum::EdgeId> timing_edges_;
-    vtr::vec_id_set<ClusterPinId> invalidated_pins_;
+    vtr::vec_id_set<ParentPinId> invalidated_pins_;
 };
 
 /*
@@ -181,7 +199,10 @@ class ClusteredPinTimingInvalidator {
  */
 
 //Return the criticality of a net's pin in the CLB netlist
-float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin);
+float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
+                                        const ClusteredPinAtomPinsLookup& pin_lookup,
+                                        const ParentPinId& clb_pin,
+                                        bool is_flat);
 
 //Return the setup slack of a net's pin in the CLB netlist
 float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin);
