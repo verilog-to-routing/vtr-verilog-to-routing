@@ -2805,7 +2805,14 @@ static int check_block_placement_consistency() {
                                                    loc.sub_tile)) {
                         VTR_LOG_ERROR(
                             "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
-                            size_t(bnum), loc.x, loc.y, loc.sub_tile, i, j, k, layer_num);
+                            size_t(bnum),
+                            loc.x,
+                            loc.y,
+                            loc.sub_tile,
+                            tile_loc.x,
+                            tile_loc.y,
+                            tile_loc.layer_num,
+                            layer_num);
                         error++;
                     }
                     ++usage_check;
@@ -2813,8 +2820,12 @@ static int check_block_placement_consistency() {
                 }
                 if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
                     VTR_LOG_ERROR(
-                        "%d block(s) were placed at location (%zu,%zu), but location contains %d block(s).\n",
-                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, usage_check);
+                        "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc),
+                        tile_loc.x,
+                        tile_loc.y,
+                        tile_loc.layer_num,
+                        usage_check);
                     error++;
                 }
             }
