@@ -95,7 +95,7 @@ struct t_compressed_block_grid {
         return grid[layer_num][cx];
     }
 
-    inline std::vector<int> get_layer_nums() const {
+    inline const std::vector<int>& get_layer_nums() const {
         return compressed_to_grid_layer;
     }
 };

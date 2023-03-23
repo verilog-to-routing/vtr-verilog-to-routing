@@ -589,9 +589,9 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
     }
     Region reg = regions[region_index];
 
-    //TODO: We assume that 3d is not used here. This function needs to be updated
-    VTR_ASSERT(g_vpr_ctx.device().grid.get_num_layers() == 1);
-    int layer_num = 0;
+    const auto& block_type_layers = compressed_block_grid.get_layer_nums();
+    VTR_ASSERT(block_type_layers.size() >= 1);
+    int layer_num = block_type_layers[vtr::irand(block_type_layers.size() - 1)];
 
     vtr::Rect<int> rect = reg.get_region_rect();
 

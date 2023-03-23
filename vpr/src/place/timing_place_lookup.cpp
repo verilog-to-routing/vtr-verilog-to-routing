@@ -175,7 +175,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
-    //TODO: is_flat flag should not be set here - It should be passed to the function.
+
     alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
                           directs, num_directs, is_flat);
 
