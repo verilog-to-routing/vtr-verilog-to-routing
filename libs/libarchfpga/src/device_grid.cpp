@@ -1,5 +1,20 @@
 #include "device_grid.h"
 
+///@brief comparison operator to compare 2 grids based on the given dimension
+struct gridDimComp {
+    // The dimension to compare
+    int dim_;
+    // Whether to compare in ascending or descending order
+    bool is_greater_;
+    gridDimComp(int dim, bool is_greater)
+        : dim_(dim)
+        , is_greater_(is_greater) {}
+
+    bool operator()(const vtr::Matrix<t_grid_tile>& lhs, const vtr::Matrix<t_grid_tile>& rhs) {
+        return is_greater_ ? lhs.dim_size(dim_) > rhs.dim_size(dim_) : lhs.dim_size(dim_) < rhs.dim_size(dim_);
+    }
+};
+
 DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid)
     : name_(grid_name)
     , grid_(grid) {

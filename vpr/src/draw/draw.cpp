@@ -843,20 +843,21 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 std::vector<int> trace_routed_connection_rr_nodes(
     const ClusterNetId net_id,
     const int driver_pin,
-    const int sink_pin) {
+    const int sink_pin,
+    bool is_flat) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     bool allocated_route_tree_structs = alloc_route_tree_timing_structs(true); //Needed for traceback_to_route_tree
 
     //Conver the traceback into an easily search-able
-    t_rt_node* rt_root = traceback_to_route_tree(net_id);
+    t_rt_node* rt_root = traceback_to_route_tree(ParentNetId(size_t(net_id)), is_flat);
 
     VTR_ASSERT(
         rt_root
         && rt_root->inode
-               == route_ctx.net_rr_terminals[net_id][driver_pin]);
+               == route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][driver_pin]);
 
-    int sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
+    int sink_rr_node = route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][sink_pin];
 
     std::vector<int> rr_nodes_on_path;
 

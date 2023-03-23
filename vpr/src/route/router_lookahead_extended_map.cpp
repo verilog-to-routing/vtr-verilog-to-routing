@@ -134,8 +134,13 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
 
     VTR_ASSERT_SAFE_MSG(false,
                         vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                        rr_node_arch_name(size_t(from_node)).c_str(),
-                                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(from_node), is_flat_).c_str())
+                                        rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
+                                        describe_rr_node(device_ctx.rr_graph,
+                                                         device_ctx.grid,
+                                                         device_ctx.rr_indexed_data,
+                                                         size_t(from_node),
+                                                         is_flat_)
+                                            .c_str())
                             .c_str());
 }
 
@@ -408,7 +413,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 
 // compute the cost maps for lookahead
 void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    this->src_opin_delays = util::compute_router_src_opin_lookahead();
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
@@ -603,7 +608,7 @@ void ExtendedMapLookahead::write(const std::string& file) const {
 void ExtendedMapLookahead::read(const std::string& file) {
     cost_map_.read(file);
 
-    this->src_opin_delays = util::compute_router_src_opin_lookahead();
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 }
 void ExtendedMapLookahead::write(const std::string& file) const {

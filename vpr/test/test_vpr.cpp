@@ -132,7 +132,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
                  &options, &vpr_setup, &arch);
         vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-        vpr_create_device(vpr_setup, arch);
+        vpr_create_device(vpr_setup, arch, false);
 
         const auto& device_ctx = g_vpr_ctx.device();
         auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
@@ -164,13 +164,12 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
-                       device_ctx.num_arch_switches,
                        kRrGraphFile,
                        device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
                        echo_file_name,
                        false);
-        vpr_free_all(arch, vpr_setup);
+        vpr_free_all((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
 
         auto& atom_ctx = g_vpr_ctx.mutable_atom();
         free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
@@ -201,7 +200,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
              &options, &vpr_setup, &arch);
     vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-    vpr_create_device(vpr_setup, arch);
+    vpr_create_device(vpr_setup, arch, false);
 
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -235,7 +234,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         REQUIRE(value != nullptr);
         CHECK_THAT(value->as_string().get(&arch.strings), Equals("test edge"));
     }
-    vpr_free_all(arch, vpr_setup);
+    vpr_free_all((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
