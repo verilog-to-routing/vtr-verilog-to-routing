@@ -27,8 +27,8 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
     float acc_y = 0;
     float weight = 1;
 
-    int initial_layer_num = g_vpr_ctx.placement().block_locs[b_from].loc.layer;
-    VTR_ASSERT(initial_layer_num != OPEN);
+    int from_block_layer_num = g_vpr_ctx.placement().block_locs[b_from].loc.layer;
+    VTR_ASSERT(from_block_layer_num != OPEN);
 
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
@@ -92,7 +92,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
     centroid.x = acc_x / acc_weight;
     centroid.y = acc_y / acc_weight;
     // For now, we don't move the centroid to a different layer
-    centroid.layer = initial_layer_num;
+    centroid.layer = from_block_layer_num;
 }
 
 static std::map<std::string, e_reward_function> available_reward_function = {
