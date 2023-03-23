@@ -2441,14 +2441,13 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
                        layout_type_tag.name());
     }
 
-    auto layer_tag_specified = layout_type_tag.children("layer");
-    int num_of_layer_tags = std::distance(layer_tag_specified.begin(), layer_tag_specified.end());
     grid_def.layers.resize(num_layers);
     //No layer tag is specified (only one die is specified in the arch file)
     //Need to process layout_type_tag children to get block types locations in the grid
     if (has_layer) {
         std::set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
         //One or more than one layer tag is specified
+        auto layer_tag_specified = layout_type_tag.children("layer");
         for (auto layer_child : layer_tag_specified) {
             int die_number;
             //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
