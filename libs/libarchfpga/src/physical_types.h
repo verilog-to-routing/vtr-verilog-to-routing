@@ -1919,9 +1919,6 @@ struct t_arch {
 
     // if we have an embedded NoC in the architecture, then we store it here
     t_noc_inf* noc = nullptr;
-
-    //Number of available dies in the arch files (used to model multi-die stacked FPGAs)
-    int number_of_dies = 1;
 };
 
 #endif
