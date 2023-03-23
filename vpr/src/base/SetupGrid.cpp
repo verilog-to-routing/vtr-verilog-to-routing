@@ -343,10 +343,11 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     //Initialize the grid and each location priority based on available dies in the architecture file
     std::vector<vtr::Matrix<t_grid_tile>> grid;
     std::vector<vtr::Matrix<int>> grid_priorities;
-    grid.resize(grid_def.num_of_avail_dies);
-    grid_priorities.resize(grid_def.num_of_avail_dies);
+    const int num_layers = (int)grid_def.layers.size();
+    grid.resize(num_layers);
+    grid_priorities.resize(num_layers);
 
-    for (int layer = 0; layer < grid_def.num_of_avail_dies; layer++) {
+    for (int layer = 0; layer < num_layers; layer++) {
         //Track the current priority for each grid location
         // Note that we initialize it to the lowest (i.e. most negative) possible value, so
         // any user-specified priority will override the default empty grid
@@ -357,7 +358,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     //Initialize the device to all empty blocks
     auto empty_type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
     VTR_ASSERT(empty_type != nullptr);
-    for (int layer = 0; layer < grid_def.num_of_avail_dies; ++layer) {
+    for (int layer = 0; layer < num_layers; ++layer) {
         for (size_t x = 0; x < grid_width; ++x) {
             for (size_t y = 0; y < grid_height; ++y) {
                 set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
@@ -368,7 +369,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
     FormulaParser p;
     std::set<t_physical_tile_type_ptr> seen_types;
-    for (int layer = 0; layer < grid_def.num_of_avail_dies; layer++) {
+    for (int layer = 0; layer < num_layers; layer++) {
         for (const auto& grid_loc_def : grid_def.layers.at(layer).loc_defs) {
             //Fill in the block types according to the specification
             auto type = find_tile_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
@@ -671,15 +672,15 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
 
 ///@brief Check grid is valid
 static void CheckGrid(const DeviceGrid& grid) {
-    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) { //Check each die individually
         for (int i = 0; i < (int)grid.width(); ++i) {
             for (int j = 0; j < (int)grid.height(); ++j) {
                 const t_physical_tile_loc tile_loc(i, j, layer_num);
                 const auto& type = grid.get_physical_type(tile_loc);
-                int width_offset = grid.get_width_offset({i, j});
-                int height_offset = grid.get_height_offset({i, j});
+                int width_offset = grid.get_width_offset(tile_loc);
+                int height_offset = grid.get_height_offset(tile_loc);
                 if (nullptr == type) {
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has no type.\n", i, j);
+                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has no type.\n", i, j, layer_num);
                 }
 
                 if ((grid.get_width_offset(tile_loc) < 0)
@@ -706,10 +707,10 @@ static void CheckGrid(const DeviceGrid& grid) {
                         int x_offset = x - i;
                         for (int y = j; y < j + type->height; ++y) {
                             int y_offset = y - j;
-
-                            const auto& tile_type = grid.get_physical_type({x, y});
-                            int tile_width_offset = grid.get_width_offset({x, y});
-                            int tile_height_offset = grid.get_height_offset({x, y});
+                            const t_physical_tile_loc tile_loc_offset(x, y, layer_num);
+                            const auto& tile_type = grid.get_physical_type(tile_loc_offset);
+                            int tile_width_offset = grid.get_width_offset(tile_loc_offset);
+                            int tile_height_offset = grid.get_height_offset(tile_loc_offset);
                             if (tile_type != type) {
                                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                                                 "Grid Location (%d,%d,%d) should have type '%s' (based on root location) but has type '%s'\n",

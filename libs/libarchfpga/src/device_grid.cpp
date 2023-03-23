@@ -1,5 +1,6 @@
 #include "device_grid.h"
 
+///@brief comparison operator to compare 2 grids based on the given dimension
 struct gridDimComp {
     // The dimension to compare
     int dim_;

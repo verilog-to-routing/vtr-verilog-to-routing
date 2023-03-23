@@ -389,7 +389,6 @@ struct t_grid_def {
     float aspect_ratio = 1.; //Aspect ratio for auto-sized devices (only valid for
                              //grid_type == AUTO)
     std::vector<t_layer_def> layers;
-    int num_of_avail_dies = 1; //Specify how many dies, the grid specification has
 };
 
 /************************* POWER ***********************************/
@@ -1992,8 +1991,6 @@ struct t_arch {
     // if we have an embedded NoC in the architecture, then we store it here
     t_noc_inf* noc = nullptr;
 
-    //Number of available dies in the arch files (used to model multi-die stacked FPGAs)
-    int number_of_dies = 1;
 };
 
 #endif
