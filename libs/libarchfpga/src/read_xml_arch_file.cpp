@@ -2422,7 +2422,6 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
 
         arch->grid_layouts.emplace_back(std::move(grid_def));
     }
-
 }
 
 static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
@@ -2485,7 +2484,6 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
     }
     return grid_def;
 }
-
 
 static void ProcessBlockTypeLocs(t_grid_def& grid_def,
                                  int die_number,

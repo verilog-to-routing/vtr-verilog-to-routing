@@ -1990,7 +1990,6 @@ struct t_arch {
 
     // if we have an embedded NoC in the architecture, then we store it here
     t_noc_inf* noc = nullptr;
-
 };
 
 #endif
