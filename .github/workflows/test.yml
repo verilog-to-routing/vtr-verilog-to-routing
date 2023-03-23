@@ -88,7 +88,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -116,7 +116,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -131,7 +131,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -148,7 +148,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -216,7 +216,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -269,7 +269,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -294,7 +294,7 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: 3.12.0
       - uses: actions/checkout@v3
       - run: ./.github/scripts/install_dependencies.sh
 
@@ -317,7 +317,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -340,7 +340,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -373,7 +373,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -407,7 +407,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.10
+        python-version: 3.12.0
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
