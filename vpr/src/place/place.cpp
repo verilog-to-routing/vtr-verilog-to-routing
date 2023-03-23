@@ -2774,11 +2774,12 @@ static int check_block_placement_consistency() {
     for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
         for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
             for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
-                if (place_ctx.grid_blocks.get_usage({i, j, layer_num}) > type->capacity) {
+                const t_physical_tile_loc tile_loc(i, j, layer_num);
+                const auto& type = device_ctx.grid.get_physical_type(tile_loc);
+                if (place_ctx.grid_blocks.get_usage(tile_loc) > type->capacity) {
                     VTR_LOG_ERROR(
-                        "%d blocks were placed at grid location (%d,%d), but location capacity is %d.\n",
-                        place_ctx.grid_blocks.get_usage({i, j, layer_num}), i, j,
+                        "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, layer_num,
                         type->capacity);
                     error++;
                 }
@@ -2810,10 +2811,10 @@ static int check_block_placement_consistency() {
                     ++usage_check;
                     bdone[bnum]++;
                 }
-                if (usage_check != place_ctx.grid_blocks.get_usage({i, j, layer_num})) {
+                if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
                     VTR_LOG_ERROR(
                         "%d block(s) were placed at location (%zu,%zu), but location contains %d block(s).\n",
-                        place_ctx.grid_blocks.get_usage({i, j, layer_num}), i, j, usage_check);
+                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, usage_check);
                     error++;
                 }
             }

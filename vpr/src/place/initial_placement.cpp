@@ -336,12 +336,16 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
 static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_loc& centroid) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int x, y;
+    t_physical_tile_loc tile_loc;
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
+    int head_layer_num = OPEN;
 
     ClusterBlockId head_blk = pl_macro.members.at(0).blk_index;
+    // For now, we put the macro in the same layer as the head block
+    head_layer_num = g_vpr_ctx.placement().block_locs[head_blk].loc.layer;
+    VTR_ASSERT(head_layer_num != OPEN);
     std::vector<ClusterBlockId> connected_blocks_to_update;
 
     //iterate over the from block pins
@@ -376,10 +380,10 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
                     continue;
                 }
 
-                get_coordinate_of_pin(sink_pin_id, x, y);
+                get_coordinate_of_pin(sink_pin_id, tile_loc);
 
-                acc_x += x;
-                acc_y += y;
+                acc_x += tile_loc.x;
+                acc_y += tile_loc.y;
                 acc_weight++;
             }
         }
@@ -393,10 +397,10 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
                 continue;
             }
 
-            get_coordinate_of_pin(source_pin, x, y);
+            get_coordinate_of_pin(source_pin, tile_loc);
 
-            acc_x += x;
-            acc_y += y;
+            acc_x += tile_loc.x;
+            acc_y += tile_loc.y;
             acc_weight++;
         }
     }
@@ -404,6 +408,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
     //Calculate the centroid location
     centroid.x = acc_x / acc_weight;
     centroid.y = acc_y / acc_weight;
+    centroid.layer = head_layer_num;
 
     return connected_blocks_to_update;
 }
@@ -415,7 +420,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc);
 
     //no suggestion was available for this block type
-    if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y)) {
+    if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer})) {
         return false;
     }
 
@@ -430,7 +435,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     }
 
     //no neighbor were found that meet all our requirements, should be placed with random placement
-    if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y) || !pr.is_loc_in_part_reg(centroid_loc)) {
+    if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) || !pr.is_loc_in_part_reg(centroid_loc)) {
         return false;
     }
 
@@ -720,7 +725,7 @@ static bool try_dense_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logi
     int column_index = get_blk_type_first_loc(loc, pl_macro, blk_types_empty_locs_in_grid);
 
     //check if first available location is within the chip and macro's partition region, otherwise placement is not legal
-    if (!is_loc_on_chip(loc.x, loc.y) || !pr.is_loc_in_part_reg(loc)) {
+    if (!is_loc_on_chip({loc.x, loc.y, loc.layer}) || !pr.is_loc_in_part_reg(loc)) {
         return false;
     }
 

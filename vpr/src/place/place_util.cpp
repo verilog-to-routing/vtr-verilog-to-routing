@@ -455,10 +455,7 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     }
 
     //Set the location of the block
-    place_ctx.block_locs[blk_id].loc.x = location.x;
-    place_ctx.block_locs[blk_id].loc.y = location.y;
-    place_ctx.block_locs[blk_id].loc.sub_tile = location.sub_tile;
-    place_ctx.block_locs[blk_id].loc.layer = location.layer;
+    place_ctx.block_locs[blk_id].loc = location;
 
     //Check if block is at an illegal location
     auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(location.x, location.y, location.layer));
@@ -496,7 +493,7 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
 
         //Check that the member location is on the grid
-        if (!is_loc_on_chip(member_pos.x, member_pos.y)) {
+        if (!is_loc_on_chip({member_pos.x, member_pos.y, member_pos.layer})) {
             mac_can_be_placed = false;
             break;
         }
