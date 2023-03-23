@@ -68,13 +68,15 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         //Remove from old location only if it hasn't already been updated by a previous block update
         if (place_ctx.grid_blocks.block_at_location(from) == blk) {
             place_ctx.grid_blocks.set_block_at_location(from, EMPTY_BLOCK_ID);
-            place_ctx.grid_blocks.set_usage({from.x, from.y}, place_ctx.grid_blocks.get_usage({from.x, from.y}) - 1);
+            place_ctx.grid_blocks.set_usage({from.x, from.y, from.layer},
+                                            place_ctx.grid_blocks.get_usage({from.x, from.y, from.layer}) - 1);
         }
 
         //Add to new location
         if (place_ctx.grid_blocks.block_at_location(to) == EMPTY_BLOCK_ID) {
             //Only need to increase usage if previously unused
-            place_ctx.grid_blocks.set_usage({to.x, to.y}, place_ctx.grid_blocks.get_usage({to.x, to.y}) + 1);
+            place_ctx.grid_blocks.set_usage({to.x, to.y, to.layer},
+                                            place_ctx.grid_blocks.get_usage({to.x, to.y, to.layer}) + 1);
         }
         place_ctx.grid_blocks.set_block_at_location(to, blk);
 

@@ -355,8 +355,8 @@ void load_grid_blocks_from_block_locs() {
         VTR_ASSERT(location.y < (int)device_ctx.grid.height());
 
         place_ctx.grid_blocks.set_block_at_location(location, blk_id);
-        place_ctx.grid_blocks.set_usage({location.x, location.y},
-                                        place_ctx.grid_blocks.get_usage({location.x, location.y}) + 1);
+        place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
+                                        place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
     }
 }
 
@@ -466,13 +466,18 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     }
 
     if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
-        VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d, %d). \n", block_name.c_str(), blk_id, location.x, location.y);
+        VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d,%d,%d). \n",
+                  block_name.c_str(),
+                  blk_id,
+                  location.x,
+                  location.y,
+                  location.layer);
     }
 
     //Mark the grid location and usage of the block
     place_ctx.grid_blocks.set_block_at_location(location, blk_id);
-    place_ctx.grid_blocks.set_usage({location.x, location.y},
-                                    place_ctx.grid_blocks.get_usage({location.x, location.y}) + 1);
+    place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
+                                    place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
     place_sync_external_block_connections(blk_id);
 }
 
