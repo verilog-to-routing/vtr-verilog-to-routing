@@ -343,10 +343,11 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     //Initialize the grid and each location priority based on available dies in the architecture file
     std::vector<vtr::Matrix<t_grid_tile>> grid;
     std::vector<vtr::Matrix<int>> grid_priorities;
-    grid.resize(grid_def.num_of_avail_dies);
-    grid_priorities.resize(grid_def.num_of_avail_dies);
+    const int num_layers = (int)grid_def.layers.size();
+    grid.resize(num_layers);
+    grid_priorities.resize(num_layers);
 
-    for (int layer = 0; layer < grid_def.num_of_avail_dies; layer++) {
+    for (int layer = 0; layer < num_layers; layer++) {
         //Track the current priority for each grid location
         // Note that we initialize it to the lowest (i.e. most negative) possible value, so
         // any user-specified priority will override the default empty grid
@@ -357,7 +358,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     //Initialize the device to all empty blocks
     auto empty_type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
     VTR_ASSERT(empty_type != nullptr);
-    for (int layer = 0; layer < grid_def.num_of_avail_dies; ++layer) {
+    for (int layer = 0; layer < num_layers; ++layer) {
         for (size_t x = 0; x < grid_width; ++x) {
             for (size_t y = 0; y < grid_height; ++y) {
                 set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
@@ -368,7 +369,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
     FormulaParser p;
     std::set<t_physical_tile_type_ptr> seen_types;
-    for (int layer = 0; layer < grid_def.num_of_avail_dies; layer++) {
+    for (int layer = 0; layer < num_layers; layer++) {
         for (const auto& grid_loc_def : grid_def.layers.at(layer).loc_defs) {
             //Fill in the block types according to the specification
             auto type = find_tile_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);

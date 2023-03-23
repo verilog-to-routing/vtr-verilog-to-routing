@@ -208,8 +208,9 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
-static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
+static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, const int num_layers);
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
+static int get_number_of_layers(pugi::xml_node layout_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node Node, std::vector<t_logical_block_type>& LogicalBlockTypes, t_arch& arch, const bool timing_enabled, const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
@@ -2394,22 +2395,21 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     }
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
-    int max_num_layers = 1;
-    for (auto layout_type_tag : layout_tag.children()) {
-        t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data);
+    int num_layers = get_number_of_layers(layout_tag, loc_data);
 
-        //If a layout is specified in die_number > 0, should keep track of how many dice is available in the arch file
-        if (grid_def.num_of_avail_dies > max_num_layers) {
-            max_num_layers = grid_def.num_of_avail_dies;
-        }
+    for (auto layout_type_tag : layout_tag.children()) {
+        t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data, num_layers);
 
         arch->grid_layouts.emplace_back(std::move(grid_def));
     }
 
-    arch->number_of_dies = max_num_layers;
+    arch->number_of_dies = num_layers;
 }
 
-static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
+static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
+                                    pugi::xml_node layout_type_tag,
+                                    const pugiutil::loc_data& loc_data,
+                                    const int num_layers) {
     t_grid_def grid_def;
 
     //Determine the grid specification type
@@ -2443,41 +2443,35 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
     }
 
     auto layer_tag_specified = layout_type_tag.children("layer");
-    grid_def.num_of_avail_dies = std::distance(layer_tag_specified.begin(), layer_tag_specified.end());
+    int num_of_layer_tags = std::distance(layer_tag_specified.begin(), layer_tag_specified.end());
+    grid_def.layers.resize(num_layers);
     //No layer tag is specified (only one die is specified in the arch file)
     //Need to process layout_type_tag children to get block types locations in the grid
-    if (grid_def.num_of_avail_dies == 0) {
-        grid_def.num_of_avail_dies = 1; //if no tag specified, meaning that we only have on layer specification
+    if (num_of_layer_tags == 0) {
         int die_number = 0;
-        grid_def.layers.resize(grid_def.num_of_avail_dies);
         ProcessBlockTypeLocs(grid_def, die_number, strings, layout_type_tag, loc_data);
     } else {
-        grid_def.layers.resize(grid_def.num_of_avail_dies);
         std::set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
         //One or more than one layer tag is specified
         for (auto layer_child : layer_tag_specified) {
             int die_number;
-            //Only one layer tag is specified, the die attribute must be 0 or unspecified
-            //Need to process <layer> tag children to get block types locations in the grid
-            if (grid_def.num_of_avail_dies == 1) {
-                die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-                VTR_ASSERT_MSG(die_number == 0, "If only one layer tag is specified, die number should be 0!");
-
-            }
             //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
             //Need to process each <layer> tag children to get block types locations for each grid
-            else {
-                die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-                VTR_ASSERT_MSG(!seen_die_numbers.count(die_number), "Two different layers with a same die number may have been specified in the Architecture file");
-                seen_die_numbers.insert(die_number);
-            }
+            die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+            VTR_ASSERT(die_number >= 0 && die_number < num_layers);
+            auto insert_res = seen_die_numbers.insert(die_number);
+            VTR_ASSERT_MSG(insert_res.second, "Two different layers with a same die number may have been specified in the Architecture file");
             ProcessBlockTypeLocs(grid_def, die_number, strings, layer_child, loc_data);
         }
     }
     return grid_def;
 }
 
-static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data) {
+static void ProcessBlockTypeLocs(t_grid_def& grid_def,
+                                 int die_number,
+                                 vtr::string_internment* strings,
+                                 pugi::xml_node layout_block_type_tag,
+                                 const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
     for (auto loc_spec_tag : layout_block_type_tag.children()) {
         auto loc_type = loc_spec_tag.name();
@@ -2706,6 +2700,26 @@ static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::stri
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
                            "Unrecognized grid location specification type '%s'\n", loc_type);
         }
+    }
+}
+
+static int get_number_of_layers(pugi::xml_node layout_tag, const pugiutil::loc_data& loc_data) {
+    int max_die_num = -1;
+    for (auto layout_type_tag : layout_tag.children()) {
+        auto layer_tag_specified = layout_type_tag.children("layer");
+        for (auto layer_child : layer_tag_specified) {
+            int die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+            if(die_number > max_die_num) {
+                max_die_num = die_number;
+            }
+        }
+    }
+
+    if(max_die_num == -1) {
+        // For backwards compatibility, if no die number is specified, assume 1 layer
+        return 1;
+    } else {
+        return max_die_num + 1;
     }
 }
 
