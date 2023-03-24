@@ -32,7 +32,7 @@ apt install -y \
   ccache \
   clang \
   clang-12 \
-  clang-format-12
+  clang-format-12 \
   ctags \
   curl \
   doxygen \
