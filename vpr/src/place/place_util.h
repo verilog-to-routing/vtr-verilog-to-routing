@@ -37,8 +37,9 @@
  *   @param MAX_INV_TIMING_COST Stops inverse timing cost from going to infinity
  *              with very lax timing constraints, which avoids multiplying by a
  *              gigantic timing_cost_norm when auto-normalizing. The exact value
- *              of this cost has relatively little impact, but should not be large
- *              enough to be on the order of timing costs for normal constraints.
+ *              of this cost has relatively little impact, but should be large
+ *              enough to not affect the timing costs computatation for normal 
+ *              constraints.
  *
  *   @param place_algorithm Determines how the member values are updated upon
  *              each temperature change during the placer annealing process.
@@ -64,7 +65,7 @@ class t_placer_costs {
     void update_norm_factors();
 
   private:
-    double MAX_INV_TIMING_COST = 1.e9;
+    double MAX_INV_TIMING_COST = 1.e12;
     t_place_algorithm place_algorithm;
 };
 
