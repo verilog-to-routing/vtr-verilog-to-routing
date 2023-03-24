@@ -748,7 +748,7 @@ bool vpr_place_flow(const Netlist<>& net_list,
 
     //Write out a vpr floorplanning constraints file if the option is specified
     if (!filename_opts.write_vpr_constraints_file.empty()) {
-        write_vpr_floorplan_constraints("vpr_floorplan_constraints.xml" /*filename_opts.write_vpr_constraints_file.c_str()*/, placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile,
+        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile,
                                         placer_opts.floorplan_num_horizontal_partitions, placer_opts.floorplan_num_vertical_partitions);
     }
 
@@ -984,11 +984,6 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
 
         //Update interactive graphics
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
-
-        //Write out a vpr floorplanning constraints file if the option is specified
-        if (!filename_opts.write_vpr_constraints_file.empty()) {
-            write_vpr_route_constraints(g_vpr_ctx.routing().constraints, "vpr_route_constraints.xml" /*filename_opts.write_vpr_constraints_file.c_str()*/);
-        }
     }
 
     return route_status;

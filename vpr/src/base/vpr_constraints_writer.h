@@ -36,6 +36,14 @@ class VprConstraints;
 void write_vpr_constraints(t_vpr_setup& vpr_setup);
 
 /**
+ * @brief Write out vpr constratins to an XML file based on current placement and 
+ * route constraint settings
+ * 
+ *   @param vpr_setup   VPR setup information
+ */
+void write_vpr_constraints(t_vpr_setup& vpr_setup);
+
+/**
  * @brief Write out floorplan constraints to an XML file based on current placement
  *
  *   @param file_name   The name of the file that the constraints will be written to
@@ -81,7 +89,5 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints,
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints,
                                                int horizontal_cutpoints,
                                                int vertical_cutpoints);
-
-void write_vpr_route_constraints(const VprConstraints& constraints, const char* file_name);
 
 #endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */
