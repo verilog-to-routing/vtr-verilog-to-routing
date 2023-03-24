@@ -1033,7 +1033,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     if (noc_enabled) {
         initial_noc_placement();
     }
-    
+
     //#ifdef VERBOSE
     //    VTR_LOG("At end of initial_placement.\n");
     //    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {

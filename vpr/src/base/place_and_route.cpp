@@ -329,7 +329,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts,noc_opts,
+                try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->Directs, arch->num_directs,
                           false);
