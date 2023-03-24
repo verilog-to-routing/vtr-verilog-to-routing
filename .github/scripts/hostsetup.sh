@@ -33,7 +33,6 @@ apt install -y \
   clang \
   clang-12 \
   clang-format-12 \
-  ctags \
   curl \
   doxygen \
   expect \
@@ -60,7 +59,6 @@ apt install -y \
   libxml2-utils \
   make \
   pkg-config \
-  python \
   python3 \
   python3-dev \
   python3-pip \
@@ -78,10 +76,8 @@ apt install -y \
   time \
   valgrind \
   zip \
-  qt5-default \
   uuid-dev \
   default-jdk \
-  qtbase5-dev \
   g++-9 \
   gcc-9 \
   g++-10 \
