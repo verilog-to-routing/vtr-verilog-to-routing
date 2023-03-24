@@ -12,7 +12,7 @@ void RouteConstraint::set_net_name(std::string name) {
     return;
 }
 
-std::string RouteConstraint::get_net_name() const {
+std::string RouteConstraint::net_name() const {
     return net_name_;
 }
 
@@ -21,7 +21,7 @@ void RouteConstraint::set_net_type(std::string type) {
     return;
 }
 
-std::string RouteConstraint::get_net_type() const {
+std::string RouteConstraint::net_type() const {
     return net_type_;
 }
 
@@ -30,7 +30,7 @@ void RouteConstraint::set_route_model(std::string route_method) {
     return;
 }
 
-std::string RouteConstraint::get_route_model() const {
+std::string RouteConstraint::route_model() const {
     return route_method_;
 }
 
@@ -38,6 +38,6 @@ void RouteConstraint::set_is_valid(bool value) {
     is_valid_ = value;
 }
 
-bool RouteConstraint::get_is_valid() const {
+bool RouteConstraint::is_valid() const {
     return is_valid_;
 }
