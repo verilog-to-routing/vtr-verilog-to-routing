@@ -27,7 +27,7 @@ struct PlacerTimingContext : public Context {
      *
      * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
      */
-    ClbNetPinsMatrix<float> connection_delay;
+    NetPinsMatrix<float> connection_delay;
 
     /**
      * @brief Net connection delays based on the proposed block positions.

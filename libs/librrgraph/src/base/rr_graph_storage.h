@@ -441,9 +441,11 @@ class t_rr_graph_storage {
         node_ptc_.clear();
         node_first_edge_.clear();
         node_fan_in_.clear();
+        seen_edge_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
+        edge_remapped_.clear();
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
@@ -458,9 +460,11 @@ class t_rr_graph_storage {
         node_ptc_.shrink_to_fit();
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
+        seen_edge_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
+        edge_remapped_.shrink_to_fit();
     }
 
     // Append 1 more RR node to the RR graph.
@@ -569,8 +573,7 @@ class t_rr_graph_storage {
     //
     // init_fan_in does not need to be invoked before this method.
     size_t count_rr_switches(
-        size_t num_arch_switches,
-        t_arch_switch_inf* arch_switch_inf,
+        const std::vector<t_arch_switch_inf>& arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins);
 
     // Maps arch_switch_inf indicies to rr_switch_inf indicies.
@@ -631,6 +634,11 @@ class t_rr_graph_storage {
     }
 
   public:
+    inline void clear_node_first_edge() {
+        node_first_edge_.clear();
+    }
+
+  private:
     friend struct edge_swapper;
     friend class edge_sort_iterator;
     friend class edge_compare_dest_node;
@@ -679,6 +687,9 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+    vtr::vector<RREdgeId, bool> edge_remapped_;
+
+    vtr::vector<RREdgeId, bool> seen_edge_;
 
     /***************
      * State flags *

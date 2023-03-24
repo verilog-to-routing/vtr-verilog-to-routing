@@ -250,6 +250,13 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("false\n");
     }
 
+    VTR_LOG("RouterOpts.has_choking_spot: ");
+    if (RouterOpts.has_choking_spot) {
+        VTR_LOG("true\n");
+    } else {
+        VTR_LOG("false\n");
+    }
+
     if (DETAILED == RouterOpts.route_type) {
         VTR_LOG("RouterOpts.router_algorithm: ");
         switch (RouterOpts.router_algorithm) {

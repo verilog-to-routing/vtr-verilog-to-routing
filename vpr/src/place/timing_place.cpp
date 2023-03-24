@@ -66,8 +66,8 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
     for (ClusterPinId clb_pin : cluster_pins_with_modified_criticality_) {
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
-
-        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, clb_pin);
+        // Routing for placement is not flat (at least for the time being)
+        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, ParentPinId(size_t(clb_pin)), false);
 
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
         /*

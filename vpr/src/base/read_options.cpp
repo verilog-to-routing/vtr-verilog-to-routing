@@ -1551,8 +1551,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Reads the lookahead data from the specified file instead of computing it.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_intra_cluster_router_lookahead, "--read_intra_cluster_router_lookahead")
+        .help("Reads the intra-cluster lookahead data from the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.write_router_lookahead, "--write_router_lookahead")
         .help("Writes the lookahead data to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_intra_cluster_router_lookahead, "--write_intra_cluster_router_lookahead")
+        .help("Writes the intra-cluster lookahead data to the specified file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_placement_delay_lookup, "--read_placement_delay_lookup")
@@ -2319,6 +2327,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_grp.add_argument(args.flat_routing, "--flat_routing")
         .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument(args.has_choking_spot, "--has_choking_spot")
+        .help(
+            ""
+            "Some FPGA architectures, due to the lack of full connectivity inside the cluster, may have"
+            " a choking spot inside the cluster. Thus, if routing doesn't converge, enabling this option may"
+            " help it.")
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
