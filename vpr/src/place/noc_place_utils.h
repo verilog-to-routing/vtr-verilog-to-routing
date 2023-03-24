@@ -263,7 +263,6 @@ void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_n
 
 /**
  * @brief Updates all the cost normalization factors relevant to the NoC.
- * Also updates the placement cost depending on the placment mode.
  * Handles exceptional cases so that the normalization factors do not
  * reach INF.
  * This is intended to be used to initialize the normalization factors of
@@ -271,9 +270,8 @@ void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_n
  * balance the NoC costs with other placment cost parameters.
  * 
  * @param costs Contains the normalization factors which need to be updated
- * @param placer_opts Determines the placement mode
  */
-void update_noc_normalization_factors(t_placer_costs& costs, const t_placer_opts& placer_opts);
+void update_noc_normalization_factors(t_placer_costs& costs);
 
 /**
  * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC

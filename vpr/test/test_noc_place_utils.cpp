@@ -1061,7 +1061,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         costs.noc_latency_cost = 1.;
 
         // run the test function
-        update_noc_normalization_factors(costs, placer_opts);
+        update_noc_normalization_factors(costs);
 
         // verify the aggregate bandwidth normalized cost
         // this should not be +INF and instead trimmed
@@ -1072,7 +1072,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         costs.noc_latency_cost = 0.;
 
         // run the test function
-        update_noc_normalization_factors(costs, placer_opts);
+        update_noc_normalization_factors(costs);
 
         // verify the latency normalized cost
         // this should not be +INF and instead trimmed
@@ -1083,7 +1083,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         costs.noc_latency_cost = 0.;
 
         // run the test function
-        update_noc_normalization_factors(costs, placer_opts);
+        update_noc_normalization_factors(costs);
 
         // verify the aggregate bandwidth normalized cost
         // this should not be trimmed
@@ -1094,7 +1094,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         costs.noc_latency_cost = 50.e-12;
 
         // run the test function
-        update_noc_normalization_factors(costs, placer_opts);
+        update_noc_normalization_factors(costs);
 
         // verify the latency normalized cost
         // this should not be trimmed
@@ -1105,7 +1105,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         costs.noc_latency_cost = 999.e-15;
 
         // run the test function
-        update_noc_normalization_factors(costs, placer_opts);
+        update_noc_normalization_factors(costs);
 
         // verify the latency normalized cost
         // this should not be trimmed

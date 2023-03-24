@@ -661,7 +661,7 @@ void try_place(const Netlist<>& net_list,
         costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
 
         // initialize all the noc normalization factors
-        update_noc_normalization_factors(costs, placer_opts);
+        update_noc_normalization_factors(costs);
     }
 
     // set the starting total placement cost
@@ -1960,7 +1960,7 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
 
     // update the noc normalization factors if the palcement includes the NoC
     if (noc_opts.noc) {
-        update_noc_normalization_factors(*costs, placer_opts);
+        update_noc_normalization_factors(*costs);
     }
 
     // update the current total placement cost

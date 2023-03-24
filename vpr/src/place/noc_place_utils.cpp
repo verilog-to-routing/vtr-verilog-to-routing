@@ -252,7 +252,7 @@ void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_n
     return;
 }
 
-void update_noc_normalization_factors(t_placer_costs& costs, const t_placer_opts& placer_opts) {
+void update_noc_normalization_factors(t_placer_costs& costs) {
     //Prevent the norm factors from going to infinity
     costs.noc_aggregate_bandwidth_cost_norm = std::min(1 / costs.noc_aggregate_bandwidth_cost, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
     costs.noc_latency_cost_norm = std::min(1 / costs.noc_latency_cost, MAX_INV_NOC_LATENCY_COST);
