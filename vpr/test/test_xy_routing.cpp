@@ -20,7 +20,7 @@ void compare_routes(const std::vector<NocLink>& golden_path, const std::vector<N
 
     for (int link_index = 0; link_index < route_size; link_index++) {
         // get the current link we need to verify from the found route
-        const NocLink found_link = noc_model.get_single_noc_link(found_path[link_index]);
+        const NocLink& found_link = noc_model.get_single_noc_link(found_path[link_index]);
 
         // now compare the found link to the equivalent link in the golden route. We are just comparing the source and destination routers of the links. We want them to be the same.
         REQUIRE(found_link.get_source_router() == golden_path[link_index].get_source_router());
@@ -46,6 +46,10 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
 
     // Create the NoC datastructure
     NocStorage noc_model;
+
+    // store the reference to device grid with
+    // this will be set to the device grid width
+    noc_model.set_device_grid_width((int)4);
 
     // add all the routers
     for (int i = 0; i < 4; i++) {
@@ -216,6 +220,10 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
     // Create the NoC datastructure
     NocStorage noc_model;
 
+    // store the reference to device grid with
+    // this will be set to the device grid width
+    noc_model.set_device_grid_width((int)4);
+
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -304,7 +312,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * Creating a test FPGA device below. The NoC itself will be
      * a 3 router design. The purpose of this design is to verify the case where the routing algorithm is stuck in a loop trying to go back and forth between two routers while trying to get to the destination.
      *
-     * For example, looking at the example below, suppose we are trying to route between routers 3 and 4. The XY routing algorithm will first traverse to router 0 as it is towards the direction of router 1.
+     * For example, looking at the example below, suppose we are trying to route between routers 3 and 1. The XY routing algorithm will first traverse to router 0 as it is towards the direction of router 1.
      * But then at router 0 the algorithm will go towards router 3 as its now
      * in the direction of router 1. But then the algorithm will infinitely
      * just pinpong between routers 0 and 3.
@@ -320,6 +328,10 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
 
     // Create the NoC datastructure
     NocStorage noc_model;
+
+    // store the reference to device grid with
+    // this will be set to the device grid width
+    noc_model.set_device_grid_width((int)4);
 
     noc_model.add_router(0, 0, 0);
     noc_model.add_router(1, 2, 2);
