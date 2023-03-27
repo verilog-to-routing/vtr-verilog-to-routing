@@ -30,7 +30,7 @@ apt install -y \
   build-essential \
   capnproto \
   clang \
-  ctags \
+  exuberant-ctags \
   curl \
   doxygen \
   flex \
@@ -50,7 +50,7 @@ apt install -y \
   libxft-dev \
   libxml++2.6-dev \
   libreadline-dev \
-  python \
+  python2 \
   python3 \
   python3-dev \
   python3-pip \
@@ -63,15 +63,11 @@ apt install -y \
   time \
   valgrind \
   zip \
-  qt5-default \
+  qtbase5-dev \
   uuid-dev \
   default-jdk \
   g++-9 \
   gcc-9 \
-  g++-10 \
-  gcc-10 \
-  g++-11 \
-  gcc-11 \
   wget \
   libtbb-dev
 
@@ -79,7 +75,7 @@ apt install -y \
 apt install -y apt-transport-https ca-certificates gnupg
 wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc |apt-key add -
 
-apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+apt-add-repository 'deb https://apt.kitware.com/ubuntu/ jammy main'
 apt update
 apt install -y cmake
 
