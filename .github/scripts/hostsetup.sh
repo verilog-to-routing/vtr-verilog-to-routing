@@ -29,21 +29,16 @@ apt install -y \
   binutils-gold \
   build-essential \
   capnproto \
-  ccache \
   clang \
-  clang-12 \
-  clang-format-12 \
+  ctags \
   curl \
   doxygen \
-  expect \
-  exuberant-ctags \
   flex \
   fontconfig \
   gdb \
   git \
   gperf \
   gzip \
-  libc6-dev \
   libcairo2-dev \
   libcapnp-dev \
   libgtk-3-dev \
@@ -51,31 +46,24 @@ apt install -y \
   libfontconfig1-dev \
   liblist-moreutils-perl \
   libncurses5-dev \
-  libreadline8 \
   libx11-dev \
   libxft-dev \
   libxml++2.6-dev \
   libreadline-dev \
-  libxml2-utils \
-  make \
-  pkg-config \
+  python \
   python3 \
   python3-dev \
   python3-pip \
   python3-virtualenv \
   python3-yaml \
-  python3-setuptools \
-  python3-lxml \
-  swig \
   tcl-dev \
-  tcl8.6-dev \
-  tcllib \
   libffi-dev \
   perl \
   texinfo \
   time \
   valgrind \
   zip \
+  qt5-default \
   uuid-dev \
   default-jdk \
   g++-9 \
