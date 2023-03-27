@@ -119,7 +119,7 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
  *
  * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
  */
-ClusterBlockId propose_block_type(t_logical_block_type& blk_type ,bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+ClusterBlockId propose_block_type(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
 
 /**
  * @brief Select a random block to be swapped with another block

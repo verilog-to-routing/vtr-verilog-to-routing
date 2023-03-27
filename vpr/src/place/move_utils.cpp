@@ -521,15 +521,14 @@ int get_num_agent_types() {
     return place_ctx.logical_to_agent_map.size();
 }
 
-ClusterBlockId propose_block_type(t_logical_block_type& blk_type ,bool highly_crit_block, ClusterNetId* net_from, int* pin_from){
+ClusterBlockId propose_block_type(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
-        if(highly_crit_block){
+        if (highly_crit_block) {
             b_from = pick_from_highly_critical_block(*net_from, *pin_from);
-        }
-        else{
+        } else {
             b_from = pick_from_block();
         }
 
@@ -537,12 +536,10 @@ ClusterBlockId propose_block_type(t_logical_block_type& blk_type ,bool highly_cr
         if (b_from) {
             blk_type.index = convert_logical_to_agent_block_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
         }
-    }
-    else{ //If the block type is specified, choose a random block with blk_type to be swapped with another random block
-        if(highly_crit_block){
+    } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
+        if (highly_crit_block) {
             b_from = pick_from_highly_critical_block(*net_from, *pin_from, blk_type);
-        }
-        else{
+        } else {
             b_from = pick_from_block(blk_type);
         }
     }
