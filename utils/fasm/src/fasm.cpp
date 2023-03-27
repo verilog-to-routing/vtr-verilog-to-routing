@@ -28,7 +28,7 @@
 
 namespace fasm {
 
-FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f) : strings_(strings), os_(f),
+FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool is_flat) : strings_(strings), os_(f),
     pb_graph_pin_lookup_from_index_by_type_(g_vpr_ctx.device().logical_block_types),
     fasm_lut(strings->intern_string(vtr::string_view("fasm_lut"))),
     fasm_features(strings->intern_string(vtr::string_view("fasm_features"))),
@@ -36,7 +36,8 @@ FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostre
     fasm_prefix(strings->intern_string(vtr::string_view("fasm_prefix"))),
     fasm_placeholders(strings->intern_string(vtr::string_view("fasm_placeholders"))),
     fasm_type(strings->intern_string(vtr::string_view("fasm_type"))),
-    fasm_mux(strings->intern_string(vtr::string_view("fasm_mux"))) {
+    fasm_mux(strings->intern_string(vtr::string_view("fasm_mux"))),
+    is_flat_(is_flat){
 }
 
 void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
@@ -640,7 +641,7 @@ void FasmWriterVisitor::walk_routing() {
     for(const auto &trace : route_ctx.trace) {
       t_trace *head = trace.head;
       if (!head) continue;
-      t_rt_node* root = traceback_to_route_tree(head);
+      t_rt_node* root = traceback_to_route_tree(head, is_flat_);
       walk_route_tree(device_ctx.rr_graph_builder, root);
       free_route_tree(root);
     }

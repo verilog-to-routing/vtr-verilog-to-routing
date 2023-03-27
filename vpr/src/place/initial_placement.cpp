@@ -11,6 +11,7 @@
 #include "move_utils.h"
 #include "region.h"
 #include "directed_moves_util.h"
+#include "noc_place_utils.h"
 
 #include "echo_files.h"
 
@@ -510,6 +511,7 @@ static int get_blk_type_first_loc(t_pl_loc& loc, t_pl_macro pl_macro, std::vecto
 static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(int block_type_index) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type_index];
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
     //create a vector to store all columns containing block_type_index with their lowest y and number of remaining blocks
     std::vector<t_grid_empty_locs_block_type> block_type_empty_locs;
@@ -525,9 +527,12 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
     //traverse all column and store their empty locations in block_type_empty_locs
     for (int x_loc = min_cx; x_loc <= max_cx; x_loc++) {
         t_grid_empty_locs_block_type empty_loc;
-        empty_loc.first_avail_loc.x = compressed_block_grid.grid[x_loc].at(0).x;
-        empty_loc.first_avail_loc.y = compressed_block_grid.grid[x_loc].at(0).y;
-        empty_loc.first_avail_loc.sub_tile = 0;
+        auto first_avail_loc = compressed_block_grid.grid[x_loc].begin()->second;
+        empty_loc.first_avail_loc.x = first_avail_loc.x;
+        empty_loc.first_avail_loc.y = first_avail_loc.y;
+        const auto& physical_type = grid[first_avail_loc.x][first_avail_loc.y].type;
+        const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(physical_type->index);
+        empty_loc.first_avail_loc.sub_tile = *std::min_element(compatible_sub_tiles.begin(), compatible_sub_tiles.end());
         empty_loc.num_of_empty_locs_in_y_axis = compressed_block_grid.grid[x_loc].size();
         block_type_empty_locs.push_back(empty_loc);
     }
@@ -1003,7 +1008,7 @@ bool place_one_block(const ClusterBlockId& blk_id,
     return placed_macro;
 }
 
-void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
+void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, bool noc_enabled) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     /* Go through cluster blocks to calculate the tightest placement
@@ -1024,10 +1029,15 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     //if any blocks remain unplaced, print an error
     check_initial_placement_legality();
 
-#ifdef VERBOSE
-    VTR_LOG("At end of initial_placement.\n");
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
-        print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
+    // route all the traffic flows in the NoC now that all the router cluster block have been placed  (this is done only if the noc optimization is enabled by the user)
+    if (noc_enabled) {
+        initial_noc_placement();
     }
-#endif
+
+    //#ifdef VERBOSE
+    //    VTR_LOG("At end of initial_placement.\n");
+    //    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
+    //        print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
+    //    }
+    //#endif
 }
