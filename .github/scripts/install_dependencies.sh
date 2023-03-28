@@ -41,19 +41,13 @@ sudo apt install -y \
   qtbase5-dev \
   uuid-dev \
   default-jdk \
-  clang-format-7 \
-  g++-7 \
-  gcc-7 \
-  g++-8 \
-  gcc-8 \
+  clang-format-12 \
   g++-9 \
   gcc-9 \
   g++-10 \
   gcc-10 \
   g++-11 \
   gcc-11 \
-  clang-6.0 \
-  clang-7 \
   clang-10 \
   libtbb-dev
 
