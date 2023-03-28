@@ -11,6 +11,7 @@
 #include "move_utils.h"
 #include "region.h"
 #include "directed_moves_util.h"
+#include "noc_place_utils.h"
 
 #include "echo_files.h"
 
@@ -1047,7 +1048,7 @@ bool place_one_block(const ClusterBlockId& blk_id,
     return placed_macro;
 }
 
-void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
+void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, bool noc_enabled) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     /* Go through cluster blocks to calculate the tightest placement
@@ -1067,6 +1068,11 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
     //if any blocks remain unplaced, print an error
     check_initial_placement_legality();
+
+    // route all the traffic flows in the NoC now that all the router cluster block have been placed  (this is done only if the noc optimization is enabled by the user)
+    if (noc_enabled) {
+        initial_noc_placement();
+    }
 
     //#ifdef VERBOSE
     //    VTR_LOG("At end of initial_placement.\n");

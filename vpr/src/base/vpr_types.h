@@ -1392,9 +1392,14 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                          ///<options to turn on hard NoC modeling & optimization
-    std::string noc_flows_file;        ///<name of the file that contains all the traffic flow information in the NoC
-    std::string noc_routing_algorithm; ///<controls the routing algorithm used to route packets within the NoC
+    bool noc;                                 ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file;               ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
+    std::string noc_routing_algorithm;        ///<controls the routing algorithm used to route packets within the NoC
+    double noc_placement_weighting;           ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
+    double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow contraints range:[0-inf)
+    double noc_latency_weighting;             ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
+    int noc_swap_percentage;                  ///<controls the number of NoC router block swap attemps relative to the total number of swaps attempted by the placer range:[0-100]
+    std::string noc_placement_file_name;      ///<is the name of the output file that contains the NoC placement information
 };
 
 /**

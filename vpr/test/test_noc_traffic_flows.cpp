@@ -18,6 +18,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
     std::string sink_router_nanme = "test_2";
     double traffic_flow_bandwidth = 200;
     double traffic_flow_latency = 10;
+    int traffic_flow_priority = 1;
     ClusterBlockId source_router_id;
     ClusterBlockId sink_router_id;
     NocTrafficFlowId curr_flow_id;
@@ -48,7 +49,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
             sink_router_id = (ClusterBlockId)second_router;
 
             // need to match how the test function does it
-            golden_traffic_flow_list.emplace_back(source_router_name, sink_router_nanme, source_router_id, sink_router_id, traffic_flow_bandwidth, traffic_flow_latency);
+            golden_traffic_flow_list.emplace_back(source_router_name, sink_router_nanme, source_router_id, sink_router_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
 
             curr_flow_id = (NocTrafficFlowId)(golden_traffic_flow_list.size() - 1);
 
@@ -72,7 +73,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
                 sink_router_id = (ClusterBlockId)second_router;
 
                 // create and add the traffic flow
-                traffic_flow_storage.create_noc_traffic_flow(source_router_name, sink_router_nanme, source_router_id, sink_router_id, traffic_flow_bandwidth, traffic_flow_latency);
+                traffic_flow_storage.create_noc_traffic_flow(source_router_name, sink_router_nanme, source_router_id, sink_router_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
             }
         }
 
@@ -89,7 +90,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
         // check the traffic flows (make sure they are correct)
         for (int traffic_flow = 0; traffic_flow < size_of_traffic_flow_list; traffic_flow++) {
             curr_flow_id = (NocTrafficFlowId)traffic_flow;
-            t_noc_traffic_flow curr_traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(curr_flow_id);
+            const t_noc_traffic_flow& curr_traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(curr_flow_id);
 
             // make sure that the source and destination routers match the golden set
             REQUIRE(curr_traffic_flow.source_router_cluster_id == golden_traffic_flow_list[traffic_flow].source_router_cluster_id);
