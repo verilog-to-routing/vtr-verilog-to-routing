@@ -34,7 +34,7 @@ class DeviceGrid {
 
     ///@brief Return the number of layers(number of dies)
     inline int get_num_layers() const {
-        return num_layers_;
+        return (int)grid_.size();
     }
 
     ///@brief Given t_grid_tile, return the x coordinate of the tile on the given layer
@@ -100,9 +100,6 @@ class DeviceGrid {
     void count_instances();
 
     std::string name_;
-
-    ///@brief num_layers_ is the number of layers (dies) in the FPGA chip. An FPGA chip has at least one layer.
-    int num_layers_ = 1;
 
     /**
      * @brief grid_ is a vector of 2D grids. Each 2D grid represents a layer (die) of the FPGA chip. The layers are pushed backed to the top from the bottom (grid_[0] corresponds to the bottom layer).
