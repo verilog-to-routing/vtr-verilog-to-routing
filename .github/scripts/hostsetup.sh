@@ -56,6 +56,7 @@ apt install -y \
   python3-pip \
   python3-virtualenv \
   python3-yaml \
+  tcllib \
   tcl8.6-dev \
   libffi-dev \
   perl \
