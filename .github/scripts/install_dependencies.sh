@@ -21,6 +21,7 @@ sudo apt install -y \
   gperf \
   libcairo2-dev \
   libcapnp-dev \
+  libeigen3-dev \
   libgtk-3-dev \
   libevent-dev \
   libfontconfig1-dev \
@@ -30,7 +31,6 @@ sudo apt install -y \
   libxft-dev \
   libxml++2.6-dev \
   libreadline-dev \
-  tcllib \
   tcl8.6-dev \
   libffi-dev \
   perl \
