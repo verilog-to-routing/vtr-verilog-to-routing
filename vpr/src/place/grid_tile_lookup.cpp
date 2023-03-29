@@ -1,11 +1,9 @@
 #include "grid_tile_lookup.h"
 
-void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 2>& type_count) {
+void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, std::vector<vtr::NdMatrix<int, 2>>& type_count) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    int num_rows = device_ctx.grid.height();
-    int num_cols = device_ctx.grid.width();
-
+    int num_layers = device_ctx.grid.get_num_layers();
     /*
      * Iterating through every location on the grid to store the number of subtiles of
      * the correct type at each location. For each location, we store the cumulative
@@ -13,39 +11,45 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::
      * subtiles at the location, plus the number of subtiles at the locations above and to
      * the right of it.
      */
-    for (int i_col = type_count.dim_size(0) - 1; i_col >= 0; i_col--) {
-        for (int j_row = type_count.dim_size(1) - 1; j_row >= 0; j_row--) {
-            const auto& tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(i_col, j_row));
-            int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(i_col, j_row));
-            int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(i_col, j_row));
-            type_count[i_col][j_row] = 0;
+    std::vector<int> layer_acc_type_count(num_layers, 0);
+    for(int layer_num = num_layers - 1; layer_num >= 0; layer_num--) {
+        int num_rows = (int)device_ctx.grid.height(layer_num);
+        int num_cols = (int)device_ctx.grid.width(layer_num);
 
-            if (is_tile_compatible(tile, block_type) && height_offset == 0 && width_offset == 0) {
-                for (const auto& sub_tile : tile->sub_tiles) {
-                    if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
-                        type_count[i_col][j_row] = sub_tile.capacity.total();
+        for (int i_col = (int)type_count[layer_num].dim_size(0) - 1; i_col >= 0; i_col--) {
+            for (int j_row = (int)type_count[layer_num].dim_size(1) - 1; j_row >= 0; j_row--) {
+                const auto& tile = device_ctx.grid.get_physical_type({i_col, j_row, layer_num});
+                int height_offset = device_ctx.grid.get_height_offset({i_col, j_row, layer_num});
+                int width_offset = device_ctx.grid.get_width_offset({i_col, j_row, layer_num});
+                type_count[layer_num][i_col][j_row] = 0;
+
+                if (is_tile_compatible(tile, block_type) && height_offset == 0 && width_offset == 0) {
+                    for (const auto& sub_tile : tile->sub_tiles) {
+                        if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
+                            type_count[layer_num][i_col][j_row] = sub_tile.capacity.total();
+                            layer_acc_type_count[layer_num] += sub_tile.capacity.total();
+                        }
                     }
                 }
-            }
 
-            if (i_col < num_cols - 1) {
-                type_count[i_col][j_row] += type_count[i_col + 1][j_row];
-            }
-            if (j_row < num_rows - 1) {
-                type_count[i_col][j_row] += type_count[i_col][j_row + 1];
-            }
-            if (i_col < (num_cols - 1) && j_row < (num_rows - 1)) {
-                type_count[i_col][j_row] -= type_count[i_col + 1][j_row + 1];
+                if (i_col < num_cols - 1) {
+                    type_count[layer_num][i_col][j_row] += type_count[layer_num][i_col + 1][j_row];
+                }
+                if (j_row < num_rows - 1) {
+                    type_count[layer_num][i_col][j_row] += type_count[layer_num][i_col][j_row + 1];
+                }
+                if (i_col < (num_cols - 1) && j_row < (num_rows - 1)) {
+                    type_count[layer_num][i_col][j_row] -= type_count[layer_num][i_col + 1][j_row + 1];
+                }
+                if(layer_num < num_layers - 1) {
+                    type_count[layer_num][i_col][j_row] += layer_acc_type_count[layer_num + 1];
+                }
             }
         }
     }
 
     //The total number of subtiles for the block type will be at [0][0]
-    max_placement_locations[block_type->index] = type_count[0][0];
-}
-
-vtr::NdMatrix<int, 2>& GridTileLookup::get_type_grid(t_logical_block_type_ptr block_type) {
-    return block_type_matrices[block_type->index];
+    max_placement_locations[block_type->index] = type_count[0][0][0];
 }
 
 int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) {
@@ -67,7 +71,11 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
      * By intersecting with the grid, we ensure that we are only counting tiles for the part of the
      * region that fits on the grid.*/
     Region grid_reg;
-    grid_reg.set_region_rect({0, 0, (int)device_ctx.grid.width(layer_num) - 1, (int)device_ctx.grid.height(layer_num) - 1, layer_num});
+    grid_reg.set_region_rect({0,
+                              0,
+                              (int)device_ctx.grid.width(layer_num) - 1,
+                              (int)device_ctx.grid.height(layer_num) - 1,
+                              layer_num});
     Region intersect_reg;
     intersect_reg = intersection(reg, grid_reg);
 
@@ -78,26 +86,26 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     int ymin = intersect_coord.ymin;
     int xmax = intersect_coord.xmax;
     int ymax = intersect_coord.ymax;
-    auto& type_grid = block_type_matrices[block_type->index];
+    auto& layer_type_grid = block_type_matrices[block_type->index][layer_num];
 
-    int xdim = (int)type_grid.dim_size(0);
-    int ydim = (int)type_grid.dim_size(1);
+    int xdim = (int)layer_type_grid.dim_size(0);
+    int ydim = (int)layer_type_grid.dim_size(1);
 
     int num_tiles = 0;
 
     if (subtile == NO_SUBTILE) {
-        num_tiles = type_grid[xmin][ymin];
+        num_tiles = layer_type_grid[xmin][ymin];
 
         if ((ymax + 1) < ydim) {
-            num_tiles -= type_grid[xmin][ymax + 1];
+            num_tiles -= layer_type_grid[xmin][ymax + 1];
         }
 
         if ((xmax + 1) < xdim) {
-            num_tiles -= type_grid[xmax + 1][ymin];
+            num_tiles -= layer_type_grid[xmax + 1][ymin];
         }
 
         if ((xmax + 1) < xdim && (ymax + 1) < ydim) {
-            num_tiles += type_grid[xmax + 1][ymax + 1];
+            num_tiles += layer_type_grid[xmax + 1][ymax + 1];
         }
     } else {
         num_tiles = region_with_subtile_count(reg, block_type);
