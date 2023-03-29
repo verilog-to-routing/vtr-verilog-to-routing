@@ -11,6 +11,7 @@ sudo apt install -y \
   binutils-gold \
   build-essential \
   capnproto \
+  ament-cmake \
   exuberant-ctags \
   curl \
   doxygen \
@@ -52,14 +53,6 @@ sudo apt install -y \
   libtbb-dev
 
 pip install -r requirements.txt
-
-# installing the latest version of cmake
-apt install -y apt-transport-https ca-certificates gnupg
-wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc |apt-key add -
-
-apt-add-repository 'deb https://apt.kitware.com/ubuntu/ jammy main'
-apt update
-apt install -y cmake
 
 git clone https://github.com/capnproto/capnproto-java.git $GITHUB_WORKSPACE/env/capnproto-java
 pushd $GITHUB_WORKSPACE/env/capnproto-java
