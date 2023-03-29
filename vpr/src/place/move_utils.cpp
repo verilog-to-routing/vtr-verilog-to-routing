@@ -1021,10 +1021,20 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
 
-    auto min_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmin_, search_range.ymin_, layer_num});
-    auto max_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmax_, search_range.ymax_, layer_num});
+    auto min_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmin_,
+                                                                          search_range.ymin_,
+                                                                          layer_num});
+
+    auto max_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmax_,
+                                                                          search_range.ymax_,
+                                                                          layer_num});
+
     Region range_reg;
-    range_reg.set_region_rect(min_grid_loc.x, min_grid_loc.y, max_grid_loc.x, max_grid_loc.y);
+    range_reg.set_region_rect({min_grid_loc.x,
+                               min_grid_loc.y,
+                               max_grid_loc.x,
+                               max_grid_loc.y,
+                               layer_num});
 
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
@@ -1047,9 +1057,15 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
         if (intersect_reg.empty()) {
             return false;
         } else {
-            vtr::Rect<int> rect = intersect_reg.get_region_rect();
-            auto min_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc({rect.xmin(), rect.ymin(), layer_num});
-            auto max_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc({rect.xmax(), rect.ymax(), layer_num});
+            const auto intersect_coord = intersect_reg.get_region_rect();
+            VTR_ASSERT(intersect_coord.layer_num == layer_num);
+            auto min_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc({intersect_coord.xmin,
+                                                                                        intersect_coord.ymin,
+                                                                                        layer_num});
+
+            auto max_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc({intersect_coord.xmax,
+                                                                                        intersect_coord.ymax,
+                                                                                        layer_num});
             delta_cx = max_compressed_loc.x - min_compressed_loc.x;
         }
     }

@@ -67,7 +67,11 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
 
         auto loc = place_ctx.block_locs[blk_id].loc;
 
-        reg.set_region_rect(loc.x - expand, loc.y - expand, loc.x + expand, loc.y + expand);
+        reg.set_region_rect({loc.x - expand,
+                            loc.y - expand,
+                            loc.x + expand,
+                            loc.y + expand,
+                            loc.layer});
         if (subtile) {
             int st = loc.sub_tile;
             reg.set_sub_tile(st);
@@ -138,7 +142,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
             int ymax = vertical_cuts[j + 1] - 1;
 
             Region reg;
-            reg.set_region_rect(xmin, ymin, xmax, ymax);
+            reg.set_region_rect({xmin, ymin, xmax, ymax, 0});
             std::vector<AtomBlockId> atoms;
 
             region_atoms.insert({reg, atoms});
@@ -176,7 +180,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
         }
 
         Region current_reg;
-        current_reg.set_region_rect(xminimum, yminimum, xmaximum, ymaximum);
+        current_reg.set_region_rect({xminimum, yminimum, xmaximum, ymaximum, 0});
 
         auto got = region_atoms.find(current_reg);
 
@@ -192,8 +196,9 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
         Partition part;
         PartitionId partid(num_partitions);
         std::string part_name = "Part" + std::to_string(num_partitions);
-        vtr::Rect<int> rect = region.first.get_region_rect();
-        create_partition(part, part_name, rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax());
+        const auto reg_coord = region.first.get_region_rect();
+        create_partition(part, part_name,
+                         {reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax, reg_coord.layer_num});
         constraints.add_partition(part);
 
         for (unsigned int k = 0; k < region.second.size(); k++) {
@@ -204,11 +209,11 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     }
 }
 
-void create_partition(Partition& part, std::string part_name, int xmin, int ymin, int xmax, int ymax) {
+void create_partition(Partition& part, std::string part_name, const RegionRectCoord& region_cord) {
     part.set_name(part_name);
     PartitionRegion part_pr;
     Region part_region;
-    part_region.set_region_rect(xmin, ymin, xmax, ymax);
+    part_region.set_region_rect(region_cord);
     std::vector<Region> part_regions;
     part_regions.push_back(part_region);
     part_pr.set_partition_region(part_regions);
