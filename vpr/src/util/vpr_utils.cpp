@@ -744,9 +744,9 @@ t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
         int rhs_num_instances = 0;
         // Count number of instances for each type
         for (auto type : lhs->equivalent_tiles)
-            lhs_num_instances += grid.num_instances(type);
+            lhs_num_instances += grid.num_instances(type, -1);
         for (auto type : rhs->equivalent_tiles)
-            rhs_num_instances += grid.num_instances(type);
+            rhs_num_instances += grid.num_instances(type, -1);
         return lhs_num_instances > rhs_num_instances;
     };
     std::stable_sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
@@ -771,7 +771,7 @@ t_logical_block_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
     for (const auto& logical_block : device_ctx.logical_block_types) {
         size_t inst_cnt = 0;
         for (const auto& equivalent_tile : logical_block.equivalent_tiles) {
-            inst_cnt += grid.num_instances(equivalent_tile);
+            inst_cnt += grid.num_instances(equivalent_tile, -1);
         }
 
         if (max_count < inst_cnt) {
@@ -793,7 +793,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid) {
     t_physical_tile_type_ptr max_type = nullptr;
     size_t max_count = 0;
     for (const auto& physical_tile : device_ctx.physical_tile_types) {
-        size_t inst_cnt = grid.num_instances(&physical_tile);
+        size_t inst_cnt = grid.num_instances(&physical_tile, -1);
 
         if (max_count < inst_cnt) {
             max_count = inst_cnt;

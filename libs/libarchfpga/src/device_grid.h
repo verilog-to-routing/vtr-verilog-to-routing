@@ -70,7 +70,7 @@ class DeviceGrid {
      * @brief Return the number of instances of the specified tile type on the specified layer. If the layer_num is -1, return the total number of instances of the specified tile type on all layers.
      * @note This function should be used if count_instances() is called in the constructor.
      */
-    size_t num_instances(t_physical_tile_type_ptr type, int layer_num = 0) const;
+    size_t num_instances(t_physical_tile_type_ptr type, int layer_num) const;
 
     /**
      * @brief Returns the block types which limits the device size (may be empty if

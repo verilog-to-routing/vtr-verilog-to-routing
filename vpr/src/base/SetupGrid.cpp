@@ -149,7 +149,6 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
     auto auto_layout_itr = std::find_if(grid_layouts.begin(), grid_layouts.end(), is_auto_grid_def);
     if (auto_layout_itr != grid_layouts.end()) {
         //Automatic grid layout, find the smallest height/width
-
         VTR_ASSERT_SAFE_MSG(std::find_if(auto_layout_itr + 1, grid_layouts.end(), is_auto_grid_def) == grid_layouts.end(), "Only one <auto_layout>");
 
         //Determine maximum device size to try before concluding that the circuit cannot fit on any device
@@ -168,7 +167,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
         const auto& grid_def = *auto_layout_itr;
         VTR_ASSERT(grid_def.aspect_ratio >= 0.);
 
-        //Initial size is 3x3, the smallest possible while avoiding
+        //Initial size is num_layers x 3 x 3, the smallest possible while avoiding
         //start before end location issues with <perimeter> location
         //specifications
         size_t width = 3;
@@ -270,7 +269,7 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(const Devic
     //Initialize available tile counts
     std::unordered_map<t_physical_tile_type_ptr, int> avail_tiles;
     for (auto& tile_type : device_ctx.physical_tile_types) {
-        avail_tiles[&tile_type] = grid.num_instances(&tile_type);
+        avail_tiles[&tile_type] = grid.num_instances(&tile_type, -1);
     }
 
     //Sort so we allocate logical blocks with the fewest equivalent sites first (least flexible)
@@ -739,13 +738,15 @@ static void CheckGrid(const DeviceGrid& grid) {
 float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts) {
     //Record the resources of the grid
     std::map<t_physical_tile_type_ptr, size_t> grid_resources;
-    for (size_t x = 0; x < grid.width(); ++x) {
-        for (size_t y = 0; y < grid.height(); ++y) {
-            int width_offset = grid.get_width_offset(t_physical_tile_loc(x, y));
-            int height_offset = grid.get_height_offset(t_physical_tile_loc(x, y));
-            if (width_offset == 0 && height_offset == 0) {
-                const auto& type = grid.get_physical_type(t_physical_tile_loc(x, y));
-                ++grid_resources[type];
+    for(int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
+        for (int x = 0; x < (int)grid.width(layer_num); ++x) {
+            for (int y = 0; y < (int)grid.height(layer_num); ++y) {
+                int width_offset = grid.get_width_offset({x, y, layer_num});
+                int height_offset = grid.get_height_offset({x, y, layer_num});
+                if (width_offset == 0 && height_offset == 0) {
+                    const auto& type = grid.get_physical_type({x, y, layer_num});
+                    ++grid_resources[type];
+                }
             }
         }
     }
