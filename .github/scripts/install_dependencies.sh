@@ -31,6 +31,7 @@ sudo apt install -y \
   libxft-dev \
   libxml++2.6-dev \
   libreadline-dev \
+  tcllib \
   tcl8.6-dev \
   libffi-dev \
   perl \
