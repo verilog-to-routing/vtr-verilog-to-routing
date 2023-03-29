@@ -43,6 +43,8 @@ sudo apt install -y \
   qtbase5-dev \
   uuid-dev \
   default-jdk \
+  clang \
+  clang++ \
   clang-format-12 \
   g++-9 \
   gcc-9 \
@@ -50,6 +52,7 @@ sudo apt install -y \
   gcc-10 \
   g++-11 \
   gcc-11 \
+  libopencl-clang10 \
   clang-12 \
   libtbb12
 
