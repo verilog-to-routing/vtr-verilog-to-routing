@@ -21,7 +21,6 @@ sudo apt install -y \
   gperf \
   libcairo2-dev \
   libcapnp-dev \
-  libeigen3-dev \
   libgtk-3-dev \
   libevent-dev \
   libfontconfig1-dev \
