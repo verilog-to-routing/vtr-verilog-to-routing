@@ -35,6 +35,7 @@ sudo apt install -y \
   tcl8.6-dev \
   libffi-dev \
   perl \
+  pkg-config \
   texinfo \
   time \
   valgrind \
@@ -49,8 +50,8 @@ sudo apt install -y \
   gcc-10 \
   g++-11 \
   gcc-11 \
-  clang-10 \
-  libtbb-dev
+  clang-12 \
+  libtbb12
 
 pip install -r requirements.txt
 
