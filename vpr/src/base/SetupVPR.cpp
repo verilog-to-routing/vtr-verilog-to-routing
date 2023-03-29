@@ -658,6 +658,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_agent_epsilon = Options.place_agent_epsilon;
     PlacerOpts->place_agent_gamma = Options.place_agent_gamma;
     PlacerOpts->place_dm_rlim = Options.place_dm_rlim;
+    PlacerOpts->place_detailed_agent = Options.place_detailed_agent;
     PlacerOpts->place_reward_fun = Options.place_reward_fun;
     PlacerOpts->place_crit_limit = Options.place_crit_limit;
     PlacerOpts->place_agent_algorithm = Options.place_agent_algorithm;

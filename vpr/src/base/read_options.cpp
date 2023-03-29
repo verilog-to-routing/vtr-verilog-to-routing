@@ -2019,6 +2019,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("3.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<bool, ParseOnOff>(args.place_detailed_agent, "--place_detailed_agent")
+        .help(
+            "Controls how detailed RL-agent Q-table should be.\n"
+            "If off, RL-agent only proposes move type at each anneal stage\n"
+            "If on, RL-agent proposes both move type and block type at each stage\n")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
         .help(
             "The reward function used by placement RL agent."

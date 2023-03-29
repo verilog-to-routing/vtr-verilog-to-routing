@@ -1065,6 +1065,14 @@ enum class e_place_delta_delay_algorithm {
  *   @param place_constraint_subtile
  *              True if subtiles should be specified when printing floorplan
  *              constraints. False if not.
+ *
+ *   @param place_detailed_agent
+ *              Integer value that specifies how much detailed RL-agent
+ *              Q-table should be. if set to false, agent will only consider
+ *              to propose move type (e.g. Median), if set to true, agent will
+ *              propose both move and block type (e.g. Median/CLB).
+ *              Default value: true
+ *
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1113,6 +1121,7 @@ struct t_placer_opts {
     float place_agent_epsilon;
     float place_agent_gamma;
     float place_dm_rlim;
+    bool place_detailed_agent;
     //int place_timing_cost_func;
     std::string place_reward_fun;
     float place_crit_limit;
