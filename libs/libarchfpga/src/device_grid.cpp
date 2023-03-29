@@ -18,13 +18,11 @@ struct gridDimComp {
 DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid)
     : name_(grid_name)
     , grid_(grid) {
-    num_layers_ = grid_.size();
     count_instances();
 }
 
 DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid, std::vector<t_logical_block_type_ptr> limiting_res)
     : DeviceGrid(grid_name, grid) {
-    num_layers_ = grid_.size();
     limiting_resources_ = limiting_res;
 }
 
@@ -35,9 +33,11 @@ size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) c
         return count;
     }
 
+    int num_layers = (int)grid_.size();
+
     if (layer_num == -1) {
         //Count all layers
-        for (int curr_layer_num = 0; curr_layer_num < num_layers_; ++curr_layer_num) {
+        for (int curr_layer_num = 0; curr_layer_num < num_layers; ++curr_layer_num) {
             auto iter = instance_counts_[curr_layer_num].find(type);
             if (iter != instance_counts_[curr_layer_num].end()) {
                 count += iter->second;
@@ -58,15 +58,15 @@ size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) c
 void DeviceGrid::clear() {
     grid_.clear();
     instance_counts_.clear();
-    num_layers_ = 1;
 }
 
 void DeviceGrid::count_instances() {
+    int num_layers = (int)grid_.size();
     instance_counts_.clear();
-    instance_counts_.resize(num_layers_);
+    instance_counts_.resize(num_layers);
 
     //Count the number of blocks in the grid
-    for (int layer_num = 0; layer_num < num_layers_; ++layer_num) {
+    for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
         for (size_t x = 0; x < width(); ++x) {
             for (size_t y = 0; y < height(); ++y) {
                 auto type = grid_[layer_num][x][y].type;
