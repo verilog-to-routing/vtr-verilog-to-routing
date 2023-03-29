@@ -22,6 +22,10 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
     // Create the NoC datastructure
     NocStorage noc_model;
 
+    // store the reference to device grid with
+    // need to add this before routers are added
+    noc_model.set_device_grid_width((int)4);
+
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {

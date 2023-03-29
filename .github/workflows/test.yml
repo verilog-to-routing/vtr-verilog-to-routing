@@ -178,7 +178,7 @@ jobs:
           {
             name: 'Basic_odin',
             params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Basic with NO_GRAPHICS',
