@@ -501,8 +501,8 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
     }
 
     if ((flag == 0 || count > 1) && !configuration.adder_cin_global) {
-        //connect the a[0] of first adder node to ground, and b[0] of first adder node to vcc
-        connect_nodes(netlist->gnd_node, 0, node[0], 0);
+        //connect the a[0] of first adder node to vcc, and b[0] of first adder node to vcc
+        connect_nodes(netlist->vcc_node, 0, node[0], 0);
         connect_nodes(netlist->vcc_node, 0, node[0], sizea);
         //hang the first sumout
         node[0]->output_pins[1] = allocate_npin();
