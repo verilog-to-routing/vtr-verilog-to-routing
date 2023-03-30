@@ -7,7 +7,7 @@
 
 /* File-scope routines */
 //a scaled and clipped exponential function
-static float scaled_clipped_exp(float x) { return std::exp(std::min(100 * x, float(3.0))); }
+static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, float(3.0))); }
 
 /*                                     *
  *                                     *
