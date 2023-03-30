@@ -43,8 +43,6 @@ sudo apt install -y \
   qtbase5-dev \
   uuid-dev \
   default-jdk \
-  clang \
-  clang++ \
   clang-format-12 \
   g++-9 \
   gcc-9 \
