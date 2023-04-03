@@ -31,13 +31,14 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        std::string write_lookahead,
                                                        std::string read_lookahead,
                                                        const std::vector<t_segment_inf>& segment_inf,
-                                                       bool is_flat) {
+                                                       bool is_flat,
+                                                       const int layer_num) {
     std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(det_routing_arch,
                                                                                      router_lookahead_type,
                                                                                      is_flat);
 
     if (read_lookahead.empty()) {
-        router_lookahead->compute(segment_inf);
+        router_lookahead->compute(segment_inf, layer_num);
     } else {
         router_lookahead->read(read_lookahead);
     }

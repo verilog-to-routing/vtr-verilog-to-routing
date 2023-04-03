@@ -511,7 +511,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
-void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
+void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf, const int /*layer_num*/) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
     //First compute the delay map when starting from the various wire types
