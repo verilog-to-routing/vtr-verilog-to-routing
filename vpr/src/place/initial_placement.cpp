@@ -554,7 +554,7 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
             empty_loc.first_avail_loc.x = first_avail_loc.x;
             empty_loc.first_avail_loc.y = first_avail_loc.y;
             empty_loc.first_avail_loc.layer = first_avail_loc.layer_num;
-            const auto& physical_type = grid.get_physical_type({first_avail_loc.x, first_avail_loc.y, first_avail_loc.layer_num}));
+            const auto& physical_type = grid.get_physical_type({first_avail_loc.x, first_avail_loc.y, first_avail_loc.layer_num});
             const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(physical_type->index);
             empty_loc.first_avail_loc.sub_tile = *std::min_element(compatible_sub_tiles.begin(), compatible_sub_tiles.end());
             empty_loc.num_of_empty_locs_in_y_axis = block_rows.size();

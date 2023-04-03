@@ -90,10 +90,10 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
      *   -------------------------------------------------------
      */
     std::vector<e_side> wanted_sides;
-    if (device_ctx.grid.height() - 1 == coord_y) { /* TOP side */
+    if ((int)device_ctx.grid.height(coord_layer) - 1 == coord_y) { /* TOP side */
         wanted_sides.push_back(BOTTOM);
     }
-    if (device_ctx.grid.width() - 1 == coord_x) { /* RIGHT side */
+    if ((int)device_ctx.grid.width(coord_layer) - 1 == coord_x) { /* RIGHT side */
         wanted_sides.push_back(LEFT);
     }
     if (0 == coord_y) { /* BOTTOM side */
