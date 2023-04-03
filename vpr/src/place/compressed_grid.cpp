@@ -14,12 +14,12 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     }
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        for (size_t x = 0; x < grid.width(layer_num); ++x) {
-            for (size_t y = 0; y < grid.height(layer_num); ++y) {
-                int width_offset = grid.get_width_offset(t_physical_tile_loc(x, y, layer_num));
+        for (int x = 0; x < (int)grid.width(layer_num); ++x) {
+            for (int y = 0; y < (int)grid.height(layer_num); ++y) {
+                int width_offset = grid.get_width_offset({x, y, layer_num});
                 int height_offset = grid.get_height_offset(t_physical_tile_loc(x, y, layer_num));
                 if (width_offset == 0 && height_offset == 0) {
-                    const auto& type = grid.get_physical_type(t_physical_tile_loc(x, y, layer_num));
+                    const auto& type = grid.get_physical_type({x, y, layer_num});
                     auto equivalent_sites = get_equivalent_sites_set(type);
 
                     for (auto& block : equivalent_sites) {

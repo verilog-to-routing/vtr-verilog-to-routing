@@ -37,13 +37,13 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     //Gets the current location of the block to move.
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(from.x, from.y, from.layer));
+    auto grid_from_type = device_ctx.grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     //Retrieving the compressed block grid for this block type
     const auto& compressed_block_grid = place_ctx.compressed_block_grids[cluster_from_type->index];
     //Checking if the block has a compatible subtile.
-    auto to_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(to.x, to.y, to.layer));
+    auto to_type = device_ctx.grid.get_physical_type({to.x, to.y, to.layer});
     auto& compatible_subtiles = compressed_block_grid.compatible_sub_tile_num(to_type->index);
 
     //No compatible subtile is found.

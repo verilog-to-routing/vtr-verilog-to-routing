@@ -18,7 +18,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(from.x, from.y, from.layer));
+    auto grid_from_type = device_ctx.grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_range_limiters range_limiters;

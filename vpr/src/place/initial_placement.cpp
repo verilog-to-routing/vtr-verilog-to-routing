@@ -449,7 +449,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     //we don't need to find one agian
     if (!neighbor_legal_loc) {
         const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-        const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(centroid_loc.x, centroid_loc.y, centroid_loc.layer));
+        const auto& type = device_ctx.grid.get_physical_type({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
         const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
         centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
     }
@@ -554,7 +554,7 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
             empty_loc.first_avail_loc.x = first_avail_loc.x;
             empty_loc.first_avail_loc.y = first_avail_loc.y;
             empty_loc.first_avail_loc.layer = first_avail_loc.layer_num;
-            const auto& physical_type = grid.get_physical_type(t_physical_tile_loc(first_avail_loc.x, first_avail_loc.y, first_avail_loc.layer_num));
+            const auto& physical_type = grid.get_physical_type({first_avail_loc.x, first_avail_loc.y, first_avail_loc.layer_num}));
             const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(physical_type->index);
             empty_loc.first_avail_loc.sub_tile = *std::min_element(compatible_sub_tiles.begin(), compatible_sub_tiles.end());
             empty_loc.num_of_empty_locs_in_y_axis = block_rows.size();
@@ -570,7 +570,7 @@ static inline void fix_IO_block_types(t_pl_macro pl_macro, t_pl_loc loc, enum e_
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
     //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
-    const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y, loc.layer));
+    const auto& type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
     if (is_io_type(type) && pad_loc_type == RANDOM) {
         for (unsigned int imember = 0; imember < pl_macro.members.size(); imember++) {
             place_ctx.block_locs[pl_macro.members[imember].blk_index].is_fixed = true;
@@ -997,14 +997,14 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
      * blocks placed anywhere.
      */
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
+        for (int i = 0; i < (int)device_ctx.grid.width(layer_num); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(layer_num); j++) {
+                const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 itype = type->index;
                 if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
                     place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
                     for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                        if (place_ctx.grid_blocks.block_at_location({i, j, k}) != INVALID_BLOCK_ID) {
+                        if (place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) != INVALID_BLOCK_ID) {
                             place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) = EMPTY_BLOCK_ID;
                         }
                     }

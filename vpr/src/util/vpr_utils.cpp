@@ -136,8 +136,8 @@ void sync_grid_to_blocks() {
     auto& grid_blocks = place_ctx.grid_blocks;
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        for (int x = 0; x < (int)device_grid.width(); ++x) {
-            for (int y = 0; y < (int)device_grid.height(); ++y) {
+        for (int x = 0; x < (int)device_grid.width(layer_num); ++x) {
+            for (int y = 0; y < (int)device_grid.height(layer_num); ++y) {
                 const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
             }
@@ -147,7 +147,6 @@ void sync_grid_to_blocks() {
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        const auto blk_loc = place_ctx.block_locs[blk_id].loc;
         int blk_x = place_ctx.block_locs[blk_id].loc.x;
         int blk_y = place_ctx.block_locs[blk_id].loc.y;
         int blk_z = place_ctx.block_locs[blk_id].loc.sub_tile;
@@ -165,21 +164,21 @@ void sync_grid_to_blocks() {
         }
 
         /* Check types match */
-        if (type != device_ctx.grid.get_physical_type(t_physical_tile_loc(blk_x, blk_y))) {
+        if (type != device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
                             blk_x, blk_y,
                             type->name,
-                            device_ctx.grid.get_physical_type(t_physical_tile_loc(blk_x, blk_y))->name);
+                            device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})->name);
         }
 
         /* Check already in use */
-        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))
-            && (INVALID_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))) {
+        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks.block_at_location({blk_x, blk_y, blk_layer}))
+            && (INVALID_BLOCK_ID != place_ctx.grid_blocks.block_at_location({blk_x, blk_y, blk_layer}))) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n",
                             blk_x, blk_y, blk_z);
         }
 
-        if (device_ctx.grid.get_width_offset(t_physical_tile_loc(blk_loc.x, blk_loc.y, blk_loc.layer)) != 0 || device_ctx.grid.get_height_offset(t_physical_tile_loc(blk_loc.x, blk_loc.y, blk_loc.layer)) != 0) {
+        if (device_ctx.grid.get_width_offset({blk_x, blk_y, blk_layer}) != 0 || device_ctx.grid.get_height_offset({blk_x, blk_y, blk_layer}) != 0) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d).",
                             size_t(blk_id), blk_x, blk_y, blk_z);
         }
@@ -528,7 +527,7 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     auto block_loc = place_ctx.block_locs[blk];
     auto loc = block_loc.loc;
 
-    return device_ctx.grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y));
+    return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
 }
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
@@ -558,7 +557,7 @@ int get_sub_tile_index(ClusterBlockId blk) {
     auto loc = block_loc.loc;
     int sub_tile_coordinate = loc.sub_tile;
 
-    auto type = device_ctx.grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y));
+    auto type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
 
     for (const auto& sub_tile : type->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_coordinate)) {
@@ -1345,7 +1344,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     auto& place_ctx = g_vpr_ctx.placement();
     auto& loc = place_ctx.block_locs[cluster_blk_id].loc;
     int cap = loc.sub_tile;
-    const auto& physical_type = grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y, loc.layer));
+    const auto& physical_type = grid.get_physical_type({loc.x, loc.y, loc.layer});
     VTR_ASSERT(grid.get_width_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0 && grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0);
     VTR_ASSERT(cap < physical_type->capacity);
 
@@ -2159,7 +2158,7 @@ t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
 
         t_pl_loc loc = place_ctx.block_locs[blk].loc;
 
-        return device_ctx.grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y, loc.layer));
+        return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
     }
 }
 

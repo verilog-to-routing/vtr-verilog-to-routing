@@ -48,7 +48,7 @@ static GridBlock init_grid_blocks() {
     for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
         for (int x = 0; x < (int)device_ctx.grid.width(); ++x) {
             for (int y = 0; y < (int)device_ctx.grid.height(); ++y) {
-                auto type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
+                auto type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
             }
         }
@@ -457,7 +457,7 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     place_ctx.block_locs[blk_id].loc = location;
 
     //Check if block is at an illegal location
-    auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(location.x, location.y, location.layer));
+    auto physical_tile = device_ctx.grid.get_physical_type({location.x, location.y, location.layer});
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
     if (location.sub_tile >= physical_tile->capacity || location.sub_tile < 0) {
@@ -534,7 +534,7 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
         // Then check whether the location could still accommodate more blocks
         // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
-            && is_tile_compatible(device_ctx.grid.get_physical_type(t_physical_tile_loc(member_pos.x, member_pos.y)), block_type)
+            && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
             && place_ctx.grid_blocks.block_at_location(member_pos) == EMPTY_BLOCK_ID) {
             // Can still accommodate blocks here, check the next position
             continue;

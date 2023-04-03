@@ -160,7 +160,7 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     }
 
     //If the block s not compatible
-    auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(to.x, to.y));
+    auto physical_tile = device_ctx.grid.get_physical_type({to.x, to.y, to.layer});
     auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
     if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
         invalid_breakpoint_entry_window("Blocks are not compatible");

@@ -3191,7 +3191,7 @@ static void print_resources_utilization() {
         auto block_loc = place_ctx.block_locs[blk_id];
         auto loc = block_loc.loc;
 
-        auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(loc.x, loc.y));
+        auto physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
         num_type_instances[logical_block]++;
