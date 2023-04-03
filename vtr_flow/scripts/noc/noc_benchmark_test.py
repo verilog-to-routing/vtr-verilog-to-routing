@@ -1,0 +1,467 @@
+#!/usr/bin/env python3
+
+"""
+    Module for running tests to verify the NoC placement of vpr
+"""
+
+from concurrent.futures import ThreadPoolExecutor, wait
+from distutils.log import error
+from fileinput import close
+import os
+from pathlib import Path
+import string
+import sys
+import argparse
+import textwrap
+import subprocess
+import re as regex
+import csv
+from operator import itemgetter
+import smtplib
+import getpass
+from random import randrange
+import threading
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "../python_libs"))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "../"))
+
+from vtr import RawDefaultHelpFormatter, paths, vpr
+
+# important extensions
+CIRCUIT_FILE_EXT = ".blif"
+FLOWS_FILE_EXT = ".flows"
+CSV_FILE_EXT = ".csv"
+NET_FILE_EXT = ".net"
+CONSTRAINTS_FILE_EXT = ".xml"
+
+# informat parsed from the vpr output
+PLACE_COST = "place_cost"
+PLACE_TIME = "place_time"
+PLACE_BB_COST = "bb_cost"
+PLACE_CPD = "post_place_cpd"
+NOC_AGGREGATE_BANDWIDTH_COST = "noc_aggregate_bandwidth_cost"
+NOC_LATENCY_COST = "noc_latency_cost"
+NOC_LATENCY_CONSTRAINT_COST = "noc_latency_constraint_cost"
+NOC_PLACEMENT_WEIGHT = "noc_placement_weight"
+
+#phrases to identify lines that contain palcement data
+PLACEMENT_COST_PHRASE = "Placement cost:"
+NOC_PLACEMENT_COST_PHRASE = "NoC Placement Costs."
+PLACEMENT_TIME = "# Placement took"
+POST_PLACE_CRITICAL_PATH_DELAY_PHRASE = "post-quench CPD"
+
+# regex match strings to extract placement info
+PLACEMENT_COST_REGEX = 'Placement cost: (.*), bb_cost: (.*), td_cost: (.*),'
+NOC_PLACEMENT_COST_REGEX = 'NoC Placement Costs. noc_aggregate_bandwidth_cost: (.*), noc_latency_cost: (.*), noc_latency_constraints_cost: (.*),'
+PLACEMENT_TIME_REGEX = '# Placement took (.*) seconds.*'
+POST_PLACE_CRITICAL_PATH_DELAY_REGEX = 'post-quench CPD = (.*) \(ns\)'
+
+MAX_SEED_VAL = 1000000
+
+def noc_test_command_line_parser(prog=None):
+    """Parses the arguments of noc_benchmark_test"""
+
+    description = textwrap.dedent(
+        """
+                    Runs VPR placer on one or more NoC benchmark designs.
+                    Runs VPR multiple times on each circuit and collects
+                    placement statistics. Each VPR run will use a different
+                    value for the the NoC placement weighting. The objective 
+                    is the identify an appropriate default NoC weighting value.
+                    """
+    )
+    epilog = textwrap.dedent(
+        """
+                Examples
+                --------
+
+                    Run the NoC driven placement on a design located at ./noc_test_circuits (design should be in .blif format). Where we want to see the NoC weighting go from 0-100 at intervals of 1:
+
+                        %(prog)s -tests_folder_location ./noc_test_cricuits -max_weighting 100 -interval 1
+ 
+                """
+    )
+
+    parser = argparse.ArgumentParser(
+        prog=prog,
+        description=description,
+        epilog=epilog,
+        formatter_class=RawDefaultHelpFormatter,
+    )
+
+    #
+    # Important Arguments
+    #
+    parser.add_argument(
+        "-tests_folder_location",
+        default="",
+        type=str,
+        help="Path to the location of the test designs"
+    )
+
+    parser.add_argument(
+        "-arch_file",
+        default = "",
+        type=str,
+        help="The architecture file the NoC benchamrk designs are placed on"
+    )
+
+    parser.add_argument(
+        "-vpr_executable",
+        default="",
+        type=str,
+        help="The executable file of VPR"
+    )
+
+    parser.add_argument(
+        "-device",
+        default="EP4SGX110",
+        type=str,
+        help="The FPGA device name the design will be placed on. Default device is EP4SGX110"
+    )
+
+    parser.add_argument(
+        "-flow_file",
+        default="",
+        type=str,
+        help="The location of the NoC traffic flow file associated with the design"
+    )
+    
+    parser.add_argument(
+        "-router_lookahead_file",
+        default="",
+        type=str,
+        help="The generated routing lookahead for a architecture"
+    )
+
+    parser.add_argument(
+        "-placement_delay_lookahead_file",
+        default="",
+        type=str,
+        help="The generated placement delay lookahead for a architecture"
+    )
+
+    parser.add_argument(
+        "-noc_routing_algorithm",
+        default="xy_routing",
+        type=str,
+        help="Controls the algorithm used by the NoC to route packets"
+    )
+
+    parser.add_argument(
+        "-noc_placement_weight",
+        default=0.6,
+        type=float,
+        help="Controls the importance of the NoC placement parameters relative to timing and wirelength of the design"
+    )
+
+    parser.add_argument(
+        "-noc_latency_constraints_weighting",
+        default=1.0,
+        type=float,
+        help="Controls the importance of meeting all the NoC traffic flow latency constraints"
+    )
+
+    parser.add_argument(
+        "-noc_latency_weighting",
+        default=0.05,
+        type=float,
+        help="Controls the importance of reducing the latencies of the NoC traffic flows"
+    )
+
+    parser.add_argument(
+        "-noc_swap_percentage",
+        default=0,
+        type=float,
+        help="Sets the minimum fraction of swaps attempted by the placer that are NoC blocks"
+    )
+
+    parser.add_argument(
+        "-number_of_seeds",
+        default=5,
+        type=int,
+        help="Number of VPR executions which are then averaged to generate final results"
+    )
+
+    parser.add_argument(
+        "-number_of_threads",
+        default=1,
+        type=int,
+        help="Number of concurrent VPR runs"
+    )
+
+    return parser
+
+def find_all_circuit_files(location_of_designs, flow_file_location, design_files, design_names, design_flow_files):
+
+    # find all the circuit files located within the provided folder
+    for single_design_file_path in Path(location_of_designs).rglob('*{0}'.format(CIRCUIT_FILE_EXT)):
+        # store the design
+        design_files.append(single_design_file_path)
+
+    # find and store the name of the design
+    design_names.append(Path(flow_file_location).stem)
+    design_flow_files.append(flow_file_location)
+
+    return
+
+def process_vpr_output(vpr_output_file):
+
+    open_file = open(vpr_output_file)
+
+    #datastrcuture below stors the palcement data in a disctionary
+    placement_data = {}
+
+    # process each line from the VPR output
+    for line in open_file:  
+        
+        # we only care about three lines where the placement costs, noc costs and placement times are located
+        # so identify those lines below
+        if PLACEMENT_COST_PHRASE in line:
+            process_placement_costs(placement_data, line)
+
+        if POST_PLACE_CRITICAL_PATH_DELAY_PHRASE in line:
+            process_placement_cpd(placement_data, line)
+
+        if NOC_PLACEMENT_COST_PHRASE in line:
+            process_noc_placement_costs(placement_data, line)
+
+        if PLACEMENT_TIME in line:
+            process_placement_time(placement_data, line)
+    
+    # close and delete the output file
+    open_file.close()
+    os.remove(vpr_output_file)
+
+    return placement_data
+
+
+def process_placement_costs(placement_data, line_with_data):
+
+    # extract the placement costs from the line where they are located
+    found_placement_metrics = regex.search(PLACEMENT_COST_REGEX, line_with_data)
+
+    # quick check that the regex worked properly
+    if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 3):
+        raise Exception("Placement cost not written out correctly")
+
+    # we know the order of the different placement costs as they are found within the extracted metric list above
+    # 1st element is the overall placement cost, second element is the placement bb cost and the third element is the placement td cost
+    # covert them to floats and store them (we don't care about the td cost so ignore it)
+    placement_data[PLACE_COST] = float(found_placement_metrics.group(1))
+    placement_data[PLACE_BB_COST] = float(found_placement_metrics.group(2))
+    
+    return
+
+def process_placement_cpd(placement_data, line_with_data):
+
+    # extract the placement time from the line where it is located
+    found_placement_metrics = regex.search(POST_PLACE_CRITICAL_PATH_DELAY_REGEX, line_with_data)
+
+    # quick check that the regex worked properly
+    if  (found_placement_metrics is None) or (found_placement_metrics.lastindex != 1):
+        raise Exception("Placement cpd not written out correctly")
+
+    # there should be only one element, since we are only grabbing the placement critical path delay
+    placement_data[PLACE_CPD] = float(found_placement_metrics.group(1))
+    
+    return
+
+def process_noc_placement_costs(placement_data, line_with_data):
+
+    # extract the noc placement costs from the line where they are located
+    found_placement_metrics = regex.search(NOC_PLACEMENT_COST_REGEX, line_with_data)
+
+    # quick check that the regex worked properly
+    if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 3):
+        raise Exception("Placement noc cost not written out correctly")
+
+    # we know the order of the different noc placement costs as they are found within the extracted metric list above
+    # 1st element is the noc aggregate bandwidth cost and the second element is the noc latency cost
+    placement_data[NOC_AGGREGATE_BANDWIDTH_COST] = float(found_placement_metrics.group(1))
+    placement_data[NOC_LATENCY_COST] = float(found_placement_metrics.group(2))
+    placement_data[NOC_LATENCY_CONSTRAINT_COST] = int(found_placement_metrics.group(3))
+    
+    return
+
+def process_placement_time(placement_data, line_with_data):
+
+    # extract the placement time from the line where it is located
+    found_placement_metrics = regex.search(PLACEMENT_TIME_REGEX, line_with_data)
+
+    # quick check that the regex worked properly
+    if found_placement_metrics.lastindex != 1:
+        raise Exception("Placement time not written out correctly")
+
+    # there should be only one element, since we are only grabbing the placement time
+    placement_data[PLACE_TIME] = float(found_placement_metrics.group(1))
+    
+    return
+
+def check_for_constraints_file(design_file):
+    
+    # build the constraint file path
+    constraints_file = os.path.splitext(design_file)[0] + CONSTRAINTS_FILE_EXT
+
+    # now check if this file exists
+    file_to_check = Path(constraints_file)
+
+    if not file_to_check.is_file():
+        # file doesn't exist. so set the file path to an empty string
+        constraints_file = ''
+
+    return constraints_file
+
+def gen_vpr_run_command(vpr_location, arch_file, design_file, design_flows_file,
+device_name, noc_routing_algorithm, noc_placement_weight, noc_latency_constraints_weight, noc_latency_weight, noc_swap_percentage, num_of_seeds, vpr_router_lookahead_file, vpr_placement_delay_lookahead_file):
+
+    # stores a list of VPR commands to execute for each seed
+    vpr_run_commands = []
+
+    # Generate a new command for the total number of seeds
+    for seed_run in range(num_of_seeds):
+        # generate a random seed val for the current run
+        seed_val = randrange(1, MAX_SEED_VAL)
+
+        # stores the vpr net file names
+        vpr_net_file = '{0}.{1}{2}'.format(design_file, seed_val, NET_FILE_EXT)
+
+        single_seed_vpr_command = [vpr_location, arch_file, str(design_file), '--noc', 'on', '--noc_flows_file', design_flows_file, '--noc_routing_algorithm', noc_routing_algorithm, '--device', device_name, '--noc_latency_weighting', str(noc_latency_weight),'--pack', '--place', '--net_file', vpr_net_file, '--seed', str(seed_val), '--noc_latency_constraints_weighting', str(noc_latency_constraints_weight), '--noc_placement_weighting', str(noc_placement_weight), '--noc_swap_percentage', str(noc_swap_percentage)]
+
+        # now add variable parameters based on input
+        # check if there is also a constraints file we need to worry about
+        constraints_file = check_for_constraints_file(design_file=design_file)
+        if constraints_file != '':
+            # this means there is a constraints file we need to include in the command line arguments
+            single_seed_vpr_command.append('--read_vpr_constraints')
+            single_seed_vpr_command.append(constraints_file)
+
+        if vpr_router_lookahead_file != '':
+            single_seed_vpr_command.append('--read_router_lookahead')
+            single_seed_vpr_command.append(vpr_router_lookahead_file)
+
+        if vpr_placement_delay_lookahead_file != '':
+            single_seed_vpr_command.append('--read_placement_delay_lookup')
+            single_seed_vpr_command.append(vpr_placement_delay_lookahead_file)
+        
+        # now add the newly created command to the list of all commands to execute
+        vpr_run_commands.append(single_seed_vpr_command)
+    
+    return vpr_run_commands
+
+
+def run_vpr_command_and_store_output(vpr_output_file, vpr_run_command):
+    # create the file that will store the VPR output
+    vpr_output = open(vpr_output_file, 'w')
+
+    # run VPR. Will timeout after 10 hours (should be good for any design)
+    result = subprocess.run(vpr_run_command,check=True, stdout=vpr_output, timeout=36000)
+
+    #close the output file
+    vpr_output.close()
+
+
+def process_vpr_runs(run_args, num_of_seeds):
+    # stores the average of all results for the current test
+    vpr_average_place_data = {}
+    vpr_average_place_data[PLACE_BB_COST] = 0.0
+    vpr_average_place_data[PLACE_COST] = 0.0
+    vpr_average_place_data[PLACE_TIME] = 0.0
+    vpr_average_place_data[PLACE_CPD] = 0.0
+    vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] = 0.0
+    vpr_average_place_data[NOC_LATENCY_COST] = 0.0
+    vpr_average_place_data[NOC_LATENCY_CONSTRAINT_COST] = 0.0
+
+    for single_run_args in run_args:
+
+        # get the placement metrics for the current run
+        curr_vpr_place_data = process_vpr_output(vpr_output_file=single_run_args[0])
+
+        # now accumulate the results of the current seed run
+        vpr_average_place_data[PLACE_BB_COST] = vpr_average_place_data[PLACE_BB_COST] + curr_vpr_place_data[PLACE_BB_COST]
+        vpr_average_place_data[PLACE_COST] = vpr_average_place_data[PLACE_COST] + curr_vpr_place_data[PLACE_COST]
+        vpr_average_place_data[PLACE_TIME] = vpr_average_place_data[PLACE_TIME] + curr_vpr_place_data[PLACE_TIME]
+        vpr_average_place_data[PLACE_CPD] = vpr_average_place_data[PLACE_CPD] + curr_vpr_place_data[PLACE_CPD]
+        vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] = vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] + curr_vpr_place_data[NOC_AGGREGATE_BANDWIDTH_COST]
+        vpr_average_place_data[NOC_LATENCY_COST] = vpr_average_place_data[NOC_LATENCY_COST] + curr_vpr_place_data[NOC_LATENCY_COST]
+        vpr_average_place_data[NOC_LATENCY_CONSTRAINT_COST] = vpr_average_place_data[NOC_LATENCY_CONSTRAINT_COST] + curr_vpr_place_data[NOC_LATENCY_CONSTRAINT_COST]
+
+        # delete the net file associated with the current run
+        os.remove(single_run_args[1][16])
+    
+    # get the average palacement results after all the runs
+    vpr_average_place_data = {place_param: value / num_of_seeds  for place_param, value in vpr_average_place_data.items()}
+    
+    return vpr_average_place_data   
+
+
+def execute_vpr_and_process_output(vpr_command_list, num_of_seeds, num_of_threads):
+
+    # stores arguments which will be used to run vpr
+    run_args = []
+
+    for single_vpr_command in vpr_command_list:
+        
+        # generate VPR out put file_name
+        # the constants represent the positions of the variabels in the command list
+        design_file_name = single_vpr_command[2]
+        seed_val = single_vpr_command[18]
+        vpr_out_file = '{0}.{1}.vpr.out'.format(design_file_name, seed_val)
+
+        # group the output file and VPR command together. 
+        # These two components are arguments to the function which executes the
+        # vpr command
+        single_run_args = (vpr_out_file, single_vpr_command)
+
+        run_args.append(single_run_args)
+    
+    # create the thread pool that will run vpr in parallel
+    vpr_executor = ThreadPoolExecutor(max_workers=num_of_threads)
+
+    # run all instances of vpr
+    vpr_run_result = vpr_executor.map(lambda vpr_args: run_vpr_command_and_store_output(*vpr_args), run_args)
+    
+    # wait for all the vpr runs to finish
+    vpr_executor.shutdown(wait=True)
+
+    # process the output and return result
+    return process_vpr_runs(run_args=run_args, num_of_seeds=num_of_seeds)
+        
+        
+if __name__ == "__main__":
+
+    try:
+        # Load the arguments
+        args = noc_test_command_line_parser().parse_args(sys.argv[1:])
+
+        # local datastructures that store the design file locations, their corresponding noc traffic flow files and the design name
+        design_files = []
+        design_names = []
+        design_flow_files = []
+
+        find_all_circuit_files(location_of_designs=args.tests_folder_location, flow_file_location=args.flow_file, design_files=design_files, design_names=design_names, design_flow_files=design_flow_files)
+ 
+        # process each design below
+        for single_design, single_design_flows_file, single_design_name in zip(design_files, design_flow_files, design_names):
+
+            # generate all the vpr commands
+            vpr_commands = gen_vpr_run_command(vpr_location=args.vpr_executable, arch_file=args.arch_file, design_file=single_design, design_flows_file=single_design_flows_file,
+            device_name=args.device, noc_routing_algorithm=args.noc_routing_algorithm, noc_placement_weight=args.noc_placement_weight, noc_latency_constraints_weight=args.noc_latency_constraints_weighting, noc_latency_weight=args.noc_latency_weighting, noc_swap_percentage=args.noc_swap_percentage, num_of_seeds=args.number_of_seeds, vpr_router_lookahead_file=args.router_lookahead_file, vpr_placement_delay_lookahead_file=args.placement_delay_lookahead_file)
+
+            # run VPR
+            vpr_placement_results = execute_vpr_and_process_output(vpr_command_list=vpr_commands, num_of_seeds=args.number_of_seeds, num_of_threads=args.number_of_threads)
+
+            print(vpr_placement_results)
+
+
+
+            
+    except Exception as error:
+        # the test failed so let user know why
+        print("TEST FAILED: " + str(error))
+        
+
+
+
+
+
