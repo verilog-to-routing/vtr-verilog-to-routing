@@ -91,7 +91,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
     //Calculate the centroid location
     centroid.x = acc_x / acc_weight;
     centroid.y = acc_y / acc_weight;
-    // For now, we don't move the centroid to a different layer
+    // TODO: For now, we don't move the centroid to a different layer
     centroid.layer = from_block_layer_num;
 }
 
