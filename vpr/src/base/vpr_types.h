@@ -666,7 +666,7 @@ struct hash<t_pl_offset> {
  */
 struct t_pl_loc {
     t_pl_loc() = default;
-    t_pl_loc(int xloc, int yloc, int sub_tile_loc, int layer_num = 0)
+    t_pl_loc(int xloc, int yloc, int sub_tile_loc, int layer_num)
         : x(xloc)
         , y(yloc)
         , sub_tile(sub_tile_loc)
@@ -675,7 +675,7 @@ struct t_pl_loc {
     int x = OPEN;
     int y = OPEN;
     int sub_tile = OPEN;
-    int layer = 0;
+    int layer = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
         x += rhs.x;

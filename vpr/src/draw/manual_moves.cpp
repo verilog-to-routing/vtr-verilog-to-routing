@@ -115,7 +115,8 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
         valid_input = false;
     }
 
-    t_pl_loc to = t_pl_loc(x_location, y_location, subtile_location);
+    // TODO: When graphic is updated to support 3D, this will need to be updated
+    t_pl_loc to = t_pl_loc(x_location, y_location, subtile_location, 0);
     valid_input = is_manual_move_legal(ClusterBlockId(block_id), to);
 
     if (valid_input) {

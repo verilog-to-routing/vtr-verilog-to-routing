@@ -171,11 +171,13 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
             int num_sub_tiles = type->capacity;
             for (int k = 0; k < num_sub_tiles; ++k) {
                 /* Don't draw if block is empty. */
-                if (place_ctx.grid_blocks.block_at_location({i, j, k}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k}) == INVALID_BLOCK_ID)
+                // TODO: Change when graphics supports 3D
+                if (place_ctx.grid_blocks.block_at_location({i, j, k, 0}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, 0}) == INVALID_BLOCK_ID)
                     continue;
 
                 /* Get block ID */
-                ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k});
+                // TODO: Change when graphics supports 3D
+                ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, 0});
                 /* Safety check, that physical blocks exists in the CLB */
                 if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
                     continue;

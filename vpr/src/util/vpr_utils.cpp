@@ -147,6 +147,7 @@ void sync_grid_to_blocks() {
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        const auto& blk_loc = place_ctx.block_locs[blk_id].loc;
         int blk_x = place_ctx.block_locs[blk_id].loc.x;
         int blk_y = place_ctx.block_locs[blk_id].loc.y;
         int blk_z = place_ctx.block_locs[blk_id].loc.sub_tile;
@@ -165,22 +166,22 @@ void sync_grid_to_blocks() {
 
         /* Check types match */
         if (type != device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
-                            blk_x, blk_y,
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) layer (%d) with a conflicting types '%s' and '%s' .\n",
+                            blk_x, blk_y, blk_layer,
                             type->name,
                             device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})->name);
         }
 
         /* Check already in use */
-        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks.block_at_location({blk_x, blk_y, blk_layer}))
-            && (INVALID_BLOCK_ID != place_ctx.grid_blocks.block_at_location({blk_x, blk_y, blk_layer}))) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n",
-                            blk_x, blk_y, blk_z);
+        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))
+            && (INVALID_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d, %d) is used more than once.\n",
+                            blk_x, blk_y, blk_z, blk_layer);
         }
 
         if (device_ctx.grid.get_width_offset({blk_x, blk_y, blk_layer}) != 0 || device_ctx.grid.get_height_offset({blk_x, blk_y, blk_layer}) != 0) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d).",
-                            size_t(blk_id), blk_x, blk_y, blk_z);
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d, %d).",
+                            size_t(blk_id), blk_x, blk_y, blk_z, blk_layer);
         }
 
         /* Set the block */
@@ -2386,7 +2387,8 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
         if (grid_block.is_sub_tile_empty({i, j}, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap});
+        // TODO: Needs to be updated when RR Graph Nodes know their layer_num
+        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, 0});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
 
         auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
@@ -2418,7 +2420,8 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
         if (grid_block.is_sub_tile_empty({i, j}, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap});
+        // TODO: Needs to be updated when RR Graph Nodes know their layer_num
+        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, 0});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() && cluster_blk_id != EMPTY_BLOCK_ID);
 
         cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);

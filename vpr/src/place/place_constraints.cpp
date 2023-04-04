@@ -313,6 +313,7 @@ void mark_fixed_blocks() {
 int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto reg_coord = reg.get_region_rect();
+    const int layer_num = reg.get_layer_num();
     int num_tiles = 0;
 
     for (int x = reg_coord.xmin; x <= reg_coord.xmax; x++) {
@@ -338,6 +339,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                     loc.x = x;
                     loc.y = y;
                     loc.sub_tile = reg.get_sub_tile();
+                    loc.layer = layer_num;
                     if (num_tiles > 1) {
                         return num_tiles;
                     }
@@ -358,6 +360,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                             loc.x = x;
                             loc.y = y;
                             loc.sub_tile = z;
+                            loc.layer = layer_num;
                         }
                         if (num_tiles > 1) {
                             return num_tiles;

@@ -40,7 +40,7 @@ void setup_noc(const t_arch& arch) {
 
     // store the reference to device grid with
     // need to set this first before adding routers to the model
-    noc_ctx.noc_model.set_device_grid_width((int)device_ctx.grid.width());
+    noc_ctx.noc_model.set_device_grid_spec((int)device_ctx.grid.width(), (int)device_ctx.grid.height());
 
     // generate noc model
     generate_noc(arch, noc_ctx, noc_router_tiles);
@@ -97,7 +97,7 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
                     curr_tile_centroid_x = (curr_tile_width - 1) / (double)2 + i;
                     curr_tile_centroid_y = (curr_tile_height - 1) / (double)2 + j;
 
-                    noc_router_tiles.push_back({i, j, curr_tile_centroid_x, curr_tile_centroid_y});
+                    noc_router_tiles.emplace_back(i, j, layer_num, curr_tile_centroid_x, curr_tile_centroid_y);
                 }
             }
         }
@@ -218,8 +218,10 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
 
         // at this point, the closest user described router to the current physical router was found
         // so add the router to the NoC
-        noc_model->add_router(logical_router->id, noc_router_tiles[closest_physical_router].grid_width_position,
-                              noc_router_tiles[closest_physical_router].grid_height_position);
+        noc_model->add_router(logical_router->id,
+                              noc_router_tiles[closest_physical_router].grid_width_position,
+                              noc_router_tiles[closest_physical_router].grid_height_position,
+                              noc_router_tiles[closest_physical_router].layer_position);
 
         // add the new assignment to the tracker
         router_assignments[closest_physical_router] = logical_router->id;

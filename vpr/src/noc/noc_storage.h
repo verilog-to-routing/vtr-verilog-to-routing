@@ -138,6 +138,7 @@ class NocStorage {
      * 
      */
     int device_grid_width;
+    int num_layer_blocks;
 
     // prevent "copying" of this object
     NocStorage(const NocStorage&) = delete;
@@ -288,7 +289,7 @@ class NocStorage {
      * @param grid_position_y The vertical position on the FPGA of the phyical
      * tile that this router represents.
      */
-    void add_router(int id, int grid_position_x, int grid_position_y);
+    void add_router(int id, int grid_position_x, int grid_position_y, int layer_poisition);
 
     /**
      * @brief Creates a new link and adds it to the NoC. The newly created
@@ -335,6 +336,8 @@ class NocStorage {
      */
 
     void set_device_grid_width(int grid_width);
+
+    void set_device_grid_spec(int grid_width, int grid_height);
 
     // general utiliy functions
     /**
@@ -434,11 +437,13 @@ class NocStorage {
      * @param grid_position_x The horizontal position on the FPGA of the phyical
      * tile that this router represents.
      * @param grid_position_y The vertical position on the FPGA of the phyical
-     * tile that this router represents. 
+     * tile that this router represents.
+     * @param layer_position The layer number of the phyical
+     * tile that this router represents.
      * @return int Represents a unique key that can be used to identify a
      * hard router block.
      */
-    int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const;
+    int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y, int layer_position) const;
 
     /**
      * @brief Writes out the NocStirage class infromation to a file. 

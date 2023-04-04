@@ -299,7 +299,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
 
     //Determine centroid location in the compressed space of the current block
     auto compressed_centroid_loc = get_compressed_loc_approx(compressed_block_grid,
-                                                             {centroid_loc.x, centroid_loc.y, centroid_loc.layer},
+                                                             centroid_loc,
                                                              num_layers);
 
     //range limit (rlim) set a limit for the neighbor search in the centroid placement
@@ -345,11 +345,16 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
     float acc_x = 0;
     float acc_y = 0;
     int head_layer_num = OPEN;
+    bool find_layer = false;
+    std::vector<int> layer_count(g_vpr_ctx.device().grid.get_num_layers(), 0);
 
     ClusterBlockId head_blk = pl_macro.members.at(0).blk_index;
     // For now, we put the macro in the same layer as the head block
     head_layer_num = g_vpr_ctx.placement().block_locs[head_blk].loc.layer;
-    VTR_ASSERT(head_layer_num != OPEN);
+    // If block is placed, we use the layer of the block. Otherwise, the layer will be determined later
+    if(head_layer_num == OPEN) {
+        find_layer = true;
+    }
     std::vector<ClusterBlockId> connected_blocks_to_update;
 
     //iterate over the from block pins
@@ -385,7 +390,10 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
                 }
 
                 get_coordinate_of_pin(sink_pin_id, tile_loc);
-
+                if(find_layer) {
+                    VTR_ASSERT(tile_loc.layer_num != OPEN);
+                    layer_count[tile_loc.layer_num]++;
+                }
                 acc_x += tile_loc.x;
                 acc_y += tile_loc.y;
                 acc_weight++;
@@ -402,23 +410,39 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
             }
 
             get_coordinate_of_pin(source_pin, tile_loc);
-
+            if(find_layer) {
+                VTR_ASSERT(tile_loc.layer_num != OPEN);
+                layer_count[tile_loc.layer_num]++;
+            }
             acc_x += tile_loc.x;
             acc_y += tile_loc.y;
             acc_weight++;
         }
     }
 
-    //Calculate the centroid location
-    centroid.x = acc_x / acc_weight;
-    centroid.y = acc_y / acc_weight;
-    centroid.layer = head_layer_num;
+    if(acc_weight ==0) {
+        centroid.x = OPEN;
+        centroid.y = OPEN;
+        centroid.layer = OPEN;
+    } else {
+        //Calculate the centroid location
+        centroid.x = acc_x / acc_weight;
+        centroid.y = acc_y / acc_weight;
+        if(find_layer) {
+            auto max_element = std::max_element(layer_count.begin(), layer_count.end());
+            VTR_ASSERT(*max_element != 0);
+            auto index = std::distance(layer_count.begin(), max_element);
+            centroid.layer = static_cast<int>(index);
+        } else {
+            centroid.layer = head_layer_num;
+        }
+    }
 
     return connected_blocks_to_update;
 }
 
 static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
-    t_pl_loc centroid_loc(OPEN, OPEN, OPEN);
+    t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
 
     unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc);
@@ -631,8 +655,8 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer));
-    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer));
+    int width_offset = device_ctx.grid.get_width_offset({loc.x, loc.y, loc.layer});
+    int height_offset = device_ctx.grid.get_height_offset({loc.x, loc.y, loc.layer});
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 

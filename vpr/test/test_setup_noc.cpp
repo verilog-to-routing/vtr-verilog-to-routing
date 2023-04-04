@@ -418,17 +418,17 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 8.5, 1});
+    list_of_routers.push_back({0, 0, 0, 0.5, 1});
+    list_of_routers.push_back({4, 0, 0, 4.5, 1});
+    list_of_routers.push_back({8, 0, 0, 8.5, 1});
 
-    list_of_routers.push_back({0, 4, 0.5, 5});
-    list_of_routers.push_back({4, 4, 4.5, 5});
-    list_of_routers.push_back({8, 4, 8.5, 5});
+    list_of_routers.push_back({0, 4, 0, 0.5, 5});
+    list_of_routers.push_back({4, 4, 0, 4.5, 5});
+    list_of_routers.push_back({8, 4, 0, 8.5, 5});
 
-    list_of_routers.push_back({0, 8, 0.5, 9});
-    list_of_routers.push_back({4, 8, 4.5, 9});
-    list_of_routers.push_back({8, 8, 8.5, 9});
+    list_of_routers.push_back({0, 8, 0, 0.5, 9});
+    list_of_routers.push_back({4, 8, 0, 4.5, 9});
+    list_of_routers.push_back({8, 8, 0, 8.5, 9});
 
     // create the noc model (to store the routers)
     NocStorage noc_model;
@@ -595,24 +595,24 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 8.5, 1});
+    list_of_routers.push_back({0, 0, 0, 0.5, 1});
+    list_of_routers.push_back({4, 0, 0, 4.5, 1});
+    list_of_routers.push_back({8, 0, 0, 8.5, 1});
 
-    list_of_routers.push_back({0, 4, 0.5, 5});
-    list_of_routers.push_back({4, 4, 4.5, 5});
-    list_of_routers.push_back({8, 4, 8.5, 5});
+    list_of_routers.push_back({0, 4, 0, 0.5, 5});
+    list_of_routers.push_back({4, 4, 0, 4.5, 5});
+    list_of_routers.push_back({8, 4, 0, 8.5, 5});
 
-    list_of_routers.push_back({0, 8, 0.5, 9});
-    list_of_routers.push_back({4, 8, 4.5, 9});
-    list_of_routers.push_back({8, 8, 8.5, 9});
+    list_of_routers.push_back({0, 8, 0, 0.5, 9});
+    list_of_routers.push_back({4, 8, 0, 4.5, 9});
+    list_of_routers.push_back({8, 8, 0, 8.5, 9});
 
     // create the noc model (to store the routers)
     NocStorage noc_model;
 
     // store the reference to device grid with
     // this will be set to the device grid width
-    noc_model.set_device_grid_width((int)3);
+    noc_model.set_device_grid_spec((int)3, 0);
 
     // create the logical router list
     t_noc_inf noc_info;
@@ -738,17 +738,17 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 8.5, 1});
+    list_of_routers.push_back({0, 0, 0, 0.5, 1});
+    list_of_routers.push_back({4, 0, 0, 4.5, 1});
+    list_of_routers.push_back({8, 0, 0, 8.5, 1});
 
-    list_of_routers.push_back({0, 4, 0.5, 5});
-    list_of_routers.push_back({4, 4, 4.5, 5});
-    list_of_routers.push_back({8, 4, 8.5, 5});
+    list_of_routers.push_back({0, 4, 0, 0.5, 5});
+    list_of_routers.push_back({4, 4, 0, 4.5, 5});
+    list_of_routers.push_back({8, 4, 0, 8.5, 5});
 
-    list_of_routers.push_back({0, 8, 0.5, 9});
-    list_of_routers.push_back({4, 8, 4.5, 9});
-    list_of_routers.push_back({8, 8, 8.5, 9});
+    list_of_routers.push_back({0, 8, 0, 0.5, 9});
+    list_of_routers.push_back({4, 8, 0, 4.5, 9});
+    list_of_routers.push_back({8, 8, 0, 8.5, 9});
 
     for (int router_id = 1; router_id < 10; router_id++) {
         // we will have 9 logical routers that will take up all physical routers

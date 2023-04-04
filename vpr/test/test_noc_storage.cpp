@@ -32,7 +32,7 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     NocRouterId converted_id;
 
@@ -44,10 +44,10 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
         router_grid_position_y = router_number + dist(rand_num_gen);
 
         // add router to the golden vector
-        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y);
+        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0);
 
         // add tje router to the noc
-        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0);
     }
 
     // now verify that the routers were added properly by reading the routers back from the noc and comparing them to the golden set
@@ -84,7 +84,7 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     NocRouterId converted_id;
 
@@ -96,10 +96,10 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
         router_grid_position_y = router_number + dist(rand_num_gen);
 
         // add router to the golden vector
-        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y);
+        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0);
 
         // add tje router to the noc
-        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0);
     }
 
     // now verify that the routers were added properly by reading the routers back from the noc and comparing them to the golden set
@@ -131,7 +131,7 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     // keeps track of the number of links created
     int total_num_of_links = 0;
@@ -147,7 +147,10 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos);
+        test_noc.add_router(router_id,
+                            curr_router_x_pos,
+                            curr_router_y_pos,
+                            0);
     }
 
     // allocate the size for outgoing link vector for each router
@@ -209,7 +212,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     // need to assign
 
@@ -228,7 +231,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos);
+        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos, 0);
     }
 
     // allocate the size for outgoing link vector for each router
@@ -284,7 +287,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     // temp variables that hold the routers involved within a link
     NocRouterId source;
@@ -302,7 +305,10 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos);
+        test_noc.add_router(router_id,
+                            curr_router_x_pos,
+                            curr_router_y_pos,
+                            0);
     }
 
     // now go through and add the links to the NoC
@@ -404,7 +410,7 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     NocRouterId converted_id;
 
@@ -420,7 +426,10 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
         golden_set.emplace_back((NocRouterId)router_number);
 
         // add the router to the noc
-        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        test_noc.add_router(curr_router_id,
+                            router_grid_position_x,
+                            router_grid_position_y,
+                            0);
     }
 
     // now verify the test function by identifying all the routers using their grid locations
@@ -428,7 +437,10 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     for (int grid_location = 0; grid_location < NUM_OF_ROUTERS; grid_location++) {
         // contains the grid location of a router block seen during placement
         // we dont care about the subtile so give it a arbritary value
-        t_pl_loc placement_router_grid_location = t_pl_loc(grid_location, grid_location, -1);
+        t_pl_loc placement_router_grid_location = t_pl_loc(grid_location,
+                                                           grid_location,
+                                                           -1,
+                                                           0);
 
         NocRouterId found_router_at_grid_location = test_noc.get_router_at_grid_location(placement_router_grid_location);
 

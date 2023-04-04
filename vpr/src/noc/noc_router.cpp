@@ -1,10 +1,11 @@
 #include "noc_router.h"
 
 // constructor
-NocRouter::NocRouter(int id, int grid_position_x, int grid_position_y)
+NocRouter::NocRouter(int id, int grid_position_x, int grid_position_y, int layer_position)
     : router_user_id(id)
     , router_grid_position_x(grid_position_x)
-    , router_grid_position_y(grid_position_y) {
+    , router_grid_position_y(grid_position_y)
+    , router_layer_position(layer_position) {
     // initialize variables
     router_block_ref = ClusterBlockId(0);
 }
@@ -20,6 +21,10 @@ int NocRouter::get_router_grid_position_x(void) const {
 
 int NocRouter::get_router_grid_position_y(void) const {
     return router_grid_position_y;
+}
+
+int NocRouter::get_router_layer_position(void) const {
+    return router_layer_position;
 }
 
 ClusterBlockId NocRouter::get_router_block_ref(void) const {
