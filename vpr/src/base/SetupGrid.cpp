@@ -350,12 +350,12 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     //Initialize the grid and each location priority based on available dies in the architecture file
     vtr::NdMatrix<t_grid_tile, 3> grid;
     vtr::NdMatrix<int, 3> grid_priorities;
-    size_t num_layers = grid_def.layers.size();
-    grid.resize(std::array<size_t, 3>{num_layers, grid_width, grid_height});
+    int num_layers = (int)grid_def.layers.size();
+    grid.resize(std::array<size_t, 3>{(size_t)num_layers, grid_width, grid_height});
     //Track the current priority for each grid location
     // Note that we initialize it to the lowest (i.e. most negative) possible value, so
     // any user-specified priority will override the default empty grid
-    grid_priorities.resize(std::array<size_t, 3>{num_layers, grid_width, grid_height}, std::numeric_limits<int>::lowest());
+    grid_priorities.resize(std::array<size_t, 3>{(size_t)num_layers, grid_width, grid_height}, std::numeric_limits<int>::lowest());
 
     //Initialize the device to all empty blocks
     auto empty_type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
