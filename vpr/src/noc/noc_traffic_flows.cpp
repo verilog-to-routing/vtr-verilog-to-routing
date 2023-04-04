@@ -9,11 +9,15 @@ NocTrafficFlows::NocTrafficFlows() {
 
 // getters for the traffic flows
 
+int NocTrafficFlows::get_number_of_traffic_flows(void) const {
+    return noc_traffic_flows.size();
+}
+
 const t_noc_traffic_flow& NocTrafficFlows::get_single_noc_traffic_flow(NocTrafficFlowId traffic_flow_id) const {
     return noc_traffic_flows[traffic_flow_id];
 }
 
-const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) {
+const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const {
     const std::vector<NocTrafficFlowId>* associated_traffic_flows_ref = nullptr;
 
     // get a reference to the traffic flows that have the current router as a source or sink
@@ -32,13 +36,25 @@ int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
     return traffic_flows_associated_to_router_blocks.size();
 }
 
+const std::vector<NocLinkId>& NocTrafficFlows::get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const {
+    return traffic_flow_routes[traffic_flow_id];
+}
+
+std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id) {
+    return traffic_flow_routes[traffic_flow_id];
+}
+
+const std::unordered_set<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netlist(void) const {
+    return router_cluster_in_netlist;
+}
+
 // setters for the traffic flows
 
-void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency) {
+void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority) {
     VTR_ASSERT_MSG(!built_traffic_flows, "NoC traffic flows have already been added, cannot modify further.");
 
     // create and add the new traffic flow to the vector
-    noc_traffic_flows.emplace_back(source_router_module_name, sink_router_module_name, source_router_cluster_id, sink_router_cluster_id, traffic_flow_bandwidth, traffic_flow_latency);
+    noc_traffic_flows.emplace_back(source_router_module_name, sink_router_module_name, source_router_cluster_id, sink_router_cluster_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
 
     //since the new traffic flow was added to the back of the vector, its id will be the index of the last element
     NocTrafficFlowId curr_traffic_flow_id = (NocTrafficFlowId)(noc_traffic_flows.size() - 1);
@@ -46,6 +62,11 @@ void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_n
     // now add the new traffic flow to flows associated with the current source and sink router
     add_traffic_flow_to_associated_routers(curr_traffic_flow_id, source_router_cluster_id);
     add_traffic_flow_to_associated_routers(curr_traffic_flow_id, sink_router_cluster_id);
+
+    // insert the clusters to the local collection of all router clusters in the netlist
+    // duplicates should not be added multiple times
+    router_cluster_in_netlist.insert(source_router_cluster_id);
+    router_cluster_in_netlist.insert(sink_router_cluster_id);
 
     return;
 }
@@ -55,13 +76,20 @@ void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_n
 void NocTrafficFlows::finshed_noc_traffic_flows_setup(void) {
     // all the traffic flows have been added, so indicate that the class has been constructed and cannot be modified anymore
     built_traffic_flows = true;
+
+    // create the storage space for all the traffic flow routes
+    int number_of_traffic_flows = noc_traffic_flows.size();
+    traffic_flow_routes.resize(number_of_traffic_flows);
+
     return;
 }
 
 void NocTrafficFlows::clear_traffic_flows(void) {
     // delete any information from internal datastructures
     noc_traffic_flows.clear();
+    router_cluster_in_netlist.clear();
     traffic_flows_associated_to_router_blocks.clear();
+    traffic_flow_routes.clear();
 
     // indicate that traffic flows need to be added again after clear
     built_traffic_flows = false;
