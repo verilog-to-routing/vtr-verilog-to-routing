@@ -632,7 +632,10 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
         noc_info.router_list.push_back(*temp_router);
 
         // add the router to the NoC
-        noc_model.add_router(router_id, list_of_routers[router_id - 1].grid_width_position, list_of_routers[router_id - 1].grid_height_position);
+        noc_model.add_router(router_id,
+                             list_of_routers[router_id - 1].grid_width_position,
+                             list_of_routers[router_id - 1].grid_height_position,
+                             list_of_routers[router_id - 1].layer_position);
     }
 
     delete temp_router;
