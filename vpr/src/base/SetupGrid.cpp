@@ -619,11 +619,11 @@ static void set_grid_block_type(int priority,
     std::set<TypeLocation> root_blocks_to_rip_up;
     auto& device_ctx = g_vpr_ctx.device();
     for (size_t x = x_root; x < x_root + type->width; ++x) {
-        VTR_ASSERT(x < grid.end_index(0));
+        VTR_ASSERT(x < grid.end_index(1));
 
         size_t x_offset = x - x_root;
         for (size_t y = y_root; y < y_root + type->height; ++y) {
-            VTR_ASSERT(y < grid.end_index(1));
+            VTR_ASSERT(y < grid.end_index(2));
             size_t y_offset = y - y_root;
 
             auto& grid_tile = grid[layer_num][x][y];
