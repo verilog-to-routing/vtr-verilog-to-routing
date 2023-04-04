@@ -36,7 +36,14 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
 
 static void CheckGrid(const DeviceGrid& grid);
 
-static void set_grid_block_type(int priority, const t_physical_tile_type* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities, const t_metadata_dict* meta);
+static void set_grid_block_type(int priority,
+                                const t_physical_tile_type* type,
+                                size_t x_root,
+                                size_t y_root,
+                                int layer_num,
+                                vtr::NdMatrix<t_grid_tile, 3>& grid,
+                                vtr::NdMatrix<int, 3>& grid_priorities,
+                                const t_metadata_dict* meta);
 
 ///@brief Create the device grid based on resource requirements
 DeviceGrid create_device_grid(std::string layout_name, const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float target_device_utilization) {
@@ -341,19 +348,14 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     auto& device_ctx = g_vpr_ctx.device();
 
     //Initialize the grid and each location priority based on available dies in the architecture file
-    std::vector<vtr::Matrix<t_grid_tile>> grid;
-    std::vector<vtr::Matrix<int>> grid_priorities;
-    const int num_layers = (int)grid_def.layers.size();
-    grid.resize(num_layers);
-    grid_priorities.resize(num_layers);
-
-    for (int layer = 0; layer < num_layers; layer++) {
-        //Track the current priority for each grid location
-        // Note that we initialize it to the lowest (i.e. most negative) possible value, so
-        // any user-specified priority will override the default empty grid
-        grid_priorities.at(layer).resize({grid_width, grid_height}, std::numeric_limits<int>::lowest());
-        grid.at(layer).resize({grid_width, grid_height});
-    }
+    vtr::NdMatrix<t_grid_tile, 3> grid;
+    vtr::NdMatrix<int, 3> grid_priorities;
+    size_t num_layers = grid_def.layers.size();
+    grid.resize(std::array<size_t, 3>{num_layers, grid_width, grid_height});
+    //Track the current priority for each grid location
+    // Note that we initialize it to the lowest (i.e. most negative) possible value, so
+    // any user-specified priority will override the default empty grid
+    grid_priorities.resize(std::array<size_t, 3>{num_layers, grid_width, grid_height}, std::numeric_limits<int>::lowest());
 
     //Initialize the device to all empty blocks
     auto empty_type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
@@ -362,7 +364,10 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         for (size_t x = 0; x < grid_width; ++x) {
             for (size_t y = 0; y < grid_height; ++y) {
                 set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
-                                    empty_type, x, y, grid.at(layer), grid_priorities.at(layer), /*meta=*/nullptr);
+                                    empty_type,
+                                    x, y, layer,
+                                    grid, grid_priorities,
+                                    /*meta=*/nullptr);
             }
         }
     }
@@ -515,7 +520,11 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
                     //Fill in the region
                     for (size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
                         for (size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
-                            set_grid_block_type(grid_loc_def.priority, type, x, y, grid.at(layer), grid_priorities.at(layer), grid_loc_def.meta);
+                            set_grid_block_type(grid_loc_def.priority,
+                                                type,
+                                                x, y, layer,
+                                                grid, grid_priorities,
+                                                grid_loc_def.meta);
                         }
                     }
                 }
@@ -533,14 +542,21 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         }
     }
 
-    auto device_grid = DeviceGrid(grid_def.name, std::vector<vtr::Matrix<t_grid_tile>>{grid}, limiting_resources);
+    auto device_grid = DeviceGrid(grid_def.name, grid, limiting_resources);
 
     CheckGrid(device_grid);
 
     return device_grid;
 }
 
-static void set_grid_block_type(int priority, const t_physical_tile_type* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities, const t_metadata_dict* meta) {
+static void set_grid_block_type(int priority,
+                                const t_physical_tile_type* type,
+                                size_t x_root,
+                                size_t y_root,
+                                int layer_num,
+                                vtr::NdMatrix<t_grid_tile, 3>& grid,
+                                vtr::NdMatrix<int, 3>& grid_priorities,
+                                const t_metadata_dict* meta) {
     struct TypeLocation {
         TypeLocation(size_t x_val, size_t y_val, const t_physical_tile_type* type_val, int priority_val)
             : x(x_val)
@@ -561,7 +577,7 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
     std::set<TypeLocation> target_locations;
     for (size_t x = x_root; x < x_root + type->width; ++x) {
         for (size_t y = y_root; y < y_root + type->height; ++y) {
-            target_locations.insert(TypeLocation(x, y, grid[x][y].type, grid_priorities[x][y]));
+            target_locations.insert(TypeLocation(x, y, grid[layer_num][x][y].type, grid_priorities[layer_num][x][y]));
         }
     }
 
@@ -610,8 +626,8 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
             VTR_ASSERT(y < grid.end_index(1));
             size_t y_offset = y - y_root;
 
-            auto& grid_tile = grid[x][y];
-            VTR_ASSERT(grid_priorities[x][y] <= priority);
+            auto& grid_tile = grid[layer_num][x][y];
+            VTR_ASSERT(grid_priorities[layer_num][x][y] <= priority);
 
             if (grid_tile.type != nullptr
                 && grid_tile.type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
@@ -619,18 +635,21 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
                 //to ensure we remove any blocks which will be invalidated when we
                 //overwrite part of their locations
 
-                size_t orig_root_x = x - grid[x][y].width_offset;
-                size_t orig_root_y = y - grid[x][y].height_offset;
+                size_t orig_root_x = x - grid[layer_num][x][y].width_offset;
+                size_t orig_root_y = y - grid[layer_num][x][y].height_offset;
 
-                root_blocks_to_rip_up.insert(TypeLocation(orig_root_x, orig_root_y, grid[x][y].type, grid_priorities[x][y]));
+                root_blocks_to_rip_up.insert(TypeLocation(orig_root_x,
+                                                          orig_root_y,
+                                                          grid[layer_num][x][y].type,
+                                                          grid_priorities[layer_num][x][y]));
             }
 
-            grid[x][y].type = type;
-            grid[x][y].width_offset = x_offset;
-            grid[x][y].height_offset = y_offset;
-            grid[x][y].meta = meta;
+            grid[layer_num][x][y].type = type;
+            grid[layer_num][x][y].width_offset = x_offset;
+            grid[layer_num][x][y].height_offset = y_offset;
+            grid[layer_num][x][y].meta = meta;
 
-            grid_priorities[x][y] = priority;
+            grid_priorities[layer_num][x][y] = priority;
         }
     }
 
@@ -642,9 +661,9 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
             for (size_t y = invalidated_root.y; y < invalidated_root.y + invalidated_root.type->height; ++y) {
                 int y_offset = y - invalidated_root.y;
 
-                if (grid[x][y].type == invalidated_root.type
-                    && grid[x][y].width_offset == x_offset
-                    && grid[x][y].height_offset == y_offset) {
+                if (grid[layer_num][x][y].type == invalidated_root.type
+                    && grid[layer_num][x][y].width_offset == x_offset
+                    && grid[layer_num][x][y].height_offset == y_offset) {
                     //This is a left-over invalidated block, mark as empty
                     // Note: that we explicitly check the type and offsets, since the original block
                     //       may have been completely overwritten, and we don't want to change anything
@@ -659,11 +678,11 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
                             type->name, x_root, y_root);
 #endif
 
-                    grid[x][y].type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
-                    grid[x][y].width_offset = 0;
-                    grid[x][y].height_offset = 0;
+                    grid[layer_num][x][y].type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
+                    grid[layer_num][x][y].width_offset = 0;
+                    grid[layer_num][x][y].height_offset = 0;
 
-                    grid_priorities[x][y] = std::numeric_limits<int>::lowest();
+                    grid_priorities[layer_num][x][y] = std::numeric_limits<int>::lowest();
                 }
             }
         }

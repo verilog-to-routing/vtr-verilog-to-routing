@@ -15,13 +15,13 @@ struct gridDimComp {
     }
 };
 
-DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid)
+DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid)
     : name_(grid_name)
     , grid_(grid) {
     count_instances();
 }
 
-DeviceGrid::DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid, std::vector<t_logical_block_type_ptr> limiting_res)
+DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid, std::vector<t_logical_block_type_ptr> limiting_res)
     : DeviceGrid(grid_name, grid) {
     limiting_resources_ = limiting_res;
 }
