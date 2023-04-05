@@ -35,7 +35,7 @@ class DeviceGrid {
 
     ///@brief Return the number of layers(number of dies)
     inline int get_num_layers() const {
-        return (int)grid_.size();
+        return (int)grid_.dim_size(0);
     }
 
     ///@brief Given t_grid_tile, return the x coordinate of the tile on the given layer

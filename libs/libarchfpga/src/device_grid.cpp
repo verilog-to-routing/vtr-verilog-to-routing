@@ -18,7 +18,7 @@ size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) c
         return count;
     }
 
-    int num_layers = (int)grid_.dim_size(0);;
+    int num_layers = (int)grid_.dim_size(0);
 
     if (layer_num == -1) {
         //Count all layers
