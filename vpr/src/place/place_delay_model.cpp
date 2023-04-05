@@ -27,7 +27,7 @@
 #endif /* VTR_ENABLE_CAPNPROTO */
 
 ///@brief DeltaDelayModel methods.
-float DeltaDelayModel::delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/) const {
+float DeltaDelayModel::delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/, int layer_num) const {
     int delta_x = std::abs(from_x - to_x);
     int delta_y = std::abs(from_y - to_y);
 
@@ -56,7 +56,7 @@ const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
 }
 
 ///@brief OverrideDelayModel methods.
-float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const {
+float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const {
     //First check to if there is an override delay value
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
@@ -82,7 +82,7 @@ float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, 
         delay_val = override_iter->second;
     } else {
         //Fall back to the base delay model if no override was found
-        delay_val = base_delay_model_->delay(from_x, from_y, from_pin, to_x, to_y, to_pin);
+        delay_val = base_delay_model_->delay(from_x, from_y, from_pin, to_x, to_y, to_pin, layer_num);
     }
 
     return delay_val;
@@ -344,6 +344,7 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
         int source_y = place_ctx.block_locs[source_block].loc.y;
         int sink_x = place_ctx.block_locs[sink_block].loc.x;
         int sink_y = place_ctx.block_locs[sink_block].loc.y;
+        int sink_layer_num = place_ctx.block_locs[sink_block].loc.layer;
 
         /**
          * This heuristic only considers delta_x and delta_y, a much better
@@ -357,7 +358,8 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
                                                   source_block_ipin,
                                                   sink_x,
                                                   sink_y,
-                                                  sink_block_ipin);
+                                                  sink_block_ipin,
+                                                  sink_layer_num);
         if (delay_source_to_sink < 0) {
             VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"

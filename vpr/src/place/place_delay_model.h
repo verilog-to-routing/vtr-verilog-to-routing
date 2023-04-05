@@ -62,7 +62,7 @@ class PlaceDelayModel {
      *
      * Either compute or read methods must be invoked before invoking delay.
      */
-    virtual float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const = 0;
+    virtual float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const = 0;
 
     ///@brief Dumps the delay model to an echo file.
     virtual void dump_echo(std::string filename) const = 0;
@@ -96,7 +96,7 @@ class DeltaDelayModel : public PlaceDelayModel {
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
-    float delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/) const override;
+    float delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/, int layer_num) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
@@ -119,7 +119,7 @@ class OverrideDelayModel : public PlaceDelayModel {
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
-    float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const override;
+    float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
