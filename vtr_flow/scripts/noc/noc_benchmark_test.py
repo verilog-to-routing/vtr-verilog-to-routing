@@ -210,6 +210,14 @@ def noc_test_command_line_parser(prog=None):
         "-route_chan_width", default=300, type=int, help="Channel width used for routing"
     )
 
+    parser.add_argument(
+        "-fix_clusters",
+        default="",
+        type=str,
+        help="Constraints file to pass into VPR which will lock down certain \
+        clusters in the design",
+    )
+
     return parser
 
 
@@ -500,6 +508,10 @@ def gen_vpr_run_command(design_file, design_flows_file, user_args):
         if user_args.placement_delay_lookahead_file != "":
             single_seed_vpr_command.append("--read_placement_delay_lookup")
             single_seed_vpr_command.append(user_args.placement_delay_lookahead_file)
+
+        if user_args.fix_clusters != "":
+            single_seed_vpr_command.append("--fix_clusters")
+            single_seed_vpr_command.append(user_args.fix_clusters)
 
         if user_args.route is True:
             # user wanted to route design so add params to run router
