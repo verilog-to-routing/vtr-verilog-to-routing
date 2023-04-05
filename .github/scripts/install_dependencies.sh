@@ -11,8 +11,8 @@ sudo apt install -y \
   binutils-gold \
   build-essential \
   capnproto \
-  cmake \
-  ctags \
+  ament-cmake \
+  exuberant-ctags \
   curl \
   doxygen \
   flex \
@@ -31,31 +31,28 @@ sudo apt install -y \
   libxft-dev \
   libxml++2.6-dev \
   libreadline-dev \
-  tcl-dev \
+  tcllib \
+  tcl8.6-dev \
   libffi-dev \
   perl \
+  pkg-config \
   texinfo \
   time \
   valgrind \
   zip \
-  qt5-default \
+  qtbase5-dev \
   uuid-dev \
   default-jdk \
-  clang-format-7 \
-  g++-7 \
-  gcc-7 \
-  g++-8 \
-  gcc-8 \
+  clang \
+  clang-format-12 \
   g++-9 \
   gcc-9 \
   g++-10 \
   gcc-10 \
   g++-11 \
   gcc-11 \
-  clang-6.0 \
-  clang-7 \
-  clang-10 \
-  libtbb-dev
+  clang-12 \
+  libtbb12
 
 pip install -r requirements.txt
 
