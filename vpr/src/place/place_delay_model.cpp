@@ -40,13 +40,13 @@ void DeltaDelayModel::dump_echo(std::string filepath) const {
     for (size_t layer_num = 0; layer_num < delays_.dim_size(0); ++layer_num) {
         fprintf(f, " %9zu", layer_num);
         fprintf(f, "\n");
-        for (size_t dx = 0; dx < delays_.dim_size(0); ++dx) {
+        for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
             fprintf(f, " %9zu", dx);
         }
         fprintf(f, "\n");
-        for (size_t dy = 0; dy < delays_.dim_size(1); ++dy) {
+        for (size_t dy = 0; dy < delays_.dim_size(2); ++dy) {
             fprintf(f, "%9zu", dy);
-            for (size_t dx = 0; dx < delays_.dim_size(0); ++dx) {
+            for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
                 fprintf(f, " %9.2e", delays_[layer_num][dx][dy]);
             }
             fprintf(f, "\n");
