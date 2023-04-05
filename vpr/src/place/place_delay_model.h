@@ -87,7 +87,7 @@ class DeltaDelayModel : public PlaceDelayModel {
   public:
     DeltaDelayModel(bool is_flat)
         : is_flat_(is_flat) {}
-    DeltaDelayModel(vtr::Matrix<float> delta_delays, bool is_flat)
+    DeltaDelayModel(vtr::NdMatrix<float, 3> delta_delays, bool is_flat)
         : delays_(std::move(delta_delays))
         , is_flat_(is_flat) {}
 
@@ -101,12 +101,12 @@ class DeltaDelayModel : public PlaceDelayModel {
 
     void read(const std::string& file) override;
     void write(const std::string& file) const override;
-    const vtr::Matrix<float>& delays() const {
+    const vtr::NdMatrix<float, 3>& delays() const {
         return delays_;
     }
 
   private:
-    vtr::Matrix<float> delays_;
+    vtr::NdMatrix<float, 3> delays_;
     bool is_flat_;
 };
 
