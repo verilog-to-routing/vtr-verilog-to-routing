@@ -54,7 +54,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            noc_model.add_router((i * 4) + j, j, i);
+            noc_model.add_router((i * 4) + j, j, i, 0);
         }
     }
 
