@@ -179,7 +179,6 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
-
     alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
                           directs, num_directs, is_flat);
 
@@ -438,7 +437,7 @@ static void generic_compute_matrix_dijkstra_expansion(
     bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type(source_x, source_y, layer_num);
+    t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type({source_x, source_y, layer_num});
     bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
     if (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE || !is_allowed_type) {
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
@@ -645,7 +644,7 @@ static vtr::NdMatrix<float, 3> compute_delta_delays(
 
     vtr::NdMatrix<float, 3> delta_delays({static_cast<unsigned long>(grid.get_num_layers()), grid.width(), grid.height()});
 
-    for(int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         vtr::Matrix<std::vector<float>> sampled_delta_delays({grid.width(), grid.height()});
 
         size_t mid_x = vtr::nint(grid.width() / 2);
@@ -929,7 +928,7 @@ static void fix_empty_coordinates(vtr::NdMatrix<float, 3>& delta_delays) {
     // would return a result, so we fill in the empty holes with a small
     // neighbour average.
     constexpr int kMaxAverageDistance = 2;
-    for(int layer_num = 0; layer_num < (int)delta_delays.dim_size(0); ++layer_num) {
+    for (int layer_num = 0; layer_num < (int)delta_delays.dim_size(0); ++layer_num) {
         for (int delta_x = 0; delta_x < (int)delta_delays.dim_size(1); ++delta_x) {
             for (int delta_y = 0; delta_y < (int)delta_delays.dim_size(2); ++delta_y) {
                 if (delta_delays[layer_num][delta_x][delta_y] == EMPTY_DELTA) {
@@ -943,7 +942,7 @@ static void fix_empty_coordinates(vtr::NdMatrix<float, 3>& delta_delays) {
 static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 3>& delta_delays) {
     // Set any empty delta's to the average of it's neighbours
 
-    for(size_t layer_num = 0; layer_num < delta_delays.dim_size(0); ++layer_num) {
+    for (size_t layer_num = 0; layer_num < delta_delays.dim_size(0); ++layer_num) {
         for (size_t delta_x = 0; delta_x < delta_delays.dim_size(1); ++delta_x) {
             for (size_t delta_y = 0; delta_y < delta_delays.dim_size(2); ++delta_y) {
                 if (delta_delays[layer_num][delta_x][delta_y] == UNINITIALIZED_DELTA) {
@@ -967,7 +966,7 @@ static void fill_impossible_coordinates(vtr::NdMatrix<float, 3>& delta_delays) {
     // filling these gaps.  It is more important to have a poor predication,
     // than a invalid value and causing a slack assertion.
     constexpr int kMaxAverageDistance = 5;
-    for(int layer_num = 0; layer_num < (int)delta_delays.dim_size(0); ++layer_num) {
+    for (int layer_num = 0; layer_num < (int)delta_delays.dim_size(0); ++layer_num) {
         for (int delta_x = 0; delta_x < (int)delta_delays.dim_size(1); ++delta_x) {
             for (int delta_y = 0; delta_y < (int)delta_delays.dim_size(2); ++delta_y) {
                 if (delta_delays[layer_num][delta_x][delta_y] == IMPOSSIBLE_DELTA) {
@@ -988,11 +987,11 @@ static vtr::NdMatrix<float, 3> compute_delta_delay_model(
     bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing delta delays");
     vtr::NdMatrix<float, 3> delta_delays = compute_delta_delays(route_profiler,
-                                                           placer_opts,
-                                                           router_opts,
-                                                           measure_directconnect,
-                                                           longest_length,
-                                                           is_flat);
+                                                                placer_opts,
+                                                                router_opts,
+                                                                measure_directconnect,
+                                                                longest_length,
+                                                                is_flat);
 
     fix_uninitialized_coordinates(delta_delays);
 
@@ -1112,7 +1111,7 @@ static bool verify_delta_delays(const vtr::NdMatrix<float, 3>& delta_delays) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
-    for(int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
         for (size_t x = 0; x < grid.width(); ++x) {
             for (size_t y = 0; y < grid.height(); ++y) {
                 float delta_delay = delta_delays[layer_num][x][y];

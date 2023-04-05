@@ -738,7 +738,7 @@ static void CheckGrid(const DeviceGrid& grid) {
 float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts) {
     //Record the resources of the grid
     std::map<t_physical_tile_type_ptr, size_t> grid_resources;
-    for(int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
         for (int x = 0; x < (int)grid.width(layer_num); ++x) {
             for (int y = 0; y < (int)grid.height(layer_num); ++y) {
                 int width_offset = grid.get_width_offset({x, y, layer_num});

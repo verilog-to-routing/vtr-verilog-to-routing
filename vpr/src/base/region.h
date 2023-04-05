@@ -4,7 +4,6 @@
 #include <vtr_geometry.h>
 #include "vpr_types.h"
 
-
 struct RegionRectCoord {
     RegionRectCoord() = default;
     RegionRectCoord(int _xmin, int _ymin, int _xmax, int _ymax, int _layer_num)
@@ -107,7 +106,7 @@ class Region {
   private:
     //may need to include zmin, zmax for future use in 3D FPGA designs
     vtr::Rect<int> region_bounds; ///< xmin, ymin, xmax, ymax inclusive
-    int layer_num;             ///< layer number of the region
+    int layer_num;                ///< layer number of the region
     int sub_tile;                 ///< users will optionally select a subtile
 };
 

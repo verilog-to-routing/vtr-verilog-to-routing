@@ -16,7 +16,6 @@ RegionRectCoord Region::get_region_rect() const {
     return RegionRectCoord(region_bounds, layer_num);
 }
 
-
 void Region::set_region_rect(const RegionRectCoord& rect_coord) {
     region_bounds.set_xmin(rect_coord.xmin);
     region_bounds.set_xmax(rect_coord.xmax);
@@ -47,7 +46,7 @@ bool Region::is_loc_in_reg(t_pl_loc loc) {
     bool is_loc_in_reg = false;
     int loc_layer_num = loc.layer;
 
-    if(layer_num != loc_layer_num) {
+    if (layer_num != loc_layer_num) {
         return is_loc_in_reg;
     }
 
@@ -81,10 +80,9 @@ bool do_regions_intersect(Region r1, Region r2) {
     int r1_layer_num = r1_reg_coord.layer_num;
     int r2_layer_num = r2_reg_coord.layer_num;
 
-
     vtr::Rect<int> intersect_rect;
 
-    if(r1_layer_num != r2_layer_num) {
+    if (r1_layer_num != r2_layer_num) {
         return intersect;
     }
 
@@ -104,7 +102,6 @@ bool do_regions_intersect(Region r1, Region r2) {
 Region intersection(const Region& r1, const Region& r2) {
     Region intersect;
 
-
     const auto r1_reg_coord = r1.get_region_rect();
     const auto r2_reg_coord = r2.get_region_rect();
 
@@ -116,11 +113,9 @@ Region intersection(const Region& r1, const Region& r2) {
 
     vtr::Rect<int> intersect_rect;
 
-    if(r1_layer_num != r2_layer_num) {
+    if (r1_layer_num != r2_layer_num) {
         return intersect;
     }
-
-
 
     /*
      * If the subtiles of two regions match (i.e. they both have no subtile specified, or the same subtile specified),

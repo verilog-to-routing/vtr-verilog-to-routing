@@ -273,7 +273,7 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
     for (auto reg : pr.get_partition_region()) {
         const auto reg_coord = reg.get_region_rect();
         vtr::Rect<int> reg_rect(reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax);
-        if(reg_coord.layer_num != loc.layer) continue;
+        if (reg_coord.layer_num != loc.layer) continue;
         if (reg_rect.contains(vtr::Point<int>(loc.x, loc.y))) {
             //check if the location is compatible with the block type
             const auto& type = grid.get_physical_type({loc.x, loc.y, loc.layer});
@@ -352,7 +352,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
     // For now, we put the macro in the same layer as the head block
     head_layer_num = g_vpr_ctx.placement().block_locs[head_blk].loc.layer;
     // If block is placed, we use the layer of the block. Otherwise, the layer will be determined later
-    if(head_layer_num == OPEN) {
+    if (head_layer_num == OPEN) {
         find_layer = true;
     }
     std::vector<ClusterBlockId> connected_blocks_to_update;
@@ -390,7 +390,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
                 }
 
                 get_coordinate_of_pin(sink_pin_id, tile_loc);
-                if(find_layer) {
+                if (find_layer) {
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
                 }
@@ -410,7 +410,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
             }
 
             get_coordinate_of_pin(source_pin, tile_loc);
-            if(find_layer) {
+            if (find_layer) {
                 VTR_ASSERT(tile_loc.layer_num != OPEN);
                 layer_count[tile_loc.layer_num]++;
             }
@@ -420,7 +420,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
         }
     }
 
-    if(acc_weight ==0) {
+    if (acc_weight == 0) {
         centroid.x = OPEN;
         centroid.y = OPEN;
         centroid.layer = OPEN;
@@ -428,7 +428,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
         //Calculate the centroid location
         centroid.x = acc_x / acc_weight;
         centroid.y = acc_y / acc_weight;
-        if(find_layer) {
+        if (find_layer) {
             auto max_element = std::max_element(layer_count.begin(), layer_count.end());
             VTR_ASSERT(*max_element != 0);
             auto index = std::distance(layer_count.begin(), max_element);
@@ -626,7 +626,6 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
     }
     Region reg = regions[region_index];
 
-
     const auto reg_coord = reg.get_region_rect();
 
     auto min_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmin, reg_coord.ymin, reg_coord.layer_num});
@@ -680,7 +679,6 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
     t_pl_loc to_loc;
 
     for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
-
         const auto reg_coord = regions[reg].get_region_rect();
         int layer_num = reg_coord.layer_num;
 
@@ -828,16 +826,15 @@ static bool place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
         pr = floorplanning_ctx.cluster_constraints[blk_id];
     } else { //If the block is not constrained, assign a region the size of the grid to its PartitionRegion
         Region reg;
-        for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
             reg.set_region_rect({0,
-                                0,
-                                (int)device_ctx.grid.width(layer_num) - 1,
-                                (int)device_ctx.grid.height(layer_num) - 1,
-                                layer_num});
+                                 0,
+                                 (int)device_ctx.grid.width(layer_num) - 1,
+                                 (int)device_ctx.grid.height(layer_num) - 1,
+                                 layer_num});
             reg.set_sub_tile(NO_SUBTILE);
             pr.add_to_part_region(reg);
         }
-
     }
 
     //If blk_types_empty_locs_in_grid is not NULL, means that initial placement has been failed in first iteration for this block type

@@ -237,9 +237,7 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
     int y = loc.y;
     int layer_num = loc.layer_num;
     //return false if the location is not within the chip
-    return (layer_num >= 0 && layer_num < int(grid.get_num_layers()) &&
-            x >= 0 && x < int(grid.width(layer_num)) &&
-            y >= 0 && y < int(grid.height(layer_num)));
+    return (layer_num >= 0 && layer_num < int(grid.get_num_layers()) && x >= 0 && x < int(grid.width(layer_num)) && y >= 0 && y < int(grid.height(layer_num)));
 }
 
 /**

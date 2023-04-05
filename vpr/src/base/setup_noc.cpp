@@ -59,7 +59,6 @@ void setup_noc(const t_arch& arch) {
 }
 
 void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& noc_router_tiles, std::string noc_router_tile_name) {
-
     const int num_layers = device_grid.get_num_layers();
     int curr_tile_width;
     int curr_tile_height;
@@ -71,7 +70,7 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
     double curr_tile_centroid_y;
 
     // go through the device
-    for(int layer_num = 0; layer_num < num_layers; layer_num++) {
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         int grid_width = (int)device_grid.width(layer_num);
         int grid_height = (int)device_grid.height(layer_num);
         for (int i = 0; i < grid_width; i++) {
@@ -89,9 +88,9 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
                 curr_tile_width = type->width;
 
                 /*
-             * Only store the tile position if it is a noc router.
-             * Additionally, since a router tile can span multiple grid locations, we only add the tile if the height and width offset are zero (this prevents the router from being added multiple times for each grid location it spans).
-             */
+                 * Only store the tile position if it is a noc router.
+                 * Additionally, since a router tile can span multiple grid locations, we only add the tile if the height and width offset are zero (this prevents the router from being added multiple times for each grid location it spans).
+                 */
                 if (!(noc_router_tile_name.compare(curr_tile_name)) && !curr_tile_width_offset && !curr_tile_height_offset) {
                     // calculating the centroid position of the current tile
                     curr_tile_centroid_x = (curr_tile_width - 1) / (double)2 + i;

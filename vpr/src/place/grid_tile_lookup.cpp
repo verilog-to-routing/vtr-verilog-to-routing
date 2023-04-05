@@ -12,7 +12,7 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, std::
      * the right of it.
      */
     std::vector<int> layer_acc_type_count(num_layers, 0);
-    for(int layer_num = num_layers - 1; layer_num >= 0; layer_num--) {
+    for (int layer_num = num_layers - 1; layer_num >= 0; layer_num--) {
         int num_rows = (int)device_ctx.grid.height(layer_num);
         int num_cols = (int)device_ctx.grid.width(layer_num);
 
@@ -41,7 +41,7 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, std::
                 if (i_col < (num_cols - 1) && j_row < (num_rows - 1)) {
                     type_count[layer_num][i_col][j_row] -= type_count[layer_num][i_col + 1][j_row + 1];
                 }
-                if(layer_num < num_layers - 1) {
+                if (layer_num < num_layers - 1) {
                     type_count[layer_num][i_col][j_row] += layer_acc_type_count[layer_num + 1];
                 }
             }

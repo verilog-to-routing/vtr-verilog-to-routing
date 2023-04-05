@@ -228,7 +228,6 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
                         2,
                         0});
 
-
     pr1.add_to_part_region(r1);
     pr1.add_to_part_region(r2);
     pr2.add_to_part_region(r3);

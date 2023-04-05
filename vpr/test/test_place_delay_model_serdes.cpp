@@ -15,7 +15,7 @@ TEST_CASE("round_trip_delta_delay_model", "[vpr]") {
     vtr::NdMatrix<float, 3> delays;
     delays.resize({kDimLayer, kDimX, kDimY});
 
-    for(size_t layer = 0; layer < kDimLayer; ++layer) {
+    for (size_t layer = 0; layer < kDimLayer; ++layer) {
         for (size_t x = 0; x < kDimX; ++x) {
             for (size_t y = 0; y < kDimY; ++y) {
                 delays[layer][x][y] = (x + 1) * (y + 1);
@@ -81,7 +81,7 @@ TEST_CASE("round_trip_override_delay_model", "[vpr]") {
         REQUIRE(delays1.dim_size(dim) == delays2.dim_size(dim));
     }
 
-    for(size_t layer = 0; layer < kDimLayer; ++layer) {
+    for (size_t layer = 0; layer < kDimLayer; ++layer) {
         for (size_t x = 0; x < kDimX; ++x) {
             for (size_t y = 0; y < kDimY; ++y) {
                 CHECK(delays1[layer][x][y] == delays2[layer][x][y]);

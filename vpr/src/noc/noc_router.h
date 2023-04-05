@@ -45,7 +45,7 @@ class NocRouter {
     // device position of the physical router tile
     int router_grid_position_x; /*<! Represents the horizontal grid position on the device the physical router tile is located*/
     int router_grid_position_y; /*<! Represents the vertical grid position on the device the physical router is located*/
-    int router_layer_position; /*<! Represents the layer number of the die that the physical router is located*/
+    int router_layer_position;  /*<! Represents the layer number of the die that the physical router is located*/
 
     ClusterBlockId router_block_ref; /*<! A unique identifier that represents a router block in the clustered netlist that is placed on the physical router*/
 

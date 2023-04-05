@@ -49,11 +49,12 @@
 
 // a data structure to store the position information of a noc router in the FPGA device
 struct t_noc_router_tile_position {
-
-    t_noc_router_tile_position(int x, int y, int layer_num, double centroid_x, double centroid_y) :
-     grid_width_position(x), grid_height_position(y), layer_position(layer_num), tile_centroid_x(centroid_x),
-        tile_centroid_y(centroid_y) {}
-
+    t_noc_router_tile_position(int x, int y, int layer_num, double centroid_x, double centroid_y)
+        : grid_width_position(x)
+        , grid_height_position(y)
+        , layer_position(layer_num)
+        , tile_centroid_x(centroid_x)
+        , tile_centroid_y(centroid_y) {}
 
     int grid_width_position;
     int grid_height_position;

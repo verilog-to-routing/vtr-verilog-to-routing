@@ -80,13 +80,12 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
                 Region modified_reg;
                 auto offset = pl_macro.members[imember].offset;
 
-
                 const auto block_reg_coord = block_regions[i].get_region_rect();
 
                 modified_reg.set_region_rect({block_reg_coord.xmin - offset.x,
-                                             block_reg_coord.ymin - offset.y,
-                                             block_reg_coord.xmax - offset.x,
-                                             block_reg_coord.ymax - offset.y,
+                                              block_reg_coord.ymin - offset.y,
+                                              block_reg_coord.xmax - offset.x,
+                                              block_reg_coord.ymax - offset.y,
                                               block_reg_coord.layer_num});
 
                 //check that subtile is not an invalid value before changing, otherwise it just stays -1
@@ -126,9 +125,9 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
         const auto block_reg_coord = block_regions[i].get_region_rect();
 
         modified_reg.set_region_rect({block_reg_coord.xmin + offset.x,
-                                     block_reg_coord.ymin + offset.y,
-                                     block_reg_coord.xmax + offset.x,
-                                     block_reg_coord.ymax + offset.y,
+                                      block_reg_coord.ymin + offset.y,
+                                      block_reg_coord.xmax + offset.x,
+                                      block_reg_coord.ymax + offset.y,
                                       block_reg_coord.layer_num});
 
         //check that subtile is not an invalid value before changing, otherwise it just stays -1
@@ -168,12 +167,11 @@ void propagate_place_constraints() {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& device_ctx = g_vpr_ctx.device();
 
-
     int num_layers = device_ctx.grid.get_num_layers();
     Region grid_reg;
     PartitionRegion grid_pr;
 
-    for(int layer_num = 0; layer_num < num_layers; layer_num++) {
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         //Create a PartitionRegion with grid dimensions
         //Will be used to check that updated PartitionRegions are within grid bounds
         int width = device_ctx.grid.width(layer_num) - 1;
@@ -182,7 +180,6 @@ void propagate_place_constraints() {
         grid_reg.set_region_rect({0, 0, width, height, layer_num});
         grid_pr.add_to_part_region(grid_reg);
     }
-
 
     for (auto pl_macro : place_ctx.pl_macros) {
         if (is_macro_constrained(pl_macro)) {
@@ -390,7 +387,7 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     int num_layers = device_ctx.grid.get_num_layers();
 
     std::vector<Region> intersect_reg(num_layers);
-    for(int layer_num = 0; layer_num < num_layers; ++layer_num) {
+    for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
         intersect_reg[layer_num].set_region_rect({0,
                                                   0,
                                                   (int)device_ctx.grid.width(layer_num) - 1,

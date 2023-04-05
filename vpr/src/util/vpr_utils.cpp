@@ -197,7 +197,8 @@ void sync_grid_to_blocks() {
                                                  blk_layer},
                                                 place_ctx.grid_blocks.get_usage({blk_x + width,
                                                                                  blk_y + height,
-                                                                                 blk_layer}) + 1);
+                                                                                 blk_layer})
+                                                    + 1);
                 VTR_ASSERT(device_ctx.grid.get_width_offset({blk_x + width, blk_y + height, blk_layer}) == width);
                 VTR_ASSERT(device_ctx.grid.get_height_offset({blk_x + width, blk_y + height, blk_layer}) == height);
             }

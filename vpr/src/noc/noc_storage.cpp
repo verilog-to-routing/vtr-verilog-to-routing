@@ -231,9 +231,7 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
 
 int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y, int layer_position) const {
     // calculate the key value
-    return (num_layer_blocks*layer_position +
-            device_grid_width * grid_position_y +
-            grid_position_x);
+    return (num_layer_blocks * layer_position + device_grid_width * grid_position_y + grid_position_x);
 }
 
 void NocStorage::echo_noc(char* file_name) const {

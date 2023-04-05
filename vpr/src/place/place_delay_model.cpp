@@ -37,7 +37,7 @@ float DeltaDelayModel::delay(int from_x, int from_y, int /*from_pin*/, int to_x,
 void DeltaDelayModel::dump_echo(std::string filepath) const {
     FILE* f = vtr::fopen(filepath.c_str(), "w");
     fprintf(f, "         ");
-    for(size_t layer_num = 0; layer_num < delays_.dim_size(0); ++layer_num) {
+    for (size_t layer_num = 0; layer_num < delays_.dim_size(0); ++layer_num) {
         fprintf(f, " %9zu", layer_num);
         fprintf(f, "\n");
         for (size_t dx = 0; dx < delays_.dim_size(0); ++dx) {

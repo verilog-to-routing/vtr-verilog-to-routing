@@ -24,7 +24,7 @@ class GridTileLookup {
         for (const auto& type : device_ctx.logical_block_types) {
             int num_layers = device_ctx.grid.get_num_layers();
             std::vector<vtr::NdMatrix<int, 2>> type_count(num_layers);
-            for(int layer_num = 0; layer_num < num_layers; layer_num++) {
+            for (int layer_num = 0; layer_num < num_layers; layer_num++) {
                 vtr::NdMatrix<int, 2> layer_type_count({device_ctx.grid.width(layer_num), device_ctx.grid.height(layer_num)});
                 type_count.push_back(layer_type_count);
             }

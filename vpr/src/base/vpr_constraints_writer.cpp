@@ -68,10 +68,10 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         auto loc = place_ctx.block_locs[blk_id].loc;
 
         reg.set_region_rect({loc.x - expand,
-                            loc.y - expand,
-                            loc.x + expand,
-                            loc.y + expand,
-                            loc.layer});
+                             loc.y - expand,
+                             loc.x + expand,
+                             loc.y + expand,
+                             loc.layer});
         if (subtile) {
             int st = loc.sub_tile;
             reg.set_sub_tile(st);
