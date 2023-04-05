@@ -35,7 +35,7 @@ PLACE_BB_COST = "Post Place WL: "
 PLACE_CPD = "Post Place CPD (ns): "
 NOC_AGGREGATE_BANDWIDTH_COST = "NoC BW Cost: "
 NOC_LATENCY_COST = "NoC Latency Cost: "
-NOC_LATENCY_CONSTRAINT_COST = "# NoC Latency Constraints Met: "
+NOC_LATENCY_CONSTRAINT_COST = "# Of NoC Latency Constraints Met: "
 NOC_PLACEMENT_WEIGHT = "noc_placement_weight"
 POST_ROUTED_WIRE_LENGTH_SEGMENTS = "Post Route WL (segments): "
 POST_ROUTED_FREQ = "Post Route Freq (MHz): "
@@ -615,6 +615,26 @@ def process_vpr_runs(run_args, num_of_seeds, route):
     return vpr_average_place_data
 
 
+def print_results(parsed_data, design_file, user_args):
+    """
+    Outputs collected metrics from VPR runs into a file.
+    """
+    results_file_name = (os.path.splitext(user_args.flow_file))[-2]
+    results_file_name = (results_file_name.split("/"))[-1]
+    results_file_name = os.path.join(os.getcwd(), results_file_name + ".txt")
+    results_file = open(results_file_name, "w+")
+
+    # write out placement info individually in seperate lines
+    results_file.write("Design File: {0}\n".format(design_file))
+    results_file.write("Flows File: {0}\n".format(user_args.flow_file))
+
+    results_file.write("------------ Place & Route Info ------------\n")
+    for metric, value in parsed_data.items():
+        results_file.write("{0}: {1}\n".format(metric, value))
+
+    results_file.close()
+
+
 def execute_vpr_and_process_output(vpr_command_list, num_of_seeds, num_of_threads, route):
     """
     Given a number of VPR run commands, execute them over a number
@@ -697,7 +717,9 @@ if __name__ == "__main__":
                 route=args.route,
             )
 
-            print(vpr_placement_results)
+            print_results(
+                parsed_data=vpr_placement_results, design_file=single_design, user_args=args
+            )
 
     # pylint: disable=broad-except
     except Exception as error:
