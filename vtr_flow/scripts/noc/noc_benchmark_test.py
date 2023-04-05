@@ -75,10 +75,9 @@ def noc_test_command_line_parser(prog=None):
         """
             Runs VPR placer on one or more NoC benchmark designs.
             Runs VPR multiple times on each circuit and collects
-            placement statistics. Each VPR run will use a different
-            value for the the NoC placement weighting. The objective
-            is the identify an appropriate default NoC weighting
-            value.
+            placement & routing metrics. Each run will use a
+            different seed (random initialization) and the averaged values over all runs
+            are provided.
         """
     )
     epilog = textwrap.dedent(
@@ -88,11 +87,14 @@ def noc_test_command_line_parser(prog=None):
 
                 Run the NoC driven placement on a design located at
                 ./noc_test_circuits (design should be in .blif format).
-                Where we want to see the NoC weighting go from 0-100
-                at intervals of 1:
+                Where we want to run 5 seeds (5 seperate runs)
+                using 3 threads (running 3 seperate runs of VPR in parallel).
+                For more information on all options run program with '-help'
+                parameter.
 
                     %(prog)s -tests_folder_location ./noc_test_cricuits
-                    -max_weighting 100 -interval 1
+                    -flow_file <path_to_flows_file> -arch_file
+                    <path_to_arch_file> -number_of_seeds 5 -number_of_threads 3
 
         """
     )
