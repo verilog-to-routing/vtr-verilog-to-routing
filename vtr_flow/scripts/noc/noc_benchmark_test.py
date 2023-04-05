@@ -551,6 +551,9 @@ def process_vpr_runs(run_args, num_of_seeds, route):
     vpr_average_place_data[POST_ROUTED_FREQ] = 0.0
     vpr_average_place_data[ROUTE_TIME] = 0.0
 
+    # weight used for latency component of cost
+    latency_weight = float(run_args[0][1][12])
+
     for single_run_args in run_args:
 
         # get the placement metrics for the current run
@@ -602,6 +605,12 @@ def process_vpr_runs(run_args, num_of_seeds, route):
     vpr_average_place_data = {
         place_param: value / num_of_seeds for place_param, value in vpr_average_place_data.items()
     }
+
+    # need to divide the NoC latency cost by the weighting to conver it to
+    # physical latency
+    vpr_average_place_data[NOC_LATENCY_COST] = (
+        vpr_average_place_data[NOC_LATENCY_COST] / latency_weight
+    )
 
     return vpr_average_place_data
 
