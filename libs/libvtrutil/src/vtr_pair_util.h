@@ -36,7 +36,7 @@ class pair_first_iter {
     auto operator*() { return iter_->first; }
 
     ///@brief -> operator
-    auto operator-> () { return &iter_->first; }
+    auto operator->() { return &iter_->first; }
 
     ///@brief == operator
     friend bool operator==(const pair_first_iter lhs, const pair_first_iter rhs) { return lhs.iter_ == rhs.iter_; }
@@ -80,7 +80,7 @@ class pair_second_iter {
     auto operator*() { return iter_->second; }
 
     ///@brief -> operator
-    auto operator-> () { return &iter_->second; }
+    auto operator->() { return &iter_->second; }
 
     ///@brief == operator
     friend bool operator==(const pair_second_iter lhs, const pair_second_iter rhs) { return lhs.iter_ == rhs.iter_; }
