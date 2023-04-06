@@ -38,9 +38,9 @@ static void CheckGrid(const DeviceGrid& grid);
 
 static void set_grid_block_type(int priority,
                                 const t_physical_tile_type* type,
+                                int layer_num,
                                 size_t x_root,
                                 size_t y_root,
-                                int layer_num,
                                 vtr::NdMatrix<t_grid_tile, 3>& grid,
                                 vtr::NdMatrix<int, 3>& grid_priorities,
                                 const t_metadata_dict* meta);
@@ -365,7 +365,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
             for (size_t y = 0; y < grid_height; ++y) {
                 set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
                                     empty_type,
-                                    x, y, layer,
+                                    layer, x, y,
                                     grid, grid_priorities,
                                     /*meta=*/nullptr);
             }
@@ -522,7 +522,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
                         for (size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
                             set_grid_block_type(grid_loc_def.priority,
                                                 type,
-                                                x, y, layer,
+                                                layer, x, y,
                                                 grid, grid_priorities,
                                                 grid_loc_def.meta);
                         }
@@ -551,9 +551,9 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
 static void set_grid_block_type(int priority,
                                 const t_physical_tile_type* type,
+                                int layer_num,
                                 size_t x_root,
                                 size_t y_root,
-                                int layer_num,
                                 vtr::NdMatrix<t_grid_tile, 3>& grid,
                                 vtr::NdMatrix<int, 3>& grid_priorities,
                                 const t_metadata_dict* meta) {
