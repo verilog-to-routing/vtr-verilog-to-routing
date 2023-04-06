@@ -497,7 +497,19 @@ def create_job(
     Create an individual job with the specified parameters
     """
     param_string = "common" + (("_" + param.replace(" ", "_")) if param else "")
-    for spec_char in [":", "<", ">", "|", "*", "?"]:
+
+    # remove any address-related characters that might be in the param_string
+    # To avoid creating invalid URL path
+    path_str = "../"
+    if path_str in param_string:
+        param_string = param_string.replace("../", "")
+        param_string = param_string.replace("-", "")
+        circuit_2 = circuit.replace(".blif", "")
+        if circuit_2 in param_string:
+            ind = param_string.find(circuit_2)
+            param_string = param_string[ind + len(circuit_2) + 1 :]
+
+    for spec_char in [":", "<", ">", "|", "*", "?", "/", "."]:
         # replaced to create valid URL path
         param_string = param_string.replace(spec_char, "_")
     if not param:
@@ -544,8 +556,10 @@ def create_job(
         current_qor_parse_command.insert(0, run_dir + "/{}".format(load_script_param(param)))
     current_cmd = cmd.copy()
     current_cmd += ["-temp_dir", run_dir + "/{}".format(param_string)]
+
     if param_string != "common":
         current_cmd += param.split(" ")
+
     return Job(
         config.task_name,
         arch,
