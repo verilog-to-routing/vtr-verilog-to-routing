@@ -383,7 +383,9 @@ class BitFields {
   public:
     BitFields(bit_value_t init_v) {
         this->bits = static_cast<T>(
-            (_0 == init_v) ? _All_0 : (_1 == init_v) ? _All_1 : (_z == init_v) ? _All_z : _All_x);
+            (_0 == init_v) ? _All_0 : (_1 == init_v) ? _All_1
+                                  : (_z == init_v)   ? _All_z
+                                                     : _All_x);
     }
 
     template<typename Addr_t>
