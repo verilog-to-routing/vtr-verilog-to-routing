@@ -2167,7 +2167,9 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
             int y_offset = y_offset_vec[pin_coord];
             e_side pin_side = pin_sides_vec[pin_coord];
             auto node_type = (pin_type == DRIVER) ? OPIN : IPIN;
-            RRNodeId node_id = node_lookup.find_node(i + x_offset,
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            RRNodeId node_id = node_lookup.find_node(0,
+                                                     i + x_offset,
                                                      j + y_offset,
                                                      node_type,
                                                      pin_num,
@@ -2386,7 +2388,8 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             total_pin_Fc += Fc[pin_index][iseg];
         }
 
-        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(i, j, OPIN, pin_index, side);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(0,i, j, OPIN, pin_index, side);
         VTR_ASSERT(node_index);
 
         if (total_pin_Fc > 0) {
@@ -2833,7 +2836,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             from_seg_details = chan_details_x[start][y_coord].data();
         }
 
-        RRNodeId node = rr_graph_builder.node_lookup().find_node(x_coord, y_coord, chan_type, track);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(0,x_coord, y_coord, chan_type, track);
 
         if (!node) {
             continue;
@@ -3766,8 +3770,8 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         if (type->is_ignored_pin[pin_index]) {
             continue;
         }
-
-        RRNodeId opin_node_index = rr_graph_builder.node_lookup().find_node(i, j, OPIN, pin_index, side);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId opin_node_index = rr_graph_builder.node_lookup().find_node(0,i, j, OPIN, pin_index, side);
         if (!opin_node_index) continue; //No valid from node
 
         for (int iseg = 0; iseg < num_seg_types; iseg++) {
@@ -4065,13 +4069,15 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 
                         if (directs[i].to_side != NUM_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
-                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin, directs[i].to_side);
+                            //SARA_TODO: zero should change to layer number once I added that to the node definition
+                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(0,x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin, directs[i].to_side);
                             if (inode) {
                                 inodes.push_back(inode);
                             }
                         } else {
                             //No side specified, get all candidates
-                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin);
+                            //SARA_TODO: zero should change to layer number once I added that to the node definition
+                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(0,x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin);
                         }
 
                         if (inodes.size() > 0) {

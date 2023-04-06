@@ -1627,16 +1627,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
   private:
     /*Allocates and load the rr_node look up table. SINK and SOURCE, IPIN and OPIN
-     *share the same look up table. CHANX and CHANY have individual look ups */
+     *share the same look-up table. CHANX and CHANY have individual look-ups */
     void process_rr_node_indices() {
         auto& rr_graph_builder = (*rr_graph_builder_);
 
         /* Alloc the lookup table */
         for (t_rr_type rr_type : RR_TYPES) {
             if (rr_type == CHANX) {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.height(), grid_.width(), rr_type, NUM_SIDES);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                rr_graph_builder.node_lookup().resize_nodes(0,grid_.height(), grid_.width(), rr_type, NUM_SIDES);
             } else {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.width(), grid_.height(), rr_type, NUM_SIDES);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                rr_graph_builder.node_lookup().resize_nodes(0,grid_.width(), grid_.height(), rr_type, NUM_SIDES);
             }
         }
 

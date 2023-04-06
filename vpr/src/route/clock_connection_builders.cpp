@@ -62,8 +62,9 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     }
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
-    auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.x, switch_location.y, CHANX);
-    auto y_wire_indices = node_lookup.find_channel_nodes(switch_location.x, switch_location.y, CHANY);
+    //SARA_TODO: zero should change to layer number once I added that to the node definition
+    auto x_wire_indices = node_lookup.find_channel_nodes(0,switch_location.x, switch_location.y, CHANX);
+    auto y_wire_indices = node_lookup.find_channel_nodes(0,switch_location.x, switch_location.y, CHANY);
     auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
         clock_to_connect_to, switch_point_name, switch_location.x, switch_location.y);
 
@@ -100,7 +101,8 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
     RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
 
     //Determine the a valid PTC
-    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(x, y, SINK);
+    //SARA_TODO: zero should change to layer number once I added that to the node definition
+    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(0,x, y, SINK);
 
     int max_ptc = 0;
     for (RRNodeId inode : nodes_at_loc) {
@@ -122,7 +124,8 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
     // However, since the SINK node has the same xhigh/xlow as well as yhigh/ylow, we can probably use a shortcut
     for (int ix = rr_graph.node_xlow(node_index); ix <= rr_graph.node_xhigh(node_index); ++ix) {
         for (int iy = rr_graph.node_ylow(node_index); iy <= rr_graph.node_yhigh(node_index); ++iy) {
-            node_lookup.add_node(node_index, ix, iy, rr_graph.node_type(node_index), rr_graph.node_class_num(node_index));
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            node_lookup.add_node(node_index,0, ix, iy, rr_graph.node_type(node_index), rr_graph.node_class_num(node_index));
         }
     }
 
@@ -306,8 +309,9 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     } else {
                         clock_y_offset = -1; // pick the chanx below the block
                     }
-
-                    auto clock_pin_node_idx = node_lookup.find_node(x,
+                    //SARA_TODO: zero should change to layer number once I added that to the node definition
+                    auto clock_pin_node_idx = node_lookup.find_node(0,
+                                                                    x,
                                                                     y,
                                                                     IPIN,
                                                                     clock_pin_idx,

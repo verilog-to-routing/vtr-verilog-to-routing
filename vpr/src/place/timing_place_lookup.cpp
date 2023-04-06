@@ -370,15 +370,15 @@ static float route_connection_delay(
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(0,source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
             VTR_ASSERT(sink_ptc != OPEN);
-
-            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0,sink_x, sink_y, SINK, sink_ptc);
 
             VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
@@ -467,7 +467,8 @@ static void generic_compute_matrix_dijkstra_expansion(
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, layer_num}));
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(0,source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
         auto delays = calculate_all_path_delays_from_rr_node(size_t(source_rr_node),
@@ -503,8 +504,8 @@ static void generic_compute_matrix_dijkstra_expansion(
                     auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}));
                     for (int sink_ptc : best_sink_ptcs) {
                         VTR_ASSERT(sink_ptc != OPEN);
-
-                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc);
+                        //SARA_TODO: zero should change to layer number once I added that to the node definition
+                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0,sink_x, sink_y, SINK, sink_ptc);
 
                         VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
@@ -1037,10 +1038,12 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             //(with multi-width/height blocks pins may not exist at all locations)
             bool from_pin_found = false;
             if (direct->from_side != NUM_SIDES) {
-                RRNodeId from_pin_rr = node_lookup.find_node(from_x, from_y, OPIN, from_pin, direct->from_side);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                RRNodeId from_pin_rr = node_lookup.find_node(0,from_x, from_y, OPIN, from_pin, direct->from_side);
                 from_pin_found = (from_pin_rr != RRNodeId::INVALID());
             } else {
-                from_pin_found = !(node_lookup.find_nodes_at_all_sides(from_x, from_y, OPIN, from_pin).empty());
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                from_pin_found = !(node_lookup.find_nodes_at_all_sides(0,from_x, from_y, OPIN, from_pin).empty());
             }
             if (!from_pin_found) continue;
 
@@ -1053,10 +1056,12 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             //(with multi-width/height blocks pins may not exist at all locations)
             bool to_pin_found = false;
             if (direct->to_side != NUM_SIDES) {
-                RRNodeId to_pin_rr = node_lookup.find_node(to_x, to_y, IPIN, to_pin, direct->to_side);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                RRNodeId to_pin_rr = node_lookup.find_node(0,to_x, to_y, IPIN, to_pin, direct->to_side);
                 to_pin_found = (to_pin_rr != RRNodeId::INVALID());
             } else {
-                to_pin_found = !(node_lookup.find_nodes_at_all_sides(to_x, to_y, IPIN, to_pin).empty());
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                to_pin_found = !(node_lookup.find_nodes_at_all_sides(0,to_x, to_y, IPIN, to_pin).empty());
             }
             if (!to_pin_found) continue;
 
@@ -1093,13 +1098,15 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //
 
     {
-        RRNodeId src_rr_candidate = node_lookup.find_node(from_x, from_y, SOURCE, from_pin_class);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId src_rr_candidate = node_lookup.find_node(0, from_x, from_y, SOURCE, from_pin_class);
         VTR_ASSERT(src_rr_candidate);
         *src_rr = size_t(src_rr_candidate);
     }
 
     {
-        RRNodeId sink_rr_candidate = node_lookup.find_node(to_x, to_y, SINK, to_pin_class);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId sink_rr_candidate = node_lookup.find_node(0,to_x, to_y, SINK, to_pin_class);
         VTR_ASSERT(sink_rr_candidate);
         *sink_rr = size_t(sink_rr_candidate);
     }

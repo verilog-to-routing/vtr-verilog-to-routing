@@ -717,7 +717,8 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
             /* Only connect to wire if there is a CB */
             if (is_cblock(chan, seg, to_track, seg_details)) {
                 to_switch = seg_details[to_track].arch_wire_switch();
-                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(tr_i, tr_j, to_type, to_track);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,tr_i, tr_j, to_type, to_track);
 
                 if (!to_node) {
                     continue;
@@ -802,8 +803,9 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
-        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(x, y, chan_type, inc_track);
-        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(x, y, chan_type, dec_track);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(0,x, y, chan_type, inc_track);
+        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(0,x, y, chan_type, dec_track);
 
         if (!inc_inode_index || !dec_inode_index) {
             continue;
@@ -1053,7 +1055,8 @@ static void load_chan_rr_indices(const int max_chan_width,
             const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
             /* Reserve nodes in lookup to save memory */
-            rr_graph_builder.node_lookup().reserve_nodes(chan, seg, type, max_chan_width);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().reserve_nodes(0,chan, seg, type, max_chan_width);
 
             for (int track = 0; track < max_chan_width; ++track) {
                 /* TODO: May let the length() == 0 case go through, to model muxes */
@@ -1071,16 +1074,18 @@ static void load_chan_rr_indices(const int max_chan_width,
 
                 /* If the start of the wire doesn't have a inode,
                  * assign one to it. */
-                RRNodeId inode = rr_graph_builder.node_lookup().find_node(node_x, node_y, type, track);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                RRNodeId inode = rr_graph_builder.node_lookup().find_node(0,node_x, node_y, type, track);
                 if (!inode) {
                     inode = RRNodeId(*index);
                     ++(*index);
-
-                    rr_graph_builder.node_lookup().add_node(inode, chan, start, type, track);
+                    //SARA_TODO: zero should change to layer number once I added that to the node definition
+                    rr_graph_builder.node_lookup().add_node(inode,0, chan, start, type, track);
                 }
 
                 /* Assign inode of start of wire to current position */
-                rr_graph_builder.node_lookup().add_node(inode, chan, seg, type, track);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                rr_graph_builder.node_lookup().add_node(inode,0, chan, seg, type, track);
             }
         }
     }
@@ -1193,8 +1198,9 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             for (int height_offset = 0; height_offset < physical_type_ptr->height; ++height_offset) {
                 int y_tile = root_y + height_offset;
                 //only nodes on the tile may be located in a location other than the root-location
-                rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN, physical_type_ptr->num_pins, side);
-                rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN, physical_type_ptr->num_pins, side);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                rr_graph_builder.node_lookup().reserve_nodes(0,x_tile, y_tile, OPIN, physical_type_ptr->num_pins, side);
+                rr_graph_builder.node_lookup().reserve_nodes(0,x_tile, y_tile, IPIN, physical_type_ptr->num_pins, side);
             }
         }
     }
@@ -1212,11 +1218,13 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             auto side = pin_sides[pin_coord_idx];
 
             if (pin_type == DRIVER) {
-                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, OPIN, pin_num, side);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                rr_graph_builder.node_lookup().add_node(RRNodeId(*index),0, x_tile, y_tile, OPIN, pin_num, side);
                 assigned_to_rr_node = true;
             } else {
                 VTR_ASSERT(pin_type == RECEIVER);
-                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, IPIN, pin_num, side);
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                rr_graph_builder.node_lookup().add_node(RRNodeId(*index),0, x_tile, y_tile, IPIN, pin_num, side);
                 assigned_to_rr_node = true;
             }
         }
@@ -1247,18 +1255,21 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                        int* index) {
     for (int x_tile = root_x; x_tile < (root_x + block_width); x_tile++) {
         for (int y_tile = root_y; y_tile < (root_y + block_height); y_tile++) {
-            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, SOURCE, class_num_vec.size(), SIDES[0]);
-            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, SINK, class_num_vec.size(), SIDES[0]);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().reserve_nodes(0,x_tile, y_tile, SOURCE, class_num_vec.size(), SIDES[0]);
+            rr_graph_builder.node_lookup().reserve_nodes(0,x_tile, y_tile, SINK, class_num_vec.size(), SIDES[0]);
         }
     }
 
     for (auto class_num : class_num_vec) {
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         if (class_type == DRIVER) {
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), root_x, root_y, SOURCE, class_num);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index),0, root_x, root_y, SOURCE, class_num);
         } else {
             VTR_ASSERT(class_type == RECEIVER);
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), root_x, root_y, SINK, class_num);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index),0, root_x, root_y, SINK, class_num);
         }
         ++(*index);
     }
@@ -1273,11 +1284,12 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             }
             int curr_x = root_x + x_offset;
             int curr_y = root_y + y_offset;
-            rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().mirror_nodes(0,vtr::Point<int>(root_x, root_y),
                                                         vtr::Point<int>(curr_x, curr_y),
                                                         SOURCE,
                                                         SIDES[0]);
-            rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+            rr_graph_builder.node_lookup().mirror_nodes(0,vtr::Point<int>(root_x, root_y),
                                                         vtr::Point<int>(curr_x, curr_y),
                                                         SINK,
                                                         SIDES[0]);
@@ -1309,9 +1321,11 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            rr_graph_builder.node_lookup().resize_nodes(grid.height(), grid.width(), rr_type, NUM_SIDES);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().resize_nodes(0,grid.height(), grid.width(), rr_type, NUM_SIDES);
         } else {
-            rr_graph_builder.node_lookup().resize_nodes(grid.width(), grid.height(), rr_type, NUM_SIDES);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().resize_nodes(0,grid.width(), grid.height(), rr_type, NUM_SIDES);
         }
     }
 
@@ -1393,9 +1407,11 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                 /* Get the list of nodes at a specific location (x, y) */
                 std::vector<RRNodeId> nodes_from_lookup;
                 if (rr_type == CHANX || rr_type == CHANY) {
-                    nodes_from_lookup = rr_graph.node_lookup().find_channel_nodes(x, y, rr_type);
+                    //SARA_TODO: zero should change to layer number once I added that to the node definition
+                    nodes_from_lookup = rr_graph.node_lookup().find_channel_nodes(0,x, y, rr_type);
                 } else {
-                    nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(x, y, rr_type);
+                    //SARA_TODO: zero should change to layer number once I added that to the node definition
+                    nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(0,x, y, rr_type);
                 }
                 for (RRNodeId inode : nodes_from_lookup) {
                     rr_node_counts[inode]++;
@@ -1601,7 +1617,8 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
 
                     /* Check there is a connection and Fc map isn't wrong */
                     /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
-                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(x, y, IPIN, ipin, side);
+                    //SARA_TODO: zero should change to layer number once I added that to the node definition
+                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,x, y, IPIN, ipin, side);
                     if (to_node) {
                         rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch);
                         ++num_conn;
@@ -1916,7 +1933,8 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     num_conn = 0;
     for (iconn = 0; iconn < conn_tracks.size(); ++iconn) {
         to_track = conn_tracks[iconn];
-        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_x, to_y, to_type, to_track);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,to_x, to_y, to_type, to_track);
 
         if (!to_node) {
             continue;
@@ -1995,7 +2013,8 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
             if (conn_vector.at(iconn).from_wire != from_wire) continue;
 
             int to_wire = conn_vector.at(iconn).to_wire;
-            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_x, to_y, to_chan_type, to_wire);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,to_x, to_y, to_chan_type, to_wire);
 
             if (!to_node) {
                 continue;
@@ -2091,7 +2110,8 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                 sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][j + 1] = to_track;
             }
 
-            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_x, to_y, to_type, to_track);
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,to_x, to_y, to_type, to_track);
 
             if (!to_node) {
                 continue;

@@ -34,20 +34,23 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
                 case SOURCE:
                 case SINK:
                 case CHANY:
-                    node_lookup_.add_node(node, ix, iy, node_type, node_ptc_num, SIDES[0]);
+                    //SARA_TODO: zero should change to layer number once I added that to the node definition
+                    node_lookup_.add_node(node,0, ix, iy, node_type, node_ptc_num, SIDES[0]);
                     break;
                 case CHANX:
                     /* Currently need to swap x and y for CHANX because of chan, seg convention 
                      * TODO: Once the builders is reworked for use consistent (x, y) convention,
                      * the following swapping can be removed
                      */
-                    node_lookup_.add_node(node, iy, ix, node_type, node_ptc_num, SIDES[0]);
+                    //SARA_TODO: zero should change to layer number once I added that to the node definition
+                    node_lookup_.add_node(node,0, iy, ix, node_type, node_ptc_num, SIDES[0]);
                     break;
                 case OPIN:
                 case IPIN:
                     for (const e_side& side : SIDES) {
                         if (node_storage_.is_node_on_specific_side(node, side)) {
-                            node_lookup_.add_node(node, ix, iy, node_type, node_ptc_num, side);
+                            //SARA_TODO: zero should change to layer number once I added that to the node definition
+                            node_lookup_.add_node(node,0, ix, iy, node_type, node_ptc_num, side);
                         }
                     }
                     break;
