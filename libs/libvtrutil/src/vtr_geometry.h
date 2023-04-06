@@ -77,7 +77,7 @@ class Point {
     friend bool operator!=<>(Point<T> lhs, Point<T> rhs);
 
     ///@brief < operator
-    friend bool operator<<>(Point<T> lhs, Point<T> rhs);
+    friend bool operator< <>(Point<T> lhs, Point<T> rhs);
 
   public: //Mutators
     ///@brief Set x and y values

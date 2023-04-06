@@ -206,7 +206,7 @@ class StrongId {
     ///@brief != operator
     friend bool operator!=<>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
     ///@brief < operator
-    friend bool operator<<>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend bool operator< <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
 
   private:
     T id_;
