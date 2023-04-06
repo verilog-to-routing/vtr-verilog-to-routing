@@ -800,5 +800,5 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_bl
 }
 
 size_t count_grid_tiles(const DeviceGrid& grid) {
-    return grid.width() * grid.height();
+    return grid.get_num_layers() * grid.width() * grid.height();
 }

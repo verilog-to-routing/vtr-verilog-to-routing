@@ -28,15 +28,15 @@ class DeviceGrid {
 
     const std::string& name() const { return name_; }
 
-    ///@brief Return the width of the grid at the specified layer
-    size_t width() const { return grid_.dim_size(1); }
-    ///@brief Return the height of the grid at the specified layer
-    size_t height() const { return grid_.dim_size(2); }
-
     ///@brief Return the number of layers(number of dies)
     inline int get_num_layers() const {
         return (int)grid_.dim_size(0);
     }
+
+    ///@brief Return the width of the grid at the specified layer
+    size_t width() const { return grid_.dim_size(1); }
+    ///@brief Return the height of the grid at the specified layer
+    size_t height() const { return grid_.dim_size(2); }
 
     ///@brief Given t_grid_tile, return the x coordinate of the tile on the given layer
     inline int get_grid_loc_x(const t_grid_tile*& grid_loc) const {
