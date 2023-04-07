@@ -885,7 +885,7 @@ int get_max_primitives_in_pb_type(t_pb_type* pb_type) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_size += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_primitives_in_pb_type(
-                                   &pb_type->modes[i].pb_type_children[j]);
+                                 &pb_type->modes[i].pb_type_children[j]);
             }
             if (temp_size > max_size) {
                 max_size = temp_size;
@@ -908,7 +908,7 @@ int get_max_nets_in_pb_type(const t_pb_type* pb_type) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_nets += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_nets_in_pb_type(
-                                   &pb_type->modes[i].pb_type_children[j]);
+                                 &pb_type->modes[i].pb_type_children[j]);
             }
             if (temp_nets > max_nets) {
                 max_nets = temp_nets;
@@ -2318,7 +2318,9 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
     for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
-        node_id = rr_spatial_lookup.find_node(root_i + x_offset[coord_idx],
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        node_id = rr_spatial_lookup.find_node(0,
+                                              root_i + x_offset[coord_idx],
                                               root_j + y_offset[coord_idx],
                                               node_type,
                                               pin_physical_num,
@@ -2337,7 +2339,8 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
     VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
     t_rr_type node_type = (class_type == e_pin_type::DRIVER) ? t_rr_type::SOURCE : t_rr_type::SINK;
-    return rr_spatial_lookup.find_node(i, j, node_type, class_physical_num);
+    //SARA_TODO: zero should change to layer number once I added that to the node definition
+    return rr_spatial_lookup.find_node(0,i, j, node_type, class_physical_num);
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {

@@ -754,7 +754,8 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
     int start_lookup_y = start_y;
 
     /* find first node in channel that has specified segment index and goes in the desired direction */
-    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(start_lookup_x, start_lookup_y, rr_type)) {
+    //SARA_TODO: zero should change to layer number once I added that to the node definition
+    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(0,start_lookup_x, start_lookup_y, rr_type)) {
         VTR_ASSERT(rr_graph.node_type(node_id) == rr_type);
 
         Direction node_direction = rr_graph.node_direction(node_id);

@@ -363,7 +363,8 @@ int ClockRib::create_chanx_wire(int x_start,
     for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
             //TODO: CHANX uses odd swapped x/y indices here. Will rework once rr_node_indices is shadowed
-            rr_graph_builder.node_lookup().add_node(chanx_node, iy, ix, rr_graph.node_type(chanx_node), rr_graph.node_track_num(chanx_node));
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().add_node(chanx_node,0, iy, ix, rr_graph.node_type(chanx_node), rr_graph.node_track_num(chanx_node));
         }
     }
 
@@ -697,7 +698,8 @@ int ClockSpine::create_chany_wire(int y_start,
     /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
     for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {
-            rr_graph_builder.node_lookup().add_node(chany_node, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
+            //SARA_TODO: zero should change to layer number once I added that to the node definition
+            rr_graph_builder.node_lookup().add_node(chany_node,0, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
         }
     }
 
