@@ -187,6 +187,10 @@ class t_rr_graph_storage {
         return node_storage_[id].yhigh_;
     }
 
+    short node_layer(RRNodeId id) const{
+        return node_storage_[id].layer_;
+    }
+
     short node_capacity(RRNodeId id) const {
         return node_storage_[id].capacity_;
     }

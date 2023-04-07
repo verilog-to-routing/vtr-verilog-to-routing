@@ -272,6 +272,7 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,
+                              const int layer,
                               const int i,
                               const int j,
                               int class_physical_num);

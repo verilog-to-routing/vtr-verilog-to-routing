@@ -2333,14 +2333,14 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,
+                              const int layer,
                               const int i,
                               const int j,
                               int class_physical_num) {
     auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
     VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
     t_rr_type node_type = (class_type == e_pin_type::DRIVER) ? t_rr_type::SOURCE : t_rr_type::SINK;
-    //SARA_TODO: zero should change to layer number once I added that to the node definition
-    return rr_spatial_lookup.find_node(0,i, j, node_type, class_physical_num);
+    return rr_spatial_lookup.find_node(layer,i, j, node_type, class_physical_num);
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {

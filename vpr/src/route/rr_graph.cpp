@@ -207,12 +207,14 @@ static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains_flat(
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  const std::vector<int>& class_num_vec,
+                                 const int layer,
                                  const int root_x,
                                  const int root_y,
                                  t_physical_tile_type_ptr physical_type);
 
 static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                               const std::vector<int>& pin_num_vec,
+                              const int layer,
                               const int i,
                               const int j,
                               t_physical_tile_type_ptr physical_type);
@@ -1863,39 +1865,44 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     int num_edges = 0;
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
-    for (size_t i = 0; i < grid.width(); ++i) {
-        for (size_t j = 0; j < grid.height(); ++j) {
-            if (grid.get_width_offset(t_physical_tile_loc(i, j)) == 0 && grid.get_height_offset(t_physical_tile_loc(i, j)) == 0) {
-                t_physical_tile_type_ptr physical_tile = grid.get_physical_type(t_physical_tile_loc(i, j));
-                std::vector<int> class_num_vec;
-                std::vector<int> pin_num_vec;
-                class_num_vec = get_tile_root_classes(physical_tile);
-                pin_num_vec = get_tile_root_pins(physical_tile);
-                add_classes_rr_graph(rr_graph_builder,
-                                     class_num_vec,
-                                     i,
-                                     j,
-                                     physical_tile);
-
-                add_pins_rr_graph(rr_graph_builder,
-                                  pin_num_vec,
-                                  i,
-                                  j,
-                                  physical_tile);
-
-                connect_src_sink_to_pins(rr_graph_builder,
+    for(int layer = 0; layer < grid.get_num_layers(); ++layer) {
+        for (size_t i = 0; i < grid.width(); ++i) {
+            for (size_t j = 0; j < grid.height(); ++j) {
+                if (grid.get_width_offset(t_physical_tile_loc(i, j, layer)) == 0 &&
+                    grid.get_height_offset(t_physical_tile_loc(i, j, layer)) == 0) {
+                    t_physical_tile_type_ptr physical_tile = grid.get_physical_type(t_physical_tile_loc(i, j, layer));
+                    std::vector<int> class_num_vec;
+                    std::vector<int> pin_num_vec;
+                    class_num_vec = get_tile_root_classes(physical_tile);
+                    pin_num_vec = get_tile_root_pins(physical_tile);
+                    add_classes_rr_graph(rr_graph_builder,
                                          class_num_vec,
+                                         layer,
                                          i,
                                          j,
-                                         rr_edges_to_create,
-                                         delayless_switch,
                                          physical_tile);
 
-                //Create the actual SOURCE->OPIN, IPIN->SINK edges
-                uniquify_edges(rr_edges_to_create);
-                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-                num_edges += rr_edges_to_create.size();
-                rr_edges_to_create.clear();
+                    add_pins_rr_graph(rr_graph_builder,
+                                      pin_num_vec,
+                                      layer,
+                                      i,
+                                      j,
+                                      physical_tile);
+
+                    connect_src_sink_to_pins(rr_graph_builder,
+                                             class_num_vec,
+                                             i,
+                                             j,
+                                             rr_edges_to_create,
+                                             delayless_switch,
+                                             physical_tile);
+
+                    //Create the actual SOURCE->OPIN, IPIN->SINK edges
+                    uniquify_edges(rr_edges_to_create);
+                    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                    num_edges += rr_edges_to_create.size();
+                    rr_edges_to_create.clear();
+                }
             }
         }
     }
@@ -2054,45 +2061,49 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                                                   bool is_flat) {
     t_rr_edge_info_set rr_edges_to_create;
     int num_edges = 0;
-    for (size_t i = 0; i < grid.width(); ++i) {
-        for (size_t j = 0; j < grid.height(); ++j) {
-            if (grid.get_width_offset(t_physical_tile_loc(i, j)) == 0 && grid.get_height_offset(t_physical_tile_loc(i, j)) == 0) {
-                t_physical_tile_type_ptr physical_tile = grid.get_physical_type(t_physical_tile_loc(i, j));
-                std::vector<int> class_num_vec;
-                std::vector<int> pin_num_vec;
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(0,i, j, physical_tile);
-                pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(0,
-                                                                         i,
-                                                                         j,
-                                                                         pin_chains,
-                                                                         chain_pin_nums,
-                                                                         physical_tile);
-                add_classes_rr_graph(rr_graph_builder,
-                                     class_num_vec,
-                                     i,
-                                     j,
-                                     physical_tile);
-
-                add_pins_rr_graph(rr_graph_builder,
-                                  pin_num_vec,
-                                  i,
-                                  j,
-                                  physical_tile);
-
-                connect_src_sink_to_pins(rr_graph_builder,
+    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
+        for (size_t i = 0; i < grid.width(); ++i) {
+            for (size_t j = 0; j < grid.height(); ++j) {
+                if (grid.get_width_offset(t_physical_tile_loc(i, j, layer)) == 0 &&
+                    grid.get_height_offset(t_physical_tile_loc(i, j, layer)) == 0) {
+                    t_physical_tile_type_ptr physical_tile = grid.get_physical_type(t_physical_tile_loc(i, j, layer));
+                    std::vector<int> class_num_vec;
+                    std::vector<int> pin_num_vec;
+                    class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(layer, i, j, physical_tile);
+                    pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(layer,
+                                                                             i,
+                                                                             j,
+                                                                             pin_chains,
+                                                                             chain_pin_nums,
+                                                                             physical_tile);
+                    add_classes_rr_graph(rr_graph_builder,
                                          class_num_vec,
+                                         layer,
                                          i,
                                          j,
-                                         rr_edges_to_create,
-                                         delayless_switch,
                                          physical_tile);
 
-                //Create the actual SOURCE->OPIN, IPIN->SINK edges
-                uniquify_edges(rr_edges_to_create);
-                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-                num_edges += rr_edges_to_create.size();
-                rr_edges_to_create.clear();
+                    add_pins_rr_graph(rr_graph_builder,
+                                      pin_num_vec,
+                                      layer,
+                                      i,
+                                      j,
+                                      physical_tile);
+
+                    connect_src_sink_to_pins(rr_graph_builder,
+                                             class_num_vec,
+                                             i,
+                                             j,
+                                             rr_edges_to_create,
+                                             delayless_switch,
+                                             physical_tile);
+
+                    //Create the actual SOURCE->OPIN, IPIN->SINK edges
+                    uniquify_edges(rr_edges_to_create);
+                    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                    num_edges += rr_edges_to_create.size();
+                    rr_edges_to_create.clear();
+                }
             }
         }
     }
@@ -2119,6 +2130,7 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  const std::vector<int>& class_num_vec,
+                                 const int layer,
                                  const int root_x,
                                  const int root_y,
                                  t_physical_tile_type_ptr physical_type) {
@@ -2126,7 +2138,7 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
 
     for (auto class_num : class_num_vec) {
         auto class_type = get_class_type_from_class_physical_num(physical_type, class_num);
-        RRNodeId class_inode = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type, root_x, root_y, class_num);
+        RRNodeId class_inode = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type,layer, root_x, root_y, class_num);
         VTR_ASSERT(class_inode != RRNodeId::INVALID());
         int class_num_pins = get_class_num_pins_from_class_physical_num(physical_type, class_num);
         if (class_type == DRIVER) {
@@ -2142,6 +2154,8 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_capacity(class_inode, (short)class_num_pins);
         VTR_ASSERT(root_x <= std::numeric_limits<short>::max() && root_y <= std::numeric_limits<short>::max());
         rr_graph_builder.set_node_coordinates(class_inode, (short)root_x, (short)root_y, (short)(root_x + physical_type->width - 1), (short)(root_y + physical_type->height - 1));
+        VTR_ASSERT(layer <= std::numeric_limits<short>::max());
+        rr_graph_builder.set_node_layer(class_inode,layer);
         float R = 0.;
         float C = 0.;
         rr_graph_builder.set_node_rc_index(class_inode, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
@@ -2151,6 +2165,7 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                               const std::vector<int>& pin_num_vec,
+                              const int layer,
                               const int i,
                               const int j,
                               t_physical_tile_type_ptr physical_type) {
@@ -2169,8 +2184,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
             int y_offset = y_offset_vec[pin_coord];
             e_side pin_side = pin_sides_vec[pin_coord];
             auto node_type = (pin_type == DRIVER) ? OPIN : IPIN;
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            RRNodeId node_id = node_lookup.find_node(0,
+            RRNodeId node_id = node_lookup.find_node(layer,
                                                      i + x_offset,
                                                      j + y_offset,
                                                      node_type,
@@ -2200,6 +2214,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                       j + y_offset,
                                                       i + x_offset,
                                                       j + y_offset);
+                rr_graph_builder.set_node_layer(node_id, layer);
                 rr_graph_builder.add_node_side(node_id, pin_side);
             }
         }
@@ -2217,7 +2232,8 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
     for (auto class_num : class_num_vec) {
         const auto& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
-        RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, class_num);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr,0, i, j, class_num);
         VTR_ASSERT(class_rr_node_id != RRNodeId::INVALID());
         //bool is_primitive = is_primitive_pin(physical_type_ptr, pin_list[0]);
         //t_logical_block_type_ptr logical_block = is_primitive ? get_logical_block_from_pin_physical_num(physical_type_ptr, pin_list[0]) : nullptr;
@@ -2265,7 +2281,8 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
     for (auto class_num : class_num_vec) {
         const auto& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
-        RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, class_num);
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
+        RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr,0, i, j, class_num);
         VTR_ASSERT(class_rr_node_id != RRNodeId::INVALID());
         for (auto pin_num : pin_list) {
             RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, pin_num);
@@ -2304,14 +2321,17 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     std::vector<int> class_num_vec(class_num_range.total_num());
     std::iota(class_num_vec.begin(), class_num_vec.end(), class_num_range.low);
 
+    //SARA_TODO: zero should change to layer number once I added that to the node definition
     add_classes_rr_graph(rr_graph_builder,
                          class_num_vec,
+                         0,
                          root_x,
                          root_y,
                          physical_tile);
-
+    //SARA_TODO: zero should change to layer number once I added that to the node definition
     add_pins_rr_graph(rr_graph_builder,
                       pin_num_vec,
+                      0,
                       root_x,
                       root_y,
                       physical_tile);
