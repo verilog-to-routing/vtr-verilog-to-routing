@@ -789,10 +789,7 @@ class GridBlock {
     GridBlock() = default;
 
     GridBlock(size_t width, size_t height, size_t layers) {
-        grid_blocks_.resize(layers);
-        for (size_t i = 0; i < layers; ++i) {
-            grid_blocks_[i] = vtr::Matrix<t_grid_blocks>({width, height});
-        }
+        grid_blocks_.resize({layers, width, height});
     }
 
     inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
@@ -824,13 +821,11 @@ class GridBlock {
     }
 
     inline void clear() {
-        for (int layer_num = 0; layer_num < (int)grid_blocks_.size(); layer_num++) {
-            grid_blocks_[layer_num].clear();
-        }
+        grid_blocks_.clear();
     }
 
   private:
-    std::vector<vtr::Matrix<t_grid_blocks>> grid_blocks_;
+    vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
 
 ///@brief Names of various files
