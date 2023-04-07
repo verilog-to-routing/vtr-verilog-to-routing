@@ -27,6 +27,7 @@ static void get_switch_type(bool is_from_sb,
                             short switch_types[2]);
 
 static void load_chan_rr_indices(const int max_chan_width,
+                                 const DeviceGrid& grid,
                                  const int chan_len,
                                  const int num_chans,
                                  const t_rr_type type,
@@ -42,6 +43,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
 static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     t_physical_tile_type_ptr physical_type_ptr,
                                     const std::vector<int>& pin_num_vec,
+                                    int layer,
                                     int root_x,
                                     int root_y,
                                     int* index,
@@ -50,6 +52,7 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                        t_physical_tile_type_ptr physical_type_ptr,
                                        const std::vector<int>& class_num_vec,
+                                       int layer,
                                        int x,
                                        int y,
                                        int block_width,
@@ -1041,51 +1044,50 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
     }
 }
 static void load_chan_rr_indices(const int max_chan_width,
+                                 const DeviceGrid& grid,
                                  const int chan_len,
                                  const int num_chans,
                                  const t_rr_type type,
                                  const t_chan_details& chan_details,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index) {
-    for (int chan = 0; chan < num_chans - 1; ++chan) {
-        for (int seg = 1; seg < chan_len - 1; ++seg) {
-            /* Assign an inode to the starts of tracks */
-            int x = (type == CHANX ? seg : chan);
-            int y = (type == CHANX ? chan : seg);
-            const t_chan_seg_details* seg_details = chan_details[x][y].data();
+    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
+        for (int chan = 0; chan < num_chans - 1; ++chan) {
+            for (int seg = 1; seg < chan_len - 1; ++seg) {
+                /* Assign an inode to the starts of tracks */
+                int x = (type == CHANX ? seg : chan);
+                int y = (type == CHANX ? chan : seg);
+                const t_chan_seg_details *seg_details = chan_details[x][y].data();
 
-            /* Reserve nodes in lookup to save memory */
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().reserve_nodes(0,chan, seg, type, max_chan_width);
+                /* Reserve nodes in lookup to save memory */
+                rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, max_chan_width);
 
-            for (int track = 0; track < max_chan_width; ++track) {
-                /* TODO: May let the length() == 0 case go through, to model muxes */
-                if (seg_details[track].length() <= 0)
-                    continue;
+                for (int track = 0; track < max_chan_width; ++track) {
+                    /* TODO: May let the length() == 0 case go through, to model muxes */
+                    if (seg_details[track].length() <= 0)
+                        continue;
 
-                int start = get_seg_start(seg_details, track, chan, seg);
+                    int start = get_seg_start(seg_details, track, chan, seg);
 
-                /* TODO: Now we still use the (y, x) convention here for CHANX. Should rework later */
-                int node_x = chan;
-                int node_y = start;
-                if (CHANX == type) {
-                    std::swap(node_x, node_y);
+                    /* TODO: Now we still use the (y, x) convention here for CHANX. Should rework later */
+                    int node_x = chan;
+                    int node_y = start;
+                    if (CHANX == type) {
+                        std::swap(node_x, node_y);
+                    }
+
+                    /* If the start of the wire doesn't have an inode,
+                     * assign one to it. */
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, node_x, node_y, type, track);
+                    if (!inode) {
+                        inode = RRNodeId(*index);
+                        ++(*index);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, chan, start, type, track);
+                    }
+
+                    /* Assign inode of start of wire to current position */
+                    rr_graph_builder.node_lookup().add_node(inode, layer, chan, seg, type, track);
                 }
-
-                /* If the start of the wire doesn't have a inode,
-                 * assign one to it. */
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                RRNodeId inode = rr_graph_builder.node_lookup().find_node(0,node_x, node_y, type, track);
-                if (!inode) {
-                    inode = RRNodeId(*index);
-                    ++(*index);
-                    //SARA_TODO: zero should change to layer number once I added that to the node definition
-                    rr_graph_builder.node_lookup().add_node(inode,0, chan, start, type, track);
-                }
-
-                /* Assign inode of start of wire to current position */
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                rr_graph_builder.node_lookup().add_node(inode,0, chan, seg, type, track);
             }
         }
     }
@@ -1099,88 +1101,92 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   int* index,
                                   bool /*is_flat*/) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
+    for(size_t layer = 0; grid.get_num_layers(); layer++) {
+        for (size_t x = 0; x < grid.width(); x++) {
+            for (size_t y = 0; y < grid.height(); y++) {
+                //Process each block from its root location
+                if (grid.get_width_offset(t_physical_tile_loc(x, y, layer)) == 0 &&
+                    grid.get_height_offset(t_physical_tile_loc(x, y,layer)) == 0) {
+                    t_physical_tile_type_ptr physical_type = grid.get_physical_type(t_physical_tile_loc(x, y,layer));
+                    //Assign indices for SINKs and SOURCEs
+                    // Note that SINKS/SOURCES have no side, so we always use side 0
+                    std::vector<int> class_num_vec;
+                    std::vector<int> pin_num_vec;
 
-    for (size_t x = 0; x < grid.width(); x++) {
-        for (size_t y = 0; y < grid.height(); y++) {
-            //Process each block from it's root location
-            if (grid.get_width_offset(t_physical_tile_loc(x, y)) == 0 && grid.get_height_offset(t_physical_tile_loc(x, y)) == 0) {
-                t_physical_tile_type_ptr physical_type = grid.get_physical_type(t_physical_tile_loc(x, y));
-                //Assign indices for SINKs and SOURCEs
-                // Note that SINKS/SOURCES have no side, so we always use side 0
-                std::vector<int> class_num_vec;
-                std::vector<int> pin_num_vec;
+                    class_num_vec = get_tile_root_classes(physical_type);
+                    pin_num_vec = get_tile_root_pins(physical_type);
+                    add_classes_spatial_lookup(rr_graph_builder,
+                                               physical_type,
+                                               class_num_vec,
+                                               layer,
+                                               x,
+                                               y,
+                                               physical_type->width,
+                                               physical_type->height,
+                                               index);
 
-                class_num_vec = get_tile_root_classes(physical_type);
-                pin_num_vec = get_tile_root_pins(physical_type);
-                add_classes_spatial_lookup(rr_graph_builder,
-                                           physical_type,
-                                           class_num_vec,
-                                           x,
-                                           y,
-                                           physical_type->width,
-                                           physical_type->height,
-                                           index);
-
-                /* Limited sides for grids
-                 *   The wanted side depends on the location of the grid.
-                 *   In particular for perimeter grid,
-                 *   -------------------------------------------------------
-                 *   Grid location |  IPIN side
-                 *   -------------------------------------------------------
-                 *   TOP           |  BOTTOM
-                 *   -------------------------------------------------------
-                 *   RIGHT         |  LEFT
-                 *   -------------------------------------------------------
-                 *   BOTTOM        |  TOP
-                 *   -------------------------------------------------------
-                 *   LEFT          |  RIGHT
-                 *   -------------------------------------------------------
-                 *   TOP-LEFT      |  BOTTOM & RIGHT
-                 *   -------------------------------------------------------
-                 *   TOP-RIGHT     |  BOTTOM & LEFT
-                 *   -------------------------------------------------------
-                 *   BOTTOM-LEFT   |  TOP & RIGHT
-                 *   -------------------------------------------------------
-                 *   BOTTOM-RIGHT  |  TOP & LEFT
-                 *   -------------------------------------------------------
-                 *   Other         |  First come first fit
-                 *   -------------------------------------------------------
-                 *
-                 * Special for IPINs:
-                 *   If there are multiple wanted sides, first come first fit is applied
-                 *   This guarantee that there is only a unique rr_node
-                 *   for the same input pin on multiple sides, and thus avoid multiple driver problems
-                 */
-                std::vector<e_side> wanted_sides;
-                if (grid.height() - 1 == y) { /* TOP side */
-                    wanted_sides.push_back(BOTTOM);
-                }
-                if (grid.width() - 1 == x) { /* RIGHT side */
-                    wanted_sides.push_back(LEFT);
-                }
-                if (0 == y) { /* BOTTOM side */
-                    wanted_sides.push_back(TOP);
-                }
-                if (0 == x) { /* LEFT side */
-                    wanted_sides.push_back(RIGHT);
-                }
-
-                /* If wanted sides is empty still, this block does not have specific wanted sides,
-                 * Deposit all the sides
-                 */
-                if (wanted_sides.empty()) {
-                    for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
-                        wanted_sides.push_back(side);
+                    /* Limited sides for grids
+                     *   The wanted side depends on the location of the grid.
+                     *   In particular for perimeter grid,
+                     *   -------------------------------------------------------
+                     *   Grid location |  IPIN side
+                     *   -------------------------------------------------------
+                     *   TOP           |  BOTTOM
+                     *   -------------------------------------------------------
+                     *   RIGHT         |  LEFT
+                     *   -------------------------------------------------------
+                     *   BOTTOM        |  TOP
+                     *   -------------------------------------------------------
+                     *   LEFT          |  RIGHT
+                     *   -------------------------------------------------------
+                     *   TOP-LEFT      |  BOTTOM & RIGHT
+                     *   -------------------------------------------------------
+                     *   TOP-RIGHT     |  BOTTOM & LEFT
+                     *   -------------------------------------------------------
+                     *   BOTTOM-LEFT   |  TOP & RIGHT
+                     *   -------------------------------------------------------
+                     *   BOTTOM-RIGHT  |  TOP & LEFT
+                     *   -------------------------------------------------------
+                     *   Other         |  First come first fit
+                     *   -------------------------------------------------------
+                     *
+                     * Special for IPINs:
+                     *   If there are multiple wanted sides, first come first fit is applied
+                     *   This guarantee that there is only a unique rr_node
+                     *   for the same input pin on multiple sides, and thus avoid multiple driver problems
+                     */
+                    std::vector<e_side> wanted_sides;
+                    if (grid.height() - 1 == y) { /* TOP side */
+                        wanted_sides.push_back(BOTTOM);
                     }
-                }
+                    if (grid.width() - 1 == x) { /* RIGHT side */
+                        wanted_sides.push_back(LEFT);
+                    }
+                    if (0 == y) { /* BOTTOM side */
+                        wanted_sides.push_back(TOP);
+                    }
+                    if (0 == x) { /* LEFT side */
+                        wanted_sides.push_back(RIGHT);
+                    }
 
-                add_pins_spatial_lookup(rr_graph_builder,
-                                        physical_type,
-                                        pin_num_vec,
-                                        x,
-                                        y,
-                                        index,
-                                        wanted_sides);
+                    /* If wanted sides is empty still, this block does not have specific wanted sides,
+                     * Deposit all the sides
+                     */
+                    if (wanted_sides.empty()) {
+                        for (e_side side: {TOP, BOTTOM, LEFT, RIGHT}) {
+                            wanted_sides.push_back(side);
+                        }
+                    }
+
+                    add_pins_spatial_lookup(rr_graph_builder,
+                                            physical_type,
+                                            pin_num_vec,
+                                            layer,
+                                            x,
+                                            y,
+                                            index,
+                                            wanted_sides);
+                }
             }
         }
     }
@@ -1188,6 +1194,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
 static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     t_physical_tile_type_ptr physical_type_ptr,
                                     const std::vector<int>& pin_num_vec,
+                                    int layer,
                                     int root_x,
                                     int root_y,
                                     int* index,
@@ -1198,9 +1205,8 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             for (int height_offset = 0; height_offset < physical_type_ptr->height; ++height_offset) {
                 int y_tile = root_y + height_offset;
                 //only nodes on the tile may be located in a location other than the root-location
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                rr_graph_builder.node_lookup().reserve_nodes(0,x_tile, y_tile, OPIN, physical_type_ptr->num_pins, side);
-                rr_graph_builder.node_lookup().reserve_nodes(0,x_tile, y_tile, IPIN, physical_type_ptr->num_pins, side);
+                rr_graph_builder.node_lookup().reserve_nodes(layer,x_tile, y_tile, OPIN, physical_type_ptr->num_pins, side);
+                rr_graph_builder.node_lookup().reserve_nodes(layer,x_tile, y_tile, IPIN, physical_type_ptr->num_pins, side);
             }
         }
     }
@@ -1216,15 +1222,12 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             int x_tile = root_x + x_offset[pin_coord_idx];
             int y_tile = root_y + y_offset[pin_coord_idx];
             auto side = pin_sides[pin_coord_idx];
-
             if (pin_type == DRIVER) {
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                rr_graph_builder.node_lookup().add_node(RRNodeId(*index),0, x_tile, y_tile, OPIN, pin_num, side);
+                rr_graph_builder.node_lookup().add_node(RRNodeId(*index),layer, x_tile, y_tile, OPIN, pin_num, side);
                 assigned_to_rr_node = true;
             } else {
                 VTR_ASSERT(pin_type == RECEIVER);
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                rr_graph_builder.node_lookup().add_node(RRNodeId(*index),0, x_tile, y_tile, IPIN, pin_num, side);
+                rr_graph_builder.node_lookup().add_node(RRNodeId(*index),layer, x_tile, y_tile, IPIN, pin_num, side);
                 assigned_to_rr_node = true;
             }
         }
@@ -1248,6 +1251,7 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                        t_physical_tile_type_ptr physical_type_ptr,
                                        const std::vector<int>& class_num_vec,
+                                       int layer,
                                        int root_x,
                                        int root_y,
                                        int block_width,
@@ -1255,21 +1259,20 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                        int* index) {
     for (int x_tile = root_x; x_tile < (root_x + block_width); x_tile++) {
         for (int y_tile = root_y; y_tile < (root_y + block_height); y_tile++) {
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().reserve_nodes(0,x_tile, y_tile, SOURCE, class_num_vec.size(), SIDES[0]);
-            rr_graph_builder.node_lookup().reserve_nodes(0,x_tile, y_tile, SINK, class_num_vec.size(), SIDES[0]);
+            rr_graph_builder.node_lookup().reserve_nodes(layer,x_tile, y_tile, SOURCE, class_num_vec.size(), SIDES[0]);
+            rr_graph_builder.node_lookup().reserve_nodes(layer,x_tile, y_tile, SINK, class_num_vec.size(), SIDES[0]);
         }
     }
 
     for (auto class_num : class_num_vec) {
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         if (class_type == DRIVER) {
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index),0, root_x, root_y, SOURCE, class_num);
+
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index),layer, root_x, root_y, SOURCE, class_num);
         } else {
             VTR_ASSERT(class_type == RECEIVER);
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index),0, root_x, root_y, SINK, class_num);
+
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index),layer, root_x, root_y, SINK, class_num);
         }
         ++(*index);
     }
@@ -1284,12 +1287,11 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             }
             int curr_x = root_x + x_offset;
             int curr_y = root_y + y_offset;
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().mirror_nodes(0,vtr::Point<int>(root_x, root_y),
+            rr_graph_builder.node_lookup().mirror_nodes(layer,vtr::Point<int>(root_x, root_y),
                                                         vtr::Point<int>(curr_x, curr_y),
                                                         SOURCE,
                                                         SIDES[0]);
-            rr_graph_builder.node_lookup().mirror_nodes(0,vtr::Point<int>(root_x, root_y),
+            rr_graph_builder.node_lookup().mirror_nodes(layer,vtr::Point<int>(root_x, root_y),
                                                         vtr::Point<int>(curr_x, curr_y),
                                                         SINK,
                                                         SIDES[0]);
@@ -1321,11 +1323,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().resize_nodes(0,grid.height(), grid.width(), rr_type, NUM_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(),grid.height(), grid.width(), rr_type, NUM_SIDES);
         } else {
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().resize_nodes(0,grid.width(), grid.height(), rr_type, NUM_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(),grid.width(), grid.height(), rr_type, NUM_SIDES);
         }
     }
 
@@ -1333,9 +1333,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     load_block_rr_indices(rr_graph_builder, grid, index, is_flat);
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(nodes_per_chan->x_max, grid.width(), grid.height(),
+    load_chan_rr_indices(nodes_per_chan->x_max,grid, grid.width(), grid.height(),
                          CHANX, chan_details_x, rr_graph_builder, index);
-    load_chan_rr_indices(nodes_per_chan->y_max, grid.height(), grid.width(),
+    load_chan_rr_indices(nodes_per_chan->y_max,grid, grid.height(), grid.width(),
                          CHANY, chan_details_y, rr_graph_builder, index);
 }
 
