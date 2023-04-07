@@ -1069,7 +1069,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
     device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
 
-    /* These are data structures used by the the unidir opin mapping. They are used
+    /* These are data structures used by the unidir opin mapping. They are used
      * to spread connections evenly for each segment type among the available
      * wire start points */
     vtr::NdMatrix<int, 3> Fc_xofs({grid.height() - 1,
@@ -1224,7 +1224,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     // Verify no incremental node allocation.
     /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
-     * Thus this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
+     * Thus, this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
     if (rr_graph.num_nodes() > expected_node_count) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
@@ -2060,8 +2060,10 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                 t_physical_tile_type_ptr physical_tile = grid.get_physical_type(t_physical_tile_loc(i, j));
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
-                class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(i, j, physical_tile);
-                pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(i,
+                //SARA_TODO: zero should change to layer number once I added that to the node definition
+                class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(0,i, j, physical_tile);
+                pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(0,
+                                                                         i,
                                                                          j,
                                                                          pin_chains,
                                                                          chain_pin_nums,

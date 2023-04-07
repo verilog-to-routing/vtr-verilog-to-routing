@@ -1101,7 +1101,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   int* index,
                                   bool /*is_flat*/) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
-    for(size_t layer = 0; grid.get_num_layers(); layer++) {
+    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (size_t x = 0; x < grid.width(); x++) {
             for (size_t y = 0; y < grid.height(); y++) {
                 //Process each block from its root location
@@ -1344,39 +1344,44 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                                                   const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                   const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index) {
-    for (size_t x = 0; x < grid.width(); x++) {
-        for (size_t y = 0; y < grid.height(); y++) {
-            //Process each block from it's root location
-            if (grid.get_width_offset(t_physical_tile_loc(x, y)) == 0 && grid.get_height_offset(t_physical_tile_loc(x, y)) == 0) {
-                t_physical_tile_type_ptr physical_type = grid.get_physical_type(t_physical_tile_loc(x, y));
-                //Assign indices for SINKs and SOURCEs
-                // Note that SINKS/SOURCES have no side, so we always use side 0
-                std::vector<int> class_num_vec;
-                std::vector<int> pin_num_vec;
-                class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(x, y, physical_type);
-                pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(x,
-                                                                         y,
-                                                                         pin_chains,
-                                                                         pin_chains_num,
-                                                                         physical_type);
-                add_classes_spatial_lookup(rr_graph_builder,
-                                           physical_type,
-                                           class_num_vec,
-                                           x,
-                                           y,
-                                           physical_type->width,
-                                           physical_type->height,
-                                           index);
+    for(int layer = 0; layer < grid.get_num_layers(); layer++){
+        for (size_t x = 0; x < grid.width(); x++) {
+            for (size_t y = 0; y < grid.height(); y++) {
+                //Process each block from it's root location
+                if (grid.get_width_offset(t_physical_tile_loc(x, y, layer)) == 0 && grid.get_height_offset(t_physical_tile_loc(x, y, layer)) == 0) {
+                    t_physical_tile_type_ptr physical_type = grid.get_physical_type(t_physical_tile_loc(x, y, layer));
+                    //Assign indices for SINKs and SOURCEs
+                    // Note that SINKS/SOURCES have no side, so we always use side 0
+                    std::vector<int> class_num_vec;
+                    std::vector<int> pin_num_vec;
+                    class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(layer,x, y, physical_type);
+                    pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(layer,
+                                                                             x,
+                                                                             y,
+                                                                             pin_chains,
+                                                                             pin_chains_num,
+                                                                             physical_type);
+                    add_classes_spatial_lookup(rr_graph_builder,
+                                               physical_type,
+                                               class_num_vec,
+                                               layer,
+                                               x,
+                                               y,
+                                               physical_type->width,
+                                               physical_type->height,
+                                               index);
 
-                std::vector<e_side> wanted_sides;
-                wanted_sides.push_back(e_side::TOP);
-                add_pins_spatial_lookup(rr_graph_builder,
-                                        physical_type,
-                                        pin_num_vec,
-                                        x,
-                                        y,
-                                        index,
-                                        wanted_sides);
+                    std::vector<e_side> wanted_sides;
+                    wanted_sides.push_back(e_side::TOP);
+                    add_pins_spatial_lookup(rr_graph_builder,
+                                            physical_type,
+                                            pin_num_vec,
+                                            layer,
+                                            x,
+                                            y,
+                                            index,
+                                            wanted_sides);
+                }
             }
         }
     }
@@ -1883,9 +1888,11 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     std::vector<int> class_num_vec(class_num_range.total_num());
     std::iota(class_num_vec.begin(), class_num_vec.end(), class_num_range.low);
 
+    //SARA_TODO: zero should change to layer number once I added that to the node definition
     add_classes_spatial_lookup(rr_graph_builder,
                                physical_tile,
                                class_num_vec,
+                               0,
                                x,
                                y,
                                physical_tile->width,
@@ -1895,6 +1902,7 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     add_pins_spatial_lookup(rr_graph_builder,
                             physical_tile,
                             pin_num_vec,
+                            0,
                             x,
                             y,
                             num_rr_nodes,

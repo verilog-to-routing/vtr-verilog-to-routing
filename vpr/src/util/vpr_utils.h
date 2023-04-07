@@ -279,12 +279,14 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
 // Check whether the given nodes are in the same cluster
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second);
 
-std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
+std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int layer,
+                                                               const int i,
                                                                const int j,
                                                                t_physical_tile_type_ptr physical_type);
 
 /**
- * @brief Returns the list of pins inside the tile located at (i, j), except fo the ones which are on a chain
+ * @brief Returns the list of pins inside the tile located at (layer, i, j), except for the ones which are on a chain
+ * @param layer
  * @param i
  * @param j
  * @param pin_chains
@@ -292,7 +294,8 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
  * @param physical_type
  * @return
  */
-std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
+std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
+                                                            const int i,
                                                             const int j,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,

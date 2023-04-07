@@ -2375,7 +2375,8 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     }
 }
 
-std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
+std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int layer,
+                                                               const int i,
                                                                const int j,
                                                                t_physical_tile_type_ptr physical_type) {
     std::vector<int> class_num_vec;
@@ -2391,8 +2392,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
         if (grid_block.is_sub_tile_empty({i, j}, abs_cap)) {
             continue;
         }
-        // TODO: Needs to be updated when RR Graph Nodes know their layer_num
-        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, 0});
+        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
 
         auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
@@ -2407,7 +2407,8 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
     return class_num_vec;
 }
 
-std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
+std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
+                                                            const int i,
                                                             const int j,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
@@ -2424,8 +2425,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
         if (grid_block.is_sub_tile_empty({i, j}, abs_cap)) {
             continue;
         }
-        // TODO: Needs to be updated when RR Graph Nodes know their layer_num
-        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, 0});
+        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() && cluster_blk_id != EMPTY_BLOCK_ID);
 
         cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);
