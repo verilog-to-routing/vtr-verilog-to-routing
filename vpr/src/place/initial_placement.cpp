@@ -685,6 +685,12 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
         int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmin, OPEN, layer_num}).x;
         int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmax, OPEN, layer_num}).x;
 
+        // There isn't any block of this type in this region
+        if(min_cx == OPEN) {
+            VTR_ASSERT(max_cx == OPEN);
+            continue;
+        }
+
         for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
             const auto& block_rows = compressed_block_grid.get_column_block_map(cx, layer_num);
             auto y_lower_iter = block_rows.begin();

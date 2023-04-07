@@ -1,9 +1,11 @@
 #include "grid_tile_lookup.h"
 
-void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, std::vector<vtr::NdMatrix<int, 2>>& type_count) {
+void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 3>& type_count) {
     auto& device_ctx = g_vpr_ctx.device();
 
     int num_layers = device_ctx.grid.get_num_layers();
+    int width = (int)device_ctx.grid.width();
+    int height = (int)device_ctx.grid.height();
     /*
      * Iterating through every location on the grid to store the number of subtiles of
      * the correct type at each location. For each location, we store the cumulative
@@ -16,8 +18,8 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, std::
         int num_rows = (int)device_ctx.grid.height(layer_num);
         int num_cols = (int)device_ctx.grid.width(layer_num);
 
-        for (int i_col = (int)type_count[layer_num].dim_size(0) - 1; i_col >= 0; i_col--) {
-            for (int j_row = (int)type_count[layer_num].dim_size(1) - 1; j_row >= 0; j_row--) {
+        for (int i_col = width - 1; i_col >= 0; i_col--) {
+            for (int j_row = height - 1; j_row >= 0; j_row--) {
                 const auto& tile = device_ctx.grid.get_physical_type({i_col, j_row, layer_num});
                 int height_offset = device_ctx.grid.get_height_offset({i_col, j_row, layer_num});
                 int width_offset = device_ctx.grid.get_width_offset({i_col, j_row, layer_num});
@@ -73,8 +75,8 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     Region grid_reg;
     grid_reg.set_region_rect({0,
                               0,
-                              (int)device_ctx.grid.width(layer_num) - 1,
-                              (int)device_ctx.grid.height(layer_num) - 1,
+                              (int)device_ctx.grid.width() - 1,
+                              (int)device_ctx.grid.height() - 1,
                               layer_num});
     Region intersect_reg;
     intersect_reg = intersection(reg, grid_reg);
@@ -86,26 +88,26 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     int ymin = intersect_coord.ymin;
     int xmax = intersect_coord.xmax;
     int ymax = intersect_coord.ymax;
-    auto& layer_type_grid = block_type_matrices[block_type->index][layer_num];
+    auto& layer_type_grid = block_type_matrices[block_type->index];
 
-    int xdim = (int)layer_type_grid.dim_size(0);
-    int ydim = (int)layer_type_grid.dim_size(1);
+    int xdim = (int)layer_type_grid.dim_size(1);
+    int ydim = (int)layer_type_grid.dim_size(2);
 
     int num_tiles = 0;
 
     if (subtile == NO_SUBTILE) {
-        num_tiles = layer_type_grid[xmin][ymin];
+        num_tiles = layer_type_grid[layer_num][xmin][ymin];
 
         if ((ymax + 1) < ydim) {
-            num_tiles -= layer_type_grid[xmin][ymax + 1];
+            num_tiles -= layer_type_grid[layer_num][xmin][ymax + 1];
         }
 
         if ((xmax + 1) < xdim) {
-            num_tiles -= layer_type_grid[xmax + 1][ymin];
+            num_tiles -= layer_type_grid[layer_num][xmax + 1][ymin];
         }
 
         if ((xmax + 1) < xdim && (ymax + 1) < ydim) {
-            num_tiles += layer_type_grid[xmax + 1][ymax + 1];
+            num_tiles += layer_type_grid[layer_num][xmax + 1][ymax + 1];
         }
     } else {
         num_tiles = region_with_subtile_count(reg, block_type);
