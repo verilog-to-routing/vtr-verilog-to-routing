@@ -32,6 +32,7 @@ option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 option(VTR_ENABLE_VERBOSE "Enable increased debug verbosity" OFF)
+option(SPEC_CPU "Enable SPEC CPU v8 support" OFF)
 
 #Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
@@ -298,6 +299,16 @@ if(VTR_ENABLE_VERBOSE)
     message(STATUS "Enabling increased debugging verbosity")
 endif()
 
+#
+# Build for SPEC CPU Benchmark v8
+#
+set(SPEC_CPU_FLAGS "")
+if(SPEC_CPU)
+    # Enable SPEC CPU flag - Maximizes portability of code and minimizing the variation in how much work we do on different platforms
+    set(SPEC_CPU_FLAGS "-DSPEC_CPU")
+    message(STATUS "SPEC CPU FLAGS: ${SPEC_CPU_FLAGS}")
+endif()
+
 if (CMAKE_MAKE_PROGRAM EQUAL "ninja" )
     #Only for coloured output for ninja, it may be desired
     #to not force colours with other make programs (e.g. if
@@ -315,7 +326,7 @@ endif()
 # Set final flags
 #
 separate_arguments(
-    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE} ${EXTRA_FLAGS}"
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE} ${EXTRA_FLAGS} ${SPEC_CPU_FLAGS}"
     )
 separate_arguments(
     WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
