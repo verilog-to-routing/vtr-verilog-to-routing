@@ -34,6 +34,8 @@
  *       node should be added to the expansion heap, based on things         *
  *       like whether it's outside the net bounding box or is moving         *
  *       further away from the target, etc.                                  *
+ * layer: An integer that specifies which die the node is located at in case *
+ * of having multiple dice in XML file.                                      *
  * type:  What is this routing resource?                                     *
  * cost_index: An integer index into the table of routing resource indexed   *
  *             data t_rr_index_data (this indirection allows quick dynamic   *
@@ -51,7 +53,7 @@
  * side: The side of a grid location where an IPIN or OPIN is located.       *
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
-struct alignas(16) t_rr_node_data {
+struct alignas(32) t_rr_node_data {
     int16_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
@@ -59,6 +61,8 @@ struct alignas(16) t_rr_node_data {
     int16_t ylow_ = -1;
     int16_t xhigh_ = -1;
     int16_t yhigh_ = -1;
+
+    int8_t layer_ = 0;
 
     t_rr_type type_ = NUM_RR_TYPES;
 
@@ -82,8 +86,8 @@ struct alignas(16) t_rr_node_data {
 // t_rr_node_data is a key data structure, so fail at compile time if the
 // structure gets bigger than expected (16 bytes right now). Developers
 // should only expand it after careful consideration and measurement.
-static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
-static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
+static_assert(sizeof(t_rr_node_data) == 32, "Check t_rr_node_data size");
+static_assert(alignof(t_rr_node_data) == 32, "Check t_rr_node_data size");
 
 /* t_rr_node_ptc_data is cold data is therefore kept seperate from
  * t_rr_node_data.
@@ -479,6 +483,7 @@ class t_rr_graph_storage {
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
+    void set_node_layer(RRNodeId id, short layer);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
     void set_node_rc_index(RRNodeId, NodeRCIndex new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
@@ -760,6 +765,10 @@ class t_rr_graph_view {
     }
     short node_yhigh(RRNodeId id) const {
         return node_storage_[id].yhigh_;
+    }
+
+    short node_layer(RRNodeId id) const{
+        return node_storage_[id].layer_;
     }
 
     short node_capacity(RRNodeId id) const {

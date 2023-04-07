@@ -727,6 +727,11 @@ void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, s
     }
 }
 
+void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer){
+    auto& node = node_storage_[id];
+    node.layer_ = layer;
+}
+
 void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
     auto& node = node_storage_[id];
     if ((size_t)new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {

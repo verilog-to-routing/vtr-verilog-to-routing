@@ -165,6 +165,11 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    /** @brief Set the node layer (specifies which die the node is located at) */
+    inline void set_node_layer(RRNodeId id, short layer){
+        node_storage_.set_node_layer(id,layer);
+    }
+
     /** @brief The ptc_num carries different meanings for different node types
      * (true in VPR RRG that is currently supported, may not be true in customized RRG)
      * CHANX or CHANY: the track id in routing channels
