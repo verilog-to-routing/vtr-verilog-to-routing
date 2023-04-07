@@ -6,7 +6,7 @@
     processor module.
 */
 
-module complex_64_noc_2D_chain (
+module complex_64_noc_nearest_neighbor (
     clk,
     reset,
 	data_out
