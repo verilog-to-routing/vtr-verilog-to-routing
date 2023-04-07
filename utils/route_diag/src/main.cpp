@@ -187,8 +187,8 @@ static void profile_source(const Netlist<>& net_list,
             bool successfully_routed;
             for (int sink_ptc : best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
-
-                int sink_rr_node = size_t(device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc));
+                //SARA_TODO
+                int sink_rr_node = size_t(device_ctx.rr_graph.node_lookup().find_node(0,sink_x, sink_y, SINK, sink_ptc));
 
                 if (directconnect_exists(source_rr_node, sink_rr_node)) {
                     //Skip if we shouldn't measure direct connects and a direct connect exists
