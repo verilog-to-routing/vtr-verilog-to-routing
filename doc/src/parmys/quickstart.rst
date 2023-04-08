@@ -33,6 +33,9 @@ Building
 To build the VTR flow with the Parmys front-end you may use the VTR Makefile wrapper, by calling the ``make CMAKE_PARAMS="-DWITH_PARMYS=ON"`` command in the `$VTR_ROOT` directory.
 
 .. note::
+    Our CI testing is on Ubuntu 22.04, so that is the best tested platform and recommended for development.
+
+.. note::
 
     Compiling the VTR flow with the ``-DYOSYS_F4PGA_PLUGINS=ON`` flag is required to build and install Yosys SystemVerilog and UHDM plugins.
     Using this compile flag, the `Yosys-F4PGA-Plugins <https://github.com/chipsalliance/yosys-f4pga-plugins>`_ and `Surelog <https://github.com/chipsalliance/Surelog>`_ repositories are cloned in the ``$VTR_ROOT/libs/EXTERNAL`` directory and then will be compiled and added as external plugins to the Parmys front-end.
