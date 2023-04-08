@@ -2450,6 +2450,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                     int num_reachable_sinks = choking_spot.second;
                     auto pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
                                                              physical_type,
+                                                             blk_loc.loc.layer,
                                                              blk_loc.loc.x,
                                                              blk_loc.loc.y,
                                                              pin_physical_num);

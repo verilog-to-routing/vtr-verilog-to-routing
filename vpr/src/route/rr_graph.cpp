@@ -112,6 +112,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
 
 static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const RRGraphView& rr_graph,
+                                 const int layer,
                                  const int i,
                                  const int j,
                                  const e_side side,
@@ -128,6 +129,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   const RRGraphView& rr_graph,
+                                  const int layer,
                                   const int i,
                                   const int j,
                                   const e_side side,
@@ -149,6 +151,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
 static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        const RRGraphView& rr_graph,
+                                       int layer,
                                        int x,
                                        int y,
                                        e_side side,
@@ -227,6 +230,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
  * @param rr_graph_builder
  * @param arch_sw_inf_map
  * @param class_num_vec
+ * @param layer
  * @param i
  * @param j
  * @param rr_edges_to_create
@@ -236,6 +240,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
 static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                           std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                           const std::vector<int>& class_num_vec,
+                                          const int layer,
                                           const int i,
                                           const int j,
                                           t_rr_edge_info_set& rr_edges_to_create,
@@ -244,6 +249,7 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
 
 static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      const std::vector<int>& class_num_vec,
+                                     const int layer,
                                      const int i,
                                      const int j,
                                      t_rr_edge_info_set& rr_edges_to_create,
@@ -253,6 +259,7 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                          t_physical_tile_type_ptr physical_tile,
+                                         int layer,
                                          int root_x,
                                          int root_y,
                                          const int delayless_switch);
@@ -304,6 +311,7 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
 static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           t_rr_edge_info_set& rr_edges_to_create,
                                           t_physical_tile_type_ptr physical_tile,
+                                          int layer,
                                           int i,
                                           int j);
 
@@ -313,6 +321,7 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
 static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          int& num_collapsed_nodes,
                                          ClusterBlockId cluster_blk_id,
+                                         const int layer,
                                          const int i,
                                          const int j,
                                          const int cap,
@@ -334,6 +343,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          const t_pb* pb,
                          const t_cluster_pin_chain& nodes_to_collapse,
                          int rel_cap,
+                         int layer,
                          int i,
                          int j);
 
@@ -347,6 +357,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
  * @param nodes_to_collapse
  * @param R_minW_nmos
  * @param R_minW_pmos
+ * @param layer
  * @param i
  * @param j
  * @return Number of the collapsed nodes
@@ -359,6 +370,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          const t_cluster_pin_chain& nodes_to_collapse,
                                          float R_minW_nmos,
                                          float R_minW_pmos,
+                                         int layer,
                                          int i,
                                          int j);
 /**
@@ -376,6 +388,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
  * @param chain_idx
  * @param node_idx
  * @param sink_pin_num
+ * @param layer
  * @param i
  * @param j
  */
@@ -391,6 +404,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                         float R_minW_pmos,
                                         int chain_idx,
                                         int node_idx,
+                                        int layer,
                                         int i,
                                         int j);
 
@@ -414,6 +428,7 @@ static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
 static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chain);
 
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
+                          const int layer,
                           const int i,
                           const int j,
                           const t_rr_type chan_type,
@@ -746,10 +761,12 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
         auto block_loc = place_ctx.block_locs[cluster_blk_id].loc;
         int i = block_loc.x;
         int j = block_loc.y;
+        int layer = block_loc.layer;
         int abs_cap = block_loc.sub_tile;
         build_cluster_internal_edges(rr_graph_builder,
                                      num_collapsed_nodes,
                                      cluster_blk_id,
+                                     layer,
                                      i,
                                      j,
                                      abs_cap,
@@ -771,6 +788,7 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
 static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           t_rr_edge_info_set& rr_edges_to_create,
                                           t_physical_tile_type_ptr physical_tile,
+                                          int layer,
                                           int i,
                                           int j) {
     auto pin_num_vec = get_flat_tile_pins(physical_tile);
@@ -780,6 +798,7 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
         }
         auto pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                  physical_tile,
+                                                 layer,
                                                  i,
                                                  j,
                                                  pin_physical_num);
@@ -789,6 +808,7 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
         for (auto driving_pin : driving_pins) {
             auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                           physical_tile,
+                                                          layer,
                                                           i,
                                                           j,
                                                           driving_pin);
@@ -1363,6 +1383,7 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          const t_det_routing_arch& det_routing_arch,
                          t_physical_tile_type_ptr physical_tile,
+                         int layer,
                          int x,
                          int y,
                          const int delayless_switch) {
@@ -1371,6 +1392,7 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     int num_rr_nodes = 0;
     alloc_and_load_tile_rr_node_indices(rr_graph_builder,
                                         physical_tile,
+                                        layer,
                                         x,
                                         y,
                                         &num_rr_nodes);
@@ -1379,6 +1401,7 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     alloc_and_load_tile_rr_graph(rr_graph_builder,
                                  sw_map,
                                  physical_tile,
+                                 layer,
                                  x,
                                  y,
                                  delayless_switch);
@@ -1891,6 +1914,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
                     connect_src_sink_to_pins(rr_graph_builder,
                                              class_num_vec,
+                                             layer,
                                              i,
                                              j,
                                              rr_edges_to_create,
@@ -1911,31 +1935,35 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     num_edges = 0;
     /* Build opins */
     int rr_edges_before_directs = 0;
-    for (size_t i = 0; i < grid.width(); ++i) {
-        for (size_t j = 0; j < grid.height(); ++j) {
-            for (e_side side : SIDES) {
-                if (BI_DIRECTIONAL == directionality) {
-                    build_bidir_rr_opins(rr_graph_builder, rr_graph, i, j, side,
-                                         opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x, chan_details_y,
-                                         grid,
-                                         directs, num_directs, clb_to_clb_directs, num_seg_types);
-                } else {
-                    VTR_ASSERT(UNI_DIRECTIONAL == directionality);
-                    bool clipped;
-                    build_unidir_rr_opins(rr_graph_builder, rr_graph, i, j, side, grid, Fc_out, chan_width,
-                                          chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
-                                          rr_edges_to_create, &clipped, seg_index_map,
-                                          directs, num_directs, clb_to_clb_directs, num_seg_types, rr_edges_before_directs);
-                    if (clipped) {
-                        *Fc_clipped = true;
+    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
+        for (size_t i = 0; i < grid.width(); ++i) {
+            for (size_t j = 0; j < grid.height(); ++j) {
+                for (e_side side: SIDES) {
+                    if (BI_DIRECTIONAL == directionality) {
+                        build_bidir_rr_opins(rr_graph_builder, rr_graph,layer, i, j, side,
+                                             opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x,
+                                             chan_details_y,
+                                             grid,
+                                             directs, num_directs, clb_to_clb_directs, num_seg_types);
+                    } else {
+                        VTR_ASSERT(UNI_DIRECTIONAL == directionality);
+                        bool clipped;
+                        build_unidir_rr_opins(rr_graph_builder, rr_graph,layer, i, j, side, grid, Fc_out, chan_width,
+                                              chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
+                                              rr_edges_to_create, &clipped, seg_index_map,
+                                              directs, num_directs, clb_to_clb_directs, num_seg_types,
+                                              rr_edges_before_directs);
+                        if (clipped) {
+                            *Fc_clipped = true;
+                        }
                     }
-                }
 
-                //Create the actual OPIN->CHANX/CHANY edges
-                uniquify_edges(rr_edges_to_create);
-                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-                num_edges += rr_edges_to_create.size();
-                rr_edges_to_create.clear();
+                    //Create the actual OPIN->CHANX/CHANY edges
+                    uniquify_edges(rr_edges_to_create);
+                    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                    num_edges += rr_edges_to_create.size();
+                    rr_edges_to_create.clear();
+                }
             }
         }
     }
@@ -1946,41 +1974,43 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
-    for (size_t i = 0; i < grid.width() - 1; ++i) {
-        for (size_t j = 0; j < grid.height() - 1; ++j) {
-            if (i > 0) {
-                int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.x_list[j]);
-                build_rr_chan(rr_graph_builder, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map, switch_block_conn,
-                              CHANX_COST_INDEX_START,
-                              chan_width, grid, tracks_per_chan,
-                              sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
-                              rr_edges_to_create,
-                              wire_to_ipin_switch,
-                              directionality);
+    for(int layer = 0; layer < grid.get_num_layers(); ++layer) {
+        for (size_t i = 0; i < grid.width() - 1; ++i) {
+            for (size_t j = 0; j < grid.height() - 1; ++j) {
+                if (i > 0) {
+                    int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.x_list[j]);
+                    build_rr_chan(rr_graph_builder,layer, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map, switch_block_conn,
+                                  CHANX_COST_INDEX_START,
+                                  chan_width, grid, tracks_per_chan,
+                                  sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
+                                  rr_edges_to_create,
+                                  wire_to_ipin_switch,
+                                  directionality);
 
-                //Create the actual CHAN->CHAN edges
-                uniquify_edges(rr_edges_to_create);
-                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-                num_edges += rr_edges_to_create.size();
+                    //Create the actual CHAN->CHAN edges
+                    uniquify_edges(rr_edges_to_create);
+                    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                    num_edges += rr_edges_to_create.size();
 
-                rr_edges_to_create.clear();
-            }
-            if (j > 0) {
-                int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.y_list[i]);
-                build_rr_chan(rr_graph_builder, i, j, CHANY, track_to_pin_lookup_y, sb_conn_map, switch_block_conn,
-                              CHANX_COST_INDEX_START + num_seg_types_x,
-                              chan_width, grid, tracks_per_chan,
-                              sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
-                              rr_edges_to_create,
-                              wire_to_ipin_switch,
-                              directionality);
+                    rr_edges_to_create.clear();
+                }
+                if (j > 0) {
+                    int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.y_list[i]);
+                    build_rr_chan(rr_graph_builder,layer, i, j, CHANY, track_to_pin_lookup_y, sb_conn_map, switch_block_conn,
+                                  CHANX_COST_INDEX_START + num_seg_types_x,
+                                  chan_width, grid, tracks_per_chan,
+                                  sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
+                                  rr_edges_to_create,
+                                  wire_to_ipin_switch,
+                                  directionality);
 
-                //Create the actual CHAN->CHAN edges
-                uniquify_edges(rr_edges_to_create);
-                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-                num_edges += rr_edges_to_create.size();
+                    //Create the actual CHAN->CHAN edges
+                    uniquify_edges(rr_edges_to_create);
+                    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                    num_edges += rr_edges_to_create.size();
 
-                rr_edges_to_create.clear();
+                    rr_edges_to_create.clear();
+                }
             }
         }
     }
@@ -2092,6 +2122,7 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
 
                     connect_src_sink_to_pins(rr_graph_builder,
                                              class_num_vec,
+                                             layer,
                                              i,
                                              j,
                                              rr_edges_to_create,
@@ -2224,6 +2255,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
 static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                           std::map<int, t_arch_switch_inf>& /*arch_sw_inf_map*/,
                                           const std::vector<int>& class_num_vec,
+                                          const int layer,
                                           const int i,
                                           const int j,
                                           t_rr_edge_info_set& rr_edges_to_create,
@@ -2232,15 +2264,15 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
     for (auto class_num : class_num_vec) {
         const auto& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr,0, i, j, class_num);
+        RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, layer, i, j, class_num);
         VTR_ASSERT(class_rr_node_id != RRNodeId::INVALID());
         //bool is_primitive = is_primitive_pin(physical_type_ptr, pin_list[0]);
         //t_logical_block_type_ptr logical_block = is_primitive ? get_logical_block_from_pin_physical_num(physical_type_ptr, pin_list[0]) : nullptr;
         for (auto pin_num : pin_list) {
-            RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, pin_num);
+            RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, layer, i, j, pin_num);
             if (pin_rr_node_id == RRNodeId::INVALID()) {
-                VTR_LOG_ERROR("In block (%d, %d) pin num: %d doesn't exist to be connected to class %d\n",
+                VTR_LOG_ERROR("In block (%d, %d, %d) pin num: %d doesn't exist to be connected to class %d\n",
+                              layer,
                               i,
                               j,
                               pin_num,
@@ -2273,6 +2305,7 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
 
 static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      const std::vector<int>& class_num_vec,
+                                     const int layer,
                                      const int i,
                                      const int j,
                                      t_rr_edge_info_set& rr_edges_to_create,
@@ -2281,13 +2314,13 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
     for (auto class_num : class_num_vec) {
         const auto& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr,0, i, j, class_num);
+        RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr,layer, i, j, class_num);
         VTR_ASSERT(class_rr_node_id != RRNodeId::INVALID());
         for (auto pin_num : pin_list) {
-            RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, pin_num);
+            RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr,layer, i, j, pin_num);
             if (pin_rr_node_id == RRNodeId::INVALID()) {
-                VTR_LOG_ERROR("In block (%d, %d) pin num: %d doesn't exist to be connected to class %d\n",
+                VTR_LOG_ERROR("In block (%d, %d, %d) pin num: %d doesn't exist to be connected to class %d\n",
+                              layer,
                               i,
                               j,
                               pin_num,
@@ -2310,6 +2343,7 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                          t_physical_tile_type_ptr physical_tile,
+                                         int layer,
                                          int root_x,
                                          int root_y,
                                          const int delayless_switch) {
@@ -2321,17 +2355,16 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     std::vector<int> class_num_vec(class_num_range.total_num());
     std::iota(class_num_vec.begin(), class_num_vec.end(), class_num_range.low);
 
-    //SARA_TODO: zero should change to layer number once I added that to the node definition
     add_classes_rr_graph(rr_graph_builder,
                          class_num_vec,
-                         0,
+                         layer,
                          root_x,
                          root_y,
                          physical_tile);
-    //SARA_TODO: zero should change to layer number once I added that to the node definition
+
     add_pins_rr_graph(rr_graph_builder,
                       pin_num_vec,
-                      0,
+                      layer,
                       root_x,
                       root_y,
                       physical_tile);
@@ -2339,6 +2372,7 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     connect_tile_src_sink_to_pins(rr_graph_builder,
                                   arch_sw_inf_map,
                                   class_num_vec,
+                                  layer,
                                   root_x,
                                   root_y,
                                   rr_edges_to_create,
@@ -2352,6 +2386,7 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     add_intra_tile_edges_rr_graph(rr_graph_builder,
                                   rr_edges_to_create,
                                   physical_tile,
+                                  layer,
                                   root_x,
                                   root_y);
 
@@ -2366,6 +2401,7 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const RRGraphView& rr_graph,
+                                 const int layer,
                                  const int i,
                                  const int j,
                                  const e_side side,
@@ -2387,9 +2423,9 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         return;
     }
 
-    auto type = grid.get_physical_type(t_physical_tile_loc(i, j));
-    int width_offset = grid.get_width_offset(t_physical_tile_loc(i, j));
-    int height_offset = grid.get_height_offset(t_physical_tile_loc(i, j));
+    auto type = grid.get_physical_type(t_physical_tile_loc(i, j, layer));
+    int width_offset = grid.get_width_offset(t_physical_tile_loc(i, j, layer));
+    int height_offset = grid.get_height_offset(t_physical_tile_loc(i, j, layer));
 
     const vtr::Matrix<int>& Fc = Fc_out[type->index];
 
@@ -2410,19 +2446,18 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             total_pin_Fc += Fc[pin_index][iseg];
         }
 
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(0,i, j, OPIN, pin_index, side);
+        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(layer,i, j, OPIN, pin_index, side);
         VTR_ASSERT(node_index);
 
         if (total_pin_Fc > 0) {
-            get_bidir_opin_connections(rr_graph_builder, i, j, pin_index,
+            get_bidir_opin_connections(rr_graph_builder,layer, i, j, pin_index,
                                        node_index, rr_edges_to_create, opin_to_track_map,
                                        chan_details_x,
                                        chan_details_y);
         }
 
         /* Add in direct connections */
-        get_opin_direct_connections(rr_graph_builder, rr_graph, i, j, side, pin_index,
+        get_opin_direct_connections(rr_graph_builder, rr_graph, layer, i, j, side, pin_index,
                                     node_index, rr_edges_to_create,
                                     directs, num_directs, clb_to_clb_directs);
     }
@@ -2455,6 +2490,7 @@ void free_rr_graph() {
 static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          int& num_collapsed_nodes,
                                          ClusterBlockId cluster_blk_id,
+                                         const int layer,
                                          const int i,
                                          const int j,
                                          const int abs_cap,
@@ -2466,8 +2502,8 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          bool is_flat) {
     VTR_ASSERT(is_flat);
     /* Internal edges are added from the start tile */
-    int width_offset = grid.get_width_offset(t_physical_tile_loc(i, j));
-    int height_offset = grid.get_height_offset(t_physical_tile_loc(i, j));
+    int width_offset = grid.get_width_offset(t_physical_tile_loc(i, j, layer));
+    int height_offset = grid.get_height_offset(t_physical_tile_loc(i, j, layer));
     VTR_ASSERT(width_offset == 0 && height_offset == 0);
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
@@ -2500,6 +2536,7 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                      pb,
                      nodes_to_collapse,
                      rel_cap,
+                     layer,
                      i,
                      j);
 
@@ -2516,6 +2553,7 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                                          nodes_to_collapse,
                                                          R_minW_nmos,
                                                          R_minW_pmos,
+                                                         layer,
                                                          i,
                                                          j);
 }
@@ -2528,6 +2566,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          const t_pb* pb,
                          const t_cluster_pin_chain& nodes_to_collapse,
                          int rel_cap,
+                         int layer,
                          int i,
                          int j) {
     auto pin_num_range = get_pb_pins(physical_type,
@@ -2549,6 +2588,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
         }
         auto parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                      physical_type,
+                                                     layer,
                                                      i,
                                                      j,
                                                      pin_physical_num);
@@ -2568,6 +2608,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
             }
             auto conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                        physical_type,
+                                                       layer,
                                                        i,
                                                        j,
                                                        conn_pin_physical_num);
@@ -2594,6 +2635,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          const t_cluster_pin_chain& nodes_to_collapse,
                                          float R_minW_nmos,
                                          float R_minW_pmos,
+                                         int layer,
                                          int i,
                                          int j) {
     // Store the cluster pins in a set to make the search more run-time efficient
@@ -2620,6 +2662,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                         R_minW_pmos,
                                         chain_idx,
                                         node_idx,
+                                        layer,
                                         i,
                                         j);
         }
@@ -2639,6 +2682,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                         float R_minW_pmos,
                                         int chain_idx,
                                         int node_idx,
+                                        int layer,
                                         int i,
                                         int j) {
     // Chain node pin physical number
@@ -2659,6 +2703,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
     // Get the chain's sink node rr node it.
     RRNodeId sink_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                   physical_type,
+                                                  layer,
                                                   i,
                                                   j,
                                                   sink_pin_num);
@@ -2689,6 +2734,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                                                   sink_pin_num);
             RRNodeId rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                      physical_type,
+                                                     layer,
                                                      i,
                                                      j,
                                                      pin_physical_num);
@@ -2720,6 +2766,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                                      sink_pin_num);
                 RRNodeId rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                          physical_type,
+                                                         layer,
                                                          i,
                                                          j,
                                                          src_pin);
@@ -2788,6 +2835,7 @@ static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chai
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
  * node properties such as cost, occupancy and capacity */
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
+                          const int layer,
                           const int x_coord,
                           const int y_coord,
                           const t_rr_type chan_type,
@@ -2811,7 +2859,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
-    //Initally a assumes CHANX
+    //Initally assumes CHANX
     int seg_coord = x_coord;                           //The absolute coordinate of this segment within the channel
     int chan_coord = y_coord;                          //The absolute coordinate of this channel within the device
     int seg_dimension = device_ctx.grid.width() - 2;   //-2 for no perim channels
@@ -2858,8 +2906,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             from_seg_details = chan_details_x[start][y_coord].data();
         }
 
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId node = rr_graph_builder.node_lookup().find_node(0,x_coord, y_coord, chan_type, track);
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer,x_coord, y_coord, chan_type, track);
 
         if (!node) {
             continue;
@@ -2962,6 +3009,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             VTR_ASSERT(chan_type == CHANY);
             rr_graph_builder.set_node_coordinates(node, x_coord, start, x_coord, end);
         }
+
+        rr_graph_builder.set_node_layer(node,layer);
 
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
@@ -3753,6 +3802,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
  */
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   const RRGraphView& rr_graph,
+                                  const int layer,
                                   const int i,
                                   const int j,
                                   const e_side side,
@@ -3792,8 +3842,8 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         if (type->is_ignored_pin[pin_index]) {
             continue;
         }
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId opin_node_index = rr_graph_builder.node_lookup().find_node(0,i, j, OPIN, pin_index, side);
+
+        RRNodeId opin_node_index = rr_graph_builder.node_lookup().find_node(layer,i, j, OPIN, pin_index, side);
         if (!opin_node_index) continue; //No valid from node
 
         for (int iseg = 0; iseg < num_seg_types; iseg++) {
@@ -3853,7 +3903,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             //VTR_ASSERT_MSG(seg_index == 0 || seg_index > 0,"seg_index map not working properly");
 
-            rr_edge_count += get_unidir_opin_connections(rr_graph_builder, chan, seg,
+            rr_edge_count += get_unidir_opin_connections(rr_graph_builder,layer, chan, seg,
                                                          seg_type_Fc, seg_index, chan_type, seg_details,
                                                          opin_node_index,
                                                          rr_edges_to_create,
@@ -3866,7 +3916,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Add in direct connections */
-        get_opin_direct_connections(rr_graph_builder, rr_graph, i, j, side, pin_index, opin_node_index, rr_edges_to_create,
+        get_opin_direct_connections(rr_graph_builder, rr_graph,layer, i, j, side, pin_index, opin_node_index, rr_edges_to_create,
                                     directs, num_directs, clb_to_clb_directs);
     }
 }
@@ -3987,10 +4037,11 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
 /* Add all direct clb-pin-to-clb-pin edges to given opin
  *
- * The current opin is located at (x,y) along the specified side
+ * The current opin is located at (layer,x,y) along the specified side
  */
 static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        const RRGraphView& rr_graph,
+                                       int layer,
                                        int x,
                                        int y,
                                        e_side side,
@@ -4002,12 +4053,12 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        const t_clb_to_clb_directs* clb_to_clb_directs) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_physical_tile_type_ptr curr_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
+    t_physical_tile_type_ptr curr_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y, layer));
 
     int num_pins = 0;
 
-    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(x, y));
-    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(x, y));
+    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(x, y, layer));
+    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(x, y, layer));
     if (!curr_type->pinloc[width_offset][height_offset][side][opin]) {
         return num_pins; //No source pin on this side
     }
@@ -4031,7 +4082,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                 && y + directs[i].y_offset > 0) {
                 //Only add connections if the target clb type matches the type in the direct specification
                 t_physical_tile_type_ptr target_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x + directs[i].x_offset,
-                                                                                                             y + directs[i].y_offset));
+                                                                                                             y + directs[i].y_offset, layer));
 
                 if (clb_to_clb_directs[i].to_clb_type == target_type
                     && z + directs[i].sub_tile_offset < int(target_type->capacity)
@@ -4091,15 +4142,13 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 
                         if (directs[i].to_side != NUM_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
-                            //SARA_TODO: zero should change to layer number once I added that to the node definition
-                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(0,x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin, directs[i].to_side);
+                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer,x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin, directs[i].to_side);
                             if (inode) {
                                 inodes.push_back(inode);
                             }
                         } else {
                             //No side specified, get all candidates
-                            //SARA_TODO: zero should change to layer number once I added that to the node definition
-                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(0,x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin);
+                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer,x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin);
                         }
 
                         if (inodes.size() > 0) {
@@ -4315,6 +4364,7 @@ bool pins_connected(t_block_loc cluster_loc,
 
     int x = cluster_loc.loc.x;
     int y = cluster_loc.loc.y;
+    int layer = cluster_loc.loc.layer;
     int abs_cap = cluster_loc.loc.sub_tile;
     const t_sub_tile* sub_tile = nullptr;
 
@@ -4345,10 +4395,10 @@ bool pins_connected(t_block_loc cluster_loc,
 
     VTR_ASSERT(to_pin_physical_num != OPEN);
 
-    RRNodeId from_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, x, y, from_pin_physical_num);
+    RRNodeId from_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, layer, x, y, from_pin_physical_num);
     VTR_ASSERT(from_node != RRNodeId::INVALID());
 
-    RRNodeId to_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, x, y, to_pin_physical_num);
+    RRNodeId to_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type,layer, x, y, to_pin_physical_num);
     VTR_ASSERT(to_node != RRNodeId::INVALID());
 
     int num_edges = rr_graph.num_edges(from_node);

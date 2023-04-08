@@ -2306,6 +2306,7 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
 
 RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             t_physical_tile_type_ptr physical_tile,
+                            const int layer,
                             const int root_i,
                             const int root_j,
                             int pin_physical_num) {
@@ -2318,8 +2319,7 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
     for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        node_id = rr_spatial_lookup.find_node(0,
+        node_id = rr_spatial_lookup.find_node(layer,
                                               root_i + x_offset[coord_idx],
                                               root_j + y_offset[coord_idx],
                                               node_type,

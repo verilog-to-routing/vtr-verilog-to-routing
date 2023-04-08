@@ -435,8 +435,10 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     pin_delays.resize(max_ptc_num);
 
     for (int pin_physical_num : tile_pins_vec) {
+        //SARA_TODO: zero should change to layer number once I added that to the node definition
         RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
                                                   physical_tile,
+                                                  0,
                                                   x,
                                                   y,
                                                   pin_physical_num);

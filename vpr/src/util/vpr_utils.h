@@ -266,6 +266,7 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
 
 RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             t_physical_tile_type_ptr physical_tile,
+                            const int layer,
                             const int root_i,
                             const int root_j,
                             int pin_physical_num);

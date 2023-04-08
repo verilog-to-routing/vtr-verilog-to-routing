@@ -1342,9 +1342,12 @@ static void compute_tile_lookahead(std::unordered_map<t_physical_tile_type_ptr, 
     RRGraphBuilder rr_graph_builder;
     int x = 1;
     int y = 1;
+    int layer = 0;
+    //SARA_TODO: zero should change to layer number once I added that to the node definition
     build_tile_rr_graph(rr_graph_builder,
                         det_routing_arch,
                         physical_tile,
+                        layer,
                         x,
                         y,
                         delayless_switch);
