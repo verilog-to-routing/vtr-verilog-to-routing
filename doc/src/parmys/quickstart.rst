@@ -9,7 +9,7 @@ Prerequisites
 * ctags
 * bison
 * flex
-* gcc 5.x
+* gcc 9.x
 * cmake 3.9 (minimum version)
 * time
 * cairo
