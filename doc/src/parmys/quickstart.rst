@@ -9,21 +9,22 @@ Prerequisites
 * ctags
 * bison
 * flex
-* gcc 9.x
+* g++ 9.x
 * cmake 3.9 (minimum version)
 * time
 * cairo
-* gawk
-* xdot
-* tcl-dev
+* build-essential
+* libreadline-dev
+* gawk tcl-dev
+* libffi-dev 
+* git
 * graphviz
+* xdot
 * pkg-config
 * python3
-* libffi-dev
-* libreadline-dev
 * libboost-system-dev
 * libboost-python-dev
-* libboost-filesystem-dev
+* libboost-filesystem-dev 
 * zlib1g-dev
 
 Building
