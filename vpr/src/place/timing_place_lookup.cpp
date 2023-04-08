@@ -884,8 +884,8 @@ static float find_neightboring_average(
     int max_distance) {
     float sum = 0;
     int counter = 0;
-    int endx = matrix.end_index(0);
-    int endy = matrix.end_index(1);
+    int endx = matrix.end_index(1);
+    int endy = matrix.end_index(2);
 
     int delx, dely;
 
