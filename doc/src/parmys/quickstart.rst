@@ -21,7 +21,7 @@ Prerequisites
 * graphviz
 * xdot
 * pkg-config
-* python3
+* python3-dev
 * libboost-system-dev
 * libboost-python-dev
 * libboost-filesystem-dev 
