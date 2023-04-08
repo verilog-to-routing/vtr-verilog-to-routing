@@ -18,13 +18,15 @@ For unix-like systems we provide a wrapper Makefile which supports the tradition
 VTR requires a C++-14 compliant compiler.
 It is tested against the default compilers of all Debian and Ubuntu releases within their standard support lifetime. Currently, those are the following:
 
-* GCC/G++: 7, 8, 9, 10, 11
-* Clang/Clang++: 6, 7, 10
+* GCC/G++: 9, 10, 11, 12
+* Clang/Clang++: 11, 12, 13, 14
 
 Other compilers may work but are untested (your milage may vary).
 
 ### Package Dependencies
 
+  * On Linux, the fastest way to set up all dependencies is to enter the commands listed in the VTR Quick Start [Environment Setup](https://docs.verilogtorouting.org/en/latest/quickstart/#environment-setup).
+  
   * At minimum you will require:
     * A modern C++ compiler supporting C++14 (such as GCC >= 4.9 or clang >= 3.6)
 	* cmake, make
