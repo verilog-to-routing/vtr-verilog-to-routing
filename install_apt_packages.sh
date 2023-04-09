@@ -22,17 +22,17 @@ sudo apt-get install -y \
     clang \
     bison \
     flex \
-	libreadline-dev \
+    libreadline-dev \
     gawk \
     tcl-dev \
     libffi-dev \
     git \
-	graphviz \
+    graphviz \
     xdot \
     pkg-config \
-    python3 \
+    python3-dev \
     libboost-system-dev \
-	libboost-python-dev \
+    libboost-python-dev \
     libboost-filesystem-dev \
     zlib1g-dev
 
