@@ -43,15 +43,19 @@ sudo apt install -y \
   qtbase5-dev \
   uuid-dev \
   default-jdk \
-  clang \
-  clang-format-12 \
   g++-9 \
   gcc-9 \
   g++-10 \
   gcc-10 \
   g++-11 \
   gcc-11 \
+  g++-12 \
+  gcc-12 \
+  clang-11 \
   clang-12 \
+  clang-13 \
+  clang-14 \
+  clang-format-14 \
   libtbb12
 
 pip install -r requirements.txt
