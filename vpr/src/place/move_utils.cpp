@@ -500,8 +500,8 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 
 int convert_agent_to_logical_block_type(int agent_block_type_index) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    if (place_ctx.logical_to_agent_map.count(agent_block_type_index)) {
-        return place_ctx.logical_to_agent_map[agent_block_type_index];
+    if (place_ctx.phys_blk_type_to_agent_blk_type_map.count(agent_block_type_index)) {
+        return place_ctx.phys_blk_type_to_agent_blk_type_map[agent_block_type_index];
     }
     //invalid block type
     return -1;
@@ -509,8 +509,8 @@ int convert_agent_to_logical_block_type(int agent_block_type_index) {
 
 int convert_logical_to_agent_block_type(int logical_block_type_index) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    if (place_ctx.agent_to_logical_map.count(logical_block_type_index)) {
-        return place_ctx.agent_to_logical_map[logical_block_type_index];
+    if (place_ctx.agent_blk_type_to_phys_blk_type_map.count(logical_block_type_index)) {
+        return place_ctx.agent_blk_type_to_phys_blk_type_map[logical_block_type_index];
     }
     //invalid block type
     return -1;
@@ -518,7 +518,7 @@ int convert_logical_to_agent_block_type(int logical_block_type_index) {
 
 int get_num_agent_types() {
     auto& place_ctx = g_vpr_ctx.placement();
-    return place_ctx.logical_to_agent_map.size();
+    return place_ctx.phys_blk_type_to_agent_blk_type_map.size();
 }
 
 ClusterBlockId propose_block_type(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {

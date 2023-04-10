@@ -984,10 +984,10 @@ enum e_agent_algorithm {
 };
 
 /**
- * @brief Used to determine how large exploration space would be
+ * @brief Used to determines the dimensionality of the RL agent exploration space
  *
  * Agent exploration space can be either based on only move types or
- * consider different block types, as well.
+ * can be based on (block_type, move_type) pair.
  *
  */
 enum e_agent_space {
