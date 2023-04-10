@@ -42,96 +42,48 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
          *      only move type.                                                *
          *      This state is activated late in the anneal and in the Quench   */
 
-        //Loop through all available logical block types and store the ones that exist in the netlist
-        auto& device_ctx = g_vpr_ctx.device();
-        auto& cluster_ctx = g_vpr_ctx.clustering();
-        auto& place_ctx = g_vpr_ctx.mutable_placement();
-        int agent_type_index = 0;
-        for (auto itype : device_ctx.logical_block_types) {
-            if (itype.index == 0) //ignore empty type
-                continue;
-            auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
-            if (blk_per_type.size() != 0) {
-                place_ctx.phys_blk_type_to_agent_blk_type_map.insert(std::pair<int, int>(agent_type_index, itype.index));
-                place_ctx.agent_blk_type_to_phys_blk_type_map.insert(std::pair<int, int>(itype.index, agent_type_index));
-                agent_type_index++;
-            }
-        }
+        //extract available physical block types in the netlist
+        determine_agent_block_types();
+
+        auto& place_ctx = g_vpr_ctx.placement();
+        int num_states_avail_moves = placer_opts.place_algorithm.is_timing_driven() ? NUM_PL_1ST_STATE_MOVE_TYPES : NUM_PL_NONTIMING_MOVE_TYPES;
+
         if (placer_opts.place_agent_algorithm == E_GREEDY) {
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent1, karmed_bandit_agent2;
-            if (placer_opts.place_algorithm.is_timing_driven()) {
-                //agent's 1st state
-                if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
-                    VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move and block types\n");
-                    karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_1ST_STATE_MOVE_TYPES,
-                                                                                place_ctx.agent_blk_type_to_phys_blk_type_map.size(),
-                                                                                placer_opts.place_agent_epsilon);
-                } else {
-                    VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
-                    karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_1ST_STATE_MOVE_TYPES,
-                                                                                placer_opts.place_agent_epsilon);
-                }
-                karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
-                move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
-                //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_MOVE_TYPES, placer_opts.place_agent_epsilon);
-                karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
-                move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+            //agent's 1st state
+            if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
+                VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move and block types\n");
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(num_states_avail_moves,
+                                                                            place_ctx.agent_blk_type_to_phys_blk_type_map.size(),
+                                                                            placer_opts.place_agent_epsilon);
             } else {
-                //agent's 1st state
-                if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
-                    VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move and block types\n");
-                    karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES,
-                                                                                place_ctx.agent_blk_type_to_phys_blk_type_map.size(),
-                                                                                placer_opts.place_agent_epsilon);
-                } else {
-                    VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
-                    karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES,
-                                                                                placer_opts.place_agent_epsilon);
-                }
-                karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
-                move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
-                //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
-                karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
-                move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+                VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(num_states_avail_moves,
+                                                                            placer_opts.place_agent_epsilon);
             }
+            karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
+            move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
+            //agent's 2nd state
+            karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(num_states_avail_moves, placer_opts.place_agent_epsilon);
+            karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
+            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
         } else {
             std::unique_ptr<SoftmaxAgent> karmed_bandit_agent1, karmed_bandit_agent2;
-
-            if (placer_opts.place_algorithm.is_timing_driven()) {
-                //agent's 1st state
-                if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
-                    VTR_LOG("Using simple RL 'Softmax agent' for choosing move and block types\n");
-                    karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_PL_1ST_STATE_MOVE_TYPES,
-                                                                          place_ctx.agent_blk_type_to_phys_blk_type_map.size());
-                } else {
-                    VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
-                    karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_PL_1ST_STATE_MOVE_TYPES);
-                }
-                karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
-                move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
-                //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_MOVE_TYPES);
-                karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
-                move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+            //agent's 1st state
+            if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
+                VTR_LOG("Using simple RL 'Softmax agent' for choosing move and block types\n");
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(num_states_avail_moves,
+                                                                      place_ctx.agent_blk_type_to_phys_blk_type_map.size());
             } else {
-                //agent's 1st state
-                if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
-                    VTR_LOG("Using simple RL 'Softmax agent' for choosing move and block types\n");
-                    karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES,
-                                                                          place_ctx.agent_blk_type_to_phys_blk_type_map.size());
-                } else {
-                    VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
-                    karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES);
-                }
-                karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
-                move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
-                //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES);
-                karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
-                move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+                VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(num_states_avail_moves);
             }
+            karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
+            move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
+            //agent's 2nd state
+            karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(num_states_avail_moves);
+            karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
+            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
         }
     }
 }
@@ -161,5 +113,23 @@ void update_move_generator(std::unique_ptr<MoveGenerator>& move_generator, std::
             move_generator = std::move(current_move_generator);
         else
             move_generator2 = std::move(current_move_generator);
+    }
+}
+
+void determine_agent_block_types(){
+    //Loop through all available logical block types and store the ones that exist in the netlist
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    int agent_type_index = 0;
+    for (auto itype : device_ctx.logical_block_types) {
+        if (itype.index == 0) //ignore empty type
+        continue;
+        auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
+        if (blk_per_type.size() != 0) {
+        place_ctx.phys_blk_type_to_agent_blk_type_map.insert(std::pair<int, int>(agent_type_index, itype.index));
+        place_ctx.agent_blk_type_to_phys_blk_type_map.insert(std::pair<int, int>(itype.index, agent_type_index));
+        agent_type_index++;
+        }
     }
 }
