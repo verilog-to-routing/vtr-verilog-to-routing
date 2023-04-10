@@ -1634,11 +1634,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         /* Alloc the lookup table */
         for (t_rr_type rr_type : RR_TYPES) {
             if (rr_type == CHANX) {
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                rr_graph_builder.node_lookup().resize_nodes(0,grid_.height(), grid_.width(), rr_type, NUM_SIDES);
+                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(),grid_.height(), grid_.width(), rr_type, NUM_SIDES);
             } else {
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                rr_graph_builder.node_lookup().resize_nodes(0,grid_.width(), grid_.height(), rr_type, NUM_SIDES);
+                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(),grid_.width(), grid_.height(), rr_type, NUM_SIDES);
             }
         }
 
