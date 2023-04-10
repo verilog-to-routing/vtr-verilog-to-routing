@@ -9,27 +9,31 @@ Prerequisites
 * ctags
 * bison
 * flex
-* gcc 5.x
+* g++ 9.x
 * cmake 3.9 (minimum version)
 * time
 * cairo
-* gawk
-* xdot
-* tcl-dev
-* graphviz
-* pkg-config
-* python3
-* libffi-dev
+* build-essential
 * libreadline-dev
+* gawk tcl-dev
+* libffi-dev 
+* git
+* graphviz
+* xdot
+* pkg-config
+* python3-dev
 * libboost-system-dev
 * libboost-python-dev
-* libboost-filesystem-dev
+* libboost-filesystem-dev 
 * zlib1g-dev
 
 Building
 --------
 
 To build the VTR flow with the Parmys front-end you may use the VTR Makefile wrapper, by calling the ``make CMAKE_PARAMS="-DWITH_PARMYS=ON"`` command in the `$VTR_ROOT` directory.
+
+.. note::
+    Our CI testing is on Ubuntu 22.04, so that is the best tested platform and recommended for development.
 
 .. note::
 
