@@ -16,7 +16,7 @@ class RouterLookahead {
     virtual std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
 
     // Compute router lookahead (if needed).
-    virtual void compute(const std::vector<t_segment_inf>& segment_inf, const int layer_num) = 0;
+    virtual void compute(const std::vector<t_segment_inf>& segment_inf) = 0;
 
     virtual void compute_intra_tile() = 0;
 
@@ -48,8 +48,7 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        std::string write_lookahead,
                                                        std::string read_lookahead,
                                                        const std::vector<t_segment_inf>& segment_inf,
-                                                       bool is_flat,
-                                                       const int layer_num = 0);
+                                                       bool is_flat);
 
 // Clear router lookahead cache (e.g. when changing or free rrgraph).
 void invalidate_router_lookahead_cache();
@@ -70,7 +69,7 @@ class ClassicLookahead : public RouterLookahead {
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
-    void compute(const std::vector<t_segment_inf>& /*segment_inf*/, const int /*layer_num*/) override {
+    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
 
     void compute_intra_tile() override {
@@ -102,7 +101,7 @@ class NoOpLookahead : public RouterLookahead {
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
-    void compute(const std::vector<t_segment_inf>& /*segment_inf*/, const int /*layer_num*/) override {
+    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
 
     void compute_intra_tile() override {
