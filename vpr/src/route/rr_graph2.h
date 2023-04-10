@@ -152,6 +152,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 bool* Fc_clipped);
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
+                      int layer,
                       int seg,
                       int chan,
                       int track,
@@ -166,6 +167,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       enum e_directionality directionality);
 
 int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
+                        const int layer,
                         const int from_chan,
                         const int from_seg,
                         const int from_track,

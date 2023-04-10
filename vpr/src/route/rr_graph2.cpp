@@ -61,6 +61,7 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const std::vector<int> conn_tracks,
+                                       const int layer,
                                        const int to_chan,
                                        const int to_seg,
                                        const int to_sb,
@@ -74,6 +75,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        t_rr_edge_info_set& rr_edges_to_create);
 
 static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                        const int layer,
                                         const int from_track,
                                         const int to_chan,
                                         const int to_seg,
@@ -92,6 +94,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         t_rr_edge_info_set& rr_edges_to_create);
 
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                 const int layer,
                                  const int from_track,
                                  const int to_chan,
                                  const int to_seg,
@@ -1560,6 +1563,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
 }
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
+                      int layer,
                       int seg,
                       int chan,
                       int track,
@@ -1624,8 +1628,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
 
                     /* Check there is a connection and Fc map isn't wrong */
                     /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
-                    //SARA_TODO: zero should change to layer number once I added that to the node definition
-                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,x, y, IPIN, ipin, side);
+                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,x, y, IPIN, ipin, side);
                     if (to_node) {
                         rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch);
                         ++num_conn;
@@ -1656,6 +1659,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
  * transistor.
  */
 int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
+                        const int layer,
                         const int from_chan,
                         const int from_seg,
                         const int from_track,
@@ -1758,7 +1762,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
             to_sb = from_chan;
         }
 
-        /* to_chan_details may correspond to an x-directed or y-directed channel, depending for which
+        /* to_chan_details may correspond to an x-directed or y-directed channel, depending on which
          * channel type this function is used; so coordinates are reversed as necessary */
         if (to_type == CHANX) {
             to_seg_details = to_chan_details[to_seg][to_chan].data();
@@ -1802,7 +1806,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         if (sb_seg < end_sb_seg) {
             if (custom_switch_block) {
                 if (Direction::DEC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
-                    num_conn += get_track_to_chan_seg(rr_graph_builder, from_track, to_chan, to_seg,
+                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side,
                                                       switch_override,
                                                       sb_conn_map, from_rr_node, rr_edges_to_create);
@@ -1812,7 +1816,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                     /* For bidir, the target segment might have an unbuffered (bidir pass transistor)
                      * switchbox, so we follow through regardless of whether the current segment has an SB */
                     conn_tracks = switch_block_conn[from_side_a][to_side][from_track];
-                    num_conn += get_bidir_track_to_chan_seg(rr_graph_builder, conn_tracks,
+                    num_conn += get_bidir_track_to_chan_seg(rr_graph_builder, conn_tracks, layer,
                                                             to_chan, to_seg, to_sb, to_type,
                                                             to_seg_details, from_is_sblock, from_switch,
                                                             switch_override,
@@ -1823,7 +1827,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                     /* Also, we are connecting from the top or right of SB so it
                      * makes the most sense to only get there from Direction::DEC wires. */
                     if ((from_is_sblock) && (Direction::DEC == from_seg_details[from_track].direction())) {
-                        num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, from_track, to_chan,
+                        num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan,
                                                                  to_seg, to_sb, to_type, max_chan_width, grid,
                                                                  from_side_a, to_side, Fs_per_side,
                                                                  sblock_pattern,
@@ -1840,7 +1844,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         if (sb_seg > start_sb_seg) {
             if (custom_switch_block) {
                 if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
-                    num_conn += get_track_to_chan_seg(rr_graph_builder, from_track, to_chan, to_seg,
+                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
                                                       switch_override,
                                                       sb_conn_map, from_rr_node, rr_edges_to_create);
@@ -1850,7 +1854,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                     /* For bidir, the target segment might have an unbuffered (bidir pass transistor)
                      * switchbox, so we follow through regardless of whether the current segment has an SB */
                     conn_tracks = switch_block_conn[from_side_b][to_side][from_track];
-                    num_conn += get_bidir_track_to_chan_seg(rr_graph_builder, conn_tracks,
+                    num_conn += get_bidir_track_to_chan_seg(rr_graph_builder, conn_tracks, layer,
                                                             to_chan, to_seg, to_sb, to_type,
                                                             to_seg_details, from_is_sblock, from_switch,
                                                             switch_override,
@@ -1862,7 +1866,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                      * makes the most sense to only get there from Direction::INC wires. */
                     if ((from_is_sblock)
                         && (Direction::INC == from_seg_details[from_track].direction())) {
-                        num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, from_track, to_chan,
+                        num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan,
                                                                  to_seg, to_sb, to_type, max_chan_width, grid,
                                                                  from_side_b, to_side, Fs_per_side,
                                                                  sblock_pattern,
@@ -1913,6 +1917,7 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const std::vector<int> conn_tracks,
+                                       const int layer,
                                        const int to_chan,
                                        const int to_seg,
                                        const int to_sb,
@@ -1943,8 +1948,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     num_conn = 0;
     for (iconn = 0; iconn < conn_tracks.size(); ++iconn) {
         to_track = conn_tracks[iconn];
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,to_x, to_y, to_type, to_track);
+        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,to_x, to_y, to_type, to_track);
 
         if (!to_node) {
             continue;
@@ -1981,6 +1985,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
  * See route/build_switchblocks.c for a detailed description of how the switch block
  * connection map sb_conn_map is generated. */
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                 const int layer,
                                  const int from_wire,
                                  const int to_chan,
                                  const int to_seg,
@@ -2023,8 +2028,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
             if (conn_vector.at(iconn).from_wire != from_wire) continue;
 
             int to_wire = conn_vector.at(iconn).to_wire;
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,to_x, to_y, to_chan_type, to_wire);
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,to_x, to_y, to_chan_type, to_wire);
 
             if (!to_node) {
                 continue;
@@ -2056,6 +2060,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
 }
 
 static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                        const int layer,
                                         const int from_track,
                                         const int to_chan,
                                         const int to_seg,
@@ -2119,9 +2124,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                 to_track = mux_labels[(to_mux + i) % num_labels];
                 sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][j + 1] = to_track;
             }
-
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(0,to_x, to_y, to_type, to_track);
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,to_x, to_y, to_type, to_track);
 
             if (!to_node) {
                 continue;
