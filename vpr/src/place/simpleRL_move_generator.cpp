@@ -79,24 +79,28 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     //Update the estimated value of the last action
     q_[last_action_] += delta_q;
 
-    if (agent_info_file_) {
-        fseek(agent_info_file_, 0, SEEK_END);
-        fprintf(agent_info_file_, "%zu,", last_action_);
-        fprintf(agent_info_file_, "%g,", reward);
-
-        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-            fprintf(agent_info_file_, "%g,", q_[i]);
-        }
-
-        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-            fprintf(agent_info_file_, "%zu", num_action_chosen_[i]);
-            if (i != num_available_moves_ * num_available_types_ - 1) {
-                fprintf(agent_info_file_, ",");
-            }
-        }
-        fprintf(agent_info_file_, "\n");
-        fflush(agent_info_file_);
+    //write agent internal q-table and actions into a file for debugging purposes
+    //agent_info_file_ variable is a NULL pointer by default
+    //info file is not generated unless the agent_info_file_ set to a filename in "init_q_scores" function
+    if(agent_info_file_) {
+        write_agent_info(last_action_, reward);
     }
+}
+
+void KArmedBanditAgent::write_agent_info(int last_action, double reward){
+    fseek(agent_info_file_, 0, SEEK_END);
+    fprintf(agent_info_file_, "%zu,", last_action);
+    fprintf(agent_info_file_, "%g,", reward);
+
+    for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
+        fprintf(agent_info_file_, "%g,", q_[i]);
+    }
+
+    for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
+        fprintf(agent_info_file_, "%zu,", num_action_chosen_[i]);
+    }
+    fprintf(agent_info_file_, "\n");
+    fflush(agent_info_file_);
 }
 
 /*                                  *
@@ -128,19 +132,14 @@ void EpsilonGreedyAgent::init_q_scores() {
     num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
     cumm_epsilon_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 1.0 / (num_available_moves_ * num_available_types_));
 
-    if (agent_info_file_) {
-        fprintf(agent_info_file_, "action,reward,");
-        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-            fprintf(agent_info_file_, "q%zu,", i);
-        }
-        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-            fprintf(agent_info_file_, "n%zu,", i);
-        }
-        fprintf(agent_info_file_, "\n");
-        fflush(agent_info_file_);
+    //agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+    //write agent internal q-table and actions into file for debugging purposes
+    if(agent_info_file_) {
+        //we haven't performed any moves yet, hence last_aciton and reward are 0
+        write_agent_info(0,0);
     }
+
     set_epsilon_action_prob();
-    //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
@@ -149,14 +148,14 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
         exp_alpha_ = -1; //Use sample average
     } else {
         //
-        // For an exponentially wieghted average the fraction of total weight applied to
-        // to moves which occured > K moves ago is:
+        // For an exponentially weighted average the fraction of total weight applied
+        // to moves which occurred > K moves ago is:
         //
         //      gamma = (1 - alpha)^K
         //
         // If we treat K as the number of moves per temperature (move_lim) then gamma
-        // is the fraction of weight applied to moves which occured > move_lim moves ago,
-        // and given a target gamma we can explicitly calcualte the alpha step-size
+        // is the fraction of weight applied to moves which occurred > move_lim moves ago,
+        // and given a target gamma we can explicitly calculate the alpha step-size
         // required by the agent:
         //
         //     alpha = 1 - e^(log(gamma) / K)
@@ -254,16 +253,11 @@ void SoftmaxAgent::init_q_scores() {
     block_type_ratio_ = std::vector<float>(num_available_types_, 0.);
     cumm_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_);
 
-    if (agent_info_file_) {
-        fprintf(agent_info_file_, "action,reward,");
-        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-            fprintf(agent_info_file_, "q%zu,", i);
-        }
-        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-            fprintf(agent_info_file_, "n%zu,", i);
-        }
-        fprintf(agent_info_file_, "\n");
-        fflush(agent_info_file_);
+    //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+    //write agent internal q-table and actions into file for debugging purposes
+    if(agent_info_file_) {
+        //we haven't performed any moves yet, hence last_aciton and reward are 0
+        write_agent_info(0,0);
     }
 
     /*
@@ -275,7 +269,7 @@ void SoftmaxAgent::init_q_scores() {
         set_block_ratio();
     }
     set_action_prob();
-    //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+
 }
 
 t_propose_action SoftmaxAgent::propose_action() {
@@ -325,7 +319,7 @@ void SoftmaxAgent::set_block_ratio() {
      */
     for (size_t itype = 0; itype < num_available_types_; itype++) {
         t_logical_block_type blk_type;
-        blk_type.index = convert_agent_to_logical_block_type(itype);
+        blk_type.index = convert_agent_to_phys_blk_type(itype);
         auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
         block_type_ratio_[itype] = (float)num_blocks / num_total_blocks;
         block_type_ratio_[itype] /= num_available_moves_;
