@@ -245,6 +245,8 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
     VTR_ASSERT(repeat.y > 0);
     VTR_ASSERT(repeat.x > 0);
 
+    int layer_num = 0; //Function *FOR NOW* assumes that layer is always 0
+
     for (unsigned y = x_chan_wire.position; y < grid.height() - 1; y += repeat.y) {
         for (unsigned x_start = x_chan_wire.start; x_start < grid.width() - 1; x_start += repeat.x) {
             unsigned drive_x = x_start + drive.offset;
@@ -282,7 +284,8 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
             }
 
             // create drive point (length zero wire)
-            auto drive_node_idx = create_chanx_wire(drive_x,
+            auto drive_node_idx = create_chanx_wire(layer_num,
+                                                    drive_x,
                                                     drive_x,
                                                     y,
                                                     ptc_num,
@@ -292,14 +295,16 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
             clock_graph.add_switch_location(get_name(), drive.name, drive_x, y, drive_node_idx);
 
             // create rib wire to the right and left of the drive point
-            auto left_node_idx = create_chanx_wire(x_start + x_offset,
+            auto left_node_idx = create_chanx_wire(layer_num,
+                                                   x_start + x_offset,
                                                    drive_x - 1,
                                                    y,
                                                    ptc_num,
                                                    Direction::DEC,
                                                    rr_nodes,
                                                    rr_graph_builder);
-            auto right_node_idx = create_chanx_wire(drive_x + 1,
+            auto right_node_idx = create_chanx_wire(layer_num,
+                                                    drive_x + 1,
                                                     x_end,
                                                     y,
                                                     ptc_num,
@@ -320,7 +325,8 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
     }
 }
 
-int ClockRib::create_chanx_wire(int x_start,
+int ClockRib::create_chanx_wire(int layer,
+                                int x_start,
                                 int x_end,
                                 int y,
                                 int ptc_num,
@@ -333,6 +339,7 @@ int ClockRib::create_chanx_wire(int x_start,
 
     rr_graph_builder.set_node_type(chanx_node, CHANX);
     rr_graph_builder.set_node_coordinates(chanx_node, x_start, y, x_end, y);
+    rr_graph_builder.set_node_layer(chanx_node,layer);
     rr_graph_builder.set_node_capacity(chanx_node, 1);
     rr_graph_builder.set_node_track_num(chanx_node, ptc_num);
     rr_graph_builder.set_node_rc_index(chanx_node, NodeRCIndex(find_create_rr_rc_data(
@@ -363,8 +370,7 @@ int ClockRib::create_chanx_wire(int x_start,
     for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
             //TODO: CHANX uses odd swapped x/y indices here. Will rework once rr_node_indices is shadowed
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().add_node(chanx_node,0, iy, ix, rr_graph.node_type(chanx_node), rr_graph.node_track_num(chanx_node));
+            rr_graph_builder.node_lookup().add_node(chanx_node,layer, iy, ix, rr_graph.node_type(chanx_node), rr_graph.node_track_num(chanx_node));
         }
     }
 
@@ -574,6 +580,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
     VTR_ASSERT(repeat.y > 0);
     VTR_ASSERT(repeat.x > 0);
 
+    int layer_num = 0; //Function "FOR NOW" assumes that layer_num is always 0
+
     for (unsigned x = y_chan_wire.position; x < grid.width() - 1; x += repeat.x) {
         for (unsigned y_start = y_chan_wire.start; y_start < grid.height() - 1; y_start += repeat.y) {
             unsigned drive_y = y_start + drive.offset;
@@ -611,7 +619,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             }
 
             //create drive point (length zero wire)
-            auto drive_node_idx = create_chany_wire(drive_y,
+            auto drive_node_idx = create_chany_wire(layer_num,
+                                                    drive_y,
                                                     drive_y,
                                                     x,
                                                     ptc_num,
@@ -622,7 +631,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             clock_graph.add_switch_location(get_name(), drive.name, x, drive_y, drive_node_idx);
 
             // create spine wire above and below the drive point
-            auto left_node_idx = create_chany_wire(y_start + y_offset,
+            auto left_node_idx = create_chany_wire(layer_num,
+                                                   y_start + y_offset,
                                                    drive_y - 1,
                                                    x,
                                                    ptc_num,
@@ -630,7 +640,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                                    rr_nodes,
                                                    rr_graph_builder,
                                                    num_segments_x);
-            auto right_node_idx = create_chany_wire(drive_y + 1,
+            auto right_node_idx = create_chany_wire(layer_num,
+                                                    drive_y + 1,
                                                     y_end,
                                                     x,
                                                     ptc_num,
@@ -655,7 +666,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
     }
 }
 
-int ClockSpine::create_chany_wire(int y_start,
+int ClockSpine::create_chany_wire(int layer,
+                                  int y_start,
                                   int y_end,
                                   int x,
                                   int ptc_num,
@@ -669,6 +681,7 @@ int ClockSpine::create_chany_wire(int y_start,
 
     rr_graph_builder.set_node_type(chany_node, CHANY);
     rr_graph_builder.set_node_coordinates(chany_node, x, y_start, x, y_end);
+    rr_graph_builder.set_node_layer(chany_node,layer);
     rr_graph_builder.set_node_capacity(chany_node, 1);
     rr_graph_builder.set_node_track_num(chany_node, ptc_num);
     rr_graph_builder.set_node_rc_index(chany_node, NodeRCIndex(find_create_rr_rc_data(
@@ -698,8 +711,7 @@ int ClockSpine::create_chany_wire(int y_start,
     /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
     for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            rr_graph_builder.node_lookup().add_node(chany_node,0, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
+            rr_graph_builder.node_lookup().add_node(chany_node,layer, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
         }
     }
 

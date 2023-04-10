@@ -23,9 +23,10 @@ void RoutingToClockConnection::set_clock_switch_point_name(std::string clock_swi
     switch_point_name = clock_switch_point_name;
 }
 
-void RoutingToClockConnection::set_switch_location(int x, int y) {
+void RoutingToClockConnection::set_switch_location(int x, int y, int layer /* =0 */) {
     switch_location.x = x;
     switch_location.y = y;
+    switch_location.layer = layer;
 }
 
 void RoutingToClockConnection::set_switch(int arch_switch_index) {
@@ -55,16 +56,15 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
-    RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.x, switch_location.y);
+    RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.layer,switch_location.x, switch_location.y);
     {
         auto& mut_device_ctx = g_vpr_ctx.mutable_device();
         mut_device_ctx.virtual_clock_network_root_idx = size_t(virtual_clock_network_root_idx);
     }
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
-    //SARA_TODO: zero should change to layer number once I added that to the node definition
-    auto x_wire_indices = node_lookup.find_channel_nodes(0,switch_location.x, switch_location.y, CHANX);
-    auto y_wire_indices = node_lookup.find_channel_nodes(0,switch_location.x, switch_location.y, CHANY);
+    auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer,switch_location.x, switch_location.y, CHANX);
+    auto y_wire_indices = node_lookup.find_channel_nodes(switch_location.layer,switch_location.x, switch_location.y, CHANY);
     auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
         clock_to_connect_to, switch_point_name, switch_location.x, switch_location.y);
 
@@ -91,7 +91,7 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     }
 }
 
-RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x, int y) {
+RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int layer, int x, int y) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_graph = device_ctx.rr_graph;
     auto& rr_graph_builder = device_ctx.rr_graph_builder;
@@ -100,9 +100,8 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
     rr_graph_builder.emplace_back();
     RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
 
-    //Determine the a valid PTC
-    //SARA_TODO: zero should change to layer number once I added that to the node definition
-    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(0,x, y, SINK);
+    //Determine a valid PTC
+    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(layer,x, y, SINK);
 
     int max_ptc = 0;
     for (RRNodeId inode : nodes_at_loc) {
@@ -113,6 +112,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
     rr_graph_builder.set_node_type(node_index, SINK);
     rr_graph_builder.set_node_class_num(node_index, ptc);
     rr_graph_builder.set_node_coordinates(node_index, x, y, x, y);
+    rr_graph_builder.set_node_layer(node_index, layer);
     rr_graph_builder.set_node_capacity(node_index, 1);
     rr_graph_builder.set_node_cost_index(node_index, RRIndexedDataId(SINK_COST_INDEX));
 
@@ -124,8 +124,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
     // However, since the SINK node has the same xhigh/xlow as well as yhigh/ylow, we can probably use a shortcut
     for (int ix = rr_graph.node_xlow(node_index); ix <= rr_graph.node_xhigh(node_index); ++ix) {
         for (int iy = rr_graph.node_ylow(node_index); iy <= rr_graph.node_yhigh(node_index); ++iy) {
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            node_lookup.add_node(node_index,0, ix, iy, rr_graph.node_type(node_index), rr_graph.node_class_num(node_index));
+            node_lookup.add_node(node_index,layer, ix, iy, rr_graph.node_type(node_index), rr_graph.node_class_num(node_index));
         }
     }
 
@@ -251,6 +250,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
     auto& grid = clock_graph.grid();
+    int layer_num = 0; //Function *FOR NOW* assumes that layer_num is always 0
 
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
@@ -259,15 +259,15 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                 continue;
             }
 
-            auto type = grid.get_physical_type(t_physical_tile_loc(x, y));
+            auto type = grid.get_physical_type(t_physical_tile_loc(x, y, layer_num));
 
             // Skip EMPTY type
             if (is_empty_type(type)) {
                 continue;
             }
 
-            auto width_offset = grid.get_width_offset(t_physical_tile_loc(x, y));
-            auto height_offset = grid.get_height_offset(t_physical_tile_loc(x, y));
+            auto width_offset = grid.get_width_offset(t_physical_tile_loc(x, y, layer_num));
+            auto height_offset = grid.get_height_offset(t_physical_tile_loc(x, y, layer_num));
 
             // Ignore grid locations that do not have blocks
             bool has_pb_type = false;
@@ -309,8 +309,8 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     } else {
                         clock_y_offset = -1; // pick the chanx below the block
                     }
-                    //SARA_TODO: zero should change to layer number once I added that to the node definition
-                    auto clock_pin_node_idx = node_lookup.find_node(0,
+
+                    auto clock_pin_node_idx = node_lookup.find_node(layer_num,
                                                                     x,
                                                                     y,
                                                                     IPIN,
