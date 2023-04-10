@@ -22,7 +22,7 @@
 static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_delays& src_opin_delays);
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays);
 
-static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> start);
+static t_physical_tile_loc pick_sample_tile(t_physical_tile_type_ptr tile_type);
 
 static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     util::t_ipin_primitive_sink_delays& pin_delays,
@@ -318,16 +318,16 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     //and so only measure one instance of each type
     for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
         for (e_rr_type rr_type : {SOURCE, OPIN}) {
-            vtr::Point<int> sample_loc(-1, -1);
+            t_physical_tile_loc sample_loc;
 
             size_t num_sampled_locs = 0;
             bool ptcs_with_no_delays = true;
             while (ptcs_with_no_delays) { //Haven't found wire connected to ptc
                 ptcs_with_no_delays = false;
 
-                sample_loc = pick_sample_tile(&device_ctx.physical_tile_types[itile], sample_loc);
+                sample_loc = pick_sample_tile(&device_ctx.physical_tile_types[itile]);
 
-                if (sample_loc.x() == -1 && sample_loc.y() == -1) {
+                if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
                     //No untried instances of the current tile type left
                     VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
                                  (num_sampled_locs == 0) ? "" : "more ",
@@ -336,9 +336,8 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                     break;
                 }
 
-                //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.,sample_loc.x(), sample_loc.y(), rr_type);
+                //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x, sample_loc.y);
+                const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num,sample_loc.x, sample_loc.y, rr_type);
                 for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
                     // For the time being, we decide to not let the lookahead explore the node inside the clusters
@@ -360,8 +359,8 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d)\n",
                                        rr_node_typename[rr_type],
                                        rr_node_arch_name(size_t(node_id), is_flat).c_str(),
-                                       sample_loc.x(),
-                                       sample_loc.y(),
+                                       sample_loc.x,
+                                       sample_loc.y,
                                        is_flat);
 
                         ptcs_with_no_delays = true;
@@ -391,27 +390,27 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
     for (auto tile_type : device_ctx.physical_tile_types) {
-        vtr::Point<int> sample_loc(-1, -1);
+        t_physical_tile_loc sample_loc;
 
-        sample_loc = pick_sample_tile(&tile_type, sample_loc);
+        sample_loc = pick_sample_tile(&tile_type);
 
-        if (sample_loc.x() == -1 && sample_loc.y() == -1) {
+        if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
             //No untried instances of the current tile type left
             VTR_LOG_WARN("Found no sample locations for %s\n",
                          tile_type.name);
             continue;
         }
 
-        int min_x = std::max(0, sample_loc.x() - X_OFFSET);
-        int min_y = std::max(0, sample_loc.y() - Y_OFFSET);
-        int max_x = std::min(int(device_ctx.grid.width()), sample_loc.x() + X_OFFSET);
-        int max_y = std::min(int(device_ctx.grid.height()), sample_loc.y() + Y_OFFSET);
+        int min_x = std::max(0, sample_loc.x - X_OFFSET);
+        int min_y = std::max(0, sample_loc.y - Y_OFFSET);
+        int max_x = std::min(int(device_ctx.grid.width()), sample_loc.x + X_OFFSET);
+        int max_y = std::min(int(device_ctx.grid.height()), sample_loc.y + Y_OFFSET);
+        int layer_num = sample_loc.layer_num;
 
         for (int ix = min_x; ix < max_x; ix++) {
             for (int iy = min_y; iy < max_y; iy++) {
                 for (auto rr_type : {CHANX, CHANY}) {
-                    //SARA_TODO: zero should change to layer number once I added that to the node definition
-                    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(0,ix, iy, rr_type)) {
+                    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(layer_num,ix, iy, rr_type)) {
                         //Find the IPINs which are reachable from the wires within the bounding box
                         //around the selected tile location
                         dijkstra_flood_to_ipins(node_id, chan_ipins_delays);
@@ -655,40 +654,38 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
     }
 }
 
-static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> prev) {
+static t_physical_tile_loc pick_sample_tile(t_physical_tile_type_ptr tile_type) {
     //Very simple for now, just pick the fist matching tile found
-    vtr::Point<int> loc(OPEN, OPEN);
-
-    //VTR_LOG("Prev: %d,%d\n", prev.x(), prev.y());
+    t_physical_tile_loc loc(OPEN, OPEN, 0);
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
-    int y_init = prev.y() + 1; //Start searching next element above prev
+    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
 
-    for (int x = prev.x(); x < int(grid.width()); ++x) {
-        if (x < 0) continue;
+        for (int x = 0; x < int(grid.width()); ++x) {
+            if (x < 0) continue;
 
-        //VTR_LOG("  x: %d\n", x);
+            //VTR_LOG("  x: %d\n", x);
 
-        for (int y = y_init; y < int(grid.height()); ++y) {
-            if (y < 0) continue;
+            for (int y = 0; y < int(grid.height()); ++y) {
+                if (y < 0) continue;
 
-            //VTR_LOG("   y: %d\n", y);
-            if (grid.get_physical_type(t_physical_tile_loc(x, y)) == tile_type) {
-                loc.set_x(x);
-                loc.set_y(y);
+                //VTR_LOG("   y: %d\n", y);
+                if (grid.get_physical_type(t_physical_tile_loc(x, y, layer)) == tile_type) {
+                    loc.x = x;
+                    loc.y = y;
+                    loc.layer_num = layer;
+                    break;
+                }
+            }
+
+            if (loc.x != OPEN && loc.y != OPEN && loc.layer_num != OPEN) {
                 break;
             }
         }
-
-        if (loc.x() != OPEN && loc.y() != OPEN) {
-            break;
-        } else {
-            y_init = 0; //Prepare to search next column
-        }
     }
-    //VTR_LOG("Next: %d,%d\n", loc.x(), loc.y());
+    //VTR_LOG("Next: %d,%d\n", loc.x, loc.y);
 
     return loc;
 }
