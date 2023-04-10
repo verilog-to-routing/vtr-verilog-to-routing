@@ -236,7 +236,7 @@ static void write_intra_cluster_router_lookahead(const std::string& file,
                                                  const std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost);
 
 /* returns index of a node from which to start routing */
-static RRNodeId get_start_node(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
+static RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(RRNodeId start_node,
@@ -603,6 +603,9 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         longest_length = std::max(longest_length, seg_inf.length);
     }
 
+    //Function *FOR NOW* assumes the layer_num is 0
+    int layer_num = 0;
+
     //Start sampling at the lower left non-corner
     int ref_x = 1;
     int ref_y = 1;
@@ -644,7 +647,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
                 for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
                     /* get the rr node index from which to start routing */
-                    RRNodeId start_node = get_start_node(sample_x, sample_y,
+                    RRNodeId start_node = get_start_node(layer_num,sample_x, sample_y,
                                                          target_x, target_y, //non-corner upper right
                                                          chan_type, iseg, track_offset);
 
@@ -733,7 +736,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 }
 
 /* returns index of a node from which to start routing */
-static RRNodeId get_start_node(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset) {
+static RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& node_lookup = rr_graph.node_lookup();
@@ -754,8 +757,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
     int start_lookup_y = start_y;
 
     /* find first node in channel that has specified segment index and goes in the desired direction */
-    //SARA_TODO: zero should change to layer number once I added that to the node definition
-    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(0,start_lookup_x, start_lookup_y, rr_type)) {
+    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(layer,start_lookup_x, start_lookup_y, rr_type)) {
         VTR_ASSERT(rr_graph.node_type(node_id) == rr_type);
 
         Direction node_direction = rr_graph.node_direction(node_id);
