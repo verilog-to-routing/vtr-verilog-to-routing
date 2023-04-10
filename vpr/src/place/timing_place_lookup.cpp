@@ -370,15 +370,13 @@ static float route_connection_delay(
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(0,source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num,source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
             VTR_ASSERT(sink_ptc != OPEN);
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0,sink_x, sink_y, SINK, sink_ptc);
+            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num,sink_x, sink_y, SINK, sink_ptc);
 
             VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
@@ -467,8 +465,7 @@ static void generic_compute_matrix_dijkstra_expansion(
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, layer_num}));
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(0,source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num,source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
         auto delays = calculate_all_path_delays_from_rr_node(size_t(source_rr_node),
@@ -504,8 +501,7 @@ static void generic_compute_matrix_dijkstra_expansion(
                     auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}));
                     for (int sink_ptc : best_sink_ptcs) {
                         VTR_ASSERT(sink_ptc != OPEN);
-                        //SARA_TODO: zero should change to layer number once I added that to the node definition
-                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0,sink_x, sink_y, SINK, sink_ptc);
+                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num,sink_x, sink_y, SINK, sink_ptc);
 
                         VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
@@ -1026,56 +1022,55 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //and which has the appropriate pins
     int from_x = 0, from_y = 0, from_sub_tile = 0;
     int to_x = 0, to_y = 0, to_sub_tile = 0;
+    int layer_num = 0; //Function *FOR NOW* assumes that from/to blocks are at same die and have a same layer nums
     bool found = false;
-    for (from_x = 0; from_x < (int)grid.width(); ++from_x) {
-        to_x = from_x + direct->x_offset;
-        if (to_x < 0 || to_x >= (int)grid.width()) continue;
+    for(layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
+        for (from_x = 0; from_x < (int) grid.width(); ++from_x) {
+            to_x = from_x + direct->x_offset;
+            if (to_x < 0 || to_x >= (int) grid.width()) continue;
 
-        for (from_y = 0; from_y < (int)grid.height(); ++from_y) {
-            if (grid.get_physical_type(t_physical_tile_loc(from_x, from_y)) != from_type) continue;
+            for (from_y = 0; from_y < (int) grid.height(); ++from_y) {
+                if (grid.get_physical_type(t_physical_tile_loc(from_x, from_y, layer_num)) != from_type) continue;
 
-            //Check that the from pin exists at this from location
-            //(with multi-width/height blocks pins may not exist at all locations)
-            bool from_pin_found = false;
-            if (direct->from_side != NUM_SIDES) {
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                RRNodeId from_pin_rr = node_lookup.find_node(0,from_x, from_y, OPIN, from_pin, direct->from_side);
-                from_pin_found = (from_pin_rr != RRNodeId::INVALID());
-            } else {
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                from_pin_found = !(node_lookup.find_nodes_at_all_sides(0,from_x, from_y, OPIN, from_pin).empty());
-            }
-            if (!from_pin_found) continue;
+                //Check that the from pin exists at this from location
+                //(with multi-width/height blocks pins may not exist at all locations)
+                bool from_pin_found = false;
+                if (direct->from_side != NUM_SIDES) {
+                    RRNodeId from_pin_rr = node_lookup.find_node(layer_num, from_x, from_y, OPIN, from_pin, direct->from_side);
+                    from_pin_found = (from_pin_rr != RRNodeId::INVALID());
+                } else {
+                    from_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, from_x, from_y, OPIN, from_pin).empty());
+                }
+                if (!from_pin_found) continue;
 
-            to_y = from_y + direct->y_offset;
+                to_y = from_y + direct->y_offset;
 
-            if (to_y < 0 || to_y >= (int)grid.height()) continue;
-            if (grid.get_physical_type(t_physical_tile_loc(to_x, to_y)) != to_type) continue;
+                if (to_y < 0 || to_y >= (int) grid.height()) continue;
+                if (grid.get_physical_type(t_physical_tile_loc(to_x, to_y)) != to_type) continue;
 
-            //Check that the from pin exists at this from location
-            //(with multi-width/height blocks pins may not exist at all locations)
-            bool to_pin_found = false;
-            if (direct->to_side != NUM_SIDES) {
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                RRNodeId to_pin_rr = node_lookup.find_node(0,to_x, to_y, IPIN, to_pin, direct->to_side);
-                to_pin_found = (to_pin_rr != RRNodeId::INVALID());
-            } else {
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                to_pin_found = !(node_lookup.find_nodes_at_all_sides(0,to_x, to_y, IPIN, to_pin).empty());
-            }
-            if (!to_pin_found) continue;
+                //Check that the from pin exists at this from location
+                //(with multi-width/height blocks pins may not exist at all locations)
+                bool to_pin_found = false;
+                if (direct->to_side != NUM_SIDES) {
+                    RRNodeId to_pin_rr = node_lookup.find_node(layer_num, to_x, to_y, IPIN, to_pin, direct->to_side);
+                    to_pin_found = (to_pin_rr != RRNodeId::INVALID());
+                } else {
+                    to_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, to_x, to_y, IPIN, to_pin).empty());
+                }
+                if (!to_pin_found) continue;
 
-            for (from_sub_tile = 0; from_sub_tile < from_type->capacity; ++from_sub_tile) {
-                to_sub_tile = from_sub_tile + direct->sub_tile_offset;
+                for (from_sub_tile = 0; from_sub_tile < from_type->capacity; ++from_sub_tile) {
+                    to_sub_tile = from_sub_tile + direct->sub_tile_offset;
 
-                if (to_sub_tile < 0 || to_sub_tile >= to_type->capacity) continue;
+                    if (to_sub_tile < 0 || to_sub_tile >= to_type->capacity) continue;
 
-                found = true;
-                break;
+                    found = true;
+                    break;
+                }
+                if (found) break;
             }
             if (found) break;
         }
-        if (found) break;
     }
 
     if (!found) {
@@ -1083,10 +1078,10 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     }
 
     //Now have a legal instance of this direct connect
-    VTR_ASSERT(grid.get_physical_type(t_physical_tile_loc(from_x, from_y)) == from_type);
+    VTR_ASSERT(grid.get_physical_type(t_physical_tile_loc(from_x, from_y, layer_num)) == from_type);
     VTR_ASSERT(from_sub_tile < from_type->capacity);
 
-    VTR_ASSERT(grid.get_physical_type(t_physical_tile_loc(to_x, to_y)) == to_type);
+    VTR_ASSERT(grid.get_physical_type(t_physical_tile_loc(to_x, to_y, layer_num)) == to_type);
     VTR_ASSERT(to_sub_tile < to_type->capacity);
 
     VTR_ASSERT(from_x + direct->x_offset == to_x);
@@ -1098,15 +1093,13 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //
 
     {
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId src_rr_candidate = node_lookup.find_node(0, from_x, from_y, SOURCE, from_pin_class);
+        RRNodeId src_rr_candidate = node_lookup.find_node(layer_num, from_x, from_y, SOURCE, from_pin_class);
         VTR_ASSERT(src_rr_candidate);
         *src_rr = size_t(src_rr_candidate);
     }
 
     {
-        //SARA_TODO: zero should change to layer number once I added that to the node definition
-        RRNodeId sink_rr_candidate = node_lookup.find_node(0,to_x, to_y, SINK, to_pin_class);
+        RRNodeId sink_rr_candidate = node_lookup.find_node(layer_num,to_x, to_y, SINK, to_pin_class);
         VTR_ASSERT(sink_rr_candidate);
         *sink_rr = size_t(sink_rr_candidate);
     }
