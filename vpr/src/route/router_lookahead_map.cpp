@@ -206,7 +206,7 @@ t_wire_cost_map f_wire_cost_map;
 
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf, const int layer_num);
 static void compute_tiles_lookahead(std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
                                     std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
@@ -511,12 +511,12 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
-void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf, const int /*layer_num*/) {
+void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf, const int layer_num) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
-    compute_router_wire_lookahead(segment_inf);
+    compute_router_wire_lookahead(segment_inf, layer_num);
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
@@ -588,7 +588,7 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, in
     return f_wire_cost_map[chan_index][seg_index][delta_x][delta_y];
 }
 
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf) {
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf, const int layer_num) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -603,8 +603,6 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         longest_length = std::max(longest_length, seg_inf.length);
     }
 
-    //Function *FOR NOW* assumes the layer_num is 0
-    int layer_num = 0;
 
     //Start sampling at the lower left non-corner
     int ref_x = 1;
