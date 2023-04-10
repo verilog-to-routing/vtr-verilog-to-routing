@@ -289,6 +289,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead();
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
+                                                         int layer,
                                                          int x,
                                                          int y);
 

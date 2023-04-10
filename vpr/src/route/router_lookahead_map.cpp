@@ -1343,7 +1343,6 @@ static void compute_tile_lookahead(std::unordered_map<t_physical_tile_type_ptr, 
     int x = 1;
     int y = 1;
     int layer = 0;
-    //SARA_TODO: zero should change to layer number once I added that to the node definition
     build_tile_rr_graph(rr_graph_builder,
                         det_routing_arch,
                         physical_tile,
@@ -1363,6 +1362,7 @@ static void compute_tile_lookahead(std::unordered_map<t_physical_tile_type_ptr, 
 
     util::t_ipin_primitive_sink_delays pin_delays = util::compute_intra_tile_dijkstra(rr_graph,
                                                                                       physical_tile,
+                                                                                      layer,
                                                                                       x,
                                                                                       y);
 

@@ -1039,8 +1039,7 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
-            //SARA_TODO: zero should change to layer number once I added that to the node definition
-            RRNodeId inode = rr_graph.node_lookup().find_node(0,
+            RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
                                                               blk_loc.loc.x,
                                                               blk_loc.loc.y,
                                                               (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
@@ -1147,8 +1146,8 @@ static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RR
                     VTR_ASSERT(class_type == RECEIVER);
                     rr_type = SINK;
                 }
-                //SARA_TODO: zero should change to layer number once I added that to the node definition
-                RRNodeId inode = rr_graph.node_lookup().find_node(0,
+
+                RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
                                                                   blk_loc.loc.x,
                                                                   blk_loc.loc.y,
                                                                   rr_type,
