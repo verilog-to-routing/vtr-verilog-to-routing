@@ -669,6 +669,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
             for (RRNodeId rr_node : rr_graph.nodes()) {
                 auto rr_type = rr_graph.node_type(rr_node);
                 if (rr_type != chan_type) continue;
+                if (rr_graph.node_layer(rr_node) != layer_num) continue;
 
                 auto cost_index = rr_graph.node_cost_index(rr_node);
                 VTR_ASSERT(cost_index != RRIndexedDataId(OPEN));
