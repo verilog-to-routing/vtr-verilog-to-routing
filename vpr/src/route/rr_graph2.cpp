@@ -1161,10 +1161,10 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                      *   for the same input pin on multiple sides, and thus avoid multiple driver problems
                      */
                     std::vector<e_side> wanted_sides;
-                    if (grid.height() - 1 == y) { /* TOP side */
+                    if ((int)grid.height() - 1 == y) { /* TOP side */
                         wanted_sides.push_back(BOTTOM);
                     }
-                    if (grid.width() - 1 == x) { /* RIGHT side */
+                    if ((int)grid.width() - 1 == x) { /* RIGHT side */
                         wanted_sides.push_back(LEFT);
                     }
                     if (0 == y) { /* BOTTOM side */
