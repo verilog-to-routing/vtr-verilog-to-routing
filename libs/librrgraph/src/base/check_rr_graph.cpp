@@ -335,7 +335,7 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
-    int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
+    int xlow, ylow, xhigh, yhigh, layer_num, ptc_num, capacity;
     t_rr_type rr_type;
     t_physical_tile_type_ptr type;
     int nodes_per_chan, tracks_per_node;
@@ -348,6 +348,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     xhigh = rr_graph.node_xhigh(rr_node);
     ylow = rr_graph.node_ylow(rr_node);
     yhigh = rr_graph.node_yhigh(rr_node);
+    layer_num = rr_graph.node_layer(rr_node);
     ptc_num = rr_graph.node_ptc_num(rr_node);
     capacity = rr_graph.node_capacity(rr_node);
     cost_index = rr_graph.node_cost_index(rr_node);
@@ -361,6 +362,11 @@ void check_rr_node(const RRGraphView& rr_graph,
     if (xlow < 0 || xhigh > int(grid.width()) - 1 || ylow < 0 || yhigh > int(grid.height()) - 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_rr_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
+    }
+
+    if (layer_num < 0 || layer_num > int(grid.get_num_layers()) - 1) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in check_rr_node: rr endpoints layer_num (%d) is out of range.\n", layer_num);
     }
 
     if (ptc_num < 0) {

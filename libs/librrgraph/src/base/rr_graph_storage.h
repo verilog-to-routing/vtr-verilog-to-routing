@@ -62,8 +62,6 @@ struct alignas(32) t_rr_node_data {
     int16_t xhigh_ = -1;
     int16_t yhigh_ = -1;
 
-    int8_t layer_ = 0;
-
     t_rr_type type_ = NUM_RR_TYPES;
 
     /* The character is a hex number which is a 4-bit truth table for node sides
@@ -81,6 +79,8 @@ struct alignas(32) t_rr_node_data {
     } dir_side_;
 
     uint16_t capacity_ = 0;
+
+    int8_t layer_ = -1;
 };
 
 // t_rr_node_data is a key data structure, so fail at compile time if the
