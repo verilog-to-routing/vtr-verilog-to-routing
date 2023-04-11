@@ -521,7 +521,7 @@ int get_num_agent_types() {
     return place_ctx.phys_blk_type_to_agent_blk_type_map.size();
 }
 
-ClusterBlockId propose_block_type(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {
+ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -561,7 +561,8 @@ ClusterBlockId pick_from_block() {
 
     std::unordered_set<ClusterBlockId> tried_from_blocks;
 
-    //So long as untried blocks remain
+    //Keep selecting random blocks as long as there are any untried blocks
+    //Can get slow if there are many blocks but only a few (or none) can move
     while (tried_from_blocks.size() < cluster_ctx.clb_nlist.blocks().size()) {
         //Pick a block at random
         ClusterBlockId b_from = ClusterBlockId(vtr::irand((int)cluster_ctx.clb_nlist.blocks().size() - 1));
@@ -603,7 +604,8 @@ ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
 
     std::unordered_set<ClusterBlockId> tried_from_blocks;
 
-    //So long as untried blocks remain
+    //Keep selecting random blocks as long as there are any untried blocks with type "blk_type"
+    //Can get slow if there are many blocks but only a few (or none) can move
     while (tried_from_blocks.size() < blocks_per_type.size()) {
         //Pick a block at random
         ClusterBlockId b_from = ClusterBlockId(blocks_per_type[vtr::irand((int)blocks_per_type.size() - 1)]);
