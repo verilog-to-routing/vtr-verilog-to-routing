@@ -594,8 +594,9 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int layer_num, 
         chan_index = 1;
     }
 
-    VTR_ASSERT_SAFE(delta_x < (int)f_wire_cost_map.dim_size(2));
-    VTR_ASSERT_SAFE(delta_y < (int)f_wire_cost_map.dim_size(3));
+    VTR_ASSERT_SAFE(layer_num < (int)f_wire_cost_map.dim_size(0));
+    VTR_ASSERT_SAFE(delta_x < (int)f_wire_cost_map.dim_size(3));
+    VTR_ASSERT_SAFE(delta_y < (int)f_wire_cost_map.dim_size(4));
 
     return f_wire_cost_map[layer_num][chan_index][seg_index][delta_x][delta_y];
 }
@@ -1310,8 +1311,8 @@ static void adjust_rr_src_sink_position(const RRNodeId rr, int& x, int& y) {
 static void print_wire_cost_map(int layer_num, const std::vector<t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (size_t chan_index = 0; chan_index < f_wire_cost_map.dim_size(0); chan_index++) {
-        for (size_t iseg = 0; iseg < f_wire_cost_map.dim_size(1); iseg++) {
+    for (size_t chan_index = 0; chan_index < f_wire_cost_map.dim_size(1); chan_index++) {
+        for (size_t iseg = 0; iseg < f_wire_cost_map.dim_size(2); iseg++) {
             vtr::printf("Seg %d (%s, length %d) %d\n",
                         iseg,
                         segment_inf[iseg].name.c_str(),
@@ -1442,8 +1443,8 @@ static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opi
         for (int dx = 0; dx < width; dx++) {
             for (int dy = 0; dy < height; dy++) {
                 util::Cost_Entry min_cost(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-                for (int chan_idx = 0; chan_idx < (int)f_wire_cost_map.dim_size(0); chan_idx++) {
-                    for (int seg_idx = 0; seg_idx < (int)f_wire_cost_map.dim_size(1); seg_idx++) {
+                for (int chan_idx = 0; chan_idx < (int)f_wire_cost_map.dim_size(1); chan_idx++) {
+                    for (int seg_idx = 0; seg_idx < (int)f_wire_cost_map.dim_size(2); seg_idx++) {
                         auto cost = util::Cost_Entry(f_wire_cost_map[layer_num][chan_idx][seg_idx][dx][dy].delay,
                                                      f_wire_cost_map[layer_num][chan_idx][seg_idx][dx][dy].congestion);
                         if (cost.delay < min_cost.delay) {
