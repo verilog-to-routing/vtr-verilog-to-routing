@@ -89,7 +89,7 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
 
 void KArmedBanditAgent::write_agent_info(int last_action, double reward){
     fseek(agent_info_file_, 0, SEEK_END);
-    fprintf(agent_info_file_, "%zu,", last_action);
+    fprintf(agent_info_file_, "%d,", last_action);
     fprintf(agent_info_file_, "%g,", reward);
 
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
