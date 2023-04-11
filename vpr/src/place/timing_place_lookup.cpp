@@ -1022,15 +1022,16 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //and which has the appropriate pins
     int from_x = 0, from_y = 0, from_sub_tile = 0;
     int to_x = 0, to_y = 0, to_sub_tile = 0;
-    int layer_num = 0; //Function *FOR NOW* assumes that from/to blocks are at same die and have a same layer nums
     bool found = false;
-    for(layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
-        for (from_x = 0; from_x < (int) grid.width(); ++from_x) {
+    int found_layer_num = -1;
+    //TODO: Function *FOR NOW* assumes that from/to blocks are at same die and have a same layer nums
+    for(int layer_num = 0; layer_num < grid.get_num_layers() && !found; ++layer_num) {
+        for (from_x = 0; from_x < (int) grid.width() && !found; ++from_x) {
             to_x = from_x + direct->x_offset;
             if (to_x < 0 || to_x >= (int) grid.width()) continue;
 
-            for (from_y = 0; from_y < (int) grid.height(); ++from_y) {
-                if (grid.get_physical_type(t_physical_tile_loc(from_x, from_y, layer_num)) != from_type) continue;
+            for (from_y = 0; from_y < (int) grid.height() && !found; ++from_y) {
+                if (grid.get_physical_type({from_x, from_y, layer_num}) != from_type) continue;
 
                 //Check that the from pin exists at this from location
                 //(with multi-width/height blocks pins may not exist at all locations)
@@ -1065,11 +1066,10 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                     if (to_sub_tile < 0 || to_sub_tile >= to_type->capacity) continue;
 
                     found = true;
+                    found_layer_num = layer_num;
                     break;
                 }
-                if (found) break;
             }
-            if (found) break;
         }
     }
 
@@ -1078,10 +1078,10 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     }
 
     //Now have a legal instance of this direct connect
-    VTR_ASSERT(grid.get_physical_type(t_physical_tile_loc(from_x, from_y, layer_num)) == from_type);
+    VTR_ASSERT(grid.get_physical_type({from_x, from_y, found_layer_num}) == from_type);
     VTR_ASSERT(from_sub_tile < from_type->capacity);
 
-    VTR_ASSERT(grid.get_physical_type(t_physical_tile_loc(to_x, to_y, layer_num)) == to_type);
+    VTR_ASSERT(grid.get_physical_type({to_x, to_y, found_layer_num}) == to_type);
     VTR_ASSERT(to_sub_tile < to_type->capacity);
 
     VTR_ASSERT(from_x + direct->x_offset == to_x);
@@ -1093,13 +1093,13 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //
 
     {
-        RRNodeId src_rr_candidate = node_lookup.find_node(layer_num, from_x, from_y, SOURCE, from_pin_class);
+        RRNodeId src_rr_candidate = node_lookup.find_node(found_layer_num, from_x, from_y, SOURCE, from_pin_class);
         VTR_ASSERT(src_rr_candidate);
         *src_rr = size_t(src_rr_candidate);
     }
 
     {
-        RRNodeId sink_rr_candidate = node_lookup.find_node(layer_num,to_x, to_y, SINK, to_pin_class);
+        RRNodeId sink_rr_candidate = node_lookup.find_node(found_layer_num,to_x, to_y, SINK, to_pin_class);
         VTR_ASSERT(sink_rr_candidate);
         *sink_rr = size_t(sink_rr_candidate);
     }
