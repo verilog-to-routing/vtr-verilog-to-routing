@@ -600,8 +600,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     const auto& to_type = grid.get_physical_type(t_physical_tile_loc(to.x, to.y, to.layer));
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
-    VTR_ASSERT_MSG(grid.get_width_offset(t_physical_tile_loc(to.x, to.y, to.layer)) == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(grid.get_height_offset(t_physical_tile_loc(to.x, to.y, to.layer)) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_width_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_height_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
 
     return true;
 }
@@ -688,8 +688,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     const auto& to_type = grid.get_physical_type(t_physical_tile_loc(to_loc.x, to_loc.y, to_loc.layer));
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, blk_type), "Type must be compatible");
-    VTR_ASSERT_MSG(grid.get_width_offset(t_physical_tile_loc(to_loc.x, to_loc.y, to_loc.layer)) == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(grid.get_height_offset(t_physical_tile_loc(to_loc.x, to_loc.y, to_loc.layer)) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
     return true;
 }
@@ -771,8 +771,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     const auto& to_type = grid.get_physical_type(t_physical_tile_loc(to_loc.x, to_loc.y, to_loc.layer));
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, blk_type), "Type must be compatible");
-    VTR_ASSERT_MSG(grid.get_width_offset(t_physical_tile_loc(to_loc.x, to_loc.y, to_loc.layer)) == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(grid.get_height_offset(t_physical_tile_loc(to_loc.x, to_loc.y, to_loc.layer)) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
     return true;
 }

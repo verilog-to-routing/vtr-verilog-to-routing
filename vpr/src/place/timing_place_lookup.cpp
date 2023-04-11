@@ -1046,7 +1046,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 to_y = from_y + direct->y_offset;
 
                 if (to_y < 0 || to_y >= (int) grid.height()) continue;
-                if (grid.get_physical_type(t_physical_tile_loc(to_x, to_y)) != to_type) continue;
+                if (grid.get_physical_type({to_x, to_y, layer_num}) != to_type) continue;
 
                 //Check that the from pin exists at this from location
                 //(with multi-width/height blocks pins may not exist at all locations)

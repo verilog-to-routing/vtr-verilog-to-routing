@@ -215,11 +215,15 @@ std::string rr_node_arch_name(int inode, bool is_flat) {
     std::string rr_node_arch_name;
     if (rr_graph.node_type(RRNodeId(inode)) == OPIN || rr_graph.node_type(RRNodeId(inode)) == IPIN) {
         //Pin names
-        auto type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node)));
+        auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                       rr_graph.node_ylow(rr_node),
+                                                       rr_graph.node_layer(rr_node)});
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node), is_flat);
     } else if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
         //Set of pins associated with SOURCE/SINK
-        auto type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node)));
+        auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                       rr_graph.node_ylow(rr_node),
+                                                       rr_graph.node_layer(rr_node)});
         auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node), is_flat);
         if (pin_names.size() > 1) {
             rr_node_arch_name += rr_graph.node_type_string(RRNodeId(inode));
@@ -1347,7 +1351,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     auto& loc = place_ctx.block_locs[cluster_blk_id].loc;
     int cap = loc.sub_tile;
     const auto& physical_type = grid.get_physical_type({loc.x, loc.y, loc.layer});
-    VTR_ASSERT(grid.get_width_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0 && grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0);
+    VTR_ASSERT(grid.get_width_offset({loc.x, loc.y, loc.layer}) == 0 && grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0);
     VTR_ASSERT(cap < physical_type->capacity);
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
@@ -2295,7 +2299,9 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
     VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    auto physical_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph_view.node_xlow(node_id), rr_graph_view.node_ylow(node_id)));
+    auto physical_type = device_ctx.grid.get_physical_type({rr_graph_view.node_xlow(node_id),
+                                                            rr_graph_view.node_ylow(node_id),
+                                                            rr_graph_view.node_layer(node_id)});
 
     if (node_type == SINK || node_type == SOURCE) {
         return get_tile_class_max_ptc(physical_type, is_flat);
@@ -2355,17 +2361,19 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     } else {
         VTR_ASSERT(first_rr_type == t_rr_type::IPIN || first_rr_type == t_rr_type::OPIN || first_rr_type == t_rr_type::SINK || first_rr_type == t_rr_type::SOURCE);
         VTR_ASSERT(second_rr_type == t_rr_type::IPIN || second_rr_type == t_rr_type::OPIN || second_rr_type == t_rr_type::SINK || second_rr_type == t_rr_type::SOURCE);
+        int first_layer = rr_graph.node_layer(node_first);
         int first_x = rr_graph.node_xlow(node_first);
         int first_y = rr_graph.node_ylow(node_first);
+        int sec_layer = rr_graph.node_layer(node_second);
         int sec_x = rr_graph.node_xlow(node_second);
         int sec_y = rr_graph.node_ylow(node_second);
 
         // Get the root-location of the pin's block
-        int first_root_x = first_x - device_ctx.grid.get_width_offset(t_physical_tile_loc(first_x, first_y));
-        int first_root_y = first_y - device_ctx.grid.get_height_offset(t_physical_tile_loc(first_x, first_y));
+        int first_root_x = first_x - device_ctx.grid.get_width_offset({first_x, first_y, first_layer});
+        int first_root_y = first_y - device_ctx.grid.get_height_offset({first_x, first_y, first_layer});
 
-        int sec_root_x = sec_x - device_ctx.grid.get_width_offset(t_physical_tile_loc(sec_x, sec_y));
-        int sec_root_y = sec_y - device_ctx.grid.get_height_offset(t_physical_tile_loc(sec_x, sec_y));
+        int sec_root_x = sec_x - device_ctx.grid.get_width_offset({sec_x, sec_y, sec_layer});
+        int sec_root_y = sec_y - device_ctx.grid.get_height_offset({sec_x, sec_y, sec_layer});
 
         // If the root-location of the nodes are similar, they should be located in the same tile
         if (first_root_x == sec_root_x && first_root_y == sec_root_y)
@@ -2375,9 +2383,9 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     }
 }
 
-std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int layer,
-                                                               const int i,
-                                                               const int j,
+std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
+                                                               int i,
+                                                               int j,
                                                                t_physical_tile_type_ptr physical_type) {
     std::vector<int> class_num_vec;
 
@@ -2389,7 +2397,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int layer,
 
     //iterate over different sub tiles inside a tile
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        if (grid_block.is_sub_tile_empty({i, j}, abs_cap)) {
+        if (grid_block.is_sub_tile_empty({i, j, layer}, abs_cap)) {
             continue;
         }
         auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
@@ -2422,7 +2430,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
         std::vector<int> cluster_internal_pins;
 
-        if (grid_block.is_sub_tile_empty({i, j}, abs_cap)) {
+        if (grid_block.is_sub_tile_empty({i, j, layer}, abs_cap)) {
             continue;
         }
         auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});

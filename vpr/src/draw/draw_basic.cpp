@@ -108,13 +108,17 @@ void drawplace(ezgl::renderer* g) {
     ClusterBlockId bnum;
     int num_sub_tiles;
 
+    //TODO: Change when graphics supports 3D FPGAs
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    int layer_num = 0;
+
     g->set_line_width(0);
     for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
         for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
             /* Only the first block of a group should control drawing */
-            const auto& type = device_ctx.grid.get_physical_type({i, j});
-            int width_offset = device_ctx.grid.get_width_offset({i, j});
-            int height_offset = device_ctx.grid.get_height_offset({i, j});
+            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+            int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
+            int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
 
             if (width_offset > 0
                 || height_offset > 0)
@@ -162,7 +166,10 @@ void drawplace(ezgl::renderer* g) {
 
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
-                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k,
+                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(layer_num,
+                                                                                  i,
+                                                                                  j,
+                                                                                  k,
                                                                                   logical_block_type);
                 ezgl::point2d center = abs_clb_bbox.center();
 

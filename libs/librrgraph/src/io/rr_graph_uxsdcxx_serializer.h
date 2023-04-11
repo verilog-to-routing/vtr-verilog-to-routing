@@ -1454,9 +1454,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
     inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) final {
-        const auto& type = grid_.get_physical_type(t_physical_tile_loc(x, y));
-        int grid_width_offset = grid_.get_width_offset(t_physical_tile_loc(x, y));
-        int grid_height_offset = grid_.get_height_offset(t_physical_tile_loc(x, y));
+        //TODO: layer_num should be added to rr-graph serializer.
+        int layer_num = 0;
+        const auto& type = grid_.get_physical_type({x, y, layer_num});
+        int grid_width_offset = grid_.get_width_offset({x, y, layer_num});
+        int grid_height_offset = grid_.get_height_offset({x, y, layer_num});
 
         if (type->index != block_type_id) {
             report_error(

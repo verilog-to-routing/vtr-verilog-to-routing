@@ -407,6 +407,10 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
 
+    // TODO: CutSpreader is not compatible with 3D FPGA
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    int layer_num = 0;
+
     std::vector<ClusterBlockId> cut_blks;
     init_cut_blks(r, cut_blks); // copy all logic blocks to cut into cut_blks
 
@@ -426,7 +430,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
             // this search should be fast as region must be small at this point (only 1 logic block left)
             for (int x = r.bb.xmin(); x <= r.bb.xmax(); x++)
                 for (int y = r.bb.ymin(); y <= r.bb.ymax(); y++) {
-                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y))) != tiles_type.end()) {
+                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type({x, y, layer_num})) != tiles_type.end()) {
                         VTR_ASSERT(blks_at_location[x][y].empty());
                         ap->blk_locs[blk].rawx = x;
                         ap->blk_locs[blk].rawy = y;

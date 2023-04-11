@@ -328,7 +328,7 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
      * represent specially-crafted connections such as carry-chains or more advanced
      * blocks where adjacency is overridden by the architect */
 
-    int from_xlow, from_ylow, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
+    int from_layer, from_xlow, from_ylow, to_layer, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
     int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh;
     bool reached;
     t_rr_type from_type, to_type;
@@ -358,12 +358,14 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
     auto from_rr = RRNodeId(from_node);
     auto to_rr = RRNodeId(to_node);
     from_type = rr_graph.node_type(from_rr);
+    from_layer = rr_graph.node_layer(from_rr);
     from_xlow = rr_graph.node_xlow(from_rr);
     from_ylow = rr_graph.node_ylow(from_rr);
     from_xhigh = rr_graph.node_xhigh(from_rr);
     from_yhigh = rr_graph.node_yhigh(from_rr);
     from_ptc = rr_graph.node_ptc_num(from_rr);
     to_type = rr_graph.node_type(to_rr);
+    to_layer = rr_graph.node_layer(to_rr);
     to_xlow = rr_graph.node_xlow(to_rr);
     to_ylow = rr_graph.node_ylow(to_rr);
     to_xhigh = rr_graph.node_xhigh(to_rr);
@@ -379,8 +381,8 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
                 && from_ylow <= to_ylow
                 && from_xhigh >= to_xhigh
                 && from_yhigh >= to_yhigh) {
-                from_grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(from_xlow, from_ylow));
-                to_grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(to_xlow, to_ylow));
+                from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
+                to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                 VTR_ASSERT(from_grid_type == to_grid_type);
 
                 iclass = get_class_num_from_pin_physical_num(to_grid_type, to_ptc);
@@ -394,7 +396,7 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
             break;
 
         case OPIN:
-            from_grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(from_xlow, from_ylow));
+            from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
             if (to_type == CHANX || to_type == CHANY) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
@@ -408,7 +410,7 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
             break;
 
         case IPIN:
-            from_grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(from_xlow, from_ylow));
+            from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
             if (is_flat) {
                 VTR_ASSERT(to_type == OPIN || to_type == IPIN || to_type == SINK);
             } else {
@@ -421,21 +423,21 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
                     && from_ylow >= to_ylow
                     && from_xhigh <= to_xhigh
                     && from_yhigh <= to_yhigh) {
-                    from_grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(from_xlow, from_ylow));
-                    to_grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(to_xlow, to_ylow));
+                    from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
+                    to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                     VTR_ASSERT(from_grid_type == to_grid_type);
                     iclass = get_class_num_from_pin_physical_num(from_grid_type, from_ptc);
                     if (iclass == to_ptc)
                         num_adj++;
                 }
             } else {
-                from_grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(from_xlow, from_ylow));
-                to_grid_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(to_xlow, to_ylow));
+                from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
+                to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                 VTR_ASSERT(from_grid_type == to_grid_type);
-                int from_root_x = from_xlow - device_ctx.grid.get_width_offset(t_physical_tile_loc(from_xlow, from_ylow));
-                int from_root_y = from_ylow - device_ctx.grid.get_height_offset(t_physical_tile_loc(from_xlow, from_ylow));
-                int to_root_x = to_xlow - device_ctx.grid.get_width_offset(t_physical_tile_loc(to_xlow, to_ylow));
-                int to_root_y = to_ylow - device_ctx.grid.get_height_offset(t_physical_tile_loc(to_xlow, to_ylow));
+                int from_root_x = from_xlow - device_ctx.grid.get_width_offset({from_xlow, from_ylow, from_layer});
+                int from_root_y = from_ylow - device_ctx.grid.get_height_offset({from_xlow, from_ylow, from_layer});
+                int to_root_x = to_xlow - device_ctx.grid.get_width_offset({to_xlow, to_ylow, to_layer});
+                int to_root_y = to_ylow - device_ctx.grid.get_height_offset({to_xlow, to_ylow, to_layer});
 
                 if (from_root_x == to_root_x && from_root_y == to_root_y) {
                     num_adj++;

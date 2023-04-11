@@ -318,7 +318,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     //and so only measure one instance of each type
     for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
         for (e_rr_type rr_type : {SOURCE, OPIN}) {
-            t_physical_tile_loc sample_loc(OPEN, OPEN);
+            t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
 
             size_t num_sampled_locs = 0;
             bool ptcs_with_no_delays = true;
@@ -390,7 +390,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
     for (auto tile_type : device_ctx.physical_tile_types) {
-        t_physical_tile_loc sample_loc(OPEN, OPEN);
+        t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
 
         sample_loc = pick_sample_tile(&tile_type, sample_loc);
 
@@ -537,8 +537,9 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(next_node),
-                                                                                                               rr_graph.node_ylow(next_node)));
+                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(next_node),
+                                                                                            rr_graph.node_ylow(next_node),
+                                                                                            rr_graph.node_layer(next_node)});
                 if (!is_inter_cluster_node(physical_type,
                                            rr_graph.node_type(next_node),
                                            rr_graph.node_ptc_num(next_node))) {
@@ -609,8 +610,9 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
         if (curr_rr_type == IPIN) {
             int node_x = rr_graph.node_xlow(curr.node);
             int node_y = rr_graph.node_ylow(curr.node);
+            int node_layer = rr_graph.node_layer(curr.node);
 
-            auto tile_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(node_x, node_y));
+            auto tile_type = device_ctx.grid.get_physical_type({node_x, node_y, node_layer});
             int itile = tile_type->index;
 
             int ptc = rr_graph.node_ptc_num(curr.node);
@@ -655,7 +657,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
 static t_physical_tile_loc pick_sample_tile(t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev) {
     //Very simple for now, just pick the fist matching tile found
-    t_physical_tile_loc loc(OPEN, OPEN);
+    t_physical_tile_loc loc(OPEN, OPEN, OPEN);
 
     //VTR_LOG("Prev: %d,%d\n", prev.x, prev.y);
 

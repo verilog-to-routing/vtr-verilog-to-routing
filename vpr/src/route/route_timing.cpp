@@ -2439,7 +2439,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                 std::for_each(sink_grp.begin(), sink_grp.end(), [&rr_graph](int& sink_rr_num) {
                     sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
                 });
-                auto physical_type = device_ctx.grid.get_physical_type(t_physical_tile_loc(blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer));
+                auto physical_type = device_ctx.grid.get_physical_type({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
                 // Get the choke points of the sink corresponds to pin_count given the sink group
                 auto sink_choking_spots = get_sink_choking_points(physical_type,
                                                                   rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),

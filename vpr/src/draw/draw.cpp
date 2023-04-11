@@ -1007,6 +1007,9 @@ static void highlight_blocks(double x, double y) {
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
+    //TODO: Change when graphics supports 3D FPGAs
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    int layer_num = 0;
     // iterate over grid x
     for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
         if (draw_coords->tile_x[i] > x) {
@@ -1018,10 +1021,10 @@ static void highlight_blocks(double x, double y) {
                 break; // we've gone to far in the y direction
             }
             // iterate over sub_blocks
-            const auto& type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
+            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
             for (int k = 0; k < type->capacity; ++k) {
                 // TODO: Change when graphics supports 3D
-                clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, 0});
+                clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
                 if (clb_index != EMPTY_BLOCK_ID) {
                     clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
                                                                   cluster_ctx.clb_nlist.block_type(clb_index));

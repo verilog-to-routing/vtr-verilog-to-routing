@@ -252,22 +252,22 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
     auto& grid = clock_graph.grid();
     int layer_num = 0; //Function *FOR NOW* assumes that layer_num is always 0
 
-    for (size_t x = 0; x < grid.width(); x++) {
-        for (size_t y = 0; y < grid.height(); y++) {
+    for (int x = 0; x < (int)grid.width(); x++) {
+        for (int y = 0; y < (int)grid.height(); y++) {
             //Avoid boundary
             if ((y == 0 && x == 0) || (x == grid.width() - 1 && y == grid.height() - 1)) {
                 continue;
             }
 
-            auto type = grid.get_physical_type(t_physical_tile_loc(x, y, layer_num));
+            auto type = grid.get_physical_type({x, y, layer_num});
 
             // Skip EMPTY type
             if (is_empty_type(type)) {
                 continue;
             }
 
-            auto width_offset = grid.get_width_offset(t_physical_tile_loc(x, y, layer_num));
-            auto height_offset = grid.get_height_offset(t_physical_tile_loc(x, y, layer_num));
+            auto width_offset = grid.get_width_offset({x, y, layer_num});
+            auto height_offset = grid.get_height_offset({x, y, layer_num});
 
             // Ignore grid locations that do not have blocks
             bool has_pb_type = false;

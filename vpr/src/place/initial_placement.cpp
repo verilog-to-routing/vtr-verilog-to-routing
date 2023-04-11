@@ -477,8 +477,8 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
         const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
         centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
     }
-    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(centroid_loc.x, centroid_loc.y, centroid_loc.layer));
-    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(centroid_loc.x, centroid_loc.y, centroid_loc.layer));
+    int width_offset = device_ctx.grid.get_width_offset({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
+    int height_offset = device_ctx.grid.get_height_offset({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 
@@ -762,8 +762,8 @@ static bool try_dense_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logi
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer));
-    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer));
+    int width_offset = device_ctx.grid.get_width_offset({loc.x, loc.y, loc.layer});
+    int height_offset = device_ctx.grid.get_height_offset({loc.x, loc.y, loc.layer});
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 

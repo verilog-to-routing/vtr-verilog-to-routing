@@ -241,9 +241,10 @@ void auto_zoom_rr_node(int rr_node_id) {
         case OPIN: {
             int i = rr_graph.node_xlow(RRNodeId(rr_node_id));
             int j = rr_graph.node_ylow(RRNodeId(rr_node_id));
-            t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j));
-            int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(i, j));
-            int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(i, j));
+            int layer_num = rr_graph.node_layer(RRNodeId(rr_node_id));
+            t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer_num});
+            int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
+            int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
             int ipin = rr_graph.node_ptc_num(RRNodeId(rr_node_id));
             float xcen, ycen;
 

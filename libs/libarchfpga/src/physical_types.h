@@ -820,11 +820,11 @@ struct t_physical_pin {
 struct t_physical_tile_loc {
     int x = OPEN;
     int y = OPEN;
-    int layer_num = 0;
+    int layer_num = OPEN;
 
     t_physical_tile_loc() = default;
 
-    t_physical_tile_loc(int x_val, int y_val, int layer_num_val = 0)
+    t_physical_tile_loc(int x_val, int y_val, int layer_num_val)
         : x(x_val)
         , y(y_val)
         , layer_num(layer_num_val) {}

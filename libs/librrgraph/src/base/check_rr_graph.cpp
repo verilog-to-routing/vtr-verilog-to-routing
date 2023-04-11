@@ -234,9 +234,11 @@ void check_rr_graph(const RRGraphView& rr_graph,
         size_t inode = (size_t)rr_node;
         t_rr_type rr_type = rr_graph.node_type(rr_node);
         int ptc_num = rr_graph.node_ptc_num(rr_node);
+        int layer_num = rr_graph.node_layer(rr_node);
         int xlow = rr_graph.node_xlow(rr_node);
         int ylow = rr_graph.node_ylow(rr_node);
-        t_physical_tile_type_ptr type = grid.get_physical_type(t_physical_tile_loc(xlow, ylow));
+
+        t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_num});
 
         if (rr_type == IPIN || rr_type == OPIN) {
             // #TODO: No edges are added for internal pins. However, they need to be checked somehow!
@@ -273,7 +275,9 @@ void check_rr_graph(const RRGraphView& rr_graph,
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
                         if (has_adjacent_channel(rr_graph, grid, node)) {
-                            auto block_type = grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node)));
+                            auto block_type = grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                                      rr_graph.node_ylow(rr_node),
+                                                                      rr_graph.node_layer(rr_node)});
                             std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node), is_flat);
                             /* Print error messages for all the sides that a node may appear */
                             for (const e_side& node_side : SIDES) {
@@ -312,7 +316,9 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
     int ipin;
     t_physical_tile_type_ptr type;
 
-    type = grid.get_physical_type(t_physical_tile_loc(rr_graph.node_xlow(inode), rr_graph.node_ylow(inode)));
+    type = grid.get_physical_type({rr_graph.node_xlow(inode),
+                                   rr_graph.node_ylow(inode),
+                                   rr_graph.node_layer(inode)});
 
     if (rr_graph.node_type(inode) != IPIN)
         return (false);
@@ -380,7 +386,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     }
 
     /* Check that the segment is within the array and such. */
-    type = grid.get_physical_type(t_physical_tile_loc(xlow, ylow));
+    type = grid.get_physical_type({xlow, ylow, layer_num});
 
     switch (rr_type) {
         case SOURCE:

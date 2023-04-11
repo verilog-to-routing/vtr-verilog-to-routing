@@ -65,8 +65,8 @@ float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, 
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
-    t_physical_tile_type_ptr from_type_ptr = grid.get_physical_type(t_physical_tile_loc(from_x, from_y));
-    t_physical_tile_type_ptr to_type_ptr = grid.get_physical_type(t_physical_tile_loc(to_x, to_y));
+    t_physical_tile_type_ptr from_type_ptr = grid.get_physical_type({from_x, from_y, layer_num});
+    t_physical_tile_type_ptr to_type_ptr = grid.get_physical_type({to_x, to_y, layer_num});
 
     t_override override_key;
     override_key.from_type = from_type_ptr->index;

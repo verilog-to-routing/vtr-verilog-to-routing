@@ -103,10 +103,14 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
         const auto reg_coord = regions[region].get_region_rect();
 
         //TODO: 0 should be replaced with the actual z value of the region when graph is 3D
-        ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(reg_coord.xmax,
-                                                                       reg_coord.ymax, 0);
-        ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(reg_coord.xmin,
-                                                                         reg_coord.ymin, 0);
+        ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(reg_coord.layer_num,
+                                                                       reg_coord.xmax,
+                                                                       reg_coord.ymax,
+                                                                       0);
+        ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(reg_coord.layer_num,
+                                                                         reg_coord.xmin,
+                                                                         reg_coord.ymin,
+                                                                         0);
 
         ezgl::rectangle on_screen_rect(bottom_left.bottom_left(), top_right.top_right());
 

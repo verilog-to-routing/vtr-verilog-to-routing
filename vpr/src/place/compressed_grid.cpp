@@ -132,7 +132,7 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vect
             VTR_ASSERT(layer_compressed_x_locs[cx] == point.x());
             VTR_ASSERT(layer_compressed_y_locs[cy] == point.y());
 
-            auto result = layer_compressed_grid[cx].insert(std::make_pair(cy, t_physical_tile_loc(point.x(), point.y())));
+            auto result = layer_compressed_grid[cx].insert(std::make_pair(cy, t_physical_tile_loc(point.x(), point.y(), layer_num)));
 
             VTR_ASSERT_MSG(result.second, "Duplicates should not exist in compressed grid space");
         }

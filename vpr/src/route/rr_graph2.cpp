@@ -149,7 +149,7 @@ void dump_seg_details(t_seg_details* seg_details,
 //  from_seg_coord: The horizontal or vertical location along the channel (i.e. y-coord for CHANY, x-coord for CHANX)
 //  from_chan_type: The from channel type
 //  to_chan_type: The to channel type
-static int should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type);
+static int should_create_switchblock(const DeviceGrid& grid, int layer_num, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type);
 
 static bool should_apply_switch_override(int switch_override);
 
@@ -672,9 +672,9 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    type = device_ctx.grid.get_physical_type(t_physical_tile_loc(i, j, layer));
-    int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(i, j, layer));
-    int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(i, j, layer));
+    type = device_ctx.grid.get_physical_type({i, j, layer});
+    int width_offset = device_ctx.grid.get_width_offset({i, j, layer});
+    int height_offset = device_ctx.grid.get_height_offset({i, j, layer});
 
     num_conn = 0;
 
@@ -1105,12 +1105,14 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   bool /*is_flat*/) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for(int layer = 0; layer < grid.get_num_layers(); layer++) {
-        for (size_t x = 0; x < grid.width(); x++) {
-            for (size_t y = 0; y < grid.height(); y++) {
+        for (int x = 0; x < (int)grid.width(); x++) {
+            for (int y = 0; y < (int)grid.height(); y++) {
                 //Process each block from its root location
-                if (grid.get_width_offset(t_physical_tile_loc(x, y, layer)) == 0 &&
-                    grid.get_height_offset(t_physical_tile_loc(x, y,layer)) == 0) {
-                    t_physical_tile_type_ptr physical_type = grid.get_physical_type(t_physical_tile_loc(x, y,layer));
+                if (grid.get_width_offset({x, y, layer}) == 0 &&
+                    grid.get_height_offset({x, y,layer}) == 0) {
+                    t_physical_tile_type_ptr physical_type = grid.get_physical_type({x,
+                                                                                     y,
+                                                                                     layer});
                     //Assign indices for SINKs and SOURCEs
                     // Note that SINKS/SOURCES have no side, so we always use side 0
                     std::vector<int> class_num_vec;
@@ -1348,11 +1350,11 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                                                   const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index) {
     for(int layer = 0; layer < grid.get_num_layers(); layer++){
-        for (size_t x = 0; x < grid.width(); x++) {
-            for (size_t y = 0; y < grid.height(); y++) {
+        for (int x = 0; x < (int)grid.width(); x++) {
+            for (int y = 0; y < (int)grid.height(); y++) {
                 //Process each block from it's root location
-                if (grid.get_width_offset(t_physical_tile_loc(x, y, layer)) == 0 && grid.get_height_offset(t_physical_tile_loc(x, y, layer)) == 0) {
-                    t_physical_tile_type_ptr physical_type = grid.get_physical_type(t_physical_tile_loc(x, y, layer));
+                if (grid.get_width_offset({x, y, layer}) == 0 && grid.get_height_offset({x, y, layer}) == 0) {
+                    t_physical_tile_type_ptr physical_type = grid.get_physical_type({x, y, layer});
                     //Assign indices for SINKs and SOURCEs
                     // Note that SINKS/SOURCES have no side, so we always use side 0
                     std::vector<int> class_num_vec;
@@ -1606,7 +1608,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                 }
 
                 /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
-                auto type = device_ctx.grid.get_physical_type(t_physical_tile_loc(x, y));
+                auto type = device_ctx.grid.get_physical_type({x, y, layer});
                 if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
                     continue;
 
@@ -1619,8 +1621,8 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
 
                 /* We need the type to find the ipin map for this type */
 
-                int width_offset = device_ctx.grid.get_width_offset(t_physical_tile_loc(x, y));
-                int height_offset = device_ctx.grid.get_height_offset(t_physical_tile_loc(x, y));
+                int width_offset = device_ctx.grid.get_width_offset({x, y, layer});
+                int height_offset = device_ctx.grid.get_height_offset({x, y, layer});
 
                 max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].size();
                 for (iconn = 0; iconn < max_conn; iconn++) {
@@ -1742,7 +1744,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
             from_is_sblock = true;
         }
 
-        auto switch_override = should_create_switchblock(grid, from_chan, sb_seg, from_type, to_type);
+        auto switch_override = should_create_switchblock(grid, layer, from_chan, sb_seg, from_type, to_type);
         if (switch_override == NO_SWITCH) {
             continue; //Do not create an SB here
         }
@@ -2742,7 +2744,7 @@ static int find_label_of_track(const std::vector<int>& wire_mux_on_track,
     return i_label;
 }
 
-static int should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type) {
+static int should_create_switchblock(const DeviceGrid& grid, int layer_num, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type) {
     //Convert the chan/seg indices to real x/y coordinates
     int y_coord;
     int x_coord;
@@ -2755,9 +2757,9 @@ static int should_create_switchblock(const DeviceGrid& grid, int from_chan_coord
         x_coord = from_chan_coord;
     }
 
-    auto blk_type = grid.get_physical_type(t_physical_tile_loc(x_coord, y_coord));
-    int width_offset = grid.get_width_offset(t_physical_tile_loc(x_coord, y_coord));
-    int height_offset = grid.get_height_offset(t_physical_tile_loc(x_coord, y_coord));
+    auto blk_type = grid.get_physical_type({x_coord, y_coord,layer_num});
+    int width_offset = grid.get_width_offset({x_coord, y_coord,layer_num});
+    int height_offset = grid.get_height_offset({x_coord, y_coord,layer_num});
 
     e_sb_type sb_type = blk_type->switchblock_locations[width_offset][height_offset];
     auto switch_override = blk_type->switchblock_switch_overrides[width_offset][height_offset];
