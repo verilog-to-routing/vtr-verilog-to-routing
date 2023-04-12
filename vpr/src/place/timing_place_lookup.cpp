@@ -1020,31 +1020,33 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 
     //Search the grid for an instance of from/to blocks which satisfy this direct connect offsets,
     //and which has the appropriate pins
-    int from_x = 0, from_y = 0, from_sub_tile = 0;
+    int from_x = -1;
+    int from_y = -1;
+    int from_sub_tile = -1;
     int to_x = 0, to_y = 0, to_sub_tile = 0;
     bool found = false;
     int found_layer_num = -1;
     //TODO: Function *FOR NOW* assumes that from/to blocks are at same die and have a same layer nums
     for(int layer_num = 0; layer_num < grid.get_num_layers() && !found; ++layer_num) {
-        for (from_x = 0; from_x < (int) grid.width() && !found; ++from_x) {
-            to_x = from_x + direct->x_offset;
+        for (int x = 0; x < (int) grid.width() && !found; ++x) {
+            to_x = x + direct->x_offset;
             if (to_x < 0 || to_x >= (int) grid.width()) continue;
 
-            for (from_y = 0; from_y < (int) grid.height() && !found; ++from_y) {
-                if (grid.get_physical_type({from_x, from_y, layer_num}) != from_type) continue;
+            for (int y = 0; y < (int) grid.height() && !found; ++y) {
+                if (grid.get_physical_type({x, y, layer_num}) != from_type) continue;
 
                 //Check that the from pin exists at this from location
                 //(with multi-width/height blocks pins may not exist at all locations)
                 bool from_pin_found = false;
                 if (direct->from_side != NUM_SIDES) {
-                    RRNodeId from_pin_rr = node_lookup.find_node(layer_num, from_x, from_y, OPIN, from_pin, direct->from_side);
+                    RRNodeId from_pin_rr = node_lookup.find_node(layer_num, x, y, OPIN, from_pin, direct->from_side);
                     from_pin_found = (from_pin_rr != RRNodeId::INVALID());
                 } else {
-                    from_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, from_x, from_y, OPIN, from_pin).empty());
+                    from_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, x, y, OPIN, from_pin).empty());
                 }
                 if (!from_pin_found) continue;
 
-                to_y = from_y + direct->y_offset;
+                to_y = y + direct->y_offset;
 
                 if (to_y < 0 || to_y >= (int) grid.height()) continue;
                 if (grid.get_physical_type({to_x, to_y, layer_num}) != to_type) continue;
@@ -1060,13 +1062,17 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 }
                 if (!to_pin_found) continue;
 
-                for (from_sub_tile = 0; from_sub_tile < from_type->capacity; ++from_sub_tile) {
-                    to_sub_tile = from_sub_tile + direct->sub_tile_offset;
+                for (int sub_tile_num = 0; sub_tile_num < from_type->capacity; ++sub_tile_num) {
+                    to_sub_tile = sub_tile_num + direct->sub_tile_offset;
 
                     if (to_sub_tile < 0 || to_sub_tile >= to_type->capacity) continue;
 
                     found = true;
                     found_layer_num = layer_num;
+                    from_x = x;
+                    from_y = y;
+                    from_sub_tile = sub_tile_num;
+
                     break;
                 }
             }
