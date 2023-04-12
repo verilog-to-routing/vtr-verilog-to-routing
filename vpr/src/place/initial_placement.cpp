@@ -1024,8 +1024,8 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
      * blocks placed anywhere.
      */
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int i = 0; i < (int)device_ctx.grid.width(layer_num); i++) {
-            for (int j = 0; j < (int)device_ctx.grid.height(layer_num); j++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                 const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 itype = type->index;
                 if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {

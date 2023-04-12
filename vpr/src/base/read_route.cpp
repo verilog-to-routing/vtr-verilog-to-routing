@@ -336,8 +336,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                     int capacity, relative_pin;
                     std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
 
-                    //TODO: RR Graph is not adapted to 3D FPGA. When it is updated, this should be changed.
-                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x, y - height_offset, capacity, 0});
+                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x, y - height_offset, capacity, layer_num});
 
                     t_pb_graph_pin* pb_pin;
 
