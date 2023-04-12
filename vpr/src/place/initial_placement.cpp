@@ -540,6 +540,7 @@ static int get_blk_type_first_loc(t_pl_loc& loc, t_pl_macro pl_macro, std::vecto
         //set the coordinate of first location that can accomodate macro blocks
         loc.x = first_empty_loc.first_avail_loc.x;
         loc.y = get_y_loc_based_on_macro_direction(first_empty_loc, pl_macro);
+        loc.layer = first_empty_loc.first_avail_loc.layer;
         loc.sub_tile = first_empty_loc.first_avail_loc.sub_tile;
 
         return empty_loc_index;
