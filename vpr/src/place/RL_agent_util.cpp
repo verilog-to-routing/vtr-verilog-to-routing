@@ -46,25 +46,26 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
         determine_agent_block_types();
 
         auto& place_ctx = g_vpr_ctx.placement();
-        int num_states_avail_moves = placer_opts.place_algorithm.is_timing_driven() ? NUM_PL_1ST_STATE_MOVE_TYPES : NUM_PL_NONTIMING_MOVE_TYPES;
+        int num_1st_state_avail_moves = placer_opts.place_algorithm.is_timing_driven() ? NUM_PL_1ST_STATE_MOVE_TYPES : NUM_PL_NONTIMING_MOVE_TYPES;
+        int num_2nd_state_avail_moves = placer_opts.place_algorithm.is_timing_driven() ? NUM_PL_MOVE_TYPES : NUM_PL_NONTIMING_MOVE_TYPES;
 
         if (placer_opts.place_agent_algorithm == E_GREEDY) {
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent1, karmed_bandit_agent2;
             //agent's 1st state
             if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
                 VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move and block types\n");
-                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(num_states_avail_moves,
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(num_1st_state_avail_moves,
                                                                             place_ctx.agent_blk_type_to_phys_blk_type_map.size(),
                                                                             placer_opts.place_agent_epsilon);
             } else {
                 VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
-                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(num_states_avail_moves,
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(num_1st_state_avail_moves,
                                                                             placer_opts.place_agent_epsilon);
             }
             karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
             move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
             //agent's 2nd state
-            karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(num_states_avail_moves, placer_opts.place_agent_epsilon);
+            karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(num_2nd_state_avail_moves, placer_opts.place_agent_epsilon);
             karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
             move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
         } else {
@@ -72,16 +73,16 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             //agent's 1st state
             if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
                 VTR_LOG("Using simple RL 'Softmax agent' for choosing move and block types\n");
-                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(num_states_avail_moves,
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(num_1st_state_avail_moves,
                                                                       place_ctx.agent_blk_type_to_phys_blk_type_map.size());
             } else {
                 VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
-                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(num_states_avail_moves);
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(num_1st_state_avail_moves);
             }
             karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
             move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
             //agent's 2nd state
-            karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(num_states_avail_moves);
+            karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(num_2nd_state_avail_moves);
             karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
             move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
         }
