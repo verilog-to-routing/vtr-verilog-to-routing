@@ -5,6 +5,8 @@
     but limit the circuit to mostly routers. The design implements the following:
 	1) A number of NoC routers that represent MLP modules
 	2) A number of dummy logic that connect to the NoC router interfaces
+	3) The actual MVM, dispatcher and collector modules are not included in this
+	   benchmark as the goal is to minimize soft logic
 */
 
 module mlp_two_phase_optimization_step_one (
