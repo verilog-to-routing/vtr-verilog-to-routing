@@ -1059,13 +1059,13 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
         } else {
             const auto intersect_coord = intersect_reg.get_region_rect();
             VTR_ASSERT(intersect_coord.layer_num == layer_num);
-            auto min_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc({intersect_coord.xmin,
-                                                                                        intersect_coord.ymin,
-                                                                                        layer_num});
+            auto min_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({intersect_coord.xmin,
+                                                                                               intersect_coord.ymin,
+                                                                                               layer_num});
 
-            auto max_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc({intersect_coord.xmax,
-                                                                                        intersect_coord.ymax,
-                                                                                        layer_num});
+            auto max_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({intersect_coord.xmax,
+                                                                                               intersect_coord.ymax,
+                                                                                               layer_num});
             delta_cx = max_compressed_loc.x - min_compressed_loc.x;
         }
     }
