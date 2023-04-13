@@ -678,6 +678,7 @@ struct t_pl_loc {
     int layer = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
+        VTR_ASSERT(this->layer != OPEN);
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
@@ -685,6 +686,7 @@ struct t_pl_loc {
     }
 
     t_pl_loc& operator-=(const t_pl_offset& rhs) {
+        VTR_ASSERT(this->layer != OPEN);
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
