@@ -5,12 +5,12 @@
 	2) A number of MVM modules that perform matrix vector multiplication
 	   on input data streams
 	3) A collector module to process the results of the MVM modules
-	4) A numbe of NoC routers that are used to connect all the modules
+	4) A number of NoC routers that are used to connect all the modules
 	   added above. The NoC routers are responsible for transferring data
 	   from dispatchers to MVM modules, between MVM modules and from MVM
 	   modules to the collector module.
-	5) A number of soft logic connections between MVM modules within the same
-	   layer
+	5) A number of soft logic connections bbetween MVM modules when passing 
+	   data from one layer to another within the same layer.
 */
 
 module mlp_co_optimization (
