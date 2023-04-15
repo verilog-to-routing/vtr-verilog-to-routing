@@ -2019,14 +2019,14 @@ static t_seg_details* alloc_and_load_global_route_seg_details(const int global_r
 
 /* Calculates the number of track connections from each block pin to each segment type */
 std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
-                                                              const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
-                                                              const int* sets_per_seg_type,
-                                                              const t_chan_width* nodes_per_chan,
-                                                              const e_fc_type fc_type,
-                                                              const enum e_directionality directionality,
-                                                              bool* Fc_clipped,
-                                                              bool is_flat) {
+                                                       const int max_pins,
+                                                       const std::vector<t_segment_inf>& segment_inf,
+                                                       const int* sets_per_seg_type,
+                                                       const t_chan_width* nodes_per_chan,
+                                                       const e_fc_type fc_type,
+                                                       const enum e_directionality directionality,
+                                                       bool* Fc_clipped,
+                                                       bool is_flat) {
     //Initialize Fc of all blocks to zero
     auto zeros = vtr::Matrix<int>({size_t(max_pins), segment_inf.size()}, 0);
     std::vector<vtr::Matrix<int>> Fc(types.size(), zeros);
