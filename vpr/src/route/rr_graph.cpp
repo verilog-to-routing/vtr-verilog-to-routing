@@ -576,14 +576,6 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder,
                           const t_rr_edge_info_set& rr_edges_to_create);
 
-static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                                         std::vector<std::map<int, int>>& switch_fanin_remap,
-                                         const std::map<int, t_arch_switch_inf> arch_sw_inf,
-                                         const float R_minW_nmos,
-                                         const float R_minW_pmos,
-                                         const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch);
-
 static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
                                          const t_arch_switch_fanin& switch_fanin);
 
@@ -608,16 +600,6 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
 
 static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
                                                               int* num_seg_details = nullptr);
-
-static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
-                                                              const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
-                                                              const int* sets_per_seg_type,
-                                                              const t_chan_width* nodes_per_chan,
-                                                              const e_fc_type fc_type,
-                                                              const enum e_directionality directionality,
-                                                              bool* Fc_clipped,
-                                                              bool is_flat);
 
 static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
                                                         RRNodeId from_rr,
@@ -1746,13 +1728,13 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
  * and count how many different fan-ins exist for each arch switch.
  * Then we create these rr switches and update the switch indices
  * of rr_nodes to index into the rr_switch_inf array. */
-static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                                         std::vector<std::map<int, int>>& switch_fanin_remap,
-                                         const std::map<int, t_arch_switch_inf> arch_sw_inf,
-                                         const float R_minW_nmos,
-                                         const float R_minW_pmos,
-                                         const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch) {
+void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                                  std::vector<std::map<int, int>>& switch_fanin_remap,
+                                  const std::map<int, t_arch_switch_inf> arch_sw_inf,
+                                  const float R_minW_nmos,
+                                  const float R_minW_pmos,
+                                  const int wire_to_arch_ipin_switch,
+                                  int* wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
      * each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
      * with this expanded list of switches.

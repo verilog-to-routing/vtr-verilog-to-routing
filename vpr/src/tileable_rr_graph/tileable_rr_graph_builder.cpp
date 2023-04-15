@@ -120,15 +120,15 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     RRSwitchId wire_to_ipin_rr_switch = RRSwitchId::INVALID();
     RRSwitchId delayless_rr_switch = RRSwitchId::INVALID();
 
-    device_ctx.rr_graph_builder.reserve_switches(device_ctx.num_arch_switches);
+    device_ctx.rr_graph_builder.reserve_switches(device_ctx.arch_switch_inf.size());
     /* Create the switches */
-    for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; ++iswitch) {
-        const t_rr_switch_inf& temp_rr_switch = create_rr_switch_from_arch_switch(iswitch, R_minW_nmos, R_minW_pmos);
+    for (size_t iswitch = 0; iswitch < device_ctx.arch_switch_inf.size(); ++iswitch) {
+        const t_rr_switch_inf& temp_rr_switch = create_rr_switch_from_arch_switch(device_ctx.arch_switch_inf[iswitch], R_minW_nmos, R_minW_pmos);
         RRSwitchId rr_switch = device_ctx.rr_graph_builder.add_rr_switch(temp_rr_switch);
-        if (iswitch == wire_to_arch_ipin_switch) {
+        if ((int)iswitch == wire_to_arch_ipin_switch) {
             wire_to_ipin_rr_switch = rr_switch;
         }
-        if (iswitch == delayless_switch) {
+        if ((int)iswitch == delayless_switch) {
             delayless_rr_switch = rr_switch;
         }
     }
@@ -207,7 +207,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     /* [0..num_types-1][0..num_pins-1] */
     std::vector<vtr::Matrix<int>> Fc_in;
     Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*)&chan_width,
-                                     e_fc_type::IN, UNI_DIRECTIONAL, &Fc_clipped);
+                                     e_fc_type::IN, UNI_DIRECTIONAL, &Fc_clipped, false);
     if (Fc_clipped) {
         *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
     }
@@ -216,7 +216,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     /* [0..num_types-1][0..num_pins-1] */
     std::vector<vtr::Matrix<int>> Fc_out;
     Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*)&chan_width,
-                                      e_fc_type::OUT, UNI_DIRECTIONAL, &Fc_clipped);
+                                      e_fc_type::OUT, UNI_DIRECTIONAL, &Fc_clipped, false);
 
     if (Fc_clipped) {
         *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -263,7 +263,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
     device_ctx.rr_graph_builder.init_fan_in();
-    alloc_and_load_rr_switch_inf(device_ctx.num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+    alloc_and_load_rr_switch_inf(device_ctx.rr_graph_builder, device_ctx.switch_fanin_remap, device_ctx.all_sw_inf, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
     /* Save the channel widths for the newly constructed graph */
     device_ctx.chan_width = chan_width;

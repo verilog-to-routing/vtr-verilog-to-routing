@@ -730,7 +730,9 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
                          g_vpr_ctx.device().rr_indexed_data,
                          g_vpr_ctx.device().rr_rc_data,
                          rr_graph_builder.rr_segments(),
-                         rr_graph_builder.rr_switch()};
+                         rr_graph_builder.rr_switch(),
+                         rr_graph_builder.node_in_edge_storage(),
+                         rr_graph_builder.node_ptc_storage()};
 
     util::t_ipin_primitive_sink_delays pin_delays = util::compute_intra_tile_dijkstra(rr_graph,
                                                                                       physical_tile,

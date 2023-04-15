@@ -64,7 +64,13 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos);
 
-void alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, const int wire_to_arch_ipin_switch, int* wire_to_rr_ipin_switch);
+void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                                  std::vector<std::map<int, int>>& switch_fanin_remap,
+                                  const std::map<int, t_arch_switch_inf> arch_sw_inf,
+                                  const float R_minW_nmos,
+                                  const float R_minW_pmos,
+                                  const int wire_to_arch_ipin_switch,
+                                  int* wire_to_rr_ipin_switch);
 
 void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_x,
@@ -81,7 +87,8 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        const t_chan_width* nodes_per_chan,
                                                        const e_fc_type fc_type,
                                                        const enum e_directionality directionality,
-                                                       bool* Fc_clipped);
+                                                       bool* Fc_clipped,
+                                                       bool is_flat);
 
 // Sets the spec for the rr_switch based on the arch switch
 void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
