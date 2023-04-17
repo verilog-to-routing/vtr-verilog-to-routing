@@ -42,6 +42,8 @@ class TaskConfig:
         script_params_list_add=None,
         pass_requirements_file=None,
         sdc_dir=None,
+        noc_traffic_list_add=None,
+        noc_traffics_dir=None,
         place_constr_dir=None,
         qor_parse_file=None,
         cmos_tech_behavior=None,
@@ -65,6 +67,8 @@ class TaskConfig:
         self.script_params_list_add = script_params_list_add
         self.pass_requirements_file = pass_requirements_file
         self.sdc_dir = sdc_dir
+        self.noc_traffics = noc_traffic_list_add
+        self.noc_traffics_dir = noc_traffics_dir
         self.place_constr_dir = place_constr_dir
         self.qor_parse_file = qor_parse_file
         self.cmos_tech_behavior = cmos_tech_behavior
@@ -195,6 +199,7 @@ def load_task_config(config_file):
             "script_params_common",
             "pass_requirements_file",
             "sdc_dir",
+            "noc_traffics_dir",
             "place_constr_dir",
             "qor_parse_file",
             "cmos_tech_behavior",
@@ -327,7 +332,9 @@ def create_jobs(args, configs, after_run=False):
     """
     jobs = []
     for config in configs:
-        for arch, circuit in itertools.product(config.archs, config.circuits):
+        for arch, circuit, noc_file in itertools.product(config.archs, config.circuits, config.noc_traffics):
+            print(f"{arch}, {circuit}, {noc_file}")
+            continue
             golden_results = load_parse_results(
                 str(PurePath(config.config_dir).joinpath("golden_results.txt"))
             )
