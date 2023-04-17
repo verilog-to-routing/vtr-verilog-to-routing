@@ -302,6 +302,11 @@ t_propose_action SoftmaxAgent::propose_action() {
     //Mark the q_table location that agent used to update its value after processing the move outcome
     last_action_ = (!propose_blk_type) ? move_type : move_type + (blk_type.index * num_available_moves_);
 
+    if(convert_agent_to_phys_blk_type(blk_type.index) == 7){ //temp change to see if NoC problem will go away
+        move_type = (int) e_move_type::UNIFORM;
+        last_action_ = move_type + (blk_type.index * num_available_moves_);
+    }
+
     t_propose_action propose_action;
     propose_action.move_type = (e_move_type)move_type;
     propose_action.blk_type = blk_type;
