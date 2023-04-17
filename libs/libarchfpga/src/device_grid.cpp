@@ -13,10 +13,8 @@ DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid
 
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
     size_t count = 0;
-    if (instance_counts_.size() == 0) {
-        //No instances counted
-        return count;
-    }
+    //instance_counts_ is not initialized
+    VTR_ASSERT(!instance_counts_.empty());
 
     int num_layers = (int)grid_.dim_size(0);
 
