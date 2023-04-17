@@ -461,10 +461,8 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         VTR_LOG("\tArchitecture\n");
         for (const auto equivalent_tile : type.equivalent_tiles) {
             auto num_instances = 0;
-            //Count number of equivalent tile at each die and add all up together
-            for (int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
-                num_instances += device_ctx.grid.num_instances(equivalent_tile, layer);
-            }
+            //get the number of equivalent tile across all layers
+            num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
 
             VTR_LOG("\t\t%d\tblocks of type: %s\n",
                     num_instances, equivalent_tile->name);

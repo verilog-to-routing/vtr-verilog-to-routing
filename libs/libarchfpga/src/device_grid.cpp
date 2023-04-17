@@ -48,6 +48,20 @@ void DeviceGrid::count_instances() {
     instance_counts_.clear();
     instance_counts_.resize(num_layers);
 
+    //Initialize the instance counts
+    for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
+        for (size_t x = 0; x < width(); ++x) {
+            for (size_t y = 0; y < height(); ++y) {
+                auto type = grid_[layer_num][x][y].type;
+
+                if (grid_[layer_num][x][y].width_offset == 0 && grid_[layer_num][x][y].height_offset == 0) {
+                    //Add capacity only if this is the root location
+                    instance_counts_[layer_num][type] = 0;
+                }
+            }
+        }
+    }
+
     //Count the number of blocks in the grid
     for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
         for (size_t x = 0; x < width(); ++x) {
