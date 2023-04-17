@@ -334,7 +334,6 @@ def create_jobs(args, configs, after_run=False):
     for config in configs:
         for arch, circuit, noc_file in itertools.product(config.archs, config.circuits, config.noc_traffics):
             print(f"{arch}, {circuit}, {noc_file}")
-            continue
             golden_results = load_parse_results(
                 str(PurePath(config.config_dir).joinpath("golden_results.txt"))
             )
