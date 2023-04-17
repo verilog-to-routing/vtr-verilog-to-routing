@@ -1,0 +1,21 @@
+<traffic_flows>
+	<single_flow src=".*noc_router_layer3_mvm0.*" dst=".*noc_router_layer3_mvm1.*" bandwidth="3.00348e8"/>
+	<single_flow src=".*noc_router_layer2_mvm0.*" dst=".*noc_router_layer2_mvm1.*" bandwidth="6.00697e8"/>
+	<single_flow src=".*noc_router_layer1_mvm0.*" dst=".*noc_router_layer1_mvm1.*" bandwidth="1.20139e9"/>
+	<single_flow src=".*noc_router_layer0_mvm3.*" dst=".*noc_router_layer1_mvm0.*" bandwidth="4.12979e8"/>
+	<single_flow src=".*noc_router_layer0_mvm3.*" dst=".*noc_router_layer1_mvm2.*" bandwidth="4.12979e8"/>
+	<single_flow src=".*noc_router_layer0_mvm3.*" dst=".*noc_router_layer1_mvm1.*" bandwidth="4.12979e8"/>
+	<single_flow src=".*noc_router_layer2_mvm1.*" dst=".*noc_router_layer3_mvm0.*" bandwidth="3.00348e8"/>
+	<single_flow src=".*noc_router_layer2_mvm1.*" dst=".*noc_router_layer3_mvm1.*" bandwidth="3.00348e8"/>
+	<single_flow src=".*noc_router_input_dispatcher1.*" dst=".*noc_router_layer0_mvm1.*" bandwidth="1.50174e8"/>
+	<single_flow src=".*noc_router_layer0_mvm0.*" dst=".*noc_router_layer0_mvm1.*" bandwidth="1.23894e9"/>
+	<single_flow src=".*noc_router_layer0_mvm1.*" dst=".*noc_router_layer0_mvm2.*" bandwidth="1.23894e9"/>
+	<single_flow src=".*noc_router_input_dispatcher2.*" dst=".*noc_router_layer0_mvm2.*" bandwidth="1.50174e8"/>
+	<single_flow src=".*noc_router_input_dispatcher0.*" dst=".*noc_router_layer0_mvm0.*" bandwidth="1.50174e8"/>
+	<single_flow src=".*noc_router_input_dispatcher3.*" dst=".*noc_router_layer0_mvm3.*" bandwidth="1.50174e8"/>
+	<single_flow src=".*noc_router_layer0_mvm2.*" dst=".*noc_router_layer0_mvm3.*" bandwidth="1.23894e9"/>
+	<single_flow src=".*noc_router_layer3_mvm1.*" dst=".*noc_router_output_collector.*" bandwidth="3.00348e8"/>
+	<single_flow src=".*noc_router_layer1_mvm2.*" dst=".*noc_router_layer2_mvm0.*" bandwidth="6.00697e8"/>
+	<single_flow src=".*noc_router_layer1_mvm2.*" dst=".*noc_router_layer2_mvm1.*" bandwidth="6.00697e8"/>
+	<single_flow src=".*noc_router_layer1_mvm1.*" dst=".*noc_router_layer1_mvm2.*" bandwidth="1.20139e9"/>
+</traffic_flows>

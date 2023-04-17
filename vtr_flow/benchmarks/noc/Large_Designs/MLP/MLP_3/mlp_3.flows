@@ -1,0 +1,15 @@
+<traffic_flows>
+	<single_flow src=".*noc_router_layer3_mvm1.*" dst=".*noc_router_output_collector.*" bandwidth="1.94758e9"/>
+	<single_flow src=".*noc_router_layer1_mvm0.*" dst=".*noc_router_layer1_mvm1.*" bandwidth="1.94758e9"/>
+	<single_flow src=".*noc_router_input_dispatcher1.*" dst=".*noc_router_layer0_mvm1.*" bandwidth="9.73789e8"/>
+	<single_flow src=".*noc_router_layer2_mvm0.*" dst=".*noc_router_layer2_mvm1.*" bandwidth="1.94758e9"/>
+	<single_flow src=".*noc_router_input_dispatcher0.*" dst=".*noc_router_layer0_mvm0.*" bandwidth="9.73789e8"/>
+	<single_flow src=".*noc_router_layer2_mvm1.*" dst=".*noc_router_layer3_mvm0.*" bandwidth="9.73789e8"/>
+	<single_flow src=".*noc_router_layer2_mvm1.*" dst=".*noc_router_layer3_mvm1.*" bandwidth="9.73789e8"/>
+	<single_flow src=".*noc_router_layer0_mvm0.*" dst=".*noc_router_layer0_mvm1.*" bandwidth="1.94758e9"/>
+	<single_flow src=".*noc_router_layer3_mvm0.*" dst=".*noc_router_layer3_mvm1.*" bandwidth="1.94758e9"/>
+	<single_flow src=".*noc_router_layer1_mvm1.*" dst=".*noc_router_layer2_mvm0.*" bandwidth="9.73789e8"/>
+	<single_flow src=".*noc_router_layer1_mvm1.*" dst=".*noc_router_layer2_mvm1.*" bandwidth="9.73789e8"/>
+	<single_flow src=".*noc_router_layer0_mvm1.*" dst=".*noc_router_layer1_mvm0.*" bandwidth="9.73789e8"/>
+	<single_flow src=".*noc_router_layer0_mvm1.*" dst=".*noc_router_layer1_mvm1.*" bandwidth="9.73789e8"/>
+</traffic_flows>
