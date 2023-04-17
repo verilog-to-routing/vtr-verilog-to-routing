@@ -293,6 +293,8 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     float cong_offset_cost = 0.;
 
     if (is_flat_) {
+        // We have not checked the multi-layer FPGA for flat routing
+        VTR_ASSERT(rr_graph.node_layer(current_node) == rr_graph.node_layer(target_node));
         if (from_rr_type == CHANX || from_rr_type == CHANY) {
             std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
