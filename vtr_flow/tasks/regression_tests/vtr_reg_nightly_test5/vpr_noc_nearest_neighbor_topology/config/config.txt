@@ -3,7 +3,7 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/noc/Synthetic_Designs/complex_64_noc_2D_chain/
+circuits_dir=benchmarks/noc/Synthetic_Designs/complex_64_noc_nearest_neighbor/
 
 # Path to directory of architectures to use
 archs_dir=arch/noc/mesh_noc_topology
@@ -12,7 +12,7 @@ archs_dir=arch/noc/mesh_noc_topology
 noc_traffics_dir=benchmarks/noc/Synthetic_Designs/complex_64_noc_2D_chain
 
 # Add circuits to list to sweep
-circuit_list_add=complex_64_noc_2D_chain.blif
+circuit_list_add=complex_64_noc_nearest_neighbor.blif
 
 # Add architectures to list to sweep
 arch_list_add=stratixiv_arch.timing_with_a_embedded_10X10_mesh_noc_topology.xml
