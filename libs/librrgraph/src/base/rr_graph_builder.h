@@ -184,6 +184,11 @@ class RRGraphBuilder {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
+    /** @brief set the layer number at which RRNodeId is located at */
+    inline void set_node_layer(RRNodeId id, int layer){
+        node_storage_.set_node_layer(id, layer);
+    }
+
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
     inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
         node_storage_.set_node_pin_num(id, new_pin_num);
