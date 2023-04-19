@@ -18,7 +18,7 @@ circuit_list_add=complex_64_noc_nearest_neighbor.blif
 arch_list_add=stratixiv_arch.timing_with_a_embedded_10X10_mesh_noc_topology.xml
 
 # Add NoC Traffic Patterns to list to sweep
-noc_traffic_list_add=complex_64_noc_nearest_neighbor
+noc_traffic_list_add=complex_64_noc_nearest_neighbor.flows
 
 # Parse info and how to parse
 parse_file=vpr_noc.txt
