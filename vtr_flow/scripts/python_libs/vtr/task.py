@@ -347,7 +347,10 @@ def create_jobs(args, configs, after_run=False):
                 work_dir = str(PurePath(arch).joinpath(circuit))
 
                 run_dir = (
-                    str(Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir)
+                    str(
+                        Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir)))
+                        / work_dir
+                    )
                     if after_run
                     else str(
                         Path(get_next_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir
@@ -450,7 +453,10 @@ def create_jobs(args, configs, after_run=False):
                     cmd += ["-verbose"]
 
                 if noc_traffic:
-                    cmd += ["--noc_flows_file", resolve_vtr_source_file(config, noc_traffic, config.noc_traffic_dir)]
+                    cmd += [
+                        "--noc_flows_file",
+                        resolve_vtr_source_file(config, noc_traffic, config.noc_traffic_dir),
+                    ]
 
                 if config.script_params_list_add:
                     for value in config.script_params_list_add:
