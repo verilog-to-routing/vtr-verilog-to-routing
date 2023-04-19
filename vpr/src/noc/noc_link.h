@@ -47,7 +47,7 @@ class NocLink {
     NocRouterId source_router; /*!< The router which has this link as an outgoing edge*/
     NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
 
-    double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bps*/
+    double bandwidth_usage = 0.0; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bps*/
 
   public:
     NocLink(NocRouterId source_router, NocRouterId sink_router);
