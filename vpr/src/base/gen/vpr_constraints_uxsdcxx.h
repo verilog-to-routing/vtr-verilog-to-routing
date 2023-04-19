@@ -1064,7 +1064,7 @@ inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, 
     std::unique_ptr<FILE, decltype(&fclose)> f(fopen(filename, "rb"), fclose);
 
     if (!f) {
-        throw std::runtime_error(std::string("Failed to open file") + filename);
+        throw std::runtime_error(std::string("Failed to open file ") + filename);
     }
 
     int current_line = 1;
