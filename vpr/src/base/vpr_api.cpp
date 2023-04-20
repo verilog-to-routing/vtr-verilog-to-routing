@@ -738,6 +738,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
               vpr_setup.AnnealSched,
               vpr_setup.RouterOpts,
               vpr_setup.AnalysisOpts,
+              vpr_setup.NocOpts,
               arch.Chans,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
@@ -957,6 +958,7 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
                                               vpr_setup.AnnealSched,
                                               router_opts,
                                               vpr_setup.AnalysisOpts,
+                                              vpr_setup.NocOpts,
                                               vpr_setup.FileNameOpts,
                                               &arch,
                                               router_opts.verify_binary_search,
@@ -1014,6 +1016,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        if ((UNI_DIRECTIONAL == det_routing_arch->directionality) && (true == det_routing_arch->tileable)) {
+            graph_type = GRAPH_UNIDIR_TILEABLE;
+        }
     }
 
     t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans, graph_directionality);
@@ -1338,7 +1343,8 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
         VTR_LOG("*****************************************************************************************\n");
     }
 
-    /* If routing is successful, apply post-routing annotations
+    /* If routing is successful and users do not force to skip the sync-up, 
+     * - apply post-routing annotations
      * - apply logic block pin fix-up
      *
      * Note:
@@ -1347,20 +1353,24 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      */
     if (!is_flat) {
         if (route_status.success()) {
-            sync_netlists_to_routing(net_list,
-                                     g_vpr_ctx.device(),
-                                     g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.atom().lookup,
-                                     g_vpr_ctx.mutable_clustering(),
-                                     g_vpr_ctx.placement(),
-                                     g_vpr_ctx.routing(),
-                                     vpr_setup.PackerOpts.pack_verbosity > 2,
-                                     is_flat);
+            if (!analysis_opts.skip_sync_clustering_and_routing_results) {
+                sync_netlists_to_routing(net_list,
+                                         g_vpr_ctx.device(),
+                                         g_vpr_ctx.mutable_atom(),
+                                         g_vpr_ctx.atom().lookup,
+                                         g_vpr_ctx.mutable_clustering(),
+                                         g_vpr_ctx.placement(),
+                                         g_vpr_ctx.routing(),
+                                         vpr_setup.PackerOpts.pack_verbosity > 2,
+                                         is_flat);
 
-            std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
-            write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
-                                         Arch.architecture_id,
-                                         post_routing_packing_output_file_name.c_str());
+                std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
+                write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
+                                             Arch.architecture_id,
+                                             post_routing_packing_output_file_name.c_str());
+            } else {
+                VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to users select to skip it\n");
+            }
         } else {
             VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
         }

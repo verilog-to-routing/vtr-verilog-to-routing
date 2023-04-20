@@ -55,6 +55,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
+                                  const t_noc_opts& noc_opts,
                                   const t_file_name_opts& filename_opts,
                                   const t_arch* arch,
                                   bool verify_binary_search,
@@ -96,6 +97,10 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         graph_directionality = GRAPH_BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        /* Branch on tileable routing */
+        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
+            graph_type = GRAPH_UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
@@ -185,6 +190,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                       annealing_sched,
                       router_opts,
                       analysis_opts,
+                      noc_opts,
                       arch->Chans,
                       det_routing_arch,
                       segment_inf,
@@ -327,7 +333,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts,
+                try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->Directs, arch->num_directs,
                           false);

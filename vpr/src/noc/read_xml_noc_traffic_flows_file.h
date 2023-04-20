@@ -3,7 +3,7 @@
 
 /**
  *  @brief The purpose of this file is to read and parse an xml file that has 
- *         then a '.flows' extension. This file contains the description of
+ *         a '.flows' extension. This file contains the description of
  *         a number of traffic flows within the NoC. A traffic flow describes
  *         the communication between two routers in the NoC.
  * 
@@ -34,9 +34,18 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <float.h>
 
 // identifier when an integer conversion failed while reading an attribute value in an xml file
 constexpr int NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE = -1;
+
+// defines the latency constriant of a traffic flow when not provided by the user
+// This value has to be signifigantly larger than latencies seen within the NoC so that the net effect in the placement cost is 0 (the latency constraint has no effect since there is none)
+// Since the traffic flow latencies will be in nanoseconds, setting this value to 1 second which is signifigantly larger that what will be seen in the NoC
+constexpr double DEFAULT_MAX_TRAFFIC_FLOW_LATENCY = 1.;
+
+// defines the prirority of a traffic flow when not specified by a user
+constexpr int DEFAULT_TRAFFIC_FLOW_PRIORITY = 1;
 
 /**
  * @brief Parse an xml '.flows' file that contains a number of traffic
@@ -76,6 +85,49 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file);
 void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
 
 /**
+ * @brief Retrieves the user provided bandwidth for the traffic
+ * flow currently being processed. If a bandwidth is not provided then
+ * an error is thrown. If the value provided was not an number then it is 
+ * assigned to an illegal value. 
+ * 
+ * @param single_flow_tag An xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return double The bandwidth for the currently processed
+ * traffic flow.
+ */
+double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Retrieves the user provided maximum allowed latency for the traffic
+ * flow currently being processed. If a maximum latency is not provided, then 
+ * it is set to 1 to indicate that there are no constraints on the
+ * latency. If the value provided was not a number then it is assigned to
+ * an illegal value.
+ * 
+ * @param single_flow_tag A xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return double The maximum allowable latency for the currently processed
+ * traffic flow.
+ */
+double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Retrieves the user provided priority for the traffic flow currently
+ * being processed. If a priority was not provided then its set to a default 
+ * value of 1 (it has an equal weighting to all other traffic flows). If the
+ * value not a number then it is assigned to an illegal value. If a floating
+ * point value is passed, then it is converted to an integer.
+ * 
+ * @param single_flow_tag A xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return int The priority for the currently processed traffic flow.
+ */
+int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
  * @brief Checks to see that the two router module names provided in the 
  *        traffic flow description are not empty and they dont have the
  *        same names. The two routers cant be the exact same since a router
@@ -93,8 +145,9 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
 void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
- * @brief Ensures that the a given traffic flows data transmission size and
- *        latency constraints are not negative values.
+ * @brief Ensures the traffic flow's bandwidth, latency constraint and 
+ *        priority are all non-negative. An error is thrown if the
+ *        above conditions are not met.
  * 
  * @param traffic_flow_bandwidth The transmission size betwee the two routers
  *                               in the traffic flow.
@@ -106,7 +159,7 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
  * @param loc_data Contains location data about the current line in the xml
  *                 file. Passed in for error logging.
  */
-void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, int traffic_flow_priority, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Given a router module name in the design, retrieve the

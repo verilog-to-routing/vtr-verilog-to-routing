@@ -18,7 +18,7 @@ jobs:
     # Prevents from running on forks where no custom runners are available
     if: ${{ github.repository_owner == 'verilog-to-routing' }}
 
-    container: ubuntu:bionic
+    container: ubuntu:jammy
 
     runs-on: [self-hosted, Linux, X64]
 
@@ -76,7 +76,7 @@ jobs:
 
   Build:
     name: 'B: Building VtR'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -88,7 +88,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -103,7 +103,7 @@ jobs:
 
 
   Format:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -116,7 +116,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -126,12 +126,12 @@ jobs:
 
   UniTests:
     name: 'U: C++ Unit Tests'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -143,12 +143,12 @@ jobs:
 
   Warnings:
     name: 'W: Check Compilation Warnings'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -165,7 +165,7 @@ jobs:
 
 
   Regression:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -178,7 +178,7 @@ jobs:
           {
             name: 'Basic_odin',
             params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Basic with NO_GRAPHICS',
@@ -216,7 +216,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -250,7 +250,7 @@ jobs:
           vtr_flow/**/parse_results*.txt
 
   Sanitized:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -269,7 +269,7 @@ jobs:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -289,12 +289,12 @@ jobs:
 
   Parmys:
     name: 'Parmys Basic Test'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.6
+          python-version: 3.10.10
       - uses: actions/checkout@v3
       - run: ./.github/scripts/install_dependencies.sh
 
@@ -312,12 +312,12 @@ jobs:
 
   ODINII:
     name: 'ODIN-II Basic Test'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -335,12 +335,12 @@ jobs:
 
   VQM2BLIF:
     name: 'VQM2BLIF Basic Tests'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -355,25 +355,25 @@ jobs:
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
 
   Compatibility:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           }
-        - { name: 'GCC 8 (Debian Buster)',            eval: 'CC=gcc-8 && CXX=g++-8',           }
-        - { name: 'GCC 9 (Ubuntu Focal - 20.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
-        - { name: 'GCC 10 (Ubuntu Hirsute - 21.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         }
-        - { name: 'GCC 11 (Latest)',                  eval: 'CC=gcc-11 && CXX=g++-11',         }
-        - { name: 'Clang 6 (Ubuntu Bionic - 18.04)',  eval: 'CC=clang-6.0 && CXX=clang++-6.0', }
-        - { name: 'Clang 7 (Debian Buster)',          eval: 'CC=clang-7 && CXX=clang++-7',     }
-        - { name: 'Clang 10 (Ubuntu Focal - 20.04)',  eval: 'CC=clang-10 && CXX=clang++-10',   }
+        - { name: 'GCC 9 (Ubuntu Jammy - 22.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
+        - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         }
+        - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-11 && CXX=g++-11',         }
+        - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-12 && CXX=g++-12',         }
+        - { name: 'Clang 11 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-11 && CXX=clang++-11',   }
+        - { name: 'Clang 12 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-12 && CXX=clang++-12',   }
+        - { name: 'Clang 13 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-13 && CXX=clang++-13',   }
+        - { name: 'Clang 14 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-14 && CXX=clang++-14',   }
     name: 'B: ${{ matrix.name }}'
     steps:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
@@ -402,12 +402,12 @@ jobs:
       - ODINII
       - VQM2BLIF
       - Compatibility
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: 3.10.10
     - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 

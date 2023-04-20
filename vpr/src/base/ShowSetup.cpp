@@ -319,6 +319,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown check_route value\n");
         }
 
+        VTR_LOG("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "true" : "false"));
+        VTR_LOG("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "true" : "false"));
         VTR_LOG("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
         VTR_LOG("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
         VTR_LOG("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
@@ -785,5 +787,10 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 static void ShowNocOpts(const t_noc_opts& NocOpts) {
     VTR_LOG("NocOpts.noc_flows_file: %s\n", NocOpts.noc_flows_file.c_str());
     VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_routing_algorithm.c_str());
+    VTR_LOG("NocOpts.noc_placement_weighting: %f\n", NocOpts.noc_placement_weighting);
+    VTR_LOG("NocOpts.noc_latency_constraints_weighting: %f\n", NocOpts.noc_latency_constraints_weighting);
+    VTR_LOG("NocOpts.noc_latency_weighting: %f\n", NocOpts.noc_latency_weighting);
+    VTR_LOG("NocOpts.noc_swap_percentage: %d%%\n", NocOpts.noc_swap_percentage);
+    VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_placement_file_name.c_str());
     VTR_LOG("\n");
 }
