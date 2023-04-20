@@ -344,7 +344,11 @@ def create_jobs(args, configs, after_run=False):
                 )
                 abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
                 abs_circuit_filepath = resolve_vtr_source_file(config, circuit, config.circuit_dir)
-                work_dir = str(PurePath(arch).joinpath(circuit))
+                work_dir = None
+                if noc_traffic:
+                    work_dir = str(PurePath(arch).joinpath(circuit).joinpath(noc_traffic))
+                else:
+                    work_dir = str(PurePath(arch).joinpath(circuit))
 
                 run_dir = (
                     str(
