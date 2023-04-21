@@ -471,6 +471,7 @@ def create_jobs(args, configs, after_run=False):
                                 circuit,
                                 includes,
                                 arch,
+                                noc_traffic,
                                 value,
                                 cmd,
                                 parse_cmd,
@@ -489,6 +490,7 @@ def create_jobs(args, configs, after_run=False):
                             circuit,
                             includes,
                             arch,
+                            noc_traffic,
                             None,
                             cmd,
                             parse_cmd,
@@ -509,6 +511,7 @@ def create_job(
     circuit,
     include,
     arch,
+    noc_flow,
     param,
     cmd,
     parse_cmd,
@@ -558,6 +561,7 @@ def create_job(
         current_parse_cmd += [
             "arch={}".format(arch),
             "circuit={}".format(circuit),
+            "noc_flow={}".format(noc_flow),
             "script_params={}".format(load_script_param(param)),
         ]
         current_parse_cmd.insert(0, run_dir + "/{}".format(load_script_param(param)))
@@ -567,6 +571,7 @@ def create_job(
         current_second_parse_cmd += [
             "arch={}".format(arch),
             "circuit={}".format(circuit),
+            "noc_flow={}".format(noc_flow),
             "script_params={}".format(load_script_param(param)),
         ]
         current_second_parse_cmd.insert(0, run_dir + "/{}".format(load_script_param(param)))
@@ -576,6 +581,7 @@ def create_job(
         current_qor_parse_command += [
             "arch={}".format(arch),
             "circuit={}".format(circuit),
+            "noc_flow={}".format(noc_flow),
             "script_params={}".format("common"),
         ]
         current_qor_parse_command.insert(0, run_dir + "/{}".format(load_script_param(param)))
