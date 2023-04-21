@@ -42,6 +42,8 @@ class TaskConfig:
         script_params_list_add=None,
         pass_requirements_file=None,
         sdc_dir=None,
+        noc_traffic_list_add=None,
+        noc_traffics_dir=None,
         place_constr_dir=None,
         qor_parse_file=None,
         cmos_tech_behavior=None,
@@ -65,6 +67,8 @@ class TaskConfig:
         self.script_params_list_add = script_params_list_add
         self.pass_requirements_file = pass_requirements_file
         self.sdc_dir = sdc_dir
+        self.noc_traffics = noc_traffic_list_add
+        self.noc_traffic_dir = noc_traffics_dir
         self.place_constr_dir = place_constr_dir
         self.qor_parse_file = qor_parse_file
         self.cmos_tech_behavior = cmos_tech_behavior
@@ -195,6 +199,7 @@ def load_task_config(config_file):
             "script_params_common",
             "pass_requirements_file",
             "sdc_dir",
+            "noc_traffics_dir",
             "place_constr_dir",
             "qor_parse_file",
             "cmos_tech_behavior",
@@ -328,117 +333,151 @@ def create_jobs(args, configs, after_run=False):
     jobs = []
     for config in configs:
         for arch, circuit in itertools.product(config.archs, config.circuits):
-            golden_results = load_parse_results(
-                str(PurePath(config.config_dir).joinpath("golden_results.txt"))
-            )
-            abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
-            abs_circuit_filepath = resolve_vtr_source_file(config, circuit, config.circuit_dir)
-            work_dir = str(PurePath(arch).joinpath(circuit))
-
-            run_dir = (
-                str(Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir)
-                if after_run
-                else str(
-                    Path(get_next_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir
+            noc_traffic = []
+            if config.noc_traffics:
+                noc_traffics = config.noc_traffics
+            else:
+                noc_traffics = [None]
+            for noc_traffic in noc_traffics:
+                golden_results = load_parse_results(
+                    str(PurePath(config.config_dir).joinpath("golden_results.txt"))
                 )
-            )
+                abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
+                abs_circuit_filepath = resolve_vtr_source_file(config, circuit, config.circuit_dir)
+                work_dir = str(PurePath(arch).joinpath(circuit))
 
-            # Collect any extra script params from the config file
-            cmd = [abs_circuit_filepath, abs_arch_filepath]
-
-            # Resolve and collect all include paths in the config file
-            # as -include ["include1", "include2", ..]
-            includes = []
-            if config.includes:
-                cmd += ["-include"]
-                for include in config.includes:
-                    abs_include_filepath = resolve_vtr_source_file(
-                        config, include, config.include_dir
+                run_dir = (
+                    str(
+                        Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir)))
+                        / work_dir
                     )
-                    includes.append(abs_include_filepath)
-
-                cmd += includes
-
-            # Check if additional architectural data files are present
-            if config.additional_files_list_add:
-                for additional_file in config.additional_files_list_add:
-                    flag, file_name = additional_file.split(",")
-
-                    cmd += [flag]
-                    cmd += [resolve_vtr_source_file(config, file_name, config.arch_dir)]
-
-            if hasattr(args, "show_failures") and args.show_failures:
-                cmd += ["-show_failures"]
-            cmd += config.script_params if config.script_params else []
-            cmd += config.script_params_common if config.script_params_common else []
-            cmd += (
-                args.shared_script_params
-                if hasattr(args, "shared_script_params") and args.shared_script_params
-                else []
-            )
-
-            # Apply any special config based parameters
-            if config.cmos_tech_behavior:
-                cmd += [
-                    "-cmos_tech",
-                    resolve_vtr_source_file(config, config.cmos_tech_behavior, "tech"),
-                ]
-
-            cmd += (
-                ["--fix_pins", resolve_vtr_source_file(config, config.pad_file)]
-                if config.pad_file
-                else []
-            )
-
-            if config.sdc_dir:
-                sdc_name = "{}.sdc".format(Path(circuit).stem)
-                sdc_file = resolve_vtr_source_file(config, sdc_name, config.sdc_dir)
-
-                cmd += ["-sdc_file", "{}".format(sdc_file)]
-
-            if config.place_constr_dir:
-                place_constr_name = "{}.place".format(Path(circuit).stem)
-                place_constr_file = resolve_vtr_source_file(
-                    config, place_constr_name, config.place_constr_dir
+                    if after_run
+                    else str(
+                        Path(get_next_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir
+                    )
                 )
 
-                cmd += ["--fix_clusters", "{}".format(place_constr_file)]
+                # Collect any extra script params from the config file
+                cmd = [abs_circuit_filepath, abs_arch_filepath]
 
-            parse_cmd = None
-            second_parse_cmd = None
-            qor_parse_command = None
-            if config.parse_file:
-                parse_cmd = [
-                    resolve_vtr_source_file(
-                        config,
-                        config.parse_file,
-                        str(PurePath("parse").joinpath("parse_config")),
-                    )
-                ]
+                # Resolve and collect all include paths in the config file
+                # as -include ["include1", "include2", ..]
+                includes = []
+                if config.includes:
+                    cmd += ["-include"]
+                    for include in config.includes:
+                        abs_include_filepath = resolve_vtr_source_file(
+                            config, include, config.include_dir
+                        )
+                        includes.append(abs_include_filepath)
 
-            if config.second_parse_file:
-                second_parse_cmd = [
-                    resolve_vtr_source_file(
-                        config,
-                        config.second_parse_file,
-                        str(PurePath("parse").joinpath("parse_config")),
-                    )
-                ]
+                    cmd += includes
 
-            if config.qor_parse_file:
-                qor_parse_command = [
-                    resolve_vtr_source_file(
-                        config,
-                        config.qor_parse_file,
-                        str(PurePath("parse").joinpath("qor_config")),
+                # Check if additional architectural data files are present
+                if config.additional_files_list_add:
+                    for additional_file in config.additional_files_list_add:
+                        flag, file_name = additional_file.split(",")
+
+                        cmd += [flag]
+                        cmd += [resolve_vtr_source_file(config, file_name, config.arch_dir)]
+
+                if hasattr(args, "show_failures") and args.show_failures:
+                    cmd += ["-show_failures"]
+                cmd += config.script_params if config.script_params else []
+                cmd += config.script_params_common if config.script_params_common else []
+                cmd += (
+                    args.shared_script_params
+                    if hasattr(args, "shared_script_params") and args.shared_script_params
+                    else []
+                )
+
+                # Apply any special config based parameters
+                if config.cmos_tech_behavior:
+                    cmd += [
+                        "-cmos_tech",
+                        resolve_vtr_source_file(config, config.cmos_tech_behavior, "tech"),
+                    ]
+
+                cmd += (
+                    ["--fix_pins", resolve_vtr_source_file(config, config.pad_file)]
+                    if config.pad_file
+                    else []
+                )
+
+                if config.sdc_dir:
+                    sdc_name = "{}.sdc".format(Path(circuit).stem)
+                    sdc_file = resolve_vtr_source_file(config, sdc_name, config.sdc_dir)
+
+                    cmd += ["-sdc_file", "{}".format(sdc_file)]
+
+                if config.place_constr_dir:
+                    place_constr_name = "{}.place".format(Path(circuit).stem)
+                    place_constr_file = resolve_vtr_source_file(
+                        config, place_constr_name, config.place_constr_dir
                     )
-                ]
-            # We specify less verbosity to the sub-script
-            # This keeps the amount of output reasonable
-            if hasattr(args, "verbosity") and max(0, args.verbosity - 1):
-                cmd += ["-verbose"]
-            if config.script_params_list_add:
-                for value in config.script_params_list_add:
+
+                    cmd += ["--fix_clusters", "{}".format(place_constr_file)]
+
+                parse_cmd = None
+                second_parse_cmd = None
+                qor_parse_command = None
+                if config.parse_file:
+                    parse_cmd = [
+                        resolve_vtr_source_file(
+                            config,
+                            config.parse_file,
+                            str(PurePath("parse").joinpath("parse_config")),
+                        )
+                    ]
+
+                if config.second_parse_file:
+                    second_parse_cmd = [
+                        resolve_vtr_source_file(
+                            config,
+                            config.second_parse_file,
+                            str(PurePath("parse").joinpath("parse_config")),
+                        )
+                    ]
+
+                if config.qor_parse_file:
+                    qor_parse_command = [
+                        resolve_vtr_source_file(
+                            config,
+                            config.qor_parse_file,
+                            str(PurePath("parse").joinpath("qor_config")),
+                        )
+                    ]
+                # We specify less verbosity to the sub-script
+                # This keeps the amount of output reasonable
+                if hasattr(args, "verbosity") and max(0, args.verbosity - 1):
+                    cmd += ["-verbose"]
+
+                if noc_traffic:
+                    cmd += [
+                        "--noc_flows_file",
+                        resolve_vtr_source_file(config, noc_traffic, config.noc_traffic_dir),
+                    ]
+
+                if config.script_params_list_add:
+                    for value in config.script_params_list_add:
+                        jobs.append(
+                            create_job(
+                                args,
+                                config,
+                                circuit,
+                                includes,
+                                arch,
+                                value,
+                                cmd,
+                                parse_cmd,
+                                second_parse_cmd,
+                                qor_parse_command,
+                                work_dir,
+                                run_dir,
+                                golden_results,
+                            )
+                        )
+                else:
                     jobs.append(
                         create_job(
                             args,
@@ -446,7 +485,7 @@ def create_jobs(args, configs, after_run=False):
                             circuit,
                             includes,
                             arch,
-                            value,
+                            None,
                             cmd,
                             parse_cmd,
                             second_parse_cmd,
@@ -456,24 +495,6 @@ def create_jobs(args, configs, after_run=False):
                             golden_results,
                         )
                     )
-            else:
-                jobs.append(
-                    create_job(
-                        args,
-                        config,
-                        circuit,
-                        includes,
-                        arch,
-                        None,
-                        cmd,
-                        parse_cmd,
-                        second_parse_cmd,
-                        qor_parse_command,
-                        work_dir,
-                        run_dir,
-                        golden_results,
-                    )
-                )
 
     return jobs
 
