@@ -10,7 +10,7 @@ Prerequisites
 * bison
 * flex
 * g++ 9.x
-* cmake 3.9 (minimum version)
+* cmake 3.16 (minimum version)
 * time
 * cairo
 * build-essential
