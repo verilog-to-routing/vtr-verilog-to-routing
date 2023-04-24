@@ -24,7 +24,7 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params_common =-starting_stage vpr --absorb_buffer_luts on
+script_params_common =-starting_stage vpr --absorb_buffer_luts on --seed 3
 script_params_list_add = -sdc_file sdc/samples/clock_aliases/clk.sdc
 script_params_list_add = -sdc_file sdc/samples/clock_aliases/clk_assign.sdc
 script_params_list_add = -sdc_file sdc/samples/clock_aliases/counter_clk.sdc
