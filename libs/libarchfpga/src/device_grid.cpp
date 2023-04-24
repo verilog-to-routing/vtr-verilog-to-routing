@@ -14,7 +14,7 @@ DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
     size_t count = 0;
     //instance_counts_ is not initialized
-    if(instance_counts_.empty()) {
+    if (instance_counts_.empty()) {
         return 0;
     }
 
