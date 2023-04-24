@@ -339,16 +339,13 @@ def create_cmd(abs_circuit_filepath, abs_arch_filepath, config, args, circuit, n
     # Collect any extra script params from the config file
     cmd = [abs_circuit_filepath, abs_arch_filepath]
 
-
     # Resolve and collect all include paths in the config file
     # as -include ["include1", "include2", ..]
     includes = []
     if config.includes:
         cmd += ["-include"]
         for include in config.includes:
-            abs_include_filepath = resolve_vtr_source_file(
-                config, include, config.include_dir
-            )
+            abs_include_filepath = resolve_vtr_source_file(config, include, config.include_dir)
             includes.append(abs_include_filepath)
 
         cmd += includes
@@ -379,9 +376,7 @@ def create_cmd(abs_circuit_filepath, abs_arch_filepath, config, args, circuit, n
         ]
 
     cmd += (
-        ["--fix_pins", resolve_vtr_source_file(config, config.pad_file)]
-        if config.pad_file
-        else []
+        ["--fix_pins", resolve_vtr_source_file(config, config.pad_file)] if config.pad_file else []
     )
 
     if config.sdc_dir:
@@ -441,7 +436,6 @@ def create_cmd(abs_circuit_filepath, abs_arch_filepath, config, args, circuit, n
     return includes, parse_cmd, second_parse_cmd, qor_parse_command, cmd
 
 
-
 # pylint: disable=too-many-branches
 def create_jobs(args, configs, after_run=False):
     """
@@ -474,9 +468,9 @@ def create_jobs(args, configs, after_run=False):
                     )
                 )
 
-                includes, parse_cmd, second_parse_cmd, qor_parse_command, cmd = create_cmd(abs_circuit_filepath,
-                                                                                           abs_arch_filepath, config,
-                                                                                           args, circuit, noc_traffic)
+                includes, parse_cmd, second_parse_cmd, qor_parse_command, cmd = create_cmd(
+                    abs_circuit_filepath, abs_arch_filepath, config, args, circuit, noc_traffic
+                )
 
                 if config.script_params_list_add:
                     for value in config.script_params_list_add:
