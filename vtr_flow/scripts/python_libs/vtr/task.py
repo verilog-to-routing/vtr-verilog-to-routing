@@ -326,6 +326,7 @@ def find_longest_task_description(configs):
 
 
 def get_work_dir_addr(arch, circuit, noc_traffic):
+    """ Get the work directory address under under run_dir """
     work_dir = None
     if noc_traffic:
         work_dir = str(PurePath(arch).joinpath(circuit).joinpath(noc_traffic))
@@ -335,7 +336,23 @@ def get_work_dir_addr(arch, circuit, noc_traffic):
     return work_dir
 
 
+def create_second_parse_cmd(config):
+    """ Create the parse command to run the second time """
+    second_parse_cmd = None
+    if config.second_parse_file:
+        second_parse_cmd = [
+            resolve_vtr_source_file(
+                config,
+                config.second_parse_file,
+                str(PurePath("parse").joinpath("parse_config")),
+            )
+        ]
+
+    return second_parse_cmd
+
+
 def create_cmd(abs_circuit_filepath, abs_arch_filepath, config, args, circuit, noc_traffic):
+    """ Create the command to run the task """
     # Collect any extra script params from the config file
     cmd = [abs_circuit_filepath, abs_arch_filepath]
 
@@ -394,7 +411,6 @@ def create_cmd(abs_circuit_filepath, abs_arch_filepath, config, args, circuit, n
         cmd += ["--fix_clusters", "{}".format(place_constr_file)]
 
     parse_cmd = None
-    second_parse_cmd = None
     qor_parse_command = None
     if config.parse_file:
         parse_cmd = [
@@ -405,14 +421,7 @@ def create_cmd(abs_circuit_filepath, abs_arch_filepath, config, args, circuit, n
             )
         ]
 
-    if config.second_parse_file:
-        second_parse_cmd = [
-            resolve_vtr_source_file(
-                config,
-                config.second_parse_file,
-                str(PurePath("parse").joinpath("parse_config")),
-            )
-        ]
+    second_parse_cmd = create_second_parse_cmd(config)
 
     if config.qor_parse_file:
         qor_parse_command = [
