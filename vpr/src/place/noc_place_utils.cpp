@@ -515,12 +515,11 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 
     ClusterBlockId b_from = *router_cluster_block_to_swap_ref;
 
-    
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //check if the block is movable
-    if(place_ctx.block_locs[b_from].is_fixed){
+    if (place_ctx.block_locs[b_from].is_fixed) {
         return e_create_move::ABORT;
     }
 
