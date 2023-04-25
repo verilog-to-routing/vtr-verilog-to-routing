@@ -522,7 +522,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_pl_loc to;

@@ -306,7 +306,8 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
             /* Verify types and ptc*/
             if (tokens[2] == "SOURCE" || tokens[2] == "SINK" || tokens[2] == "OPIN" || tokens[2] == "IPIN") {
-                if (tokens[4 + offset] == "Pad:" && !is_io_type(device_ctx.grid[x][y].type)) {
+                const auto& type = device_ctx.grid.get_physical_type(x, y);
+                if (tokens[4 + offset] == "Pad:" && !is_io_type(type)) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "Node %d is of the wrong type", inode);
                 }
@@ -326,11 +327,11 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             /*Process switches and pb pin info if it is ipin or opin type*/
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
-                if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
+                auto type = device_ctx.grid.get_physical_type(x, y);
+                if (!is_io_type(type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
-                    auto type = device_ctx.grid[x][y].type;
-                    int height_offset = device_ctx.grid[x][y].height_offset;
+                    int height_offset = device_ctx.grid.get_height_offset(x, y);
 
                     int capacity, relative_pin;
                     std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
