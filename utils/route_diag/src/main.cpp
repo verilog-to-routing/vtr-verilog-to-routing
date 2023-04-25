@@ -178,12 +178,12 @@ static void profile_source(const Netlist<>& net_list,
 
     for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
         for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
-            if(device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+            if(device_ctx.grid.get_physical_type(sink_x, sink_y) == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 continue;
             }
 
             auto best_sink_ptcs = get_best_classes(RECEIVER,
-                    device_ctx.grid[sink_x][sink_y].type);
+                    device_ctx.grid.get_physical_type(sink_x, sink_y));
             bool successfully_routed;
             for (int sink_ptc : best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
