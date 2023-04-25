@@ -117,7 +117,7 @@ void update_move_generator(std::unique_ptr<MoveGenerator>& move_generator, std::
     }
 }
 
-void determine_agent_block_types(){
+void determine_agent_block_types() {
     //Loop through all available logical block types and store the ones that exist in the netlist
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -125,12 +125,12 @@ void determine_agent_block_types(){
     int agent_type_index = 0;
     for (auto itype : device_ctx.logical_block_types) {
         if (itype.index == 0) //ignore empty type
-        continue;
+            continue;
         auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
         if (blk_per_type.size() != 0) {
-        place_ctx.phys_blk_type_to_agent_blk_type_map.insert(std::pair<int, int>(agent_type_index, itype.index));
-        place_ctx.agent_blk_type_to_phys_blk_type_map.insert(std::pair<int, int>(itype.index, agent_type_index));
-        agent_type_index++;
+            place_ctx.phys_blk_type_to_agent_blk_type_map.insert(std::pair<int, int>(agent_type_index, itype.index));
+            place_ctx.agent_blk_type_to_phys_blk_type_map.insert(std::pair<int, int>(itype.index, agent_type_index));
+            agent_type_index++;
         }
     }
 }

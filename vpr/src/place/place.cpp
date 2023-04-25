@@ -3224,7 +3224,7 @@ static void print_placement_move_types_stats(
     float moves, accepted, rejected, aborted;
 
     float total_moves = 0;
-    for(size_t iaction = 0; iaction < move_type_stat.blk_type_moves.size(); iaction++){
+    for (size_t iaction = 0; iaction < move_type_stat.blk_type_moves.size(); iaction++) {
         total_moves += move_type_stat.blk_type_moves[iaction];
     }
 

@@ -17,27 +17,27 @@ class KArmedBanditAgent {
     virtual ~KArmedBanditAgent() {}
 
     /**
-    * @brief Choose a move type to perform and a block type that move should be performed with based on Q-table
-    *
-    * @return A move type and a block type as a "t_propose_action" struct
-    * If the agent is set to only propose move type, then block type index in the struct will be set to -1
-    */
+     * @brief Choose a move type to perform and a block type that move should be performed with based on Q-table
+     *
+     * @return A move type and a block type as a "t_propose_action" struct
+     * If the agent is set to only propose move type, then block type index in the struct will be set to -1
+     */
     virtual t_propose_action propose_action() = 0;
 
     /**
-    * @brief Update the agent Q-table based on the reward received by the SA algorithm
-    *
-    *   @param reward A double value calculated in "place.cpp" file showing how placement cost was affected by the prior action taken
-    *   @param reward_func The reward function used by the agent, detail explanation can be found on "directed_moves_util.h" file
-    */
+     * @brief Update the agent Q-table based on the reward received by the SA algorithm
+     *
+     *   @param reward A double value calculated in "place.cpp" file showing how placement cost was affected by the prior action taken
+     *   @param reward_func The reward function used by the agent, detail explanation can be found on "directed_moves_util.h" file
+     */
     void process_outcome(double, e_reward_function);
 
     /**
-    * @brief write all agent internal information (Q-table, reward for each performed action, ...) to a file (agent_info_file_)
-    *
-    *   @param last_action Last action performed by the RL-agent
-    *   @param reward A double value calculated in "place.cpp" file showing how placement cost was affected by the prior action taken
-    */
+     * @brief write all agent internal information (Q-table, reward for each performed action, ...) to a file (agent_info_file_)
+     *
+     *   @param last_action Last action performed by the RL-agent
+     *   @param reward A double value calculated in "place.cpp" file showing how placement cost was affected by the prior action taken
+     */
     void write_agent_info(int last_action, double reward);
 
   protected:
@@ -72,32 +72,31 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
 
   public:
-
     /**
-    * @brief Set the user-specified epsilon for the E-greedy agent
-    *
-    *   @param epsilon Epsilon value for the agent, can be specified by the command-line option "--place_agent_epsilon"
-    *   Epsilon default value is 0.3.
-    */
+     * @brief Set the user-specified epsilon for the E-greedy agent
+     *
+     *   @param epsilon Epsilon value for the agent, can be specified by the command-line option "--place_agent_epsilon"
+     *   Epsilon default value is 0.3.
+     */
     void set_epsilon(float epsilon);
 
     /**
-    * @brief Set equal action probability to all available actions.
-    */
+     * @brief Set equal action probability to all available actions.
+     */
     void set_epsilon_action_prob();
 
     /**
-    * @brief Set step size for q-table updates
-    *
-    *   @param gamma Controls how quickly the agent's memory decays, can be specified by the command-line option "--place_agent_gamma"
-    *   Gamma default value is 0.05.
-    *   @param move_lim Number of moves per temperature
-    */
+     * @brief Set step size for q-table updates
+     *
+     *   @param gamma Controls how quickly the agent's memory decays, can be specified by the command-line option "--place_agent_gamma"
+     *   Gamma default value is 0.05.
+     *   @param move_lim Number of moves per temperature
+     */
     void set_step(float gamma, int move_lim);
 
     /**
-    * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
-    */
+     * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
+     */
     void init_q_scores();
 
   private:
@@ -122,32 +121,30 @@ class SoftmaxAgent : public KArmedBanditAgent {
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
 
   public:
-
     /**
-    * @brief Calculate the fraction of total netlist blocks for each agent block type and will be used by the "set_action_prob" function.
-    */
+     * @brief Calculate the fraction of total netlist blocks for each agent block type and will be used by the "set_action_prob" function.
+     */
     void set_block_ratio();
 
-
     /**
-    * @brief Set action probability for all available actions.
-    * If agent only proposes move type, the action probabilities would be equal for all move types at the beginning.
-    * If agent proposes both move and block type, the action_prob for each action would be based on its block type count in the netlist.
-    */
+     * @brief Set action probability for all available actions.
+     * If agent only proposes move type, the action probabilities would be equal for all move types at the beginning.
+     * If agent proposes both move and block type, the action_prob for each action would be based on its block type count in the netlist.
+     */
     void set_action_prob();
 
     /**
-    * @brief Set step size for q-table updates
-    *
-    *   @param gamma Controls how quickly the agent's memory decays, can be specified by the command-line option "--place_agent_gamma"
-    *   Gamma default value is 0.05.
-    *   @param move_lim Number of moves per temperature
-    */
+     * @brief Set step size for q-table updates
+     *
+     *   @param gamma Controls how quickly the agent's memory decays, can be specified by the command-line option "--place_agent_gamma"
+     *   Gamma default value is 0.05.
+     *   @param move_lim Number of moves per temperature
+     */
     void set_step(float gamma, int move_lim);
 
     /**
-    * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
-    */
+     * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
+     */
     void init_q_scores();
 
   private:

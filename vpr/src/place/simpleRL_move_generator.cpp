@@ -82,12 +82,12 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     //write agent internal q-table and actions into a file for debugging purposes
     //agent_info_file_ variable is a NULL pointer by default
     //info file is not generated unless the agent_info_file_ set to a filename in "init_q_scores" function
-    if(agent_info_file_) {
+    if (agent_info_file_) {
         write_agent_info(last_action_, reward);
     }
 }
 
-void KArmedBanditAgent::write_agent_info(int last_action, double reward){
+void KArmedBanditAgent::write_agent_info(int last_action, double reward) {
     fseek(agent_info_file_, 0, SEEK_END);
     fprintf(agent_info_file_, "%d,", last_action);
     fprintf(agent_info_file_, "%g,", reward);
@@ -134,9 +134,9 @@ void EpsilonGreedyAgent::init_q_scores() {
 
     //agent_info_file_ = vtr::fopen("agent_info.txt", "w");
     //write agent internal q-table and actions into file for debugging purposes
-    if(agent_info_file_) {
+    if (agent_info_file_) {
         //we haven't performed any moves yet, hence last_aciton and reward are 0
-        write_agent_info(0,0);
+        write_agent_info(0, 0);
     }
 
     set_epsilon_action_prob();
@@ -255,9 +255,9 @@ void SoftmaxAgent::init_q_scores() {
 
     //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
     //write agent internal q-table and actions into file for debugging purposes
-    if(agent_info_file_) {
+    if (agent_info_file_) {
         //we haven't performed any moves yet, hence last_aciton and reward are 0
-        write_agent_info(0,0);
+        write_agent_info(0, 0);
     }
 
     /*
@@ -269,7 +269,6 @@ void SoftmaxAgent::init_q_scores() {
         set_block_ratio();
     }
     set_action_prob();
-
 }
 
 t_propose_action SoftmaxAgent::propose_action() {
