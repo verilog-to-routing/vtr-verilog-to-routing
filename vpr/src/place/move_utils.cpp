@@ -457,7 +457,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
         return false;
     }
 
-    auto physical_tile = device_ctx.grid[to.x][to.y].type;
+    auto physical_tile = device_ctx.grid.get_physical_type(to.x, to.y);
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
 
     if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity
@@ -589,11 +589,11 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     compressed_grid_to_loc(type, cx_to, cy_to, to);
 
     auto& grid = g_vpr_ctx.device().grid;
-    auto to_type = grid[to.x][to.y].type;
+    const auto& to_type = grid.get_physical_type(to.x, to.y);
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
-    VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(grid[to.x][to.y].height_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_width_offset(to.x, to.y) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_height_offset(to.x, to.y) == 0, "Should be at block base location");
 
     return true;
 }
@@ -661,11 +661,11 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     compressed_grid_to_loc(blk_type, cx_to, cy_to, to_loc);
 
     auto& grid = g_vpr_ctx.device().grid;
-    auto to_type = grid[to_loc.x][to_loc.y].type;
+    const auto& to_type = grid.get_physical_type(to_loc.x, to_loc.y);
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, blk_type), "Type must be compatible");
-    VTR_ASSERT_MSG(grid[to_loc.x][to_loc.y].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(grid[to_loc.x][to_loc.y].height_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_width_offset(to_loc.x, to_loc.y) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_height_offset(to_loc.x, to_loc.y) == 0, "Should be at block base location");
 
     return true;
 }
@@ -746,11 +746,11 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     compressed_grid_to_loc(blk_type, cx_to, cy_to, to_loc);
 
     auto& grid = g_vpr_ctx.device().grid;
-    auto to_type = grid[to_loc.x][to_loc.y].type;
+    const auto& to_type = grid.get_physical_type(to_loc.x, to_loc.y);
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, blk_type), "Type must be compatible");
-    VTR_ASSERT_MSG(grid[to_loc.x][to_loc.y].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(grid[to_loc.x][to_loc.y].height_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_width_offset(to_loc.x, to_loc.y) == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid.get_height_offset(to_loc.x, to_loc.y) == 0, "Should be at block base location");
 
     return true;
 }
@@ -779,7 +779,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
     to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
 
     auto& grid = g_vpr_ctx.device().grid;
-    auto to_type = grid[to_loc.x][to_loc.y].type;
+    auto to_type = grid.get_physical_type(to_loc.x, to_loc.y);
 
     //Each x/y location contains only a single type, so we can pick a random z (capcity) location
     auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);

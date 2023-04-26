@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstddef>
 #include <iterator>
+#include <algorithm>
 #include "vtr_range.h"
 
 namespace vtr {
