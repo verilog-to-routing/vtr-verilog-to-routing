@@ -16,13 +16,25 @@ sudo apt-get install -y \
     libgtk-3-dev \
     libx11-dev
 
-# Required for yosys front-end
+# Required for parmys front-end from https://github.com/YosysHQ/yosys
 sudo apt-get install -y \
+    build-essential \
     clang \
+    bison \
+    flex \
+    libreadline-dev \
+    gawk \
     tcl-dev \
-    uuid-dev \
-    default-jdk \
-    libreadline-dev
+    libffi-dev \
+    git \
+    graphviz \
+    xdot \
+    pkg-config \
+    python3-dev \
+    libboost-system-dev \
+    libboost-python-dev \
+    libboost-filesystem-dev \
+    zlib1g-dev
 
 # Required to build the documentation
 sudo apt-get install -y \

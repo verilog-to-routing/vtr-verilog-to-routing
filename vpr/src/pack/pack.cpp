@@ -265,7 +265,16 @@ bool try_pack(t_packer_opts* packer_opts,
     /* Packing iterative improvement can be done here */
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
+    VTR_LOG("Start the iterative improvement process\n");
+    //iteratively_improve_packing(*packer_opts, clustering_data, 2);
+    VTR_LOG("the iterative improvement process is done\n");
 
+    /*
+     * auto& cluster_ctx = g_vpr_ctx.clustering();
+     * for (auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
+     * free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(blk_id));
+     * }
+     */
     /******************** End **************************/
 
     //check clustering and output it

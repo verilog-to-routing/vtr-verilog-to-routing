@@ -776,7 +776,7 @@ module mode1_max_tree(
   mode1_stage0_run,
   clk,
   reset,
-  outp,
+  outp
 );
 
   input  [`DATAWIDTH-1 : 0] inp0; 
@@ -974,7 +974,7 @@ module mode2_sub(
   outp5,
   outp6,
   outp7,
-  b_inp,
+  b_inp
 );
   
   input clk;
@@ -1438,7 +1438,7 @@ module FPAddSub(
 	assign flags = 5'b0;
 	
 `ifdef complex_dsp
-adder_fp_clk u_add(.clk(clk), .a(a), .b(b),.out(result));
+addition_fp_clk_16 u_add(.clk(clk), .a(a), .b(b),.out(result));
 `else
 FPAddSub_16 u_FPAddSub (.clk(clk), .rst(rst), .a(a), .b(b), .operation(1'b0), .result(result), .flags());
 `endif
@@ -1996,9 +1996,9 @@ module expunit (a, z, status, stage_run, stage_run2, clk, reset);
   fptofixed_para fpfx (.fp(a), .fx(fxout));
   LUT lut(.addr(fxout[int_width + frac_width - 1 : 0]), .exp(LUTout)); 
   //DW_fp_mult #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) fpmult (.a(a), .b(LUTout[31:16]), .rnd(3'b000), .z(Mult_out), .status());
-  FPMult fpmult (.clk(clk), .rst(rst), .a(a_reg), .b(LUTout_reg2[31:16]), .result(Mult_out), .flags());
+  FPMult fpmult (.clk(clk), .rst(reset), .a(a_reg), .b(LUTout_reg2[31:16]), .result(Mult_out), .flags());
   //DW_fp_add #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) fpsub (.a(Mult_out_reg), .b(LUTout_reg[15:0]), .rnd(3'b000), .z(z), .status(status[7:0]));
-  FPAddSub fpsub (.clk(clk), .rst(rst), .a(Mult_out_reg),	.b(LUTout_reg[15:0]), .operation(1'b0),	.result(z), .flags());
+  FPAddSub fpsub (.clk(clk), .rst(reset), .a(Mult_out_reg),	.b(LUTout_reg[15:0]), .operation(1'b0),	.result(z), .flags());
 endmodule
 
 module fptofixed_para (
@@ -2025,7 +2025,7 @@ module fptofixed_para (
 	assign fx = temp[9+int_width:10-frac_width];
 	
 
-always @(sftfx)
+always @(sftfx, Ea, fp)
 begin
 // only negetive numbers as inputs after sorting and subtraction from max
 	if (Ea > int_width - 1)
@@ -2175,7 +2175,7 @@ module FPMult(
 	output [4:0] flags ;				// Flags indicating exceptions according to IEEE754
 	assign flags = 5'b0;
 `ifdef complex_dsp
-	multiply_fp_clk u_mult_fp(.clk(clk), .a(a), .b(b), .out(result)); 
+	mult_fp_clk_16 u_mult_fp(.clk(clk), .a(a), .b(b), .out(result)); 
 `else
 FPMult_16 u_FPMult (.clk(clk), .rst(1'b0), .a(a), .b(b), .result(result), .flags());
 `endif
@@ -2971,7 +2971,7 @@ module FPAddSub_AlignShift1(
 	
 
 	wire bf16;
-	assign bf16 = 1'b1; //hardcoding to 1, to avoid ODIN issue. a `ifdef here wasn't working. apparently, nested `ifdefs don't work
+	assign bf16 = 1'b0; //hardcoding to 1, to avoid ODIN issue. a `ifdef here wasn't working. apparently, nested `ifdefs don't work
 
 	// Internal signals
 	reg	  [`MANTISSA:0]		Lvl1;
@@ -2979,43 +2979,39 @@ module FPAddSub_AlignShift1(
 	wire    [2*`MANTISSA+1:0]    Stage1;	
 	integer           i;                // Loop variable
 
-	wire [`MANTISSA:0] temp_0; 
-
-assign temp_0 = 0;
-
 	always @(*) begin
 		if (bf16 == 1'b1) begin						
 //hardcoding for bfloat16
 	//For bfloat16, we can shift the mantissa by a max of 7 bits since mantissa has a width of 7. 
 	//Hence if either, bit[3]/bit[4]/bit[5]/bit[6]/bit[7] is 1, we can make it 0. This corresponds to bits [5:1] in our updated shift which doesn't contain last 2 bits.
 		//Lvl1 <= (Shift[1]|Shift[2]|Shift[3]|Shift[4]|Shift[5]) ? {temp_0} : {1'b1, MminP};  // MANTISSA + 1 width	
-		Lvl1 <= (|Shift[`EXPONENT-3:1]) ? {temp_0} : {1'b1, MminP};  // MANTISSA + 1 width	
+		Lvl1 <= (|Shift[`EXPONENT-3:1]) ? 'd0 : {1'b1, MminP};  // MANTISSA + 1 width	
 		end
 		else begin
 		//for half precision fp16, 10 bits can be shifted. Hence, only shifts till 10 (01010)can be made. 
-		Lvl1 <= Shift[2] ? {temp_0} : {1'b1, MminP};
+		Lvl1 <= Shift[2] ? 'd0 : {1'b1, MminP};
 		end
 	end
 	
-	assign Stage1 = { temp_0, Lvl1}; //2*MANTISSA + 2 width
+	assign Stage1 = {Lvl1, Lvl1}; //2*MANTISSA + 2 width
 
 	always @(*) begin    					// Rotate {0 | 4 } bits
 	if(bf16 == 1'b1) begin
 	  case (Shift[0])
 			// Rotate by 0	
-			1'b0:  Lvl2 <= Stage1[`MANTISSA:0];       			
+			1'b0: Lvl2 <= Stage1[`MANTISSA:0];       			
 			// Rotate by 4	
-			1'b1:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end Lvl2[`MANTISSA:`MANTISSA-3] <= 0; end
+			1'b1: Lvl2 <= Stage1[`MANTISSA+4:4];
 	  endcase
 	end
 	else begin
 	  case (Shift[1:0])					// Rotate {0 | 4 | 8} bits
 			// Rotate by 0	
-			2'b00:  Lvl2 <= Stage1[`MANTISSA:0];       			
+			2'b00: Lvl2 <= Stage1[`MANTISSA:0];       			
 			// Rotate by 4	
-			2'b01:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end Lvl2[`MANTISSA:`MANTISSA-3] <= 0; end
+			2'b01: Lvl2 <= Stage1[`MANTISSA+4:4];
 			// Rotate by 8
-			2'b10:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+8]; end Lvl2[`MANTISSA:`MANTISSA-7] <= 0; end
+			2'b10: Lvl2 <= Stage1[`MANTISSA+8:8];
 			// Rotate by 12	
 			2'b11: Lvl2[`MANTISSA: 0] <= 0; 
 			//2'b11:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+12]; end Lvl2[`MANTISSA:`MANTISSA-12] <= 0; end
@@ -3051,18 +3047,18 @@ module FPAddSub_AlignShift2(
 	wire    [2*`MANTISSA+1:0]    Stage2;	
 	integer           j;               // Loop variable
 	
-	assign Stage2 = {11'b0, MminP};
+	assign Stage2 = {MminP, MminP};
 
 	always @(*) begin    // Rotate {0 | 1 | 2 | 3} bits
 	  case (Shift[1:0])
 			// Rotate by 0
-			2'b00:  Lvl3 <= Stage2[`MANTISSA:0];   
+			2'b00: Lvl3 <= Stage2[`MANTISSA:0];   
 			// Rotate by 1
-			2'b01:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+1]; end Lvl3[`MANTISSA] <= 0; end 
+			2'b01: Lvl3 <= Stage2[`MANTISSA+1:1]; 
 			// Rotate by 2
-			2'b10:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+2]; end Lvl3[`MANTISSA:`MANTISSA-1] <= 0; end 
+			2'b10: Lvl3 <= Stage2[`MANTISSA+2:2];
 			// Rotate by 3
-			2'b11:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+3]; end Lvl3[`MANTISSA:`MANTISSA-2] <= 0; end 	  
+			2'b11: Lvl3 <= Stage2[`MANTISSA+3:3];  
 	  endcase
 	end
 	
@@ -3208,11 +3204,11 @@ module FPAddSub_NormalizeShift1(
 			// Rotate by 0
 			2'b00: Lvl2 <= Stage1[`DWIDTH:0];       		
 			// Rotate by 4
-			2'b01: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-4]; end Lvl2[3:0] <= 0; end
+			2'b01: Lvl2 <= Stage1[29:13];
 			// Rotate by 8
-			2'b10: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-8]; end Lvl2[7:0] <= 0; end
+			2'b10: Lvl2 <= Stage1[25:9];
 			// Rotate by 12
-			2'b11: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-12]; end Lvl2[11:0] <= 0; end
+			2'b11: Lvl2 <= Stage1[21:5];
 	  endcase
 	end
 	
@@ -3221,13 +3217,13 @@ module FPAddSub_NormalizeShift1(
 	always @(*) begin   				 		// Rotate {0 | 1 | 2 | 3} bits
 	  case (Shift[1:0])
 			// Rotate by 0
-			2'b00:  Lvl3 <= Stage2[`DWIDTH:0];
+			2'b00: Lvl3 <= Stage2[`DWIDTH:0];
 			// Rotate by 1
-			2'b01: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-1]; end Lvl3[0] <= 0; end 
+			2'b01: Lvl3 <= Stage2[32:16];
 			// Rotate by 2
-			2'b10: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-2]; end Lvl3[1:0] <= 0; end
+			2'b10: Lvl3 <= Stage2[31:15];
 			// Rotate by 3
-			2'b11: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-3]; end Lvl3[2:0] <= 0; end
+			2'b11: Lvl3 <= Stage2[30:14];
 	  endcase
 	end
 	
@@ -3424,4 +3420,5 @@ module FPAddSub_ExceptionModule(
 	
 endmodule
 `endif
+
 

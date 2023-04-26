@@ -12,13 +12,13 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
     bool route_exists = true;
 
     // get the source router
-    const NocRouter src_router = noc_model.get_single_noc_router(src_router_id);
+    const NocRouter& src_router = noc_model.get_single_noc_router(src_router_id);
 
     // keep track of the last router in the route as we build it. Initially we are at the start router, so that will be the current router
     NocRouterId curr_router_id = src_router_id;
 
     // lets get the sink router
-    const NocRouter sink_router = noc_model.get_single_noc_router(sink_router_id);
+    const NocRouter& sink_router = noc_model.get_single_noc_router(sink_router_id);
 
     // get the position of the sink router
     int sink_router_x_position = sink_router.get_router_grid_position_x();
@@ -44,7 +44,7 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
      * */
     while (curr_router_id != sink_router_id) {
         // store the router that is currently visited at each iteration of the algorithm
-        const NocRouter curr_router = noc_model.get_single_noc_router(curr_router_id);
+        const NocRouter& curr_router = noc_model.get_single_noc_router(curr_router_id);
 
         // get the position of the current router
         int curr_router_x_position = curr_router.get_router_grid_position_x();
@@ -103,16 +103,16 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
     bool visited_next_router = false;
 
     // get all the outgoing links for the current router
-    std::vector<NocLinkId> router_connections = noc_model.get_noc_router_connections(curr_router_id);
+    const std::vector<NocLinkId>& router_connections = noc_model.get_noc_router_connections(curr_router_id);
 
     // go through each outgoing link and determine whether the link leads towards the inteded route direction
     for (auto connecting_link = router_connections.begin(); connecting_link != router_connections.end(); connecting_link++) {
         // get the current outgoing link which is being processed
-        const NocLink curr_outgoing_link = noc_model.get_single_noc_link(*connecting_link);
+        const NocLink& curr_outgoing_link = noc_model.get_single_noc_link(*connecting_link);
 
         // get the next router that we will visit if we travel across the current link
         next_router_id = curr_outgoing_link.get_sink_router();
-        const NocRouter next_router = noc_model.get_single_noc_router(next_router_id);
+        const NocRouter& next_router = noc_model.get_single_noc_router(next_router_id);
 
         // get the coordinates of the next router
         int next_router_x_position = next_router.get_router_grid_position_x();
