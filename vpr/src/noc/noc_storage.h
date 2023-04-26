@@ -78,6 +78,31 @@ class NocStorage {
     std::unordered_map<int, NocRouterId> router_id_conversion_table;
 
     /**
+     * @brief Associates the hard (physical) routers on the device to their grid
+     * location. During placement, when logical routers are moved to
+     * different hard routers, only the grid location of where the
+     * logical router was moved is known.
+     * Using this datastructure, the grid location can be used to
+     * identify the corresponding hard router block positioned at that grid 
+     * location. The NocROuterId uniqely identifies hard router blocks and 
+     * can be used to retrieve the hard router block information using
+     * the router_storage datastructurre above. This can also be used to
+     * access the connectivity graph datastructure above.
+     * 
+     * It is important to know the specific hard router block because 
+     * without it we cannot determine the starting/end points of the traffic
+     * flows associated to the moved logical router. We need this
+     * so that we can re-route all traffic flows and evaluate the
+     * the placement cost of the moved logical router block.
+     * 
+     * The intended use is when trying to re-route a traffic flow. The current
+     * location of a logical router block can be used in conjuction with this
+     * datastructure to identify the corresponding hard router block.
+     * 
+     */
+    std::unordered_map<int, NocRouterId> grid_location_to_router_id;
+
+    /**
      * @brief A flag that indicates whether the NoC has been built. If this
      * flag is true, then the NoC cannot be modified, meaning that routers and
      * links cannot be added or removed. The inteded use of this flag is to
@@ -89,7 +114,7 @@ class NocStorage {
     bool built_noc;
 
     /**
-     * @brief Represents the maximum allowed bandwidth for the links in the NoC (in Gbps)
+     * @brief Represents the maximum allowed bandwidth for the links in the NoC (in bps)
      */
     double noc_link_bandwidth;
 
@@ -104,6 +129,15 @@ class NocStorage {
      * seconds))
      */
     double noc_router_latency;
+
+    /**
+     * @brief Internal reference to the device grid width. This is necessary
+     * to compute a unique key for a given grid location which we can then use
+     * to get the corresponding physical (hard) router at the given grid
+     * location using 'grid_location_to_router_id'. 
+     * 
+     */
+    int device_grid_width;
 
     // prevent "copying" of this object
     NocStorage(const NocStorage&) = delete;
@@ -135,6 +169,12 @@ class NocStorage {
     const vtr::vector<NocRouterId, NocRouter>& get_noc_routers(void) const;
 
     /**
+     * @return An integer representing the total number of routers within the
+     * NoC.
+     */
+    int get_number_of_noc_routers(void) const;
+
+    /**
      * @brief Get all the links in the NoC. The links themselves cannot
      * be modified. This function should be used when information on
      * every link is needed.
@@ -142,6 +182,12 @@ class NocStorage {
      * @return A vector of links. 
      */
     const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
+
+    /**
+     * @return An integer representing the total number of links within the
+     * NoC.
+     */
+    int get_number_of_noc_links(void) const;
 
     /**
      * @brief Get the maximum allowable bandwidth for a link
@@ -214,6 +260,18 @@ class NocStorage {
      */
     NocLink& get_single_mutable_noc_link(NocLinkId id);
 
+    /**
+     * @brief Given a grid location of a hard router block on
+     * the FPGA device this function determines the id of the hard
+     * router block positioned on that grid location.
+     * 
+     * @param hard_router_location A struct that contains the grid location
+     * of an arbirtary hard router block on the FPGA.
+     * @return NocRouterId The hard router block "id"  
+     * located at the given grid location. 
+     */
+    NocRouterId get_router_at_grid_location(const t_pl_loc& hard_router_location) const;
+
     // setters for the NoC
 
     /**
@@ -269,6 +327,14 @@ class NocStorage {
      */
 
     void set_noc_router_latency(double router_latency);
+
+    /**
+     * @brief Set the internal reference to the device
+     * grid width.
+     * 
+     */
+
+    void set_device_grid_width(int grid_width);
 
     // general utiliy functions
     /**
@@ -355,6 +421,24 @@ class NocStorage {
      * to the input link.
      */
     NocLinkId get_parallel_link(NocLinkId current_link) const;
+
+    /**
+     * @brief Generates a unique integer using the x and y coordinates of a 
+     * hard router block that can be used to identify it. This should be
+     * used to generate the keys for the 'grid_location_to_router_id'
+     * datastructure.
+     * 
+     * The key will be generated as follows:
+     * key = y * device_grid.width() + x
+     * 
+     * @param grid_position_x The horizontal position on the FPGA of the phyical
+     * tile that this router represents.
+     * @param grid_position_y The vertical position on the FPGA of the phyical
+     * tile that this router represents. 
+     * @return int Represents a unique key that can be used to identify a
+     * hard router block.
+     */
+    int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const;
 
     /**
      * @brief Writes out the NocStirage class infromation to a file. 

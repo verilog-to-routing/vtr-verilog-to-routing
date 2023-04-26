@@ -11,6 +11,7 @@
 #include "globals.h"
 #include "place_constraints.h"
 #include "place_util.h"
+#include "re_cluster_util.h"
 
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
@@ -228,19 +229,18 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
 void load_cluster_constraints() {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    ClusterAtomsLookup atoms_lookup;
 
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(cluster_id);
+        std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(cluster_id);
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 
         //if there are any constrainted atoms in the cluster,
         //we update the cluster's PartitionRegion
-        for (unsigned int i = 0; i < atoms.size(); i++) {
-            PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atoms[i]);
+        for (auto atom : *atoms) {
+            PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atom);
 
             if (partid != PartitionId::INVALID()) {
                 PartitionRegion pr = floorplanning_ctx.constraints.get_partition_pr(partid);
@@ -301,7 +301,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
 
     for (int x = rb.xmin(); x <= rb.xmax(); x++) {
         for (int y = rb.ymin(); y <= rb.ymax(); y++) {
-            auto& tile = device_ctx.grid[x][y].type;
+            const auto& tile = device_ctx.grid.get_physical_type(x, y);
 
             /*
              * If the tile at the grid location is not compatible with the cluster block

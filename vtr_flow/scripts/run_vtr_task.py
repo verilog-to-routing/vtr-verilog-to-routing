@@ -98,6 +98,14 @@ def vtr_command_argparser(prog=None):
     )
 
     parser.add_argument(
+        "-temp_dir",
+        default=None,
+        metavar="TEMP_DIR",
+        dest="alt_tasks_dir",
+        help="Alternate directory to run the tasks in (will be created if non-existant)",
+    )
+
+    parser.add_argument(
         "-parse",
         default=False,
         action="store_true",
@@ -272,7 +280,7 @@ def run_tasks(
 
     run_dirs = {}
     for config in configs:
-        task_dir = find_task_dir(config)
+        task_dir = find_task_dir(config, args.alt_tasks_dir)
         task_run_dir = get_next_run_dir(task_dir)
         run_dirs[config.task_name] = task_run_dir
 
@@ -290,17 +298,17 @@ def run_tasks(
             print("\nParsing test results...")
             if len(args.list_file) > 0:
                 print("scripts/parse_vtr_task.py -l {}".format(args.list_file[0]))
-            parse_tasks(configs, jobs)
+            parse_tasks(configs, jobs, args.alt_tasks_dir)
             print("Elapsed time: {}".format(format_elapsed_time(datetime.now() - start)))
 
         if args.create_golden:
-            create_golden_results_for_tasks(configs)
+            create_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.check_golden:
-            num_failed += check_golden_results_for_tasks(configs)
+            num_failed += check_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.calc_geomean:
-            summarize_qor(configs)
+            summarize_qor(configs, args.alt_tasks_dir)
             calc_geomean(args, configs)
     # This option generates a shell script (vtr_flow.sh) for each architecture,
     # circuit, script_params

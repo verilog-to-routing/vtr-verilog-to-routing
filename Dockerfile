@@ -18,12 +18,13 @@ RUN apt-get update -qq \
     libeigen3-dev \
     libtbb-dev \
     python3-pip \
+    git \
 # Install python packages
     && pip install -r requirements.txt \
 # Cleanup
     && apt-get autoclean && apt-get clean && apt-get -y autoremove \
     && rm -rf /var/lib/apt/lists/*
 # Build VTR
-RUN make -j$(nproc) && make install
+RUN rm -rf build && make -j$(nproc) && make install
 # Container's default launch command
 SHELL ["/bin/bash", "-c"]

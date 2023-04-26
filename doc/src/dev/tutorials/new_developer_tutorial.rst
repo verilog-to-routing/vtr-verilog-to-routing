@@ -57,7 +57,7 @@ Open the Black Box
 
 At this stage, you have gotten a taste of how an FPGA architect would go about using VTR.  As a developer though, you need a much deeper understanding of how this tool works.  The purpose of this section is to have you to learn the details of the VTR CAD flow by having you manually do what the scripts do.
 
-Using the custom Verilog circuit and architecture created in the previous step, directly run Odin II on it to generate a blif netlist.  You may need to skim the ``ODIN_II/README.rst`` and the ``vtr_flow/scripts/run_vtr_flow.py``.
+Using the custom Verilog circuit and architecture created in the previous step, directly run Odin II on it to generate a blif netlist.  You may need to skim the ``odin_ii/README.rst`` and the ``vtr_flow/scripts/run_vtr_flow.py``.
 
 Using the output netlist of Odin II, run ABC to generate a technology-mapped blif file.  You may need to skim the ABC homepage (http://www.eecs.berkeley.edu/~alanmi/abc/).
 

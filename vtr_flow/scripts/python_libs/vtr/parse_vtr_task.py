@@ -95,6 +95,14 @@ def vtr_command_argparser(prog=None):
     )
 
     parser.add_argument(
+        "-temp_dir",
+        default=None,
+        metavar="TEMP_DIR",
+        dest="alt_tasks_dir",
+        help="Alternate directory to run the tasks in (will be created if non-existant)",
+    )
+
+    parser.add_argument(
         "-parse_qor",
         default=False,
         action="store_true",
@@ -148,16 +156,16 @@ def vtr_command_main(arg_list, prog=None):
         num_failed = 0
 
         jobs = create_jobs(args, configs, after_run=True)
-        parse_tasks(configs, jobs)
+        parse_tasks(configs, jobs, args.alt_tasks_dir)
 
         if args.create_golden:
-            create_golden_results_for_tasks(configs)
+            create_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.check_golden:
-            num_failed += check_golden_results_for_tasks(configs)
+            num_failed += check_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.calc_geomean:
-            summarize_qor(configs)
+            summarize_qor(configs, args.alt_tasks_dir)
             calc_geomean(args, configs)
 
     except CommandError as error:
@@ -178,29 +186,32 @@ def vtr_command_main(arg_list, prog=None):
     return num_failed
 
 
-def parse_tasks(configs, jobs):
+def parse_tasks(configs, jobs, alt_tasks_dir=None):
     """
     Parse the selection of tasks specified in configs and associated jobs
     """
     for config in configs:
         config_jobs = [job for job in jobs if job.task_name() == config.task_name]
-        parse_task(config, config_jobs)
+        parse_task(config, config_jobs, alt_tasks_dir=alt_tasks_dir)
 
 
-def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE):
+def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_tasks_dir=None):
     """
     Parse a single task run.
 
     This generates a file parse_results.txt in the task's working directory,
     which is an amalgam of the parse_rests.txt's produced by each job (flow invocation)
     """
-    run_dir = find_latest_run_dir(config)
+    run_dir = find_latest_run_dir(config, alt_tasks_dir)
 
     # Record max widths for pretty printing
     max_arch_len = len("architecture")
     max_circuit_len = len("circuit")
     for job in config_jobs:
-        work_dir = job.work_dir(get_latest_run_dir(find_task_dir(config)))
+        work_dir = job.work_dir(get_latest_run_dir(find_task_dir(config, alt_tasks_dir)))
+        job.parse_command()[0] = work_dir
+        # job.second_parse_command()[0] = work_dir
+        job.qor_parse_command()[0] = work_dir
         if job.parse_command():
             parse_filepath = str(PurePath(work_dir) / flow_metrics_basename)
             with open(parse_filepath, "w+") as parse_file:
@@ -261,18 +272,18 @@ def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
                 )
 
 
-def create_golden_results_for_tasks(configs):
+def create_golden_results_for_tasks(configs, alt_tasks_dir=None):
     """Runs create_golden_results_for_task on all of the give configuration"""
 
     for config in configs:
-        create_golden_results_for_task(config)
+        create_golden_results_for_task(config, alt_tasks_dir)
 
 
-def create_golden_results_for_task(config):
+def create_golden_results_for_task(config, alt_tasks_dir=None):
     """
     Copies the latest task run's parse_results.txt into the config directory as golden_results.txt
     """
-    run_dir = find_latest_run_dir(config)
+    run_dir = find_latest_run_dir(config, alt_tasks_dir)
 
     task_results = str(PurePath(run_dir).joinpath(FIRST_PARSE_FILE))
     golden_results_filepath = str(PurePath(config.config_dir).joinpath("golden_results.txt"))
@@ -280,23 +291,23 @@ def create_golden_results_for_task(config):
     shutil.copy(task_results, golden_results_filepath)
 
 
-def check_golden_results_for_tasks(configs):
+def check_golden_results_for_tasks(configs, alt_tasks_dir=None):
     """runs check_golden_results_for_task on all the input configurations"""
     num_qor_failures = 0
 
     print("\nCalculating QoR results...")
     for config in configs:
-        num_qor_failures += check_golden_results_for_task(config)
+        num_qor_failures += check_golden_results_for_task(config, alt_tasks_dir)
 
     return num_qor_failures
 
 
-def check_golden_results_for_task(config):
+def check_golden_results_for_task(config, alt_tasks_dir=None):
     """
     Copies the latest task run's parse_results.txt into the config directory as golden_results.txt
     """
     num_qor_failures = 0
-    run_dir = find_latest_run_dir(config)
+    run_dir = find_latest_run_dir(config, alt_tasks_dir)
 
     if not config.pass_requirements_file:
         print(
@@ -460,32 +471,38 @@ def check_two_files(
 # pylint: enable=too-many-branches,too-many-locals
 
 
-def summarize_qor(configs):
+def summarize_qor(configs, alt_tasks_dir=None):
     """Summarize the Qor results"""
 
     first = True
-    task_path = Path(configs[0].config_dir).parent
+    task_path = Path(find_task_dir(configs[0], alt_tasks_dir))
     if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():
         task_path = task_path.parent
     task_path = task_path / "task_summary"
     task_path.mkdir(exist_ok=True)
-    out_file = task_path / (str(Path(find_latest_run_dir(configs[0])).stem) + "_summary.txt")
+    out_file = task_path / (
+        str(Path(find_latest_run_dir(configs[0], alt_tasks_dir)).stem) + "_summary.txt"
+    )
     with out_file.open("w+") as out:
         for config in configs:
-            with (Path(find_latest_run_dir(config)) / QOR_PARSE_FILE).open("r") as in_file:
+            with (Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE).open(
+                "r"
+            ) as in_file:
                 headers = in_file.readline()
                 if first:
                     print("task_name \t{}".format(headers), file=out, end="")
                     first = False
                 for line in in_file:
                     print("{}\t{}".format(config.task_name, line), file=out, end="")
-            pretty_print_table(str(Path(find_latest_run_dir(config)) / QOR_PARSE_FILE))
+            pretty_print_table(
+                str(Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE)
+            )
 
 
 def calc_geomean(args, configs):
     """caclulate and ouput the geomean values to the geomean file"""
     first = False
-    task_path = Path(configs[0].config_dir).parent
+    task_path = Path(find_task_dir(configs[0], args.alt_tasks_dir))
     if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():
         task_path = task_path.parent
     out_file = task_path / "qor_geomean.txt"
@@ -494,7 +511,7 @@ def calc_geomean(args, configs):
     summary_file = (
         task_path
         / "task_summary"
-        / (str(Path(find_latest_run_dir(configs[0])).stem) + "_summary.txt")
+        / (str(Path(find_latest_run_dir(configs[0], args.alt_tasks_dir)).stem) + "_summary.txt")
     )
 
     with out_file.open("w" if first else "a") as out:
@@ -508,7 +525,7 @@ def calc_geomean(args, configs):
                 first = False
             lines = summary.readlines()
             print(
-                get_latest_run_number(str(Path(configs[0].config_dir).parent)),
+                get_latest_run_number(find_task_dir(configs[0], args.alt_tasks_dir)),
                 file=out,
                 end="\t",
             )
@@ -550,9 +567,9 @@ def calculate_individual_geo_mean(lines, index, geo_mean, num):
     return geo_mean, num, previous_value
 
 
-def find_latest_run_dir(config):
+def find_latest_run_dir(config, alt_tasks_dir=None):
     """Find the latest run directory for given configuration"""
-    task_dir = find_task_dir(config)
+    task_dir = find_task_dir(config, alt_tasks_dir)
 
     run_dir = get_latest_run_dir(task_dir)
 

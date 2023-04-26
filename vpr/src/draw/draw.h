@@ -93,7 +93,8 @@ bool draw_if_net_highlighted(ClusterNetId inet);
 std::vector<int> trace_routed_connection_rr_nodes(
     const ClusterNetId net_id,
     const int driver_pin,
-    const int sink_pin);
+    const int sink_pin,
+    bool is_flat);
 
 /* Helper function for trace_routed_connection_rr_nodes
  * Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path

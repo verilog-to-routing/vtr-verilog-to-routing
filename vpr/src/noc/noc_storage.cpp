@@ -15,8 +15,16 @@ const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers(void) con
     return router_storage;
 }
 
+int NocStorage::get_number_of_noc_routers(void) const {
+    return router_storage.size();
+}
+
 const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
     return link_storage;
+}
+
+int NocStorage::get_number_of_noc_links(void) const {
+    return link_storage.size();
 }
 
 double NocStorage::get_noc_link_bandwidth(void) const {
@@ -48,6 +56,18 @@ NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
     return link_storage[id];
 }
 
+NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location) const {
+    // get the key to identify the corresponding hard router block at the provided grid location
+    int router_key = generate_router_key_from_grid_location(hard_router_location.x, hard_router_location.y);
+
+    // get the hard router block id at the given grid location
+    auto hard_router_block = grid_location_to_router_id.find(router_key);
+    // verify whether a router hard block exists at this location
+    VTR_ASSERT(hard_router_block != grid_location_to_router_id.end());
+
+    return hard_router_block->second;
+}
+
 // setters for the NoC
 
 void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
@@ -63,6 +83,11 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
      */
     NocRouterId converted_id((int)(router_storage.size() - 1));
     router_id_conversion_table.emplace(id, converted_id);
+
+    /* need to associate the current router with its grid position */
+    // get the key to identify the current router
+    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y);
+    grid_location_to_router_id.insert(std::pair<int, NocRouterId>(router_key, converted_id));
 
     return;
 }
@@ -90,6 +115,11 @@ void NocStorage::set_noc_link_latency(double link_latency) {
 
 void NocStorage::set_noc_router_latency(double router_latency) {
     noc_router_latency = router_latency;
+    return;
+}
+
+void NocStorage::set_device_grid_width(int grid_width) {
+    device_grid_width = grid_width;
     return;
 }
 
@@ -148,6 +178,7 @@ void NocStorage::clear_noc(void) {
     router_storage.clear();
     link_storage.clear();
     router_link_list.clear();
+    grid_location_to_router_id.clear();
 
     built_noc = false;
 
@@ -188,6 +219,11 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     }
 
     return parallel_link;
+}
+
+int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const {
+    // calculate the key value
+    return (device_grid_width * grid_position_y + grid_position_x);
 }
 
 void NocStorage::echo_noc(char* file_name) const {
