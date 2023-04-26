@@ -10,9 +10,11 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     std::vector<std::vector<vtr::Point<int>>> block_locations(device_ctx.logical_block_types.size());
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
-            const t_grid_tile& tile = grid[x][y];
-            if (tile.width_offset == 0 && tile.height_offset == 0) {
-                auto equivalent_sites = get_equivalent_sites_set(tile.type);
+            int width_offset = grid.get_width_offset(x, y);
+            int height_offset = grid.get_height_offset(x, y);
+            if (width_offset == 0 && height_offset == 0) {
+                const auto& type = grid.get_physical_type(x, y);
+                auto equivalent_sites = get_equivalent_sites_set(type);
 
                 for (auto& block : equivalent_sites) {
                     //Only record at block root location

@@ -35,9 +35,9 @@ Koios benchmarks are tested by the following regression tests in VTR:
 |---------------|----------------------|---------------|-------------------|
 | Strong        | A test circuit. Goal is to check the architecture files.   | tasks/regression_tests/vtr_reg_strong/koios | 6 seconds |
 | Strong        | Same test circuit without enabling complex dsp features    | tasks/regression_tests/vtr_reg_strong/koios_no_complex_dsp | 6 seconds|
-| Nightly       | Small-to-medium sized designs from Koios run with one arch file                           | tasks/regression_tests/vtr_reg_nightly_test4/koios | 2 hours with -j3 |
-| Nightly       | Small-to-medium sized designs from Koios run with an arch file without enabling complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test4/koios_no_complex_dsp | 2 hours with -j3 |
-| Nightly       | A small design from Koios run with various flavors of the arch file that enables complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test4/koios_multi_arch | 2 hours with -j3 |
+| Nightly       | Small-to-medium sized designs from Koios run with one arch file                           | tasks/regression_tests/vtr_reg_nightly_test6/koios | 2 hours with -j3 |
+| Nightly       | Small-to-medium sized designs from Koios run with an arch file without enabling complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test6/koios_no_complex_dsp | 2 hours with -j3 |
+| Nightly       | A small design from Koios run with various flavors of the arch file that enables complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test6/koios_multi_arch | 2 hours with -j3 |
 | Weekly        | Large designs from Koios run with one arch file                           | tasks/regression_tests/vtr_reg_weekly/koios | a little over 24 hours with -j4 |
 | Weekly        | Large designs from Koios run with an arch file without enabling complex dsp features  | tasks/regression_tests/vtr_reg_weekly/koios_no_complex_dsp | a little over 24 hours with -j4 |
 
@@ -51,9 +51,6 @@ Some of the main issues (and/or pull requests) that were seen and fixed during K
 
 #### Multiple PBs using the same Model
 https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2103
-
-#### Difference in resource usage between ODIN and Yosys+ODIN
-https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2104
 
 #### Random net names
 https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2086
@@ -69,9 +66,6 @@ https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2068
 https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2031
 https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2035
 
-#### General hardblock support in the Yosys+ODIN flow
-https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/1953
-
 #### Padding the multiplication output port if it's size is less than the sum of both input ports
 https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2013
 
@@ -86,11 +80,6 @@ Some issues that are still pending to be fixed are:
 
 #### Placement failure with designs with hard block chains:
 https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2149
-
-#### Difference in QoR between ODIN-only and Yosys+ODIN synthesis flows:
-https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2131
-https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2104
-https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2148
 
 
 ## How to Cite

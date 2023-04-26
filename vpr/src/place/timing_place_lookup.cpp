@@ -162,6 +162,7 @@ static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y,
 
 std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
+                                                           const Netlist<>& net_list,
                                                            t_det_routing_arch* det_routing_arch,
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
@@ -174,25 +175,26 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
+    //TODO: is_flat flag should not be set here - It should be passed to the function.
     alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
-                          directs, num_directs);
+                          directs, num_directs, is_flat);
 
-    const RouterLookahead* router_lookahead = get_cached_router_lookahead(
-        router_opts.lookahead_type,
-        router_opts.write_router_lookahead,
-        router_opts.read_router_lookahead,
-        segment_inf,
-        is_flat);
-    RouterDelayProfiler route_profiler(router_lookahead, is_flat);
+    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+                                                                          router_opts.lookahead_type,
+                                                                          router_opts.write_router_lookahead,
+                                                                          router_opts.read_router_lookahead,
+                                                                          segment_inf,
+                                                                          is_flat);
+    RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 
     int longest_length = get_longest_segment_length(segment_inf);
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
-        place_delay_model = std::make_unique<DeltaDelayModel>(false);
+        place_delay_model = std::make_unique<DeltaDelayModel>(is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        place_delay_model = std::make_unique<OverrideDelayModel>(false);
+        place_delay_model = std::make_unique<OverrideDelayModel>(is_flat);
     } else {
         VTR_ASSERT_MSG(false, "Invalid placer delay model");
     }
@@ -208,7 +210,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
     }
 
     /*free all data structures that are no longer needed */
-    free_routing_structs();
+    free_routing_structs(net_list);
 
     return place_delay_model;
 }
@@ -359,8 +361,8 @@ static float route_connection_delay(
     bool successfully_routed = false;
 
     //Get the rr nodes to route between
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid[source_x][source_y].type);
-    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
+    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type(source_x, source_y));
+    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type(sink_x, sink_y));
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
@@ -430,7 +432,7 @@ static void generic_compute_matrix_dijkstra_expansion(
     bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_physical_tile_type_ptr src_type = device_ctx.grid[source_x][source_y].type;
+    t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type(source_x, source_y);
     bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
     if (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE || !is_allowed_type) {
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
@@ -457,7 +459,7 @@ static void generic_compute_matrix_dijkstra_expansion(
 
     vtr::Matrix<bool> found_matrix({matrix.dim_size(0), matrix.dim_size(1)}, false);
 
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid[source_x][source_y].type);
+    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type(source_x, source_y));
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
@@ -477,7 +479,7 @@ static void generic_compute_matrix_dijkstra_expansion(
                     continue;
                 }
 
-                t_physical_tile_type_ptr sink_type = device_ctx.grid[sink_x][sink_y].type;
+                t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type(sink_x, sink_y);
                 if (sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                     if (matrix[delta_x][delta_y].empty()) {
                         //Only set empty target if we don't already have a valid delta delay
@@ -493,7 +495,7 @@ static void generic_compute_matrix_dijkstra_expansion(
                     }
                 } else {
                     bool found_a_sink = false;
-                    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
+                    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type(sink_x, sink_y));
                     for (int sink_ptc : best_sink_ptcs) {
                         VTR_ASSERT(sink_ptc != OPEN);
 
@@ -576,8 +578,8 @@ static void generic_compute_matrix_iterative_astar(
             delta_x = abs(sink_x - source_x);
             delta_y = abs(sink_y - source_y);
 
-            t_physical_tile_type_ptr src_type = device_ctx.grid[source_x][source_y].type;
-            t_physical_tile_type_ptr sink_type = device_ctx.grid[sink_x][sink_y].type;
+            t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type(source_x, source_y);
+            t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type(sink_x, sink_y);
 
             bool src_or_target_empty = (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE
                                         || sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE);
@@ -690,7 +692,7 @@ static vtr::Matrix<float> compute_delta_delays(
     t_physical_tile_type_ptr src_type = nullptr;
     for (x = 0; x < grid.width(); ++x) {
         for (y = 0; y < grid.height(); ++y) {
-            auto type = grid[x][y].type;
+            auto type = grid.get_physical_type(x, y);
 
             if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
@@ -733,7 +735,7 @@ static vtr::Matrix<float> compute_delta_delays(
     src_type = nullptr;
     for (y = 0; y < grid.height(); ++y) {
         for (x = 0; x < grid.width(); ++x) {
-            auto type = grid[x][y].type;
+            auto type = grid.get_physical_type(x, y);
 
             if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
@@ -1004,7 +1006,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
         if (to_x < 0 || to_x >= (int)grid.width()) continue;
 
         for (from_y = 0; from_y < (int)grid.height(); ++from_y) {
-            if (grid[from_x][from_y].type != from_type) continue;
+            if (grid.get_physical_type(from_x, from_y) != from_type) continue;
 
             //Check that the from pin exists at this from location
             //(with multi-width/height blocks pins may not exist at all locations)
@@ -1020,7 +1022,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             to_y = from_y + direct->y_offset;
 
             if (to_y < 0 || to_y >= (int)grid.height()) continue;
-            if (grid[to_x][to_y].type != to_type) continue;
+            if (grid.get_physical_type(to_x, to_y) != to_type) continue;
 
             //Check that the from pin exists at this from location
             //(with multi-width/height blocks pins may not exist at all locations)
@@ -1051,10 +1053,10 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     }
 
     //Now have a legal instance of this direct connect
-    VTR_ASSERT(grid[from_x][from_y].type == from_type);
+    VTR_ASSERT(grid.get_physical_type(from_x, from_y) == from_type);
     VTR_ASSERT(from_sub_tile < from_type->capacity);
 
-    VTR_ASSERT(grid[to_x][to_y].type == to_type);
+    VTR_ASSERT(grid.get_physical_type(to_x, to_y) == to_type);
     VTR_ASSERT(to_sub_tile < to_type->capacity);
 
     VTR_ASSERT(from_x + direct->x_offset == to_x);

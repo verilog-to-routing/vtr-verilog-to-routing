@@ -157,14 +157,18 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             /* Only the first block of a group should control drawing */
-            if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0)
+            const auto& type = device_ctx.grid.get_physical_type(i, j);
+            int width_offset = device_ctx.grid.get_width_offset(i, j);
+            int height_offset = device_ctx.grid.get_height_offset(i, j);
+
+            if (width_offset > 0 || height_offset > 0)
                 continue;
 
             /* Don't draw if tile is empty. This includes corners. */
-            if (is_empty_type(device_ctx.grid[i][j].type))
+            if (is_empty_type(type))
                 continue;
 
-            int num_sub_tiles = device_ctx.grid[i][j].type->capacity;
+            int num_sub_tiles = type->capacity;
             for (int k = 0; k < num_sub_tiles; ++k) {
                 /* Don't draw if block is empty. */
                 if (place_ctx.grid_blocks[i][j].blocks[k] == EMPTY_BLOCK_ID || place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK_ID)
@@ -278,8 +282,9 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     double left, bot, right, top;
 
     int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
+    const auto& type = device_ctx.grid.get_physical_type(1, 0);
     if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks[1][0].usage != 0
-        && type_descrip_index == device_ctx.grid[1][0].type->index) {
+        && type_descrip_index == type->index) {
         // that should test for io blocks, and setting capacity_divisor > 1
         // will squish every thing down
         capacity_divisor = capacity - 1;

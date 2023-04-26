@@ -22,17 +22,20 @@ struct t_fmap_cell {
     t_fmap_cell* next;
 };
 
-int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
+int binary_search_place_and_route(const Netlist<>& placement_net_list,
+                                  const Netlist<>& router_net_list,
+                                  const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
+                                  const t_noc_opts& noc_opts,
                                   const t_file_name_opts& filename_opts,
                                   const t_arch* arch,
                                   bool verify_binary_search,
                                   int min_chan_width_hint,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
-                                  ClbNetPinsMatrix<float>& net_delay,
+                                  NetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc,
                                   bool is_flat);

@@ -76,15 +76,33 @@ class ExtendedMapLookahead : public RouterLookahead {
      */
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
 
+    void compute_intra_tile() override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
+    }
+
     /**
      * @brief Reads the extended lookahead map
      */
     void read(const std::string& file) override;
 
     /**
+     * @brief Read the extended intra-cluster lookahead map
+     */
+    void read_intra_cluster(const std::string& /*file*/) override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::read_intra_cluster unimplemented");
+    }
+
+    /**
      * @brief Writes the extended lookahead map
      */
     void write(const std::string& file) const override;
+
+    /**
+     * @brief Writes the extended intra-cluster lookahead map
+     */
+    void write_intra_cluster(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::write_intra_cluster unimplemented");
+    }
 };
 
 #endif

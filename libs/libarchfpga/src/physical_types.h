@@ -35,6 +35,8 @@
 #include <unordered_map>
 #include <limits>
 #include <numeric>
+#include <set>
+#include <unordered_set>
 
 #include "vtr_ndmatrix.h"
 #include "vtr_hash.h"
@@ -372,6 +374,10 @@ enum GridDefType {
     FIXED
 };
 
+struct t_layer_def {
+    std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
+};
+
 struct t_grid_def {
     GridDefType grid_type = GridDefType::AUTO; //The type of this grid specification
 
@@ -382,8 +388,7 @@ struct t_grid_def {
 
     float aspect_ratio = 1.; //Aspect ratio for auto-sized devices (only valid for
                              //grid_type == AUTO)
-
-    std::vector<t_grid_loc_def> loc_defs; //The list of grid location definitions for this grid specification
+    std::vector<t_layer_def> layers;
 };
 
 /************************* POWER ***********************************/
@@ -454,6 +459,28 @@ struct t_class_range {
     int total_num() const {
         return high - low + 1;
     }
+
+    t_class_range() = default;
+
+    t_class_range(int low_class_num, int high_class_num)
+        : low(low_class_num)
+        , high(high_class_num) {}
+};
+
+// Struct to hold the pin ranges for a specific sub block
+struct t_pin_range {
+    int low = 0;
+    int high = 0;
+    // Returns the total number of pins
+    int total_num() const {
+        return high - low + 1;
+    }
+
+    t_pin_range() = default;
+
+    t_pin_range(int low_class_num, int high_class_num)
+        : low(low_class_num)
+        , high(high_class_num) {}
 };
 
 enum e_power_wire_type {
@@ -617,14 +644,21 @@ struct t_physical_tile_type {
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
-    std::unordered_map<int, t_class> internal_class_inf;
+    // Primitive class is refered to a classes that are in the primitive blocks. These classes are
+    // used during flat-routing to route the nets.
+    // The starting number of primitive classes
+    int primitive_class_starting_idx = -1;
+    std::unordered_map<int, t_class> primitive_class_inf; // [primitive_class_num] -> primitive_class_inf
 
-    std::vector<int> pin_width_offset;  // [0..num_pins-1]
-    std::vector<int> pin_height_offset; // [0..num_pins-1]
-    std::vector<int> pin_class;         // [0..num_pins-1]
-    std::unordered_map<int, int> internal_pin_class;
-    std::vector<bool> is_ignored_pin; // [0..num_pins-1]
-    std::vector<bool> is_pin_global;  // [0..num_pins-1]
+    std::vector<int> pin_width_offset;                // [0..num_pins-1]
+    std::vector<int> pin_height_offset;               // [0..num_pins-1]
+    std::vector<int> pin_class;                       // [0..num_pins-1]
+    std::unordered_map<int, int> primitive_pin_class; // [primitive_pin_num] -> primitive_class_num
+    std::vector<bool> is_ignored_pin;                 // [0..num_pins-1]
+    std::vector<bool> is_pin_global;                  // [0..num_pins-1]
+
+    std::unordered_map<int, std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>> on_tile_pin_num_to_pb_pin; // [root_pin_physical_num][logical_block] -> t_pb_graph_pin*
+    std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin;                                                       // [intra_tile_pin_physical_num] -> t_pb_graph_pin
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -730,10 +764,10 @@ struct t_sub_tile {
                                ///>E.g.: capacity can range from 4 to 7, meaning that there are four placeable sub tiles
                                ///>      at a physical location, and compatible netlist blocks can be placed at sub_tile
                                ///>      indices ranging from 4 to 7.
-    t_class_range class_range;
+    t_class_range class_range; // Range of the root-level classes
 
-    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_class_idx;
-    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_pin_idx;
+    std::vector<std::unordered_map<t_logical_block_type_ptr, t_class_range>> primitive_class_range; // [rel_cap][logical_block_ptr] -> class_range
+    std::vector<std::unordered_map<t_logical_block_type_ptr, t_pin_range>> intra_pin_range;         // [rel_cap][logical_block_ptr] -> intra_pin_range
 
     int num_phy_pins = 0;
 
@@ -832,7 +866,7 @@ struct t_physical_tile_port {
  * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
  * corresponding pb_graph_pin
  *
- * pb_pin_to_class_logical_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
+ * primitive_pb_pin_to_logical_class_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
  * index to logical_class_inf.
  *
  * logical_class_inf: Contains all the classes inside the logical block. The index of each class is the logical number associate with the class.
@@ -859,9 +893,10 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, const t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;   /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_class_logical_num_mapping; /* pb_pin_to_class_logical_num_mapping[pb_graph_pin ptr] -> class logical number */
-    std::vector<t_class> logical_class_inf;                                             /* logical_class_inf[class_logical_number] -> class */
+    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                   /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping; /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
+    std::vector<t_class> primitive_logical_class_inf;                                             /* primitive_logical_class_inf[class_logical_number] -> class */
+    std::unordered_map<const t_pb_graph_node*, t_class_range> pb_graph_node_class_range;
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -943,6 +978,8 @@ struct t_pb_type {
 
     t_pin_to_pin_annotation* annotations = nullptr; /* [0..num_annotations-1] */
     int num_annotations = 0;
+
+    int index_in_logical_block = 0; /* assign a unique id to each pb_type in a logical block */
 
     /* Power related members */
     t_pb_type_power* pb_type_power = nullptr;
@@ -1185,6 +1222,8 @@ class t_pb_graph_node {
      * */
     std::vector<int> illegal_modes;
 
+    t_pin_range pin_num_range;
+
     t_pb_graph_pin** input_pins;  /* [0..num_input_ports-1] [0..num_port_pins-1]*/
     t_pb_graph_pin** output_pins; /* [0..num_output_ports-1] [0..num_port_pins-1]*/
     t_pb_graph_pin** clock_pins;  /* [0..num_clock_ports-1] [0..num_port_pins-1]*/
@@ -1260,6 +1299,9 @@ class t_pb_graph_pin {
     int pin_number = 0;
     std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
     int num_input_edges = 0;
+    // This map is initialized only if flat_routing is enabled
+    std::unordered_map<const t_pb_graph_pin*, int> sink_pin_edge_idx_map; /* [t_pb_graph_pin*] -> edge_idx - This is the index of the corresponding edge stored in output_edges vector */
+
     std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
 
@@ -1276,6 +1318,13 @@ class t_pb_graph_pin {
     float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
+
+    /* This member is used when flat-routing and has_choking_spot are enabled.
+     * It is used to identify choke points.
+     * This is only valid for IPINs, and it only contain the pins that are reachable to the pin by a forwarding path.
+     * It doesn't take into account feed-back connection.
+     * */
+    std::unordered_set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
 
     /* combinational timing information */
     int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/
@@ -1359,6 +1408,8 @@ class t_pb_graph_edge {
     std::vector<const char*> pack_pattern_names;
     int* pack_pattern_indices;
     bool infer_pattern;
+
+    int switch_type_idx = OPEN; /* architecture switch id of the edge - used when flat_routing is enabled */
 
     // class member functions
   public:
@@ -1573,7 +1624,7 @@ struct t_arch_switch_inf {
   public:
     static constexpr int UNDEFINED_FANIN = -1;
 
-    char* name = nullptr;
+    std::string name;
     float R = 0.;
     float Cin = 0.;
     float Cout = 0.;
@@ -1583,6 +1634,8 @@ struct t_arch_switch_inf {
     float buf_size = 0.;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
     float power_buffer_size = 0.;
+
+    bool intra_tile = false;
 
   public:
     //Returns the type of switch
@@ -1644,7 +1697,7 @@ struct t_rr_switch_inf {
     float Tdel = 0.;
     float mux_trans_size = 0.;
     float buf_size = 0.;
-    const char* name = nullptr;
+    std::string name;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
     float power_buffer_size = 0.;
 
