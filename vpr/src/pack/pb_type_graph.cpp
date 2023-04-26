@@ -828,7 +828,7 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
         for (j = 0; j < num_input_pb_graph_node_sets; j++) {
             delete[] input_pb_graph_node_pins[j];
         }
-        delete[](input_pb_graph_node_pins);
+        delete[] input_pb_graph_node_pins;
         for (j = 0; j < num_output_pb_graph_node_sets; j++) {
             delete[] output_pb_graph_node_pins[j];
         }
@@ -1469,7 +1469,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     if (prev_num_pins > 0) {
         std::vector<t_pb_graph_pin*> temp(*pb_graph_pins, *pb_graph_pins + prev_num_pins);
-        delete[](*pb_graph_pins);
+        delete[] * pb_graph_pins;
         *pb_graph_pins = new t_pb_graph_pin*[*num_pins];
         for (i = 0; i < prev_num_pins; i++)
             (*pb_graph_pins)[i] = temp[i];

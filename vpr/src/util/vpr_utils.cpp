@@ -1598,7 +1598,7 @@ void free_pb_stats(t_pb* pb) {
         pb->pb_stats->num_pins_of_net_in_pb.clear();
 
         if (pb->pb_stats->feasible_blocks) {
-            delete[](pb->pb_stats->feasible_blocks);
+            delete[] pb->pb_stats->feasible_blocks;
         }
         if (!pb->parent_pb) {
             pb->pb_stats->transitive_fanout_candidates.clear();
