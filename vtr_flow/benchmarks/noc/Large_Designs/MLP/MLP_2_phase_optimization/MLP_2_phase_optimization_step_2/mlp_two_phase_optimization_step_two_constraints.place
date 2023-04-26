@@ -1,0 +1,18 @@
+#block name                                                                      x       y      subblk   block number
+#-----------------------------------------------------------------------        ---     ---     -------  ------------
+noc_router_adapter_block:noc_router_output_collector|slave_tready~reg0          115     250      0       #0  -- NB: block number is a comment.
+noc_router_adapter_block:noc_router_input_dispatcher0|slave_tready~reg0         220     250      0       #1
+noc_router_adapter_block:noc_router_input_dispatcher1|slave_tready~reg0         10      250      0       #2
+noc_router_adapter_block:noc_router_input_dispatcher2|slave_tready~reg0         220     10       0       #3
+noc_router_adapter_block:noc_router_input_dispatcher3|slave_tready~reg0         10      10       0       #4
+noc_router_adapter_block:noc_router_layer0_mvm0|slave_tready~reg0               325     250      0       #5
+noc_router_adapter_block:noc_router_layer0_mvm1|slave_tready~reg0               10      170      0       #6
+noc_router_adapter_block:noc_router_layer0_mvm2|slave_tready~reg0               325     10       0       #7
+noc_router_adapter_block:noc_router_layer0_mvm3|slave_tready~reg0               115     90       0       #8
+noc_router_adapter_block:noc_router_layer1_mvm0|slave_tready~reg0               115     10       0       #9
+noc_router_adapter_block:noc_router_layer1_mvm1|slave_tready~reg0               10      90       0       #10
+noc_router_adapter_block:noc_router_layer1_mvm2|slave_tready~reg0               220     90       0       #11
+noc_router_adapter_block:noc_router_layer2_mvm0|slave_tready~reg0               325     90       0       #12
+noc_router_adapter_block:noc_router_layer2_mvm1|slave_tready~reg0               220     170      0       #13
+noc_router_adapter_block:noc_router_layer3_mvm0|slave_tready~reg0               325     170      0       #14
+noc_router_adapter_block:noc_router_layer3_mvm1|slave_tready~reg0               115     170      0       #15

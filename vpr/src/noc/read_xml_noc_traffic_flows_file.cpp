@@ -78,7 +78,7 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     NocTrafficFlows* noc_traffic_flow_storage = &noc_ctx.noc_traffic_flows_storage;
 
     // an accepted list of attributes for the single flow tag
-    std::vector<std::string> expected_single_flow_attributes = {"src", "dst", "bandwidth", "latency_cons"};
+    std::vector<std::string> expected_single_flow_attributes = {"src", "dst", "bandwidth", "latency_cons", "priority"};
 
     // check that only the accepted single flow  attributes are found in the tag
     pugiutil::expect_only_attributes(single_flow_tag, expected_single_flow_attributes, loc_data);
@@ -101,16 +101,69 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     check_traffic_flow_router_module_type(sink_router_module_name, sink_router_id, single_flow_tag, loc_data, cluster_ctx, noc_router_tile_type);
 
     // store the properties of the traffic flow
-    double traffic_flow_bandwidth = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_double(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
+    double traffic_flow_bandwidth = get_traffic_flow_bandwidth(single_flow_tag, loc_data);
 
-    double max_traffic_flow_latency = pugiutil::get_attribute(single_flow_tag, "latency_cons", loc_data, pugiutil::REQUIRED).as_double(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
+    double max_traffic_flow_latency = get_max_traffic_flow_latency(single_flow_tag, loc_data);
 
-    verify_traffic_flow_properties(traffic_flow_bandwidth, max_traffic_flow_latency, single_flow_tag, loc_data);
+    int traffic_flow_priority = get_traffic_flow_priority(single_flow_tag, loc_data);
+
+    verify_traffic_flow_properties(traffic_flow_bandwidth, max_traffic_flow_latency, traffic_flow_priority, single_flow_tag, loc_data);
 
     // The current flow information is legal, so store it
-    noc_traffic_flow_storage->create_noc_traffic_flow(source_router_module_name, sink_router_module_name, source_router_id, sink_router_id, traffic_flow_bandwidth, max_traffic_flow_latency);
+    noc_traffic_flow_storage->create_noc_traffic_flow(source_router_module_name, sink_router_module_name, source_router_id, sink_router_id, traffic_flow_bandwidth, max_traffic_flow_latency, traffic_flow_priority);
 
     return;
+}
+
+double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
+    double traffic_flow_bandwidth;
+    // holds the bandwidth value as a string so that it can be used to convert to a floating point value (this is done so that scientific notation is supported)
+    // there is no default value since this is a required attribute
+    // Either it is provided or an error is thrown is not provided or it is an illegal value
+    std::string traffic_flow_bandwidth_intermediate_val = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_string();
+
+    // now convert the value to double
+    traffic_flow_bandwidth = std::atof(traffic_flow_bandwidth_intermediate_val.c_str());
+
+    return traffic_flow_bandwidth;
+}
+
+double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
+    // "set to large value, indicating no constraint
+    double max_traffic_flow_latency = DEFAULT_MAX_TRAFFIC_FLOW_LATENCY;
+
+    // holds the latency value as a string so that it can be used to convert to a floating point value (this is done so that scientific notation is supported)
+    std::string max_traffic_flow_latency_intermediate_val;
+
+    // get the corresponding attribute where the latency constraint is stored
+    pugi::xml_attribute max_traffic_flow_latency_attribute = pugiutil::get_attribute(single_flow_tag, "latency_cons", loc_data, pugiutil::OPTIONAL);
+
+    // check if the attribute value was provided
+    if (max_traffic_flow_latency_attribute) {
+        // value was provided, so store it
+        max_traffic_flow_latency_intermediate_val = max_traffic_flow_latency_attribute.as_string();
+
+        // now convert the value to double
+        max_traffic_flow_latency = std::atof(max_traffic_flow_latency_intermediate_val.c_str());
+    }
+
+    return max_traffic_flow_latency;
+}
+
+int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
+    // default priority is 1 (indicating that the traffic flow is weighted equall to all others)
+    int traffic_flow_priority = 1;
+
+    // get the corresponding attribute where the priority is stored
+    pugi::xml_attribute traffic_flow_priority_attribute = pugiutil::get_attribute(single_flow_tag, "priority", loc_data, pugiutil::OPTIONAL);
+
+    // check if the attribute value was provided
+    if (traffic_flow_priority_attribute) {
+        // value was provided, so store it
+        traffic_flow_priority = traffic_flow_priority_attribute.as_int(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
+    }
+
+    return traffic_flow_priority;
 }
 
 void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
@@ -131,10 +184,20 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
     return;
 }
 
-void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
-    // check that the bandwidth and max latency are positive values
-    if ((traffic_flow_bandwidth < 0) || (max_traffic_flow_latency < 0)) {
-        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow bandwidth and latency constraints need to be positive values.");
+void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, int traffic_flow_priority, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
+    // check that the bandwidth is a positive value
+    if (traffic_flow_bandwidth <= 0.) {
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow bandwidths are expected to be a non-zero positive floating point or integer values.");
+    }
+
+    // check that the latency constraint is also a positive value
+    if (max_traffic_flow_latency <= 0.) {
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The latency constraints need to be a non-zero positive floating point or integer values.");
+    }
+
+    // check that the priority is a positive non-zero value
+    if (traffic_flow_priority <= 0) {
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow priorities expected to be positive, non-zero integer values.");
     }
 
     return;
@@ -186,7 +249,7 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
     VTR_ASSERT(physical_noc_router != noc_ctx.noc_model.get_noc_routers().end());
 
     //Using the routers grid position go to the device and identify the physical type of the tile located there.
-    return device_ctx.grid[physical_noc_router->get_router_grid_position_x()][physical_noc_router->get_router_grid_position_y()].type;
+    return device_ctx.grid.get_physical_type(physical_noc_router->get_router_grid_position_x(), physical_noc_router->get_router_grid_position_y());
 }
 
 bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file) {

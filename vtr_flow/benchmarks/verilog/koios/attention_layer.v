@@ -12,6 +12,7 @@
 `define BUF_AWIDTH 4 //16 entries in each buffer ram
 `define BUF_LOC_SIZE 4 //4 words in each addr location
 `define OUT_RAM_DEPTH 512 //512 entries in output bram
+`define LOG_OUT_RAM_DEPTH 9 //512 entries in output bram
 
 /////////////////////////////////////////////////////////////////////////////
 //Self-Attention Layer
@@ -41,7 +42,7 @@
 `define SIGN 1
 `define DWIDTH (`SIGN+`EXPONENT+`MANTISSA)
 
-module attention(
+module attention_layer(
 input clk,
 input rst,
 input start,			
@@ -49,31 +50,36 @@ input [4:0] q_rd_addr, //start address of q
 input [4:0] k_rd_addr, //start address of k
 input [4:0] v_rd_addr, //start address of v
 input [2:0] wren_qkv_ext, //To write data into Q,K,V BRAMs externally
-input [5:0] address_ext,  //External write address
+input [4:0] address_ext,  //External write address
 input [`VECTOR_BITS-1:0] data_ext,  //Data to be written
-input [`OUT_RAM_DEPTH-1:0] out_rd_addr,	//To read stored outputs from outside
-output [`DATA_WIDTH-1:0] out   //16 bit output from out bram
+input [`LOG_OUT_RAM_DEPTH-1:0] out_rd_addr,	//To read stored outputs from outside
+output [`DATA_WIDTH-1:0] out_part1,  //16 bit output from out bram
+output [`DATA_WIDTH-1:0] out_part2   //16 bit output from out bram
 );
 
 
 reg q_en,k_en,v_en;
 reg [4:0] q_addr,k_addr;
-reg [5:0] v_addr;
+reg [4:0] v_addr;
 wire [`VECTOR_BITS-1:0] q,k;
-wire [(`NUM_WORDS*`DATA_WIDTH)-1:0] v;
+wire [(`NUM_WORDS*`DATA_WIDTH)-1:0] v_part1;
+wire [(`NUM_WORDS*`DATA_WIDTH)-1:0] v_part2;
 
 //Dummy input/ouputs connected to DPRAM to ensure VTR doesn't optimize the BRAM out.
 reg [`VECTOR_BITS-1:0] dummyin_q,dummyin_k;
 reg [(`NUM_WORDS*`DATA_WIDTH)-1:0] dummyin_v;
 wire [`VECTOR_BITS-1:0] dummyout_q,dummyout_k;
-wire [(`NUM_WORDS*`DATA_WIDTH)-1:0] dummyout_v;
+wire [(`NUM_WORDS*`DATA_WIDTH)-1:0] dummyout_v1;
+wire [(`NUM_WORDS*`DATA_WIDTH)-1:0] dummyout_v2;
 
 reg [4:0] count;
 wire [`VECTOR_BITS-1:0] mul_out;
 wire [`DATA_WIDTH-1:0] qiki, scaled_qiki;
 reg flag;
-wire [`NUM_WORDS*`DATA_WIDTH-1:0] mul_out2;
-wire [`DATA_WIDTH-1:0] softmulv;
+wire [`NUM_WORDS*`DATA_WIDTH-1:0] mul_out2_part1;
+wire [`NUM_WORDS*`DATA_WIDTH-1:0] mul_out2_part2;
+wire [`DATA_WIDTH-1:0] softmulv_part1;
+wire [`DATA_WIDTH-1:0] softmulv_part2;
 
 //Input/output connections of the buffers
 reg [`BUF_AWIDTH-1:0] wr_addr_12;
@@ -103,22 +109,24 @@ reg buff_done;
 reg [4:0] soft_word_count;
 wire [8*`BUF_LOC_SIZE*`DATA_WIDTH-1:0] comb_softout;
 reg vector_complete;
-reg strt_softmulv;
+//reg strt_softmulv;
 reg [5:0] v_count,v_count_ff;
 
 reg [8:0] out_wr_addr;
 reg [8:0] addr_a,addr_b;
 reg wren_a,wren_b;
 reg [`DATA_WIDTH-1:0] dummy_b;
-wire [`DATA_WIDTH-1:0] dummy_a;
+wire [`DATA_WIDTH-1:0] dummy_a1;
+wire [`DATA_WIDTH-1:0] dummy_a2;
 reg strt_out_write;
 reg soft_out_strt, soft_out_end;
-reg first_time,mvm_complete;
+reg first_time;
 
 //BRAMs that hold Q,K,V matrices
 dpram Q(.clk(clk),.address_a(q_addr),.address_b(address_ext),.wren_a(q_en),.wren_b(wren_qkv_ext[0]),.data_a(dummyin_q),.data_b(data_ext),.out_a(q),.out_b(dummyout_q));
 dpram K(.clk(clk),.address_a(k_addr),.address_b(address_ext),.wren_a(k_en),.wren_b(wren_qkv_ext[0]),.data_a(dummyin_k),.data_b(data_ext),.out_a(k),.out_b(dummyout_k));
-dpram_t V(.clk(clk),.address_a(v_addr),.address_b(address_ext),.wren_a(v_en),.wren_b(wren_qkv_ext[0]),.data_a(dummyin_v),.data_b(data_ext),.out_a(v),.out_b(dummyout_v));
+dpram_t V_part1(.clk(clk),.address_a(v_addr),.address_b(address_ext),.wren_a(v_en),.wren_b(wren_qkv_ext[0]),.data_a(dummyin_v),.data_b(data_ext[511:0]),.out_a(v_part1),.out_b(dummyout_v1));
+dpram_t V_part2(.clk(clk),.address_a(v_addr),.address_b(address_ext),.wren_a(v_en),.wren_b(wren_qkv_ext[0]),.data_a(dummyin_v),.data_b(data_ext[1023:512]),.out_a(v_part2),.out_b(dummyout_v2));
 
 //Multiplying Q and K vector
 vecmat_mul qk_mul (.clk(clk),.reset(rst),.vector(q),.matrix(k),.tmp(mul_out));
@@ -177,21 +185,34 @@ softmax soft(
 //	.addr_sel(addr_select)
 );
 
-//Multiplying output of softmax with V vector
-vecmat_mul_32 rv_mul (.clk(clk),.reset(rst),.vector(data_to_MVM),.matrix(v),.tmp(mul_out2));
-vecmat_add_32 rv_acc (.clk(clk),.reset(rst),.mulout(mul_out2),.data_out(softmulv));
+//Multiplying output of softmax with V matrix.
+//this is done using 2 MVMs. We parallelize by processing 32 rows in each MVM
+//this results in the total operation taking 30+change cycles.
+//this is done to balance the pipeline. MVM1 takes 30+change cycles, SOFTMAX
+//takes 30+change cycles, MVM2 now takes 30+change cycles. If we don't use
+//2 MVMs for MVM2, then it'll take 60+change cycles.
 
+//First MVM will only process first 32 rows of the
+//matrix V.
+vecmat_mul_32 rv_mul_1 (.clk(clk),.reset(rst),.vector(data_to_MVM),.matrix(v_part1),.tmp(mul_out2_part1));
+vecmat_add_32 rv_acc_1 (.clk(clk),.reset(rst),.mulout(mul_out2_part1),.data_out(softmulv_part1));
+
+//second set of MVM for multiplying the output of softmax (vector) with the
+//V matrix. this MVM will process the next 32 rows of the matrix V.
+vecmat_mul_32 rv_mul_2 (.clk(clk),.reset(rst),.vector(data_to_MVM),.matrix(v_part2),.tmp(mul_out2_part2));
+vecmat_add_32 rv_acc_2 (.clk(clk),.reset(rst),.mulout(mul_out2_part2),.data_out(softmulv_part2));
 
 //output BRAM can store upto 512 elements of `DATA_WIDTH
-dpram_small out_ram (.clk(clk),.address_a(out_wr_addr),.address_b(out_rd_addr),.wren_a(wren_a),.wren_b(wren_b),.data_a(softmulv),.data_b(dummy_b),.out_a(dummy_a),.out_b(out));
+dpram_small out_ram_part1 (.clk(clk),.address_a(out_wr_addr),.address_b(out_rd_addr),.wren_a(wren_a),.wren_b(wren_b),.data_a(softmulv_part1),.data_b(dummy_b),.out_a(dummy_a1),.out_b(out_part1));
+dpram_small out_ram_part2 (.clk(clk),.address_a(out_wr_addr),.address_b(out_rd_addr),.wren_a(wren_a),.wren_b(wren_b),.data_a(softmulv_part2),.data_b(dummy_b),.out_a(dummy_a2),.out_b(out_part2));
 
 assign rd_addr_12 = soft_rd_addr|soft_sub0_addr|soft_sub1_addr ;
 //assign rd_addr_12 = (addr_select)?soft_rd_addr:soft_sub0_addr|soft_sub1_addr ;
 
 
 
-assign soft_strt_addr = (~choose_buf)?4'd0:4'd8;
-assign soft_end_addr = (~choose_buf)?4'd8:4'd16;
+assign soft_strt_addr = (~choose_buf)?4'd0:4'd7;
+assign soft_end_addr = (~choose_buf)?4'd7:4'd15;
 
 
 
@@ -219,14 +240,14 @@ always @(posedge clk) begin
 		if (start ==1) begin
 			q_addr <= q_rd_addr;
 			k_addr <= k_rd_addr;
-			count <= count+1;	
+			count <= count+1'b1;	
 		end
 		else begin
 			//Reading data from the K,Q BRAMs to feed to MVM 
 			//K vector increments every cycle and Q increments after multiplication with the whole set of K vectors is complete
-			k_addr <= k_addr+1;
+			k_addr <= k_addr+1'b1;
 			if(count==0) 
-				q_addr <= q_addr+1;
+				q_addr <= q_addr+1'b1;
 			if(count>4) 
 				flag <= 1; //to ensure initially there is a 4 cycle pipeline stage delay
 			
@@ -238,10 +259,10 @@ always @(posedge clk) begin
 					word_we0_12 <= word_we0_12 <<1;  //creating write enable for diff words in same addr loc.
 			
 				if(word_we0_12 == 4'b1000)
-					wr_addr_12 <= wr_addr_12+1;    //addr gets incremented every 4 words
+					wr_addr_12 <= wr_addr_12+1'b1;    //addr gets incremented every 4 words
 
 						
-				word_count <= word_count+1;	
+				word_count <= word_count+1'b1;	
 
 				if(count==4)
 					  buff_done <= 1;	//indicates one of the buffers being full
@@ -268,7 +289,7 @@ always @(posedge clk) begin
   			
             end
 	
-			count <= count+1;
+			count <= count+1'b1;
 			wr_data_12 <= scaled_qiki<<(`DATA_WIDTH*(word_count));   //word data sent to softmax
 
 			
@@ -314,7 +335,7 @@ always@(posedge clk) begin
 		soft_word_count <=0;
 		rd_addr_34 <= 0;  
 		word_we1_34 <= 0;	
-		strt_softmulv <= 0;
+		//strt_softmulv <= 0;
 		v_en <= 0;
 		v_addr <= 0;
 		v_count <= 0;	
@@ -335,34 +356,34 @@ always@(posedge clk) begin
 				word_we0_34 <= word_we0_34<<4;
  
 			wr_data_34 <= comb_softout<<(`DATA_WIDTH*soft_word_count);
-			soft_word_count <= soft_word_count+4; //every cycle we write 4 words together
+			soft_word_count <= soft_word_count+3'd4; //every cycle we write 4 words together
 		end
 		else begin
 			word_we0_34 <= 0;
 			if(word_we0_34==32'hf0000000) begin
 
-				wr_addr_34 <= wr_addr_34+1;
+				wr_addr_34 <= wr_addr_34+1'b1;
 				vector_complete <=1;	 //indicates atleast one buffer has data
 			end
 		end
 		//MVM with V matrix control logic (1x32 * 32x64)	
 		if(vector_complete==1) begin 
-			v_addr <= v_addr+1;
-			v_count <= v_count+1;
+			v_addr <= v_addr+1'b1;
+			v_count <= v_count+1'b1;
 		end
 		
-		if(v_count==63) begin
+		if(v_count==31) begin
 				rd_addr_34 <= ~rd_addr_34;  //change addr to read data to MVM block
-				mvm_complete <= 1;			//pulse indicates completion on one mvm multiplication of soft vector and V
+				//mvm_complete <= 1;			//pulse indicates completion on one mvm multiplication of soft vector and V
 		end
 		else
-			mvm_complete <= 0;
+			//mvm_complete <= 0;
 
 		if(v_count==4)   //output write 4 stage pipeline delay for MVM
 			strt_out_write <=1;
 
 		if(strt_out_write==1)
-			out_wr_addr <= out_wr_addr+1;
+			out_wr_addr <= out_wr_addr+1'b1;
 
 	end			
 end
@@ -761,7 +782,7 @@ output reg [(`VECTOR_BITS-1):0] out_b
 );
 
 
-`ifdef SIMULATION_MEMORY
+`ifndef hard_mem
 
 reg [`VECTOR_BITS-1:0] ram[`NUM_WORDS-1:0];
 
@@ -785,6 +806,9 @@ end
 
 `else
 
+defparam u_dual_port_ram.ADDR_WIDTH = 5;
+defparam u_dual_port_ram.DATA_WIDTH = `VECTOR_BITS;
+
 dual_port_ram u_dual_port_ram(
 .addr1(address_a),
 .we1(wren_a),
@@ -804,8 +828,8 @@ endmodule
  
 module dpram_t (	
 input clk,
-input [5:0] address_a,
-input [5:0] address_b,
+input [4:0] address_a,
+input [4:0] address_b,
 input  wren_a,
 input  wren_b,
 input [((`NUM_WORDS*`DATA_WIDTH)-1):0] data_a,
@@ -815,7 +839,7 @@ output reg [((`NUM_WORDS*`DATA_WIDTH)-1):0] out_b
 );
 
 
-`ifdef SIMULATION_MEMORY
+`ifndef hard_mem
 
 reg [(`NUM_WORDS*`DATA_WIDTH)-1:0] ram[`VECTOR_DEPTH-1:0];
 
@@ -838,6 +862,9 @@ always @ (posedge clk) begin
 end
 
 `else
+
+defparam u_dual_port_ram.ADDR_WIDTH = 5;
+defparam u_dual_port_ram.DATA_WIDTH = `NUM_WORDS*`DATA_WIDTH;
 
 dual_port_ram u_dual_port_ram(
 .addr1(address_a),
@@ -868,7 +895,7 @@ output reg [`DATA_WIDTH-1:0] out_b
 );
 
 
-`ifdef SIMULATION_MEMORY
+`ifndef hard_mem
 
 reg [`DATA_WIDTH-1:0] ram[`OUT_RAM_DEPTH-1:0];
 
@@ -876,21 +903,19 @@ always @ (posedge clk) begin
   if (wren_a) begin
       ram[address_a] <= data_a;
   end
-  else begin
-      out_a <= ram[address_a];
-  end
+  out_a <= ram[address_a];
 end
   
 always @ (posedge clk) begin 
   if (wren_b) begin
       ram[address_b] <= data_b;
   end 
-  else begin
-      out_b <= ram[address_b];
-  end
+  out_b <= ram[address_b];
 end
 
 `else
+defparam u_dual_port_ram.ADDR_WIDTH = 9;
+defparam u_dual_port_ram.DATA_WIDTH = `DATA_WIDTH;
 
 dual_port_ram u_dual_port_ram(
 .addr1(address_a),
@@ -927,67 +952,21 @@ input [`BUF_LOC_SIZE*`DATA_WIDTH-1:0] d0;
 input [`BUF_LOC_SIZE*`DATA_WIDTH-1:0] d1;
 input [`BUF_LOC_SIZE-1:0] we0;
 input [`BUF_LOC_SIZE-1:0] we1;
-output reg [`BUF_LOC_SIZE*`DATA_WIDTH-1:0] q0;
-output reg [`BUF_LOC_SIZE*`DATA_WIDTH-1:0] q1;
+output [`BUF_LOC_SIZE*`DATA_WIDTH-1:0] q0;
+output [`BUF_LOC_SIZE*`DATA_WIDTH-1:0] q1;
 input clk;
 
-`ifdef SIMULATION_MEMORY
+genvar i; 
 
-reg [`BUF_LOC_SIZE*`DATA_WIDTH-1:0] ram[((1<<`BUF_AWIDTH)-1):0];
-reg [3:0] i;
-
-always @(posedge clk)  
-begin 
-    if(we0 == 0) begin   //read
-	 for (i = 0; i < `BUF_LOC_SIZE; i=i+1) begin
-        	q0[i*`DATA_WIDTH +: `DATA_WIDTH] <= ram[addr0][i*`DATA_WIDTH +: `DATA_WIDTH];
-    	end
-    end
-    else begin  //write
-    	for (i = 0; i < `BUF_LOC_SIZE; i=i+1) begin
-      	  if (we0[i]) ram[addr0][i*`DATA_WIDTH +: `DATA_WIDTH] <= d0[i*`DATA_WIDTH +: `DATA_WIDTH]; 
-    	end   
-   end 
-     
-end
-
-always @(posedge clk)  
-begin 
-    if(we1 == 0) begin 
-	 for (i = 0; i < `BUF_LOC_SIZE; i=i+1) begin
-        q1[i*`DATA_WIDTH +: `DATA_WIDTH] <= ram[addr1][i*`DATA_WIDTH +: `DATA_WIDTH];
-        end
-   end
-    else begin  
-    	for (i = 0; i < `BUF_LOC_SIZE; i=i+1) begin
-        	if (we1[i]) ram[addr1][i*`DATA_WIDTH +: `DATA_WIDTH] <= d1[i*`DATA_WIDTH +: `DATA_WIDTH]; 
-    	end
-    end    
-     
-end
-
+generate
+`ifdef QUARTUS
+   for (i=0;i<`BUF_LOC_SIZE;i=i+1) begin: gen_dpram
 `else
-//BRAMs available in VTR FPGA architectures have one bit write-enables.
-//So let's combine multiple bits into 1. We don't have a usecase of
-//writing/not-writing only parts of the word anyway.
-wire we0_coalesced;
-assign we0_coalesced = |we0;
-wire we1_coalesced;
-assign we1_coalesced = |we1;
-
-dual_port_ram u_dual_port_ram(
-.addr1(addr0),
-.we1(we0_coalesced),
-.data1(d0),
-.out1(q0),
-.addr2(addr1),
-.we2(we1_coalesced),
-.data2(d1),
-.out2(q1),
-.clk(clk)
-);
-
+   for (i=0;i<`BUF_LOC_SIZE;i=i+1) begin
 `endif
+     dpram_original #(.AWIDTH(`BUF_AWIDTH),.DWIDTH(`DATA_WIDTH),.NUM_WORDS(1<<`BUF_AWIDTH)) dp1 (.clk(clk),.address_a(addr0),.address_b(addr1),.wren_a(we0[i]),.wren_b(we1[i]),.data_a(d0[i*`DATA_WIDTH +: `DATA_WIDTH]),.data_b(d1[i*`DATA_WIDTH +: `DATA_WIDTH]),.out_a(q0[i*`DATA_WIDTH +: `DATA_WIDTH]),.out_b(q1[i*`DATA_WIDTH +: `DATA_WIDTH]));
+   end
+endgenerate
 
 endmodule
 
@@ -1009,70 +988,85 @@ input [8*`BUF_LOC_SIZE*`DATA_WIDTH-1:0] d0;
 input [8*`BUF_LOC_SIZE*`DATA_WIDTH-1:0] d1;
 input [8*`BUF_LOC_SIZE-1:0] we0;
 input [8*`BUF_LOC_SIZE-1:0] we1;
-output reg [8*`BUF_LOC_SIZE*`DATA_WIDTH-1:0] q0;
-output reg [8*`BUF_LOC_SIZE*`DATA_WIDTH-1:0] q1;
+output [8*`BUF_LOC_SIZE*`DATA_WIDTH-1:0] q0;
+output [8*`BUF_LOC_SIZE*`DATA_WIDTH-1:0] q1;
 input clk;
 
-`ifdef SIMULATION_MEMORY
+genvar i; 
 
-reg [(8*`BUF_LOC_SIZE*`DATA_WIDTH)-1:0] ram[1:0];   //ping pong buffer
-reg [5:0] i;
+generate 
+`ifdef QUARTUS
+	for (i=0;i<`NUM_WORDS;i=i+1) begin: gen_dpram_2
+`else
+	for (i=0;i<`NUM_WORDS;i=i+1) begin
+`endif
+		dpram_original #(.AWIDTH(1),.DWIDTH(`DATA_WIDTH),.NUM_WORDS(1<<1)) dp1 (.clk(clk),.address_a(addr0),.address_b(addr1),.wren_a(we0[i]),.wren_b(we1[i]),.data_a(d0[i*`DATA_WIDTH +: `DATA_WIDTH]),.data_b(d1[i*`DATA_WIDTH +: `DATA_WIDTH]),.out_a(q0[i*`DATA_WIDTH +: `DATA_WIDTH]),.out_b(q1[i*`DATA_WIDTH +: `DATA_WIDTH]));
+	end
+endgenerate
 
-always @(posedge clk)  
-begin 
-    if(we0 == 0) begin   //read
-	 for (i = 0; i < `NUM_WORDS; i=i+1) begin
-        	q0[i*`DATA_WIDTH +: `DATA_WIDTH] <= ram[addr0][i*`DATA_WIDTH +: `DATA_WIDTH];
-    	end
-    end
-    else begin  //write
-    	for (i = 0; i < `NUM_WORDS; i=i+1) begin
-      	  if (we0[i]) ram[addr0][i*`DATA_WIDTH +: `DATA_WIDTH] <= d0[i*`DATA_WIDTH +: `DATA_WIDTH]; 
-    	end   
-   end 
-     
+endmodule
+
+
+module dpram_original (
+    clk,
+    address_a,
+    address_b,
+    wren_a,
+    wren_b,
+    data_a,
+    data_b,
+    out_a,
+    out_b
+);
+parameter AWIDTH=10;
+parameter NUM_WORDS=1024;
+parameter DWIDTH=32;
+input clk;
+input [(AWIDTH-1):0] address_a;
+input [(AWIDTH-1):0] address_b;
+input  wren_a;
+input  wren_b;
+input [(DWIDTH-1):0] data_a;
+input [(DWIDTH-1):0] data_b;
+output reg [(DWIDTH-1):0] out_a;
+output reg [(DWIDTH-1):0] out_b;
+
+`ifndef hard_mem
+
+reg [DWIDTH-1:0] ram[NUM_WORDS-1:0];
+always @ (posedge clk) begin 
+  if (wren_a) begin
+      ram[address_a] <= data_a;
+  end
+  out_a <= ram[address_a];
 end
-
-always @(posedge clk)  
-begin 
-    if(we1 == 0) begin 
-	 for (i = 0; i < `NUM_WORDS; i=i+1) begin
-        q1[i*`DATA_WIDTH +: `DATA_WIDTH] <= ram[addr1][i*`DATA_WIDTH +: `DATA_WIDTH];
-        end
-   end
-    else begin  
-    	for (i = 0; i < `NUM_WORDS; i=i+1) begin
-        	if (we1[i]) ram[addr1][i*`DATA_WIDTH +: `DATA_WIDTH] <= d1[i*`DATA_WIDTH +: `DATA_WIDTH]; 
-    	end
-    end    
-     
+  
+always @ (posedge clk) begin 
+  if (wren_b) begin
+      ram[address_b] <= data_b;
+  end 
+  out_b <= ram[address_b];
 end
 
 `else
-//BRAMs available in VTR FPGA architectures have one bit write-enables.
-//So let's combine multiple bits into 1. We don't have a usecase of
-//writing/not-writing only parts of the word anyway.
-wire we0_coalesced;
-assign we0_coalesced = |we0;
-wire we1_coalesced;
-assign we1_coalesced = |we1;
+
+defparam u_dual_port_ram.ADDR_WIDTH = AWIDTH;
+defparam u_dual_port_ram.DATA_WIDTH = DWIDTH;
 
 dual_port_ram u_dual_port_ram(
-.addr1(addr0),
-.we1(we0_coalesced),
-.data1(d0),
-.out1(q0),
-.addr2(addr1),
-.we2(we1_coalesced),
-.data2(d1),
-.out2(q1),
+.addr1(address_a),
+.we1(wren_a),
+.data1(data_a),
+.out1(out_a),
+.addr2(address_b),
+.we2(wren_b),
+.data2(data_b),
+.out2(out_b),
 .clk(clk)
 );
 
 `endif
-
 endmodule
-
 
 /////////////////////////////////////////////////////////////////
 // Softmax block
@@ -1203,7 +1197,7 @@ module softmax(
     end
     //logic when to finish mode1 and trigger mode2 to latch the mode2 address
     else if(mode1_start && addr < end_addr) begin 
-      addr <= addr + 1;
+      addr <= addr + 1'b1;
       mode1_run <= 1;
     end else if(addr == end_addr)begin 
       addr <= 0;
@@ -1264,7 +1258,7 @@ module softmax(
 	end
     //logic when to finish mode2
     else if(mode2_start && sub0_inp_addr < end_addr) begin
-      sub0_inp_addr <= sub0_inp_addr + 1;
+      sub0_inp_addr <= sub0_inp_addr + 1'b1;
       sub0_inp_reg <= sub0_inp;
       mode2_run <= 1;
     end 
@@ -1412,7 +1406,7 @@ module softmax(
       sub1_inp_reg <= sub1_inp;
     end
     else if(~reset && presub_start && sub1_inp_addr < end_addr)begin
-      sub1_inp_addr <= sub1_inp_addr + 1;
+      sub1_inp_addr <= sub1_inp_addr + 1'b1;
       sub1_inp_reg <= sub1_inp;
       presub_run <= 1;
     end 
@@ -1858,7 +1852,6 @@ wire cmp0_stage2_alb;
 wire cmp0_stage2_aleb;
 wire cmp0_stage2_agb;
 wire cmp0_stage2_ageb;
-wire cmp0_stage2_unordered;
 
 wire cmp1_stage2_aeb;
 wire cmp1_stage2_aneb;
@@ -1866,7 +1859,6 @@ wire cmp1_stage2_alb;
 wire cmp1_stage2_aleb;
 wire cmp1_stage2_agb;
 wire cmp1_stage2_ageb;
-wire cmp1_stage2_unordered;
 
 wire cmp0_stage1_aeb;
 wire cmp0_stage1_aneb;
@@ -1874,7 +1866,6 @@ wire cmp0_stage1_alb;
 wire cmp0_stage1_aleb;
 wire cmp0_stage1_agb;
 wire cmp0_stage1_ageb;
-wire cmp0_stage1_unordered;
 
 wire cmp0_stage0_aeb;
 wire cmp0_stage0_aneb;
@@ -1882,12 +1873,11 @@ wire cmp0_stage0_alb;
 wire cmp0_stage0_aleb;
 wire cmp0_stage0_agb;
 wire cmp0_stage0_ageb;
-wire cmp0_stage0_unordered;
 
-comparator cmp0_stage2(.a(inp0),       .b(inp1),        .aeb(cmp0_stage2_aeb), .aneb(cmp0_stage2_aneb), .alb(cmp0_stage2_alb), .aleb(cmp0_stage2_aleb), .agb(cmp0_stage2_agb), .ageb(cmp0_stage2_ageb), .unordered(cmp0_stage2_unordered));
+comparator cmp0_stage2(.a(inp0),       .b(inp1),        .aeb(cmp0_stage2_aeb), .aneb(cmp0_stage2_aneb), .alb(cmp0_stage2_alb), .aleb(cmp0_stage2_aleb), .agb(cmp0_stage2_agb), .ageb(cmp0_stage2_ageb));
 assign cmp0_out_stage2 = (cmp0_stage2_ageb==1'b1) ? inp0 : inp1;
 
-comparator cmp1_stage2(.a(inp2),       .b(inp3),         .aeb(cmp1_stage2_aeb), .aneb(cmp1_stage2_aneb), .alb(cmp1_stage2_alb), .aleb(cmp1_stage2_aleb), .agb(cmp1_stage2_agb), .ageb(cmp1_stage2_ageb), .unordered(cmp1_stage2_unordered));   
+comparator cmp1_stage2(.a(inp2),       .b(inp3),         .aeb(cmp1_stage2_aeb), .aneb(cmp1_stage2_aneb), .alb(cmp1_stage2_alb), .aleb(cmp1_stage2_aleb), .agb(cmp1_stage2_agb), .ageb(cmp1_stage2_ageb));   
 assign cmp1_out_stage2 = (cmp1_stage2_ageb==1'b1) ? inp2 : inp3;
 
 always @(posedge clk) begin
@@ -1901,7 +1891,7 @@ always @(posedge clk) begin
 	end
 end
 
-comparator cmp0_stage1(.a(cmp0_out_stage2_reg),       .b(cmp1_out_stage2_reg),          .aeb(cmp0_stage1_aeb), .aneb(cmp0_stage1_aneb), .alb(cmp0_stage1_alb), .aleb(cmp0_stage1_aleb), .agb(cmp0_stage1_agb), .ageb(cmp0_stage1_ageb), .unordered(cmp0_stage1_unordered));
+comparator cmp0_stage1(.a(cmp0_out_stage2_reg),       .b(cmp1_out_stage2_reg),          .aeb(cmp0_stage1_aeb), .aneb(cmp0_stage1_aneb), .alb(cmp0_stage1_alb), .aleb(cmp0_stage1_aleb), .agb(cmp0_stage1_agb), .ageb(cmp0_stage1_ageb));
 assign cmp0_out_stage1 = (cmp0_stage1_ageb==1'b1) ? cmp0_out_stage2_reg: cmp1_out_stage2_reg;
 
 always @(posedge clk) begin
@@ -1914,15 +1904,8 @@ always @(posedge clk) begin
 	end
 end
 
-comparator cmp0_stage0(.a(outp),       .b(cmp0_out_stage1_reg),         .aeb(cmp0_stage0_aeb), .aneb(cmp0_stage0_aneb), .alb(cmp0_stage0_alb), .aleb(cmp0_stage0_aleb), .agb(cmp0_stage0_agb), .ageb(cmp0_stage0_ageb), .unordered(cmp0_stage0_unordered));
+comparator cmp0_stage0(.a(outp),       .b(cmp0_out_stage1_reg),         .aeb(cmp0_stage0_aeb), .aneb(cmp0_stage0_aneb), .alb(cmp0_stage0_alb), .aleb(cmp0_stage0_aleb), .agb(cmp0_stage0_agb), .ageb(cmp0_stage0_ageb));
 assign cmp0_out_stage0 = (cmp0_stage0_ageb==1'b1) ? outp : cmp0_out_stage1_reg;
-
-//DW_fp_cmp #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) cmp0_stage2(.a(inp0),       .b(inp1),      .z1(cmp0_out_stage2), .zctr(1'b0), .aeqb(), .altb(), .agtb(), .unordered(), .z0(), .status0(), .status1());
-//DW_fp_cmp #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) cmp1_stage2(.a(inp2),       .b(inp3),      .z1(cmp1_out_stage2), .zctr(1'b0), .aeqb(), .altb(), .agtb(), .unordered(), .z0(), .status0(), .status1());
-//
-//DW_fp_cmp #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) cmp0_stage1(.a(cmp0_out_stage2),       .b(cmp1_out_stage2),      .z1(cmp0_out_stage1), .zctr(1'b0), .aeqb(), .altb(), .agtb(), .unordered(), .z0(), .status0(), .status1());
-//
-//DW_fp_cmp #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) cmp0_stage0(.a(outp),       .b(cmp0_out_stage1),      .z1(cmp0_out_stage0), .zctr(1'b0), .aeqb(), .altb(), .agtb(), .unordered(), .z0(), .status0(), .status1());
 
 endmodule
 
@@ -1949,21 +1932,12 @@ module mode2_sub(
   output  [`DATAWIDTH-1 : 0] outp3;
   input  [`DATAWIDTH-1 : 0] b_inp;
 
-
-  wire clk_NC;
-  wire rst_NC;
-  wire [4:0] flags_NC0, flags_NC1, flags_NC2, flags_NC3;
-
   // 0 add, 1 sub
-  fixed_point_addsub sub0(.clk(clk_NC), .rst(rst_NC), .a(a_inp0),	.b(b_inp), .operation(1'b1),	.result(outp0), .flags(flags_NC0));
-  fixed_point_addsub sub1(.clk(clk_NC), .rst(rst_NC), .a(a_inp1),	.b(b_inp), .operation(1'b1),	.result(outp1), .flags(flags_NC1));
-  fixed_point_addsub sub2(.clk(clk_NC), .rst(rst_NC), .a(a_inp2),	.b(b_inp), .operation(1'b1),	.result(outp2), .flags(flags_NC2));
-  fixed_point_addsub sub3(.clk(clk_NC), .rst(rst_NC), .a(a_inp3),	.b(b_inp), .operation(1'b1),	.result(outp3), .flags(flags_NC3));
-
-//  DW_fp_sub #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) sub0(.a(a_inp0), .b(b_inp), .z(outp0), .rnd(3'b000), .status());
-//  DW_fp_sub #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) sub1(.a(a_inp1), .b(b_inp), .z(outp1), .rnd(3'b000), .status());
-//  DW_fp_sub #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) sub2(.a(a_inp2), .b(b_inp), .z(outp2), .rnd(3'b000), .status());
-//  DW_fp_sub #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) sub3(.a(a_inp3), .b(b_inp), .z(outp3), .rnd(3'b000), .status());
+  fixed_point_addsub sub0(.a(a_inp0),	.b(b_inp), .operation(1'b1),	.result(outp0));
+  fixed_point_addsub sub1(.a(a_inp1),	.b(b_inp), .operation(1'b1),	.result(outp1));
+  fixed_point_addsub sub2(.a(a_inp2),	.b(b_inp), .operation(1'b1),	.result(outp2));
+  fixed_point_addsub sub3(.a(a_inp3),	.b(b_inp), .operation(1'b1),	.result(outp3));
+  
 endmodule
 
 
@@ -1998,10 +1972,10 @@ module mode3_exp(
   output  [`DATAWIDTH-1 : 0] outp1;
   output  [`DATAWIDTH-1 : 0] outp2;
   output  [`DATAWIDTH-1 : 0] outp3;
-  expunit exp0(.a(inp0), .z(outp0), .status(), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
-  expunit exp1(.a(inp1), .z(outp1), .status(), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
-  expunit exp2(.a(inp2), .z(outp2), .status(), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
-  expunit exp3(.a(inp3), .z(outp3), .status(), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
+  expunit exp0(.a(inp0), .z(outp0), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
+  expunit exp1(.a(inp1), .z(outp1), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
+  expunit exp2(.a(inp2), .z(outp2), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
+  expunit exp3(.a(inp3), .z(outp3), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
 endmodule
 
 
@@ -2093,23 +2067,11 @@ always @ (posedge clk) begin
 	end
 end	
 		
-	
-  wire clk_NC;
-  wire rst_NC;
-  wire [4:0] flags_NC0, flags_NC1, flags_NC2, flags_NC3;
-
   // 0 add, 1 sub
-  fixed_point_addsub add0_stage2(.clk(clk_NC), .rst(rst_NC), .a(inp0),	.b(inp1), .operation(1'b0),	.result(add0_out_stage2), .flags(flags_NC0));
-  fixed_point_addsub add1_stage2(.clk(clk_NC), .rst(rst_NC), .a(inp2),	.b(inp3), .operation(1'b0),	.result(add1_out_stage2), .flags(flags_NC1));
-  fixed_point_addsub add0_stage1(.clk(clk_NC), .rst(rst_NC), .a(add0_out_stage2_reg),	.b(add1_out_stage2_reg), .operation(1'b0),	.result(add0_out_stage1), .flags(flags_NC2));
-  fixed_point_addsub add0_stage0(.clk(clk_NC), .rst(rst_NC), .a(outp),	.b(add0_out_stage1_reg), .operation(1'b0),	.result(add0_out_stage0), .flags(flags_NC3));
-
-  //DW_fp_add #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) add0_stage2(.a(inp0),       .b(inp1),      .z(add0_out_stage2), .rnd(3'b000),    .status());
-  //DW_fp_add #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) add1_stage2(.a(inp2),       .b(inp3),      .z(add1_out_stage2), .rnd(3'b000),    .status());
-
-  //DW_fp_add #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) add0_stage1(.a(add0_out_stage2_reg),       .b(add1_out_stage2_reg),      .z(add0_out_stage1), .rnd(3'b000),    .status());
-
-  //DW_fp_add #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) add0_stage0(.a(outp),       .b(add0_out_stage1_reg),      .z(add0_out_stage0), .rnd(3'b000),    .status());
+  fixed_point_addsub add0_stage2(.a(inp0),	.b(inp1), .operation(1'b0),	.result(add0_out_stage2));
+  fixed_point_addsub add1_stage2(.a(inp2),	.b(inp3), .operation(1'b0),	.result(add1_out_stage2));
+  fixed_point_addsub add0_stage1(.a(add0_out_stage2_reg),	.b(add1_out_stage2_reg), .operation(1'b0),	.result(add0_out_stage1));
+  fixed_point_addsub add0_stage0(.a(outp),	.b(add0_out_stage1_reg), .operation(1'b0),	.result(add0_out_stage0));
 
 endmodule
 
@@ -2121,7 +2083,7 @@ module mode5_ln(inp, outp, clk, reset, mode5_stage3_run, mode5_stage2_run, mode5
   input mode5_stage2_run;
   input mode5_stage1_run;	
   
-  logunit ln(.fpin(inp), .fpout(outp), .status(), .clk(clk), .reset(reset), .mode5_stage3_run(mode5_stage3_run), .mode5_stage2_run(mode5_stage2_run), .mode5_stage1_run(mode5_stage1_run));
+  logunit ln(.fpin(inp), .fpout(outp), .clk(clk), .reset(reset), .mode5_stage3_run(mode5_stage3_run), .mode5_stage2_run(mode5_stage2_run), .mode5_stage1_run(mode5_stage1_run));
 endmodule
 
 module mode6_sub(
@@ -2146,18 +2108,12 @@ module mode6_sub(
   output  [`DATAWIDTH-1 : 0] outp2;
   output  [`DATAWIDTH-1 : 0] outp3;
 
-  wire [4:0] flags_NC0, flags_NC1, flags_NC2, flags_NC3;
   // 0 add, 1 sub
-  wire clk_NC, rst_NC;
-  fixed_point_addsub sub0(.clk(clk_NC), .rst(rst_NC), .a(a_inp0),	.b(b_inp), .operation(1'b1),	.result(outp0), .flags(flags_NC0));
-  fixed_point_addsub sub1(.clk(clk_NC), .rst(rst_NC), .a(a_inp1),	.b(b_inp), .operation(1'b1),	.result(outp1), .flags(flags_NC1));
-  fixed_point_addsub sub2(.clk(clk_NC), .rst(rst_NC), .a(a_inp2),	.b(b_inp), .operation(1'b1),	.result(outp2), .flags(flags_NC2));
-  fixed_point_addsub sub3(.clk(clk_NC), .rst(rst_NC), .a(a_inp3),	.b(b_inp), .operation(1'b1),	.result(outp3), .flags(flags_NC3));
-
-//  DW_fp_sub #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) sub0(.a(a_inp0), .b(b_inp), .z(outp0), .rnd(3'b000), .status());
-//  DW_fp_sub #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) sub1(.a(a_inp1), .b(b_inp), .z(outp1), .rnd(3'b000), .status());
-//  DW_fp_sub #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) sub2(.a(a_inp2), .b(b_inp), .z(outp2), .rnd(3'b000), .status());
-//  DW_fp_sub #(`MANTISSA, `EXPONENT, `IEEE_COMPLIANCE) sub3(.a(a_inp3), .b(b_inp), .z(outp3), .rnd(3'b000), .status());
+  fixed_point_addsub sub0(.a(a_inp0),	.b(b_inp), .operation(1'b1),	.result(outp0));
+  fixed_point_addsub sub1(.a(a_inp1),	.b(b_inp), .operation(1'b1),	.result(outp1));
+  fixed_point_addsub sub2(.a(a_inp2),	.b(b_inp), .operation(1'b1),	.result(outp2));
+  fixed_point_addsub sub3(.a(a_inp3),	.b(b_inp), .operation(1'b1),	.result(outp3));
+  
 endmodule
 
 
@@ -2192,29 +2148,22 @@ module mode7_exp(
   output  [`DATAWIDTH-1 : 0] outp1;
   output  [`DATAWIDTH-1 : 0] outp2;
   output  [`DATAWIDTH-1 : 0] outp3;
-  expunit exp0(.a(inp0), .z(outp0), .status(), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
-  expunit exp1(.a(inp1), .z(outp1), .status(), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
-  expunit exp2(.a(inp2), .z(outp2), .status(), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
-  expunit exp3(.a(inp3), .z(outp3), .status(), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
+  expunit exp0(.a(inp0), .z(outp0), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
+  expunit exp1(.a(inp1), .z(outp1), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
+  expunit exp2(.a(inp2), .z(outp2), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
+  expunit exp3(.a(inp3), .z(outp3), .stage_run(stage_run), .stage_run2(stage_run2), .clk(clk), .reset(reset));
 endmodule
 
 //============================================================================
 // Fixed point add/sub module
 //============================================================================
 module fixed_point_addsub(
-		clk,
-		rst,
 		a,
 		b,
 		operation,			// 0 add, 1 sub
-		result,
-		flags
+		result
 	);
-	
-	// Clock and reset
-	input clk ;										// Clock signal
-	input rst ;										// Reset (active high, resets pipeline registers)
-	
+		
 	// Input ports
   input [`DATAWIDTH-1:0] a ;								// Input A, a 32-bit floating point number
   input [`DATAWIDTH-1:0] b ;								// Input B, a 32-bit floating point number
@@ -2222,12 +2171,11 @@ module fixed_point_addsub(
 	
 	// Output ports
   output reg [`DATAWIDTH-1:0] result ;						// Result of the operation
-	output [4:0] flags ;							// Flags indicating exceptions according to IEEE754
 	
   reg [`DATAWIDTH:0] result_t ;
   wire [`DATAWIDTH-1:0] b_t ;
 	
-	assign b_t = ~b + 1;
+	assign b_t = ~b + 1'b1;
 	
 	always@(*) begin
       if (operation == 1'b0) begin
@@ -2270,8 +2218,7 @@ aneb,
 alb,
 aleb,
 agb,
-ageb,
-unordered
+ageb
 );
 
 input [15:0] a;
@@ -2282,8 +2229,6 @@ output alb;
 output aleb;
 output agb;
 output ageb;
-output unordered;
-
   
 
 reg lt;
@@ -2293,8 +2238,8 @@ reg gt;
 wire [15:0] a_t;
 wire [15:0] b_t;
 
-assign a_t = (~a[15:0])+1;
-assign b_t = (~b[15:0])+1;
+assign a_t = (~a[15:0])+1'b1;
+assign b_t = (~b[15:0])+1'b1;
 
 always @(*) begin
 	if (a[15] == 1'b0 && b[15] == 1'b1) begin
@@ -2338,7 +2283,7 @@ always @(*) begin
 		eq = 1'b1;
 		end
 	end
-	else if (a[15] == 1'b1 && b[15] == 1'b1) begin
+	else begin
 		if (a_t > b_t) begin
 		lt = 1'b1;
 		gt = 1'b0;
@@ -2376,11 +2321,10 @@ endmodule
 //////////////////////////////////////////////////////
 
 
-module logunit (fpin, fpout, status, clk, reset, mode5_stage3_run, mode5_stage2_run, mode5_stage1_run);
+module logunit (fpin, fpout, clk, reset, mode5_stage3_run, mode5_stage2_run, mode5_stage1_run);
 
 	input [15:0] fpin;
 	output [15:0] fpout;
-	output [7:0] status;
 	input clk,reset;
 
 	input mode5_stage3_run;
@@ -2403,7 +2347,7 @@ module logunit (fpin, fpout, status, clk, reset, mode5_stage3_run, mode5_stage2_
   FPLUT1 lut1 (.addr(fpin_f_reg[14:10]),.log(fxout1)); 
   FP8LUT2 lut2 (.addr(fpin_f_reg[9:2]),.log(fxout2)); 
 `ifdef complex_dsp
-adder_fp_clk u_add(.clk(clk), .a(fxout1_reg), .b(fxout2_reg), .out(fpout_f));
+addition_fp_clk_16 u_add(.clk(clk), .a(fxout1_reg), .b(fxout2_reg), .out(fpout_f));
 `else
 FPAddSub u_FPAddSub (.clk(clk), .rst(1'b0), .a(fxout1_reg), .b(fxout2_reg), .operation(1'b0), .result(fpout_f), .flags());
 `endif
@@ -2475,8 +2419,8 @@ module align_t (
 
   assign a = input_a;
   assign a_m[15:5] = {1'b1, a[9 : 0]};
-  assign a_m[4:0] = 8'b0;
-  assign a_e = a[14 : 10] - 15;
+  assign a_m[4:0] = 5'b0;
+  assign a_e = a[14 : 10] - 4'd15;
   assign a_s = a[15];
 
 endmodule
@@ -2485,7 +2429,7 @@ module sub_t (
   input [5:0] a_e,
   output [5:0] sub_a_e);
 
-assign sub_a_e = 15 - a_e;
+assign sub_a_e = 4'd15 - a_e;
 
 endmodule
 
@@ -2633,7 +2577,7 @@ module sub2 (
   input [4:0] a_e,
   output [4:0] sub_a_e);
 
-assign sub_a_e = 15 - a_e;
+assign sub_a_e = 5'd15 - a_e;
 
 endmodule
 
@@ -2666,9 +2610,9 @@ wire sticky;
 always@(guard or round_bit or sticky or z_m or z_e)
 begin
 if (guard && (round_bit || sticky || z_m[0])) begin
-    z_m_final = z_m + 1;
+    z_m_final = z_m + 1'b1;
    if (z_m == 11'b11111111111) begin
-            z_e_final = z_e + 1;
+            z_e_final = z_e + 1'b1;
           end
 		  else z_e_final = z_e;
           end
@@ -2692,7 +2636,7 @@ module final_out (
 	end
 	else begin
       output_z[9:0] = z_m[9:0];
-      output_z[14:10] = z_e + 8'd3;
+      output_z[14:10] = z_e + 2'd3;
       output_z[15] = z_s;
 	end
   end
@@ -3013,7 +2957,7 @@ endmodule
 // Author: Pragnesh Patel
 //////////////////////////////////////////////////////
 
-module expunit (a, z, status, stage_run, stage_run2, clk, reset);
+module expunit (a, z, stage_run, stage_run2, clk, reset);
 
 	input [15:0] a;
     input stage_run;
@@ -3021,7 +2965,6 @@ module expunit (a, z, status, stage_run, stage_run2, clk, reset);
     input clk;
     input reset;
     output reg [15:0] z;
-    output [7:0] status;
 	
     reg  [31:0] LUTout_reg;
 	reg  [31:0] LUTout_reg2;
@@ -3062,7 +3005,7 @@ module expunit (a, z, status, stage_run, stage_run2, clk, reset);
     end
 
     assign a_comp = ~a + 1'b1;
-    ExpLUT lut(.addr(a_comp[14:8]), .exp(LUTout)); 
+    ExpLUT lut(.clk(clk), .addr(a_comp[14:8]), .exp(LUTout)); 
     assign Mult_out = ~(a_comp_reg*LUTout_reg2[31:16])+1;
     assign z_out = Mult_out_reg[27:12] + LUTout_reg[15:0];
 
@@ -3076,140 +3019,141 @@ module expunit (a, z, status, stage_run, stage_run2, clk, reset);
   
 endmodule
 
-module ExpLUT(addr, exp);
+module ExpLUT(clk, addr, exp);
+	 input clk;
     input [6:0] addr;
     output reg [31:0] exp;
 
-    always @(addr) begin
+    always @(posedge clk) begin
         case (addr)
-	     7'b0000000            : exp =  32'b00001111100000100001000000000000;
-	     7'b0000001            : exp =  32'b00001110100100100000111111110000;
-	     7'b0000010            : exp =  32'b00001101101100000000111111010100;
-	     7'b0000011            : exp =  32'b00001100110110110000111110101100;
-	     7'b0000100            : exp =  32'b00001100000101000000111101111011;
-	     7'b0000101            : exp =  32'b00001011010110000000111101000000;
-	     7'b0000110            : exp =  32'b00001010101010000000111011111110;
-	     7'b0000111            : exp =  32'b00001010000000110000111010110110;
-	     7'b0001000            : exp =  32'b00001001011010000000111001101000;
-	     7'b0001001            : exp =  32'b00001000110101100000111000010110;
-	     7'b0001010            : exp =  32'b00001000010011010000110111000000;
-	     7'b0001011            : exp =  32'b00000111110011000000110101101000;
-	     7'b0001100            : exp =  32'b00000111010100110000110100001101;
-	     7'b0001101            : exp =  32'b00000110111000010000110010110001;
-	     7'b0001110            : exp =  32'b00000110011101110000110001010011;
-	     7'b0001111            : exp =  32'b00000110000100100000101111110101;
-	     7'b0010000            : exp =  32'b00000101101101000000101110010111;
-	     7'b0010001            : exp =  32'b00000101010111000000101100111001;
-	     7'b0010010            : exp =  32'b00000101000010010000101011011011;
-	     7'b0010011            : exp =  32'b00000100101110100000101001111111;
-	     7'b0010100            : exp =  32'b00000100011100010000101000100011;
-	     7'b0010101            : exp =  32'b00000100001011000000100111001001;
-	     7'b0010110            : exp =  32'b00000011111010110000100101110000;
-	     7'b0010111            : exp =  32'b00000011101011110000100100011000;
-	     7'b0011000            : exp =  32'b00000011011101010000100011000010;
-	     7'b0011001            : exp =  32'b00000011010000000000100001101111;
-	     7'b0011010            : exp =  32'b00000011000011010000100000011101;
-	     7'b0011011            : exp =  32'b00000010110111100000011111001101;
-	     7'b0011100            : exp =  32'b00000010101100010000011101111111;
-	     7'b0011101            : exp =  32'b00000010100010000000011100110011;
-	     7'b0011110            : exp =  32'b00000010011000000000011011101001;
-	     7'b0011111            : exp =  32'b00000010001111000000011010100010;
-	     7'b0100000            : exp =  32'b00000010000110010000011001011101;
-	     7'b0100001            : exp =  32'b00000001111110000000011000011001;
-	     7'b0100010            : exp =  32'b00000001110110100000010111011000;
-	     7'b0100011            : exp =  32'b00000001101111010000010110011010;
-	     7'b0100100            : exp =  32'b00000001101000100000010101011101;
-	     7'b0100101            : exp =  32'b00000001100010010000010100100010;
-	     7'b0100110            : exp =  32'b00000001011100010000010011101010;
-	     7'b0100111            : exp =  32'b00000001010110100000010010110011;
-	     7'b0101000            : exp =  32'b00000001010001010000010001111111;
-	     7'b0101001            : exp =  32'b00000001001100100000010001001100;
-	     7'b0101010            : exp =  32'b00000001000111110000010000011011;
-	     7'b0101011            : exp =  32'b00000001000011100000001111101100;
-	     7'b0101100            : exp =  32'b00000000111111010000001110111111;
-	     7'b0101101            : exp =  32'b00000000111011100000001110010100;
-	     7'b0101110            : exp =  32'b00000000111000000000001101101011;
-	     7'b0101111            : exp =  32'b00000000110100100000001101000011;
-	     7'b0110000            : exp =  32'b00000000110001010000001100011100;
-	     7'b0110001            : exp =  32'b00000000101110010000001011111000;
-	     7'b0110010            : exp =  32'b00000000101011100000001011010101;
-	     7'b0110011            : exp =  32'b00000000101000110000001010110011;
-	     7'b0110100            : exp =  32'b00000000100110010000001010010011;
-	     7'b0110101            : exp =  32'b00000000100100000000001001110100;
-	     7'b0110110            : exp =  32'b00000000100001110000001001010110;
-	     7'b0110111            : exp =  32'b00000000011111110000001000111010;
-	     7'b0111000            : exp =  32'b00000000011101110000001000011111;
-	     7'b0111001            : exp =  32'b00000000011100000000001000000101;
-	     7'b0111010            : exp =  32'b00000000011010010000000111101100;
-	     7'b0111011            : exp =  32'b00000000011000110000000111010101;
-	     7'b0111100            : exp =  32'b00000000010111010000000110111110;
-	     7'b0111101            : exp =  32'b00000000010101110000000110101000;
-	     7'b0111110            : exp =  32'b00000000010100100000000110010100;
-	     7'b0111111            : exp =  32'b00000000010011010000000110000000;
-	     7'b1000000            : exp =  32'b00000000010010000000000101101101;
-	     7'b1000001            : exp =  32'b00000000010001000000000101011100;
-	     7'b1000010            : exp =  32'b00000000010000000000000101001010;
-	     7'b1000011            : exp =  32'b00000000001111000000000100111010;
-	     7'b1000100            : exp =  32'b00000000001110000000000100101011;
-	     7'b1000101            : exp =  32'b00000000001101010000000100011100;
-	     7'b1000110            : exp =  32'b00000000001100010000000100001110;
-	     7'b1000111            : exp =  32'b00000000001011100000000100000000;
-	     7'b1001000            : exp =  32'b00000000001011000000000011110011;
-	     7'b1001001            : exp =  32'b00000000001010010000000011100111;
-	     7'b1001010            : exp =  32'b00000000001001100000000011011100;
-	     7'b1001011            : exp =  32'b00000000001001000000000011010001;
-	     7'b1001100            : exp =  32'b00000000001000100000000011000110;
-	     7'b1001101            : exp =  32'b00000000001000000000000010111100;
-	     7'b1001110            : exp =  32'b00000000000111100000000010110011;
-	     7'b1001111            : exp =  32'b00000000000111000000000010101001;
-	     7'b1010000            : exp =  32'b00000000000110100000000010100001;
-	     7'b1010001            : exp =  32'b00000000000110010000000010011001;
-	     7'b1010010            : exp =  32'b00000000000101110000000010010001;
-	     7'b1010011            : exp =  32'b00000000000101100000000010001001;
-	     7'b1010100            : exp =  32'b00000000000101000000000010000010;
-	     7'b1010101            : exp =  32'b00000000000100110000000001111100;
-	     7'b1010110            : exp =  32'b00000000000100100000000001110101;
-	     7'b1010111            : exp =  32'b00000000000100010000000001101111;
-	     7'b1011000            : exp =  32'b00000000000100000000000001101001;
-	     7'b1011001            : exp =  32'b00000000000011110000000001100100;
-	     7'b1011010            : exp =  32'b00000000000011100000000001011111;
-	     7'b1011011            : exp =  32'b00000000000011010000000001011010;
-	     7'b1011100            : exp =  32'b00000000000011000000000001010101;
-	     7'b1011101            : exp =  32'b00000000000010110000000001010001;
-	     7'b1011110            : exp =  32'b00000000000010110000000001001101;
-	     7'b1011111            : exp =  32'b00000000000010100000000001001001;
-	     7'b1100000            : exp =  32'b00000000000010010000000001000101;
-	     7'b1100001            : exp =  32'b00000000000010010000000001000001;
-	     7'b1100010            : exp =  32'b00000000000010000000000000111110;
-	     7'b1100011            : exp =  32'b00000000000010000000000000111010;
-	     7'b1100100            : exp =  32'b00000000000001110000000000110111;
-	     7'b1100101            : exp =  32'b00000000000001110000000000110100;
-	     7'b1100110            : exp =  32'b00000000000001100000000000110010;
-	     7'b1100111            : exp =  32'b00000000000001100000000000101111;
-	     7'b1101000            : exp =  32'b00000000000001010000000000101100;
-	     7'b1101001            : exp =  32'b00000000000001010000000000101010;
-	     7'b1101010            : exp =  32'b00000000000001010000000000101000;
-	     7'b1101011            : exp =  32'b00000000000001000000000000100110;
-	     7'b1101100            : exp =  32'b00000000000001000000000000100100;
-	     7'b1101101            : exp =  32'b00000000000001000000000000100010;
-	     7'b1101110            : exp =  32'b00000000000001000000000000100000;
-	     7'b1101111            : exp =  32'b00000000000000110000000000011110;
-	     7'b1110000            : exp =  32'b00000000000000110000000000011101;
-	     7'b1110001            : exp =  32'b00000000000000110000000000011011;
-	     7'b1110010            : exp =  32'b00000000000000110000000000011010;
-	     7'b1110011            : exp =  32'b00000000000000110000000000011000;
-	     7'b1110100            : exp =  32'b00000000000000100000000000010111;
-	     7'b1110101            : exp =  32'b00000000000000100000000000010110;
-	     7'b1110110            : exp =  32'b00000000000000100000000000010100;
-	     7'b1110111            : exp =  32'b00000000000000100000000000010011;
-	     7'b1111000            : exp =  32'b00000000000000100000000000010010;
-	     7'b1111001            : exp =  32'b00000000000000100000000000010001;
-	     7'b1111010            : exp =  32'b00000000000000010000000000010000;
-	     7'b1111011            : exp =  32'b00000000000000010000000000001111;
-	     7'b1111100            : exp =  32'b00000000000000010000000000001111;
-	     7'b1111101            : exp =  32'b00000000000000010000000000001110;
-	     7'b1111110            : exp =  32'b00000000000000010000000000001101;
-	     7'b1111111            : exp =  32'b00000000000000010000000000001100;
+	     7'b0000000            : exp <=  32'b00001111100000100001000000000000;
+	     7'b0000001            : exp <=  32'b00001110100100100000111111110000;
+	     7'b0000010            : exp <=  32'b00001101101100000000111111010100;
+	     7'b0000011            : exp <=  32'b00001100110110110000111110101100;
+	     7'b0000100            : exp <=  32'b00001100000101000000111101111011;
+	     7'b0000101            : exp <=  32'b00001011010110000000111101000000;
+	     7'b0000110            : exp <=  32'b00001010101010000000111011111110;
+	     7'b0000111            : exp <=  32'b00001010000000110000111010110110;
+	     7'b0001000            : exp <=  32'b00001001011010000000111001101000;
+	     7'b0001001            : exp <=  32'b00001000110101100000111000010110;
+	     7'b0001010            : exp <=  32'b00001000010011010000110111000000;
+	     7'b0001011            : exp <=  32'b00000111110011000000110101101000;
+	     7'b0001100            : exp <=  32'b00000111010100110000110100001101;
+	     7'b0001101            : exp <=  32'b00000110111000010000110010110001;
+	     7'b0001110            : exp <=  32'b00000110011101110000110001010011;
+	     7'b0001111            : exp <=  32'b00000110000100100000101111110101;
+	     7'b0010000            : exp <=  32'b00000101101101000000101110010111;
+	     7'b0010001            : exp <=  32'b00000101010111000000101100111001;
+	     7'b0010010            : exp <=  32'b00000101000010010000101011011011;
+	     7'b0010011            : exp <=  32'b00000100101110100000101001111111;
+	     7'b0010100            : exp <=  32'b00000100011100010000101000100011;
+	     7'b0010101            : exp <=  32'b00000100001011000000100111001001;
+	     7'b0010110            : exp <=  32'b00000011111010110000100101110000;
+	     7'b0010111            : exp <=  32'b00000011101011110000100100011000;
+	     7'b0011000            : exp <=  32'b00000011011101010000100011000010;
+	     7'b0011001            : exp <=  32'b00000011010000000000100001101111;
+	     7'b0011010            : exp <=  32'b00000011000011010000100000011101;
+	     7'b0011011            : exp <=  32'b00000010110111100000011111001101;
+	     7'b0011100            : exp <=  32'b00000010101100010000011101111111;
+	     7'b0011101            : exp <=  32'b00000010100010000000011100110011;
+	     7'b0011110            : exp <=  32'b00000010011000000000011011101001;
+	     7'b0011111            : exp <=  32'b00000010001111000000011010100010;
+	     7'b0100000            : exp <=  32'b00000010000110010000011001011101;
+	     7'b0100001            : exp <=  32'b00000001111110000000011000011001;
+	     7'b0100010            : exp <=  32'b00000001110110100000010111011000;
+	     7'b0100011            : exp <=  32'b00000001101111010000010110011010;
+	     7'b0100100            : exp <=  32'b00000001101000100000010101011101;
+	     7'b0100101            : exp <=  32'b00000001100010010000010100100010;
+	     7'b0100110            : exp <=  32'b00000001011100010000010011101010;
+	     7'b0100111            : exp <=  32'b00000001010110100000010010110011;
+	     7'b0101000            : exp <=  32'b00000001010001010000010001111111;
+	     7'b0101001            : exp <=  32'b00000001001100100000010001001100;
+	     7'b0101010            : exp <=  32'b00000001000111110000010000011011;
+	     7'b0101011            : exp <=  32'b00000001000011100000001111101100;
+	     7'b0101100            : exp <=  32'b00000000111111010000001110111111;
+	     7'b0101101            : exp <=  32'b00000000111011100000001110010100;
+	     7'b0101110            : exp <=  32'b00000000111000000000001101101011;
+	     7'b0101111            : exp <=  32'b00000000110100100000001101000011;
+	     7'b0110000            : exp <=  32'b00000000110001010000001100011100;
+	     7'b0110001            : exp <=  32'b00000000101110010000001011111000;
+	     7'b0110010            : exp <=  32'b00000000101011100000001011010101;
+	     7'b0110011            : exp <=  32'b00000000101000110000001010110011;
+	     7'b0110100            : exp <=  32'b00000000100110010000001010010011;
+	     7'b0110101            : exp <=  32'b00000000100100000000001001110100;
+	     7'b0110110            : exp <=  32'b00000000100001110000001001010110;
+	     7'b0110111            : exp <=  32'b00000000011111110000001000111010;
+	     7'b0111000            : exp <=  32'b00000000011101110000001000011111;
+	     7'b0111001            : exp <=  32'b00000000011100000000001000000101;
+	     7'b0111010            : exp <=  32'b00000000011010010000000111101100;
+	     7'b0111011            : exp <=  32'b00000000011000110000000111010101;
+	     7'b0111100            : exp <=  32'b00000000010111010000000110111110;
+	     7'b0111101            : exp <=  32'b00000000010101110000000110101000;
+	     7'b0111110            : exp <=  32'b00000000010100100000000110010100;
+	     7'b0111111            : exp <=  32'b00000000010011010000000110000000;
+	     7'b1000000            : exp <=  32'b00000000010010000000000101101101;
+	     7'b1000001            : exp <=  32'b00000000010001000000000101011100;
+	     7'b1000010            : exp <=  32'b00000000010000000000000101001010;
+	     7'b1000011            : exp <=  32'b00000000001111000000000100111010;
+	     7'b1000100            : exp <=  32'b00000000001110000000000100101011;
+	     7'b1000101            : exp <=  32'b00000000001101010000000100011100;
+	     7'b1000110            : exp <=  32'b00000000001100010000000100001110;
+	     7'b1000111            : exp <=  32'b00000000001011100000000100000000;
+	     7'b1001000            : exp <=  32'b00000000001011000000000011110011;
+	     7'b1001001            : exp <=  32'b00000000001010010000000011100111;
+	     7'b1001010            : exp <=  32'b00000000001001100000000011011100;
+	     7'b1001011            : exp <=  32'b00000000001001000000000011010001;
+	     7'b1001100            : exp <=  32'b00000000001000100000000011000110;
+	     7'b1001101            : exp <=  32'b00000000001000000000000010111100;
+	     7'b1001110            : exp <=  32'b00000000000111100000000010110011;
+	     7'b1001111            : exp <=  32'b00000000000111000000000010101001;
+	     7'b1010000            : exp <=  32'b00000000000110100000000010100001;
+	     7'b1010001            : exp <=  32'b00000000000110010000000010011001;
+	     7'b1010010            : exp <=  32'b00000000000101110000000010010001;
+	     7'b1010011            : exp <=  32'b00000000000101100000000010001001;
+	     7'b1010100            : exp <=  32'b00000000000101000000000010000010;
+	     7'b1010101            : exp <=  32'b00000000000100110000000001111100;
+	     7'b1010110            : exp <=  32'b00000000000100100000000001110101;
+	     7'b1010111            : exp <=  32'b00000000000100010000000001101111;
+	     7'b1011000            : exp <=  32'b00000000000100000000000001101001;
+	     7'b1011001            : exp <=  32'b00000000000011110000000001100100;
+	     7'b1011010            : exp <=  32'b00000000000011100000000001011111;
+	     7'b1011011            : exp <=  32'b00000000000011010000000001011010;
+	     7'b1011100            : exp <=  32'b00000000000011000000000001010101;
+	     7'b1011101            : exp <=  32'b00000000000010110000000001010001;
+	     7'b1011110            : exp <=  32'b00000000000010110000000001001101;
+	     7'b1011111            : exp <=  32'b00000000000010100000000001001001;
+	     7'b1100000            : exp <=  32'b00000000000010010000000001000101;
+	     7'b1100001            : exp <=  32'b00000000000010010000000001000001;
+	     7'b1100010            : exp <=  32'b00000000000010000000000000111110;
+	     7'b1100011            : exp <=  32'b00000000000010000000000000111010;
+	     7'b1100100            : exp <=  32'b00000000000001110000000000110111;
+	     7'b1100101            : exp <=  32'b00000000000001110000000000110100;
+	     7'b1100110            : exp <=  32'b00000000000001100000000000110010;
+	     7'b1100111            : exp <=  32'b00000000000001100000000000101111;
+	     7'b1101000            : exp <=  32'b00000000000001010000000000101100;
+	     7'b1101001            : exp <=  32'b00000000000001010000000000101010;
+	     7'b1101010            : exp <=  32'b00000000000001010000000000101000;
+	     7'b1101011            : exp <=  32'b00000000000001000000000000100110;
+	     7'b1101100            : exp <=  32'b00000000000001000000000000100100;
+	     7'b1101101            : exp <=  32'b00000000000001000000000000100010;
+	     7'b1101110            : exp <=  32'b00000000000001000000000000100000;
+	     7'b1101111            : exp <=  32'b00000000000000110000000000011110;
+	     7'b1110000            : exp <=  32'b00000000000000110000000000011101;
+	     7'b1110001            : exp <=  32'b00000000000000110000000000011011;
+	     7'b1110010            : exp <=  32'b00000000000000110000000000011010;
+	     7'b1110011            : exp <=  32'b00000000000000110000000000011000;
+	     7'b1110100            : exp <=  32'b00000000000000100000000000010111;
+	     7'b1110101            : exp <=  32'b00000000000000100000000000010110;
+	     7'b1110110            : exp <=  32'b00000000000000100000000000010100;
+	     7'b1110111            : exp <=  32'b00000000000000100000000000010011;
+	     7'b1111000            : exp <=  32'b00000000000000100000000000010010;
+	     7'b1111001            : exp <=  32'b00000000000000100000000000010001;
+	     7'b1111010            : exp <=  32'b00000000000000010000000000010000;
+	     7'b1111011            : exp <=  32'b00000000000000010000000000001111;
+	     7'b1111100            : exp <=  32'b00000000000000010000000000001111;
+	     7'b1111101            : exp <=  32'b00000000000000010000000000001110;
+	     7'b1111110            : exp <=  32'b00000000000000010000000000001101;
+	     7'b1111111            : exp <=  32'b00000000000000010000000000001100;
         endcase
     end
 endmodule
@@ -3586,8 +3530,8 @@ module FPAddSub_PrealignModule(
 	
 	//assign DAB = (A[30:23] - B[30:23]) ;
 	//assign DBA = (B[30:23] - A[30:23]) ;
-	assign DAB = (A[`DWIDTH-2:`MANTISSA] + ~(B[`DWIDTH-2:`MANTISSA]) + 1) ;
-	assign DBA = (B[`DWIDTH-2:`MANTISSA] + ~(A[`DWIDTH-2:`MANTISSA]) + 1) ;
+	assign DAB = (A[`DWIDTH-2:`MANTISSA] + ~(B[`DWIDTH-2:`MANTISSA]) + 1'b1) ;
+	assign DBA = (B[`DWIDTH-2:`MANTISSA] + ~(A[`DWIDTH-2:`MANTISSA]) + 1'b1) ;
 	
 	assign Sa = A[`DWIDTH-1] ;									// A's sign bit
 	assign Sb = B[`DWIDTH-1] ;									// B's sign	bit
@@ -3683,46 +3627,46 @@ module FPAddSub_AlignShift1(
 	wire    [2*`MANTISSA+1:0]    Stage1;	
 	integer           i;                // Loop variable
 
-	wire [`MANTISSA:0] temp_0; 
-
-assign temp_0 = 0;
-
 	always @(*) begin
 		if (bf16 == 1'b1) begin						
 //hardcoding for bfloat16
 	//For bfloat16, we can shift the mantissa by a max of 7 bits since mantissa has a width of 7. 
 	//Hence if either, bit[3]/bit[4]/bit[5]/bit[6]/bit[7] is 1, we can make it 0. This corresponds to bits [5:1] in our updated shift which doesn't contain last 2 bits.
 		//Lvl1 <= (Shift[1]|Shift[2]|Shift[3]|Shift[4]|Shift[5]) ? {temp_0} : {1'b1, MminP};  // MANTISSA + 1 width	
-		Lvl1 <= (|Shift[`EXPONENT-3:1]) ? {temp_0} : {1'b1, MminP};  // MANTISSA + 1 width	
+		Lvl1 <= (|Shift[`EXPONENT-3:1]) ? 11'd0 : {1'b1, MminP};  // MANTISSA + 1 width	
 		end
 		else begin
 		//for half precision fp16, 10 bits can be shifted. Hence, only shifts till 10 (01010)can be made. 
-		Lvl1 <= Shift[2] ? {temp_0} : {1'b1, MminP};
+		Lvl1 <= Shift[2] ? 11'd0 : {1'b1, MminP};
 		end
 	end
 	
-	assign Stage1 = { temp_0, Lvl1}; //2*MANTISSA + 2 width
+	assign Stage1 = {Lvl1, Lvl1}; //2*MANTISSA + 2 width
 
 	always @(*) begin    					// Rotate {0 | 4 } bits
 	if(bf16 == 1'b1) begin
 	  case (Shift[0])
 			// Rotate by 0	
-			1'b0:  Lvl2 <= Stage1[`MANTISSA:0];       			
+			1'b0: Lvl2 <= Stage1[`MANTISSA:0];       			
 			// Rotate by 4	
-			1'b1:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end Lvl2[`MANTISSA:`MANTISSA-3] <= 0; end
+			1'b1: Lvl2 <= Stage1[`MANTISSA+4:4];
+			//1'b1:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end end
 	  endcase
 	end
 	else begin
 	  case (Shift[1:0])					// Rotate {0 | 4 | 8} bits
 			// Rotate by 0	
-			2'b00:  Lvl2 <= Stage1[`MANTISSA:0];       			
+			2'b00: Lvl2 <= Stage1[`MANTISSA:0];       			
 			// Rotate by 4	
-			2'b01:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end Lvl2[`MANTISSA:`MANTISSA-3] <= 0; end
+			2'b01: Lvl2 <= Stage1[`MANTISSA+4:4];
+			//2'b01:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end end
 			// Rotate by 8
-			2'b10:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+8]; end Lvl2[`MANTISSA:`MANTISSA-7] <= 0; end
+			2'b10: Lvl2 <= Stage1[`MANTISSA+8:8];
+			//2'b10:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+8]; end end
 			// Rotate by 12	
 			2'b11: Lvl2[`MANTISSA: 0] <= 0; 
 			//2'b11:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+12]; end Lvl2[`MANTISSA:`MANTISSA-12] <= 0; end
+			default: Lvl2[`MANTISSA: 0] <= 0; 
 	  endcase
 	end
 	end
@@ -3755,18 +3699,23 @@ module FPAddSub_AlignShift2(
 	wire    [2*`MANTISSA+1:0]    Stage2;	
 	integer           j;               // Loop variable
 	
-	assign Stage2 = {11'b0, MminP};
+	assign Stage2 = {MminP, MminP};
 
 	always @(*) begin    // Rotate {0 | 1 | 2 | 3} bits
 	  case (Shift[1:0])
 			// Rotate by 0
 			2'b00:  Lvl3 <= Stage2[`MANTISSA:0];   
 			// Rotate by 1
-			2'b01:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+1]; end Lvl3[`MANTISSA] <= 0; end 
+			2'b01: Lvl3 <= Stage2[`MANTISSA+1:1];
+			//2'b01:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+1]; end end 
 			// Rotate by 2
-			2'b10:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+2]; end Lvl3[`MANTISSA:`MANTISSA-1] <= 0; end 
+			2'b10: Lvl3 <= Stage2[`MANTISSA+2:2];
+			//2'b10:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+2]; end end 
 			// Rotate by 3
-			2'b11:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+3]; end Lvl3[`MANTISSA:`MANTISSA-2] <= 0; end 	  
+			2'b11: Lvl3 <= Stage2[`MANTISSA+3:3];
+			//2'b11:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+3]; end end 	
+			default: Lvl3 <= Stage2[`MANTISSA+3:3];
+			//default:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+3]; end end 
 	  endcase
 	end
 	
@@ -3911,12 +3860,17 @@ module FPAddSub_NormalizeShift1(
 	  case (Shift[3:2])
 			// Rotate by 0
 			2'b00: Lvl2 <= Stage1[`DWIDTH:0];       		
-			// Rotate by 4
-			2'b01: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-4]; end Lvl2[3:0] <= 0; end
+			// Rotate by 4'
+			2'b01: Lvl2[16:0] <= Stage1[28:13];
+			//2'b01: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-`DWIDTH-1] <= Stage1[i-4]; end Lvl2[3:0] <= 0; end
 			// Rotate by 8
-			2'b10: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-8]; end Lvl2[7:0] <= 0; end
+			2'b10: Lvl2[16:0] <= Stage1[24:9];
+			//2'b10: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-`DWIDTH-1] <= Stage1[i-8]; end Lvl2[7:0] <= 0; end
 			// Rotate by 12
-			2'b11: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-12]; end Lvl2[11:0] <= 0; end
+			2'b11: Lvl2[16:0] <= Stage1[20:5];
+			//2'b11: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-`DWIDTH-1] <= Stage1[i-12]; end Lvl2[11:0] <= 0; end
+			//default: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-`DWIDTH-1] <= Stage1[i-12]; end Lvl2[11:0] <= 0; end 
+			default: Lvl2[16:0] <= Stage1[20:5];
 	  endcase
 	end
 	
@@ -3927,11 +3881,16 @@ module FPAddSub_NormalizeShift1(
 			// Rotate by 0
 			2'b00:  Lvl3 <= Stage2[`DWIDTH:0];
 			// Rotate by 1
-			2'b01: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-1]; end Lvl3[0] <= 0; end 
+			2'b01: Lvl3[16:0] <= Stage2[31:16];
+			//2'b01: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-1]; end Lvl3[0] <= 0; end 
 			// Rotate by 2
-			2'b10: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-2]; end Lvl3[1:0] <= 0; end
+			2'b10: Lvl3[16:0] <= Stage2[30:15];
+			//2'b10: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-2]; end Lvl3[1:0] <= 0; end
 			// Rotate by 3
-			2'b11: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-3]; end Lvl3[2:0] <= 0; end
+			2'b11: Lvl3[16:0] <= Stage2[29:14];
+			//2'b11: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-3]; end Lvl3[2:0] <= 0; end
+			default: Lvl3[16:0] <= Stage2[29:14];
+			//default: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-3]; end Lvl3[2:0] <= 0; end
 	  endcase
 	end
 	
@@ -4047,7 +4006,7 @@ module FPAddSub_RoundModule(
 	assign RoundUp = (G & ((R | S) | NormM[0])) ;
 	
 	// Note that in the other cases (rounding down), the sum is already 'rounded'
-	assign RoundUpM = (NormM + 1) ;								// The sum, rounded up by 1
+	assign RoundUpM = (NormM + 1'b1) ;								// The sum, rounded up by 1
 	assign RoundM = (RoundUp ? RoundUpM[`MANTISSA-1:0] : NormM) ; 	// Compute final mantissa	
 	assign RoundOF = RoundUp & RoundUpM[`MANTISSA] ; 				// Check for overflow when rounding up
 
@@ -4129,5 +4088,4 @@ module FPAddSub_ExceptionModule(
 endmodule
 
 `endif
-
 

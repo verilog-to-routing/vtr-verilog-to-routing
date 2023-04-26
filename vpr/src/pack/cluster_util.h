@@ -451,4 +451,5 @@ bool cleanup_pb(t_pb* pb);
 
 void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size);
 
+void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup);
 #endif

@@ -1,2 +1,3 @@
 regression_tests/pgo_profile/vtr
+regression_tests/pgo_profile/vtr_odin
 regression_tests/pgo_profile/titan

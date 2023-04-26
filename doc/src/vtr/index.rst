@@ -24,7 +24,7 @@ The VTR design flow takes as input a Verilog description of a digital circuit, a
 
 It then perfoms:
 
- * Elaboration & Synthesis (:ref:`odin_II`)
+ * Elaboration & Synthesis (:ref:`odin_ii`)
  * Logic Optimization & Technology Mapping (:ref:`abc`)
  * Packing, Placement, Routing & Timing Analysis (:ref:`vpr`)
 
