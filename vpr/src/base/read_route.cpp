@@ -67,6 +67,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node);
 bool read_route(const char* route_file, const t_router_opts& router_opts, bool verify_file_digests) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
+    bool flat_router = router_opts.flat_routing;
     /* Begin parsing the file */
     VTR_LOG("Begin loading FPGA routing file.\n");
 
@@ -100,7 +101,11 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
-    init_route_structs(router_opts.bb_factor);
+    const Netlist<>& router_net_list = (flat_router) ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    init_route_structs(router_net_list,
+                       router_opts.bb_factor,
+                       router_opts.has_choking_spot,
+                       flat_router);
 
     /*Check dimensions*/
     std::getline(fp, header_str);
@@ -121,19 +126,24 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     /*Correctly set up the clb opins*/
     BinaryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
-    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
-                               router_opts.acc_fac, false);
-    recompute_occupancy_from_scratch();
+    if (!flat_router) {
+        reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
+                                   router_opts.acc_fac, false, flat_router);
+    }
+    recompute_occupancy_from_scratch(router_net_list,
+                                     flat_router);
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
     pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
-
-    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
-                               router_opts.acc_fac, true);
+    if (!flat_router) {
+        reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
+                                   router_opts.acc_fac, true, flat_router);
+    }
 
     /* Finished loading in the routing, now check it*/
-    recompute_occupancy_from_scratch();
+    recompute_occupancy_from_scratch(router_net_list,
+                                     flat_router);
     bool is_feasible = feasible_routing();
 
     VTR_LOG("Finished loading route file\n");
@@ -213,7 +223,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_trace* tptr = route_ctx.trace[inet].head;
+    t_trace* tptr = route_ctx.trace[(const ParentNetId&)inet].head;
 
     /*remember the position of the last line in order to go back*/
     std::streampos oldpos = fp.tellg();
@@ -296,7 +306,8 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
             /* Verify types and ptc*/
             if (tokens[2] == "SOURCE" || tokens[2] == "SINK" || tokens[2] == "OPIN" || tokens[2] == "IPIN") {
-                if (tokens[4 + offset] == "Pad:" && !is_io_type(device_ctx.grid[x][y].type)) {
+                const auto& type = device_ctx.grid.get_physical_type(x, y);
+                if (tokens[4 + offset] == "Pad:" && !is_io_type(type)) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "Node %d is of the wrong type", inode);
                 }
@@ -316,11 +327,11 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             /*Process switches and pb pin info if it is ipin or opin type*/
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
-                if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
+                auto type = device_ctx.grid.get_physical_type(x, y);
+                if (!is_io_type(type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
-                    auto type = device_ctx.grid[x][y].type;
-                    int height_offset = device_ctx.grid[x][y].height_offset;
+                    int height_offset = device_ctx.grid.get_height_offset(x, y);
 
                     int capacity, relative_pin;
                     std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
@@ -366,12 +377,12 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
             /* Allocate and load correct values to trace.head*/
             if (node_count == 0) {
-                route_ctx.trace[inet].head = alloc_trace_data();
-                route_ctx.trace[inet].head->index = inode;
-                route_ctx.trace[inet].head->net_pin_index = net_pin_index;
-                route_ctx.trace[inet].head->iswitch = switch_id;
-                route_ctx.trace[inet].head->next = nullptr;
-                tptr = route_ctx.trace[inet].head;
+                route_ctx.trace[(const ParentNetId&)inet].head = alloc_trace_data();
+                route_ctx.trace[(const ParentNetId&)inet].head->index = inode;
+                route_ctx.trace[(const ParentNetId&)inet].head->net_pin_index = net_pin_index;
+                route_ctx.trace[(const ParentNetId&)inet].head->iswitch = switch_id;
+                route_ctx.trace[(const ParentNetId&)inet].head->next = nullptr;
+                tptr = route_ctx.trace[(const ParentNetId&)inet].head;
                 node_count++;
             } else {
                 tptr->next = alloc_trace_data();

@@ -51,7 +51,7 @@ int OdinInterface::startOdin()
     /* pass arguments here to odin */
     std::vector<std::string> arguments = 
 	{
-		"../ODIN_II/odin_ii", 												//	pass the odin location relative to blifexplorer
+		"../odin_ii/odin_ii", 												//	pass the odin location relative to blifexplorer
 		"--interractive_simulation",										//	prevent odin from freeing valuable information
         "-r", "7",															//	set simulation seed
         "-sim_dir", std::string(simulation_directory + "/"),												//	set simulation directory

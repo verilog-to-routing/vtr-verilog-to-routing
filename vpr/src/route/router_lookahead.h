@@ -18,13 +18,23 @@ class RouterLookahead {
     // Compute router lookahead (if needed).
     virtual void compute(const std::vector<t_segment_inf>& segment_inf) = 0;
 
+    virtual void compute_intra_tile() = 0;
+
     // Read router lookahead data (if any) from specified file.
     // May be unimplemented, in which case method should throw an exception.
     virtual void read(const std::string& file) = 0;
 
+    // Read intra-cluster router lookahead data (if any) from specified file.
+    // May be unimplemented, in which case method should throw an exception.
+    virtual void read_intra_cluster(const std::string& file) = 0;
+
     // Write router lookahead data (if any) to specified file.
     // May be unimplemented, in which case method should throw an exception.
     virtual void write(const std::string& file) const = 0;
+
+    // Write intra-cluster router lookahead data (if any) to specified file.
+    // May be unimplemented, in which case method should throw an exception.
+    virtual void write_intra_cluster(const std::string& file) const = 0;
 
     virtual ~RouterLookahead() {}
 };
@@ -33,12 +43,12 @@ class RouterLookahead {
 //
 // This may involve recomputing the lookahead, so only use if lookahead cache
 // cannot be used.
-std::unique_ptr<RouterLookahead> make_router_lookahead(
-    e_router_lookahead router_lookahead_type,
-    std::string write_lookahead,
-    std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf,
-    bool is_flat);
+std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch& det_routing_arch,
+                                                       e_router_lookahead router_lookahead_type,
+                                                       std::string write_lookahead,
+                                                       std::string read_lookahead,
+                                                       const std::vector<t_segment_inf>& segment_inf,
+                                                       bool is_flat);
 
 // Clear router lookahead cache (e.g. when changing or free rrgraph).
 void invalidate_router_lookahead_cache();
@@ -47,12 +57,12 @@ void invalidate_router_lookahead_cache();
 //
 // Object is cached in RouterContext, but access to cached object should
 // performed via this function.
-const RouterLookahead* get_cached_router_lookahead(
-    e_router_lookahead router_lookahead_type,
-    std::string write_lookahead,
-    std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf,
-    bool is_flat);
+const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det_routing_arch,
+                                                   e_router_lookahead router_lookahead_type,
+                                                   std::string write_lookahead,
+                                                   std::string read_lookahead,
+                                                   const std::vector<t_segment_inf>& segment_inf,
+                                                   bool is_flat);
 
 class ClassicLookahead : public RouterLookahead {
   public:
@@ -62,11 +72,24 @@ class ClassicLookahead : public RouterLookahead {
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
 
+    void compute_intra_tile() override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
+    }
+
     void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::read unimplemented");
     }
+
+    void read_intra_cluster(const std::string& /*file*/) override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::read_intra_cluster unimplemented");
+    }
+
     void write(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write unimplemented");
+    }
+
+    void write_intra_cluster(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write_intra_cluster unimplemented");
     }
 
   private:
@@ -80,11 +103,25 @@ class NoOpLookahead : public RouterLookahead {
 
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
+
+    void compute_intra_tile() override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
+    }
+
     void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "Read not supported for NoOpLookahead");
     }
+
+    void read_intra_cluster(const std::string& /*file*/) override {
+        VPR_THROW(VPR_ERROR_ROUTE, "read_intra_cluster not supported for NoOpLookahead");
+    }
+
     void write(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "Write not supported for NoOpLookahead");
+    }
+
+    void write_intra_cluster(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "write_intra_cluster not supported for NoOpLookahead");
     }
 };
 

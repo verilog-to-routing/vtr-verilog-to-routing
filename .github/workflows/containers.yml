@@ -16,7 +16,7 @@ jobs:
     steps:
 
       - name: 🧰 Repository Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: 🔧 Generate image name
         id: generate

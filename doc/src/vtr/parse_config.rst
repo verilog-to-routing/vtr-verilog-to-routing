@@ -17,7 +17,7 @@ Each line contains a semicolon delimited tuple in the following format::
 
     This name is used when generating the output files of :ref:`parse_vtr_task` and :ref:`parse_vtr_flow`.
 
-* ``<file_to_search_within>``: The name of the file that will be searched (vpr.out, odin.out, etc.)
+* ``<file_to_search_within>``: The name of the file that will be searched (vpr.out, parmys.out, etc.)
 
 * ``<regex>``: A perl regular expression used to find the desired value.
 

@@ -286,8 +286,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         std::vector<t_rr_rc_data>* rr_rc_data,
         const int virtual_clock_network_root_idx,
-        const size_t num_arch_switches,
-        const t_arch_switch_inf* arch_switch_inf,
+        const std::vector<t_arch_switch_inf>& arch_switch_inf,
         const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
         const DeviceGrid& grid,
@@ -312,7 +311,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , read_edge_metadata_(read_edge_metadata)
         , echo_enabled_ (echo_enabled)
         , echo_file_name_ (echo_file_name)
-        , num_arch_switches_(num_arch_switches)
         , arch_switch_inf_(arch_switch_inf)
         , segment_inf_(segment_inf)
         , physical_tile_types_(physical_tile_types)
@@ -463,21 +461,22 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // If the switch name is not present in the architecture, generate an
         // error.
         bool found_arch_name = false;
-        for (size_t i = 0; i < num_arch_switches_; ++i) {
-            if (strcmp(name, arch_switch_inf_[i].name) == 0) {
-                name = arch_switch_inf_[i].name;
+        std::string string_name = std::string(name);
+        for (const auto& arch_sw_inf: arch_switch_inf_) {
+            if (string_name == arch_sw_inf.name) {
+                string_name = arch_sw_inf.name;
                 found_arch_name = true;
                 break;
             }
         }
         if (!found_arch_name) {
-            report_error("Switch name '%s' not found in architecture\n", name);
+            report_error("Switch name '%s' not found in architecture\n", string_name.c_str());
         }
 
-        sw->name = name;
+        sw->name = string_name;
     }
     inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
-        return sw->name;
+        return sw->name.c_str();
     }
 
     inline void set_switch_type(uxsd::enum_switch_type type, t_rr_switch_inf*& sw) final {
@@ -1239,7 +1238,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const t_physical_tile_type* tile;
         int ptc;
         std::tie(tile, ptc) = context;
-        if (block_type_pin_index_to_name(tile, ptc) != value) {
+        if (block_type_pin_index_to_name(tile, ptc, is_flat_) != value) {
             report_error(
                 "Architecture file does not match RR graph's block pin list");
         }
@@ -1303,7 +1302,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const t_physical_tile_type* tile;
         int ptc;
         std::tie(tile, ptc) = context;
-        temp_string_ = block_type_pin_index_to_name(tile, ptc);
+        temp_string_ = block_type_pin_index_to_name(tile, ptc, is_flat_);
         return temp_string_.c_str();
     }
     inline int get_pin_ptc(const std::pair<const t_physical_tile_type*, int>& context) final {
@@ -1448,26 +1447,28 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline void preallocate_grid_locs_grid_loc(void*& /*ctx*/, size_t size) final {
-        if (grid_.matrix().size() != size) {
+        if (grid_.grid_size() != size) {
             report_error(
                 "Architecture file contains %zu grid locations, rr graph contains %zu grid locations.",
-                grid_.matrix().size(), size);
+                grid_.grid_size(), size);
         }
     }
     inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) final {
-        const t_grid_tile& grid_tile = grid_[x][y];
+        const auto& type = grid_.get_physical_type(x, y);
+        int grid_width_offset = grid_.get_width_offset(x, y);
+        int grid_height_offset = grid_.get_height_offset(x, y);
 
-        if (grid_tile.type->index != block_type_id) {
+        if (type->index != block_type_id) {
             report_error(
                 "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
-                (grid_tile.type->index), block_type_id);
+                (type->index), block_type_id);
         }
-        if (grid_tile.width_offset != width_offset) {
+        if (grid_width_offset != width_offset) {
             report_error(
                 "Architecture file does not match RR graph's width_offset at (%d, %d)", x, y);
         }
 
-        if (grid_tile.height_offset != height_offset) {
+        if (grid_height_offset != height_offset) {
             report_error(
                 "Architecture file does not match RR graph's height_offset at (%d, %d)", x, y);
         }
@@ -1491,20 +1492,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return grid_loc->width_offset;
     }
     inline int get_grid_loc_x(const t_grid_tile*& grid_loc) final {
-        auto diff = grid_loc - &grid_.matrix().get(0);
-
-        return diff / grid_.matrix().dim_size(1);
+        return grid_.get_grid_loc_x(grid_loc);
     }
     inline int get_grid_loc_y(const t_grid_tile*& grid_loc) final {
-        auto diff = grid_loc - &grid_.matrix().get(0);
-
-        return diff % grid_.matrix().dim_size(1);
+        return grid_.get_grid_loc_y(grid_loc);
     }
     inline size_t num_grid_locs_grid_loc(void*& /*iter*/) final {
-        return grid_.matrix().size();
+        return grid_.grid_size();
     }
     inline const t_grid_tile* get_grid_locs_grid_loc(int n, void*& /*ctx*/) final {
-        return &grid_.matrix().get(n);
+        return grid_.get_grid_locs_grid_loc(n);
     }
 
     /** Generated for complex type "rr_graph":
@@ -1933,8 +1930,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const bool echo_enabled_;
     const char* echo_file_name_;
 
-    const size_t num_arch_switches_;
-    const t_arch_switch_inf* arch_switch_inf_;
+    const std::vector<t_arch_switch_inf>& arch_switch_inf_;
     /*AA: The serializer does not support non-uniform Y & X directed channels yet. Will need to modify
      * the methods following routines:rr_graph_rr_nodes and init_node_segment according to the changes in 
      * rr_graph_indexed_data.cpp */

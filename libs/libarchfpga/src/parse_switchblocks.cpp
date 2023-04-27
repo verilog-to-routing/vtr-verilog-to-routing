@@ -350,7 +350,7 @@ static void parse_switch_override(const char* switch_override, t_wireconn_inf& w
 
     // iterate through the valid switch names in the arch looking for the requested switch_override
     for (int i = 0; i < num_switches; i++) {
-        if (0 == strcmp(switch_override, switches[i].name)) {
+        if (0 == strcmp(switch_override, switches[i].name.c_str())) {
             wireconn.switch_override_indx = i;
             return;
         }

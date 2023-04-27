@@ -79,8 +79,8 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            route_ctx.net_status.set_is_routed(net_id, false);
-            route_ctx.net_status.set_is_fixed(net_id, false);
+            route_ctx.net_status.set_is_routed((const ParentNetId&)net_id, false);
+            route_ctx.net_status.set_is_fixed((const ParentNetId&)net_id, false);
         }
 
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -98,7 +98,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
         else
             rip_up_local_opins = true;
 
-        reserve_locally_used_opins(&heap, pres_fac, router_opts.acc_fac, rip_up_local_opins);
+        reserve_locally_used_opins(&heap, pres_fac, router_opts.acc_fac, rip_up_local_opins, false);
 
         success = feasible_routing();
         if (success) {
@@ -119,7 +119,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     VTR_LOG("Routing failed.\n");
 
 #ifdef ROUTER_DEBUG
-    print_invalid_routing_info();
+    print_invalid_routing_info((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist);
 #endif
 
     return (false);
@@ -131,24 +131,24 @@ bool try_breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float pr
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.net_status.is_fixed(net_id)) { /* Skip pre-routed nets. */
+    if (route_ctx.net_status.is_fixed((const ParentNetId&)net_id)) { /* Skip pre-routed nets. */
         is_routed = true;
 
     } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Skip ignored nets. */
         is_routed = true;
 
     } else {
-        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
+        pathfinder_update_path_occupancy(route_ctx.trace[(const ParentNetId&)net_id].head, -1);
         is_routed = breadth_first_route_net(heap, net_id, router_opts.bend_cost, pres_fac);
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
-            route_ctx.net_status.set_is_routed(net_id, false);
+            route_ctx.net_status.set_is_routed((const ParentNetId&)net_id, false);
         } else {
             VTR_LOG("Routing failed.\n");
         }
 
-        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
+        pathfinder_update_path_occupancy(route_ctx.trace[(const ParentNetId&)net_id].head, 1);
     }
     return (is_routed);
 }
@@ -179,10 +179,10 @@ static bool breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float
     VTR_LOG("Routing Net %zu (%zu sinks)\n", size_t(net_id), cluster_ctx.clb_nlist.net_sinks(net_id).size());
 #endif
 
-    free_traceback(net_id);
+    free_traceback((const ParentNetId&)net_id);
 
     breadth_first_add_source_to_heap(heap, net_id, pres_fac);
-    mark_ends(net_id);
+    mark_ends((const Netlist<>&)cluster_ctx.clb_nlist, (const ParentNetId&)net_id);
 
     tptr = nullptr;
     remaining_connections_to_sink = 0;
@@ -266,7 +266,7 @@ static bool breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float
         route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
         remaining_connections_to_sink = route_ctx.rr_node_route_inf[inode].target_flag;
         size_t ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-        tptr = update_traceback(current, ipin, net_id);
+        tptr = update_traceback(current, ipin, (const ParentNetId&)net_id);
         heap.free(current);
     }
 
@@ -390,8 +390,10 @@ static void breadth_first_expand_neighbours(BinaryHeap& heap, int inode, float p
     for (RREdgeId from_edge : rr_graph.edge_range(RRNodeId(inode))) {
         RRNodeId to_node = device_ctx.rr_graph.rr_nodes().edge_sink_node(from_edge);
 
-        vtr::Point<int> lower_left(route_ctx.route_bb[net_id].xmin, route_ctx.route_bb[net_id].ymin);
-        vtr::Point<int> upper_right(route_ctx.route_bb[net_id].xmax, route_ctx.route_bb[net_id].ymax);
+        vtr::Point<int> lower_left(route_ctx.route_bb[(const ParentNetId&)net_id].xmin,
+                                   route_ctx.route_bb[(const ParentNetId&)net_id].ymin);
+        vtr::Point<int> upper_right(route_ctx.route_bb[(const ParentNetId&)net_id].xmax,
+                                    route_ctx.route_bb[(const ParentNetId&)net_id].ymax);
         vtr::Rect<int> bounding_box(lower_left, upper_right);
 
         if (!rr_graph.node_is_inside_bounding_box(to_node, bounding_box)) continue;
@@ -451,7 +453,7 @@ static void breadth_first_add_source_to_heap(BinaryHeap& heap, ClusterNetId net_
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-    inode = route_ctx.net_rr_terminals[net_id][0]; /* SOURCE */
+    inode = route_ctx.net_rr_terminals[(const ParentNetId&)net_id][0]; /* SOURCE */
     cost = get_rr_cong_cost(inode, pres_fac);
 
 #ifdef ROUTER_DEBUG

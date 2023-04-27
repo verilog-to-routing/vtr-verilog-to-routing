@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 project("libvtrutil")
 
@@ -105,6 +105,7 @@ target_link_libraries(libvtrutil
                         liblog)
 
 install(TARGETS libvtrutil DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION include/libvtrutil)
 
 #
 # Unit Tests

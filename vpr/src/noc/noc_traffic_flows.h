@@ -60,20 +60,27 @@ struct t_noc_traffic_flow {
     /** The maximum allowable time to transmit data between thw two routers, in seconds. This parameter will be used to evaluate a router traffic flow.*/
     double max_traffic_flow_latency;
 
+    /** Indicates the importance of the traffic flow. Higher priority traffic flows will have more importance and will be more likely to have their latency reduced and constriants met. Range: [0-inf) */
+    int traffic_flow_priority;
+
     /** Constructor initializes all variables*/
-    t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency)
+    t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency, int flow_priority)
         : source_router_module_name(source_router_name)
         , sink_router_module_name(sink_router_name)
         , source_router_cluster_id(source_router_id)
         , sink_router_cluster_id(sink_router_id)
         , traffic_flow_bandwidth(flow_bandwidth)
-        , max_traffic_flow_latency(max_flow_latency) {}
+        , max_traffic_flow_latency(max_flow_latency)
+        , traffic_flow_priority(flow_priority) {}
 };
 
 class NocTrafficFlows {
   private:
     /** contains all the traffic flows provided by the user and their information*/
     vtr::vector<NocTrafficFlowId, t_noc_traffic_flow> noc_traffic_flows;
+
+    /** contains the ids of all the router cluster blocks within the design */
+    std::unordered_set<ClusterBlockId> router_cluster_in_netlist;
 
     /**
      * @brief Each traffic flow is composed of a source and destination 
@@ -87,7 +94,7 @@ class NocTrafficFlows {
      * 
      * This is done so that during placement when a router cluster block is 
      * moved then the traffic flows that need to be re-routed due to the moved
-     * block can quickly be found. 
+     * block can quickly be found.
      * 
      */
     std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>> traffic_flows_associated_to_router_blocks;
@@ -102,6 +109,17 @@ class NocTrafficFlows {
      * 
      */
     bool built_traffic_flows;
+
+    /**
+     * @brief Stores the routes that were found by the routing algorithm for
+     * all traffic flows within the NoC. This is initialized after all the
+     * traffic flows have been added. This datastructure should be used
+     * to store the path found whenever a traffic flow needs to be routed/
+     * re-routed. Also, this datastructure should be used to access the routed
+     * path of a traffic flow. 
+     * 
+     */
+    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
 
     // private functions
 
@@ -124,6 +142,12 @@ class NocTrafficFlows {
     NocTrafficFlows();
 
     //getters
+
+    /**
+     * @return int An integer that represents the number of unique traffic
+     * flows within the NoC. 
+     */
+    int get_number_of_traffic_flows(void) const;
 
     /**
      * @brief Given a unique id of a traffic flow (t_noc_traffic_flow)
@@ -151,7 +175,7 @@ class NocTrafficFlows {
      * flows that have the input router block parameter as the source or sink
      * in the flow.
      */
-    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id);
+    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const;
 
     /**
      * @brief Gets the number of unique router blocks in the
@@ -162,6 +186,30 @@ class NocTrafficFlows {
      * the traffic flows provided by the user.
      */
     int get_number_of_routers_used_in_traffic_flows(void);
+
+    /**
+     * @brief Gets the routed path of traffic flow. This cannot be
+     * modified externally.
+     * 
+     * @param traffic_flow_id A unique identifier that represents a 
+     * traffic flow.
+     * @return std::vector<NocLinkId>& A reference to the provided
+     * traffic flow's routed path.
+     */
+    const std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const;
+
+    /**
+     * @brief Gets the routed path of a traffic flow. The path
+     * returned can and is expected to be  modified externally.
+     * 
+     * @param traffic_flow_id A unique identifier that represents a 
+     * traffic flow.
+     * @return std::vector<NocLinkId>& A reference to the provided
+     * traffic flow's vector of links used from the src to dst.
+     */
+    std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
+
+    const std::unordered_set<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
 
     // setters
 
@@ -189,8 +237,9 @@ class NocTrafficFlows {
      * @param traffic_flow_latency The maximum allowable delay between
      * transmitting data at the source router and having it received
      * at the sink router.
+     * @param traffic_flow_priority The importance of a given traffic flow.
      */
-    void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency);
+    void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
 
     //utility functions
 
@@ -198,7 +247,8 @@ class NocTrafficFlows {
      * @brief Indicates that the class has been fully constructed, meaning
      * that all the traffic flows have been added and cannot be added anymore.
      * This function should be called only after adding all the traffic flows
-     * provided by the user.
+     * provided by the user. Additionally, creates the storage space for storing
+     * the routed paths for all traffic flows.
      * 
      */
     void finshed_noc_traffic_flows_setup(void);
