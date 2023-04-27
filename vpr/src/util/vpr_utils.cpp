@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
+#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -1423,7 +1424,6 @@ t_pin_range get_pb_pins(t_physical_tile_type_ptr physical_type,
 
     //TODO: This is not working if there is a custom mapping between tile pins and the root-level
     // pb-block.
-    t_pin_range pin_num_range;
     if (pb->pb_graph_node->is_root()) {
         int num_pins = sub_tile->num_phy_pins / sub_tile->capacity.total();
         int first_num_node = sub_tile->sub_tile_to_tile_pin_indices[0] + num_pins * rel_cap;
