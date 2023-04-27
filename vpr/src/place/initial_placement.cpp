@@ -400,8 +400,10 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
     }
 
     //Calculate the centroid location
-    centroid.x = acc_x / acc_weight;
-    centroid.y = acc_y / acc_weight;
+    if (acc_weight > 0) {
+        centroid.x = acc_x / acc_weight;
+        centroid.y = acc_y / acc_weight;
+    }
 
     return connected_blocks_to_update;
 }
