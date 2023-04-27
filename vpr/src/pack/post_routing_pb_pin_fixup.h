@@ -9,8 +9,10 @@
 /********************************************************************
  * Function declaration
  *******************************************************************/
-void sync_netlists_to_routing(const DeviceContext& device_ctx,
+void sync_netlists_to_routing(const Netlist<>& net_list,
+                              const DeviceContext& device_ctx,
                               AtomContext& atom_ctx,
+                              const AtomLookup& atom_lookup,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
                               const RoutingContext& routing_ctx,

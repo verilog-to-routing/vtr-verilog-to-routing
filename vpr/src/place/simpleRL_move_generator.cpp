@@ -15,25 +15,29 @@ static float scaled_clipped_exp(float x) { return std::exp(std::min(1000000 * x,
  *                                     *
  *                                     */
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
-    avail_moves.emplace_back(std::make_unique<UniformMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<MedianMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<CentroidMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<WeightedCentroidMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<WeightedMedianMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<CriticalUniformMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<FeasibleRegionMoveGenerator>());
+    avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
+
+    avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
+    avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
+    avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
 
     karmed_bandit_agent = std::move(agent);
 }
 
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent) {
-    avail_moves.emplace_back(std::make_unique<UniformMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<MedianMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<CentroidMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<WeightedCentroidMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<WeightedMedianMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<CriticalUniformMoveGenerator>());
-    avail_moves.emplace_back(std::make_unique<FeasibleRegionMoveGenerator>());
+    avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
+
+    avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
+    avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
+    avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
 
     karmed_bandit_agent = std::move(agent);
 }
@@ -242,12 +246,12 @@ void SoftmaxAgent::set_action_prob() {
         }
     }
 
-    // normalize all the action probabilities to guarantee the sum(all actyion probs) = 1
+    // normalize all the action probabilities to guarantee the sum(all action probs) = 1
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
-                   bind2nd(std::plus<float>(), (1.0 - sum_prob) / num_available_actions_));
+                   [sum_prob, this](float x) { return x + ((1.0 - sum_prob) / this->num_available_actions_); });
 
-    //calulcate the accumulative action probability of each action
+    // calculate the accumulative action probability of each action
     // e.g. if we have 5 actions with equal probability of 0.2, the cumm_action_prob will be {0.2,0.4,0.6,0.8,1.0}
     float accum = 0;
     for (size_t i = 0; i < num_available_actions_; ++i) {

@@ -24,6 +24,11 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
 static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> start);
 
+static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                    util::t_ipin_primitive_sink_delays& pin_delays,
+                                    t_physical_tile_type_ptr physical_tile,
+                                    RRNodeId starting_node_id);
+
 // Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
 // These are used when finding all the delays to get to the IPINs of all the different tile types
 // of the device.
@@ -300,7 +305,7 @@ template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                                              std::vector<PQ_Entry_Base_Cost>,
                                                              std::greater<PQ_Entry_Base_Cost>>* pq);
 
-t_src_opin_delays compute_router_src_opin_lookahead() {
+t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
@@ -337,9 +342,9 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
                 for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
                     // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                    if (!is_node_on_tile(&device_ctx.physical_tile_types[itile],
-                                         rr_type,
-                                         ptc)) {
+                    if (!is_inter_cluster_node(&device_ctx.physical_tile_types[itile],
+                                               rr_type,
+                                               ptc)) {
                         continue;
                     }
 
@@ -354,9 +359,10 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
                     if (src_opin_delays[itile][ptc].empty()) {
                         VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d)\n",
                                        rr_node_typename[rr_type],
-                                       rr_node_arch_name(size_t(node_id)).c_str(),
+                                       rr_node_arch_name(size_t(node_id), is_flat).c_str(),
                                        sample_loc.x(),
-                                       sample_loc.y());
+                                       sample_loc.y(),
+                                       is_flat);
 
                         ptcs_with_no_delays = true;
                     }
@@ -415,6 +421,30 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     }
 
     return chan_ipins_delays;
+}
+
+t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                                         t_physical_tile_type_ptr physical_tile,
+                                                         int x,
+                                                         int y) {
+    auto tile_pins_vec = get_flat_tile_pins(physical_tile);
+    int max_ptc_num = get_tile_pin_max_ptc(physical_tile, true);
+
+    t_ipin_primitive_sink_delays pin_delays;
+    pin_delays.resize(max_ptc_num);
+
+    for (int pin_physical_num : tile_pins_vec) {
+        RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
+                                                  physical_tile,
+                                                  x,
+                                                  y,
+                                                  pin_physical_num);
+        VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
+
+        run_intra_tile_dijkstra(rr_graph, pin_delays, physical_tile, pin_node_id);
+    }
+
+    return pin_delays;
 }
 
 } // namespace util
@@ -506,10 +536,10 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)].type;
-                if (!is_node_on_tile(physical_type,
-                                     rr_graph.node_type(next_node),
-                                     rr_graph.node_ptc_num(next_node))) {
+                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(next_node), rr_graph.node_ylow(next_node));
+                if (!is_inter_cluster_node(physical_type,
+                                           rr_graph.node_type(next_node),
+                                           rr_graph.node_ptc_num(next_node))) {
                     continue;
                 }
 
@@ -578,7 +608,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
             int node_x = rr_graph.node_xlow(curr.node);
             int node_y = rr_graph.node_ylow(curr.node);
 
-            auto tile_type = device_ctx.grid[node_x][node_y].type;
+            auto tile_type = device_ctx.grid.get_physical_type(node_x, node_y);
             int itile = tile_type->index;
 
             int ptc = rr_graph.node_ptc_num(curr.node);
@@ -641,7 +671,7 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
             if (y < 0) continue;
 
             //VTR_LOG("   y: %d\n", y);
-            if (grid[x][y].type == tile_type) {
+            if (grid.get_physical_type(x, y) == tile_type) {
                 loc.set_x(x);
                 loc.set_y(y);
                 break;
@@ -657,4 +687,82 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
     //VTR_LOG("Next: %d,%d\n", loc.x(), loc.y());
 
     return loc;
+}
+
+static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                    util::t_ipin_primitive_sink_delays& pin_delays,
+                                    t_physical_tile_type_ptr /*physical_tile*/,
+                                    RRNodeId starting_node_id) {
+    // device_ctx should not be used to access rr_graph, since the graph get from device_ctx is not the intra-tile graph
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    vtr::vector<RRNodeId, bool> node_expanded;
+    node_expanded.resize(rr_graph.num_nodes());
+    std::fill(node_expanded.begin(), node_expanded.end(), false);
+
+    vtr::vector<RRNodeId, float> node_seen_cost;
+    node_seen_cost.resize(rr_graph.num_nodes());
+    std::fill(node_seen_cost.begin(), node_seen_cost.end(), -1.);
+
+    struct t_pq_entry {
+        float delay;
+        float congestion;
+        RRNodeId node;
+
+        bool operator<(const t_pq_entry& rhs) const {
+            return this->delay < rhs.delay;
+        }
+
+        bool operator>(const t_pq_entry& rhs) const {
+            return this->delay > rhs.delay;
+        }
+    };
+
+    std::priority_queue<t_pq_entry, std::vector<t_pq_entry>, std::greater<t_pq_entry>> pq;
+
+    t_pq_entry root;
+    root.congestion = 0.;
+    root.delay = 0.;
+    root.node = starting_node_id;
+
+    int root_ptc = rr_graph.node_ptc_num(root.node);
+    std::unordered_map<int, util::Cost_Entry>& starting_pin_delay_map = pin_delays.at(root_ptc);
+    pq.push(root);
+
+    while (!pq.empty()) {
+        t_pq_entry curr = pq.top();
+        pq.pop();
+        if (node_expanded[curr.node]) {
+            continue;
+        } else {
+            node_expanded[curr.node] = true;
+        }
+        auto curr_type = rr_graph.node_type(curr.node);
+        VTR_ASSERT(curr_type != t_rr_type::CHANX && curr_type != t_rr_type::CHANY);
+        if (curr_type != SINK) {
+            for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
+                RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
+                auto cost_index = rr_graph.node_cost_index(next_node);
+                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
+
+                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
+                float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost;
+
+                t_pq_entry next;
+                next.congestion = curr.congestion + incr_cong; //Of current node
+                next.delay = curr.delay + incr_delay;          //To reach next node
+                next.node = next_node;
+
+                if (node_seen_cost[next_node] < 0. || node_seen_cost[next_node] > next.delay) {
+                    node_seen_cost[next_node] = next.delay;
+                    pq.push(next);
+                }
+            }
+        } else {
+            int curr_ptc = rr_graph.node_ptc_num(curr.node);
+            if (starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() || starting_pin_delay_map.at(curr_ptc).delay > curr.delay) {
+                starting_pin_delay_map[curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
+            }
+        }
+    }
 }
