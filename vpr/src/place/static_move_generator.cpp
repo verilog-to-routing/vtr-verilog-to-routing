@@ -6,13 +6,13 @@
 #include "vtr_assert.h"
 
 StaticMoveGenerator::StaticMoveGenerator(const std::vector<float>& prob) {
-    avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<CentroidMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<WeightedMedianMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<CriticalUniformMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<FeasibleRegionMoveGenerator>()));
+    avail_moves.emplace_back(std::make_unique<UniformMoveGenerator>());
+    avail_moves.emplace_back(std::make_unique<MedianMoveGenerator>());
+    avail_moves.emplace_back(std::make_unique<CentroidMoveGenerator>());
+    avail_moves.emplace_back(std::make_unique<WeightedCentroidMoveGenerator>());
+    avail_moves.emplace_back(std::make_unique<WeightedMedianMoveGenerator>());
+    avail_moves.emplace_back(std::make_unique<CriticalUniformMoveGenerator>());
+    avail_moves.emplace_back(std::make_unique<FeasibleRegionMoveGenerator>());
 
     initialize_move_prob(prob);
 }
