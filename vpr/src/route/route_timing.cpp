@@ -1045,11 +1045,11 @@ void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t
     /* Frees all the structures needed only by the timing-driven router.        */
 
     // coverity[offset_free : Intentional]
-    delete[](pin_criticality);
+    delete[] pin_criticality;
     // coverity[offset_free : Intentional]
-    delete[](sink_order);
+    delete[] sink_order;
     // coverity[offset_free : Intentional]
-    delete[](rt_node_of_sink);
+    delete[] rt_node_of_sink;
 
     free_route_tree_timing_structs();
 }
@@ -2439,7 +2439,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                 std::for_each(sink_grp.begin(), sink_grp.end(), [&rr_graph](int& sink_rr_num) {
                     sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
                 });
-                auto physical_type = device_ctx.grid[blk_loc.loc.x][blk_loc.loc.y].type;
+                auto physical_type = device_ctx.grid.get_physical_type(blk_loc.loc.x, blk_loc.loc.y);
                 // Get the choke points of the sink corresponds to pin_count given the sink group
                 auto sink_choking_spots = get_sink_choking_points(physical_type,
                                                                   rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),

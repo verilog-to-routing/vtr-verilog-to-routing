@@ -2971,22 +2971,23 @@ static int check_block_placement_consistency() {
     /* Step through device grid and placement. Check it against blocks */
     for (size_t i = 0; i < device_ctx.grid.width(); i++)
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+            const auto& type = device_ctx.grid.get_physical_type(i, j);
             if (place_ctx.grid_blocks[i][j].usage
-                > device_ctx.grid[i][j].type->capacity) {
+                > type->capacity) {
                 VTR_LOG_ERROR(
                     "%d blocks were placed at grid location (%zu,%zu), but location capacity is %d.\n",
                     place_ctx.grid_blocks[i][j].usage, i, j,
-                    device_ctx.grid[i][j].type->capacity);
+                    type->capacity);
                 error++;
             }
             int usage_check = 0;
-            for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
+            for (int k = 0; k < type->capacity; k++) {
                 auto bnum = place_ctx.grid_blocks[i][j].blocks[k];
                 if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
                     continue;
 
                 auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-                auto physical_tile = device_ctx.grid[i][j].type;
+                auto physical_tile = type;
 
                 if (physical_tile_type(bnum) != physical_tile) {
                     VTR_LOG_ERROR(
@@ -3173,7 +3174,7 @@ static void print_resources_utilization() {
         auto block_loc = place_ctx.block_locs[blk_id];
         auto loc = block_loc.loc;
 
-        auto physical_tile = device_ctx.grid[loc.x][loc.y].type;
+        auto physical_tile = device_ctx.grid.get_physical_type(loc.x, loc.y);
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
         num_type_instances[logical_block]++;

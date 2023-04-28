@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
+#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -133,9 +134,10 @@ void sync_grid_to_blocks() {
     for (size_t x = 0; x < device_grid.width(); ++x) {
         for (size_t y = 0; y < device_grid.height(); ++y) {
             auto& grid_block = grid_blocks[x][y];
-            grid_block.blocks.resize(device_ctx.grid[x][y].type->capacity);
+            const auto& type = device_ctx.grid.get_physical_type(x, y);
+            grid_block.blocks.resize(type->capacity);
 
-            for (int z = 0; z < device_ctx.grid[x][y].type->capacity; ++z) {
+            for (int z = 0; z < type->capacity; ++z) {
                 grid_block.blocks[z] = EMPTY_BLOCK_ID;
             }
         }
@@ -160,11 +162,11 @@ void sync_grid_to_blocks() {
         }
 
         /* Check types match */
-        if (type != device_ctx.grid[blk_x][blk_y].type) {
+        if (type != device_ctx.grid.get_physical_type(blk_x, blk_y)) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
                             blk_x, blk_y,
                             type->name,
-                            device_ctx.grid[blk_x][blk_y].type->name);
+                            device_ctx.grid.get_physical_type(blk_x, blk_y)->name);
         }
 
         /* Check already in use */
@@ -174,7 +176,7 @@ void sync_grid_to_blocks() {
                             blk_x, blk_y, blk_z);
         }
 
-        if (device_ctx.grid[blk_x][blk_y].width_offset != 0 || device_ctx.grid[blk_x][blk_y].height_offset != 0) {
+        if (device_ctx.grid.get_width_offset(blk_x, blk_y) != 0 || device_ctx.grid.get_height_offset(blk_x, blk_y) != 0) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d).",
                             size_t(blk_id), blk_x, blk_y, blk_z);
         }
@@ -184,8 +186,8 @@ void sync_grid_to_blocks() {
             for (int height = 0; height < type->height; ++height) {
                 place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = blk_id;
                 place_ctx.grid_blocks[blk_x + width][blk_y + height].usage++;
-                VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].width_offset == width);
-                VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].height_offset == height);
+                VTR_ASSERT(device_ctx.grid.get_width_offset(blk_x + width, blk_y + height) == width);
+                VTR_ASSERT(device_ctx.grid.get_height_offset(blk_x + width, blk_y + height) == height);
             }
         }
     }
@@ -200,11 +202,11 @@ std::string rr_node_arch_name(int inode, bool is_flat) {
     std::string rr_node_arch_name;
     if (rr_graph.node_type(RRNodeId(inode)) == OPIN || rr_graph.node_type(RRNodeId(inode)) == IPIN) {
         //Pin names
-        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
+        auto type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node), is_flat);
     } else if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
         //Set of pins associated with SOURCE/SINK
-        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
+        auto type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));
         auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node), is_flat);
         if (pin_names.size() > 1) {
             rr_node_arch_name += rr_graph.node_type_string(RRNodeId(inode));
@@ -514,7 +516,7 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     auto block_loc = place_ctx.block_locs[blk];
     auto loc = block_loc.loc;
 
-    return device_ctx.grid[loc.x][loc.y].type;
+    return device_ctx.grid.get_physical_type(loc.x, loc.y);
 }
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
@@ -544,7 +546,7 @@ int get_sub_tile_index(ClusterBlockId blk) {
     auto loc = block_loc.loc;
     int sub_tile_coordinate = loc.sub_tile;
 
-    auto type = device_ctx.grid[loc.x][loc.y].type;
+    auto type = device_ctx.grid.get_physical_type(loc.x, loc.y);
 
     for (const auto& sub_tile : type->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_coordinate)) {
@@ -1333,8 +1335,8 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     int i = loc.x;
     int j = loc.y;
     int cap = loc.sub_tile;
-    auto physical_type = grid[i][j].type;
-    VTR_ASSERT(grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0);
+    const auto& physical_type = grid.get_physical_type(i, j);
+    VTR_ASSERT(grid.get_width_offset(i, j) == 0 && grid.get_height_offset(i, j) == 0);
     VTR_ASSERT(cap < physical_type->capacity);
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
@@ -1422,7 +1424,6 @@ t_pin_range get_pb_pins(t_physical_tile_type_ptr physical_type,
 
     //TODO: This is not working if there is a custom mapping between tile pins and the root-level
     // pb-block.
-    t_pin_range pin_num_range;
     if (pb->pb_graph_node->is_root()) {
         int num_pins = sub_tile->num_phy_pins / sub_tile->capacity.total();
         int first_num_node = sub_tile->sub_tile_to_tile_pin_indices[0] + num_pins * rel_cap;
@@ -1597,7 +1598,7 @@ void free_pb_stats(t_pb* pb) {
         pb->pb_stats->num_pins_of_net_in_pb.clear();
 
         if (pb->pb_stats->feasible_blocks) {
-            delete[](pb->pb_stats->feasible_blocks);
+            delete[] pb->pb_stats->feasible_blocks;
         }
         if (!pb->parent_pb) {
             pb->pb_stats->transitive_fanout_candidates.clear();
@@ -2147,7 +2148,7 @@ t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
 
         t_pl_loc loc = place_ctx.block_locs[blk].loc;
 
-        return device_ctx.grid[loc.x][loc.y].type;
+        return device_ctx.grid.get_physical_type(loc.x, loc.y);
     }
 }
 
@@ -2282,7 +2283,7 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
     VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    auto physical_type = device_ctx.grid[rr_graph_view.node_xlow(node_id)][rr_graph_view.node_ylow(node_id)].type;
+    auto physical_type = device_ctx.grid.get_physical_type(rr_graph_view.node_xlow(node_id), rr_graph_view.node_ylow(node_id));
 
     if (node_type == SINK || node_type == SOURCE) {
         return get_tile_class_max_ptc(physical_type, is_flat);
@@ -2345,11 +2346,11 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
         int sec_y = rr_graph.node_ylow(node_second);
 
         // Get the root-location of the pin's block
-        int first_root_x = first_x - device_ctx.grid[first_x][first_y].width_offset;
-        int first_root_y = first_y - device_ctx.grid[first_x][first_y].height_offset;
+        int first_root_x = first_x - device_ctx.grid.get_width_offset(first_x, first_y);
+        int first_root_y = first_y - device_ctx.grid.get_height_offset(first_x, first_y);
 
-        int sec_root_x = sec_x - device_ctx.grid[sec_x][sec_y].width_offset;
-        int sec_root_y = sec_y - device_ctx.grid[sec_x][sec_y].height_offset;
+        int sec_root_x = sec_x - device_ctx.grid.get_width_offset(sec_x, sec_y);
+        int sec_root_y = sec_y - device_ctx.grid.get_height_offset(sec_x, sec_y);
 
         // If the root-location of the nodes are similar, they should be located in the same tile
         if (first_root_x == sec_root_x && first_root_y == sec_root_y)

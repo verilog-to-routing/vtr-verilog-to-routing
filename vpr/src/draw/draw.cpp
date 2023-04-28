@@ -544,9 +544,9 @@ void free_draw_structs() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
-        delete[](draw_coords->tile_x);
+        delete[] draw_coords->tile_x;
         draw_coords->tile_x = nullptr;
-        delete[](draw_coords->tile_y);
+        delete[] draw_coords->tile_y;
         draw_coords->tile_y = nullptr;
     }
 
@@ -1018,8 +1018,8 @@ static void highlight_blocks(double x, double y) {
                 break; // we've gone to far in the y direction
             }
             // iterate over sub_blocks
-            const t_grid_tile* grid_tile = &device_ctx.grid[i][j];
-            for (int k = 0; k < grid_tile->type->capacity; ++k) {
+            const auto& type = device_ctx.grid.get_physical_type(i, j);
+            for (int k = 0; k < type->capacity; ++k) {
                 clb_index = place_ctx.grid_blocks[i][j].blocks[k];
                 if (clb_index != EMPTY_BLOCK_ID) {
                     clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,

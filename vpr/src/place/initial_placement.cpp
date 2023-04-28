@@ -273,9 +273,12 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
     for (auto reg : pr.get_partition_region()) {
         if (reg.get_region_rect().contains(vtr::Point<int>(loc.x, loc.y))) {
             //check if the location is compatible with the block type
-            if (is_tile_compatible(grid[loc.x][loc.y].type, block_type)) {
+            const auto& type = grid.get_physical_type(loc.x, loc.y);
+            int height_offset = grid.get_height_offset(loc.x, loc.y);
+            int width_offset = grid.get_width_offset(loc.x, loc.y);
+            if (is_tile_compatible(type, block_type)) {
                 //Check if the location is an anchor position
-                if (grid[loc.x][loc.y].height_offset == 0 && grid[loc.x][loc.y].width_offset == 0) {
+                if (height_offset == 0 && width_offset == 0) {
                     legal = true;
                     break;
                 }
@@ -397,8 +400,10 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
     }
 
     //Calculate the centroid location
-    centroid.x = acc_x / acc_weight;
-    centroid.y = acc_y / acc_weight;
+    if (acc_weight > 0) {
+        centroid.x = acc_x / acc_weight;
+        centroid.y = acc_y / acc_weight;
+    }
 
     return connected_blocks_to_update;
 }
@@ -435,12 +440,14 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     //we don't need to find one agian
     if (!neighbor_legal_loc) {
         const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-        auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(device_ctx.grid[centroid_loc.x][centroid_loc.y].type->index);
+        const auto& type = device_ctx.grid.get_physical_type(centroid_loc.x, centroid_loc.y);
+        auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(type->index);
         centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
     }
-
-    VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].width_offset == 0);
-    VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].height_offset == 0);
+    int width_offset = device_ctx.grid.get_width_offset(centroid_loc.x, centroid_loc.y);
+    int height_offset = device_ctx.grid.get_height_offset(centroid_loc.x, centroid_loc.y);
+    VTR_ASSERT(width_offset == 0);
+    VTR_ASSERT(height_offset == 0);
 
     bool legal;
 
@@ -530,7 +537,7 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
         auto first_avail_loc = compressed_block_grid.grid[x_loc].begin()->second;
         empty_loc.first_avail_loc.x = first_avail_loc.x;
         empty_loc.first_avail_loc.y = first_avail_loc.y;
-        const auto& physical_type = grid[first_avail_loc.x][first_avail_loc.y].type;
+        const auto& physical_type = grid.get_physical_type(first_avail_loc.x, first_avail_loc.y);
         const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(physical_type->index);
         empty_loc.first_avail_loc.sub_tile = *std::min_element(compatible_sub_tiles.begin(), compatible_sub_tiles.end());
         empty_loc.num_of_empty_locs_in_y_axis = compressed_block_grid.grid[x_loc].size();
@@ -545,7 +552,8 @@ static inline void fix_IO_block_types(t_pl_macro pl_macro, t_pl_loc loc, enum e_
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
     //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
-    if (is_io_type(device_ctx.grid[loc.x][loc.y].type) && pad_loc_type == RANDOM) {
+    const auto& type = device_ctx.grid.get_physical_type(loc.x, loc.y);
+    if (is_io_type(type) && pad_loc_type == RANDOM) {
         for (unsigned int imember = 0; imember < pl_macro.members.size(); imember++) {
             place_ctx.block_locs[pl_macro.members[imember].blk_index].is_fixed = true;
         }
@@ -600,8 +608,10 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    VTR_ASSERT(device_ctx.grid[loc.x][loc.y].width_offset == 0);
-    VTR_ASSERT(device_ctx.grid[loc.x][loc.y].height_offset == 0);
+    int width_offset = device_ctx.grid.get_width_offset(loc.x, loc.y);
+    int height_offset = device_ctx.grid.get_height_offset(loc.x, loc.y);
+    VTR_ASSERT(width_offset == 0);
+    VTR_ASSERT(height_offset == 0);
 
     legal = try_place_macro(pl_macro, loc);
 
@@ -643,7 +653,7 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
                 to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
 
                 auto& grid = g_vpr_ctx.device().grid;
-                auto tile_type = grid[to_loc.x][to_loc.y].type;
+                auto tile_type = grid.get_physical_type(to_loc.x, to_loc.y);
 
                 if (regions[reg].get_sub_tile() != NO_SUBTILE) {
                     int subtile = regions[reg].get_sub_tile();
@@ -696,8 +706,10 @@ static bool try_dense_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logi
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    VTR_ASSERT(device_ctx.grid[loc.x][loc.y].width_offset == 0);
-    VTR_ASSERT(device_ctx.grid[loc.x][loc.y].height_offset == 0);
+    int width_offset = device_ctx.grid.get_width_offset(loc.x, loc.y);
+    int height_offset = device_ctx.grid.get_height_offset(loc.x, loc.y);
+    VTR_ASSERT(width_offset == 0);
+    VTR_ASSERT(height_offset == 0);
 
     bool legal = false;
     legal = try_place_macro(pl_macro, loc);
@@ -951,7 +963,8 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
      */
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            itype = device_ctx.grid[i][j].type->index;
+            const auto& type = device_ctx.grid.get_physical_type(i, j);
+            itype = type->index;
             if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
                 place_ctx.grid_blocks[i][j].usage = 0;
                 for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {

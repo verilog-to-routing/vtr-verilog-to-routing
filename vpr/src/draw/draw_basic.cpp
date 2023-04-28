@@ -112,11 +112,15 @@ void drawplace(ezgl::renderer* g) {
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             /* Only the first block of a group should control drawing */
-            if (device_ctx.grid[i][j].width_offset > 0
-                || device_ctx.grid[i][j].height_offset > 0)
+            const auto& type = device_ctx.grid.get_physical_type(i, j);
+            int width_offset = device_ctx.grid.get_width_offset(i, j);
+            int height_offset = device_ctx.grid.get_height_offset(i, j);
+
+            if (width_offset > 0
+                || height_offset > 0)
                 continue;
 
-            num_sub_tiles = device_ctx.grid[i][j].type->capacity;
+            num_sub_tiles = type->capacity;
             /* Don't draw if tile capacity is zero. eg-> corners. */
             if (num_sub_tiles == 0) {
                 continue;
@@ -147,15 +151,13 @@ void drawplace(ezgl::renderer* g) {
                     if (bnum != EMPTY_BLOCK_ID) {
                         block_color = draw_state->block_color(bnum);
                     } else {
-                        block_color = get_block_type_color(
-                            device_ctx.grid[i][j].type);
+                        block_color = get_block_type_color(type);
                         block_color = lighten_color(block_color,
                                                     EMPTY_BLOCK_LIGHTEN_FACTOR);
                     }
                 }
 
-                auto tile_type = device_ctx.grid[i][j].type;
-                logical_block_type = pick_logical_type(tile_type);
+                logical_block_type = pick_logical_type(type);
 
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
@@ -184,9 +186,9 @@ void drawplace(ezgl::renderer* g) {
                                      abs_clb_bbox.height());
                     }
                     /* Draw text for block type so that user knows what block */
-                    if (device_ctx.grid[i][j].width_offset == 0
-                        && device_ctx.grid[i][j].height_offset == 0) {
-                        std::string block_type_loc = device_ctx.grid[i][j].type->name;
+                    if (width_offset == 0
+                        && height_offset == 0) {
+                        std::string block_type_loc = type->name;
                         block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
 
                         g->draw_text(

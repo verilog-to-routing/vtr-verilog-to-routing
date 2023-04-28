@@ -249,7 +249,7 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
     VTR_ASSERT(physical_noc_router != noc_ctx.noc_model.get_noc_routers().end());
 
     //Using the routers grid position go to the device and identify the physical type of the tile located there.
-    return device_ctx.grid[physical_noc_router->get_router_grid_position_x()][physical_noc_router->get_router_grid_position_y()].type;
+    return device_ctx.grid.get_physical_type(physical_noc_router->get_router_grid_position_x(), physical_noc_router->get_router_grid_position_y());
 }
 
 bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file) {
