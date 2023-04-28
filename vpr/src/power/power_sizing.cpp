@@ -167,7 +167,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
 
     transistor_cnt += power_count_transistors_mux_node(mux_arch->mux_graph_head,
                                                        mux_arch->transistor_size);
-    delete[](max_inputs);
+    delete[] max_inputs;
     return transistor_cnt;
 }
 
@@ -773,8 +773,8 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
                               * this_pb_interc_sidelength;
         }
 
-        delete[](fanout_per_mode);
-        delete[](wirelength_out_per_mode);
+        delete[] fanout_per_mode;
+        delete[] wirelength_out_per_mode;
 
         /* Input wirelength - from parent PB */
         if (!top_level_pb) {
