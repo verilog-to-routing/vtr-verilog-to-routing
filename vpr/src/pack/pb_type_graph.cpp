@@ -639,6 +639,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
         case DIRECT_INTERC: /* intentionally fallthrough */
             VTR_ASSERT(num_output_sets == 1);
             /* intentionally fallthrough */
+            [[fallthrough]];
         case MUX_INTERC:
             if (!interconnect->interconnect_power->port_info_initialized) {
                 for (set_idx = 0; set_idx < num_input_sets; set_idx++) {
