@@ -1294,7 +1294,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     track_to_pin_lookup_x.clear();
     track_to_pin_lookup_y.clear();
     if (clb_to_clb_directs != nullptr) {
-        delete[](clb_to_clb_directs);
+        delete[] clb_to_clb_directs;
     }
 }
 
@@ -3952,8 +3952,8 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
             //Use the delayless switch by default
             clb_to_clb_directs[i].switch_index = delayless_switch;
         }
-        delete[](tile_name);
-        delete[](port_name);
+        delete[] tile_name;
+        delete[] port_name;
     }
 
     return clb_to_clb_directs;
@@ -4186,7 +4186,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
             perturb_opins[0] = false;
         }
     }
-    delete[](prime_factors);
+    delete[] prime_factors;
 
     return perturb_opins;
 }
