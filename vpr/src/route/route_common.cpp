@@ -1362,12 +1362,15 @@ void print_route(const Netlist<>& net_list,
                     int jlow = rr_graph.node_ylow(rr_node);
                     int layer_num = rr_graph.node_layer(rr_node);
 
-                    fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
-                            rr_graph.node_type_string(rr_node), ilow, jlow);
+                    fprintf(fp, "Node:\t%d\t%6s (%d,%d,%d) ", inode,
+                            rr_graph.node_type_string(rr_node), layer_num, ilow, jlow);
 
-                    if ((ilow != rr_graph.node_xhigh(rr_node))
+                    if ((layer_num != rr_graph.node_layer(rr_node))
+                        || (ilow != rr_graph.node_xhigh(rr_node))
                         || (jlow != rr_graph.node_yhigh(rr_node)))
-                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(rr_node),
+                        fprintf(fp, "to (%d,%d,%d) ",
+                                rr_graph.node_layer(rr_node),
+                                rr_graph.node_xhigh(rr_node),
                                 rr_graph.node_yhigh(rr_node));
 
                     switch (rr_type) {
