@@ -47,7 +47,7 @@ class RoutingToClockConnection : public ClockConnection {
      */
     void set_clock_name_to_connect_to(std::string clock_name);
     void set_clock_switch_point_name(std::string clock_switch_point_name);
-    void set_switch_location(int x, int y, int layer=0);
+    void set_switch_location(int x, int y, int layer = 0);
     void set_switch(int arch_switch_index);
     void set_fc_val(float fc_val);
 

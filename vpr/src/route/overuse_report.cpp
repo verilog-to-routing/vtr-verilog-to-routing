@@ -337,12 +337,8 @@ static void report_congested_nets(const Netlist<>& net_list,
                 auto cluster_loc = g_vpr_ctx.placement().block_locs[cluster_block_id];
                 auto physical_type = g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num});
                 int cluster_layer_num = cluster_loc.loc.layer;
-                int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x,
-                                                                                               cluster_loc.loc.y,
-                                                                                               cluster_layer_num})->width;
-                int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x,
-                                                                                               cluster_loc.loc.y,
-                                                                                               cluster_layer_num})->height;
+                int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x, cluster_loc.loc.y, cluster_layer_num})->width;
+                int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x, cluster_loc.loc.y, cluster_layer_num})->height;
                 if (cluster_x == x && cluster_y == y) {
                     VTR_ASSERT(physical_type == g_vpr_ctx.device().grid.get_physical_type({cluster_x, cluster_y, cluster_layer_num}));
                     os << "Sink in the same location = "
@@ -470,7 +466,7 @@ void print_block_pins_nets(std::ostream& os,
 
     for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
         t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
-        RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type,layer, root_x, root_y, pin);
+        RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, layer, root_x, root_y, pin);
         VTR_ASSERT(node_id != RRNodeId::INVALID());
         auto search_result = rr_node_to_net_map.find(node_id);
         if (rr_type == t_rr_type::OPIN) {

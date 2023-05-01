@@ -420,12 +420,8 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
         }
     }
 
-    if (acc_weight == 0) {
-        centroid.x = OPEN;
-        centroid.y = OPEN;
-        centroid.layer = OPEN;
-    } else {
-        //Calculate the centroid location
+    //Calculate the centroid location
+    if (acc_weight > 0) {
         centroid.x = acc_x / acc_weight;
         centroid.y = acc_y / acc_weight;
         if (find_layer) {
@@ -563,8 +559,8 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
         Region reg;
         reg.set_region_rect({0,
                              0,
-                             (int)device_ctx.grid.width(layer_num) - 1,
-                             (int)device_ctx.grid.height(layer_num) - 1,
+                             (int)device_ctx.grid.width() - 1,
+                             (int)device_ctx.grid.height() - 1,
                              layer_num});
         reg.set_sub_tile(NO_SUBTILE);
         const auto reg_coord = reg.get_region_rect();
@@ -687,7 +683,7 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
         int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmax, OPEN, layer_num}).x;
 
         // There isn't any block of this type in this region
-        if(min_cx == OPEN) {
+        if (min_cx == OPEN) {
             VTR_ASSERT(max_cx == OPEN);
             continue;
         }
@@ -836,8 +832,8 @@ static bool place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
         for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
             reg.set_region_rect({0,
                                  0,
-                                 (int)device_ctx.grid.width(layer_num) - 1,
-                                 (int)device_ctx.grid.height(layer_num) - 1,
+                                 (int)device_ctx.grid.width() - 1,
+                                 (int)device_ctx.grid.height() - 1,
                                  layer_num});
             reg.set_sub_tile(NO_SUBTILE);
             pr.add_to_part_region(reg);

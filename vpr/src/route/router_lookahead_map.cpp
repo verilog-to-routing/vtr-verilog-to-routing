@@ -624,7 +624,6 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         longest_length = std::max(longest_length, seg_inf.length);
     }
 
-
     //Start sampling at the lower left non-corner
     int ref_x = 1;
     int ref_y = 1;
@@ -645,7 +644,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     int target_y = device_ctx.grid.height() - 2;
 
     //Profile each wire segment type
-    for(int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
             //First try to pick good representative sample locations for each type
             std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;
@@ -746,11 +745,11 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                     if (false) print_router_cost_map(routing_cost_map);
 
                     /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
-                 * cost map */
+                     * cost map */
                     set_lookahead_map_costs(layer_num, iseg, chan_type, routing_cost_map);
 
                     /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
-                 * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
+                     * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
                     fill_in_missing_lookahead_entries(iseg, chan_type);
                 }
             }
@@ -781,7 +780,7 @@ static RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x
     int start_lookup_y = start_y;
 
     /* find first node in channel that has specified segment index and goes in the desired direction */
-    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(layer,start_lookup_x, start_lookup_y, rr_type)) {
+    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(layer, start_lookup_x, start_lookup_y, rr_type)) {
         VTR_ASSERT(rr_graph.node_type(node_id) == rr_type);
 
         Direction node_direction = rr_graph.node_direction(node_id);
@@ -845,7 +844,7 @@ static void run_dijkstra(RRNodeId start_node,
             continue;
         }
 
-        if(rr_graph.node_layer(curr_node) != sample_layer_num) {
+        if (rr_graph.node_layer(curr_node) != sample_layer_num) {
             continue;
         }
 
@@ -945,7 +944,7 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
     auto& device_ctx = g_vpr_ctx.device();
 
     /* find missing cost entries and fill them in by copying a nearby cost entry */
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); ++layer_num) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); ++layer_num) {
         for (unsigned ix = 0; ix < device_ctx.grid.width(); ix++) {
             for (unsigned iy = 0; iy < device_ctx.grid.height(); iy++) {
                 Cost_Entry cost_entry = f_wire_cost_map[layer_num][chan_index][segment_index][ix][iy];
@@ -1444,7 +1443,7 @@ static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opi
                                           static_cast<unsigned long>(width),
                                           static_cast<unsigned long>(height)});
 
-    for(int layer_num = 0; layer_num < num_layers; layer_num++) {
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         for (int dx = 0; dx < width; dx++) {
             for (int dy = 0; dy < height; dy++) {
                 util::Cost_Entry min_cost(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());

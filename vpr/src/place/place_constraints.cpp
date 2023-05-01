@@ -174,8 +174,8 @@ void propagate_place_constraints() {
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         //Create a PartitionRegion with grid dimensions
         //Will be used to check that updated PartitionRegions are within grid bounds
-        int width = device_ctx.grid.width(layer_num) - 1;
-        int height = device_ctx.grid.height(layer_num) - 1;
+        int width = device_ctx.grid.width() - 1;
+        int height = device_ctx.grid.height() - 1;
 
         grid_reg.set_region_rect({0, 0, width, height, layer_num});
         grid_pr.add_to_part_region(grid_reg);
@@ -390,8 +390,8 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
         intersect_reg[layer_num].set_region_rect({0,
                                                   0,
-                                                  (int)device_ctx.grid.width(layer_num) - 1,
-                                                  (int)device_ctx.grid.height(layer_num) - 1,
+                                                  (int)device_ctx.grid.width() - 1,
+                                                  (int)device_ctx.grid.height() - 1,
                                                   layer_num});
     }
     std::vector<Region> current_reg(num_layers);

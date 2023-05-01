@@ -337,7 +337,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                 }
 
                 //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
-                const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num,sample_loc.x, sample_loc.y, rr_type);
+                const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num, sample_loc.x, sample_loc.y, rr_type);
                 for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
                     // For the time being, we decide to not let the lookahead explore the node inside the clusters
@@ -409,7 +409,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
         for (int ix = min_x; ix < max_x; ix++) {
             for (int iy = min_y; iy < max_y; iy++) {
                 for (auto rr_type : {CHANX, CHANY}) {
-                    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(sample_loc.layer_num,ix, iy, rr_type)) {
+                    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(sample_loc.layer_num, ix, iy, rr_type)) {
                         //Find the IPINs which are reachable from the wires within the bounding box
                         //around the selected tile location
                         dijkstra_flood_to_ipins(node_id, chan_ipins_delays);
@@ -661,8 +661,8 @@ static t_physical_tile_loc pick_sample_tile(t_physical_tile_type_ptr tile_type, 
 
     //VTR_LOG("Prev: %d,%d\n", prev.x, prev.y);
 
-    auto &device_ctx = g_vpr_ctx.device();
-    auto &grid = device_ctx.grid;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
 
     int y_init = prev.y + 1; //Start searching next element above prev
 

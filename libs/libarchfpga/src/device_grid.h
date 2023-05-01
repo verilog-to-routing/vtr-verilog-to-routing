@@ -3,12 +3,13 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
 #include "vtr_ndmatrix.h"
 #include "physical_types.h"
 
 /**
  * @brief s_grid_tile is the minimum tile of the fpga
- * @note This struct shouldn't be directly accessed by other functions. Use helper function in DeviceGrid instead.
+ * @note This struct shouldn't be directly accessed by other functions. Use the helper functions in DeviceGrid instead.
  */
 struct t_grid_tile {
     t_physical_tile_type_ptr type = nullptr; ///<Pointer to type descriptor, NULL for illegal
@@ -22,48 +23,27 @@ struct t_grid_tile {
 class DeviceGrid {
   public:
     DeviceGrid() = default;
-    DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid);
-    DeviceGrid(std::string grid_name, std::vector<vtr::Matrix<t_grid_tile>> grid, std::vector<t_logical_block_type_ptr> limiting_res);
+    DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid);
+    DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid, std::vector<t_logical_block_type_ptr> limiting_res);
 
     const std::string& name() const { return name_; }
 
-    ///@brief Return the width of the grid at the specified layer
-    size_t width(int layer_num = 0) const { return grid_[layer_num].dim_size(0); }
-    ///@brief Return the height of the grid at the specified layer
-    size_t height(int layer_num = 0) const { return grid_[layer_num].dim_size(1); }
-
     ///@brief Return the number of layers(number of dies)
     inline int get_num_layers() const {
-        return num_layers_;
+        return (int)grid_.dim_size(0);
     }
 
-    ///@brief Given t_grid_tile, return the x coordinate of the tile on the given layer
-    inline int get_grid_loc_x(const t_grid_tile*& grid_loc, int layer_num = 0) const {
-        auto diff = grid_loc - &grid_[layer_num].get(0);
-
-        return diff / grid_[layer_num].dim_size(1);
-    }
-
-    ///@brief Given t_grid_tile, return the y coordinate of the tile on the given layer
-    inline int get_grid_loc_y(const t_grid_tile*& grid_loc, int layer_num = 0) const {
-        auto diff = grid_loc - &grid_[layer_num].get(0);
-
-        return diff % grid_[layer_num].dim_size(1);
-    }
-
-    ///@brief Return the nth t_grid_tile on the given layer of the flattened grid
-    inline const t_grid_tile* get_grid_locs_grid_loc(int n, int layer_num = 0) const {
-        return &grid_[layer_num].get(n);
-    }
+    ///@brief Return the width of the grid at the specified layer
+    size_t width() const { return grid_.dim_size(1); }
+    ///@brief Return the height of the grid at the specified layer
+    size_t height() const { return grid_.dim_size(2); }
 
     ///@brief Return the size of the flattened grid on the given layer
-    inline size_t grid_size(int layer_num = 0) const {
-        return grid_[layer_num].size();
+    inline size_t grid_size() const {
+        return grid_.size();
     }
 
-    inline size_t grid_dim_size(int dim, int layer_num = 0) const {
-        return grid_[layer_num].dim_size(dim);
-    }
+    ///@brief deallocate members of DeviceGrid
     void clear();
 
     /**
@@ -98,23 +78,41 @@ class DeviceGrid {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].meta;
     }
 
+    ///@brief Given t_grid_tile, return the x coordinate of the tile on the given layer - Used by serializer functions
+    inline int get_grid_loc_x(const t_grid_tile*& grid_loc) const {
+        int layer_num = std::floor(static_cast<int>(grid_loc - &grid_.get(0)) / (width() * height()));
+        auto diff = grid_loc - &grid_.get(layer_num * height() * width());
+
+        return diff / grid_.dim_size(2);
+    }
+
+    ///@brief Given t_grid_tile, return the y coordinate of the tile on the given layer - Used by serializer functions
+    inline int get_grid_loc_y(const t_grid_tile*& grid_loc) const {
+        int layer_num = std::floor(static_cast<int>(grid_loc - &grid_.get(0)) / (width() * height()));
+        auto diff = grid_loc - &grid_.get(layer_num * height() * width());
+
+        return diff % grid_.dim_size(2);
+    }
+
+    ///@brief Return the nth t_grid_tile on the given layer of the flattened grid - Used by serializer functions
+    inline const t_grid_tile* get_grid_locs_grid_loc(int n) const {
+        return &grid_.get(n);
+    }
+
   private:
     ///@brief count_instances() counts the number of each tile type on each layer and store it in instance_counts_. It is called in the constructor.
     void count_instances();
 
     std::string name_;
 
-    ///@brief num_layers_ is the number of layers (dies) in the FPGA chip. An FPGA chip has at least one layer.
-    int num_layers_ = 1;
-
     /**
-     * @brief grid_ is a vector of 2D grids. Each 2D grid represents a layer (die) of the FPGA chip. The layers are pushed backed to the top from the bottom (grid_[0] corresponds to the bottom layer).
-     * @note The first dimension is the layer number, the second dimension is the x coordinate, and the third dimension is the y coordinate.
+     * @brief grid_ is a 3D matrix that represents the grid of the FPGA chip.
+     * @note The first dimension is the layer number (grid_[0] corresponds to the bottom layer), the second dimension is the x coordinate, and the third dimension is the y coordinate.
      * @note Note that vtr::Matrix operator[] returns and intermediate type
-     * @note which can be used or indexing in the second dimension, allowing
+     * @note which can be used for indexing in the second dimension, allowing
      * @note traditional 2-d indexing to be used
      */
-    std::vector<vtr::Matrix<t_grid_tile>> grid_;
+    vtr::NdMatrix<t_grid_tile, 3> grid_; //This stores the grid of complex blocks. It is a a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
 
     ///@brief instance_counts_ stores the number of each tile type on each layer. It is initialized in count_instances().
     std::vector<std::map<t_physical_tile_type_ptr, size_t>> instance_counts_; /* [layer_num][physical_tile_type_ptr] */

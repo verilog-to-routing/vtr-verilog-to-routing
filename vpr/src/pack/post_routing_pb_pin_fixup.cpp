@@ -90,10 +90,10 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
      *   -------------------------------------------------------
      */
     std::vector<e_side> wanted_sides;
-    if ((int)device_ctx.grid.height(coord_layer) - 1 == coord_y) { /* TOP side */
+    if ((int)device_ctx.grid.height() - 1 == coord_y) { /* TOP side */
         wanted_sides.push_back(BOTTOM);
     }
-    if ((int)device_ctx.grid.width(coord_layer) - 1 == coord_x) { /* RIGHT side */
+    if ((int)device_ctx.grid.width() - 1 == coord_x) { /* RIGHT side */
         wanted_sides.push_back(LEFT);
     }
     if (0 == coord_y) { /* BOTTOM side */
@@ -158,7 +158,7 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         short valid_routing_net_cnt = 0;
         for (const e_side& pin_side : pin_sides) {
             /* Find the net mapped to this pin in routing results */
-            RRNodeId rr_node = node_lookup.find_node(coord_layer,coord_x, coord_y, rr_node_type, physical_pin, pin_side);
+            RRNodeId rr_node = node_lookup.find_node(coord_layer, coord_x, coord_y, rr_node_type, physical_pin, pin_side);
 
             /* Bypass invalid nodes, after that we must have a valid rr_node id */
             if (!rr_node) {

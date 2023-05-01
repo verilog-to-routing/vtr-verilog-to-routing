@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
+#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -136,8 +137,8 @@ void sync_grid_to_blocks() {
     auto& grid_blocks = place_ctx.grid_blocks;
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        for (int x = 0; x < (int)device_grid.width(layer_num); ++x) {
-            for (int y = 0; y < (int)device_grid.height(layer_num); ++y) {
+        for (int x = 0; x < (int)device_grid.width(); ++x) {
+            for (int y = 0; y < (int)device_grid.height(); ++y) {
                 const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
             }
@@ -1439,7 +1440,6 @@ t_pin_range get_pb_pins(t_physical_tile_type_ptr physical_type,
 
     //TODO: This is not working if there is a custom mapping between tile pins and the root-level
     // pb-block.
-    t_pin_range pin_num_range;
     if (pb->pb_graph_node->is_root()) {
         int num_pins = sub_tile->num_phy_pins / sub_tile->capacity.total();
         int first_num_node = sub_tile->sub_tile_to_tile_pin_indices[0] + num_pins * rel_cap;
@@ -1614,7 +1614,7 @@ void free_pb_stats(t_pb* pb) {
         pb->pb_stats->num_pins_of_net_in_pb.clear();
 
         if (pb->pb_stats->feasible_blocks) {
-            delete[](pb->pb_stats->feasible_blocks);
+            delete[] pb->pb_stats->feasible_blocks;
         }
         if (!pb->parent_pb) {
             pb->pb_stats->transitive_fanout_candidates.clear();
@@ -2346,7 +2346,7 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
     VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
     t_rr_type node_type = (class_type == e_pin_type::DRIVER) ? t_rr_type::SOURCE : t_rr_type::SINK;
-    return rr_spatial_lookup.find_node(layer,i, j, node_type, class_physical_num);
+    return rr_spatial_lookup.find_node(layer, i, j, node_type, class_physical_num);
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {

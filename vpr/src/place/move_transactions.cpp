@@ -48,7 +48,8 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (device_ctx.grid.get_physical_type({blocks_affected.moved_blocks[iblk].old_loc.x,
                                                blocks_affected.moved_blocks[iblk].old_loc.y,
-                                               blocks_affected.moved_blocks[iblk].old_loc.layer}) != device_ctx.grid.get_physical_type({blocks_affected.moved_blocks[iblk].new_loc.x, blocks_affected.moved_blocks[iblk].new_loc.y, blocks_affected.moved_blocks[iblk].new_loc.layer})) {
+                                               blocks_affected.moved_blocks[iblk].old_loc.layer})
+            != device_ctx.grid.get_physical_type({blocks_affected.moved_blocks[iblk].new_loc.x, blocks_affected.moved_blocks[iblk].new_loc.y, blocks_affected.moved_blocks[iblk].new_loc.layer})) {
             place_sync_external_block_connections(blk);
         }
     }
@@ -101,7 +102,8 @@ void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (device_ctx.grid.get_physical_type({blocks_affected.moved_blocks[iblk].old_loc.x,
                                                blocks_affected.moved_blocks[iblk].old_loc.y,
-                                               blocks_affected.moved_blocks[iblk].old_loc.layer}) != device_ctx.grid.get_physical_type({blocks_affected.moved_blocks[iblk].new_loc.x, blocks_affected.moved_blocks[iblk].new_loc.y, blocks_affected.moved_blocks[iblk].new_loc.layer})) {
+                                               blocks_affected.moved_blocks[iblk].old_loc.layer})
+            != device_ctx.grid.get_physical_type({blocks_affected.moved_blocks[iblk].new_loc.x, blocks_affected.moved_blocks[iblk].new_loc.y, blocks_affected.moved_blocks[iblk].new_loc.layer})) {
             place_sync_external_block_connections(blk);
         }
 

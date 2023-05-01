@@ -23,7 +23,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
     int test_grid_height = 10;
 
     // create the test device grid (10x10)
-    auto test_grid = vtr::Matrix<t_grid_tile>({10, 10});
+    auto test_grid = vtr::NdMatrix<t_grid_tile, 3>({1, 10, 10});
 
     // create an empty physical tile and assign its parameters
     t_physical_tile_type empty_tile;
@@ -51,87 +51,87 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         // in this test, the routers will be on the 4 corners of the FPGA
 
         // bottom left corner
-        test_grid[0][0].type = &router_tile;
-        test_grid[0][0].height_offset = 0;
-        test_grid[0][0].width_offset = 0;
+        test_grid[0][0][0].type = &router_tile;
+        test_grid[0][0][0].height_offset = 0;
+        test_grid[0][0][0].width_offset = 0;
 
-        test_grid[1][0].type = &router_tile;
-        test_grid[1][0].height_offset = 0;
-        test_grid[1][0].width_offset = 1;
+        test_grid[0][1][0].type = &router_tile;
+        test_grid[0][1][0].height_offset = 0;
+        test_grid[0][1][0].width_offset = 1;
 
-        test_grid[0][1].type = &router_tile;
-        test_grid[0][1].height_offset = 1;
-        test_grid[0][1].width_offset = 0;
+        test_grid[0][0][1].type = &router_tile;
+        test_grid[0][0][1].height_offset = 1;
+        test_grid[0][0][1].width_offset = 0;
 
-        test_grid[1][1].type = &router_tile;
-        test_grid[1][1].height_offset = 1;
-        test_grid[1][1].width_offset = 1;
+        test_grid[0][1][1].type = &router_tile;
+        test_grid[0][1][1].height_offset = 1;
+        test_grid[0][1][1].width_offset = 1;
 
         // bottom right corner
-        test_grid[8][0].type = &router_tile;
-        test_grid[8][0].height_offset = 0;
-        test_grid[8][0].width_offset = 0;
+        test_grid[0][8][0].type = &router_tile;
+        test_grid[0][8][0].height_offset = 0;
+        test_grid[0][8][0].width_offset = 0;
 
-        test_grid[9][0].type = &router_tile;
-        test_grid[9][0].height_offset = 0;
-        test_grid[9][0].width_offset = 1;
+        test_grid[0][9][0].type = &router_tile;
+        test_grid[0][9][0].height_offset = 0;
+        test_grid[0][9][0].width_offset = 1;
 
-        test_grid[8][1].type = &router_tile;
-        test_grid[8][1].height_offset = 1;
-        test_grid[8][1].width_offset = 0;
+        test_grid[0][8][1].type = &router_tile;
+        test_grid[0][8][1].height_offset = 1;
+        test_grid[0][8][1].width_offset = 0;
 
-        test_grid[9][1].type = &router_tile;
-        test_grid[9][1].height_offset = 1;
-        test_grid[9][1].width_offset = 1;
+        test_grid[0][9][1].type = &router_tile;
+        test_grid[0][9][1].height_offset = 1;
+        test_grid[0][9][1].width_offset = 1;
 
         // top left corner
-        test_grid[0][8].type = &router_tile;
-        test_grid[0][8].height_offset = 0;
-        test_grid[0][8].width_offset = 0;
+        test_grid[0][0][8].type = &router_tile;
+        test_grid[0][0][8].height_offset = 0;
+        test_grid[0][0][8].width_offset = 0;
 
-        test_grid[1][8].type = &router_tile;
-        test_grid[1][8].height_offset = 0;
-        test_grid[1][8].width_offset = 1;
+        test_grid[0][1][8].type = &router_tile;
+        test_grid[0][1][8].height_offset = 0;
+        test_grid[0][1][8].width_offset = 1;
 
-        test_grid[0][9].type = &router_tile;
-        test_grid[0][9].height_offset = 1;
-        test_grid[0][9].width_offset = 0;
+        test_grid[0][0][9].type = &router_tile;
+        test_grid[0][0][9].height_offset = 1;
+        test_grid[0][0][9].width_offset = 0;
 
-        test_grid[1][9].type = &router_tile;
-        test_grid[1][9].height_offset = 1;
-        test_grid[1][9].width_offset = 1;
+        test_grid[0][1][9].type = &router_tile;
+        test_grid[0][1][9].height_offset = 1;
+        test_grid[0][1][9].width_offset = 1;
 
         // top right corner
-        test_grid[8][8].type = &router_tile;
-        test_grid[8][8].height_offset = 0;
-        test_grid[8][8].width_offset = 0;
+        test_grid[0][8][8].type = &router_tile;
+        test_grid[0][8][8].height_offset = 0;
+        test_grid[0][8][8].width_offset = 0;
 
-        test_grid[9][8].type = &router_tile;
-        test_grid[9][8].height_offset = 0;
-        test_grid[9][8].width_offset = 1;
+        test_grid[0][9][8].type = &router_tile;
+        test_grid[0][9][8].height_offset = 0;
+        test_grid[0][9][8].width_offset = 1;
 
-        test_grid[8][9].type = &router_tile;
-        test_grid[8][9].height_offset = 1;
-        test_grid[8][9].width_offset = 0;
+        test_grid[0][8][9].type = &router_tile;
+        test_grid[0][8][9].height_offset = 1;
+        test_grid[0][8][9].width_offset = 0;
 
-        test_grid[9][9].type = &router_tile;
-        test_grid[9][9].height_offset = 1;
-        test_grid[9][9].width_offset = 1;
+        test_grid[0][9][9].type = &router_tile;
+        test_grid[0][9][9].height_offset = 1;
+        test_grid[0][9][9].width_offset = 1;
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
                 // make sure the current tyle is not a router
-                if (test_grid[i][j].type == nullptr) {
+                if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
-                    test_grid[i][j].type = &empty_tile;
-                    test_grid[i][j].width_offset = 0;
-                    test_grid[i][j].height_offset = 0;
+                    test_grid[0][i][j].type = &empty_tile;
+                    test_grid[0][i][j].width_offset = 0;
+                    test_grid[0][i][j].height_offset = 0;
                 }
             }
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
+        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
         identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
@@ -168,87 +168,87 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         // in this test, the routers will be on the 4 corners of the FPGA
 
         // bottom left corner
-        test_grid[3][0].type = &router_tile;
-        test_grid[3][0].height_offset = 0;
-        test_grid[3][0].width_offset = 0;
+        test_grid[0][3][0].type = &router_tile;
+        test_grid[0][3][0].height_offset = 0;
+        test_grid[0][3][0].width_offset = 0;
 
-        test_grid[4][0].type = &router_tile;
-        test_grid[4][0].height_offset = 0;
-        test_grid[4][0].width_offset = 1;
+        test_grid[0][4][0].type = &router_tile;
+        test_grid[0][4][0].height_offset = 0;
+        test_grid[0][4][0].width_offset = 1;
 
-        test_grid[3][1].type = &router_tile;
-        test_grid[3][1].height_offset = 1;
-        test_grid[3][1].width_offset = 0;
+        test_grid[0][3][1].type = &router_tile;
+        test_grid[0][3][1].height_offset = 1;
+        test_grid[0][3][1].width_offset = 0;
 
-        test_grid[4][1].type = &router_tile;
-        test_grid[4][1].height_offset = 1;
-        test_grid[4][1].width_offset = 1;
+        test_grid[0][4][1].type = &router_tile;
+        test_grid[0][4][1].height_offset = 1;
+        test_grid[0][4][1].width_offset = 1;
 
         // bottom right corner
-        test_grid[5][0].type = &router_tile;
-        test_grid[5][0].height_offset = 0;
-        test_grid[5][0].width_offset = 0;
+        test_grid[0][5][0].type = &router_tile;
+        test_grid[0][5][0].height_offset = 0;
+        test_grid[0][5][0].width_offset = 0;
 
-        test_grid[6][0].type = &router_tile;
-        test_grid[6][0].height_offset = 0;
-        test_grid[6][0].width_offset = 1;
+        test_grid[0][6][0].type = &router_tile;
+        test_grid[0][6][0].height_offset = 0;
+        test_grid[0][6][0].width_offset = 1;
 
-        test_grid[5][1].type = &router_tile;
-        test_grid[5][1].height_offset = 1;
-        test_grid[5][1].width_offset = 0;
+        test_grid[0][5][1].type = &router_tile;
+        test_grid[0][5][1].height_offset = 1;
+        test_grid[0][5][1].width_offset = 0;
 
-        test_grid[6][1].type = &router_tile;
-        test_grid[6][1].height_offset = 1;
-        test_grid[6][1].width_offset = 1;
+        test_grid[0][6][1].type = &router_tile;
+        test_grid[0][6][1].height_offset = 1;
+        test_grid[0][6][1].width_offset = 1;
 
         // top left corner
-        test_grid[0][5].type = &router_tile;
-        test_grid[0][5].height_offset = 0;
-        test_grid[0][5].width_offset = 0;
+        test_grid[0][0][5].type = &router_tile;
+        test_grid[0][0][5].height_offset = 0;
+        test_grid[0][0][5].width_offset = 0;
 
-        test_grid[1][5].type = &router_tile;
-        test_grid[1][5].height_offset = 0;
-        test_grid[1][5].width_offset = 1;
+        test_grid[0][1][5].type = &router_tile;
+        test_grid[0][1][5].height_offset = 0;
+        test_grid[0][1][5].width_offset = 1;
 
-        test_grid[0][6].type = &router_tile;
-        test_grid[0][6].height_offset = 1;
-        test_grid[0][6].width_offset = 0;
+        test_grid[0][0][6].type = &router_tile;
+        test_grid[0][0][6].height_offset = 1;
+        test_grid[0][0][6].width_offset = 0;
 
-        test_grid[1][6].type = &router_tile;
-        test_grid[1][6].height_offset = 1;
-        test_grid[1][6].width_offset = 1;
+        test_grid[0][1][6].type = &router_tile;
+        test_grid[0][1][6].height_offset = 1;
+        test_grid[0][1][6].width_offset = 1;
 
         // top right corner
-        test_grid[2][5].type = &router_tile;
-        test_grid[2][5].height_offset = 0;
-        test_grid[2][5].width_offset = 0;
+        test_grid[0][2][5].type = &router_tile;
+        test_grid[0][2][5].height_offset = 0;
+        test_grid[0][2][5].width_offset = 0;
 
-        test_grid[3][5].type = &router_tile;
-        test_grid[3][5].height_offset = 0;
-        test_grid[3][5].width_offset = 1;
+        test_grid[0][3][5].type = &router_tile;
+        test_grid[0][3][5].height_offset = 0;
+        test_grid[0][3][5].width_offset = 1;
 
-        test_grid[2][6].type = &router_tile;
-        test_grid[2][6].height_offset = 1;
-        test_grid[2][6].width_offset = 0;
+        test_grid[0][2][6].type = &router_tile;
+        test_grid[0][2][6].height_offset = 1;
+        test_grid[0][2][6].width_offset = 0;
 
-        test_grid[3][6].type = &router_tile;
-        test_grid[3][6].height_offset = 1;
-        test_grid[3][6].width_offset = 1;
+        test_grid[0][3][6].type = &router_tile;
+        test_grid[0][3][6].height_offset = 1;
+        test_grid[0][3][6].width_offset = 1;
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
                 // make sure the current tyle is not a router
-                if (test_grid[i][j].type == nullptr) {
+                if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
-                    test_grid[i][j].type = &empty_tile;
-                    test_grid[i][j].width_offset = 0;
-                    test_grid[i][j].height_offset = 0;
+                    test_grid[0][i][j].type = &empty_tile;
+                    test_grid[0][i][j].width_offset = 0;
+                    test_grid[0][i][j].height_offset = 0;
                 }
             }
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
+        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
         identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
@@ -285,87 +285,87 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         // in this test, the routers will be on the 4 corners of the FPGA
 
         // bottom left corner
-        test_grid[0][2].type = &router_tile;
-        test_grid[0][2].height_offset = 0;
-        test_grid[0][2].width_offset = 0;
+        test_grid[0][0][2].type = &router_tile;
+        test_grid[0][0][2].height_offset = 0;
+        test_grid[0][0][2].width_offset = 0;
 
-        test_grid[1][2].type = &router_tile;
-        test_grid[1][2].height_offset = 0;
-        test_grid[1][2].width_offset = 1;
+        test_grid[0][1][2].type = &router_tile;
+        test_grid[0][1][2].height_offset = 0;
+        test_grid[0][1][2].width_offset = 1;
 
-        test_grid[0][3].type = &router_tile;
-        test_grid[0][3].height_offset = 1;
-        test_grid[0][3].width_offset = 0;
+        test_grid[0][0][3].type = &router_tile;
+        test_grid[0][0][3].height_offset = 1;
+        test_grid[0][0][3].width_offset = 0;
 
-        test_grid[1][3].type = &router_tile;
-        test_grid[1][3].height_offset = 1;
-        test_grid[1][3].width_offset = 1;
+        test_grid[0][1][3].type = &router_tile;
+        test_grid[0][1][3].height_offset = 1;
+        test_grid[0][1][3].width_offset = 1;
 
         // bottom right corner
-        test_grid[0][4].type = &router_tile;
-        test_grid[0][4].height_offset = 0;
-        test_grid[0][4].width_offset = 0;
+        test_grid[0][0][4].type = &router_tile;
+        test_grid[0][0][4].height_offset = 0;
+        test_grid[0][0][4].width_offset = 0;
 
-        test_grid[1][4].type = &router_tile;
-        test_grid[1][4].height_offset = 0;
-        test_grid[1][4].width_offset = 1;
+        test_grid[0][1][4].type = &router_tile;
+        test_grid[0][1][4].height_offset = 0;
+        test_grid[0][1][4].width_offset = 1;
 
-        test_grid[0][5].type = &router_tile;
-        test_grid[0][5].height_offset = 1;
-        test_grid[0][5].width_offset = 0;
+        test_grid[0][0][5].type = &router_tile;
+        test_grid[0][0][5].height_offset = 1;
+        test_grid[0][0][5].width_offset = 0;
 
-        test_grid[1][5].type = &router_tile;
-        test_grid[1][5].height_offset = 1;
-        test_grid[1][5].width_offset = 1;
+        test_grid[0][1][5].type = &router_tile;
+        test_grid[0][1][5].height_offset = 1;
+        test_grid[0][1][5].width_offset = 1;
 
         // top left corner
-        test_grid[7][6].type = &router_tile;
-        test_grid[7][6].height_offset = 0;
-        test_grid[7][6].width_offset = 0;
+        test_grid[0][7][6].type = &router_tile;
+        test_grid[0][7][6].height_offset = 0;
+        test_grid[0][7][6].width_offset = 0;
 
-        test_grid[8][6].type = &router_tile;
-        test_grid[8][6].height_offset = 0;
-        test_grid[8][6].width_offset = 1;
+        test_grid[0][8][6].type = &router_tile;
+        test_grid[0][8][6].height_offset = 0;
+        test_grid[0][8][6].width_offset = 1;
 
-        test_grid[7][7].type = &router_tile;
-        test_grid[7][7].height_offset = 1;
-        test_grid[7][7].width_offset = 0;
+        test_grid[0][7][7].type = &router_tile;
+        test_grid[0][7][7].height_offset = 1;
+        test_grid[0][7][7].width_offset = 0;
 
-        test_grid[8][7].type = &router_tile;
-        test_grid[8][7].height_offset = 1;
-        test_grid[8][7].width_offset = 1;
+        test_grid[0][8][7].type = &router_tile;
+        test_grid[0][8][7].height_offset = 1;
+        test_grid[0][8][7].width_offset = 1;
 
         // top right corner
-        test_grid[7][8].type = &router_tile;
-        test_grid[7][8].height_offset = 0;
-        test_grid[7][8].width_offset = 0;
+        test_grid[0][7][8].type = &router_tile;
+        test_grid[0][7][8].height_offset = 0;
+        test_grid[0][7][8].width_offset = 0;
 
-        test_grid[8][8].type = &router_tile;
-        test_grid[8][8].height_offset = 0;
-        test_grid[8][8].width_offset = 1;
+        test_grid[0][8][8].type = &router_tile;
+        test_grid[0][8][8].height_offset = 0;
+        test_grid[0][8][8].width_offset = 1;
 
-        test_grid[7][9].type = &router_tile;
-        test_grid[7][9].height_offset = 1;
-        test_grid[7][9].width_offset = 0;
+        test_grid[0][7][9].type = &router_tile;
+        test_grid[0][7][9].height_offset = 1;
+        test_grid[0][7][9].width_offset = 0;
 
-        test_grid[8][9].type = &router_tile;
-        test_grid[8][9].height_offset = 1;
-        test_grid[8][9].width_offset = 1;
+        test_grid[0][8][9].type = &router_tile;
+        test_grid[0][8][9].height_offset = 1;
+        test_grid[0][8][9].width_offset = 1;
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
                 // make sure the current tyle is not a router
-                if (test_grid[i][j].type == nullptr) {
+                if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
-                    test_grid[i][j].type = &empty_tile;
-                    test_grid[i][j].width_offset = 0;
-                    test_grid[i][j].height_offset = 0;
+                    test_grid[0][i][j].type = &empty_tile;
+                    test_grid[0][i][j].width_offset = 0;
+                    test_grid[0][i][j].height_offset = 0;
                 }
             }
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
+        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
         identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
@@ -822,7 +822,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         int test_grid_height = 10;
 
         // create the test device grid (10x10)
-        auto test_grid = vtr::Matrix<t_grid_tile>({10, 10});
+        auto test_grid = vtr::NdMatrix<t_grid_tile, 3>({1, 10, 10});
 
         // create an empty physical tile and assign its parameters
         t_physical_tile_type empty_tile;
@@ -840,86 +840,86 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         // in this test, the routers will be on the 4 corners of the FPGA
 
         // bottom left corner
-        test_grid[0][0].type = &router_tile;
-        test_grid[0][0].height_offset = 0;
-        test_grid[0][0].width_offset = 0;
+        test_grid[0][0][0].type = &router_tile;
+        test_grid[0][0][0].height_offset = 0;
+        test_grid[0][0][0].width_offset = 0;
 
-        test_grid[1][0].type = &router_tile;
-        test_grid[1][0].height_offset = 0;
-        test_grid[1][0].width_offset = 1;
+        test_grid[0][1][0].type = &router_tile;
+        test_grid[0][1][0].height_offset = 0;
+        test_grid[0][1][0].width_offset = 1;
 
-        test_grid[0][1].type = &router_tile;
-        test_grid[0][1].height_offset = 1;
-        test_grid[0][1].width_offset = 0;
+        test_grid[0][0][1].type = &router_tile;
+        test_grid[0][0][1].height_offset = 1;
+        test_grid[0][0][1].width_offset = 0;
 
-        test_grid[1][1].type = &router_tile;
-        test_grid[1][1].height_offset = 1;
-        test_grid[1][1].width_offset = 1;
+        test_grid[0][1][1].type = &router_tile;
+        test_grid[0][1][1].height_offset = 1;
+        test_grid[0][1][1].width_offset = 1;
 
         // bottom right corner
-        test_grid[8][0].type = &router_tile;
-        test_grid[8][0].height_offset = 0;
-        test_grid[8][0].width_offset = 0;
+        test_grid[0][8][0].type = &router_tile;
+        test_grid[0][8][0].height_offset = 0;
+        test_grid[0][8][0].width_offset = 0;
 
-        test_grid[9][0].type = &router_tile;
-        test_grid[9][0].height_offset = 0;
-        test_grid[9][0].width_offset = 1;
+        test_grid[0][9][0].type = &router_tile;
+        test_grid[0][9][0].height_offset = 0;
+        test_grid[0][9][0].width_offset = 1;
 
-        test_grid[8][1].type = &router_tile;
-        test_grid[8][1].height_offset = 1;
-        test_grid[8][1].width_offset = 0;
+        test_grid[0][8][1].type = &router_tile;
+        test_grid[0][8][1].height_offset = 1;
+        test_grid[0][8][1].width_offset = 0;
 
-        test_grid[9][1].type = &router_tile;
-        test_grid[9][1].height_offset = 1;
-        test_grid[9][1].width_offset = 1;
+        test_grid[0][9][1].type = &router_tile;
+        test_grid[0][9][1].height_offset = 1;
+        test_grid[0][9][1].width_offset = 1;
 
         // top left corner
-        test_grid[0][8].type = &router_tile;
-        test_grid[0][8].height_offset = 0;
-        test_grid[0][8].width_offset = 0;
+        test_grid[0][0][8].type = &router_tile;
+        test_grid[0][0][8].height_offset = 0;
+        test_grid[0][0][8].width_offset = 0;
 
-        test_grid[1][8].type = &router_tile;
-        test_grid[1][8].height_offset = 0;
-        test_grid[1][8].width_offset = 1;
+        test_grid[0][1][8].type = &router_tile;
+        test_grid[0][1][8].height_offset = 0;
+        test_grid[0][1][8].width_offset = 1;
 
-        test_grid[0][9].type = &router_tile;
-        test_grid[0][9].height_offset = 1;
-        test_grid[0][9].width_offset = 0;
+        test_grid[0][0][9].type = &router_tile;
+        test_grid[0][0][9].height_offset = 1;
+        test_grid[0][0][9].width_offset = 0;
 
-        test_grid[1][9].type = &router_tile;
-        test_grid[1][9].height_offset = 1;
-        test_grid[1][9].width_offset = 1;
+        test_grid[0][1][9].type = &router_tile;
+        test_grid[0][1][9].height_offset = 1;
+        test_grid[0][1][9].width_offset = 1;
 
         // top right corner
-        test_grid[8][8].type = &router_tile;
-        test_grid[8][8].height_offset = 0;
-        test_grid[8][8].width_offset = 0;
+        test_grid[0][8][8].type = &router_tile;
+        test_grid[0][8][8].height_offset = 0;
+        test_grid[0][8][8].width_offset = 0;
 
-        test_grid[9][8].type = &router_tile;
-        test_grid[9][8].height_offset = 0;
-        test_grid[9][8].width_offset = 1;
+        test_grid[0][9][8].type = &router_tile;
+        test_grid[0][9][8].height_offset = 0;
+        test_grid[0][9][8].width_offset = 1;
 
-        test_grid[8][9].type = &router_tile;
-        test_grid[8][9].height_offset = 1;
-        test_grid[8][9].width_offset = 0;
+        test_grid[0][8][9].type = &router_tile;
+        test_grid[0][8][9].height_offset = 1;
+        test_grid[0][8][9].width_offset = 0;
 
-        test_grid[9][9].type = &router_tile;
-        test_grid[9][9].height_offset = 1;
-        test_grid[9][9].width_offset = 1;
+        test_grid[0][9][9].type = &router_tile;
+        test_grid[0][9][9].height_offset = 1;
+        test_grid[0][9][9].width_offset = 1;
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
                 // make sure the current tyle is not a router
-                if (test_grid[i][j].type == nullptr) {
+                if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
-                    test_grid[i][j].type = &empty_tile;
-                    test_grid[i][j].width_offset = 0;
-                    test_grid[i][j].height_offset = 0;
+                    test_grid[0][i][j].type = &empty_tile;
+                    test_grid[0][i][j].width_offset = 0;
+                    test_grid[0][i][j].height_offset = 0;
                 }
             }
         }
 
-        device_ctx.grid = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
+        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
     }
@@ -939,7 +939,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         int test_grid_height = 10;
 
         // create the test device grid (10x10)
-        auto test_grid = vtr::Matrix<t_grid_tile>({10, 10});
+        auto test_grid = vtr::NdMatrix<t_grid_tile, 3>({1, 10, 10});
 
         // create an empty physical tile and assign its parameters
         t_physical_tile_type empty_tile;
@@ -959,18 +959,18 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
                 // make sure the current tyle is not a router
-                if (test_grid[i][j].type == nullptr) {
+                if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
-                    test_grid[i][j].type = &empty_tile;
-                    test_grid[i][j].width_offset = 0;
-                    test_grid[i][j].height_offset = 0;
+                    test_grid[0][i][j].type = &empty_tile;
+                    test_grid[0][i][j].width_offset = 0;
+                    test_grid[0][i][j].height_offset = 0;
                 }
             }
         }
 
         noc_info.router_list.clear();
 
-        device_ctx.grid = DeviceGrid(device_grid_name, std::vector<vtr::Matrix<t_grid_tile>>{test_grid});
+        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }

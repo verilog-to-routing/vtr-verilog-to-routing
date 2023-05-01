@@ -71,8 +71,8 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
 
     // go through the device
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        int grid_width = (int)device_grid.width(layer_num);
-        int grid_height = (int)device_grid.height(layer_num);
+        int grid_width = (int)device_grid.width();
+        int grid_height = (int)device_grid.height();
         for (int i = 0; i < grid_width; i++) {
             for (int j = 0; j < grid_height; j++) {
                 // get some information from the current tile
@@ -101,8 +101,6 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
             }
         }
     }
-
-    return;
 }
 
 void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_router_tile_position>& noc_router_tiles) {

@@ -13,7 +13,7 @@ TEST_CASE("round_trip_map_lookahead", "[vpr]") {
     constexpr std::array<size_t, 5> kDim({1, 10, 12, 15, 16});
 
     f_wire_cost_map.resize(kDim);
-    for(size_t layer = 0; layer < kDim[0]; layer++) {
+    for (size_t layer = 0; layer < kDim[0]; layer++) {
         for (size_t x = 0; x < kDim[1]; ++x) {
             for (size_t y = 0; y < kDim[2]; ++y) {
                 for (size_t z = 0; z < kDim[3]; ++z) {
@@ -28,7 +28,7 @@ TEST_CASE("round_trip_map_lookahead", "[vpr]") {
 
     write_router_lookahead(kMapLookaheadBin);
 
-    for(size_t layer = 0; layer < kDim[0]; layer++) {
+    for (size_t layer = 0; layer < kDim[0]; layer++) {
         for (size_t x = 0; x < kDim[1]; ++x) {
             for (size_t y = 0; y < kDim[2]; ++y) {
                 for (size_t z = 0; z < kDim[3]; ++z) {
@@ -49,7 +49,7 @@ TEST_CASE("round_trip_map_lookahead", "[vpr]") {
         REQUIRE(f_wire_cost_map.dim_size(i) == kDim[i]);
     }
 
-    for(size_t layer = 0; layer < kDim[0]; layer++) {
+    for (size_t layer = 0; layer < kDim[0]; layer++) {
         for (size_t x = 0; x < kDim[1]; ++x) {
             for (size_t y = 0; y < kDim[2]; ++y) {
                 for (size_t z = 0; z < kDim[3]; ++z) {

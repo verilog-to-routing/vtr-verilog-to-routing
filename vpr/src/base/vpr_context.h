@@ -145,7 +145,7 @@ struct DeviceContext : public Context {
     /**
      * @brief The device grid
      *
-     * This represents the physical layout of the device. To get the physical tile at each location (x, y, z) the helper function in this data structure should be used.
+     * This represents the physical layout of the device. To get the physical tile at each location (layer_num, x, y) the helper functions in this data structure should be used.
      */
     DeviceGrid grid;
     /*

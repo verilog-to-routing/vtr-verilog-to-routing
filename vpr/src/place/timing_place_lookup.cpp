@@ -370,13 +370,13 @@ static float route_connection_delay(
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num,source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num, source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
             VTR_ASSERT(sink_ptc != OPEN);
-            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num,sink_x, sink_y, SINK, sink_ptc);
+            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num, sink_x, sink_y, SINK, sink_ptc);
 
             VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
@@ -465,7 +465,7 @@ static void generic_compute_matrix_dijkstra_expansion(
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, layer_num}));
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num,source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num, source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
         auto delays = calculate_all_path_delays_from_rr_node(size_t(source_rr_node),
@@ -501,7 +501,7 @@ static void generic_compute_matrix_dijkstra_expansion(
                     auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}));
                     for (int sink_ptc : best_sink_ptcs) {
                         VTR_ASSERT(sink_ptc != OPEN);
-                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num,sink_x, sink_y, SINK, sink_ptc);
+                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num, sink_x, sink_y, SINK, sink_ptc);
 
                         VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
@@ -1027,12 +1027,12 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     bool found = false;
     int found_layer_num = -1;
     //TODO: Function *FOR NOW* assumes that from/to blocks are at same die and have a same layer nums
-    for(int layer_num = 0; layer_num < grid.get_num_layers() && !found; ++layer_num) {
-        for (int x = 0; x < (int) grid.width() && !found; ++x) {
+    for (int layer_num = 0; layer_num < grid.get_num_layers() && !found; ++layer_num) {
+        for (int x = 0; x < (int)grid.width() && !found; ++x) {
             to_x = x + direct->x_offset;
-            if (to_x < 0 || to_x >= (int) grid.width()) continue;
+            if (to_x < 0 || to_x >= (int)grid.width()) continue;
 
-            for (int y = 0; y < (int) grid.height() && !found; ++y) {
+            for (int y = 0; y < (int)grid.height() && !found; ++y) {
                 if (grid.get_physical_type({x, y, layer_num}) != from_type) continue;
 
                 //Check that the from pin exists at this from location
@@ -1048,7 +1048,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 
                 to_y = y + direct->y_offset;
 
-                if (to_y < 0 || to_y >= (int) grid.height()) continue;
+                if (to_y < 0 || to_y >= (int)grid.height()) continue;
                 if (grid.get_physical_type({to_x, to_y, layer_num}) != to_type) continue;
 
                 //Check that the from pin exists at this from location
@@ -1105,7 +1105,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     }
 
     {
-        RRNodeId sink_rr_candidate = node_lookup.find_node(found_layer_num,to_x, to_y, SINK, to_pin_class);
+        RRNodeId sink_rr_candidate = node_lookup.find_node(found_layer_num, to_x, to_y, SINK, to_pin_class);
         VTR_ASSERT(sink_rr_candidate);
         *sink_rr = size_t(sink_rr_candidate);
     }

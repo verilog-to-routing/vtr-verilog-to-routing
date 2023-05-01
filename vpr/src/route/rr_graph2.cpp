@@ -724,7 +724,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
             /* Only connect to wire if there is a CB */
             if (is_cblock(chan, seg, to_track, seg_details)) {
                 to_switch = seg_details[to_track].arch_wire_switch();
-                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,tr_i, tr_j, to_type, to_track);
+                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, tr_i, tr_j, to_type, to_track);
 
                 if (!to_node) {
                     continue;
@@ -810,8 +810,8 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
-        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(layer,x, y, chan_type, inc_track);
-        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(layer,x, y, chan_type, dec_track);
+        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, inc_track);
+        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, dec_track);
 
         if (!inc_inode_index || !dec_inode_index) {
             continue;
@@ -1054,13 +1054,13 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const t_chan_details& chan_details,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index) {
-    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
+    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int chan = 0; chan < num_chans - 1; ++chan) {
             for (int seg = 1; seg < chan_len - 1; ++seg) {
                 /* Assign an inode to the starts of tracks */
                 int x = (type == CHANX ? seg : chan);
                 int y = (type == CHANX ? chan : seg);
-                const t_chan_seg_details *seg_details = chan_details[x][y].data();
+                const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
                 /* Reserve nodes in lookup to save memory */
                 rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, max_chan_width);
@@ -1104,12 +1104,11 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   int* index,
                                   bool /*is_flat*/) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
-    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
+    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int x = 0; x < (int)grid.width(); x++) {
             for (int y = 0; y < (int)grid.height(); y++) {
                 //Process each block from its root location
-                if (grid.get_width_offset({x, y, layer}) == 0 &&
-                    grid.get_height_offset({x, y,layer}) == 0) {
+                if (grid.get_width_offset({x, y, layer}) == 0 && grid.get_height_offset({x, y, layer}) == 0) {
                     t_physical_tile_type_ptr physical_type = grid.get_physical_type({x,
                                                                                      y,
                                                                                      layer});
@@ -1178,7 +1177,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                      * Deposit all the sides
                      */
                     if (wanted_sides.empty()) {
-                        for (e_side side: {TOP, BOTTOM, LEFT, RIGHT}) {
+                        for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
                             wanted_sides.push_back(side);
                         }
                     }
@@ -1210,8 +1209,8 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             for (int height_offset = 0; height_offset < physical_type_ptr->height; ++height_offset) {
                 int y_tile = root_y + height_offset;
                 //only nodes on the tile may be located in a location other than the root-location
-                rr_graph_builder.node_lookup().reserve_nodes(layer,x_tile, y_tile, OPIN, physical_type_ptr->num_pins, side);
-                rr_graph_builder.node_lookup().reserve_nodes(layer,x_tile, y_tile, IPIN, physical_type_ptr->num_pins, side);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, OPIN, physical_type_ptr->num_pins, side);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, IPIN, physical_type_ptr->num_pins, side);
             }
         }
     }
@@ -1228,11 +1227,11 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             int y_tile = root_y + y_offset[pin_coord_idx];
             auto side = pin_sides[pin_coord_idx];
             if (pin_type == DRIVER) {
-                rr_graph_builder.node_lookup().add_node(RRNodeId(*index),layer, x_tile, y_tile, OPIN, pin_num, side);
+                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, x_tile, y_tile, OPIN, pin_num, side);
                 assigned_to_rr_node = true;
             } else {
                 VTR_ASSERT(pin_type == RECEIVER);
-                rr_graph_builder.node_lookup().add_node(RRNodeId(*index),layer, x_tile, y_tile, IPIN, pin_num, side);
+                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, x_tile, y_tile, IPIN, pin_num, side);
                 assigned_to_rr_node = true;
             }
         }
@@ -1264,20 +1263,19 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                        int* index) {
     for (int x_tile = root_x; x_tile < (root_x + block_width); x_tile++) {
         for (int y_tile = root_y; y_tile < (root_y + block_height); y_tile++) {
-            rr_graph_builder.node_lookup().reserve_nodes(layer,x_tile, y_tile, SOURCE, class_num_vec.size(), SIDES[0]);
-            rr_graph_builder.node_lookup().reserve_nodes(layer,x_tile, y_tile, SINK, class_num_vec.size(), SIDES[0]);
+            rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, SOURCE, class_num_vec.size(), SIDES[0]);
+            rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, SINK, class_num_vec.size(), SIDES[0]);
         }
     }
 
     for (auto class_num : class_num_vec) {
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         if (class_type == DRIVER) {
-
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index),layer, root_x, root_y, SOURCE, class_num);
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, root_x, root_y, SOURCE, class_num);
         } else {
             VTR_ASSERT(class_type == RECEIVER);
 
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index),layer, root_x, root_y, SINK, class_num);
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, root_x, root_y, SINK, class_num);
         }
         ++(*index);
     }
@@ -1292,11 +1290,11 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             }
             int curr_x = root_x + x_offset;
             int curr_y = root_y + y_offset;
-            rr_graph_builder.node_lookup().mirror_nodes(layer,vtr::Point<int>(root_x, root_y),
+            rr_graph_builder.node_lookup().mirror_nodes(layer, vtr::Point<int>(root_x, root_y),
                                                         vtr::Point<int>(curr_x, curr_y),
                                                         SOURCE,
                                                         SIDES[0]);
-            rr_graph_builder.node_lookup().mirror_nodes(layer,vtr::Point<int>(root_x, root_y),
+            rr_graph_builder.node_lookup().mirror_nodes(layer, vtr::Point<int>(root_x, root_y),
                                                         vtr::Point<int>(curr_x, curr_y),
                                                         SINK,
                                                         SIDES[0]);
@@ -1328,9 +1326,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(),grid.height(), grid.width(), rr_type, NUM_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.height(), grid.width(), rr_type, NUM_SIDES);
         } else {
-            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(),grid.width(), grid.height(), rr_type, NUM_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_SIDES);
         }
     }
 
@@ -1338,9 +1336,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     load_block_rr_indices(rr_graph_builder, grid, index, is_flat);
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(nodes_per_chan->x_max,grid, grid.width(), grid.height(),
+    load_chan_rr_indices(nodes_per_chan->x_max, grid, grid.width(), grid.height(),
                          CHANX, chan_details_x, rr_graph_builder, index);
-    load_chan_rr_indices(nodes_per_chan->y_max,grid, grid.height(), grid.width(),
+    load_chan_rr_indices(nodes_per_chan->y_max, grid, grid.height(), grid.width(),
                          CHANY, chan_details_y, rr_graph_builder, index);
 }
 
@@ -1349,7 +1347,7 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                                                   const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                   const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index) {
-    for(int layer = 0; layer < grid.get_num_layers(); layer++){
+    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int x = 0; x < (int)grid.width(); x++) {
             for (int y = 0; y < (int)grid.height(); y++) {
                 //Process each block from it's root location
@@ -1359,7 +1357,7 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                     // Note that SINKS/SOURCES have no side, so we always use side 0
                     std::vector<int> class_num_vec;
                     std::vector<int> pin_num_vec;
-                    class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(layer,x, y, physical_type);
+                    class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(layer, x, y, physical_type);
                     pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(layer,
                                                                              x,
                                                                              y,
@@ -1412,17 +1410,16 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
     int height = grid.height();
     int layer = grid.get_num_layers();
 
-    for(int l = 0; l < layer; ++l){
+    for (int l = 0; l < layer; ++l) {
         for (int x = 0; x < width; ++x) {
             for (int y = 0; y < height; ++y) {
                 for (t_rr_type rr_type : RR_TYPES) {
                     /* Get the list of nodes at a specific location (x, y) */
                     std::vector<RRNodeId> nodes_from_lookup;
                     if (rr_type == CHANX || rr_type == CHANY) {
-
-                        nodes_from_lookup = rr_graph.node_lookup().find_channel_nodes(l,x, y, rr_type);
+                        nodes_from_lookup = rr_graph.node_lookup().find_channel_nodes(l, x, y, rr_type);
                     } else {
-                        nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(l,x, y, rr_type);
+                        nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(l, x, y, rr_type);
                     }
                     for (RRNodeId inode : nodes_from_lookup) {
                         rr_node_counts[inode]++;
@@ -1630,7 +1627,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
 
                     /* Check there is a connection and Fc map isn't wrong */
                     /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
-                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,x, y, IPIN, ipin, side);
+                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, x, y, IPIN, ipin, side);
                     if (to_node) {
                         rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch);
                         ++num_conn;
@@ -1950,7 +1947,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     num_conn = 0;
     for (iconn = 0; iconn < conn_tracks.size(); ++iconn) {
         to_track = conn_tracks[iconn];
-        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,to_x, to_y, to_type, to_track);
+        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_type, to_track);
 
         if (!to_node) {
             continue;
@@ -2030,7 +2027,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
             if (conn_vector.at(iconn).from_wire != from_wire) continue;
 
             int to_wire = conn_vector.at(iconn).to_wire;
-            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,to_x, to_y, to_chan_type, to_wire);
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_chan_type, to_wire);
 
             if (!to_node) {
                 continue;
@@ -2126,7 +2123,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                 to_track = mux_labels[(to_mux + i) % num_labels];
                 sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][j + 1] = to_track;
             }
-            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer,to_x, to_y, to_type, to_track);
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_type, to_track);
 
             if (!to_node) {
                 continue;
@@ -2757,9 +2754,9 @@ static int should_create_switchblock(const DeviceGrid& grid, int layer_num, int 
         x_coord = from_chan_coord;
     }
 
-    auto blk_type = grid.get_physical_type({x_coord, y_coord,layer_num});
-    int width_offset = grid.get_width_offset({x_coord, y_coord,layer_num});
-    int height_offset = grid.get_height_offset({x_coord, y_coord,layer_num});
+    auto blk_type = grid.get_physical_type({x_coord, y_coord, layer_num});
+    int width_offset = grid.get_width_offset({x_coord, y_coord, layer_num});
+    int height_offset = grid.get_height_offset({x_coord, y_coord, layer_num});
 
     e_sb_type sb_type = blk_type->switchblock_locations[width_offset][height_offset];
     auto switch_override = blk_type->switchblock_switch_overrides[width_offset][height_offset];

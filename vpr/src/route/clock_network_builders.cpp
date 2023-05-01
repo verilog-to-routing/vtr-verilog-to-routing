@@ -339,7 +339,7 @@ int ClockRib::create_chanx_wire(int layer,
 
     rr_graph_builder.set_node_type(chanx_node, CHANX);
     rr_graph_builder.set_node_coordinates(chanx_node, x_start, y, x_end, y);
-    rr_graph_builder.set_node_layer(chanx_node,layer);
+    rr_graph_builder.set_node_layer(chanx_node, layer);
     rr_graph_builder.set_node_capacity(chanx_node, 1);
     rr_graph_builder.set_node_track_num(chanx_node, ptc_num);
     rr_graph_builder.set_node_rc_index(chanx_node, NodeRCIndex(find_create_rr_rc_data(
@@ -370,7 +370,7 @@ int ClockRib::create_chanx_wire(int layer,
     for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
             //TODO: CHANX uses odd swapped x/y indices here. Will rework once rr_node_indices is shadowed
-            rr_graph_builder.node_lookup().add_node(chanx_node,layer, iy, ix, rr_graph.node_type(chanx_node), rr_graph.node_track_num(chanx_node));
+            rr_graph_builder.node_lookup().add_node(chanx_node, layer, iy, ix, rr_graph.node_type(chanx_node), rr_graph.node_track_num(chanx_node));
         }
     }
 
@@ -681,7 +681,7 @@ int ClockSpine::create_chany_wire(int layer,
 
     rr_graph_builder.set_node_type(chany_node, CHANY);
     rr_graph_builder.set_node_coordinates(chany_node, x, y_start, x, y_end);
-    rr_graph_builder.set_node_layer(chany_node,layer);
+    rr_graph_builder.set_node_layer(chany_node, layer);
     rr_graph_builder.set_node_capacity(chany_node, 1);
     rr_graph_builder.set_node_track_num(chany_node, ptc_num);
     rr_graph_builder.set_node_rc_index(chany_node, NodeRCIndex(find_create_rr_rc_data(
@@ -711,7 +711,7 @@ int ClockSpine::create_chany_wire(int layer,
     /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
     for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {
-            rr_graph_builder.node_lookup().add_node(chany_node,layer, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
+            rr_graph_builder.node_lookup().add_node(chany_node, layer, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
         }
     }
 
