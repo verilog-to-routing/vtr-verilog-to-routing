@@ -1613,8 +1613,9 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
-            ++move_type_stat.accepted_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
-
+            if (move_blk_type.index != -1) { //if the agent proposed the block type, then collect the block type stat
+                ++move_type_stat.accepted_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
+            }
             if (noc_opts.noc) {
                 commit_noc_costs(number_of_affected_noc_traffic_flows);
 
@@ -1670,8 +1671,9 @@ static e_move_result try_swap(const t_annealing_state* state,
                 revert_td_cost(blocks_affected);
             }
 
-            ++move_type_stat.rejected_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
-
+            if (move_blk_type.index != -1) { //if the agent proposed the block type, then collect the block type stat
+                ++move_type_stat.rejected_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
+            }
             /* Revert the traffic flow routes within the NoC*/
             if (noc_opts.noc) {
                 revert_noc_traffic_flow_routes(blocks_affected);
