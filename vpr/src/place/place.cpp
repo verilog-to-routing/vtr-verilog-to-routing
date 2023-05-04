@@ -1432,7 +1432,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     crit_params.crit_exponent = state->crit_exponent;
     crit_params.crit_limit = placer_opts.place_crit_limit;
 
-    e_move_type move_type;              //move type number
+    e_move_type move_type = e_move_type::UNIFORM; //move type number
     t_logical_block_type move_blk_type; //blk type that is chosen to be moved by the agent
 
     num_ts_called++;
@@ -1461,7 +1461,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         rlim = state->rlim;
     }
 
-    e_create_move create_move_outcome;
+    e_create_move create_move_outcome = e_create_move::ABORT;
 
     //When manual move toggle button is active, the manual move window asks the user for input.
     if (manual_move_enabled) {
@@ -1482,7 +1482,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
-    e_move_result move_outcome = ABORTED;
+    e_move_result move_outcome = e_move_result::ABORTED;
 
     if (create_move_outcome == e_create_move::ABORT) {
         LOG_MOVE_STATS_OUTCOME(std::numeric_limits<float>::quiet_NaN(),
