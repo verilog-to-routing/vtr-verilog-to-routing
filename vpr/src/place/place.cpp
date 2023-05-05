@@ -1433,7 +1433,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     crit_params.crit_limit = placer_opts.place_crit_limit;
 
     e_move_type move_type = e_move_type::UNIFORM; //move type number
-    t_logical_block_type move_blk_type; //blk type that is chosen to be moved by the agent
+    t_logical_block_type move_blk_type;           //blk type that is chosen to be moved by the agent
 
     num_ts_called++;
 
