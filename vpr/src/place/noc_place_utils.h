@@ -31,20 +31,6 @@ struct NocPlaceStats {
     std::vector<int> number_of_noc_router_moves_per_move_type;
 };
 
-/* Defines how the links found in a traffic flow are updated in terms
- * of their bandwidth usage.
- */
-enum class link_usage_update_state {
-    /* State 1: The link usages have to be incremented as the traffic
-     * flow route route has been updated 
-     */
-    increment,
-    /* State 2: The link usages have to be decremented as the traffic flow
-     * route is being removed
-     */
-    decrement
-};
-
 /**
  * @brief Routes all the traffic flows within the NoC and updates the link usage
  * for all links. This should be called after initial placement, where all the 
@@ -160,11 +146,13 @@ std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id,
  * @param noc_model Contains all the links and routers within the NoC. Used
  * to update link information.
  * @param how_to_update_links Determines how the bandwidths of links found
- * in the traffic flow route are updated.
+ * in the traffic flow route are updated. If it is -1, the route flow has
+ * been removed and links' bandwidth must be decremented. Otherwise, the a traffic
+ * flow has been re-routed and its links' bandwidth should be incremented.
  * @param traffic_flow_bandwidth The bandwidth of a traffic flow. This will
  * be used to update bandwidth usage of the links.
  */
-void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, link_usage_update_state how_to_update_links, double traffic_flow_bandwidth);
+void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int how_to_update_links, double traffic_flow_bandwidth);
 
 /**
  * @brief Goes through all the traffic flows associated to a moved

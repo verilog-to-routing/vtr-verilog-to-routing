@@ -39,7 +39,7 @@ void initial_noc_placement(void) {
         std::vector<NocLinkId>& curr_traffic_flow_route = get_traffic_flow_route(conv_traffic_flow_id, noc_ctx.noc_model, *noc_traffic_flows_storage, noc_ctx.noc_flows_router, place_ctx.block_locs);
 
         // update the links used in the found traffic flow route
-        update_traffic_flow_link_usage(curr_traffic_flow_route, noc_ctx.noc_model, link_usage_update_state::increment, curr_traffic_flow.traffic_flow_bandwidth);
+        update_traffic_flow_link_usage(curr_traffic_flow_route, noc_ctx.noc_model, 1, curr_traffic_flow.traffic_flow_bandwidth);
     }
 
     return;
@@ -123,24 +123,14 @@ std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id,
     return curr_traffic_flow_route;
 }
 
-void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, link_usage_update_state how_to_update_links, double traffic_flow_bandwidth) {
+void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int how_to_update_links, double traffic_flow_bandwidth) {
     // go through the links within the traffic flow route and update their bandwidth usage
     for (auto& link_in_route_id : traffic_flow_route) {
         // get the link to update and its current bandwdith
         NocLink& curr_link = noc_model.get_single_mutable_noc_link(link_in_route_id);
         double curr_link_bandwidth = curr_link.get_bandwidth_usage();
 
-        // update the link badnwidth based on the user provided state
-        switch (how_to_update_links) {
-            case link_usage_update_state::increment:
-                curr_link.set_bandwidth_usage(curr_link_bandwidth + traffic_flow_bandwidth);
-                break;
-            case link_usage_update_state::decrement:
-                curr_link.set_bandwidth_usage(curr_link_bandwidth - traffic_flow_bandwidth);
-                break;
-            default:
-                break;
-        }
+        curr_link.set_bandwidth_usage(curr_link_bandwidth + how_to_update_links * traffic_flow_bandwidth);
 
         // check that the bandwidth never goes to negative
         VTR_ASSERT(curr_link.get_bandwidth_usage() >= 0.0);
@@ -227,11 +217,11 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
      * the existing traffic flow route
      */
     const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage.get_traffic_flow_route(traffic_flow_id);
-    update_traffic_flow_link_usage(curr_traffic_flow_route, noc_model, link_usage_update_state::decrement, curr_traffic_flow.traffic_flow_bandwidth);
+    update_traffic_flow_link_usage(curr_traffic_flow_route, noc_model, -1 , curr_traffic_flow.traffic_flow_bandwidth);
 
     // now get the re-routed traffic flow route and update all the link usages with this reverted route
     std::vector<NocLinkId>& re_routed_traffic_flow_route = get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id, noc_model, noc_traffic_flows_storage, noc_flows_router, placed_cluster_block_locations);
-    update_traffic_flow_link_usage(re_routed_traffic_flow_route, noc_model, link_usage_update_state::increment, curr_traffic_flow.traffic_flow_bandwidth);
+    update_traffic_flow_link_usage(re_routed_traffic_flow_route, noc_model, 1, curr_traffic_flow.traffic_flow_bandwidth);
 
     return;
 }
