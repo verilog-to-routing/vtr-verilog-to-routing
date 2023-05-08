@@ -376,27 +376,6 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
 int get_number_of_traffic_flows_with_latency_cons_met(void);
 
 /**
- * @brief This verifies whether we need to compare the recomputed noc latency
- * cost to the current noc latency cost. During placement there is a function
- * called "recompute_costs_from_scratch" that regularily checks whether the
- * NoC latency cost updates after each move match a complete recalculation of
- * the NoC latency cost at the current state. This will fail when the latency
- * costs get really low. So we expect the latency costs to never actually go 
- * below one picosecond, so we check whether a recomputed cost is below this
- * threshold and if it is then indicate that there is no need to verify the
- * NoC latency cost. This is acceptable since the only case where the NoC
- * latency cost will be below one picosecond is when the weighting on the 
- * latency component of the cost is extremely low (ie. 0) and when most if not 
- * all the latency constraints have been met (so this is also close to 0). There
- * is no need to check and compare the cost here.
- * 
- * @param recomputed_cost The newly computed NoC latency cost for a given
- * placement state.
- * 
- */
-bool check_recomputed_noc_latency_cost(float recomputed_cost);
-
-/**
  * @brief There are a number of static datastructures which are local
  * to 'noc_place_utils.cpp'. THe purpose of these datastructures is
  * to keep track of the NoC costs for all traffic flows and temporarily

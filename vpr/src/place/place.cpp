@@ -1247,8 +1247,8 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
         costs->noc_aggregate_bandwidth_cost = new_noc_aggregate_bandwidth_cost;
 
         // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
-        // Otherwise there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
-        if (check_recomputed_noc_latency_cost(new_noc_latency_cost)) {
+        // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
+        if (new_noc_latency_cost > MIN_EXPECTED_NOC_LATENCY_COST) {
             if (fabs(
                     new_noc_latency_cost
                     - costs->noc_latency_cost)
