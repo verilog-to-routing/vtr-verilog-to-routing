@@ -489,7 +489,7 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
 }
 
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
-    // need to access all the router cluster blocks int he design
+    // need to access all the router cluster blocks in the design
     auto& noc_ctx = g_vpr_ctx.noc();
     // get a reference to the collection of router cluster blocks in the design
     const std::unordered_set<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
@@ -533,7 +533,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 
-    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
         return e_create_move::ABORT;
     }
