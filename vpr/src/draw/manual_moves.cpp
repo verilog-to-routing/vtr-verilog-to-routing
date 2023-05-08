@@ -310,7 +310,8 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
     draw_manual_moves_window("");
     update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
     move_type = e_move_type::MANUAL_MOVE;
-    return manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+    t_logical_block_type blk_type; //no need to specify block type in manual move "propose_move" function
+    return manual_move_generator.propose_move(blocks_affected, move_type, blk_type, rlim, placer_opts, criticalities);
 }
 
 #endif /*NO_GRAPHICS*/
