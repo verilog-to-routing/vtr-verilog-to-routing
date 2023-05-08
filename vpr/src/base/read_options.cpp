@@ -461,6 +461,37 @@ struct ParsePlaceAgentAlgorithm {
     }
 };
 
+struct ParsePlaceAgentSpace {
+    ConvertedValue<e_agent_space> from_str(std::string str) {
+        ConvertedValue<e_agent_space> conv_value;
+        if (str == "move_type")
+            conv_value.set_value(MOVE_TYPE);
+        else if (str == "move_block_type")
+            conv_value.set_value(MOVE_BLOCK_TYPE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_agent_space (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_agent_space val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == MOVE_TYPE)
+            conv_value.set_value("move_type");
+        else {
+            VTR_ASSERT(val == MOVE_BLOCK_TYPE);
+            conv_value.set_value("move_block_type");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"move_type", "move_block_type"};
+    }
+};
+
 struct ParseFixPins {
     ConvertedValue<e_pad_loc_type> from_str(std::string str) {
         ConvertedValue<e_pad_loc_type> conv_value;
@@ -2081,6 +2112,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Controls which placement RL agent is used")
         .default_value("softmax")
         .choices({"e_greedy", "softmax"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_agent_space, ParsePlaceAgentSpace>(args.place_agent_space, "--place_agent_space")
+        .help(
+            "Agent exploration space can be either based on only move types or also consider different block types\n"
+            "The available values are: move_type, move_block_type")
+        .default_value("move_block_type")
+        .choices({"move_type", "move_block_type"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
