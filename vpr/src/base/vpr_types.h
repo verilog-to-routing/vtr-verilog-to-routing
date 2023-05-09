@@ -983,6 +983,18 @@ enum e_agent_algorithm {
     SOFTMAX
 };
 
+/**
+ * @brief Used to determines the dimensionality of the RL agent exploration space
+ *
+ * Agent exploration space can be either based on only move types or
+ * can be based on (block_type, move_type) pair.
+ *
+ */
+enum e_agent_space {
+    MOVE_TYPE,
+    MOVE_BLOCK_TYPE
+};
+
 ///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
     CIRCUIT,       ///<Effort scales based on circuit size only
@@ -1065,6 +1077,8 @@ enum class e_place_delta_delay_algorithm {
  *   @param place_constraint_subtile
  *              True if subtiles should be specified when printing floorplan
  *              constraints. False if not.
+ *
+ *
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1113,6 +1127,7 @@ struct t_placer_opts {
     float place_agent_epsilon;
     float place_agent_gamma;
     float place_dm_rlim;
+    e_agent_space place_agent_space;
     //int place_timing_cost_func;
     std::string place_reward_fun;
     float place_crit_limit;
@@ -1297,6 +1312,9 @@ struct t_router_opts {
     std::string write_router_lookahead;
     std::string read_router_lookahead;
 
+    std::string write_intra_cluster_router_lookahead;
+    std::string read_intra_cluster_router_lookahead;
+
     e_heap_type router_heap;
     bool exit_after_first_routing_iteration;
 
@@ -1307,6 +1325,7 @@ struct t_router_opts {
     bool generate_rr_node_overuse_report;
 
     bool flat_routing;
+    bool has_choking_spot;
 
     // Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
@@ -1333,9 +1352,14 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                          ///<options to turn on hard NoC modeling & optimization
-    std::string noc_flows_file;        ///<name of the file that contains all the traffic flow information in the NoC
-    std::string noc_routing_algorithm; ///<controls the routing algorithm used to route packets within the NoC
+    bool noc;                                 ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file;               ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
+    std::string noc_routing_algorithm;        ///<controls the routing algorithm used to route packets within the NoC
+    double noc_placement_weighting;           ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
+    double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow contraints range:[0-inf)
+    double noc_latency_weighting;             ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
+    int noc_swap_percentage;                  ///<controls the number of NoC router block swap attemps relative to the total number of swaps attempted by the placer range:[0-100]
+    std::string noc_placement_file_name;      ///<is the name of the output file that contains the NoC placement information
 };
 
 /**
@@ -1613,26 +1637,61 @@ class t_net_routing_status {
         is_fixed_.resize(number_nets);
         is_fixed_.fill(false);
     }
-    void set_is_routed(ClusterNetId net, bool is_routed) {
+    void set_is_routed(ParentNetId net, bool is_routed) {
         is_routed_.set(index(net), is_routed);
     }
-    bool is_routed(ClusterNetId net) const {
+    bool is_routed(ParentNetId net) const {
         return is_routed_.get(index(net));
     }
-    void set_is_fixed(ClusterNetId net, bool is_fixed) {
+    void set_is_fixed(ParentNetId net, bool is_fixed) {
         is_fixed_.set(index(net), is_fixed);
     }
-    bool is_fixed(ClusterNetId net) const {
+    bool is_fixed(ParentNetId net) const {
         return is_fixed_.get(index(net));
     }
 
   private:
-    ClusterNetId index(ClusterNetId net) const {
-        VTR_ASSERT_SAFE(net != ClusterNetId::INVALID());
+    ParentNetId index(ParentNetId net) const {
+        VTR_ASSERT_SAFE(net != ParentNetId::INVALID());
         return net;
     }
-    vtr::dynamic_bitset<ClusterNetId> is_routed_; ///<Whether the net has been legally routed
-    vtr::dynamic_bitset<ClusterNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
+    vtr::dynamic_bitset<ParentNetId> is_routed_; ///<Whether the net has been legally routed
+    vtr::dynamic_bitset<ParentNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
+};
+
+class t_atom_net_routing_status {
+  public:
+    void clear() {
+        is_routed_.clear();
+        is_fixed_.clear();
+    }
+
+    void resize(size_t number_nets) {
+        is_routed_.resize(number_nets);
+        is_routed_.fill(false);
+        is_fixed_.resize(number_nets);
+        is_fixed_.fill(false);
+    }
+    void set_is_routed(AtomNetId net, bool is_routed) {
+        is_routed_.set(index(net), is_routed);
+    }
+    bool is_routed(AtomNetId net) const {
+        return is_routed_.get(index(net));
+    }
+    void set_is_fixed(AtomNetId net, bool is_fixed) {
+        is_fixed_.set(index(net), is_fixed);
+    }
+    bool is_fixed(AtomNetId net) const {
+        return is_fixed_.get(index(net));
+    }
+
+  private:
+    AtomNetId index(AtomNetId net) const {
+        VTR_ASSERT_SAFE(net != AtomNetId::INVALID());
+        return net;
+    }
+    vtr::dynamic_bitset<AtomNetId> is_routed_; ///<Whether the net has been legally routed
+    vtr::dynamic_bitset<AtomNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
 };
 
 struct t_node_edge {

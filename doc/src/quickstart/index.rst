@@ -17,7 +17,7 @@ The first step is to `download VTR <https://verilogtorouting.org/download/>`_ an
 
 Environment Setup
 -----------------
-VTR requires several system packages and Python packages to build and run the flow.  You can install the required system packages using the following command (this works on Ubuntu 18.04 and 20.04, but you may require different packages on other Linux distributions):
+VTR requires several system packages and Python packages to build and run the flow.  You can install the required system packages using the following command (this works on Ubuntu 18.04, 20.04 and 22.04, but you may require different packages on other Linux distributions). Our CI testing is on Ubuntu 22.04, so that is the best tested platform and recommended for development.
 
 .. code-block:: bash
 

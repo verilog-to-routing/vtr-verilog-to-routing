@@ -1,10 +1,50 @@
 #pragma once
 
+// This struct instructs the router on how to route the given connection
+struct ConnectionParameters {
+    ConnectionParameters(ParentNetId net_id,
+                         int target_pin_num,
+                         bool has_choking_spot,
+                         const std::unordered_map<RRNodeId, int>& connection_choking_spots)
+        : net_id_(net_id)
+        , target_pin_num_(target_pin_num)
+        , has_choking_spot_(has_choking_spot)
+        , connection_choking_spots_(connection_choking_spots) {}
+
+    // Net id of the connection
+    ParentNetId net_id_;
+    // Net's pin number of the connection's SINK
+    int target_pin_num_;
+
+    // Show whether for the given connection, router should expect a choking point
+    // If this is true, it would increase the routing time since the router has to
+    // take some measures to solve the congestion
+    bool has_choking_spot_;
+
+    const std::unordered_map<RRNodeId, int>& connection_choking_spots_;
+};
 struct RouterStats {
     size_t connections_routed = 0;
     size_t nets_routed = 0;
     size_t heap_pushes = 0;
     size_t heap_pops = 0;
+    size_t inter_cluster_node_pushes = 0;
+    size_t inter_cluster_node_pops = 0;
+    size_t intra_cluster_node_pushes = 0;
+    size_t intra_cluster_node_pops = 0;
+    size_t inter_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t inter_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
+    size_t intra_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t intra_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
+
+    // For debugging purposes
+    size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t rt_node_high_fanout_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t rt_node_entire_tree_pushes[t_rr_type::NUM_RR_TYPES];
+
+    size_t add_all_rt_from_high_fanout;
+    size_t add_high_fanout_rt;
+    size_t add_all_rt;
 };
 
 class WirelengthInfo {

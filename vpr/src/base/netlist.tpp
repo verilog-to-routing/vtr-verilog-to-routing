@@ -69,6 +69,20 @@ bool Netlist<BlockId, PortId, PinId, NetId>::is_compressed() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
+bool Netlist<BlockId, PortId, PinId, NetId>::net_is_ignored(const NetId id) const {
+    VTR_ASSERT_SAFE(valid_net_id(id));
+
+    return net_is_ignored_[id];
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+bool Netlist<BlockId, PortId, PinId, NetId>::net_is_global(const NetId id) const {
+    VTR_ASSERT_SAFE(valid_net_id(id));
+
+    return net_is_global_[id];
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::print_stats() const {
     VTR_LOG("Blocks  %zu capacity/size: %.2f\n", block_ids_.size(), float(block_ids_.capacity()) / block_ids_.size());
     VTR_LOG("Ports   %zu capacity/size: %.2f\n", port_ids_.size(), float(port_ids_.capacity()) / port_ids_.size());
@@ -786,6 +800,10 @@ NetId Netlist<BlockId, PortId, PinId, NetId>::create_net(const std::string name)
         net_pins_.emplace_back();
         net_pins_[net_id].emplace_back(PinId::INVALID());
 
+        net_is_ignored_.push_back(false);
+
+        net_is_global_.push_back(false);
+
         VTR_ASSERT(net_pins_[net_id].size() == 1);
         VTR_ASSERT(net_pins_[net_id][0] == PinId::INVALID());
     }
@@ -897,6 +915,20 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_block_param(const BlockId blk_i
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
+void Netlist<BlockId, PortId, PinId, NetId>::set_net_is_ignored(NetId net_id, bool state) {
+    VTR_ASSERT(valid_net_id(net_id));
+
+    net_is_ignored_[net_id] = state;
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+void Netlist<BlockId, PortId, PinId, NetId>::set_net_is_global(NetId net_id, bool state) {
+    VTR_ASSERT(valid_net_id(net_id));
+
+    net_is_global_[net_id] = state;
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::merge_nets(const NetId driver_net, const NetId sink_net) {
     VTR_ASSERT(valid_net_id(driver_net));
     VTR_ASSERT(valid_net_id(sink_net));
@@ -945,11 +977,11 @@ void Netlist<BlockId, PortId, PinId, NetId>::remove_block(const BlockId blk_id) 
     StringId name_id = block_names_[blk_id];
     block_name_to_block_id_.insert(name_id, BlockId::INVALID());
 
-    //Mark as invalid
-    block_ids_[blk_id] = BlockId::INVALID();
-
     //Call derived class' remove()
     remove_block_impl(blk_id);
+
+    //Mark as invalid
+    block_ids_[blk_id] = BlockId::INVALID();
 
     //Mark netlist dirty
     dirty_ = true;
@@ -1236,6 +1268,8 @@ void Netlist<BlockId, PortId, PinId, NetId>::clean_nets(const vtr::vector_map<Ne
     net_ids_ = clean_and_reorder_ids(net_id_map);
     net_names_ = clean_and_reorder_values(net_names_, net_id_map);
     net_pins_ = clean_and_reorder_values(net_pins_, net_id_map); //Note: actual pin refs are updated in rebuild_net_refs()
+    net_is_ignored_ = clean_and_reorder_values(net_is_ignored_, net_id_map);
+    net_is_global_ = clean_and_reorder_values(net_is_global_, net_id_map);
 
     clean_nets_impl(net_id_map);
 
@@ -1424,6 +1458,8 @@ void Netlist<BlockId, PortId, PinId, NetId>::shrink_to_fit() {
     net_ids_.shrink_to_fit();
     net_names_.shrink_to_fit();
     net_pins_.shrink_to_fit();
+    net_is_ignored_.shrink_to_fit();
+    net_is_global_.shrink_to_fit();
     VTR_ASSERT(validate_net_sizes());
 
     //String data
@@ -1547,6 +1583,8 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_sizes() const {
     size_t num_nets = nets().size();
     if (net_names_.size() != num_nets
         || net_pins_.size() != num_nets
+        || net_is_ignored_.size() != num_nets
+        || net_is_global_.size() != num_nets
         || !validate_net_sizes_impl(num_nets)) {
         VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Inconsistent net data sizes");
     }

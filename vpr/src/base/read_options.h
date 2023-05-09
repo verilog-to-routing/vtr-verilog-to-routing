@@ -36,6 +36,9 @@ struct t_options {
     argparse::ArgValue<std::string> write_router_lookahead;
     argparse::ArgValue<std::string> read_router_lookahead;
 
+    argparse::ArgValue<std::string> write_intra_cluster_router_lookahead;
+    argparse::ArgValue<std::string> read_intra_cluster_router_lookahead;
+
     argparse::ArgValue<std::string> write_block_usage;
 
     /* Stage Options */
@@ -131,6 +134,7 @@ struct t_options {
     argparse::ArgValue<float> place_agent_epsilon;
     argparse::ArgValue<float> place_agent_gamma;
     argparse::ArgValue<float> place_dm_rlim;
+    argparse::ArgValue<e_agent_space> place_agent_space;
     argparse::ArgValue<e_agent_algorithm> place_agent_algorithm;
     argparse::ArgValue<std::string> place_reward_fun;
     argparse::ArgValue<float> place_crit_limit;
@@ -143,6 +147,11 @@ struct t_options {
     argparse::ArgValue<bool> noc;
     argparse::ArgValue<std::string> noc_flows_file;
     argparse::ArgValue<std::string> noc_routing_algorithm;
+    argparse::ArgValue<double> noc_placement_weighting;
+    argparse::ArgValue<double> noc_latency_constraints_weighting;
+    argparse::ArgValue<double> noc_latency_weighting;
+    argparse::ArgValue<double> noc_swap_percentage;
+    argparse::ArgValue<std::string> noc_placement_file_name;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
@@ -186,6 +195,7 @@ struct t_options {
     argparse::ArgValue<int> reorder_rr_graph_nodes_threshold;
     argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
     argparse::ArgValue<bool> flat_routing;
+    argparse::ArgValue<bool> has_choking_spot;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;

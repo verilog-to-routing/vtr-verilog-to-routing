@@ -38,6 +38,10 @@ void setup_noc(const t_arch& arch) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
 
+    // store the reference to device grid with
+    // need to set this first before adding routers to the model
+    noc_ctx.noc_model.set_device_grid_width((int)device_ctx.grid.width());
+
     // generate noc model
     generate_noc(arch, noc_ctx, noc_router_tiles);
 
@@ -71,12 +75,16 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
     for (int i = 0; i < grid_width; i++) {
         for (int j = 0; j < grid_height; j++) {
             // get some information from the current tile
-            curr_tile_name.assign(device_grid[i][j].type->name);
-            curr_tile_width_offset = device_grid[i][j].width_offset;
-            curr_tile_height_offset = device_grid[i][j].height_offset;
+            const auto& type = device_grid.get_physical_type(i, j);
+            int width_offset = device_grid.get_width_offset(i, j);
+            int height_offset = device_grid.get_height_offset(i, j);
 
-            curr_tile_height = device_grid[i][j].type->height;
-            curr_tile_width = device_grid[i][j].type->width;
+            curr_tile_name.assign(type->name);
+            curr_tile_width_offset = width_offset;
+            curr_tile_height_offset = height_offset;
+
+            curr_tile_height = type->height;
+            curr_tile_width = type->width;
 
             /* 
              * Only store the tile position if it is a noc router.

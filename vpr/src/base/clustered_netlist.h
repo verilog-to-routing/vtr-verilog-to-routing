@@ -92,11 +92,6 @@
  * the first two ins, and last two outs are used. Indices [0,1] represent the ins, and [4,5]
  * represent the outs. Indices [2,3] are unused. Therefore, logical_pin_index_[92] = 5.
  *
- * Nets
- * ----
- * The pieces of unique net information stored are:
- *       net_global_:    Boolean mapping whether the net is global
- *       net_fixed_:     Boolean mapping whether the net is fixed (i.e. constant)
  *
  * Implementation
  * ==============
@@ -139,6 +134,9 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ///@brief Returns the type of CLB (Logic block, RAM, DSP, etc.)
     t_logical_block_type_ptr block_type(const ClusterBlockId id) const;
 
+    ///@brief Returns the blocks with the specific block types in the netlist
+    std::vector<ClusterBlockId> blocks_per_type(const t_logical_block_type blk_type) const;
+
     ///@brief Returns the net of the block attached to the specific pin index
     ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
 
@@ -178,12 +176,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      * Nets
      */
 
-    ///@brief Returns whether the net is ignored i.e. not routed
-    bool net_is_ignored(const ClusterNetId id) const;
-
-    ///@brief Returns whether the net is global
-    bool net_is_global(const ClusterNetId id) const;
-
   public: //Public Mutators
     /**
      * @brief Create or return an existing block in the netlist
@@ -221,12 +213,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *   @param name  The unique name of the net
      */
     ClusterNetId create_net(const std::string name);
-
-    ///@brief Sets the flag in net_ignored_ = state
-    void set_net_is_ignored(ClusterNetId net_id, bool state);
-
-    ///@brief Sets the flag in net_is_global_ = state
-    void set_net_is_global(ClusterNetId net_id, bool state);
 
     /**
      * @brief Given a name of a block and vector of possible cluster blocks
@@ -348,6 +334,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     vtr::vector_map<ClusterBlockId, t_pb*> block_pbs_;                              ///<Physical block representing the clustering & internal hierarchy of each CLB
     vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         ///<The type of logical block this user circuit block is mapped to
     vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; ///<The logical pin associated with each physical tile pin
+    std::unordered_map<int, std::vector<ClusterBlockId>> blocks_per_type_;          ///<Block IDs associated with each physical block type, Used in placement to move specific block type
 
     //Pins
     /**
@@ -357,8 +344,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     vtr::vector_map<ClusterPinId, int> pin_logical_index_;
 
     //Nets
-    vtr::vector_map<ClusterNetId, bool> net_is_ignored_; ///<Boolean mapping indicating if the net is ignored
-    vtr::vector_map<ClusterNetId, bool> net_is_global_;  ///<Boolean mapping indicating if the net is global
 };
 
 #endif

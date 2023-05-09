@@ -142,8 +142,12 @@ struct DeviceContext : public Context {
      * Physical FPGA architecture
      *********************************************************************/
 
-    DeviceGrid grid; ///<FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1]
-
+    /**
+     * @brief The device grid
+     *
+     * This represents the physical layout of the device. To get the physical tile at each location (layer_num, x, y) the helper functions in this data structure should be used.
+     */
+    DeviceGrid grid;
     /*
      * Empty types
      */
@@ -197,8 +201,13 @@ struct DeviceContext : public Context {
      * for client functions: GUI, placer, router, timing analyzer etc.
      */
     RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
-    int num_arch_switches;
-    t_arch_switch_inf* arch_switch_inf; // [0..(num_arch_switches-1)]
+    std::vector<t_arch_switch_inf> arch_switch_inf; // [0..(num_arch_switches-1)]
+
+    std::map<int, t_arch_switch_inf> all_sw_inf;
+
+    int delayless_switch_idx = OPEN;
+
+    bool rr_graph_is_flat = false;
 
     /*
      * Clock Networks
@@ -378,6 +387,19 @@ struct PlacementContext : public Context {
      * Used for unique identification and consistency checking
      */
     std::string placement_id;
+
+    /**
+     * @brief Map physical block type to RL-agent block type
+     *
+     * RL-agent block types are the physical block types that are used in the netlist (at least one logical block in the netlist maps to).
+     * As an example:
+     *      Having physical block types (EMPTY, LAB, DSP, IO),
+     *      agent block types would be (LAB,IO) if netlist doesn't contain DSP blocks.
+     * Key   : physical (agent) block type index
+     * Value : agent (physical) block type index
+     */
+    std::unordered_map<int, int> phys_blk_type_to_agent_blk_type_map;
+    std::unordered_map<int, int> agent_blk_type_to_phys_blk_type_map;
 };
 
 /**
@@ -388,15 +410,21 @@ struct PlacementContext : public Context {
  */
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    vtr::vector<ClusterNetId, t_traceback> trace;
-    vtr::vector<ClusterNetId, std::unordered_set<int>> trace_nodes;
+    vtr::vector<ParentNetId, t_traceback> trace;
 
-    vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
-    vtr::vector<ClusterNetId, uint8_t> is_clock_net;              /* [0..num_nets-1] */
+    vtr::vector<ParentNetId, std::unordered_set<int>> trace_nodes;
 
-    vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+    vtr::vector<ParentNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+
+    vtr::vector<ParentNetId, uint8_t> is_clock_net; /* [0..num_nets-1] */
+
+    vtr::vector<ParentBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
     std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+
+    vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
+
+    vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
 
     /**
      * @brief Information about whether a node is part of a non-configurable set
@@ -413,7 +441,7 @@ struct RoutingContext : public Context {
     t_net_routing_status net_status;
 
     ///@brief Limits area within which each net must be routed.
-    vtr::vector<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
+    vtr::vector<ParentNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
     t_clb_opins_used clb_opins_used_locally; //[0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1]
 
@@ -423,6 +451,9 @@ struct RoutingContext : public Context {
      * Used for unique identification and consistency checking
      */
     std::string routing_id;
+
+    // Cache key used to create router lookahead
+    std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>> router_lookahead_cache_key_;
 
     /**
      * @brief Cache of router lookahead object.
