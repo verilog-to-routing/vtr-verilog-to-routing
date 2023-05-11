@@ -3,7 +3,7 @@
 
 /********************** Variables local to noc_place_utils.c pp***************************/
 /* Proposed and actual cost of a noc traffic flow used for each move assessment */
-static vtr::vector<NocTrafficFlowId ,TrafficFlowPlaceCost> traffic_flow_costs, proposed_traffic_flow_costs;
+static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, proposed_traffic_flow_costs;
 
 /* Keeps track of traffic flows that have been updated at each attempted placement move*/
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
@@ -97,7 +97,6 @@ void commit_noc_costs(int number_of_affected_traffic_flows) {
         // reset the proposed traffic flows costs
         proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = -1;
         proposed_traffic_flow_costs[traffic_flow_id].latency = -1;
-
     }
 
     return;
