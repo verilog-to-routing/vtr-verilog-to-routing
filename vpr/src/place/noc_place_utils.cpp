@@ -491,10 +491,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 
     int number_of_router_blocks = router_clusters.size();
 
-    /* We will choose a random number between 0-number_of_router_blocks-1.
-     * Then we will iterate through the router cluster blocks and stop when we 
-     * have iterated through the chosen random number of blocks. The cluster
-     * we have stopped at will be the cluster to swap.*/
+    //randomly choose a router block to move
     int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
     ClusterBlockId b_from = router_clusters[random_cluster_block_index];
 

@@ -223,7 +223,7 @@ class NocTrafficFlows {
      * look up which traffic flows contain a specific router cluster block.
      * 
      * @param source_router_module_name A string that represents the
-     * name of the source router block in the traffic flow. THis is
+     * name of the source router block in the traffic flow. This is
      * provided by the user.
      * @param sink_router_module_name A string that represents the name
      * of the sink router block in the traffic flow. This is provided by
@@ -241,7 +241,19 @@ class NocTrafficFlows {
      */
     void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
 
-
+    /**
+     * @brief fill "router_cluster_in_netlist" vector which is an internal
+     * data structure used in "propose_router_swap" function. This vector
+     * will contain NoC routers' ClusterBlockId specified in the netlist to
+     * simplify their quick access during choosing a random router from netlist.
+     * This routine is executed only once during traffic flow extraction
+     * after "get_cluster_blocks_compatible_with_noc_router_tiles"
+     * function and the vector will be constant afterward.
+     *
+     * @param routers_cluster_id_in_netlist A vector containing all routers'
+     * ClusterBlockId extracted from netlist.
+     *
+     */
     void set_router_cluster_in_netlist(std::vector<ClusterBlockId> routers_cluster_id_in_netlist);
 
     //utility functions
@@ -258,8 +270,8 @@ class NocTrafficFlows {
     void finshed_noc_traffic_flows_setup(void);
 
     /**
-     * @brief Resets the class by clearning internal
-     * satastructures.
+     * @brief Resets the class by clearing internal
+     * datastructures.
      * 
      */
     void clear_traffic_flows(void);
@@ -267,7 +279,7 @@ class NocTrafficFlows {
     /**
      * @brief Given a block from the clustered netlist, determine
      * if the block has traffic flows that it is a part of. There are
-     * three posssible cases seen by this function. Case 1 is when the
+     * three possible cases seen by this function. Case 1 is when the
      * block is not a router. Case 2 is when the block is a router and
      * has not traffic flows it is a part of. And finally case three is
      * when the block is a router and has traffic flows it is a part of.

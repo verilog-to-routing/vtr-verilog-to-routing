@@ -66,8 +66,8 @@ void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_n
     return;
 }
 
-//SARA_TODO: commenting
 void NocTrafficFlows::set_router_cluster_in_netlist(std::vector<ClusterBlockId> routers_cluster_id_in_netlist){
+    //copy the input vector to the internal vector
     for (auto router_id : routers_cluster_id_in_netlist){
         router_cluster_in_netlist.emplace_back(router_id);
     }

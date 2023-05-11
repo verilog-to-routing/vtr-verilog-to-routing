@@ -25,14 +25,14 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
      * which represents the name of the router modules in the HDL design. Each
      * time the cluster id is needed, the name of the block needs to be 
      * compared to every block in the clustered netlist. This can be very
-     * time consuming, so instead we can compare to only blocks that are 
+     * time-consuming, so instead we can compare to only blocks that are
      * compatible to physical NoC router tiles. 
      */
     std::vector<ClusterBlockId> cluster_blocks_compatible_with_noc_router_tiles = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_tile_type);
 
     /* variabled used when parsing the file.
      * Stores xml related information while parsing the file, such as current 
-     * line number, current tag and etc. These variables will be used to 
+     * line number, current tag and etc. These variables will be used to
      * provide additional information to the user when reporting an error. 
      */
     pugi::xml_document doc;
