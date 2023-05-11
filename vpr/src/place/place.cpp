@@ -753,11 +753,6 @@ void try_place(const Netlist<>& net_list,
     move_type_stat.accepted_moves.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
     move_type_stat.rejected_moves.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
 
-    // if the noc option was turned on then setup the noc placement stats datastructure
-    if (noc_opts.noc) {
-        initialize_noc_placement_stats(placer_opts);
-    }
-
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
                             device_ctx.grid.height() - 1);
@@ -1621,11 +1616,6 @@ static e_move_result try_swap(const t_annealing_state* state,
 
                 costs->noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
                 costs->noc_latency_cost += noc_latency_delta_c;
-
-                // if a noc router block was moved, update the NoC related stats
-                if (number_of_affected_noc_traffic_flows != 0) {
-                    update_noc_placement_stats((int)move_type);
-                }
             }
 
             //Highlights the new block when manual move is selected.
