@@ -1,26 +1,19 @@
 #include "critical_uniform_move_generator.h"
 #include "globals.h"
 #include "place_constraints.h"
+#include "move_utils.h"
 
-e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
+e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
+    ClusterNetId net_from;
+    int pin_from;
+    //Find a movable block based on blk_type
+    ClusterBlockId b_from = propose_block_to_move(blk_type, true, &net_from, &pin_from);
+
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.move();
 
-    /* Pick a random block to be swapped with another random block.   */
-    // pick it from the highly critical blocks
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
-        return e_create_move::ABORT; //No critical block
-    }
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
-    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
-
-    if (!b_from) {
-        return e_create_move::ABORT; //No movable block found
-    }
-
-    if (place_ctx.block_locs[b_from].is_fixed) {
-        return e_create_move::ABORT; //Block is fixed, cannot move
+    if (!b_from) { //No movable block found
+        return e_create_move::ABORT;
     }
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
@@ -36,7 +29,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 
-    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
         return e_create_move::ABORT;
     }
