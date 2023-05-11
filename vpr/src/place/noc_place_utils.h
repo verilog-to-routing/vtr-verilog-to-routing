@@ -437,36 +437,6 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  */
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim);
 
-/* Below are functions related to modifying and retreiving the NoC placement stats dastructure*/
-
-/**
- * @brief Initializes all the stat values to 0 and allocates space for the
- * number of possible move types offered by the placer. This is needed as
- * the stats datastructure for the NoC keeps track of which moves caused
- * a router block to move.
- * 
- * @param placer_opts Contains information about all the possible move
- * types in the placer.
- */
-void initialize_noc_placement_stats(const t_placer_opts& placer_opts);
-
-/**
- * @brief Increments the count of total number of router block moves during
- * placement. Also increments the move type that caused the router block to
- * move. This function should be called whenever a noc router block is moved
- * during placement.
- * 
- * @param move_type The type of move in the placer which caused a router block
- * to move.
- */
-void update_noc_placement_stats(int move_type);
-
-/**
- * @brief Displays the NoC placement statistical data.
- * 
- */
-void print_noc_placement_stats(void);
-
 /**
  * @brief Writes out the locations of the router cluster blocks in the
  * final placement. This file contains only NoC routers and the 
