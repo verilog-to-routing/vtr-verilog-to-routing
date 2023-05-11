@@ -13,22 +13,22 @@ e_create_move AtomCriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_m
     AtomBlockId atom_blk_id = AtomBlockId::INVALID();
     std::tie(cluster_blk_id, atom_blk_id) = getCriticalAtomBlock();
 
-    if(b_from == AtomBlockId::INVALID()) {
+    if(cluster_blk_id == ClusterBlockId::INVALID() || atom_blk_id == AtomBlockId::INVALID()) {
         return e_create_move::ABORT; // Not a valid block
     }
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
-    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    t_pl_loc from = place_ctx.block_locs[cluster_blk_id].loc;
+    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(cluster_blk_id);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_pl_loc to;
 
-    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from)) {
+    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, cluster_blk_id)) {
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, cluster_blk_id, to);
 
     //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
