@@ -1039,7 +1039,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     test_noc_latency_costs = 0.;
 
     // now execute the test function
-    recompute_noc_costs(&test_noc_bandwidth_costs, &test_noc_latency_costs);
+    recompute_noc_costs(test_noc_bandwidth_costs, test_noc_latency_costs);
 
     // now verify
     REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_latency_costs));
