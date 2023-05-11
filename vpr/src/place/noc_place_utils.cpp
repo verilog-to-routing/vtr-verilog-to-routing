@@ -2,9 +2,8 @@
 #include "noc_place_utils.h"
 
 /********************** Variables local to noc_place_utils.c pp***************************/
-/* Cost of a noc traffic flow, and a temporary cost of a noc traffic flow
- * during move assessment*/
-static vtr::vector<NocTrafficFlowId, double> traffic_flow_aggregate_bandwidth_cost, proposed_traffic_flow_aggregate_bandwidth_cost, traffic_flow_latency_cost, proposed_traffic_flow_latency_cost;
+/* Proposed and actual cost of a noc traffic flow used for each move assessment */
+static vtr::vector<NocTrafficFlowId ,TrafficFlowPlaceCost> traffic_flow_costs, proposed_traffic_flow_costs;
 
 /* Keeps track of traffic flows that have been updated at each attempted placement move*/
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
@@ -78,11 +77,11 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
         // get the current traffic flow info
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
 
-        proposed_traffic_flow_aggregate_bandwidth_cost[traffic_flow_id] = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
-        proposed_traffic_flow_latency_cost[traffic_flow_id] = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
+        proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
+        proposed_traffic_flow_costs[traffic_flow_id].latency = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
 
-        noc_aggregate_bandwidth_delta_c += proposed_traffic_flow_aggregate_bandwidth_cost[traffic_flow_id] - traffic_flow_aggregate_bandwidth_cost[traffic_flow_id];
-        noc_latency_delta_c += proposed_traffic_flow_latency_cost[traffic_flow_id] - traffic_flow_latency_cost[traffic_flow_id];
+        noc_aggregate_bandwidth_delta_c += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
+        noc_latency_delta_c += proposed_traffic_flow_costs[traffic_flow_id].latency - traffic_flow_costs[traffic_flow_id].latency;
     }
 
     return number_of_affected_traffic_flows;
@@ -93,12 +92,12 @@ void commit_noc_costs(int number_of_affected_traffic_flows) {
         NocTrafficFlowId traffic_flow_id = affected_traffic_flows[traffic_flow_affected];
 
         // update the traffic flow costs
-        traffic_flow_aggregate_bandwidth_cost[traffic_flow_id] = proposed_traffic_flow_aggregate_bandwidth_cost[traffic_flow_id];
-        traffic_flow_latency_cost[traffic_flow_id] = proposed_traffic_flow_latency_cost[traffic_flow_id];
+        traffic_flow_costs[traffic_flow_id] = proposed_traffic_flow_costs[traffic_flow_id];
 
         // reset the proposed traffic flows costs
-        proposed_traffic_flow_aggregate_bandwidth_cost[traffic_flow_id] = -1;
-        proposed_traffic_flow_latency_cost[traffic_flow_id] = -1;
+        proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = -1;
+        proposed_traffic_flow_costs[traffic_flow_id].latency = -1;
+
     }
 
     return;
@@ -235,8 +234,8 @@ void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_n
 
     // go through the costs of all the traffic flows and add them up to recompute the total costs associated with the NoC
     for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
-        *new_noc_aggregate_bandwidth_cost += traffic_flow_aggregate_bandwidth_cost[(NocTrafficFlowId)traffic_flow_id];
-        *new_noc_latency_cost += traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id];
+        *new_noc_aggregate_bandwidth_cost += traffic_flow_costs[(NocTrafficFlowId)traffic_flow_id].aggregate_bandwidth;
+        *new_noc_latency_cost += traffic_flow_costs[(NocTrafficFlowId)traffic_flow_id].latency;
     }
 
     return;
@@ -269,9 +268,9 @@ double comp_noc_aggregate_bandwidth_cost(void) {
         double curr_traffic_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth_cost(curr_traffic_flow_route, curr_traffic_flow);
 
         // store the calculated aggregate bandwidth for the current traffic flow in local datastructures (this also initializes them)
-        traffic_flow_aggregate_bandwidth_cost[(NocTrafficFlowId)traffic_flow_id] = curr_traffic_flow_aggregate_bandwidth_cost;
+        traffic_flow_costs[(NocTrafficFlowId)traffic_flow_id].aggregate_bandwidth = curr_traffic_flow_aggregate_bandwidth_cost;
 
-        // accumumulate the aggregate bandwidth cost
+        // accumulate the aggregate bandwidth cost
         noc_aggregate_bandwidth_cost += curr_traffic_flow_aggregate_bandwidth_cost;
     }
 
@@ -297,7 +296,7 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
         double curr_traffic_flow_latency_cost = calculate_traffic_flow_latency_cost(curr_traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
 
         // store the calculated latency for the current traffic flow in local datastructures (this also initializes them)
-        traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id] = curr_traffic_flow_latency_cost;
+        traffic_flow_costs[(NocTrafficFlowId)traffic_flow_id].latency = curr_traffic_flow_latency_cost;
 
         // accumulate the aggregate bandwidth cost
         noc_latency_cost += curr_traffic_flow_latency_cost;
@@ -351,7 +350,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         double current_flow_latency_cost = calculate_traffic_flow_latency_cost(temp_found_noc_route, *noc_model, curr_traffic_flow, noc_opts);
         noc_latency_cost_check += current_flow_latency_cost;
 
-        // clear the current traffic flow route so we can route the next traffic flow
+        // clear the current traffic flow route, so we can route the next traffic flow
         temp_found_noc_route.clear();
     }
 
@@ -447,10 +446,8 @@ void allocate_and_load_noc_placement_structs(void) {
 
     int number_of_traffic_flows = noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows();
 
-    traffic_flow_aggregate_bandwidth_cost.resize(number_of_traffic_flows, -1);
-    proposed_traffic_flow_aggregate_bandwidth_cost.resize(number_of_traffic_flows, -1);
-    traffic_flow_latency_cost.resize(number_of_traffic_flows, -1);
-    proposed_traffic_flow_latency_cost.resize(number_of_traffic_flows, -1);
+    traffic_flow_costs.resize(number_of_traffic_flows);
+    proposed_traffic_flow_costs.resize(number_of_traffic_flows);
 
     affected_traffic_flows.resize(number_of_traffic_flows, NocTrafficFlowId::INVALID());
 
@@ -458,10 +455,8 @@ void allocate_and_load_noc_placement_structs(void) {
 }
 
 void free_noc_placement_structs(void) {
-    vtr::release_memory(traffic_flow_aggregate_bandwidth_cost);
-    vtr::release_memory(proposed_traffic_flow_aggregate_bandwidth_cost);
-    vtr::release_memory(traffic_flow_latency_cost);
-    vtr::release_memory(proposed_traffic_flow_latency_cost);
+    vtr::release_memory(traffic_flow_costs);
+    vtr::release_memory(proposed_traffic_flow_costs);
     vtr::release_memory(affected_traffic_flows);
 
     return;

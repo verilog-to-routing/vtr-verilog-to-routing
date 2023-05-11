@@ -32,6 +32,18 @@ struct NocPlaceStats {
 };
 
 /**
+ * @brief Each traffic flow cost consists of two components:
+ *        1) traffic flow aggregate bandwidth
+ *        2) traffic flow latency
+ *        NoC placement code will keep an array-of-struct to easily access each
+ *        traffic flow cost.
+ */
+struct TrafficFlowPlaceCost {
+    double aggregate_bandwidth = -1;
+    double latency = -1;
+};
+
+/**
  * @brief Routes all the traffic flows within the NoC and updates the link usage
  * for all links. This should be called after initial placement, where all the 
  * logical NoC router blocks have been placed for the first time and no traffic
