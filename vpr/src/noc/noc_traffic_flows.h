@@ -80,7 +80,7 @@ class NocTrafficFlows {
     vtr::vector<NocTrafficFlowId, t_noc_traffic_flow> noc_traffic_flows;
 
     /** contains the ids of all the router cluster blocks within the design */
-    std::unordered_set<ClusterBlockId> router_cluster_in_netlist;
+    std::vector<ClusterBlockId> router_cluster_in_netlist;
 
     /**
      * @brief Each traffic flow is composed of a source and destination 
@@ -209,7 +209,7 @@ class NocTrafficFlows {
      */
     std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
-    const std::unordered_set<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
+    const std::vector<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
 
     // setters
 
@@ -231,7 +231,7 @@ class NocTrafficFlows {
      * @param source_router_cluster_id The source router block id that
      * uniquely identifies this block in the clustered netlist.
      * @param sink_router_cluster_id  The sink router block id that
-     * uniquely identifier this block in the clusterd netlist.
+     * uniquely identifier this block in the clustered netlist.
      * @param traffic_flow_bandwidth The size of the data transmission
      * in this traffic flow (units of bps).
      * @param traffic_flow_latency The maximum allowable delay between
@@ -240,6 +240,9 @@ class NocTrafficFlows {
      * @param traffic_flow_priority The importance of a given traffic flow.
      */
     void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
+
+
+    void set_router_cluster_in_netlist(std::vector<ClusterBlockId> routers_cluster_id_in_netlist);
 
     //utility functions
 
@@ -251,6 +254,7 @@ class NocTrafficFlows {
      * the routed paths for all traffic flows.
      * 
      */
+
     void finshed_noc_traffic_flows_setup(void);
 
     /**

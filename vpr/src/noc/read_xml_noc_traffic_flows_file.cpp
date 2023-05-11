@@ -55,6 +55,9 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
             process_single_flow(single_flow, loc_data, cluster_ctx, noc_ctx, noc_router_tile_type, cluster_blocks_compatible_with_noc_router_tiles);
         }
 
+        // insert the clusters to the local collection of all router clusters in the netlist
+        noc_ctx.noc_traffic_flows_storage.set_router_cluster_in_netlist(cluster_blocks_compatible_with_noc_router_tiles);
+
     } catch (pugiutil::XmlError& e) { // used for identifying any of the xml parsing library errors
 
         vpr_throw(VPR_ERROR_OTHER, noc_flows_file, e.line(), e.what());

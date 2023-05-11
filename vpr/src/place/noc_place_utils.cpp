@@ -482,7 +482,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
     // need to access all the router cluster blocks in the design
     auto& noc_ctx = g_vpr_ctx.noc();
     // get a reference to the collection of router cluster blocks in the design
-    const std::unordered_set<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+    const std::vector<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
 
     // if there are no router cluster blocks to swap then abort
     if (router_clusters.empty()) {
@@ -496,10 +496,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
      * have iterated through the chosen random number of blocks. The cluster
      * we have stopped at will be the cluster to swap.*/
     int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
-    auto router_cluster_block_to_swap_ref = router_clusters.begin();
-    std::advance(router_cluster_block_to_swap_ref, random_cluster_block_index);
-
-    ClusterBlockId b_from = *router_cluster_block_to_swap_ref;
+    ClusterBlockId b_from = router_clusters[random_cluster_block_index];
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -594,7 +591,7 @@ void write_noc_placement_file(std::string file_name) {
     int layer_number = 0;
 
     // get a reference to the collection of router cluster blocks in the design
-    const std::unordered_set<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+    const std::vector<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
     //get the noc model to determine the physical routers where clusters are placed
     const NocStorage& noc_model = noc_ctx.noc_model;
 
