@@ -142,7 +142,7 @@ void commit_noc_costs(int number_of_affected_traffic_flows);
  * placed grid locations of all cluster blocks.
  * @return std::vector<NocLinkId>& The found route for the traffic flow.
  */
-std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model, NocTrafficFlows& noc_traffic_flows_storage, NocRouting* noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations);
+std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model, NocTrafficFlows& noc_traffic_flows_storage, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations);
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -190,13 +190,13 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  * @param placed_cluster_block_locations A datastructure that identifies the
  * placed grid locations of all cluster blocks.
  * @param updated_traffic_flows Keeps track of traffic flows that have been
- * re-routed. Used to prevent re-rouitng the same traffic flow multiple times.
+ * re-routed. Used to prevent re-routing the same traffic flow multiple times.
  * @param number_of_affected_traffic_flows an integer which represents the 
  * number of traffic flows which were affected (modified) due to either 
  * their source or destination routers being moved for a single placement
  * iteration. This is updated within this function.
  */
-void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting* noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows, int& number_of_affected_traffic_flows);
+void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows, int& number_of_affected_traffic_flows);
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical
@@ -229,7 +229,7 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
  * @param placed_cluster_block_locations A datastructure that identifies the
  * placed grid locations of all cluster blocks.
  */
-void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting* noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations);
+void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations);
 
 /**
  * @brief Recompute the NoC costs (aggregate bandwidth and latency) by
@@ -243,14 +243,14 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
  * the incremental changes to the NoC costs are correct by comparing
  * the current costs to newly computed costs for the current
  * placement state. This function assumes the traffic flows have
- * been routed and all the inidividual NoC costs of all traffic flows are 
+ * been routed and all the individual NoC costs of all traffic flows are
  * correct and only accumulates them to compute the new overall NoC costs.
  * 
  * If the comparison is larger than the error tolerance then it
  * implies that the incremental cost updates were incorrect and 
  * an error is thrown. 
  * 
- * This function is not very expensive and can be called regularily during
+ * This function is not very expensive and can be called regularly during
  * placement to ensure the NoC costs do not deviate too far off
  * from their correct values.
  * 
@@ -259,7 +259,7 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
  * @param new_noc_latency_cost Will store the newly computed
  * NoC latency cost for the current placement state.
  */
-void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_noc_latency_cost);
+void recompute_noc_costs(double& new_noc_aggregate_bandwidth_cost, double& new_noc_latency_cost);
 
 /**
  * @brief Updates all the cost normalization factors relevant to the NoC.
@@ -267,7 +267,7 @@ void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_n
  * reach INF.
  * This is intended to be used to initialize the normalization factors of
  * the NoC and also at the outer loop iteration of placement to 
- * balance the NoC costs with other placment cost parameters.
+ * balance the NoC costs with other placement cost parameters.
  * 
  * @param costs Contains the normalization factors which need to be updated
  */
@@ -281,7 +281,7 @@ void update_noc_normalization_factors(t_placer_costs& costs);
  * the individual traffic flow aggregate bandwidths.
  * 
  * This should be used after initial placement to determine the starting
- * aggregate bandwdith cost of the NoC.
+ * aggregate bandwidth cost of the NoC.
  * 
  * @return double The aggregate bandwidth cost of the NoC.
  */
@@ -324,9 +324,9 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts);
  * placement.
  * @param error_tolerance The maximum allowable difference between the current
  * NoC costs and the newly computed NoC costs. 
- * @param noc_opts Contains information neccessary to compute the NoC costs
+ * @param noc_opts Contains information necessary to compute the NoC costs
  * from scratch. For example this would include the routing algorithm and
- * weights for the differnce components of the NoC costs.
+ * weights for the difference components of the NoC costs.
  * @return An integer which represents the status of the comparison. 0
  * indicates that the current NoC costs are within the error tolerance and
  * a non-zero values indicates the current NoC costs are above the error
@@ -382,7 +382,7 @@ int get_number_of_traffic_flows_with_latency_cons_met(void);
  * store the status of the NoC placement after each move. We create and
  * initialize the datastructures here.
  * 
- * This should be called before starting the simulated annealing palcement.
+ * This should be called before starting the simulated annealing placement.
  * 
  */
 void allocate_and_load_noc_placement_structs(void);
@@ -423,7 +423,7 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  */
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim);
 
-/* Below are functions related to modifying and retreiving the NoC placement stats dastructure*/
+/* Below are functions related to modifying and retrieving the NoC placement stats data structure*/
 
 /**
  * @brief Initializes all the stat values to 0 and allocates space for the

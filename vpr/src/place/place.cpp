@@ -1231,7 +1231,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     if (noc_opts.noc) {
         double new_noc_aggregate_bandwidth_cost = 0.;
         double new_noc_latency_cost = 0.;
-        recompute_noc_costs(&new_noc_aggregate_bandwidth_cost, &new_noc_latency_cost);
+        recompute_noc_costs(new_noc_aggregate_bandwidth_cost, new_noc_latency_cost);
 
         if (fabs(
                 new_noc_aggregate_bandwidth_cost
