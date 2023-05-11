@@ -19,7 +19,7 @@ void initial_noc_placement(void) {
     const auto& place_ctx = g_vpr_ctx.placement();
 
     // need to update the link usages within after routing all the traffic flows
-    // also need to route all the traffic flows ans store them
+    // also need to route all the traffic flows and store them
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
     NocTrafficFlows* noc_traffic_flows_storage = &noc_ctx.noc_traffic_flows_storage;
@@ -197,7 +197,7 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
                         re_route_traffic_flow(traffic_flow_id, *noc_traffic_flows_storage, noc_ctx.noc_model, noc_ctx.noc_flows_router, place_ctx.block_locs);
 
                         // make sure we do not revert this traffic flow again
-                        reverted_traffic_flows.insert((NocTrafficFlowId)traffic_flow_id);
+                        reverted_traffic_flows.insert(traffic_flow_id);
                     }
                 }
             }
@@ -209,7 +209,7 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
 
 void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting* noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations) {
     // get the current traffic flow info
-    const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
+    const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
     /*  since the current traffic flow route will be 
      * changed, first we need to decrement the bandwidth
@@ -220,7 +220,7 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
     update_traffic_flow_link_usage(curr_traffic_flow_route, noc_model, -1, curr_traffic_flow.traffic_flow_bandwidth);
 
     // now get the re-routed traffic flow route and increment all the link usages with this reverted route
-    std::vector<NocLinkId>& re_routed_traffic_flow_route = get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id, noc_model, noc_traffic_flows_storage, noc_flows_router, placed_cluster_block_locations);
+    std::vector<NocLinkId>& re_routed_traffic_flow_route = get_traffic_flow_route(traffic_flow_id, noc_model, noc_traffic_flows_storage, noc_flows_router, placed_cluster_block_locations);
     update_traffic_flow_link_usage(re_routed_traffic_flow_route, noc_model, 1, curr_traffic_flow.traffic_flow_bandwidth);
 
     return;
@@ -299,7 +299,7 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
         // store the calculated latency for the current traffic flow in local datastructures (this also initializes them)
         traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id] = curr_traffic_flow_latency_cost;
 
-        // accumumulate the aggregate bandwidth cost
+        // accumulate the aggregate bandwidth cost
         noc_latency_cost += curr_traffic_flow_latency_cost;
     }
 

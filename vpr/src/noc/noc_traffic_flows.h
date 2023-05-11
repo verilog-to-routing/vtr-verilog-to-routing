@@ -153,7 +153,7 @@ class NocTrafficFlows {
      * @brief Given a unique id of a traffic flow (t_noc_traffic_flow)
      * retrieve it from the vector of all traffic flows in the design. The
      * retrieved traffic flow cannot be modified but can be used to
-     * retireve information such as the routers involved.
+     * retrieve information such as the routers involved.
      * 
      * @param traffic_flow_id The unique identifier (NocTrafficFlowId)
      * of the traffic flow to retrieve.
