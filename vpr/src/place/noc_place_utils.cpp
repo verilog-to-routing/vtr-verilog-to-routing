@@ -541,13 +541,6 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
     return create_move;
 }
 
-void update_noc_placement_stats(int move_type) {
-    noc_place_stats.number_of_noc_router_moves++;
-    noc_place_stats.number_of_noc_router_moves_per_move_type[move_type]++;
-
-    return;
-}
-
 void write_noc_placement_file(std::string file_name) {
     // we need the clustered netlist to get the names of all the NoC router cluster blocks
     auto& cluster_ctx = g_vpr_ctx.clustering();
