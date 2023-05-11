@@ -114,7 +114,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             int cap = 0;
             for (auto ax : {X_AXIS, Y_AXIS}) {
                 occ += directed_occ_by_length[ax][seg_length];
-                cap = directed_cap_by_length[ax][seg_length];
+                cap += directed_cap_by_length[ax][seg_length];
             }
             utilization = (float)occ / (float)cap;
             VTR_LOG("                               %s%s %4d %11.3g\n", std::string(std::max(4 - seg_name_size, (max_segment_name_length - seg_name_size)), ' ').c_str(), seg_name.c_str(), seg_type, utilization);
