@@ -217,7 +217,7 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
      * the existing traffic flow route
      */
     const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage.get_traffic_flow_route(traffic_flow_id);
-    update_traffic_flow_link_usage(curr_traffic_flow_route, noc_model, -1 , curr_traffic_flow.traffic_flow_bandwidth);
+    update_traffic_flow_link_usage(curr_traffic_flow_route, noc_model, -1, curr_traffic_flow.traffic_flow_bandwidth);
 
     // now get the re-routed traffic flow route and update all the link usages with this reverted route
     std::vector<NocLinkId>& re_routed_traffic_flow_route = get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id, noc_model, noc_traffic_flows_storage, noc_flows_router, placed_cluster_block_locations);
