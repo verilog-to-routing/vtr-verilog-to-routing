@@ -2,6 +2,9 @@
 #include "manual_move_generator.h"
 
 void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, const t_placer_opts& placer_opts, int move_lim) {
+    //extract available physical block types in the netlist
+    determine_agent_block_types();
+
     if (placer_opts.RL_agent_placement == false) {
         if (placer_opts.place_algorithm.is_timing_driven()) {
             VTR_LOG("Using static probabilities for choosing each move type\n");
@@ -41,9 +44,6 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
          *      2nd state agent Q-table size is always 7 and always proposes   *
          *      only move type.                                                *
          *      This state is activated late in the anneal and in the Quench   */
-
-        //extract available physical block types in the netlist
-        determine_agent_block_types();
 
         auto& place_ctx = g_vpr_ctx.placement();
         int num_1st_state_avail_moves = placer_opts.place_algorithm.is_timing_driven() ? NUM_PL_1ST_STATE_MOVE_TYPES : NUM_PL_NONTIMING_MOVE_TYPES;
