@@ -10,10 +10,6 @@ static vtr::vector<NocTrafficFlowId, double> traffic_flow_aggregate_bandwidth_co
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
-/*********** NoC Placement Stats ***********/
-static NocPlaceStats noc_place_stats;
-/*******************************************/
-
 void initial_noc_placement(void) {
     // need to get placement information about where the router cluster blocks are palced on the device
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -515,16 +511,20 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 
     ClusterBlockId b_from = *router_cluster_block_to_swap_ref;
 
-    // now choose a compatible block to swap with
-
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //check if the block is movable
+    if (place_ctx.block_locs[b_from].is_fixed) {
+        return e_create_move::ABORT;
+    }
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
+    // now choose a compatible block to swap with
     t_pl_loc to;
 
     if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from)) {
@@ -539,46 +539,6 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
     }
 
     return create_move;
-}
-
-/* Below are functions related to modifying and printing the NoC placement
- * statistical data */
-void initialize_noc_placement_stats(const t_placer_opts& placer_opts) {
-    // initially there are no router blocks moved
-    noc_place_stats.number_of_noc_router_moves = 0;
-
-    // allocate the space to keep track of how many of each move type caused a router block to move
-    noc_place_stats.number_of_noc_router_moves_per_move_type.resize(placer_opts.place_static_move_prob.size() + 1, 0);
-
-    return;
-}
-
-void update_noc_placement_stats(int move_type) {
-    noc_place_stats.number_of_noc_router_moves++;
-    noc_place_stats.number_of_noc_router_moves_per_move_type[move_type]++;
-
-    return;
-}
-
-void print_noc_placement_stats(void) {
-    float moves;
-    std::string move_name;
-
-    VTR_LOG("\n\nTotal number of NoC router block moves: %d\n", noc_place_stats.number_of_noc_router_moves);
-    VTR_LOG("\nPercentage of different move types that cause NoC router block moves:\n");
-
-    for (size_t i = 0; i < noc_place_stats.number_of_noc_router_moves_per_move_type.size(); i++) {
-        moves = noc_place_stats.number_of_noc_router_moves_per_move_type[i];
-        if (moves != 0) {
-            move_name = move_type_to_string(e_move_type(i));
-            VTR_LOG(
-                "\t%.17s move: %2.2f %%\n",
-                move_name.c_str(), 100 * moves / noc_place_stats.number_of_noc_router_moves);
-        }
-    }
-    VTR_LOG("\n");
-
-    return;
 }
 
 void write_noc_placement_file(std::string file_name) {
