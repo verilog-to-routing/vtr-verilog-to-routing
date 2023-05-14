@@ -1,47 +1,55 @@
-Overview
-========
+# Building VTR on Docker
 
+## Overview
 Docker creates an isolated container on your system so you know that VTR will run without further configurations nor affecting any other work.
 
 Our Docker file sets up this enviroment by installing all necessary Linux packages and applications as well as Perl modules.
 
-Additionally, Cloud9 is installed, which enables the remote management of your container through browser. With Cloud9, VTR can be started easier (and even modified and recompiled) without the need to logging into a terminal. If the Cloud9 endpoint is published outside your LAN, you can also execute VTR remotely or share your screen with other users.
+## Setup
+
+1. Install docker (Community Edition is free and sufficient for VTR): https://docs.docker.com/engine/install/
+
+2. Clone the VTR project:
+
+    ```
+    git clone https://github.com/verilog-to-routing/vtr-verilog-to-routing
+    ```
+
+3. CD to the VTR folder and build the docker image:
+
+    ```
+    docker build . -t vtrimg
+    ```
+
+4. Start docker with the new image:
+
+    ```
+    docker run -it -d --name vtr vtrimg
+    ```
 
 
-Setup
-=====
+## Running
 
-Install docker (Community Edition is free and sufficient for VTR): https://docs.docker.com/engine/installation/
+1. Attach to the Docker container. Attaching will open a shell on the `/workspace` directory within the container.
+The project root directory from the docker build process is copied and placed in the `/workspace` directory.
 
-Clone the VTR project:
+    ```sh
+    # from host computer
+    docker exec -it vtr /bin/bash
+    ```
 
-`git clone https://github.com/verilog-to-routing/vtr-verilog-to-routing`
+2. Ensure that a basic regression test passes:
 
-CD to the VTR folder and build the docker image:
+    ```sh
+    # in container
+    ./run_reg_test.py vtr_reg_basic
+    ```
 
-`docker build . -t vtrimg`
-
-Start docker with the new image and connect the current volume with the workspace volume of the container:
-
-`sudo docker run -it -d -p <port-to-open-on-host>:8080 -v <absolute-path-to-VTR-folder>:/workspace vtrimg`
+3. Run and/or modify VTR in the usual way.
 
 
-Running
-=======
+## Development Debugging
 
-Open a browser (Google Chrome for example) and navigate to your host's url at the port you opened up. For example:
-http://192.168.1.30:8080
-
-First, use one of the terminals and compile VTR:
-make && make installation/
-
-Second, ensure that a basic regression test passes:
-./run_reg_test.py vtr_reg_basic
-
-Third, run and/or modify VTR in the usual way.
-
-Developpement Debugging
-=======================
 the container already comes with clang as the default compiler and with scan-build the do statistical analysis on the build
 set to `debug` in makefile
 
