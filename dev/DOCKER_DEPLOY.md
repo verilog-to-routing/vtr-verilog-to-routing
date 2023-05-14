@@ -38,12 +38,25 @@ The project root directory from the docker build process is copied and placed in
     docker exec -it vtr /bin/bash
     ```
 
-2. Ensure that a basic regression test passes:
+1. Verfiy that VTR has been installed correctly:
 
     ```sh
     # in container
-    ./run_reg_test.py vtr_reg_basic
+    ./vtr_flow/scripts/run_vtr_task.py regression_tests/vtr_reg_basic/basic_timing
     ```
 
-3. Run and/or modify VTR in the usual way.
+    The expected output is:
+
+    ```
+    k6_N10_mem32K_40nm/single_ff            OK
+    k6_N10_mem32K_40nm/single_ff            OK
+    k6_N10_mem32K_40nm/single_wire          OK
+    k6_N10_mem32K_40nm/single_wire          OK
+    k6_N10_mem32K_40nm/diffeq1              OK
+    k6_N10_mem32K_40nm/diffeq1              OK
+    k6_N10_mem32K_40nm/ch_intrinsics                OK
+    k6_N10_mem32K_40nm/ch_intrinsics                OK
+    ```
+
+2. Run and/or modify VTR in the usual way.
 
