@@ -47,14 +47,3 @@ The project root directory from the docker build process is copied and placed in
 
 3. Run and/or modify VTR in the usual way.
 
-
-## Development Debugging
-
-the container already comes with clang as the default compiler and with scan-build the do statistical analysis on the build
-set to `debug` in makefile
-
-run `scan-build make -j4` from the root VTR directory.
-to output the html analysis to a specific folder, run `scan-build make -j4 -o /some/folder`
-
-the output is html and viewable in any browser.
-
