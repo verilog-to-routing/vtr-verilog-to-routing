@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 # set out workspace
 ENV WORKSPACE=/workspace
@@ -19,6 +19,7 @@ RUN apt-get update -qq \
     libtbb-dev \
     python3-pip \
     git \
+    time \
 # Install python packages
     && pip install -r requirements.txt \
 # Cleanup
