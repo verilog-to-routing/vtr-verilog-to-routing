@@ -3,19 +3,22 @@
 # Updated documentation of the configuration options is available at
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+from pathlib import Path
 import sys
 import os
 import shlex
-import shutil
+from shutil import copy, which
 import subprocess
 
+
+ROOT = Path(__file__).resolve().parent
+
+copy(ROOT / "../../CHANGELOG.md", ROOT / "CHANGELOG.md")
 
 sys.path.append(".")
 sys.path.insert(0, os.path.abspath("../../vtr_flow/scripts/python_libs"))
 from markdown_code_symlinks import LinkParser, MarkdownSymlinksDomain
 
-# Cool looking ReadTheDocs theme
-import sphinx_rtd_theme
 
 # See if sphinxcontrib.bibtex has been installed
 have_sphinxcontrib_bibtex = True
@@ -59,7 +62,7 @@ else:
         "Warning: Could not find sphinxcontrib.bibtex for managing citations, attempting to build anyway..."
     )
 
-templates_path = []
+templates_path = ["_templates"]
 
 source_suffix = [".rst"]
 
@@ -84,19 +87,27 @@ numfig = True
 
 # -- Options for HTML output ----------------------------------------------
 
-html_theme = "sphinx_rtd_theme"
-
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-
-html_logo = "_static/vtr_logo.svg"
-
-html_favicon = "_static/favicon.ico"
-
-html_static_path = ["_static"]
-
 html_scaled_image_link = True
 
 htmlhelp_basename = "Verilog-to-Routingdoc"
+
+html_show_sourcelink = True
+
+html_theme = "sphinx_symbiflow_theme"
+
+html_theme_options = {
+    "repo_name": "verilog-to-routing/vtr-verilog-to-routing",
+    "github_url": "https://github.com/verilog-to-routing/vtr-verilog-to-routing",
+    "globaltoc_collapse": True,
+    "color_primary": "light-blue",
+    "color_accent": "deep-orange",
+    "hide_symbiflow_links": True,
+}
+
+html_static_path = ["_static"]
+
+html_logo = str(Path(html_static_path[0]) / "vtr_logo.svg")
+html_favicon = str(Path(html_static_path[0]) / "favicon.ico")
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -145,7 +156,7 @@ notfound_context = {
 """,
 }
 
-if shutil.which("doxygen"):
+if which("doxygen"):
     breathe_projects = {
         "vpr": "../_build/doxygen/vpr/xml",
         "vtr": "../_build/doxygen/vtr/xml",

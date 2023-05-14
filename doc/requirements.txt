@@ -1,26 +1,9 @@
-#Python requirements file for building documentation
-# used by Read The Docs to install python required
-# modules with pip.
-
 sphinx
-sphinx_rtd_theme
-
-# Support custom domains
+https://github.com/SymbiFlow/sphinx_symbiflow_theme/archive/master.zip#sphinx-symbiflow-theme
 sphinxcontrib-domaintools
-
-# Support Markdown
 sphinx-markdown-tables
 myst_parser
-
-# Handle markdown cross-references
-git+https://github.com/SymbiFlow/sphinxcontrib-markdown-symlinks
-
-#Handle references in bibtex format
-
+https://github.com/SymbiFlow/sphinxcontrib-markdown-symlinks/archive/master.zip#sphinxcontrib-markdown-symlinks
 sphinxcontrib-bibtex
-
-#Generates a project specific 404 (page not found) page
 sphinx-notfound-page
-
-#API Documentation
 breathe
