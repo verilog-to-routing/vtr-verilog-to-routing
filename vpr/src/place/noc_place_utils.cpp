@@ -52,6 +52,7 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
     std::unordered_set<NocTrafficFlowId> updated_traffic_flows;
 
     int number_of_affected_traffic_flows = 0;
+    affected_traffic_flows.clear();
 
     // go through the moved blocks and process them only if they are NoC routers
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
@@ -65,8 +66,7 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
     }
 
     // go through all the affected traffic flows and calculate their new costs after being re-routed, then determine the change in cost before the traffic flows were modified
-    for (int traffic_flow_affected = 0; traffic_flow_affected < number_of_affected_traffic_flows; traffic_flow_affected++) {
-        NocTrafficFlowId traffic_flow_id = affected_traffic_flows[traffic_flow_affected];
+    for (auto& traffic_flow_id : affected_traffic_flows) {
         // get the traffic flow route
         const std::vector<NocLinkId>& traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route(traffic_flow_id);
 
@@ -84,9 +84,7 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
 }
 
 void commit_noc_costs(int number_of_affected_traffic_flows) {
-    for (int traffic_flow_affected = 0; traffic_flow_affected < number_of_affected_traffic_flows; traffic_flow_affected++) {
-        NocTrafficFlowId traffic_flow_id = affected_traffic_flows[traffic_flow_affected];
-
+    for (auto& traffic_flow_id : affected_traffic_flows){
         // update the traffic flow costs
         traffic_flow_costs[traffic_flow_id] = proposed_traffic_flow_costs[traffic_flow_id];
 
@@ -150,7 +148,7 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_block_router_id, Noc
                 updated_traffic_flows.insert(traffic_flow_id);
 
                 // update global datastructures to indicate that the current traffic flow was affected due to router cluster blocks being swapped
-                affected_traffic_flows[number_of_affected_traffic_flows] = traffic_flow_id;
+                affected_traffic_flows.push_back(traffic_flow_id);
                 number_of_affected_traffic_flows++;
             }
         }
@@ -255,7 +253,7 @@ double comp_noc_aggregate_bandwidth_cost(void) {
     double noc_aggregate_bandwidth_cost = 0.;
 
     // now go through each traffic flow route and calculate its
-    // aggregate bandwidth. Then store this in local datastrucutres and accumulate it.
+    // aggregate bandwidth. Then store this in local data structures and accumulate it.
     for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
         const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id);
@@ -443,8 +441,6 @@ void allocate_and_load_noc_placement_structs(void) {
 
     traffic_flow_costs.resize(number_of_traffic_flows);
     proposed_traffic_flow_costs.resize(number_of_traffic_flows);
-
-    affected_traffic_flows.resize(number_of_traffic_flows, NocTrafficFlowId::INVALID());
 
     return;
 }
