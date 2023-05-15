@@ -1554,14 +1554,13 @@ static e_move_result try_swap(const t_annealing_state* state,
             delta_c = bb_delta_c * costs->bb_cost_norm;
         }
 
-        int number_of_affected_noc_traffic_flows = 0;
         double noc_aggregate_bandwidth_delta_c = 0; // change in the NoC aggregate bandwidth cost
         double noc_latency_delta_c = 0;             // change in the NoC latency cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            number_of_affected_noc_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
 
-            // Include the NoC delata costs in the total cost change for this swap
+            // Include the NoC delta costs in the total cost change for this swap
             delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c * costs->noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);
         }
 

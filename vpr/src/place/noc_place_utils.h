@@ -83,11 +83,8 @@ void initial_noc_placement(void);
  * @param noc_latency_delta_c The change in the overall
  * NoC latency cost caused by a placer move is stored
  * here.
- * @return An integer which represents the number of traffic flows
- * which were affected (modified) due to either their source or
- * destination routers being moved for a single placement iteration.
  */
-int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts);
+void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -179,12 +176,8 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  * placed grid locations of all cluster blocks.
  * @param updated_traffic_flows Keeps track of traffic flows that have been
  * re-routed. Used to prevent re-routing the same traffic flow multiple times.
- * @param number_of_affected_traffic_flows an integer which represents the 
- * number of traffic flows which were affected (modified) due to either 
- * their source or destination routers being moved for a single placement
- * iteration. This is updated within this function.
  */
-void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows, int& number_of_affected_traffic_flows);
+void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical

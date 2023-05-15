@@ -212,8 +212,16 @@ class NocTrafficFlows {
      */
     std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
+    /**
+     * @return provides access to a vector containing all logical router ClusterBlockId to
+     * help "propose_router_swap" function to choose a random logical router to move.
+     */
     const std::vector<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
 
+    /**
+     * @return provides access to all traffic flows' ids to allow a range-based
+     * loop through all traffic flows, used in noc_place_utils.cpp functions.
+     */
     const std::vector<NocTrafficFlowId>& get_all_traffic_flow_id(void) const;
 
     // setters

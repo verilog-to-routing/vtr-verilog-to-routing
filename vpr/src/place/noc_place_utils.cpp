@@ -10,7 +10,7 @@ static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
 void initial_noc_placement(void) {
-    // need to get placement information about where the router cluster blocks are palced on the device
+    // need to get placement information about where the router cluster blocks are placed on the device
     const auto& place_ctx = g_vpr_ctx.placement();
 
     // need to update the link usages within after routing all the traffic flows
@@ -37,7 +37,7 @@ void initial_noc_placement(void) {
     return;
 }
 
-int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts) {
+void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts) {
     // provides the positions where the affected blocks have moved to
     auto& place_ctx = g_vpr_ctx.placement();
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
@@ -48,7 +48,6 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
     // This is useful for cases where two moved routers were part of the same traffic flow and prevents us from re-routing the same flow twice.
     std::unordered_set<NocTrafficFlowId> updated_traffic_flows;
 
-    int number_of_affected_traffic_flows = 0;
     affected_traffic_flows.clear();
 
     // go through the moved blocks and process them only if they are NoC routers
@@ -58,7 +57,7 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
         // check if the current moved block is a noc router
         if (noc_traffic_flows_storage->check_if_cluster_block_has_traffic_flows(blk)) {
             // current block is a router, so re-route all the traffic flows it is a part of
-            re_route_associated_traffic_flows(blk, *noc_traffic_flows_storage, noc_ctx.noc_model, *noc_ctx.noc_flows_router, place_ctx.block_locs, updated_traffic_flows, number_of_affected_traffic_flows);
+            re_route_associated_traffic_flows(blk, *noc_traffic_flows_storage, noc_ctx.noc_model, *noc_ctx.noc_flows_router, place_ctx.block_locs, updated_traffic_flows);
         }
     }
 
@@ -77,7 +76,6 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
         noc_latency_delta_c += proposed_traffic_flow_costs[traffic_flow_id].latency - traffic_flow_costs[traffic_flow_id].latency;
     }
 
-    return number_of_affected_traffic_flows;
 }
 
 void commit_noc_costs() {
@@ -115,7 +113,7 @@ std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id,
 void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int how_to_update_links, double traffic_flow_bandwidth) {
     // go through the links within the traffic flow route and update their bandwidth usage
     for (auto& link_in_route_id : traffic_flow_route) {
-        // get the link to update and its current bandwdith
+        // get the link to update and its current bandwidth
         NocLink& curr_link = noc_model.get_single_mutable_noc_link(link_in_route_id);
         double curr_link_bandwidth = curr_link.get_bandwidth_usage();
 
@@ -128,7 +126,7 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
     return;
 }
 
-void re_route_associated_traffic_flows(ClusterBlockId moved_block_router_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows, int& number_of_affected_traffic_flows) {
+void re_route_associated_traffic_flows(ClusterBlockId moved_block_router_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows) {
     // get all the associated traffic flows for the logical router cluster block
     const std::vector<NocTrafficFlowId>* assoc_traffic_flows = noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(moved_block_router_id);
 
@@ -146,7 +144,6 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_block_router_id, Noc
 
                 // update global datastructures to indicate that the current traffic flow was affected due to router cluster blocks being swapped
                 affected_traffic_flows.push_back(traffic_flow_id);
-                number_of_affected_traffic_flows++;
             }
         }
     }
@@ -177,7 +174,7 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
             const std::vector<NocTrafficFlowId>* assoc_traffic_flows = noc_traffic_flows_storage->get_traffic_flows_associated_to_router_block(blk);
 
             // now check if there are any associated traffic flows
-            if (assoc_traffic_flows != nullptr) {
+            if (assoc_traffic_flows->size() != 0) {
                 // There are traffic flows associated to the current router block so process them
                 for (auto& traffic_flow_id : *assoc_traffic_flows) {
                     // first check to see whether we have already reverted the current traffic flow and only revert it if we haven't already.
@@ -269,13 +266,11 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
     // datastructure that stores all the traffic flow routes
     const NocTrafficFlows* noc_traffic_flows_storage = &noc_ctx.noc_traffic_flows_storage;
 
-    int number_of_traffic_flows = noc_traffic_flows_storage->get_number_of_traffic_flows();
-
     double noc_latency_cost = 0.;
 
     // now go through each traffic flow route and calculate its
     // latency. Then store this in local data structures and accumulate it.
-    for (const auto& traffic_flow_id : g_vpr_ctx.noc().noc_traffic_flows_storage.get_all_traffic_flow_id()){
+    for (const auto& traffic_flow_id : noc_ctx.noc_traffic_flows_storage.get_all_traffic_flow_id()){
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
         const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route(traffic_flow_id);
 
@@ -307,8 +302,6 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     // need to create a temporary noc routing algorithm
     NocRoutingAlgorithmCreator routing_algorithm_factory;
     NocRouting* temp_noc_routing_algorithm = routing_algorithm_factory.create_routing_algorithm(noc_opts.noc_routing_algorithm);
-
-    int number_of_traffic_flows = noc_traffic_flows_storage->get_number_of_traffic_flows();
 
     // stores a temporarily found route for a traffic flow
     std::vector<NocLinkId> temp_found_noc_route;
@@ -348,7 +341,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         error++;
     }
 
-    // only check the recomputed cost if it is above our expected latency cost threshold of 1 picosecond, otherwise there is no point in checking it
+    // only check the recomputed cost if it is above our expected latency cost threshold of 1 pico-second, otherwise there is no point in checking it
     if (noc_latency_cost_check > MIN_EXPECTED_NOC_LATENCY_COST) {
         // check whether the latency placement cost is within the error tolerance
         if (fabs(noc_latency_cost_check - costs.noc_latency_cost) > costs.noc_latency_cost * error_tolerance) {
@@ -367,7 +360,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
 double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info) {
     int num_of_links_in_traffic_flow = traffic_flow_route.size();
 
-    // the traffic flow aggregate bandwidth cost is scaled by its priority, which dictates its important to the placement
+    // the traffic flow aggregate bandwidth cost is scaled by its priority, which dictates its importance to the placement
     return (traffic_flow_info.traffic_flow_priority * traffic_flow_info.traffic_flow_bandwidth * num_of_links_in_traffic_flow);
 }
 
@@ -396,8 +389,6 @@ int get_number_of_traffic_flows_with_latency_cons_met(void) {
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     // datastructure that stores all the traffic flow routes
     const NocTrafficFlows* noc_traffic_flows_storage = &noc_ctx.noc_traffic_flows_storage;
-
-    int number_of_traffic_flows = noc_traffic_flows_storage->get_number_of_traffic_flows();
 
     int count_of_achieved_latency_cons = 0;
 
@@ -523,7 +514,7 @@ void write_noc_placement_file(std::string file_name) {
             file_name.c_str());
     }
 
-    // assume that the FPGA device has a single layer (2-D), so when we write the palcement file the layer value will be constant
+    // assume that the FPGA device has a single layer (2-D), so when we write the placement file the layer value will be constant
     int layer_number = 0;
 
     // get a reference to the collection of router cluster blocks in the design
@@ -548,7 +539,7 @@ void write_noc_placement_file(std::string file_name) {
         // get the name of the router cluster block
         const std::string& cluster_name = cluster_block_netlist.block_name(single_cluster_id);
 
-        //get the placement location of the curren router cluster block
+        //get the placement location of the current router cluster block
         const t_block_loc& cluster_location = clustered_block_placed_locations[single_cluster_id];
 
         // now get the corresponding physical router block id the cluster is located on
