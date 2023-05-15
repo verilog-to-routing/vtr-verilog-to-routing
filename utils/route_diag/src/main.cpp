@@ -158,7 +158,7 @@ static void profile_source(const Netlist<>& net_list,
     vtr::ScopedStartFinishTimer timer("Profiling source");
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
-    // TODO: We assume if this function is called, the grid has a 2D structure
+    // TODO: We assume if this function is called, the grid has a 2D structure - It assumes everything is on layer number 0, so it won't work yet for multi-layer FPGAs
     VTR_ASSERT(grid.get_num_layers() == 1);
     int layer_num = 0;
 
