@@ -1612,7 +1612,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                 ++move_type_stat.accepted_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
             }
             if (noc_opts.noc) {
-                commit_noc_costs(number_of_affected_noc_traffic_flows);
+                commit_noc_costs();
 
                 costs->noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
                 costs->noc_latency_cost += noc_latency_delta_c;

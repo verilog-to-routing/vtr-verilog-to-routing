@@ -83,7 +83,7 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
     return number_of_affected_traffic_flows;
 }
 
-void commit_noc_costs(int number_of_affected_traffic_flows) {
+void commit_noc_costs() {
     for (auto& traffic_flow_id : affected_traffic_flows){
         // update the traffic flow costs
         traffic_flow_costs[traffic_flow_id] = proposed_traffic_flow_costs[traffic_flow_id];

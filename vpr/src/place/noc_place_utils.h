@@ -105,15 +105,10 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
  * This function should be used after a proposed move which includes NoC
  * router blocks (logical) is accepted. The move needs to be accepted
  * since the affected traffic flow costs are updated here to reflect the
- * current placement and the placmennt is only updated when a move is
+ * current placement and the placement is only updated when a move is
  * accepted.
- * 
- * @param number_of_affected_traffic_flows An integer which represents the 
- * number of traffic flows which were affected (modified) due to either 
- * their source or destination routers being moved for a single placement
- * iteration.
  */
-void commit_noc_costs(int number_of_affected_traffic_flows);
+void commit_noc_costs();
 
 /**
  * @brief Routes a given traffic flow within the NoC based on where the
