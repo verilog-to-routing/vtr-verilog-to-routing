@@ -71,7 +71,7 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
         const std::vector<NocLinkId>& traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route(traffic_flow_id);
 
         // get the current traffic flow info
-        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
+        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
 
         proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
         proposed_traffic_flow_costs[traffic_flow_id].latency = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
@@ -281,7 +281,7 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
     double noc_latency_cost = 0.;
 
     // now go through each traffic flow route and calculate its
-    // latency. Then store this in local datastrucutres and accumulate it.
+    // latency. Then store this in local data structures and accumulate it.
     for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
         const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id);
