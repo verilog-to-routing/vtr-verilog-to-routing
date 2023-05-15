@@ -30,5 +30,5 @@ qor_parse_file=qor_noc_spec.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params =-starting_stage vpr  --noc on --noc_routing_algorithm xy_routing --device "EP4SE820"
+script_params =-starting_stage vpr  --noc on --noc_routing_algorithm xy_routing --device "EP4SE820" --pack --place
 
