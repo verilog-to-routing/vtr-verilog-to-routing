@@ -70,15 +70,15 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
 
 // setters for the NoC
 
-void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
+void NocStorage::add_router(int id, int grid_position_x, int grid_position_y) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
-    router_storage.emplace_back(id, grid_position_x, grid_posistion_y);
+    router_storage.emplace_back(id, grid_position_x, grid_position_y);
 
     /* Get the corresponding NocRouterId for the newly added router and
      * add it to the conversion table.
      * Since the router is added at the end of the list, the id is equivalent to the last element index.
-     * We build the conversion table here as it gurantees only unique routers
+     * We build the conversion table here as it guarantees only unique routers
      * in the NoC are added.
      */
     NocRouterId converted_id((int)(router_storage.size() - 1));
@@ -86,7 +86,7 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
 
     /* need to associate the current router with its grid position */
     // get the key to identify the current router
-    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y);
+    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_position_y);
     grid_location_to_router_id.insert(std::pair<int, NocRouterId>(router_key, converted_id));
 
     return;
@@ -127,12 +127,12 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
     // This status variable is used to report externally whether the link was removed or not
     bool link_removed_status = false;
 
-    // check if the src router for the link to remove exists (within the id ranges). Otherwise there is no point looking for the link
+    // check if the src router for the link to remove exists (within the id ranges). Otherwise, there is no point looking for the link
     if ((size_t)src_router_id < router_storage.size()) {
         // get all the outgoing links of the provided sourcer router
         std::vector<NocLinkId>* source_router_outgoing_links = &router_link_list[src_router_id];
 
-        // keeps track of the position of each outgoing link for the provided src router. When the id of the link to remove is found, this index can be used to remove it from the ougoing link vector.
+        // keeps track of the position of each outgoing link for the provided src router. When the id of the link to remove is found, this index can be used to remove it from the outgoing link vector.
         int outgoing_link_index = 0;
 
         // go through each outgoing link of the source router and see if there is a link that also has the corresponding sink router.

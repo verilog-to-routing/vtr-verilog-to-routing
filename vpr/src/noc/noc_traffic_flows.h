@@ -4,7 +4,7 @@
 /**
  * @file 
  * @brief This file defines the NocTrafficFlows class, which contains all
- * communication betwee routers in the NoC.
+ * communication between routers in the NoC.
  * 
  * Overview
  * ======== 
@@ -60,7 +60,7 @@ struct t_noc_traffic_flow {
     /** The maximum allowable time to transmit data between thw two routers, in seconds. This parameter will be used to evaluate a router traffic flow.*/
     double max_traffic_flow_latency;
 
-    /** Indicates the importance of the traffic flow. Higher priority traffic flows will have more importance and will be more likely to have their latency reduced and constriants met. Range: [0-inf) */
+    /** Indicates the importance of the traffic flow. Higher priority traffic flows will have more importance and will be more likely to have their latency reduced and constraints met. Range: [0-inf) */
     int traffic_flow_priority;
 
     /** Constructor initializes all variables*/
@@ -132,7 +132,7 @@ class NocTrafficFlows {
      * to a vector of traffic flows associated to the router.
      * 
      * @param traffic_flow_id A unique id that represents a traffic flow.
-     * @param associated_router_id A ClusterblockId that represents a
+     * @param associated_router_id A ClusterBlockId that represents a
      *                             router block. 
      * @param router_associated_traffic_flows A datastructure that stores
      * a vector of traffic flows for a given router block where the traffic
@@ -280,7 +280,7 @@ class NocTrafficFlows {
      * 
      */
 
-    void finshed_noc_traffic_flows_setup(void);
+    void finished_noc_traffic_flows_setup(void);
 
     /**
      * @brief Resets the class by clearing internal

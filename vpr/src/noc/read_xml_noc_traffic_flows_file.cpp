@@ -30,7 +30,7 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
      */
     std::vector<ClusterBlockId> cluster_blocks_compatible_with_noc_router_tiles = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_tile_type);
 
-    /* variabled used when parsing the file.
+    /* variable used when parsing the file.
      * Stores xml related information while parsing the file, such as current 
      * line number, current tag and etc. These variables will be used to
      * provide additional information to the user when reporting an error. 
@@ -66,7 +66,7 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     // make sure that all the router modules in the design have an associated traffic flow
     check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_tile_type, noc_flows_file);
 
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // dump out the NocTrafficFlows class information if the user requested it
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_TRAFFIC_FLOWS)) {
@@ -154,7 +154,7 @@ double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiut
 }
 
 int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
-    // default priority is 1 (indicating that the traffic flow is weighted equall to all others)
+    // default priority is 1 (indicating that the traffic flow is weighted equal to all others)
     int traffic_flow_priority = 1;
 
     // get the corresponding attribute where the priority is stored
@@ -248,7 +248,7 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
     // assuming that all routers have the same physical type, so we are just using the physical type of the first router stored within the NoC
     auto physical_noc_router = noc_ctx.noc_model.get_noc_routers().begin();
 
-    // Cannot gurantee that there are any physical routers within the NoC, so check if the NoC has any routers, if it doesn't then throw an error
+    // Cannot guarantee that there are any physical routers within the NoC, so check if the NoC has any routers, if it doesn't then throw an error
     VTR_ASSERT(physical_noc_router != noc_ctx.noc_model.get_noc_routers().end());
 
     //Using the routers grid position go to the device and identify the physical type of the tile located there.

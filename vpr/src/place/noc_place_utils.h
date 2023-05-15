@@ -14,9 +14,9 @@
 #include "fstream"
 
 // represent the maximum values of the NoC cost normalization factors //
-// we need to handle the case where the agggregate bandwidth is 0, so we set this to some arbritary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
+// we need to handle the case where the aggregate bandwidth is 0, so we set this to some arbitrary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
 constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
-// we expect the latency costs to be in the picosecond range, and we don't expect it to go lower than that. So if the latency costs go below the picosecond range we trim the normalization value to be no higher than 1/ps
+// we expect the latency costs to be in the pico-second range, and we don't expect it to go lower than that. So if the latency costs go below the pico-second range we trim the normalization value to be no higher than 1/ps
 // This should be updated if the delays become lower
 constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
 
@@ -58,7 +58,7 @@ void initial_noc_placement(void);
  * 
  * For each moved block that is a NoC router, all the traffic flows
  * that the router is a part of are re-routed. The individual noc placement
- * costs (latency and aggregate bandwdith) are also updated to
+ * costs (latency and aggregate bandwidth) are also updated to
  * reflect the re-routed traffic flows. This update is done to the 
  * 'proposed_traffic_flow_aggregate_bandwidth_cost' and 
  * 'proposed_traffic_flow_latency_cost' datastructures found in
@@ -131,10 +131,10 @@ std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id,
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
- * The link bandwidth usages are either incremeneted or decremented by the 
+ * The link bandwidth usages are either incremented or decremented by the
  * bandwidth of the traffic flow. If the traffic flow route is being deleted,
  * then the link bandwidth needs to be decremented. If the traffic flow
- * route has just been added then the link badnwidth needs to be incremented.
+ * route has just been added then the link bandwidth needs to be incremented.
  * This function needs to be called everytime a traffic flow has been newly
  * routed.
  * 
@@ -203,7 +203,7 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
  * @param traffic_flow_id The traffic flow to re-route.
  * @param noc_traffic_flows_storage Contains all the traffic flow information
  * within the NoC. Used to get the current traffic flow information.
- * @param noc_model Contains all the links and rotuters within the NoC. Used
+ * @param noc_model Contains all the links and routers within the NoC. Used
  * to route traffic flows within the NoC.
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
@@ -214,7 +214,7 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
 
 /**
  * @brief Recompute the NoC costs (aggregate bandwidth and latency) by
- * accumulating the inidividual traffic flow costs and then verify
+ * accumulating the individual traffic flow costs and then verify
  * whether the result is within an error tolerance of the placements
  * NoC costs.
  * 
@@ -407,7 +407,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 /**
  * @brief Writes out the locations of the router cluster blocks in the
  * final placement. This file contains only NoC routers and the 
- * information is written out in a format that is compatible with the RADsim
+ * information is written out in a format that is compatible with the RADSim
  * imulator place file. The output of this function is a text file.
  * 
  * Sample placement file output:

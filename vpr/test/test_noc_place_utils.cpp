@@ -132,7 +132,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
             break;
         }
     }
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
     // start by creating the routing alagorithm
@@ -310,7 +310,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         }
     }
 
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // need to route all the traffic flows so create a datstructure to store them here
     std::vector<int> golden_traffic_flow_route_sizes;
@@ -559,7 +559,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
             break;
         }
     }
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
     // start by creating the routing alagorithm
@@ -1244,7 +1244,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         }
     }
 
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
     // start by creating the routing alagorithm
@@ -1559,7 +1559,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         }
     }
 
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
     // start by creating the routing alagorithm

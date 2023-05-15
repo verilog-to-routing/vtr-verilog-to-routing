@@ -80,7 +80,7 @@ void NocTrafficFlows::set_router_cluster_in_netlist(std::vector<ClusterBlockId> 
 
 // utility functions for the noc traffic flows
 
-void NocTrafficFlows::finshed_noc_traffic_flows_setup(void) {
+void NocTrafficFlows::finished_noc_traffic_flows_setup(void) {
     // all the traffic flows have been added, so indicate that the class has been constructed and cannot be modified anymore
     built_traffic_flows = true;
 
@@ -107,7 +107,7 @@ void NocTrafficFlows::clear_traffic_flows(void) {
 bool NocTrafficFlows::check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id) {
     auto traffic_flows = get_traffic_flows_associated_to_router_block(block_id);
 
-    // indicate whether a vector of traffic flows were found that are associated to the curre cluster block
+    // indicate whether a vector of traffic flows were found that are associated to the current cluster block
     return (traffic_flows != nullptr);
 }
 
@@ -117,7 +117,7 @@ void NocTrafficFlows::add_traffic_flow_to_associated_routers(NocTrafficFlowId tr
     // get a reference to the traffic flows associated with the current router
     auto router_traffic_flows = traffic_flows_associated_to_router_blocks.find(associated_router_id);
 
-    // check if a vector asssociated traffic flows exists
+    // check if a vector associated traffic flows exists
     if (router_traffic_flows == traffic_flows_associated_to_router_blocks.end()) {
         // there exists no associated traffic flows for this router, so we add it with the newly created traffic flow id
         traffic_flows_associated_to_router_blocks.insert(std::pair<ClusterBlockId, std::vector<NocTrafficFlowId>>(associated_router_id, {traffic_flow_id}));
@@ -157,7 +157,7 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
         fprintf(fp, "Traffic flow bandwidth: %f bps\n", traffic_flow->traffic_flow_bandwidth);
         fprintf(fp, "Traffic flow latency: %f seconds\n", traffic_flow->max_traffic_flow_latency);
 
-        // seperate the next link information
+        // separate the next link information
         fprintf(fp, "\n");
 
         // update the id for the next traffic flow
@@ -184,7 +184,7 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
             fprintf(fp, "%lu ", (size_t)*traffic_flow);
         }
 
-        // seperate to the next cluster associated traffic flows information
+        // separate to the next cluster associated traffic flows information
         fprintf(fp, "\n\n");
     }
 
