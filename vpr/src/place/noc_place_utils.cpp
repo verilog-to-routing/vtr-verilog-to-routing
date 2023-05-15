@@ -75,11 +75,10 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
         noc_aggregate_bandwidth_delta_c += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
         noc_latency_delta_c += proposed_traffic_flow_costs[traffic_flow_id].latency - traffic_flow_costs[traffic_flow_id].latency;
     }
-
 }
 
 void commit_noc_costs() {
-    for (auto& traffic_flow_id : affected_traffic_flows){
+    for (auto& traffic_flow_id : affected_traffic_flows) {
         // update the traffic flow costs
         traffic_flow_costs[traffic_flow_id] = proposed_traffic_flow_costs[traffic_flow_id];
 
@@ -244,7 +243,7 @@ double comp_noc_aggregate_bandwidth_cost(void) {
 
     // now go through each traffic flow route and calculate its
     // aggregate bandwidth. Then store this in local data structures and accumulate it.
-    for (const auto& traffic_flow_id : g_vpr_ctx.noc().noc_traffic_flows_storage.get_all_traffic_flow_id()){
+    for (const auto& traffic_flow_id : g_vpr_ctx.noc().noc_traffic_flows_storage.get_all_traffic_flow_id()) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
         const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route(traffic_flow_id);
 
@@ -270,7 +269,7 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
 
     // now go through each traffic flow route and calculate its
     // latency. Then store this in local data structures and accumulate it.
-    for (const auto& traffic_flow_id : noc_ctx.noc_traffic_flows_storage.get_all_traffic_flow_id()){
+    for (const auto& traffic_flow_id : noc_ctx.noc_traffic_flows_storage.get_all_traffic_flow_id()) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
         const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route(traffic_flow_id);
 
@@ -307,7 +306,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     std::vector<NocLinkId> temp_found_noc_route;
 
     // go through all the traffic flows and find a route for them based on where the routers are placed within the NoC
-    for(const auto& traffic_flow_id : noc_traffic_flows_storage->get_all_traffic_flow_id()){
+    for (const auto& traffic_flow_id : noc_traffic_flows_storage->get_all_traffic_flow_id()) {
         // get the traffic flow with the current id
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
 

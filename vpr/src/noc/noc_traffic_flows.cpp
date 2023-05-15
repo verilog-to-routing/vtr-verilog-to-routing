@@ -48,7 +48,7 @@ const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netli
     return router_cluster_in_netlist;
 }
 
-const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id(void) const{
+const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id(void) const {
     return noc_traffic_flows_ids;
 }
 
