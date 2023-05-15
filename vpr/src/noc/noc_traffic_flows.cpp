@@ -48,6 +48,10 @@ const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netli
     return router_cluster_in_netlist;
 }
 
+const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id(void) const{
+    return noc_traffic_flows_ids;
+}
+
 // setters for the traffic flows
 
 void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority) {
@@ -58,6 +62,7 @@ void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_n
 
     //since the new traffic flow was added to the back of the vector, its id will be the index of the last element
     NocTrafficFlowId curr_traffic_flow_id = (NocTrafficFlowId)(noc_traffic_flows.size() - 1);
+    noc_traffic_flows_ids.emplace_back(curr_traffic_flow_id);
 
     // now add the new traffic flow to flows associated with the current source and sink router
     add_traffic_flow_to_associated_routers(curr_traffic_flow_id, source_router_cluster_id);

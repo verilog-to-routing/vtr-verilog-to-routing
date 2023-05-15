@@ -21,17 +21,14 @@ void initial_noc_placement(void) {
 
     /* We need all the traffic flow ids to be able to access them. The range
      * of traffic flow ids go from 0 to the total number of traffic flows within
-     * the NoC. So get the upper range here.*/
-    int number_of_traffic_flows = noc_traffic_flows_storage->get_number_of_traffic_flows();
-
-    // go through all the traffic flows and route them. Then once routed, update the links used in the routed traffic flows with their usages
-    for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
-        // get the traffic flow with the current id
-        NocTrafficFlowId conv_traffic_flow_id = (NocTrafficFlowId)traffic_flow_id;
-        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(conv_traffic_flow_id);
+     * the NoC.
+     * go through all the traffic flows and route them. Then once routed, update the links used in the routed traffic flows with their usages
+     */
+    for (const auto& traffic_flow_id : noc_traffic_flows_storage->get_all_traffic_flow_id()) {
+        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
 
         // update the traffic flow route based on where the router cluster blocks are placed
-        std::vector<NocLinkId>& curr_traffic_flow_route = get_traffic_flow_route(conv_traffic_flow_id, noc_ctx.noc_model, *noc_traffic_flows_storage, *noc_ctx.noc_flows_router, place_ctx.block_locs);
+        std::vector<NocLinkId>& curr_traffic_flow_route = get_traffic_flow_route(traffic_flow_id, noc_ctx.noc_model, *noc_traffic_flows_storage, *noc_ctx.noc_flows_router, place_ctx.block_locs);
 
         // update the links used in the found traffic flow route, links' bandwidth should be incremented since the traffic flow is routed
         update_traffic_flow_link_usage(curr_traffic_flow_route, noc_ctx.noc_model, 1, curr_traffic_flow.traffic_flow_bandwidth);
@@ -219,16 +216,14 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
 }
 
 void recompute_noc_costs(double& new_noc_aggregate_bandwidth_cost, double& new_noc_latency_cost) {
-    int number_of_traffic_flows = g_vpr_ctx.noc().noc_traffic_flows_storage.get_number_of_traffic_flows();
-
     // reset the cost variables first
     new_noc_aggregate_bandwidth_cost = 0;
     new_noc_latency_cost = 0;
 
     // go through the costs of all the traffic flows and add them up to recompute the total costs associated with the NoC
-    for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
-        new_noc_aggregate_bandwidth_cost += traffic_flow_costs[(NocTrafficFlowId)traffic_flow_id].aggregate_bandwidth;
-        new_noc_latency_cost += traffic_flow_costs[(NocTrafficFlowId)traffic_flow_id].latency;
+    for (const auto& traffic_flow_id : g_vpr_ctx.noc().noc_traffic_flows_storage.get_all_traffic_flow_id()) {
+        new_noc_aggregate_bandwidth_cost += traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
+        new_noc_latency_cost += traffic_flow_costs[traffic_flow_id].latency;
     }
 
     return;
@@ -248,20 +243,18 @@ double comp_noc_aggregate_bandwidth_cost(void) {
     // datastructure that stores all the traffic flow routes
     const NocTrafficFlows* noc_traffic_flows_storage = &noc_ctx.noc_traffic_flows_storage;
 
-    int number_of_traffic_flows = noc_traffic_flows_storage->get_number_of_traffic_flows();
-
     double noc_aggregate_bandwidth_cost = 0.;
 
     // now go through each traffic flow route and calculate its
     // aggregate bandwidth. Then store this in local data structures and accumulate it.
-    for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
-        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
-        const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id);
+    for (const auto& traffic_flow_id : g_vpr_ctx.noc().noc_traffic_flows_storage.get_all_traffic_flow_id()){
+        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
+        const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route(traffic_flow_id);
 
         double curr_traffic_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth_cost(curr_traffic_flow_route, curr_traffic_flow);
 
         // store the calculated aggregate bandwidth for the current traffic flow in local datastructures (this also initializes them)
-        traffic_flow_costs[(NocTrafficFlowId)traffic_flow_id].aggregate_bandwidth = curr_traffic_flow_aggregate_bandwidth_cost;
+        traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = curr_traffic_flow_aggregate_bandwidth_cost;
 
         // accumulate the aggregate bandwidth cost
         noc_aggregate_bandwidth_cost += curr_traffic_flow_aggregate_bandwidth_cost;
@@ -282,14 +275,14 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
 
     // now go through each traffic flow route and calculate its
     // latency. Then store this in local data structures and accumulate it.
-    for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
-        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
-        const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id);
+    for (const auto& traffic_flow_id : g_vpr_ctx.noc().noc_traffic_flows_storage.get_all_traffic_flow_id()){
+        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
+        const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route(traffic_flow_id);
 
         double curr_traffic_flow_latency_cost = calculate_traffic_flow_latency_cost(curr_traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
 
         // store the calculated latency for the current traffic flow in local datastructures (this also initializes them)
-        traffic_flow_costs[(NocTrafficFlowId)traffic_flow_id].latency = curr_traffic_flow_latency_cost;
+        traffic_flow_costs[traffic_flow_id].latency = curr_traffic_flow_latency_cost;
 
         // accumulate the aggregate bandwidth cost
         noc_latency_cost += curr_traffic_flow_latency_cost;
@@ -321,9 +314,9 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     std::vector<NocLinkId> temp_found_noc_route;
 
     // go through all the traffic flows and find a route for them based on where the routers are placed within the NoC
-    for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
+    for(const auto& traffic_flow_id : noc_traffic_flows_storage->get_all_traffic_flow_id()){
         // get the traffic flow with the current id
-        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
+        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
 
         // get the source and destination logical router blocks in the current traffic flow
         ClusterBlockId logical_source_router_block_id = curr_traffic_flow.source_router_cluster_id;
@@ -409,9 +402,9 @@ int get_number_of_traffic_flows_with_latency_cons_met(void) {
     int count_of_achieved_latency_cons = 0;
 
     // now go through each traffic flow route and check if its latency constraint was met
-    for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
-        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
-        const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id);
+    for (const auto& traffic_flow_id : noc_traffic_flows_storage->get_all_traffic_flow_id()) {
+        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow(traffic_flow_id);
+        const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route(traffic_flow_id);
 
         // there will always be one more router than links in a traffic flow
         int num_of_links_in_traffic_flow = curr_traffic_flow_route.size();

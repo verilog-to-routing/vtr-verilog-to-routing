@@ -79,6 +79,9 @@ class NocTrafficFlows {
     /** contains all the traffic flows provided by the user and their information*/
     vtr::vector<NocTrafficFlowId, t_noc_traffic_flow> noc_traffic_flows;
 
+    /** contains all the traffic flows ids provided by the user*/
+    std::vector<NocTrafficFlowId> noc_traffic_flows_ids;
+
     /** contains the ids of all the router cluster blocks within the design */
     std::vector<ClusterBlockId> router_cluster_in_netlist;
 
@@ -88,7 +91,7 @@ class NocTrafficFlows {
      * flow needs tp be re-routed. 
      * 
      * This datastructure stores a vector of traffic flows that are associated
-     * to each router cbluster block. A traffic flow is associated to a router
+     * to each router cluster block. A traffic flow is associated to a router
      * cluster block if the router block is either the source or destination
      * router within the traffic flow.
      * 
@@ -210,6 +213,8 @@ class NocTrafficFlows {
     std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
     const std::vector<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
+
+    const std::vector<NocTrafficFlowId>& get_all_traffic_flow_id(void) const;
 
     // setters
 
