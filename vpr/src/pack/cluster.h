@@ -18,7 +18,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          int num_models,
                                                          const std::unordered_set<AtomNetId>& is_clock,
                                                          const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
-                                                         bool allow_unrelated_clustering,
+                                                         t_allow_unrelated_clustering allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,
                                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                                                          const t_ext_pin_util_targets& ext_pin_util_targets,

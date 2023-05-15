@@ -9,7 +9,6 @@
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
-#include <string>
 
 using argparse::ConvertedValue;
 using argparse::Provenance;
@@ -676,44 +675,6 @@ struct ParseClockModeling {
 
     std::vector<std::string> default_choices() {
         return {"ideal", "route", "dedicated_network"};
-    }
-};
-
-struct ParseUnrelatedClustering {
-    ConvertedValue<e_unrelated_clustering> from_str(std::string str) {
-        ConvertedValue<e_unrelated_clustering> conv_value;
-        if (str == "on")
-            conv_value.set_value(e_unrelated_clustering::ON);
-        else if (str == "off")
-            conv_value.set_value(e_unrelated_clustering::OFF);
-        else if (str == "auto")
-            conv_value.set_value(e_unrelated_clustering::AUTO);
-        else {
-            std::stringstream msg;
-            msg << "Invalid conversion from '"
-                << str
-                << "' to e_unrelated_clustering (expected one of: "
-                << argparse::join(default_choices(), ", ") << ")";
-            conv_value.set_error(msg.str());
-        }
-        return conv_value;
-    }
-
-    ConvertedValue<std::string> to_str(e_unrelated_clustering val) {
-        ConvertedValue<std::string> conv_value;
-        if (val == e_unrelated_clustering::ON)
-            conv_value.set_value("on");
-        else if (val == e_unrelated_clustering::OFF)
-            conv_value.set_value("off");
-        else {
-            VTR_ASSERT(val == e_unrelated_clustering::AUTO);
-            conv_value.set_value("auto");
-        }
-        return conv_value;
-    }
-
-    std::vector<std::string> default_choices() {
-        return {"on", "off", "auto"};
     }
 };
 
@@ -1668,14 +1629,24 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<e_unrelated_clustering, ParseUnrelatedClustering>(args.allow_unrelated_clustering, "--allow_unrelated_clustering")
+    pack_grp.add_argument(args.allow_unrelated_clustering, "--allow_unrelated_clustering")
         .help(
             "Controls whether primitives with no attraction to a cluster can be packed into it.\n"
             "Turning unrelated clustering on can increase packing density (fewer blocks are used), but at the cost of worse routability.\n"
-            " * on  : Unrelated clustering enabled\n"
-            " * off : Unrelated clustering disabled\n"
-            " * auto: Dynamically enabled/disabled (based on density)\n")
-        .default_value("auto")
+            "This option can take multiple specifications in several\n"
+            "formats:\n"
+            "* auto (i.e. 'auto'): Dynamically enabled/disabled (based on density)\n"
+            "* on  : Unrelated clustering enabled\n"
+            "* off : Unrelated clustering disabled\n"
+            "* Specified for a certain block type: (e.g. 'clb:on')\n"
+            "These can be used in combination. For example:\n"
+            "   '--allow_unrelated_clustering auto io:on'\n"
+            "would turn on unrelated clustering for io blocks and\n"
+            "dynamically determine enable/disable unrelated clustering,\n"
+            "for all other blocks.\n")
+
+        .nargs('+')
+        .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.alpha_clustering, "--alpha_clustering")
@@ -1810,19 +1781,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     pack_grp.add_argument<bool, ParseOnOff>(args.use_attraction_groups, "--use_attraction_groups")
         .help("Whether attraction groups are used to make it easier to pack primitives in the same floorplan region together.")
         .default_value("on")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument(args.pack_num_moves, "--pack_num_moves")
-        .help(
-            "The number of moves that can be tried in packing stage")
-        .default_value("100000")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument(args.pack_move_type, "--pack_move_type")
-        .help(
-            "The move type used in packing."
-            "The available values are: randomSwap, semiDirectedSwap, semiDirectedSameTypeSwap")
-        .default_value("semiDirectedSwap")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");
@@ -2053,8 +2011,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
         .help(
             "The reward function used by placement RL agent."
-            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware"
-            "The latter two are only available for timing-driven placement.")
+            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware")
         .default_value("WLbiased_runtime_aware")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2853,19 +2810,6 @@ void set_conditional_defaults(t_options& args) {
             args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
-        }
-    }
-
-    // Check for correct options combinations
-    // If you are running WLdriven placement, the RL reward function should be
-    // either basic or nonPenalizing basic
-    if (args.RL_agent_placement && (args.PlaceAlgorithm == BOUNDING_BOX_PLACE || !args.timing_analysis)) {
-        if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic") {
-            VTR_LOG_WARN(
-                "To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"
-                "you can specify the reward function using --place_reward_fun.\n"
-                "Setting the placement reward function to \"basic\"\n");
-            args.place_reward_fun.set("basic", Provenance::INFERRED);
         }
     }
 

@@ -85,7 +85,7 @@ struct t_options {
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
-    argparse::ArgValue<e_unrelated_clustering> allow_unrelated_clustering;
+    argparse::ArgValue<std::vector<std::string>> allow_unrelated_clustering;
     argparse::ArgValue<float> alpha_clustering;
     argparse::ArgValue<float> beta_clustering;
     argparse::ArgValue<bool> timing_driven_clustering;

@@ -23,6 +23,35 @@ void t_ext_pin_util_targets::set_default_pin_util(t_ext_pin_util default_target)
     defaults_ = default_target;
 }
 
+t_allow_unrelated_clustering::t_allow_unrelated_clustering(enum e_unrel_clust_stat default_stat, enum e_unrel_clust_mode default_mode) {
+    default_.first = default_stat;
+    default_.second = default_mode;
+}
+enum e_unrel_clust_stat t_allow_unrelated_clustering::get_block_status(std::string block_type_name) const {
+    auto itr = overrides_.find(block_type_name);
+    if (itr != overrides_.end()) {
+        std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status = itr->second;
+        return status.first;
+    }
+    return default_.first;
+}
+
+enum e_unrel_clust_mode t_allow_unrelated_clustering::get_block_mode(std::string block_type_name) const {
+    auto itr = overrides_.find(block_type_name);
+    if (itr != overrides_.end()) {
+        std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status = itr->second;
+        return status.second;
+    }
+    return default_.second;
+}
+
+void t_allow_unrelated_clustering::set_block_status(std::string block_type_name, std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status) {
+    overrides_[block_type_name] = status;
+}
+void t_allow_unrelated_clustering::set_default_status(std::pair<enum e_unrel_clust_stat, enum e_unrel_clust_mode> status) {
+    default_ = status;
+}
+
 t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(int threshold)
     : default_(threshold) {}
 
