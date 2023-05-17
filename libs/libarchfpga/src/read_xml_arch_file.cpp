@@ -126,7 +126,8 @@ static void ProcessTiles(pugi::xml_node Node,
                          std::vector<t_logical_block_type>& LogicalBlockTypes,
                          const t_default_fc_spec& arch_def_fc,
                          t_arch& arch,
-                         const pugiutil::loc_data& loc_data);
+                         const pugiutil::loc_data& loc_data,
+                         const int num_of_avail_layer);
 // TODO: Remove block_type_contains_blif_model / pb_type_contains_blif_model
 // as part of
 // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
@@ -161,13 +162,15 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                 t_physical_tile_type* PhysicalTileType,
                                 t_sub_tile* SubTile,
                                 t_pin_locs* pin_locs,
-                                const pugiutil::loc_data& loc_data);
+                                const pugiutil::loc_data& loc_data,
+                                const int num_of_avail_layer);
 static void ProcessSubTiles(pugi::xml_node Node,
                             t_physical_tile_type* PhysicalTileType,
                             std::vector<t_logical_block_type>& LogicalBlockTypes,
                             std::vector<t_segment_inf>& segments,
                             const t_default_fc_spec& arch_def_fc,
-                            const pugiutil::loc_data& loc_data);
+                            const pugiutil::loc_data& loc_data,
+                            const int num_of_avail_layer);
 static void ProcessPb_Type(vtr::string_internment* strings,
                            pugi::xml_node Parent,
                            t_pb_type* pb_type,
@@ -214,8 +217,8 @@ static void ProcessChanWidthDistr(pugi::xml_node Node,
 static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pugiutil::loc_data& loc_data);
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
-static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
-static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
+static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
+static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
@@ -347,8 +350,9 @@ void XmlReadArch(const char* ArchFile,
         CreateModelLibrary(arch);
 
         /* Process layout */
+        int num_of_avail_layers = 0;
         Next = get_single_child(architecture, "layout", loc_data);
-        ProcessLayout(Next, arch, loc_data);
+        ProcessLayout(Next, arch, loc_data, num_of_avail_layers);
 
         /* Process device */
         Next = get_single_child(architecture, "device", loc_data);
@@ -379,7 +383,7 @@ void XmlReadArch(const char* ArchFile,
 
         /* Process logical block types */
         Next = get_single_child(architecture, "tiles", loc_data);
-        ProcessTiles(Next, PhysicalTileTypes, LogicalBlockTypes, arch_def_fc, *arch, loc_data);
+        ProcessTiles(Next, PhysicalTileTypes, LogicalBlockTypes, arch_def_fc, *arch, loc_data, num_of_avail_layers);
 
         /* Link Physical Tiles with Logical Blocks */
         link_physical_logical_types(PhysicalTileTypes, LogicalBlockTypes);
@@ -2387,7 +2391,7 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
     }
 }
 
-static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data) {
+static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer) {
     VTR_ASSERT(layout_tag.name() == std::string("layout"));
 
     //Expect no attributes on <layout>
@@ -2418,7 +2422,7 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
     for (auto layout_type_tag : layout_tag.children()) {
-        t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data);
+        t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data, num_of_avail_layer);
 
         arch->grid_layouts.emplace_back(std::move(grid_def));
     }
@@ -2426,9 +2430,10 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
 
 static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
                                     pugi::xml_node layout_type_tag,
-                                    const pugiutil::loc_data& loc_data) {
+                                    const pugiutil::loc_data& loc_data,
+                                    int& num_of_avail_layer) {
     t_grid_def grid_def;
-    int num_layers = get_number_of_layers(layout_type_tag, loc_data);
+    num_of_avail_layer = get_number_of_layers(layout_type_tag, loc_data);
     bool has_layer = layout_type_tag.child("layer");
 
     //Determine the grid specification type
@@ -2461,7 +2466,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
                        layout_type_tag.name());
     }
 
-    grid_def.layers.resize(num_layers);
+    grid_def.layers.resize(num_of_avail_layer);
     //No layer tag is specified (only one die is specified in the arch file)
     //Need to process layout_type_tag children to get block types locations in the grid
     if (has_layer) {
@@ -2473,7 +2478,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
             //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
             //Need to process each <layer> tag children to get block types locations for each grid
             die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-            VTR_ASSERT(die_number >= 0 && die_number < num_layers);
+            VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
             auto insert_res = seen_die_numbers.insert(die_number);
             VTR_ASSERT_MSG(insert_res.second, "Two different layers with a same die number may have been specified in the Architecture file");
             ProcessBlockTypeLocs(grid_def, die_number, strings, layer_child, loc_data);
@@ -2868,7 +2873,8 @@ static void ProcessTiles(pugi::xml_node Node,
                          std::vector<t_logical_block_type>& LogicalBlockTypes,
                          const t_default_fc_spec& arch_def_fc,
                          t_arch& arch,
-                         const pugiutil::loc_data& loc_data) {
+                         const pugiutil::loc_data& loc_data,
+                         const int num_of_avail_layer) {
     pugi::xml_node CurTileType;
     pugi::xml_node Cur;
     std::map<std::string, int> tile_type_descriptors;
@@ -2915,7 +2921,7 @@ static void ProcessTiles(pugi::xml_node Node,
         Cur = get_single_child(CurTileType, "switchblock_locations", loc_data, ReqOpt::OPTIONAL);
         ProcessSwitchblockLocations(Cur, &PhysicalTileType, arch, loc_data);
 
-        ProcessSubTiles(CurTileType, &PhysicalTileType, LogicalBlockTypes, arch.Segments, arch_def_fc, loc_data);
+        ProcessSubTiles(CurTileType, &PhysicalTileType, LogicalBlockTypes, arch.Segments, arch_def_fc, loc_data, num_of_avail_layer);
 
         /* Type fully read */
         ++index;
@@ -3254,7 +3260,8 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                 t_physical_tile_type* PhysicalTileType,
                                 t_sub_tile* SubTile,
                                 t_pin_locs* pin_locs,
-                                const pugiutil::loc_data& loc_data) {
+                                const pugiutil::loc_data& loc_data,
+                                const int num_of_avail_layer) {
     pugi::xml_node Cur;
     const char* Prop;
     enum e_pin_location_distr distribution;
@@ -3298,15 +3305,19 @@ static void ProcessPinLocations(pugi::xml_node Locations,
     if (distribution == E_CUSTOM_PIN_DISTR) {
         expect_only_children(Locations, {"loc"}, loc_data);
         Cur = Locations.first_child();
+        //SARA_TODO : THIS IS CHECK FOR EACH SIDE,WIDTH,HEIGHT, PROBABLY NEED TO ADD LAYER
+        //OR FIGURE OUT SOME LOGIC TO AVOID DUPLICATION
         std::set<std::tuple<e_side, int, int>> seen_sides;
         while (Cur) {
             check_node(Cur, "loc", loc_data);
 
-            expect_only_attributes(Cur, {"side", "xoffset", "yoffset"}, loc_data);
+            //SARA_TODO: ADD LAYER_OFFSET
+            expect_only_attributes(Cur, {"side", "xoffset", "yoffset","layer_offset"}, loc_data);
 
-            /* Get offset (ie. height) */
+            /* Get offset (height, width, layer) */
             int x_offset = get_attribute(Cur, "xoffset", loc_data, ReqOpt::OPTIONAL).as_int(0);
             int y_offset = get_attribute(Cur, "yoffset", loc_data, ReqOpt::OPTIONAL).as_int(0);
+            int layer_offset = pugiutil::get_attribute(Cur, "layer_offset",loc_data, ReqOpt::OPTIONAL).as_int(0);
 
             /* Get side */
             e_side side = TOP;
@@ -3335,6 +3346,12 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                y_offset, PhysicalTileType->name, PhysicalTileType->height - 1);
             }
 
+            if((layer_offset < 0) || (layer_offset >= num_of_avail_layer)){
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                               "'%d' is an invalid layer offset for type '%s' (must be within [0, %d]).\n",
+                               layer_offset, PhysicalTileType->name, num_of_avail_layer-1);
+            }
+
             //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
             auto side_offset = std::make_tuple(side, x_offset, y_offset);
             if (seen_sides.count(side_offset)) {
@@ -3345,6 +3362,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             seen_sides.insert(side_offset);
 
             /* Go through lists of pins */
+            //SARA_TOASK: WHAT IS TOKEN?
             const std::vector<std::string> Tokens = vtr::split(Cur.child_value());
             int Count = (int)Tokens.size();
             if (Count > 0) {
@@ -3368,6 +3386,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                     for (auto token : pin_locs->assignments[sub_tile_index][w][h][side]) {
                         InstPort inst_port(token.c_str());
 
+                        //SARA_TOASK: WHAT DOES THIS IF CONDITION DO?
                         //A pin specification should contain only the block name, and not any instace count information
                         if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
                             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
@@ -3440,7 +3459,8 @@ static void ProcessSubTiles(pugi::xml_node Node,
                             std::vector<t_logical_block_type>& LogicalBlockTypes,
                             std::vector<t_segment_inf>& segments,
                             const t_default_fc_spec& arch_def_fc,
-                            const pugiutil::loc_data& loc_data) {
+                            const pugiutil::loc_data& loc_data,
+                            const int num_of_avail_layer) {
     pugi::xml_node CurSubTile;
     pugi::xml_node Cur;
     int index = 0;
@@ -3453,6 +3473,8 @@ static void ProcessSubTiles(pugi::xml_node Node,
     std::map<std::string, int> sub_tile_names;
 
     t_pin_locs pin_locs;
+    //SARA_TODO: WHEN ADDING A LAYER_OFFSET THIS SHOULD BE {NUM_SUB_TILES,WIDTH,HEIGHT,LAYER,NUM_SIDES}
+    //MAYBE WE DON'T NEED TO CHANGE IT EITHER BECAUSE EVERY PIN ASSIGNMENT MIGHT BE IN THE FPGA FABRIC
     pin_locs.assignments.resize({num_sub_tiles, width, height, num_sides});
 
     if (num_sub_tiles == 0) {
@@ -3514,7 +3536,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         PhysicalTileType->num_drivers += capacity * pin_counts.output;
 
         Cur = get_single_child(CurSubTile, "pinlocations", loc_data, ReqOpt::OPTIONAL);
-        ProcessPinLocations(Cur, PhysicalTileType, &SubTile, &pin_locs, loc_data);
+        ProcessPinLocations(Cur, PhysicalTileType, &SubTile, &pin_locs, loc_data, num_of_avail_layer);
 
         /* Load Fc */
         Cur = get_single_child(CurSubTile, "fc", loc_data, ReqOpt::OPTIONAL);
