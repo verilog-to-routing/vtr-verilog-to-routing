@@ -113,7 +113,8 @@ struct t_pin_locs {
 static void LoadPinLoc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
                        t_pin_locs* pin_locs,
-                       const pugiutil::loc_data& loc_data);
+                       const pugiutil::loc_data& loc_data,
+                       const int num_of_avail_layer);
 template<typename T>
 static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
@@ -486,9 +487,12 @@ void XmlReadArch(const char* ArchFile,
 static void LoadPinLoc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
                        t_pin_locs* pin_locs,
-                       const pugiutil::loc_data& loc_data) {
+                       const pugiutil::loc_data& loc_data,
+                       const int num_of_avail_layer) {
     type->pin_width_offset.resize(type->num_pins, 0);
     type->pin_height_offset.resize(type->num_pins, 0);
+    //SARA_TODO: should fill this layer  offset for non-custom <pinlocation> tags or should leave it at zero
+    type->pin_layer_offset.resize(type->num_pins, 0);
 
     std::vector<int> physical_pin_counts(type->num_pins, 0);
     if (pin_locs->distribution == E_SPREAD_PIN_DISTR) {
@@ -641,6 +645,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         }
     }
 
+    //SARA_TOASK: WHAT THIS FOR LOOP DO?
     for (int ipin = 0; ipin < type->num_pins; ++ipin) {
         VTR_ASSERT(physical_pin_counts[ipin] >= 1);
 
@@ -649,6 +654,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
 
         VTR_ASSERT(type->pin_width_offset[ipin] >= 0 && type->pin_width_offset[ipin] < type->width);
         VTR_ASSERT(type->pin_height_offset[ipin] >= 0 && type->pin_height_offset[ipin] < type->height);
+        VTR_ASSERT(type->pin_layer_offset[ipin] >= 0 && type->pin_layer_offset[ipin] > num_of_avail_layer);
     }
 }
 
@@ -3312,12 +3318,12 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             check_node(Cur, "loc", loc_data);
 
             //SARA_TODO: ADD LAYER_OFFSET
-            expect_only_attributes(Cur, {"side", "xoffset", "yoffset","layer_offset"}, loc_data);
+            expect_only_attributes(Cur, {"side", "xoffset", "yoffset", "layer_offset"}, loc_data);
 
             /* Get offset (height, width, layer) */
             int x_offset = get_attribute(Cur, "xoffset", loc_data, ReqOpt::OPTIONAL).as_int(0);
             int y_offset = get_attribute(Cur, "yoffset", loc_data, ReqOpt::OPTIONAL).as_int(0);
-            int layer_offset = pugiutil::get_attribute(Cur, "layer_offset",loc_data, ReqOpt::OPTIONAL).as_int(0);
+            int layer_offset = pugiutil::get_attribute(Cur, "layer_offset", loc_data, ReqOpt::OPTIONAL).as_int(0);
 
             /* Get side */
             e_side side = TOP;
@@ -3346,10 +3352,10 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                y_offset, PhysicalTileType->name, PhysicalTileType->height - 1);
             }
 
-            if((layer_offset < 0) || (layer_offset >= num_of_avail_layer)){
+            if ((layer_offset < 0) || (layer_offset >= num_of_avail_layer)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "'%d' is an invalid layer offset for type '%s' (must be within [0, %d]).\n",
-                               layer_offset, PhysicalTileType->name, num_of_avail_layer-1);
+                               layer_offset, PhysicalTileType->name, num_of_avail_layer - 1);
             }
 
             //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
@@ -3362,7 +3368,6 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             seen_sides.insert(side_offset);
 
             /* Go through lists of pins */
-            //SARA_TOASK: WHAT IS TOKEN?
             const std::vector<std::string> Tokens = vtr::split(Cur.child_value());
             int Count = (int)Tokens.size();
             if (Count > 0) {
@@ -3558,7 +3563,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
     PhysicalTileType->pinloc.resize({width, height, num_sides}, std::vector<bool>(num_pins, false));
 
     setup_pin_classes(PhysicalTileType);
-    LoadPinLoc(Cur, PhysicalTileType, &pin_locs, loc_data);
+    LoadPinLoc(Cur, PhysicalTileType, &pin_locs, loc_data, num_of_avail_layer);
 }
 
 /* Takes in node pointing to <typelist> and loads all the

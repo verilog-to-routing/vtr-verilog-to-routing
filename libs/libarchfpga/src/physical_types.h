@@ -650,7 +650,7 @@ struct t_physical_tile_type {
     int primitive_class_starting_idx = -1;
     std::unordered_map<int, t_class> primitive_class_inf; // [primitive_class_num] -> primitive_class_inf
 
-    //SARA_TODO: ADD A PIN_LAYER_OFFSET [0..num_pins-1]
+    std::vector<int> pin_layer_offset;                // [0..num_pins-1]
     std::vector<int> pin_width_offset;                // [0..num_pins-1]
     std::vector<int> pin_height_offset;               // [0..num_pins-1]
     std::vector<int> pin_class;                       // [0..num_pins-1]
