@@ -654,7 +654,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
 
         VTR_ASSERT(type->pin_width_offset[ipin] >= 0 && type->pin_width_offset[ipin] < type->width);
         VTR_ASSERT(type->pin_height_offset[ipin] >= 0 && type->pin_height_offset[ipin] < type->height);
-        VTR_ASSERT(type->pin_layer_offset[ipin] >= 0 && type->pin_layer_offset[ipin] > num_of_avail_layer);
+        VTR_ASSERT(type->pin_layer_offset[ipin] >= 0 && type->pin_layer_offset[ipin] < num_of_avail_layer);
     }
 }
 
