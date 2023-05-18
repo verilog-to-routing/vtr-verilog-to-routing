@@ -94,8 +94,8 @@ struct t_pin_locs {
   public:
     enum e_pin_location_distr distribution = E_SPREAD_PIN_DISTR;
 
-    /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..3][0..num_tokens-1] */
-    vtr::NdMatrix<std::vector<std::string>, 4> assignments;
+    /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..num_of_layer-1][0..3][0..num_tokens-1] */
+    vtr::NdMatrix<std::vector<std::string>, 5> assignments;
 
     bool is_distribution_set() {
         return distribution_set;
@@ -3311,13 +3311,11 @@ static void ProcessPinLocations(pugi::xml_node Locations,
     if (distribution == E_CUSTOM_PIN_DISTR) {
         expect_only_children(Locations, {"loc"}, loc_data);
         Cur = Locations.first_child();
-        //SARA_TODO : THIS IS CHECK FOR EACH SIDE,WIDTH,HEIGHT, PROBABLY NEED TO ADD LAYER
-        //OR FIGURE OUT SOME LOGIC TO AVOID DUPLICATION
-        std::set<std::tuple<e_side, int, int>> seen_sides;
+        //check for duplications ([0..3][0..type->width-1][0..type->height-1][0..num_of_avail_layer-1])
+        std::set<std::tuple<e_side, int, int, int>> seen_sides;
         while (Cur) {
             check_node(Cur, "loc", loc_data);
 
-            //SARA_TODO: ADD LAYER_OFFSET
             expect_only_attributes(Cur, {"side", "xoffset", "yoffset", "layer_offset"}, loc_data);
 
             /* Get offset (height, width, layer) */
@@ -3359,11 +3357,11 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             }
 
             //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
-            auto side_offset = std::make_tuple(side, x_offset, y_offset);
+            auto side_offset = std::make_tuple(side, x_offset, y_offset, layer_offset);
             if (seen_sides.count(side_offset)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "Duplicate pin location side/offset specification."
-                               " Only a single <loc> per side/xoffset/yoffset is permitted.\n");
+                               " Only a single <loc> per side/xoffset/yoffset/layer_offset is permitted.\n");
             }
             seen_sides.insert(side_offset);
 
@@ -3373,7 +3371,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             if (Count > 0) {
                 for (int pin = 0; pin < Count; ++pin) {
                     /* Store location assignment */
-                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][side].push_back(std::string(Tokens[pin].c_str()));
+                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][layer_offset][side].push_back(std::string(Tokens[pin].c_str()));
 
                     /* Advance through list of pins in this location */
                 }
@@ -3385,57 +3383,60 @@ static void ProcessPinLocations(pugi::xml_node Locations,
 
         //Record all the specified pins
         std::map<std::string, std::set<int>> port_pins_with_specified_locations;
-        for (int w = 0; w < PhysicalTileType->width; ++w) {
-            for (int h = 0; h < PhysicalTileType->height; ++h) {
-                for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                    for (auto token : pin_locs->assignments[sub_tile_index][w][h][side]) {
-                        InstPort inst_port(token.c_str());
+        for(int l = 0; l < num_of_avail_layer; ++l) {
+            for (int w = 0; w < PhysicalTileType->width; ++w) {
+                for (int h = 0; h < PhysicalTileType->height; ++h) {
+                    for (e_side side: {TOP, RIGHT, BOTTOM, LEFT}) {
+                        for (auto token: pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                            InstPort inst_port(token.c_str());
 
-                        //SARA_TOASK: WHAT DOES THIS IF CONDITION DO?
-                        //A pin specification should contain only the block name, and not any instace count information
-                        if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
-                            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                           "Pin location specification '%s' should not contain an instance range (should only be the block name)",
-                                           token.c_str());
-                        }
+                            //SARA_TOASK: WHAT DOES THIS IF CONDITION DO?
+                            //A pin specification should contain only the block name, and not any instace count information
+                            if (inst_port.instance_low_index() != InstPort::UNSPECIFIED ||
+                                inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
+                                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                               "Pin location specification '%s' should not contain an instance range (should only be the block name)",
+                                               token.c_str());
+                            }
 
-                        //Check that the block name matches
-                        if (inst_port.instance_name() != SubTile->name) {
-                            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                           "Mismatched sub tile name in pin location specification (expected '%s' was '%s')",
-                                           SubTile->name, inst_port.instance_name().c_str());
-                        }
+                            //Check that the block name matches
+                            if (inst_port.instance_name() != SubTile->name) {
+                                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                               "Mismatched sub tile name in pin location specification (expected '%s' was '%s')",
+                                               SubTile->name, inst_port.instance_name().c_str());
+                            }
 
-                        int pin_low_idx = inst_port.port_low_index();
-                        int pin_high_idx = inst_port.port_high_index();
+                            int pin_low_idx = inst_port.port_low_index();
+                            int pin_high_idx = inst_port.port_high_index();
 
-                        if (pin_low_idx == InstPort::UNSPECIFIED && pin_high_idx == InstPort::UNSPECIFIED) {
-                            //Empty range, so full port
+                            if (pin_low_idx == InstPort::UNSPECIFIED && pin_high_idx == InstPort::UNSPECIFIED) {
+                                //Empty range, so full port
 
-                            //Find the matching pb type to get the total number of pins
-                            const t_physical_tile_port* port = nullptr;
-                            for (const auto& tmp_port : SubTile->ports) {
-                                if (tmp_port.name == inst_port.port_name()) {
-                                    port = &tmp_port;
-                                    break;
+                                //Find the matching pb type to get the total number of pins
+                                const t_physical_tile_port *port = nullptr;
+                                for (const auto &tmp_port: SubTile->ports) {
+                                    if (tmp_port.name == inst_port.port_name()) {
+                                        port = &tmp_port;
+                                        break;
+                                    }
+                                }
+
+                                if (port) {
+                                    pin_low_idx = 0;
+                                    pin_high_idx = port->num_pins - 1;
+                                } else {
+                                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                                   "Failed to find port named '%s' on block '%s'",
+                                                   inst_port.port_name().c_str(), SubTile->name);
                                 }
                             }
+                            VTR_ASSERT(pin_low_idx >= 0);
+                            VTR_ASSERT(pin_high_idx >= 0);
 
-                            if (port) {
-                                pin_low_idx = 0;
-                                pin_high_idx = port->num_pins - 1;
-                            } else {
-                                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                               "Failed to find port named '%s' on block '%s'",
-                                               inst_port.port_name().c_str(), SubTile->name);
+                            for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
+                                //Record that the pin has it's location specified
+                                port_pins_with_specified_locations[inst_port.port_name()].insert(ipin);
                             }
-                        }
-                        VTR_ASSERT(pin_low_idx >= 0);
-                        VTR_ASSERT(pin_high_idx >= 0);
-
-                        for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
-                            //Record that the pin has it's location specified
-                            port_pins_with_specified_locations[inst_port.port_name()].insert(ipin);
                         }
                     }
                 }
@@ -3448,7 +3449,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                 if (!port_pins_with_specified_locations[port.name].count(ipin)) {
                     //Missing
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                   "Pin '%s.%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
+                                   "Pin '%s.%s[%d]' has no pin location specified (a location is required for pattern=\"custom\")",
                                    SubTile->name, port.name, ipin);
                 }
             }
