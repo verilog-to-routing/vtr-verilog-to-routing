@@ -621,19 +621,17 @@ static void LoadPinLoc(pugi::xml_node Locations,
             for (int layer = 0; layer < num_of_avail_layer; ++layer) {
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
-                        for (e_side side: {TOP, RIGHT, BOTTOM, LEFT}) {
-                            for (auto token: pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
-                                auto pin_range = ProcessPinString<t_sub_tile *>(Locations,
-                                                                                &sub_tile,
-                                                                                token.c_str(),
-                                                                                loc_data);
+                        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                            for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                                auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
+                                                                               &sub_tile,
+                                                                               token.c_str(),
+                                                                               loc_data);
 
                                 for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
-                                    VTR_ASSERT(pin_num <
-                                               (int) sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
+                                    VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
                                     for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
-                                        int sub_tile_pin_index =
-                                                pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
+                                        int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                         int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                         type->pinloc[width][height][side][physical_pin_index] = true;
                                         type->pin_width_offset[physical_pin_index] += width;
@@ -3387,17 +3385,16 @@ static void ProcessPinLocations(pugi::xml_node Locations,
 
         //Record all the specified pins
         std::map<std::string, std::set<int>> port_pins_with_specified_locations;
-        for(int l = 0; l < num_of_avail_layer; ++l) {
+        for (int l = 0; l < num_of_avail_layer; ++l) {
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
-                    for (e_side side: {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (auto token: pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
                             InstPort inst_port(token.c_str());
 
                             //SARA_TOASK: WHAT DOES THIS IF CONDITION DO?
                             //A pin specification should contain only the block name, and not any instace count information
-                            if (inst_port.instance_low_index() != InstPort::UNSPECIFIED ||
-                                inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
+                            if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
                                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                "Pin location specification '%s' should not contain an instance range (should only be the block name)",
                                                token.c_str());
@@ -3417,8 +3414,8 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                 //Empty range, so full port
 
                                 //Find the matching pb type to get the total number of pins
-                                const t_physical_tile_port *port = nullptr;
-                                for (const auto &tmp_port: SubTile->ports) {
+                                const t_physical_tile_port* port = nullptr;
+                                for (const auto& tmp_port : SubTile->ports) {
                                     if (tmp_port.name == inst_port.port_name()) {
                                         port = &tmp_port;
                                         break;
@@ -3480,7 +3477,6 @@ static void ProcessSubTiles(pugi::xml_node Node,
     unsigned long int height = PhysicalTileType->height;
     unsigned long int layer = num_of_avail_layer;
     unsigned long int num_sides = 4;
-
 
     std::map<std::string, int> sub_tile_names;
 
