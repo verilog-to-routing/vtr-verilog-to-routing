@@ -213,8 +213,8 @@ class NocTrafficFlows {
     std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
     /**
-     * @return provides access to a vector containing all logical router ClusterBlockId to
-     * help "propose_router_swap" function to choose a random logical router to move.
+     * @return a vector ([0..num_logical_router-1]) where each entry gives the clusterBlockId
+     * of a logical NoC router. Used for fast lookups in the placer.
      */
     const std::vector<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
 
@@ -255,19 +255,14 @@ class NocTrafficFlows {
     void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
 
     /**
-     * @brief fill "router_cluster_in_netlist" vector which is an internal
-     * data structure used in "propose_router_swap" function. This vector
-     * will contain NoC routers' ClusterBlockId specified in the netlist to
-     * simplify their quick access during choosing a random router from netlist.
-     * This routine is executed only once during traffic flow extraction
-     * after "get_cluster_blocks_compatible_with_noc_router_tiles"
-     * function and the vector will be constant afterward.
+     * @brief Copies the passed in router_cluster_id_in_netlist vector to the
+     * private internal vector.
      *
-     * @param routers_cluster_id_in_netlist A vector containing all routers'
+     * @param routers_cluster_id_in_netlist A vector ([0..num_logical_routers-1]) containing all routers'
      * ClusterBlockId extracted from netlist.
      *
      */
-    void set_router_cluster_in_netlist(std::vector<ClusterBlockId> routers_cluster_id_in_netlist);
+    void set_router_cluster_in_netlist(std::vector<ClusterBlockId>& routers_cluster_id_in_netlist);
 
     //utility functions
 
