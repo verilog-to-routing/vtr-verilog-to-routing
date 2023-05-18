@@ -491,7 +491,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
                        const int num_of_avail_layer) {
     type->pin_width_offset.resize(type->num_pins, 0);
     type->pin_height_offset.resize(type->num_pins, 0);
-    //SARA_TODO: should fill this layer  offset for non-custom <pinlocation> tags or should leave it at zero
+    //layer_offset is not used if the distribution is not custom
     type->pin_layer_offset.resize(type->num_pins, 0);
 
     std::vector<int> physical_pin_counts(type->num_pins, 0);
