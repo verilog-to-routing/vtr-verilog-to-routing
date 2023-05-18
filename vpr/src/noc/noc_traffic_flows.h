@@ -262,7 +262,7 @@ class NocTrafficFlows {
      * ClusterBlockId extracted from netlist.
      *
      */
-    void set_router_cluster_in_netlist(std::vector<ClusterBlockId>& routers_cluster_id_in_netlist);
+    void set_router_cluster_in_netlist(const std::vector<ClusterBlockId>& routers_cluster_id_in_netlist);
 
     //utility functions
 
