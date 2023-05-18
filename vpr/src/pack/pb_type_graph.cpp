@@ -49,7 +49,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_type* pb_type,
                                     const int index,
                                     bool load_power_structures,
-                                    int& pin_count_in_cluster);
+                                    int& pin_count_in_cluster,
+                                    int& primitive_num);
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node);
 
@@ -147,12 +148,14 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
         if (type.pb_type) {
             type.pb_graph_head = new t_pb_graph_node();
             int pin_count_in_cluster = 0;
+            int primitive_num = 0;
             alloc_and_load_pb_graph(type.pb_graph_head,
                                     nullptr,
                                     type.pb_type,
                                     0,
                                     load_power_structures,
-                                    pin_count_in_cluster);
+                                    pin_count_in_cluster,
+                                    primitive_num);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
@@ -225,7 +228,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_type* pb_type,
                                     const int index,
                                     bool load_power_structures,
-                                    int& pin_count_in_cluster) {
+                                    int& pin_count_in_cluster,
+                                    int& primitive_num) {
     int i, j, k, i_input, i_output, i_clockport;
 
     pb_graph_node->placement_index = index;
@@ -339,6 +343,11 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         pb_graph_node->pb_node_power->transistor_cnt_pb_children = 0.;
     }
 
+    if (pb_graph_node->is_primitive()) {
+        pb_graph_node->primitive_num = primitive_num;
+        primitive_num++;
+    }
+
     /* Allocate and load child nodes for each mode and create interconnect in each mode */
 
     pb_graph_node->child_pb_graph_nodes = (t_pb_graph_node***)vtr::calloc(pb_type->num_modes, sizeof(t_pb_graph_node**));
@@ -353,7 +362,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                         &pb_type->modes[i].pb_type_children[j],
                                         k,
                                         load_power_structures,
-                                        pin_count_in_cluster);
+                                        pin_count_in_cluster,
+                                        primitive_num);
             }
         }
     }

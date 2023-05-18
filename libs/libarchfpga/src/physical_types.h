@@ -1202,6 +1202,7 @@ class t_pb_graph_node {
 
     int placement_index;
 
+    int primitive_num;
     /* Contains a collection of mode indices that cannot be used as they produce conflicts during VPR packing stage
      *
      * Illegal modes do arise when children of a graph_node do have inconsistent `edge_modes` with respect to
@@ -1248,7 +1249,7 @@ class t_pb_graph_node {
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
     int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
-                                
+
     /* Interconnect instances for this pb
      * Only used for power
      */
