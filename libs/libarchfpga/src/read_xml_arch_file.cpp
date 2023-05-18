@@ -621,7 +621,8 @@ static void LoadPinLoc(pugi::xml_node Locations,
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
                     for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (auto token : pin_locs->assignments[sub_tile_index][width][height][side]) {
+                        //SARA_TODO: [0] should change to layer_num which is a loop through
+                        for (auto token : pin_locs->assignments[sub_tile_index][width][height][0][side]) {
                             auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
                                                                            &sub_tile,
                                                                            token.c_str(),
@@ -3474,14 +3475,14 @@ static void ProcessSubTiles(pugi::xml_node Node,
     unsigned long int num_sub_tiles = count_children(Node, "sub_tile", loc_data);
     unsigned long int width = PhysicalTileType->width;
     unsigned long int height = PhysicalTileType->height;
+    unsigned long int layer = num_of_avail_layer;
     unsigned long int num_sides = 4;
+
 
     std::map<std::string, int> sub_tile_names;
 
     t_pin_locs pin_locs;
-    //SARA_TODO: WHEN ADDING A LAYER_OFFSET THIS SHOULD BE {NUM_SUB_TILES,WIDTH,HEIGHT,LAYER,NUM_SIDES}
-    //MAYBE WE DON'T NEED TO CHANGE IT EITHER BECAUSE EVERY PIN ASSIGNMENT MIGHT BE IN THE FPGA FABRIC
-    pin_locs.assignments.resize({num_sub_tiles, width, height, num_sides});
+    pin_locs.assignments.resize({num_sub_tiles, width, height, layer, num_sides});
 
     if (num_sub_tiles == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
