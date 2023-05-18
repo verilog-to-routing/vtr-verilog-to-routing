@@ -267,7 +267,6 @@ void SetupVPR(const t_options* Options,
     vtr::out_file_prefix = Options->out_file_prefix;
 
     /* Set seed for pseudo-random placement, default seed to 1 */
-    PlacerOpts->seed = Options->Seed;
     vtr::srandom(PlacerOpts->seed);
 
     {
