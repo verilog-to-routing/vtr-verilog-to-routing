@@ -109,14 +109,14 @@ std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id,
     return curr_traffic_flow_route;
 }
 
-void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int how_to_update_links, double traffic_flow_bandwidth) {
+void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int inc_or_dec, double traffic_flow_bandwidth) {
     // go through the links within the traffic flow route and update their bandwidth usage
     for (auto& link_in_route_id : traffic_flow_route) {
         // get the link to update and its current bandwidth
         NocLink& curr_link = noc_model.get_single_mutable_noc_link(link_in_route_id);
         double curr_link_bandwidth = curr_link.get_bandwidth_usage();
 
-        curr_link.set_bandwidth_usage(curr_link_bandwidth + how_to_update_links * traffic_flow_bandwidth);
+        curr_link.set_bandwidth_usage(curr_link_bandwidth + inc_or_dec * traffic_flow_bandwidth);
 
         // check that the bandwidth never goes to negative
         VTR_ASSERT(curr_link.get_bandwidth_usage() >= 0.0);

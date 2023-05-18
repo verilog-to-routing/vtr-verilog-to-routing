@@ -26,8 +26,8 @@ constexpr double MIN_EXPECTED_NOC_LATENCY_COST = 1.e-12;
 
 /**
  * @brief Each traffic flow cost consists of two components:
- *        1) traffic flow aggregate bandwidth
- *        2) traffic flow latency
+ *        1) traffic flow aggregate bandwidth (sum over all used links of the traffic flow bandwidth)
+ *        2) traffic flow latency (currently unloaded/best-case latency of the flow)
  *        NoC placement code will keep an array-of-struct to easily access each
  *        traffic flow cost.
  */
@@ -142,14 +142,14 @@ std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id,
  * contains a collection of links in the NoC.
  * @param noc_model Contains all the links and routers within the NoC. Used
  * to update link information.
- * @param how_to_update_links Determines how the bandwidths of links found
+ * @param inc_or_dec Determines how the bandwidths of links found
  * in the traffic flow route are updated. If it is -1, the route flow has
  * been removed and links' bandwidth must be decremented. Otherwise, the a traffic
  * flow has been re-routed and its links' bandwidth should be incremented.
  * @param traffic_flow_bandwidth The bandwidth of a traffic flow. This will
  * be used to update bandwidth usage of the links.
  */
-void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int how_to_update_links, double traffic_flow_bandwidth);
+void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int inc_or_dec, double traffic_flow_bandwidth);
 
 /**
  * @brief Goes through all the traffic flows associated to a moved
