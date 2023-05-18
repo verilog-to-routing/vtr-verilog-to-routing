@@ -618,25 +618,29 @@ static void LoadPinLoc(pugi::xml_node Locations,
             int sub_tile_index = sub_tile.index;
             int sub_tile_capacity = sub_tile.capacity.total();
 
-            for (int width = 0; width < type->width; ++width) {
-                for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        //SARA_TODO: [0] should change to layer_num which is a loop through
-                        for (auto token : pin_locs->assignments[sub_tile_index][width][height][0][side]) {
-                            auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
-                                                                           &sub_tile,
-                                                                           token.c_str(),
-                                                                           loc_data);
+            for (int layer = 0; layer < num_of_avail_layer; ++layer) {
+                for (int width = 0; width < type->width; ++width) {
+                    for (int height = 0; height < type->height; ++height) {
+                        for (e_side side: {TOP, RIGHT, BOTTOM, LEFT}) {
+                            for (auto token: pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                                auto pin_range = ProcessPinString<t_sub_tile *>(Locations,
+                                                                                &sub_tile,
+                                                                                token.c_str(),
+                                                                                loc_data);
 
-                            for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
-                                VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                                for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
-                                    int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
-                                    int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
-                                    type->pinloc[width][height][side][physical_pin_index] = true;
-                                    type->pin_width_offset[physical_pin_index] += width;
-                                    type->pin_height_offset[physical_pin_index] += height;
-                                    physical_pin_counts[physical_pin_index] += 1;
+                                for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
+                                    VTR_ASSERT(pin_num <
+                                               (int) sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
+                                    for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
+                                        int sub_tile_pin_index =
+                                                pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
+                                        int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
+                                        type->pinloc[width][height][side][physical_pin_index] = true;
+                                        type->pin_width_offset[physical_pin_index] += width;
+                                        type->pin_height_offset[physical_pin_index] += height;
+                                        type->pin_layer_offset[physical_pin_index] += layer;
+                                        physical_pin_counts[physical_pin_index] += 1;
+                                    }
                                 }
                             }
                         }
@@ -646,7 +650,6 @@ static void LoadPinLoc(pugi::xml_node Locations,
         }
     }
 
-    //SARA_TOASK: WHAT THIS FOR LOOP DO?
     for (int ipin = 0; ipin < type->num_pins; ++ipin) {
         VTR_ASSERT(physical_pin_counts[ipin] >= 1);
 
