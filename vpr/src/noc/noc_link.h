@@ -84,7 +84,7 @@ class NocLink {
 
     /**
      * @brief Can be used to set the sink router of the link to a different router. 
-     * @param source_router The identifier representing the router that should be the sibk of
+     * @param sink_router The identifier representing the router that should be the sink of
      * this link
      */
     void set_sink_router(NocRouterId sink);
