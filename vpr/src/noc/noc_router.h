@@ -39,7 +39,7 @@
 class NocRouter {
   private:
     /** this represents a unique id provided by the user when describing the NoC topology in the arch file. The intended
-     * use is to report errors with rouer ids the user understands*/
+     * use is to report errors with router ids the user understands*/
     int router_user_id;
 
     // device position of the physical router tile
