@@ -80,7 +80,7 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y, i
     /* Get the corresponding NocRouterId for the newly added router and
      * add it to the conversion table.
      * Since the router is added at the end of the list, the id is equivalent to the last element index.
-     * We build the conversion table here as it gurantees only unique routers
+     * We build the conversion table here as it guarantees only unique routers
      * in the NoC are added.
      */
     NocRouterId converted_id((int)(router_storage.size() - 1));
@@ -135,12 +135,12 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
     // This status variable is used to report externally whether the link was removed or not
     bool link_removed_status = false;
 
-    // check if the src router for the link to remove exists (within the id ranges). Otherwise there is no point looking for the link
+    // check if the src router for the link to remove exists (within the id ranges). Otherwise, there is no point looking for the link
     if ((size_t)src_router_id < router_storage.size()) {
         // get all the outgoing links of the provided sourcer router
         std::vector<NocLinkId>* source_router_outgoing_links = &router_link_list[src_router_id];
 
-        // keeps track of the position of each outgoing link for the provided src router. When the id of the link to remove is found, this index can be used to remove it from the ougoing link vector.
+        // keeps track of the position of each outgoing link for the provided src router. When the id of the link to remove is found, this index can be used to remove it from the outgoing link vector.
         int outgoing_link_index = 0;
 
         // go through each outgoing link of the source router and see if there is a link that also has the corresponding sink router.
@@ -148,7 +148,7 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
         for (auto outgoing_link_id = source_router_outgoing_links->begin(); outgoing_link_id != source_router_outgoing_links->end(); outgoing_link_id++) {
             // check to see if the current link id matches the id of the link to remove
             if (link_storage[*outgoing_link_id].get_sink_router() == sink_router_id) {
-                // found the link we need to remove so we delete it here
+                // found the link we need to remove, so we delete it here
                 //change the link to be invalid
                 link_storage[*outgoing_link_id].set_source_router(NocRouterId::INVALID());
                 link_storage[*outgoing_link_id].set_sink_router(NocRouterId::INVALID());

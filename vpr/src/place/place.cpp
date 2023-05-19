@@ -1232,7 +1232,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     if (noc_opts.noc) {
         double new_noc_aggregate_bandwidth_cost = 0.;
         double new_noc_latency_cost = 0.;
-        recompute_noc_costs(&new_noc_aggregate_bandwidth_cost, &new_noc_latency_cost);
+        recompute_noc_costs(new_noc_aggregate_bandwidth_cost, new_noc_latency_cost);
 
         if (fabs(
                 new_noc_aggregate_bandwidth_cost
@@ -1246,8 +1246,8 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
         costs->noc_aggregate_bandwidth_cost = new_noc_aggregate_bandwidth_cost;
 
         // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
-        // Otherwise there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
-        if (check_recomputed_noc_latency_cost(new_noc_latency_cost)) {
+        // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
+        if (new_noc_latency_cost > MIN_EXPECTED_NOC_LATENCY_COST) {
             if (fabs(
                     new_noc_latency_cost
                     - costs->noc_latency_cost)
@@ -1560,14 +1560,13 @@ static e_move_result try_swap(const t_annealing_state* state,
             delta_c = bb_delta_c * costs->bb_cost_norm;
         }
 
-        int number_of_affected_noc_traffic_flows = 0;
         double noc_aggregate_bandwidth_delta_c = 0; // change in the NoC aggregate bandwidth cost
         double noc_latency_delta_c = 0;             // change in the NoC latency cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            number_of_affected_noc_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
 
-            // Include the NoC delata costs in the total cost change for this swap
+            // Include the NoC delta costs in the total cost change for this swap
             delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c * costs->noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);
         }
 
@@ -1618,7 +1617,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                 ++move_type_stat.accepted_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
             }
             if (noc_opts.noc) {
-                commit_noc_costs(number_of_affected_noc_traffic_flows);
+                commit_noc_costs();
 
                 costs->noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
                 costs->noc_latency_cost += noc_latency_delta_c;

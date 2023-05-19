@@ -27,7 +27,7 @@
  * A link is a component of the NoC ans is defined by the
  * NocLink class. Links are connections between two routers.
  * Links are used by routers to communicate with other routers
- * in the NoC. Thye can be thought of as edges in a graph. Links
+ * in the NoC. They can be thought of as edges in a graph. Links
  * have a source router where they exit from and sink router where
  * they enter. It is important to note that the links are not
  * unidirectional, the legal way to traverse a link is from the
@@ -69,10 +69,10 @@ class NocStorage {
      * @brief The user provides an ID for the router when describing the NoC
      * in the architecture file. This ID system will be different than the
      * NocRouterIds assigned to each router. The user ID system will be 
-     * arbritary but the internal ID system used here will start at 0 and
+     * arbitrary but the internal ID system used here will start at 0 and
      * are dense since it is used to index the routers. The datastructure
      * below is a conversiont able that maps the user router IDs to the
-     * correspondint internal ones.
+     * corresponding internal ones.
      * 
      */
     std::unordered_map<int, NocRouterId> router_id_conversion_table;
@@ -84,9 +84,9 @@ class NocStorage {
      * logical router was moved is known.
      * Using this datastructure, the grid location can be used to
      * identify the corresponding hard router block positioned at that grid 
-     * location. The NocROuterId uniqely identifies hard router blocks and 
+     * location. The NocROuterId uniquely identifies hard router blocks and
      * can be used to retrieve the hard router block information using
-     * the router_storage datastructurre above. This can also be used to
+     * the router_storage data structure above. This can also be used to
      * access the connectivity graph datastructure above.
      * 
      * It is important to know the specific hard router block because 
@@ -96,7 +96,7 @@ class NocStorage {
      * the placement cost of the moved logical router block.
      * 
      * The intended use is when trying to re-route a traffic flow. The current
-     * location of a logical router block can be used in conjuction with this
+     * location of a logical router block can be used in conjunction with this
      * datastructure to identify the corresponding hard router block.
      * 
      */
@@ -105,7 +105,7 @@ class NocStorage {
     /**
      * @brief A flag that indicates whether the NoC has been built. If this
      * flag is true, then the NoC cannot be modified, meaning that routers and
-     * links cannot be added or removed. The inteded use of this flag is to
+     * links cannot be added or removed. The intended use of this flag is to
      * set it after you complete building the NoC (adding routers and links).
      * This flag can then acts as a check so that the NoC is not modified
      * later on after building it.
@@ -145,7 +145,7 @@ class NocStorage {
     void operator=(const NocStorage&) = delete;
 
   public:
-    // default contructor (cleare all the elements in the vectors)
+    // default constructor (clear all the elements in the vectors)
     NocStorage();
 
     // getters for the NoC
@@ -154,7 +154,7 @@ class NocStorage {
      * @brief Gets a vector of outgoing links for a given router
      * in the NoC. THe link vector cannot be modified.
      * 
-     * @param id A unique indetifier that represents a router
+     * @param id A unique identifier that represents a router
      * @return A vector of links. The links are represented by a unique
      * identifier.
      */
@@ -194,7 +194,7 @@ class NocStorage {
      * @brief Get the maximum allowable bandwidth for a link
      * within the NoC.
      * 
-     * @return a numeric value that represents the link bandwith in bps
+     * @return a numeric value that represents the link bandwidth in bps
      */
 
     double get_noc_link_bandwidth(void) const;
@@ -267,7 +267,7 @@ class NocStorage {
      * router block positioned on that grid location.
      * 
      * @param hard_router_location A struct that contains the grid location
-     * of an arbirtary hard router block on the FPGA.
+     * of an arbitrary hard router block on the FPGA.
      * @return NocRouterId The hard router block "id"  
      * located at the given grid location. 
      */
@@ -284,9 +284,9 @@ class NocStorage {
      * the NoC.
      * 
      * @param id The user supplied identification for the router.
-     * @param grid_position_x The horizontal position on the FPGA of the phyical
+     * @param grid_position_x The horizontal position on the FPGA of the physical
      * tile that this router represents.
-     * @param grid_position_y The vertical position on the FPGA of the phyical
+     * @param grid_position_y The vertical position on the FPGA of the physical
      * tile that this router represents.
      */
     void add_router(int id, int grid_position_x, int grid_position_y, int layer_poisition);
@@ -347,7 +347,7 @@ class NocStorage {
      * the link is set to being invalid by. The link
      * is still removed since it will be considered invalid when used 
      * externally. THe link is identified by going through the vector 
-     * outgoing links of the supplied source router, for each outgoin link
+     * outgoing links of the supplied source router, for each outgoing link
      * the sink router is compared the supplied sink router and the link to
      * remove is identified if there is a match.
      * If the link doesn't exist in the
@@ -356,7 +356,7 @@ class NocStorage {
      * 
      * @param src_router_id The source router of the traffic flow to delete
      * @param sink_router_id The sink router of the traffic flow to delete
-     * @return true The link was succesfully removed
+     * @return true The link was successfully removed
      * @return false The link was not removed
      */
     bool remove_link(NocRouterId src_router_id, NocRouterId sink_router_id);
@@ -372,8 +372,8 @@ class NocStorage {
     void finished_building_noc(void);
 
     /**
-     * @brief Resets the NoC by clearning all internal datastructures. 
-     * This includes deleteing all routers and links. Also all internal
+     * @brief Resets the NoC by clearing all internal datastructures.
+     * This includes deleting all routers and links. Also all internal
      * IDs are removed (the is conversion table is cleared). It is
      * recommended to run this function before building the NoC.
      * 
@@ -434,19 +434,22 @@ class NocStorage {
      * The key will be generated as follows:
      * key = y * device_grid.width() + x
      * 
-     * @param grid_position_x The horizontal position on the FPGA of the phyical
+     * @param grid_position_x The horizontal position on the FPGA of the physical
      * tile that this router represents.
+     * 
      * @param grid_position_y The vertical position on the FPGA of the phyical
      * tile that this router represents.
+     * 
      * @param layer_position The layer number of the phyical
      * tile that this router represents.
+     *  
      * @return int Represents a unique key that can be used to identify a
      * hard router block.
      */
     int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y, int layer_position) const;
 
     /**
-     * @brief Writes out the NocStirage class infromation to a file. 
+     * @brief Writes out the NocStorage class information to a file.
      *        This includes the list of routers and their connections
      *        to other routers in the NoC.
      * 
