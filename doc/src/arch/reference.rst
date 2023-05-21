@@ -108,6 +108,10 @@ Global FPGA Information
 
     Content inside this tag contains a group of ``<pb_type>`` tags that specify the types of functional blocks and their properties.
 
+.. arch:tag:: <layer die='int'>content</layer>
+    
+    Content inside this tag specifies each die grid layout to describe multi-die FPGAs (e.g., 3D FPGAs)
+
 .. arch:tag:: <layout/>
 
     Content inside this tag specifies device grid layout.
