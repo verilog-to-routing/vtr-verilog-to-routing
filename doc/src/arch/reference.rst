@@ -108,15 +108,15 @@ Global FPGA Information
 
     Content inside this tag contains a group of ``<pb_type>`` tags that specify the types of functional blocks and their properties.
 
-.. arch:tag:: <layer die='int'>content</layer>
-    
-    Content inside this tag specifies each die grid layout to describe multi-die FPGAs (e.g., 3D FPGAs)
-
 .. arch:tag:: <layout/>
 
     Content inside this tag specifies device grid layout.
 
     .. seealso:: :ref:`arch_grid_layout`
+
+.. arch:tag:: <layer die='int'>content</layer>
+    
+    Content inside this tag specifies each die grid layout to describe multi-die FPGAs (e.g., 3D FPGAs)
 
 .. arch:tag:: <device>content</device>
 
@@ -169,6 +169,36 @@ The valid tags within the ``<layout>`` tag are:
     .. note:: Multiple ``<fixed_layout>`` tags can be specified.
 
 Each ``<auto_layout>`` or ``<fixed_layout>`` tag should contain a set of grid location tags.
+
+FPGA Layer Information
+----------------
+Layer tag is an optional tag to specify multi-die FPGAs. If not specified, a single-die FPGA is assumed. 
+
+.. arch:tag:: <layer die="int">
+    
+    :opt_param die:
+        Each die layout in a multi-die FPGAs can be specified using the die number. 
+
+        **Default**: ``0``
+
+    .. note:: If die number left unspecified, a single-die FPGA (die number = 0) is assumed.
+    
+    .. code-block:: xml
+
+        <!-- Describe 3D FPGA using layer tag -->
+        <!-- First die (base die) -->
+        <fixed_layout name="3D-FPGA" width="device_width" height="device_height">
+            <layer die="0"/>
+                <!-- Specifiy base die Grid layout (e.g., fill with Network-on-Chips) -->
+                <fill type="NoC">
+            </layer>
+            <!-- Second die (upper die) -->
+            <layer die="1">
+                <!-- Specifiy upper die Grid layout (e.g., fill with logic blocks) -->
+                <fill type="LAB">
+            </layer>
+        </fixed_layout>
+
 
 Grid Location Priorities
 ~~~~~~~~~~~~~~~~~~~~~~~~
