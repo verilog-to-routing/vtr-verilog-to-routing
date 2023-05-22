@@ -416,6 +416,18 @@ def vtr_command_argparser(prog=None):
         action="store_true",
         help="Do a second-run of the incremental analysis to compare the result files",
     )
+    vpr.add_argument(
+        "-verify_inter_cluster_router_lookahead",
+        default=False,
+        action="store_true",
+        help="Tells VPR to verify the router lookahead.",
+    )
+    vpr.add_argument(
+        "-verify_intra_cluster_router_lookahead",
+        default=False,
+        action="store_true",
+        help="Tells VPR to verify the router lookahead.",
+    )
 
     return parser
 
@@ -712,6 +724,11 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     if args.verify_rr_graph:
         rr_graph_out_file = "rr_graph" + args.rr_graph_ext
         vpr_args["write_rr_graph"] = rr_graph_out_file
+    if args.verify_inter_cluster_router_lookahead:
+        vpr_args["write_router_lookahead"] = "inter_cluster_router_lookahead.capnp"
+    if args.verify_intra_cluster_router_lookahead:
+        assert "flat_routing" in vpr_args, "Flat router should be enabled if intra cluster router lookahead is to be verified"
+        vpr_args["write_intra_cluster_router_lookahead"] = "intra_cluster_router_lookahead.capnp"
 
     return vpr_args
 
