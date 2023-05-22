@@ -165,6 +165,8 @@ def run(
 
 
     """
+    if "crit_path_router_iterations" in vpr_args:
+        del vpr_args["crit_path_router_iterations"]
 
     if vpr_args is None:
         vpr_args = OrderedDict()
