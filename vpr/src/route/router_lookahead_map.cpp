@@ -547,6 +547,7 @@ void MapLookahead::read(const std::string& file) {
 
 void MapLookahead::read_intra_cluster(const std::string& file) {
     vtr::ScopedStartFinishTimer timer("Loading router intra cluster lookahead map");
+    is_flat_ = true;
     // Maps related to global resources should not be empty
     VTR_ASSERT(!f_wire_cost_map.empty());
     read_intra_cluster_router_lookahead(inter_tile_pin_primitive_pin_delay,
