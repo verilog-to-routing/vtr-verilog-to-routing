@@ -648,6 +648,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
     switch (interconnect->type) {
         case DIRECT_INTERC: /* intentionally fallthrough */
             VTR_ASSERT(num_output_sets == 1);
+            VTR_ASSERT(num_input_sets == 1);
             /* intentionally fallthrough */
             [[fallthrough]];
         case MUX_INTERC:
@@ -692,8 +693,9 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
             }
 
             break;
+        case PARTIAL_INTERC:
+            [[fallthrough]];
         case COMPLETE_INTERC:
-
             if (!interconnect->interconnect_power->port_info_initialized) {
                 /* The code does not support bus-based crossbars, so all pins from all input sets
                  * connect to all pins from all output sets */
@@ -731,52 +733,6 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
             for (port_idx = 0; port_idx < interconnect->interconnect_power->num_input_ports; port_idx++) {
                 interc_pins->input_pins[port_idx] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
             }
-            num_ports = 0;
-            for (set_idx = 0; set_idx < num_input_sets; set_idx++) {
-                for (pin_idx = 0; pin_idx < num_input_pins[set_idx]; pin_idx++) {
-                    interc_pins->input_pins[num_ports++][0] = input_pins[set_idx][pin_idx];
-                }
-            }
-
-            /* Output Pins */
-            interc_pins->output_pins = new t_pb_graph_pin**[interconnect->interconnect_power->num_output_ports];
-            for (port_idx = 0; port_idx < interconnect->interconnect_power->num_output_ports; port_idx++) {
-                interc_pins->output_pins[port_idx] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
-            }
-            num_ports = 0;
-            for (set_idx = 0; set_idx < num_output_sets; set_idx++) {
-                for (pin_idx = 0; pin_idx < num_output_pins[set_idx]; pin_idx++) {
-                    interc_pins->output_pins[num_ports++][0] = output_pins[set_idx][pin_idx];
-                }
-            }
-
-            break;
-        case PARTIAL_INTERC:
-            if (!interconnect->interconnect_power->port_info_initialized) {
-                interconnect->interconnect_power->num_pins_per_port = 1;
-
-                num_ports = 0;
-                for (set_idx = 0; set_idx < num_input_sets; set_idx++) {
-                    num_ports += num_input_pins[set_idx];
-                }
-                interconnect->interconnect_power->num_input_ports = num_ports;
-
-                num_ports = 0;
-                for (set_idx = 0; set_idx < num_output_sets; set_idx++) {
-                    num_ports += num_output_pins[set_idx];
-                }
-                interconnect->interconnect_power->num_output_ports = num_ports;
-
-                interconnect->interconnect_power->port_info_initialized = true;
-            }
-
-            /* Input Pins */
-            interc_pins->input_pins = new t_pb_graph_pin**[interconnect->interconnect_power->num_input_ports];
-            for (port_idx = 0; port_idx < interconnect->interconnect_power->num_input_ports;
-                 port_idx++) {
-                interc_pins->input_pins[port_idx] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
-            }
-
             num_ports = 0;
             for (set_idx = 0; set_idx < num_input_sets; set_idx++) {
                 for (pin_idx = 0; pin_idx < num_input_pins[set_idx]; pin_idx++) {
