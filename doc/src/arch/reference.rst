@@ -186,8 +186,8 @@ Layer tag is an optional tag to specify multi-die FPGAs. If not specified, a sin
     .. code-block:: xml
 
         <!-- Describe 3D FPGA using layer tag -->
-        <!-- First die (base die) -->
         <fixed_layout name="3D-FPGA" width="device_width" height="device_height">
+            <!-- First die (base die) -->
             <layer die="0"/>
                 <!-- Specifiy base die Grid layout (e.g., fill with Network-on-Chips) -->
                 <fill type="NoC">
