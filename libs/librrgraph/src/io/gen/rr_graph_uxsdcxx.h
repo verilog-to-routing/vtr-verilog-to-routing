@@ -269,8 +269,8 @@ constexpr const char *atok_lookup_t_block_type[] = {"height", "id", "name", "wid
 enum class gtok_t_block_types {BLOCK_TYPE};
 constexpr const char *gtok_lookup_t_block_types[] = {"block_type"};
 
-enum class atok_t_grid_loc {BLOCK_TYPE_ID, HEIGHT_OFFSET, WIDTH_OFFSET, X, Y};
-constexpr const char *atok_lookup_t_grid_loc[] = {"block_type_id", "height_offset", "width_offset", "x", "y"};
+enum class atok_t_grid_loc {BLOCK_TYPE_ID, HEIGHT_OFFSET, WIDTH_OFFSET, X, Y, LAYER};
+constexpr const char *atok_lookup_t_grid_loc[] = {"block_type_id", "height_offset", "width_offset", "x", "y", "layer"};
 
 enum class gtok_t_grid_locs {GRID_LOC};
 constexpr const char *gtok_lookup_t_grid_locs[] = {"grid_loc"};
@@ -1015,6 +1015,21 @@ inline atok_t_grid_loc lex_attr_t_grid_loc(const char *in, const std::function<v
 		default: break;
 		}
 		break;
+
+	case 5:
+		switch(*((triehash_uu32*)&in[0])){
+			case onechar('l', 0, 32) | onechar('a', 8, 32) | onechar('y', 16, 32) | onechar('e', 24, 32):
+				switch(in[4]){
+					case onechar('r', 0, 8):
+						return atok_t_grid_loc::LAYER;
+					break;
+					default: break;
+				}
+			break;
+			default:break;
+		}
+		break;
+
 	case 12:
 		switch(*((triehash_uu64*)&in[0])){
 		case onechar('w', 0, 64) | onechar('i', 8, 64) | onechar('d', 16, 64) | onechar('t', 24, 64) | onechar('h', 32, 64) | onechar('_', 40, 64) | onechar('o', 48, 64) | onechar('f', 56, 64):
