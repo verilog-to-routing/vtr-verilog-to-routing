@@ -3930,9 +3930,6 @@ inline void write_grid_locs(T &in, std::ostream &os, Context &context){
 			os << " width_offset=\"" << in.get_grid_loc_width_offset(child_context) << "\"";
 			os << " x=\"" << in.get_grid_loc_x(child_context) << "\"";
 			os << " y=\"" << in.get_grid_loc_y(child_context) << "\"";
-            int x = in.get_grid_loc_x(child_context);
-			int y = in.get_grid_loc_y(child_context);
-			int layer = in.get_grid_loc_layer(child_context);
 			os << " layer=\"" << in.get_grid_loc_layer(child_context) << "\"";
 
 			os << "/>\n";
