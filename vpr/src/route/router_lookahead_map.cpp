@@ -1499,7 +1499,8 @@ static void getIntraClusterArrayFlatSize(int& num_tile_types,
                                          int& num_pins,
                                          int& num_sinks,
                                          const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay) {
-    num_tile_types = inter_tile_pin_primitive_pin_delay.size();
+    const auto& physical_tile_types = g_vpr_ctx.device().physical_tile_types;
+    num_tile_types = (int)physical_tile_types.size();
 
     num_pins = 0;
     for(const auto& tile_type : inter_tile_pin_primitive_pin_delay) {
@@ -1538,6 +1539,7 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_
 
 
     int num_seen_pair = 0;
+    int num_seen_pin = 0;
     for(int physical_tile_idx = 0; physical_tile_idx < (int)physical_tile_num_pin_arr.size(); physical_tile_idx++) {
         int num_pins = physical_tile_num_pin_arr[physical_tile_idx];
         util::t_ipin_primitive_sink_delays tile_pin_sink_cost_map(num_pins);
@@ -1546,12 +1548,13 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_
             std::unordered_map<int, util::Cost_Entry> pin_sink_cost_map;
             toUnorderedMap<int64_t, VprMapCostEntry, int, util::Cost_Entry>(pin_sink_cost_map,
                                                                             num_seen_pair,
-                                                                            num_seen_pair + (int)pin_sink_cost_map.size(),
+                                                                            num_seen_pair + pin_num_sink_arr[num_seen_pin],
                                                                             map.getPinSinks(),
                                                                             map.getPinSinkCosts(),
                                                                             toPairEntry);
             tile_pin_sink_cost_map[pin_num] = pin_sink_cost_map;
             num_seen_pair += (int)pin_sink_cost_map.size();
+            ++num_seen_pin;
         }
         inter_tile_pin_primitive_pin_delay[physical_tile_idx] = tile_pin_sink_cost_map;
     }
