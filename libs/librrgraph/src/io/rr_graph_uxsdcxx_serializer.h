@@ -1503,12 +1503,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_grid_loc_y(const t_grid_tile*& grid_loc) final {
         return grid_.get_grid_loc_y(grid_loc);
     }
+
+    inline int get_grid_loc_layer(const t_grid_tile*& grid_loc) final{
+        return grid_.get_grid_loc_layer(grid_loc);
+    }
+
     inline size_t num_grid_locs_grid_loc(void*& /*iter*/) final {
         return grid_.grid_size();
     }
     inline const t_grid_tile* get_grid_locs_grid_loc(int n, void*& /*ctx*/) final {
         return grid_.get_grid_locs_grid_loc(n);
     }
+
 
     /** Generated for complex type "rr_graph":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
