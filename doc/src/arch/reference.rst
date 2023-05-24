@@ -1542,9 +1542,9 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
     :req_param name: Identifier for the interconnect.
     :req_param input: Pins that are inputs to this interconnect. Different data lines are separated by a space.
     :req_param output: Pins that are outputs of this interconnect.
-    :req_param fout: Number of outgoing edges for each input pin.
+    :req_param fout: Number of outgoing edges for each input pin.  
 
-    Describes a partial (sparse) crossbar between input and output pins.
+    Describes a partial (sparse) crossbar between input and output pins.  The produced partial crossbar will have fout edges from each input pin to a subset of the output pins.  The connectivity pattern cannot be specified; however, the algorithm assigns input pins to output pins in a rotating fashion to provide varied inputs to each output pin, and to roughly balance the number of inputs that can reach each output.
     
     **Example:**
 

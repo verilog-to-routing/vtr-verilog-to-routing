@@ -162,7 +162,9 @@ enum e_pin_type {
     RECEIVER = 1
 };
 
-/* Type of interconnect within complex block: Complete for everything connected (full crossbar), direct for one-to-one connections, mux for many-to-one connections, and partial for sparse crossbar based on variable fout value */
+/* Type of interconnect within complex block: Complete for everything connected (full crossbar), 
+ * direct for one-to-one connections, mux for many-to-one connections, 
+ * and partial for sparse crossbar */
 enum e_interconnect {
     COMPLETE_INTERC = 1,
     DIRECT_INTERC = 2,
