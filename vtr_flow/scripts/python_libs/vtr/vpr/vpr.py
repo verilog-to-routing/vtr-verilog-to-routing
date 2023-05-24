@@ -292,7 +292,9 @@ def run_second_time(
     if "write_intra_cluster_router_lookahead" in second_run_args:
         intra_cluster_router_lookahead = second_run_args["write_intra_cluster_router_lookahead"]
         second_run_args["read_intra_cluster_router_lookahead"] = intra_cluster_router_lookahead
-        second_run_args["write_intra_cluster_router_lookahead"] = "intra_cluster_router_lookahead2.capnp"
+        second_run_args[
+            "write_intra_cluster_router_lookahead"
+        ] = "intra_cluster_router_lookahead2.capnp"
 
     # run VPR
     run(
@@ -320,7 +322,9 @@ def run_second_time(
             cmd, temp_dir, log_filename="diff.inter_cluster_router_lookahead.out", indent_depth=1
         )
         if diff_result:
-            raise InspectError("failed: vpr (Inter Cluster Router Lookahead output not consistent when reloaded)")
+            raise InspectError(
+                "failed: vpr (Inter Cluster Router Lookahead output not consistent when reloaded)"
+            )
 
     if "write_intra_cluster_router_lookahead" in second_run_args:
         cmd = ["diff", intra_cluster_router_lookahead, "intra_cluster_router_lookahead2.capnp"]
@@ -328,7 +332,9 @@ def run_second_time(
             cmd, temp_dir, log_filename="diff.intra_cluster_router_lookahead.out", indent_depth=1
         )
         if diff_result:
-            raise InspectError("failed: vpr (Intra Cluster Router Lookahead not consistent when reloaded)")
+            raise InspectError(
+                "failed: vpr (Intra Cluster Router Lookahead not consistent when reloaded)"
+            )
 
 
 def cmp_full_vs_incr_sta(

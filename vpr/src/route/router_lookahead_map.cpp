@@ -1471,8 +1471,8 @@ static void toIntEntry(std::vector<int>& out,
 }
 
 static void fromIntEntry(::capnp::List<int64_t, ::capnp::Kind::PRIMITIVE>::Builder& out,
-                          int idx,
-                          const int& cost) {
+                         int idx,
+                         const int& cost) {
     out.set(idx, cost);
 }
 
@@ -1482,11 +1482,10 @@ static void toPairEntry(std::unordered_map<int, util::Cost_Entry>& map_out,
     VTR_ASSERT(map_out.find(key) == map_out.end());
     util::Cost_Entry cost(cap_cost.getDelay(), cap_cost.getCongestion());
     map_out[key] = cost;
-
 }
 
 static void fromPairEntry(::capnp::List<int64_t, ::capnp::Kind::PRIMITIVE>::Builder& out_key,
-                          ::capnp::List<::VprMapCostEntry,  ::capnp::Kind::STRUCT>::Builder& out_val,
+                          ::capnp::List<::VprMapCostEntry, ::capnp::Kind::STRUCT>::Builder& out_val,
                           int flat_idx,
                           const int& key,
                           const util::Cost_Entry& cost) {
@@ -1503,18 +1502,16 @@ static void getIntraClusterArrayFlatSize(int& num_tile_types,
     num_tile_types = (int)physical_tile_types.size();
 
     num_pins = 0;
-    for(const auto& tile_type : inter_tile_pin_primitive_pin_delay) {
+    for (const auto& tile_type : inter_tile_pin_primitive_pin_delay) {
         num_pins += (int)tile_type.second.size();
     }
 
     num_sinks = 0;
-    for(const auto& tile_type : inter_tile_pin_primitive_pin_delay) {
-        for(const auto& pin_sink: tile_type.second) {
+    for (const auto& tile_type : inter_tile_pin_primitive_pin_delay) {
+        for (const auto& pin_sink : tile_type.second) {
             num_sinks += (int)pin_sink.size();
         }
     }
-
-
 }
 
 static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
@@ -1537,14 +1534,13 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_
                            map.getPinNumSinks(),
                            toIntEntry);
 
-
     int num_seen_pair = 0;
     int num_seen_pin = 0;
-    for(int physical_tile_idx = 0; physical_tile_idx < (int)physical_tile_num_pin_arr.size(); physical_tile_idx++) {
+    for (int physical_tile_idx = 0; physical_tile_idx < (int)physical_tile_num_pin_arr.size(); physical_tile_idx++) {
         int num_pins = physical_tile_num_pin_arr[physical_tile_idx];
         util::t_ipin_primitive_sink_delays tile_pin_sink_cost_map(num_pins);
 
-        for(int pin_num = 0; pin_num < num_pins; pin_num++) {
+        for (int pin_num = 0; pin_num < num_pins; pin_num++) {
             std::unordered_map<int, util::Cost_Entry> pin_sink_cost_map;
             toUnorderedMap<int64_t, VprMapCostEntry, int, util::Cost_Entry>(pin_sink_cost_map,
                                                                             num_seen_pair,
@@ -1580,8 +1576,7 @@ static void write_intra_cluster_router_lookahead(const std::string& file,
             physical_tile_num_pin_arr[physical_type_idx] = (int)physical_type.second.size();
         }
 
-        ::capnp::List<int64_t>::Builder physical_tile_num_pin_arr_builder =
-            vpr_intra_cluster_lookahead_builder.initPhysicalTileNumPins(num_tile_types);
+        ::capnp::List<int64_t>::Builder physical_tile_num_pin_arr_builder = vpr_intra_cluster_lookahead_builder.initPhysicalTileNumPins(num_tile_types);
         fromVector<int64_t, int>(physical_tile_num_pin_arr_builder,
                                  physical_tile_num_pin_arr,
                                  fromIntEntry);
@@ -1590,31 +1585,28 @@ static void write_intra_cluster_router_lookahead(const std::string& file,
     std::vector<int> pin_num_sink_arr(num_pins, 0);
     {
         int num_seen_pin = 0;
-        for(int physical_tile_idx = 0; physical_tile_idx < num_tile_types; ++physical_tile_idx) {
-            if(inter_tile_pin_primitive_pin_delay.find(physical_tile_idx) == inter_tile_pin_primitive_pin_delay.end()) {
+        for (int physical_tile_idx = 0; physical_tile_idx < num_tile_types; ++physical_tile_idx) {
+            if (inter_tile_pin_primitive_pin_delay.find(physical_tile_idx) == inter_tile_pin_primitive_pin_delay.end()) {
                 continue;
             }
-            for(const auto& pin_sinks : inter_tile_pin_primitive_pin_delay.at(physical_tile_idx)) {
+            for (const auto& pin_sinks : inter_tile_pin_primitive_pin_delay.at(physical_tile_idx)) {
                 pin_num_sink_arr[num_seen_pin] = (int)pin_sinks.size();
                 ++num_seen_pin;
             }
         }
-        ::capnp::List<int64_t>::Builder pin_num_sink_arr_builder =
-            vpr_intra_cluster_lookahead_builder.initPinNumSinks(num_pins);
+        ::capnp::List<int64_t>::Builder pin_num_sink_arr_builder = vpr_intra_cluster_lookahead_builder.initPinNumSinks(num_pins);
         fromVector<int64_t, int>(pin_num_sink_arr_builder,
                                  pin_num_sink_arr,
                                  fromIntEntry);
     }
 
     {
-        ::capnp::List<int64_t>::Builder pin_sink_arr_builder =
-            vpr_intra_cluster_lookahead_builder.initPinSinks(num_sinks);
-        ::capnp::List<VprMapCostEntry>::Builder pin_sink_cost_builder =
-            vpr_intra_cluster_lookahead_builder.initPinSinkCosts(num_sinks);
+        ::capnp::List<int64_t>::Builder pin_sink_arr_builder = vpr_intra_cluster_lookahead_builder.initPinSinks(num_sinks);
+        ::capnp::List<VprMapCostEntry>::Builder pin_sink_cost_builder = vpr_intra_cluster_lookahead_builder.initPinSinkCosts(num_sinks);
 
         int num_seen_pin = 0;
-        for(int physical_tile_idx = 0; physical_tile_idx < num_tile_types; ++physical_tile_idx) {
-            for(int pin_num = 0; pin_num < physical_tile_num_pin_arr[physical_tile_idx]; ++pin_num) {
+        for (int physical_tile_idx = 0; physical_tile_idx < num_tile_types; ++physical_tile_idx) {
+            for (int pin_num = 0; pin_num < physical_tile_num_pin_arr[physical_tile_idx]; ++pin_num) {
                 const std::unordered_map<int, util::Cost_Entry>& pin_sinks = inter_tile_pin_primitive_pin_delay.at(physical_tile_idx).at(pin_num);
                 FromUnorderedMap<int64_t, VprMapCostEntry, int, util::Cost_Entry>(
                     pin_sink_arr_builder,
@@ -1626,7 +1618,6 @@ static void write_intra_cluster_router_lookahead(const std::string& file,
             }
         }
     }
-
 
     writeMessageToFile(file, &builder);
 }

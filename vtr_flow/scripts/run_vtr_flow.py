@@ -727,7 +727,9 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     if args.verify_inter_cluster_router_lookahead:
         vpr_args["write_router_lookahead"] = "inter_cluster_router_lookahead.capnp"
     if args.verify_intra_cluster_router_lookahead:
-        assert "flat_routing" in vpr_args, "Flat router should be enabled if intra cluster router lookahead is to be verified"
+        assert (
+            "flat_routing" in vpr_args
+        ), "Flat router should be enabled if intra cluster router lookahead is to be verified"
         vpr_args["write_intra_cluster_router_lookahead"] = "intra_cluster_router_lookahead.capnp"
 
     return vpr_args
