@@ -227,7 +227,6 @@ static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 2>& internal_opi
 
 // Read the file and fill inter_tile_pin_primitive_pin_delay and tile_min_cost
 static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
-                                                std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                                 const std::string& file);
 
 // Write the file with inter_tile_pin_primitive_pin_delay and tile_min_cost
@@ -550,8 +549,17 @@ void MapLookahead::read_intra_cluster(const std::string& file) {
     // Maps related to global resources should not be empty
     VTR_ASSERT(!f_wire_cost_map.empty());
     read_intra_cluster_router_lookahead(inter_tile_pin_primitive_pin_delay,
-                                        tile_min_cost,
                                         file);
+
+    const auto& tiles = g_vpr_ctx.device().physical_tile_types;
+    for (const auto& tile : tiles) {
+        if (is_empty_type(&tile)) {
+            continue;
+        }
+        store_min_cost_to_sinks(tile_min_cost,
+                                &tile,
+                                inter_tile_pin_primitive_pin_delay);
+    }
 
     // The information about distance_based_min_cost is not stored in the file, thus it needs to be computed
     min_global_cost_map(distance_based_min_cost,
@@ -1435,7 +1443,6 @@ void DeltaDelayModel::write(const std::string& /*file*/) const {
 }
 
 static void read_intra_cluster_router_lookahead(std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& /*inter_tile_pin_primitive_pin_delay*/,
-                                                std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& /*tile_min_cost*/,
                                                 const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read_intra_cluster_router_lookahead " DISABLE_ERROR);
 }
@@ -1457,10 +1464,25 @@ static void FromCostEntry(VprMapCostEntry::Builder* out, const Cost_Entry& in) {
     out->setCongestion(in.congestion);
 }
 
+static void toIntEntry(std::vector<int>& out,
+                       int idx,
+                       const int& cost) {
+    out[idx] = cost;
+}
+
 static void fromIntEntry(::capnp::List<int64_t, ::capnp::Kind::PRIMITIVE>::Builder& out,
                           int idx,
                           const int& cost) {
     out.set(idx, cost);
+}
+
+static void toPairEntry(std::unordered_map<int, util::Cost_Entry>& map_out,
+                        const int& key,
+                        const VprMapCostEntry::Reader& cap_cost) {
+    VTR_ASSERT(map_out.find(key) == map_out.end());
+    util::Cost_Entry cost(cap_cost.getDelay(), cap_cost.getCongestion());
+    map_out[key] = cost;
+
 }
 
 static void fromPairEntry(::capnp::List<int64_t, ::capnp::Kind::PRIMITIVE>::Builder& out_key,
@@ -1495,20 +1517,44 @@ static void getIntraClusterArrayFlatSize(int& num_tile_types,
 }
 
 static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
-                                                std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                                 const std::string& file) {
-//    MmapFile f(file);
-//
-//    /* Increase reader limit to 1G words to allow for large files. */
-//    ::capnp::ReaderOptions opts = default_large_capnp_opts();
-//    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
-//
-//    auto map = reader.getRoot<VprIntraClusterLookahead>();
-//
-//    ToIntraClusterLookahead(inter_tile_pin_primitive_pin_delay,
-//                            tile_min_cost,
-//                            g_vpr_ctx.device().physical_tile_types,
-//                            map);
+    MmapFile f(file);
+
+    /* Increase reader limit to 1G words to allow for large files. */
+    ::capnp::ReaderOptions opts = default_large_capnp_opts();
+    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
+
+    auto map = reader.getRoot<VprIntraClusterLookahead>();
+
+    std::vector<int> physical_tile_num_pin_arr;
+    toVector<int64_t, int>(physical_tile_num_pin_arr,
+                           map.getPhysicalTileNumPins(),
+                           toIntEntry);
+
+    std::vector<int> pin_num_sink_arr;
+    toVector<int64_t, int>(pin_num_sink_arr,
+                           map.getPinNumSinks(),
+                           toIntEntry);
+
+
+    int num_seen_pair = 0;
+    for(int physical_tile_idx = 0; physical_tile_idx < (int)physical_tile_num_pin_arr.size(); physical_tile_idx++) {
+        int num_pins = physical_tile_num_pin_arr[physical_tile_idx];
+        util::t_ipin_primitive_sink_delays tile_pin_sink_cost_map(num_pins);
+
+        for(int pin_num = 0; pin_num < num_pins; pin_num++) {
+            std::unordered_map<int, util::Cost_Entry> pin_sink_cost_map;
+            toUnorderedMap<int64_t, VprMapCostEntry, int, util::Cost_Entry>(pin_sink_cost_map,
+                                                                            num_seen_pair,
+                                                                            num_seen_pair + (int)pin_sink_cost_map.size(),
+                                                                            map.getPinSinks(),
+                                                                            map.getPinSinkCosts(),
+                                                                            toPairEntry);
+            tile_pin_sink_cost_map[pin_num] = pin_sink_cost_map;
+            num_seen_pair += (int)pin_sink_cost_map.size();
+        }
+        inter_tile_pin_primitive_pin_delay[physical_tile_idx] = tile_pin_sink_cost_map;
+    }
 }
 
 static void write_intra_cluster_router_lookahead(const std::string& file,
