@@ -1554,6 +1554,7 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_
                                                                             toPairEntry);
             tile_pin_sink_cost_map[pin_num] = pin_sink_cost_map;
             num_seen_pair += (int)pin_sink_cost_map.size();
+            VTR_ASSERT((int)pin_sink_cost_map.size() == pin_num_sink_arr[num_seen_pin]);
             ++num_seen_pin;
         }
         inter_tile_pin_primitive_pin_delay[physical_tile_idx] = tile_pin_sink_cost_map;
