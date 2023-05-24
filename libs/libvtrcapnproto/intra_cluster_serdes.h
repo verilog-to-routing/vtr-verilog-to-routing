@@ -17,6 +17,35 @@
 #include "router_lookahead_map_utils.h"
 
 template<typename CapElemType, typename ElemType>
+void toVector(std::vector<ElemType>& vec_out,
+              const typename capnp::List<CapElemType>::Reader& m_in,
+              const std::function<void(std::vector<ElemType>&,
+                                       int,
+                                       const ElemType&)>& copy_fun) {
+    int size = m_in.size();
+    vec_out.resize(size);
+    for(int idx = 0; idx < size; idx++) {
+        copy_fun(vec_out, idx, m_in[idx]);
+    }
+}
+
+template<typename CapKeyType, typename CapValType, typename KeyType, typename CostType>
+void toUnorderedMap(
+    std::unordered_map<KeyType, CostType>& map_in,
+    const int begin_flat_idx,
+    const int end_flat_idx,
+    const typename capnp::List<CapKeyType>::Reader& m_out_key,
+    const typename capnp::List<CapValType>::Reader& m_out_val,
+    const std::function<void(std::unordered_map<KeyType, CostType>&,
+                             const KeyType&,
+                             const typename CapValType::Reader&)>& copy_fun) {
+
+    for(int flat_idx = begin_flat_idx; flat_idx < end_flat_idx; flat_idx++) {
+        copy_fun(map_in, m_out_key[flat_idx], m_out_val[flat_idx]);
+    }
+}
+
+template<typename CapElemType, typename ElemType>
 void fromVector(typename capnp::List<CapElemType>::Builder& m_out,
                 const std::vector<ElemType>& vec_in,
                 const std::function<void(typename capnp::List<CapElemType>::Builder&,
