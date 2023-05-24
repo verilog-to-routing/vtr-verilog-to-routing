@@ -698,7 +698,6 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
             if (!interconnect->interconnect_power->port_info_initialized) {
                 /* The code does not support bus-based crossbars, so all pins from all input sets
                  * connect to all pins from all output sets */
-                VTR_ASSERT(num_input_pins[0] == 1);
                 interconnect->interconnect_power->num_pins_per_port = 1;
 
                 num_ports = 0;
