@@ -1284,7 +1284,6 @@ static void alloc_and_load_partial_interc_edges(t_interconnect* interconnect,
     /* Map to hold set and pin number of each input pin */
     std::map<t_pb_graph_pin*, std::pair<int, int>> input_pin_map;
 
-    VTR_ASSERT(false);
     VTR_ASSERT(interconnect->infer_annotations == false);
 
     /* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */

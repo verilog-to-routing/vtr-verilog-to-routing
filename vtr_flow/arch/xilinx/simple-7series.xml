@@ -432,54 +432,8 @@
         <direct name="top_slice_O" input="slice[0].O" output="clb.O[0:11]"/>
         <direct name="bottom_slice_O" input="slice[1].O" output="clb.O[12:23]"/>
         <complete name="CLK" input="clb.CLK" output="slice.CLK"/>
-        <complete name="cross0" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]" output="slice[1].I[2]"/>
-        <complete name="cross1" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]" output="slice[0].I[2]"/>
-        <complete name="cross2" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]" output="slice[0].I[1]"/>
-        <complete name="cross3" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]" output="slice[1].I[1]"/>
-        <complete name="cross4" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]" output="slice[0].I[5]"/>
-        <complete name="cross5" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]" output="slice[1].I[5]"/>
-        <complete name="cross6" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]" output="slice[1].I[0]"/>
-        <complete name="cross7" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]" output="slice[0].I[1]"/>
-        <complete name="cross8" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]" output="slice[0].I[4]"/>
-        <complete name="cross9" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]" output="slice[1].I[4]"/>
-        <complete name="cross10" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]" output="slice[1].I[3]"/>
-        <complete name="cross11" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]" output="slice[0].I[3]"/>
-        <complete name="cross12" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]" output="slice[0].I[12]"/>
-        <complete name="cross13" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]" output="slice[0].I[12]"/>
-        <complete name="cross14" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]" output="slice[1].I[7]"/>
-        <complete name="cross15" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]" output="slice[0].I[7]"/>
-        <complete name="cross16" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]" output="slice[1].I[9]"/>
-        <complete name="cross17" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]" output="slice[0].I[9]"/>
-        <complete name="cross18" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]" output="slice[0].I[8]"/>
-        <complete name="cross19" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]" output="slice[1].I[8]"/>
-        <complete name="cross20" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]" output="slice[1].I[15]"/>
-        <complete name="cross21" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]" output="slice[1].I[17]"/>
-        <complete name="cross22" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]" output="slice[0].I[16]"/>
-        <complete name="cross23" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]" output="slice[1].I[16]"/>
-        <complete name="cross24" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]" output="slice[0].I[11]"/>
-        <complete name="cross25" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]" output="slice[1].I[11]"/>
-        <complete name="cross26" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]" output="slice[1].I[10]"/>
-        <complete name="cross27" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]" output="slice[0].I[10]"/>
-        <complete name="cross28" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]" output="slice[0].I[17]"/>
-        <complete name="cross29" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]" output="slice[0].I[15]"/>
-        <complete name="cross30" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]" output="slice[1].I[18]"/>
-        <complete name="cross31" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]" output="slice[0].I[18]"/>
-        <complete name="cross32" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]" output="slice[0].I[14]"/>
-        <complete name="cross33" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]" output="slice[1].I[14]"/>
-        <complete name="cross34" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]" output="slice[1].I[19]"/>
-        <complete name="cross35" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]" output="slice[0].I[19]"/>
-        <complete name="cross36" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]" output="slice[1].I[22]"/>
-        <complete name="cross37" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]" output="slice[1].I[24]"/>
-        <complete name="cross38" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]" output="slice[0].I[23]"/>
-        <complete name="cross39" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]" output="slice[1].I[23]"/>
-        <complete name="cross40" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]" output="slice[0].I[21]"/>
-        <complete name="cross41" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]" output="slice[1].I[21]"/>
-        <complete name="cross42" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]" output="slice[1].I[26]"/>
-        <complete name="cross43" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]" output="slice[0].I[26]"/>
-        <complete name="cross44" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]" output="slice[0].I[24]"/>
-        <complete name="cross45" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]" output="slice[0].I[22]"/>
-        <complete name="cross46" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]" output="slice[1].I[25]"/>
-        <complete name="cross47" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]" output="slice[0].I[25]"/>
+        <partial name="partial_cross1" input="slice[1].O slice[0].O" output="slice[1].I" fout="3"/>
+        <partial name="partial_cross2" input="slice[1].O slice[0].O" output="slice[0].I" fout="3"/>
       </interconnect>
     </pb_type>
     <pb_type name="memory">
