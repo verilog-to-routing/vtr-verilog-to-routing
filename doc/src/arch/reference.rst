@@ -172,12 +172,12 @@ Each ``<auto_layout>`` or ``<fixed_layout>`` tag should contain a set of grid lo
 
 FPGA Layer Information
 ----------------
-Layer tag is an optional tag to specify multi-die FPGAs. If not specified, a single-die FPGA is assumed. 
+The layer tag is an optional tag to specify multi-die FPGAs. If not specified, a single-die FPGA with a single die (with index 0) is assumed.
 
 .. arch:tag:: <layer die="int">
     
     :opt_param die:
-        Each die layout in a multi-die FPGAs can be specified using the die number. 
+        Specifies the index of the die; index 0 is assumed to be at the bottom of a stack. 
 
         **Default**: ``0``
 
@@ -199,6 +199,7 @@ Layer tag is an optional tag to specify multi-die FPGAs. If not specified, a sin
             </layer>
         </fixed_layout>
 
+    .. note:: Note that all dice have the same width and height. Since we can always fill unused parts of a die with EMPTY blocks this does not restrict us to have the same usable area on each die.
 
 Grid Location Priorities
 ~~~~~~~~~~~~~~~~~~~~~~~~
