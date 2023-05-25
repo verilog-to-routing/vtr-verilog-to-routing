@@ -1457,12 +1457,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 grid_.grid_size(), size);
         }
     }
-    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) final {
-        //TODO: layer_num should be added to rr-graph serializer.
-        int layer_num = 0;
-        const auto& type = grid_.get_physical_type({x, y, layer_num});
-        int grid_width_offset = grid_.get_width_offset({x, y, layer_num});
-        int grid_height_offset = grid_.get_height_offset({x, y, layer_num});
+    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y, int layer) final {
+        const auto& type = grid_.get_physical_type({x, y, layer});
+        int grid_width_offset = grid_.get_width_offset({x, y, layer});
+        int grid_height_offset = grid_.get_height_offset({x, y, layer});
 
         if (type->index != block_type_id) {
             report_error(
@@ -1503,12 +1501,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_grid_loc_y(const t_grid_tile*& grid_loc) final {
         return grid_.get_grid_loc_y(grid_loc);
     }
+
+    inline int get_grid_loc_layer(const t_grid_tile*& grid_loc) final{
+        return grid_.get_grid_loc_layer(grid_loc);
+    }
+
     inline size_t num_grid_locs_grid_loc(void*& /*iter*/) final {
         return grid_.grid_size();
     }
     inline const t_grid_tile* get_grid_locs_grid_loc(int n, void*& /*ctx*/) final {
         return grid_.get_grid_locs_grid_loc(n);
     }
+
 
     /** Generated for complex type "rr_graph":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">

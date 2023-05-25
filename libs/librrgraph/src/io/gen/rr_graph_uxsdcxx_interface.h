@@ -332,6 +332,7 @@ public:
 	 * <xs:complexType name="grid_loc">
 	 *   <xs:attribute name="x" type="xs:int" use="required" />
 	 *   <xs:attribute name="y" type="xs:int" use="required" />
+	 *   <xs:attribute name="layer" type="xs:int" use=:"required" />
 	 *   <xs:attribute name="block_type_id" type="xs:int" use="required" />
 	 *   <xs:attribute name="width_offset" type="xs:int" use="required" />
 	 *   <xs:attribute name="height_offset" type="xs:int" use="required" />
@@ -342,6 +343,7 @@ public:
 	virtual inline int get_grid_loc_width_offset(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_x(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_y(typename ContextTypes::GridLocReadContext &ctx) = 0;
+	virtual inline int get_grid_loc_layer(typename ContextTypes::GridLocReadContext &ctx) =0;
 
 	/** Generated for complex type "grid_locs":
 	 * <xs:complexType name="grid_locs">
@@ -351,7 +353,7 @@ public:
 	 * </xs:complexType>
 	*/
 	virtual inline void preallocate_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int width_offset, int x, int y) = 0;
+	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int width_offset, int x, int y, int layer) = 0;
 	virtual inline void finish_grid_locs_grid_loc(typename ContextTypes::GridLocWriteContext &ctx) = 0;
 	virtual inline size_t num_grid_locs_grid_loc(typename ContextTypes::GridLocsReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::GridLocReadContext get_grid_locs_grid_loc(int n, typename ContextTypes::GridLocsReadContext &ctx) = 0;

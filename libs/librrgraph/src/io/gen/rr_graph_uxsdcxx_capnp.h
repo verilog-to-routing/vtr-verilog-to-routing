@@ -687,7 +687,7 @@ inline void load_grid_locs_capnp_type(const ucap::GridLocs::Reader &root, T &out
 		auto data = root.getGridLocs();
 		out.preallocate_grid_locs_grid_loc(context, data.size());
 		for(const auto & el : data) {
-			auto child_context = out.add_grid_locs_grid_loc(context, el.getBlockTypeId(), el.getHeightOffset(), el.getWidthOffset(), el.getX(), el.getY());
+			auto child_context = out.add_grid_locs_grid_loc(context, el.getBlockTypeId(), el.getHeightOffset(), el.getWidthOffset(), el.getX(), el.getY(), el.getLayer());
 			load_grid_loc_capnp_type(el, out, child_context, report_error, stack);
 			out.finish_grid_locs_grid_loc(child_context);
 			stack->back().second += 1;

@@ -82,7 +82,7 @@ template <class T, typename Context>
 inline void load_block_types(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
 inline void load_grid_loc(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
-inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * width_offset, int * x, int * y, const std::function<void(const char*)> * report_error);
+inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * width_offset, int * x, int * y, int* layer, const std::function<void(const char*)> * report_error);
 template <class T, typename Context>
 inline void load_grid_locs(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
@@ -269,8 +269,8 @@ constexpr const char *atok_lookup_t_block_type[] = {"height", "id", "name", "wid
 enum class gtok_t_block_types {BLOCK_TYPE};
 constexpr const char *gtok_lookup_t_block_types[] = {"block_type"};
 
-enum class atok_t_grid_loc {BLOCK_TYPE_ID, HEIGHT_OFFSET, WIDTH_OFFSET, X, Y};
-constexpr const char *atok_lookup_t_grid_loc[] = {"block_type_id", "height_offset", "width_offset", "x", "y"};
+enum class atok_t_grid_loc {BLOCK_TYPE_ID, HEIGHT_OFFSET, WIDTH_OFFSET, X, Y, LAYER};
+constexpr const char *atok_lookup_t_grid_loc[] = {"block_type_id", "height_offset", "width_offset", "x", "y", "layer"};
 
 enum class gtok_t_grid_locs {GRID_LOC};
 constexpr const char *gtok_lookup_t_grid_locs[] = {"grid_loc"};
@@ -1015,6 +1015,21 @@ inline atok_t_grid_loc lex_attr_t_grid_loc(const char *in, const std::function<v
 		default: break;
 		}
 		break;
+
+	case 5:
+		switch(*((triehash_uu32*)&in[0])){
+			case onechar('l', 0, 32) | onechar('a', 8, 32) | onechar('y', 16, 32) | onechar('e', 24, 32):
+				switch(in[4]){
+					case onechar('r', 0, 8):
+						return atok_t_grid_loc::LAYER;
+					break;
+					default: break;
+				}
+			break;
+			default:break;
+		}
+		break;
+
 	case 12:
 		switch(*((triehash_uu64*)&in[0])){
 		case onechar('w', 0, 64) | onechar('i', 8, 64) | onechar('d', 16, 64) | onechar('t', 24, 64) | onechar('h', 32, 64) | onechar('_', 40, 64) | onechar('o', 48, 64) | onechar('f', 56, 64):
@@ -2293,14 +2308,14 @@ inline void load_block_type_required_attributes(const pugi::xml_node &root, int 
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_block_type, report_error);
 }
 
-inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * width_offset, int * x, int * y, const std::function<void(const char *)> * report_error){
-	std::bitset<5> astate = 0;
+inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * width_offset, int * x, int * y, int* layer, const std::function<void(const char *)> * report_error){
+	std::bitset<6> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_grid_loc in = lex_attr_t_grid_loc(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
 		else noreturn_report(report_error, ("Duplicate attribute " + std::string(attr.name()) + " in <grid_loc>.").c_str());
 		switch(in){
-		case atok_t_grid_loc::BLOCK_TYPE_ID:
+        case atok_t_grid_loc::BLOCK_TYPE_ID:
 			*block_type_id = load_int(attr.value(), report_error);
 			break;
 		case atok_t_grid_loc::HEIGHT_OFFSET:
@@ -2315,10 +2330,12 @@ inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * 
 		case atok_t_grid_loc::Y:
 			*y = load_int(attr.value(), report_error);
 			break;
+        case atok_t_grid_loc::LAYER:
+            *layer=load_int(attr.value(), report_error);
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<5> test_astate = astate | std::bitset<5>(0b00000);
+	std::bitset<6> test_astate = astate | std::bitset<6>(0b000000);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_grid_loc, report_error);
 }
 
@@ -3207,8 +3224,10 @@ inline void load_grid_locs(const pugi::xml_node &root, T &out, Context &context,
 				memset(&grid_loc_x, 0, sizeof(grid_loc_x));
 				int grid_loc_y;
 				memset(&grid_loc_y, 0, sizeof(grid_loc_y));
-				load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y, report_error);
-				auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_width_offset, grid_loc_x, grid_loc_y);
+                int grid_loc_layer;
+                memset(&grid_loc_layer,0,sizeof(grid_loc_layer));
+				load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y, &grid_loc_layer, report_error);
+				auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_width_offset, grid_loc_x, grid_loc_y, grid_loc_layer);
 				load_grid_loc(node, out, child_context, report_error, offset_debug);
 				out.finish_grid_locs_grid_loc(child_context);
 			}
@@ -3930,6 +3949,8 @@ inline void write_grid_locs(T &in, std::ostream &os, Context &context){
 			os << " width_offset=\"" << in.get_grid_loc_width_offset(child_context) << "\"";
 			os << " x=\"" << in.get_grid_loc_x(child_context) << "\"";
 			os << " y=\"" << in.get_grid_loc_y(child_context) << "\"";
+			os << " layer=\"" << in.get_grid_loc_layer(child_context) << "\"";
+
 			os << "/>\n";
 		}
 	}

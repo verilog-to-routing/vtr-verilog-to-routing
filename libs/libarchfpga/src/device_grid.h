@@ -94,6 +94,12 @@ class DeviceGrid {
         return diff % grid_.dim_size(2);
     }
 
+    ///@brief Given t_grid_tile, return the layer number of the tile - Used by serializer functions
+    inline int get_grid_loc_layer(const t_grid_tile*& grid_loc) const {
+        int layer_num = std::floor(static_cast<int>(grid_loc - &grid_.get(0)) / (width() * height()));
+        return layer_num;
+    }
+
     ///@brief Return the nth t_grid_tile on the given layer of the flattened grid - Used by serializer functions
     inline const t_grid_tile* get_grid_locs_grid_loc(int n) const {
         return &grid_.get(n);
