@@ -154,6 +154,7 @@ struct GridLoc {
 	widthOffset @2 :Int32;
 	x @3 :Int32;
 	y @4 :Int32;
+	layer @5 : Int32;
 }
 
 struct GridLocs {

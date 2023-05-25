@@ -353,7 +353,7 @@ public:
 	 * </xs:complexType>
 	*/
 	virtual inline void preallocate_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int width_offset, int x, int y) = 0;
+	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int width_offset, int x, int y, int layer) = 0;
 	virtual inline void finish_grid_locs_grid_loc(typename ContextTypes::GridLocWriteContext &ctx) = 0;
 	virtual inline size_t num_grid_locs_grid_loc(typename ContextTypes::GridLocsReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::GridLocReadContext get_grid_locs_grid_loc(int n, typename ContextTypes::GridLocsReadContext &ctx) = 0;
