@@ -116,7 +116,7 @@ Global FPGA Information
 
 .. arch:tag:: <layer die='int'>content</layer>
     
-    Content inside this tag specifies each die grid layout to describe multi-die FPGAs (e.g., 3D FPGAs)
+    Content inside this tag specifies the layout of a single (2D) die; using multiple layer tags one can describe multi-die FPGAs (e.g. 3D stacked FPGAs).
 
 .. arch:tag:: <device>content</device>
 
