@@ -707,8 +707,8 @@ void create_rr_graph(const t_graph_type graph_type,
 
     print_rr_graph_stats();
 
-    //Write out rr graph file if needed
-    if (!det_routing_arch->write_rr_graph_filename.empty()) {
+    //Write out rr graph file if needed - Currently, writing the flat rr-graph is not supported since loading from a flat rr-graph is not supported
+    if (!det_routing_arch->write_rr_graph_filename.empty() && !is_flat) {
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
                        &mutable_device_ctx.rr_graph,
                        device_ctx.physical_tile_types,
