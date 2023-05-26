@@ -11,13 +11,13 @@ void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_remapped_.reserve(num_edges);
 }
 
-void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
+void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
     // Cannot mutate edges once edges have been read!
     VTR_ASSERT(!edges_read_);
     edge_src_node_.emplace_back(src);
     edge_dest_node_.emplace_back(dest);
     edge_switch_.emplace_back(edge_switch);
-    edge_remapped_.emplace_back(false);
+    edge_remapped_.emplace_back(remapped);
 }
 
 // Typical node to edge ratio.  This allows a preallocation guess for the edges
@@ -48,7 +48,8 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         emplace_back_edge(
             new_edge.from_node,
             new_edge.to_node,
-            new_edge.switch_type);
+            new_edge.switch_type,
+            new_edge.remapped);
     }
 }
 

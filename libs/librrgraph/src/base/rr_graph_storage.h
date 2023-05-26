@@ -549,7 +549,7 @@ class t_rr_graph_storage {
     // the number of edges present in the graph.  This method is still
     // amortized O(1), like std::vector::emplace_back, but both runtime and
     // peak memory usage will be higher if reallocation is required.
-    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch);
+    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped);
 
     // Adds a batch of edges.
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
