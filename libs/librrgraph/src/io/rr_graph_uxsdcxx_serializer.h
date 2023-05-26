@@ -465,8 +465,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // as a future work to remove the arch_switch_types and use all_sw info under device_ctx instead.
         bool found_arch_name = false;
         std::string string_name = std::string(name);
+        bool is_internal_sw = string_name.compare(0, 15, "Internal Switch") == 0;
         for (const auto& arch_sw_inf: arch_switch_inf_) {
-            if (string_name == arch_sw_inf.name || string_name.compare(0, 15, "Internal Switch") == 0) {
+            if (string_name == arch_sw_inf.name || is_internal_sw) {
                 found_arch_name = true;
                 break;
             }
@@ -474,7 +475,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         if (!found_arch_name) {
             report_error("Switch name '%s' not found in architecture\n", string_name.c_str());
         }
-
+        if(is_internal_sw){
+            sw->intra_tile = true;
+        } else {
+            sw->intra_tile = false;
+        }
         sw->name = string_name;
     }
     inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
@@ -830,6 +835,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void finish_rr_nodes_node(int& /*inode*/) final {
     }
     inline size_t num_rr_nodes_node(void*& /*ctx*/) final {
+
         return rr_nodes_->size();
     }
     inline const t_rr_node get_rr_nodes_node(int n, void*& /*ctx*/) final {
@@ -921,7 +927,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             bind.set_ignore();
         }
 
-        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
+        // The edge ids in the rr graph file are indeed rr edge id not architecture edge id
+        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id, true);
         return bind;
     }
     inline void finish_rr_edges_edge(MetadataBind& bind) final {
