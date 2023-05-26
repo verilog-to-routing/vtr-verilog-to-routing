@@ -69,6 +69,7 @@ struct t_pin_loc {
     int pin_index;
     int width_offset;
     int height_offset;
+    int layer_offset;
     e_side side;
 };
 
@@ -85,7 +86,7 @@ void print_rr_graph_stats();
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
-static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
+static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr Type,
                                                                           const std::vector<bool>& perturb_switch_pattern,
@@ -93,7 +94,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
                                                                           const std::vector<t_segment_inf>& seg_inf,
                                                                           const int* sets_per_seg_type);
 
-static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
+static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
                                                             const int seg_type_tracks,
                                                             const int Fc,
                                                             const t_physical_tile_type_ptr Type,
@@ -265,14 +266,14 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          const int delayless_switch);
 
 static float pattern_fmod(float a, float b);
-static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
+static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                   const std::vector<t_pin_loc>& pin_locations,
                                                   const int x_chan_width,
                                                   const int y_chan_width,
                                                   const int Fc,
                                                   const enum e_directionality directionality);
 
-static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
+static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                     const std::vector<t_pin_loc>& pin_locations,
                                                     const int x_chan_width,
                                                     const int y_chan_width,
@@ -1973,6 +1974,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
+    //sara_todo: this layer should n't be a loop through, at least should be layer+layer_offset
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
         for (size_t i = 0; i < grid.width() - 1; ++i) {
             for (size_t j = 0; j < grid.height() - 1; ++j) {
@@ -2832,6 +2834,7 @@ static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chai
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
  * node properties such as cost, occupancy and capacity */
+//sara_todo: I should modify this function!
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int layer,
                           const int x_coord,
@@ -3032,7 +3035,7 @@ void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, const t_rr_edge_info
 
 /* allocate pin to track map for each segment type individually and then combine into a single
  * vector */
-static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
+static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr Type,
                                                                           const std::vector<bool>& perturb_switch_pattern,
@@ -3060,10 +3063,13 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
     /* allocate 'result' matrix and initialize entries to OPEN. also allocate and intialize matrix which will be
      * used to index into the correct entries when loading up 'result' */
 
-    auto result = vtr::NdMatrix<std::vector<int>, 4>({
+    //SARA_TODO: pins can be connected to what ever track they want -> shouldn't be the same layer
+    auto& grid = g_vpr_ctx.device().grid;
+    auto result = vtr::NdMatrix<std::vector<int>, 5>({
         size_t(Type->num_pins), //[0..num_pins-1]
         size_t(Type->width),    //[0..width-1]
         size_t(Type->height),   //[0..height-1]
+        size_t(grid.get_num_layers()), //[0..layer-1]
         4,                      //[0..sides-1]
     });
 
@@ -3093,12 +3099,14 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
         /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,num_seg_type_tracks-1] range.
          * now load up 'result' array with these connections, but offset them so they are relative to the channel
          * as a whole */
+        //todo: should fix this!
+        int layer = Type->pin_layer_offset[0];
         for (int ipin = 0; ipin < Type->num_pins; ipin++) {
             for (int iwidth = 0; iwidth < Type->width; iwidth++) {
                 for (int iheight = 0; iheight < Type->height; iheight++) {
                     for (int iside = 0; iside < 4; iside++) {
                         for (int iconn = 0; iconn < max_Fc; iconn++) {
-                            int relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][iside][iconn];
+                            int relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][layer][iside][iconn];
 
                             if (relative_track_ind == OPEN) continue;
 
@@ -3106,7 +3114,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
                             int absolute_track_ind = relative_track_ind + seg_type_start_track;
 
                             VTR_ASSERT(absolute_track_ind >= 0);
-                            result[ipin][iwidth][iheight][iside].push_back(absolute_track_ind);
+                            result[ipin][iwidth][iheight][layer][iside].push_back(absolute_track_ind);
                         }
                     }
                 }
@@ -3120,7 +3128,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
     return result;
 }
 
-static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
+static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
                                                             const int num_seg_type_tracks,
                                                             const int Fc,
                                                             const t_physical_tile_type_ptr Type,
@@ -3143,14 +3151,18 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
      * allowing different specification of the segment parallel_axis.
      */
 
+    auto& grid = g_vpr_ctx.device().grid;
+
+    //SARA_TODO: FIX this
     if (Type->num_pins < 1) {
-        return vtr::NdMatrix<int, 5>();
+        return vtr::NdMatrix<int, 6>();
     }
 
-    auto tracks_connected_to_pin = vtr::NdMatrix<int, 5>({
+    auto tracks_connected_to_pin = vtr::NdMatrix<int, 6>({
                                                              size_t(Type->num_pins), //[0..num_pins-1]
                                                              size_t(Type->width),    //[0..width-1]
                                                              size_t(Type->height),   //[0..height-1]
+                                                             size_t(grid.get_num_layers()),//[0..layer-1]
                                                              NUM_SIDES,              //[0..NUM_SIDES-1]
                                                              size_t(Fc)              //[0..Fc-1]
                                                          },
@@ -3160,9 +3172,10 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //Note that his may be more than the logical number of pins (i.e.
     //Type->num_pins) if a logical pin has multiple specified physical
     //pinlocations (i.e. appears on multiple sides of the block)
-    auto num_dir = vtr::NdMatrix<int, 3>({
+    auto num_dir = vtr::NdMatrix<int, 4>({
                                              size_t(Type->width),  //[0..width-1]
                                              size_t(Type->height), //[0..height-1]
+                                             size_t(grid.get_num_layers()), //[0..layer-1]
                                              NUM_SIDES             //[0..NUM_SIDES-1]
                                          },
                                          0);
@@ -3172,18 +3185,20 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //last dimension are [0 .. num_dir[width][height][side]-1]
     //
     //Max possible space alloced for simplicity
-    auto dir_list = vtr::NdMatrix<int, 4>({
+    auto dir_list = vtr::NdMatrix<int, 5>({
                                               size_t(Type->width),   //[0..width-1]
                                               size_t(Type->height),  //[0..height-1]
+                                              size_t(grid.get_num_layers()), //[0..layer-1]
                                               NUM_SIDES,             //[0..NUM_SIDES-1]
                                               size_t(Type->num_pins) //[0..num_pins-1]
                                           },
                                           -1); //Defensive coding: Initialize to invalid
 
     //Number of currently assigned physical pins
-    auto num_done_per_dir = vtr::NdMatrix<int, 3>({
+    auto num_done_per_dir = vtr::NdMatrix<int, 4>({
                                                       size_t(Type->width),  //[0..width-1]
                                                       size_t(Type->height), //[0..height-1]
+                                                      size_t(grid.get_num_layers()), //[0..layer-1]
                                                       NUM_SIDES             //[0..NUM_SIDES-1]
                                                   },
                                                   0);
@@ -3198,12 +3213,14 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         if (Type->is_ignored_pin[pin])
             continue;
 
+        int layer = 0; //todo: sara_todo should get this from pinloc, for testing purposes
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
                 for (e_side side : SIDES) {
                     if (Type->pinloc[width][height][side][pin] == 1) {
-                        dir_list[width][height][side][num_dir[width][height][side]] = pin;
-                        num_dir[width][height][side]++;
+                        int layer_offset = Type->pin_layer_offset[pin];
+                        dir_list[width][height][layer_offset][side][num_dir[width][height][layer_offset][side]] = pin;
+                        num_dir[width][height][layer_offset][side]++;
                     }
                 }
             }
@@ -3212,10 +3229,12 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
     //Total the number of physical pins
     int num_phys_pins = 0;
-    for (int width = 0; width < Type->width; ++width) {
-        for (int height = 0; height < Type->height; ++height) {
-            for (e_side side : SIDES) {
-                num_phys_pins += num_dir[width][height][side]; /* Num. physical pins per type */
+    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
+        for (int width = 0; width < Type->width; ++width) {
+            for (int height = 0; height < Type->height; ++height) {
+                for (e_side side: SIDES) {
+                    num_phys_pins += num_dir[width][height][layer][side]; /* Num. physical pins per type */
+                }
             }
         }
     }
@@ -3243,6 +3262,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //Determine the order in which physical pins will be considered while building
     //the connection block. This generally tries to order the pins so they are 'spread'
     //out (in hopes of yielding good connection diversity)
+    int layer_offset = Type->pin_layer_offset[0]; //todo: sara_todo should get this from pinloc, for testing purposes
     while (pin < num_phys_pins) {
         if (height == init_height && width == init_width && side == init_side) {
             //Completed one loop through all the possible offsets/side combinations
@@ -3253,11 +3273,11 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
         VTR_ASSERT_MSG(pin_index < num_phys_pins, "Physical block pins bound number of logical block pins");
 
-        if (num_done_per_dir[width][height][side] >= num_dir[width][height][side]) {
+        if (num_done_per_dir[width][height][layer_offset][side] >= num_dir[width][height][layer_offset][side]) {
             continue;
         }
 
-        int pin_num = dir_list[width][height][side][pin_index];
+        int pin_num = dir_list[width][height][layer_offset][side][pin_index];
         VTR_ASSERT(pin_num >= 0);
         VTR_ASSERT(Type->pinloc[width][height][side][pin_num]);
 
@@ -3265,11 +3285,12 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         pin_loc.pin_index = pin_num;
         pin_loc.width_offset = width;
         pin_loc.height_offset = height;
+        pin_loc.layer_offset = layer_offset;
         pin_loc.side = side;
 
         pin_ordering.push_back(pin_loc);
 
-        num_done_per_dir[width][height][side]++;
+        num_done_per_dir[width][height][layer_offset][side]++;
         pin++;
     }
 
@@ -3426,7 +3447,7 @@ static float pattern_fmod(float a, float b) {
     return raw_result;
 }
 
-static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
+static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                   const std::vector<t_pin_loc>& pin_locations,
                                                   const int x_chan_width,
                                                   const int y_chan_width,
@@ -3521,6 +3542,7 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_
         e_side side = pin_locations[i].side;
         int width = pin_locations[i].width_offset;
         int height = pin_locations[i].height_offset;
+        int layer = pin_locations[i].layer_offset;
 
         /* Bi-directional treats each track separately, uni-directional works with pairs of tracks */
         for (int j = 0; j < (Fc / group_size); ++j) {
@@ -3607,8 +3629,8 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_
 
             /* Assign the group of tracks for the Fc pattern */
             for (int k = 0; k < group_size; ++k) {
-                tracks_connected_to_pin[pin][width][height][side][group_size * j + k] = (itrack + k) % max_chan_width;
-
+                tracks_connected_to_pin[pin][width][height][layer][side][group_size * j + k] = (itrack + k) % max_chan_width;
+                //todo: sara_todo check this is correct
                 excess_tracks_selected[side][width][height][(itrack + k) % max_chan_width]++;
             }
         }
@@ -3627,7 +3649,7 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_
  *
  *
  */
-static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
+static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                     const std::vector<t_pin_loc>& pin_locations,
                                                     const int x_chan_width,
                                                     const int y_chan_width,
@@ -3657,6 +3679,7 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& track
         e_side side = pin_locations[i].side;
         int width = pin_locations[i].width_offset;
         int height = pin_locations[i].height_offset;
+        int layer = pin_locations[i].layer_offset;
 
         int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
         float step_size = (float)max_chan_width / (float)(Fc * num_phys_pins);
@@ -3681,7 +3704,7 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& track
                  * so connection is valid and fine */
                 int itrack = (int)ftrack;
                 itrack = itrack % max_chan_width;
-                tracks_connected_to_pin[pin][width][height][side][iconn] = itrack;
+                tracks_connected_to_pin[pin][width][height][layer][side][iconn] = itrack;
 
                 ftrack += spacing[ihalf];
                 iconn++;

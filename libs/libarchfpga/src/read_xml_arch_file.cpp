@@ -3392,7 +3392,6 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                         for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
                             InstPort inst_port(token.c_str());
 
-                            //SARA_TOASK: WHAT DOES THIS IF CONDITION DO?
                             //A pin specification should contain only the block name, and not any instace count information
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
                                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),

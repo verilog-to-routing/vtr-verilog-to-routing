@@ -1620,6 +1620,8 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
 
                 int width_offset = device_ctx.grid.get_width_offset({x, y, layer});
                 int height_offset = device_ctx.grid.get_height_offset({x, y, layer});
+                //SARA_TEMP
+                int layer_offset = type->pin_layer_offset[0];
 
                 max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].size();
                 for (iconn = 0; iconn < max_conn; iconn++) {
