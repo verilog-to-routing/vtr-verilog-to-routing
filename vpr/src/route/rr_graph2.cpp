@@ -1027,6 +1027,11 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                            FILE* fp) {
     if (fp) {
         for (unsigned int i = 0; i < types.size(); i++) {
+            //todo: sara_todo fix the hardcoding
+            int layer = 0;
+            if(types[i].num_pins != 0){
+                layer = types[i].pin_layer_offset[0];
+            }
             if (!track_to_pin_map[i].empty()) {
                 for (int track = 0; track < max_chan_width; ++track) {
                     for (int width = 0; width < types[i].width; ++width) {
@@ -1034,8 +1039,8 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                             for (int side = 0; side < 4; ++side) {
                                 fprintf(fp, "\nTYPE:%s width:%d height:%d\n", types[i].name, width, height);
                                 fprintf(fp, "\nSIDE:%d TRACK:%d \n", side, track);
-                                for (size_t con = 0; con < track_to_pin_map[i][track][width][height][side].size(); con++) {
-                                    fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][side][con]);
+                                for (size_t con = 0; con < track_to_pin_map[i][track][width][height][layer][side].size(); con++) {
+                                    fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][layer][side][con]);
                                 }
                                 fprintf(fp, "=====================\n");
                             }
