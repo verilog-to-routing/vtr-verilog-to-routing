@@ -1701,6 +1701,8 @@ struct t_rr_switch_inf {
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
     float power_buffer_size = 0.;
 
+    bool intra_tile = false;
+
   public:
     //Returns the type of switch
     SwitchType type() const;
