@@ -208,8 +208,8 @@ class RRGraphBuilder {
 
     /** @brief emplace_back_edge; It add one edge. This method is efficient if reserve_edges was called with
      * the number of edges present in the graph. */
-    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
-        node_storage_.emplace_back_edge(src, dest, edge_switch);
+    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool is_rr_id) {
+        node_storage_.emplace_back_edge(src, dest, edge_switch, is_rr_id);
     }
     /** @brief Append 1 more RR node to the RR graph. */
     inline void emplace_back() {
