@@ -103,8 +103,9 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
 static void advance_to_next_block_side(t_physical_tile_type_ptr Type, int& width_offset, int& height_offset, e_side& side);
 
-static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr::NdMatrix<std::vector<int>, 4> pin_to_track_map,
+static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr::NdMatrix<std::vector<int>, 5> pin_to_track_map,
                                                                              const vtr::Matrix<int>& Fc,
+                                                                             const int layer,
                                                                              const int width,
                                                                              const int height,
                                                                              const int num_pins,
@@ -1167,6 +1168,11 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_track_to_pin_lookup track_to_pin_lookup_y(types.size());
 
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
+        //todo: sara_todo fix the hardcoding part
+        int type_layer = 0;
+        if(types[itype].num_pins > 0){
+            type_layer += types[itype].pin_layer_offset[0];
+        }
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
                                                                      Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
                                                                      segment_inf_x, sets_per_seg_type_x.get());
@@ -1175,10 +1181,10 @@ static void build_rr_graph(const t_graph_type graph_type,
                                                                      Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
                                                                      segment_inf_y, sets_per_seg_type_y.get());
 
-        track_to_pin_lookup_x[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_x[itype], Fc_in[itype], types[itype].width, types[itype].height,
+        track_to_pin_lookup_x[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_x[itype], Fc_in[itype],type_layer,types[itype].width, types[itype].height,
                                                                           types[itype].num_pins, nodes_per_chan.x_max, segment_inf_x);
 
-        track_to_pin_lookup_y[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_y[itype], Fc_in[itype], types[itype].width, types[itype].height,
+        track_to_pin_lookup_y[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_y[itype], Fc_in[itype], type_layer,types[itype].width, types[itype].height,
                                                                           types[itype].num_pins, nodes_per_chan.y_max, segment_inf_y);
     }
 
@@ -3752,17 +3758,18 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
 /* Allocates and loads the track to ipin lookup for each physical grid type. This
  * is the same information as the ipin_to_track map but accessed in a different way. */
 
-static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr::NdMatrix<std::vector<int>, 4> pin_to_track_map,
+static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr::NdMatrix<std::vector<int>, 5> pin_to_track_map,
                                                                              const vtr::Matrix<int>& Fc,
+                                                                             const int type_layer,
                                                                              const int type_width,
                                                                              const int type_height,
                                                                              const int num_pins,
                                                                              const int max_chan_width,
                                                                              const std::vector<t_segment_inf>& seg_inf) {
-    /* [0..max_chan_width-1][0..width][0..height][0..3].  For each track number
+    /* [0..max_chan_width-1][0..width][0..height][0..layer-1][0..3].  For each track number
      * it stores a vector for each of the four sides.  x-directed channels will
-     * use the TOP and   BOTTOM vectors to figure out what clb input pins they
-     * connect to above  and below them, respectively, while y-directed channels
+     * use the TOP and BOTTOM vectors to figure out what clb input pins they
+     * connect to above and below them, respectively, while y-directed channels
      * use the LEFT and RIGHT vectors.  Each vector contains an nelem field
      * saying how many ipins it connects to.  The list[0..nelem-1] array then
      * gives the pin numbers.                                                  */
@@ -3772,19 +3779,21 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
      * here is always in the perspective of the CLB                            */
 
     if (num_pins < 1) {
-        return vtr::NdMatrix<std::vector<int>, 4>();
+        return vtr::NdMatrix<std::vector<int>, 5>();
     }
 
     const int num_seg_types = seg_inf.size();
+    auto& grid = g_vpr_ctx.device().grid;
     /* Alloc and zero the the lookup table */
-    auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 4>({size_t(max_chan_width), size_t(type_width), size_t(type_height), 4});
+    auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 5>({size_t(max_chan_width), size_t(type_width), size_t(grid.get_num_layers()),size_t(type_height), 4});
 
     /* Count number of pins to which each track connects  */
+    //todo : sara_todo fix this
     for (int pin = 0; pin < num_pins; ++pin) {
         for (int width = 0; width < type_width; ++width) {
             for (int height = 0; height < type_height; ++height) {
                 for (int side = 0; side < 4; ++side) {
-                    if (pin_to_track_map[pin][width][height][side].empty())
+                    if (pin_to_track_map[pin][width][height][type_layer][side].empty())
                         continue;
 
                     /* get number of tracks to which this pin connects */
@@ -3793,12 +3802,12 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
                         num_tracks += Fc[pin][seg_inf[iseg].seg_index]; // AA: Fc_in and Fc_out matrices are unified for all segments so need to map index.
                     }
 
-                    num_tracks = std::min(num_tracks, (int)pin_to_track_map[pin][width][height][side].size());
+                    num_tracks = std::min(num_tracks, (int)pin_to_track_map[pin][width][height][type_layer][side].size());
                     for (int conn = 0; conn < num_tracks; ++conn) {
-                        int track = pin_to_track_map[pin][width][height][side][conn];
+                        int track = pin_to_track_map[pin][width][height][type_layer][side][conn];
                         VTR_ASSERT(track < max_chan_width);
                         VTR_ASSERT(track >= 0);
-                        track_to_pin_lookup[track][width][height][side].push_back(pin);
+                        track_to_pin_lookup[track][width][height][type_layer][side].push_back(pin);
                     }
                 }
             }
