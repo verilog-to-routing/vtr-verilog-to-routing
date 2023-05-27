@@ -3103,8 +3103,8 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
         /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,num_seg_type_tracks-1] range.
          * now load up 'result' array with these connections, but offset them so they are relative to the channel
          * as a whole */
-        //todo: should fix this!
-        int layer = Type->pin_layer_offset[0];
+        //todo: sara_todo should fix this!
+        int layer = (Type->num_pins != 0) ? Type->pin_layer_offset[0] : 0;
         for (int ipin = 0; ipin < Type->num_pins; ipin++) {
             for (int iwidth = 0; iwidth < Type->width; iwidth++) {
                 for (int iheight = 0; iheight < Type->height; iheight++) {
@@ -3217,7 +3217,8 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         if (Type->is_ignored_pin[pin])
             continue;
 
-        int layer = 0; //todo: sara_todo should get this from pinloc, for testing purposes
+        //int layer = 0;
+        // todo: sara_todo should get this from pinloc, for testing purposes
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
                 for (e_side side : SIDES) {
@@ -3783,7 +3784,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
     const int num_seg_types = seg_inf.size();
     auto& grid = g_vpr_ctx.device().grid;
     /* Alloc and zero the the lookup table */
-    auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 5>({size_t(max_chan_width), size_t(type_width), size_t(grid.get_num_layers()),size_t(type_height), 4});
+    auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 5>({size_t(max_chan_width), size_t(type_width),size_t(type_height), size_t(grid.get_num_layers()), 4});
 
     /* Count number of pins to which each track connects  */
     //todo : sara_todo fix this
