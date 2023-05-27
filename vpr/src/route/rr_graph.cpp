@@ -1980,7 +1980,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
-    //sara_todo: this layer should n't be a loop through, at least should be layer+layer_offset
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
         for (size_t i = 0; i < grid.width() - 1; ++i) {
             for (size_t j = 0; j < grid.height() - 1; ++j) {
@@ -2840,7 +2839,6 @@ static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chai
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
  * node properties such as cost, occupancy and capacity */
-//sara_todo: I should modify this function!
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int layer,
                           const int x_coord,

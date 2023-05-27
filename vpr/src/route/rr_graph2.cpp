@@ -675,6 +675,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     type = device_ctx.grid.get_physical_type({i, j, layer});
     int width_offset = device_ctx.grid.get_width_offset({i, j, layer});
     int height_offset = device_ctx.grid.get_height_offset({i, j, layer});
+    int layer_offset = (type->num_pins > 0) ?  type->pin_layer_offset[0] : 0;
 
     num_conn = 0;
 
@@ -713,17 +714,20 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         const t_chan_seg_details* seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
 
         /* Iterate of the opin to track connections */
-        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][side]) {
+
+        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][layer_offset][side]) {
             /* Skip unconnected connections */
             if (OPEN == to_track || is_connected_track) {
                 is_connected_track = true;
-                VTR_ASSERT(OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][side][0]);
+                VTR_ASSERT(OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][layer_offset][side][0]);
                 continue;
             }
 
             /* Only connect to wire if there is a CB */
             if (is_cblock(chan, seg, to_track, seg_details)) {
                 to_switch = seg_details[to_track].arch_wire_switch();
+                //todo : sara_todo check if it is actually track not pin
+                //if it is a pin, should change the layer
                 RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, tr_i, tr_j, to_type, to_track);
 
                 if (!to_node) {
@@ -1625,12 +1629,15 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
 
                 int width_offset = device_ctx.grid.get_width_offset({x, y, layer});
                 int height_offset = device_ctx.grid.get_height_offset({x, y, layer});
-                //SARA_TEMP
+                //todo: sara_todo avoid hard coding
                 int layer_offset = type->pin_layer_offset[0];
+                if(layer == 1){
+                    layer -= layer_offset;
+                }
 
-                max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].size();
+                max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer_offset][side].size();
                 for (iconn = 0; iconn < max_conn; iconn++) {
-                    ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side][iconn];
+                    ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer_offset][side][iconn];
 
                     /* Check there is a connection and Fc map isn't wrong */
                     /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
