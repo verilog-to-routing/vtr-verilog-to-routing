@@ -1351,7 +1351,7 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                       expected_node_count, rr_graph.num_nodes());
     }
 
-    if(!load_rr_graph) {
+    if (!load_rr_graph) {
         remap_rr_node_switch_indices(rr_graph_builder,
                                      g_vpr_ctx.device().switch_fanin_remap);
     } else {
@@ -2576,14 +2576,14 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                               pin_physical_num,
                                               conn_pin_physical_num);
 
-            if(is_remapped) {
+            if (is_remapped) {
                 bool found = false;
                 float delay = g_vpr_ctx.device().all_sw_inf.at(sw_idx).Tdel();
                 const auto& rr_switches = rr_graph_builder.rr_switch();
-                for(int sw_id = 0; sw_id < (int)rr_switches.size(); sw_id++) {
+                for (int sw_id = 0; sw_id < (int)rr_switches.size(); sw_id++) {
                     const auto& rr_switch = rr_switches[RRSwitchId(sw_id)];
-                    if(rr_switch.intra_tile) {
-                        if(rr_switch.Tdel == delay) {
+                    if (rr_switch.intra_tile) {
+                        if (rr_switch.Tdel == delay) {
                             sw_idx = sw_id;
                             found = true;
                             break;
@@ -2758,17 +2758,17 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                                                       is_rr_sw_id,
                                                                       delay);
 
-            if(!is_rr_sw_id && is_new_sw) {
+            if (!is_rr_sw_id && is_new_sw) {
                 // Currently we assume that if rr graph is read from a file, we shouldn't get into this block
                 VTR_ASSERT(!load_rr_graph);
                 // The internal edges are added after switch_fanin_remap is initialized; thus, if a new arch_sw is added,
                 // switch _fanin_remap should be updated.
                 t_rr_switch_inf rr_sw_inf = create_rr_switch_from_arch_switch(create_internal_arch_sw(delay),
-                                                                      R_minW_nmos,
-                                                                      R_minW_pmos);
+                                                                              R_minW_nmos,
+                                                                              R_minW_pmos);
                 auto rr_sw_id = rr_graph_builder.add_rr_switch(rr_sw_inf);
                 // If rr graph is loaded from a file, switch_fanin_remap is going to be empty
-                if(!load_rr_graph) {
+                if (!load_rr_graph) {
                     auto& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
                     switch_fanin_remap.push_back({{UNDEFINED, size_t(rr_sw_id)}});
                 }
@@ -4662,11 +4662,11 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
                                                          float delay) {
     const auto& rr_graph_switches = rr_graph.rr_switch();
 
-    if(is_rr_sw) {
+    if (is_rr_sw) {
         for (int rr_switch_id = 0; rr_switch_id < (int)rr_graph_switches.size(); rr_switch_id++) {
             const auto& rr_sw = rr_graph_switches[RRSwitchId(rr_switch_id)];
             if (rr_sw.intra_tile) {
-                if(rr_sw.Tdel == delay) {
+                if (rr_sw.Tdel == delay) {
                     return std::make_pair(false, rr_switch_id);
                 }
             }
