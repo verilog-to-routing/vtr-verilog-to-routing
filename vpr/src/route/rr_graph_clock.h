@@ -121,7 +121,8 @@ class ClockRRGraphBuilder {
     void add_edge(t_rr_edge_info_set* rr_edges_to_create,
                   RRNodeId src_node,
                   RRNodeId sink_node,
-                  int arch_switch_idx) const;
+                  int arch_switch_idx,
+                  bool edge_remapped) const;
 
   public:
     /* Creates the routing resourse (rr) graph of the clock network and appends it to the
