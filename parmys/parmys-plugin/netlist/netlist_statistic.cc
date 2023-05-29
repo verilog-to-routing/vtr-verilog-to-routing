@@ -16,7 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <algorithm>
-
+#include <iostream>
+#include <fstream>
 /* for hb */
 #include "multiplier.h"
 
@@ -24,7 +25,6 @@
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "vtr_memory.h"
-
 USING_YOSYS_NAMESPACE
 
 static void init(metric_t *m);
@@ -367,7 +367,7 @@ void compute_statistics(netlist_t *netlist, bool display)
 {
     if (netlist) {
         // reinit the node count
-        init_stat(netlist);
+        //init_stat(netlist);
 
         get_upward_stat(&netlist->output_node_stat, netlist->top_output_nodes, netlist->num_top_output_nodes, netlist, travelsal_id + 1);
 
@@ -388,3 +388,59 @@ void compute_statistics(netlist_t *netlist, bool display)
         }
     }
 }
+
+void file_statistics(netlist_t* netlist, bool write) {
+    if (netlist) {
+        // reinit the node count
+        init_stat(netlist);
+
+        get_upward_stat(&netlist->output_node_stat, netlist->top_output_nodes, netlist->num_top_output_nodes, netlist, travelsal_id + 1);
+
+        if (write) {
+            std::ofstream statsfile;
+            statsfile.open ("netstats.txt", std::ios_base::app);
+            std::string hdr = "";
+            for (auto op = 0; op < operation_list_END; op += 1) {
+                switch (op) {
+                    // For top IO nodes generate detailed info since the design might have unconnected input nodes
+                    case INPUT_NODE: {
+                        auto unused_pi = netlist->num_top_input_nodes - netlist->num_of_type[op] - netlist->num_of_type[CLOCK_NODE];
+                        if (unused_pi > 0) {
+                            hdr = std::string("Number of unused <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
+                        }
+                        [[fallthrough]];
+                    }
+                    case OUTPUT_NODE: {
+                        auto unused_po = netlist->num_top_output_nodes - netlist->num_of_type[op];
+                        if (unused_po > 0) {
+                            hdr = std::string("Number of unused <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
+                        }
+                        [[fallthrough]];
+                    }
+                    default: {
+                        if (netlist->num_of_type[op] > UNUSED_NODE_TYPE) {
+                            hdr = std::string("Number of <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
+                            statsfile <<  hdr.c_str();
+                            statsfile << netlist->num_of_type[op];
+                            statsfile <<"\n";
+                        }
+                    }
+                }
+            }
+            statsfile <<  "Total estimated number of lut: ";
+            statsfile << netlist->num_logic_element;
+            statsfile <<"\n";
+            statsfile <<  "Longest path: ";
+            statsfile << netlist->output_node_stat.max_depth;
+            statsfile <<"\n";
+            statsfile.close();
+        }
+    }
+}
+    

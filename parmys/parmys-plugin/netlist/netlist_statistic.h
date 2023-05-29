@@ -27,6 +27,7 @@ stat_t *get_stats(nnode_t *node, netlist_t *netlist, uintptr_t traverse_mark_num
 
 void init_stat(netlist_t *netlist);
 void compute_statistics(netlist_t *netlist, bool display);
+void file_statistics(netlist_t* netlist,bool write);
 
 /**
  * @brief This function will calculate and assign weights related

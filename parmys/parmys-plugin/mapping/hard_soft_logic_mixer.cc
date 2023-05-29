@@ -53,11 +53,11 @@ void HardSoftLogicMixer::partial_map_node(nnode_t *node, short traverse_number, 
     _opts[node->type]->partial_map_node(node, traverse_number, netlist, this);
 }
 
-void HardSoftLogicMixer::perform_optimizations(netlist_t *netlist)
+void HardSoftLogicMixer::perform_optimizations(netlist_t *netlist, float pred_ratio)
 {
     if (_opts[MULTIPLY]->enabled()) {
         int blocks_needed = this->hard_blocks_needed(MULTIPLY);
-        _opts[MULTIPLY]->set_blocks_needed(blocks_needed);
+        _opts[MULTIPLY]->set_blocks_needed(blocks_needed, pred_ratio);
         _opts[MULTIPLY]->assign_weights(netlist, _nodes_by_opt[MULTIPLY]);
         _opts[MULTIPLY]->perform(netlist, _nodes_by_opt[MULTIPLY]);
         _opts[MULTIPLY]->instantiate_soft_logic(netlist, _nodes_by_opt[MULTIPLY]);

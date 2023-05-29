@@ -26,13 +26,14 @@
 #include "netlist_statistic.h"     // mixing_optimization_stats
 #include "odin_error.h"            // error_message
 
-void MixingOpt::scale_counts()
+void MixingOpt::scale_counts(float pred_ratio)
 {
     if (this->_blocks_count < 0 || this->_blocks_count == INT_MAX || this->_ratio < 0.0 || this->_ratio > 1.0) {
         error_message(NETLIST, unknown_location, "The parameters for optimization kind:%i are configured incorrectly : count %i, ratio %f\n",
                       this->_kind, this->_blocks_count, this->_ratio);
         exit(0);
     }
+    this->_ratio = pred_ratio;
     this->_blocks_count = this->_blocks_count * this->_ratio;
 }
 
@@ -122,9 +123,9 @@ void MultsOpt::perform(netlist_t *netlist, std::vector<nnode_t *> &weighted_node
     }
 }
 
-void MixingOpt::set_blocks_needed(int new_count) { this->_blocks_count = new_count; }
+void MixingOpt::set_blocks_needed(int new_count, float pred_ratio) { this->_blocks_count = new_count; }
 
-void MultsOpt::set_blocks_needed(int new_count)
+void MultsOpt::set_blocks_needed(int new_count, float pred_ratio)
 {
     // with development for fixed_layout, this value will change
     int availableHardBlocks = INT_MAX;
@@ -139,7 +140,7 @@ void MultsOpt::set_blocks_needed(int new_count)
         this->_blocks_count = hardBlocksCount;
     }
 
-    this->scale_counts();
+    this->scale_counts(pred_ratio);
 }
 void MixingOpt::instantiate_soft_logic(netlist_t * /*netlist*/, std::vector<nnode_t *> /* nodes*/)
 {
