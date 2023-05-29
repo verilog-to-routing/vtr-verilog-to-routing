@@ -1,4 +1,3 @@
-#This is a simple wrapper which hides cmake (for convenience, and from non-expert end users).
 #
 # It supports the targets:
 #   'make'           - builds everything (all libaries/executables)
