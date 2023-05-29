@@ -54,7 +54,7 @@ Visualizing Placement
 --------------------------------
 By default VPR's graphics displays the FPGA floorplan (block grid) and current placement.
 
-.. figure:: ../../_build/html/_images/Overall_view.png
+.. figure:: ../Images/Overall_view.png
     :align: center 
     :height: 300
 
@@ -71,7 +71,7 @@ Visualizing Netlist Connectivity
 --------------------------------
 The **Toggle Nets** drop-down list under the **Net Settings** tab toggles the nets in the circuit to be visible/invisible. Options include **Nets** and **Logical Connections**.
 
-.. figure:: ../../_build/html/_images/Net_Settings.png
+.. figure:: ../Images/Net_Settings.png
     :align: center 
     :height: 200
 
@@ -94,7 +94,7 @@ Visualizing the Critical Path
 During placement and routing you can click on the **Crit. Path** drop-down menu under the **Misc.** tab to visualize the critical path.
 Each stage between primitive pins is shown in a different colour.
 
-.. figure:: ../../_build/html/_images/crit_path.png
+.. figure:: ../Images/crit_path.png
     :align: center 
     :height: 200
 
@@ -115,7 +115,7 @@ Visualizing Routing Architecture
 
 When a routing is on screen, the **Routing Options** tab provides various options to gain more visual information.
 
-.. figure:: ../../_build/html/_images/Routing_Options.png
+.. figure:: ../Images/Routing_Options.png
     :align: center 
     :height: 300
 
@@ -166,7 +166,7 @@ Toggle Block Internal
 -------------------------------
 During placement and routing you can adjust the level of block detail you visualize by using the **Toggle Block Internal** option under the **Block Settings** tab. 
 
-.. figure:: ../../_build/html/_images/Block_Settings.png
+.. figure:: ../Images/Block_Settings.png
     :align: center 
     :height: 300
 
@@ -258,7 +258,7 @@ Manual Moves
 
 The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
 
-.. figure:: ../../_build/html/_images/manual_move.png
+.. figure:: ../Images/manual_move.png
     :align: center
     :height: 200
 
