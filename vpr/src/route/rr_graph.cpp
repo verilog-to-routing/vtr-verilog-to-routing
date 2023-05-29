@@ -1946,6 +1946,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             for (size_t j = 0; j < grid.height(); ++j) {
                 for (e_side side : SIDES) {
                     if (BI_DIRECTIONAL == directionality) {
+                        //todo: sara_todo fix this, layer inside should be added with layer_offset
                         build_bidir_rr_opins(rr_graph_builder, rr_graph, layer, i, j, side,
                                              opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x,
                                              chan_details_y,
@@ -3860,6 +3861,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
     int width_offset = grid.get_width_offset({i, j, layer});
     int height_offset = grid.get_height_offset({i, j, layer});
+    int layer_offset = (type->num_pins != 0) ? type->pin_layer_offset[0] : 0;
 
     /* Go through each pin and find its fanout. */
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
@@ -3932,7 +3934,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             //VTR_ASSERT_MSG(seg_index == 0 || seg_index > 0,"seg_index map not working properly");
 
-            rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer, chan, seg,
+            rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer + layer_offset, chan, seg,
                                                          seg_type_Fc, seg_index, chan_type, seg_details,
                                                          opin_node_index,
                                                          rr_edges_to_create,
