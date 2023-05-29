@@ -378,6 +378,7 @@ struct PlacementContext : public Context {
      *
      * Used to efficiently find logically 'adjacent' blocks of the same
      * block type even though the may be physically far apart
+     * Indexed with logical block type index: [0...num_logical_block_types-1] -> logical block compressed grid
      */
     t_compressed_block_grids compressed_block_grids;
 
