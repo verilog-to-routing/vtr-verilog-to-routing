@@ -102,6 +102,8 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
 
     std::vector<int> vertical_cuts;
 
+    // This function has not been tested for multi-layer grids
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int horizontal_interval = device_ctx.grid.width() / horizontal_cutpoints;
     VTR_LOG("Device grid width is %d, horizontal interval is %d\n", device_ctx.grid.width(), horizontal_interval);
 
@@ -142,6 +144,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
             int ymax = vertical_cuts[j + 1] - 1;
 
             Region reg;
+            // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
             reg.set_region_rect({xmin, ymin, xmax, ymax, 0});
             std::vector<AtomBlockId> atoms;
 
@@ -180,6 +183,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
         }
 
         Region current_reg;
+        // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
         current_reg.set_region_rect({xminimum, yminimum, xmaximum, ymaximum, 0});
 
         auto got = region_atoms.find(current_reg);

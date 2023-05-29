@@ -4,6 +4,14 @@
 #include <vtr_geometry.h>
 #include "vpr_types.h"
 
+/**
+ * @brief This class stores the data for each constraint region on a layer
+ * @param xmin The minimum x coordinate of the region
+ * @param ymin The minimum y coordinate of the region
+ * @param xmax The maximum x coordinate of the region
+ * @param ymax The maximum y coordinate of the region
+ * @param layer_num The layer number of the region
+ */
 struct RegionRectCoord {
     RegionRectCoord() = default;
     RegionRectCoord(int _xmin, int _ymin, int _xmax, int _ymax, int _layer_num)
@@ -26,10 +34,12 @@ struct RegionRectCoord {
     int ymax;
     int layer_num;
 
+    /// @brief Convert to a vtr::Rect
     vtr::Rect<int> get_rect() const {
         return vtr::Rect<int>(xmin, ymin, xmax, ymax);
     }
 
+    /// @brief Equality operator
     bool operator==(const RegionRectCoord& rhs) const {
         vtr::Rect<int> lhs_rect(xmin, ymin, xmax, ymax);
         vtr::Rect<int> rhs_rect(rhs.xmin, rhs.ymin, rhs.xmax, rhs.ymax);

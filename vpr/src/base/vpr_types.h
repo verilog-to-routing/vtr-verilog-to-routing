@@ -660,7 +660,8 @@ struct hash<t_pl_offset> {
  *
  * x: x-coordinate
  * y: y-coordinate
- * z: z-coordinate (capacity postion)
+ * sub_tile: sub-tile number (capacity position)
+ * layer: layer number
  *
  * @note t_pl_offset should be used to represent an offset between t_pl_loc.
  */
