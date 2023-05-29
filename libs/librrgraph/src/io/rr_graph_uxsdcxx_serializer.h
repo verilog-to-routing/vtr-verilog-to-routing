@@ -460,9 +460,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         //
         // If the switch name is not present in the architecture, generate an
         // error.
-        // If the graph is written when flat-routing is enalbed, the types of the switches inside of the rr_graph are also
-        // added to the XML file. These types are not added the data structure that contain arch switch types. It's remained
-        // as a future work to remove the arch_switch_types and use all_sw info under device_ctx instead.
+        // If the graph is written when flat-routing is enabled, the types of the switches inside of the rr_graph are also
+        // added to the XML file. These types are not added to the data structure that contain arch switch types. They are added to all_sw_inf under dvice context.
+        // It remains as a future work to remove the arch_switch_types and use all_sw info under device_ctx instead.
         bool found_arch_name = false;
         std::string string_name = std::string(name);
         bool is_internal_sw = string_name.compare(0, 15, "Internal Switch") == 0;
