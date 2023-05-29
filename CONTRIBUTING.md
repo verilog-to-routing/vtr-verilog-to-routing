@@ -29,6 +29,10 @@ If VTR does not support your use case, consider [filling an enhancement](#fillin
 Great! Submitting bug-fixes and features is a great way to improve VTR.
 See the guidlines for [submitting code](#submitting-code-to-vtr).
 
+### How do I build the documentation?
+The documentation can be built by using the command `make html` in the `$VTR_ROOT/doc` directory. More information on building
+the document can be found on the [README on the GitHub](https://github.com/verilog-to-routing/vtr-verilog-to-routing/tree/master/doc).
+
 ## The Details
 
 ### Enhancing Documentation
