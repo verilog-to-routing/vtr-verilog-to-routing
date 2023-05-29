@@ -17,7 +17,7 @@ struct t_compressed_block_grid {
     //full (uncompressed) device grid.
     std::vector<std::vector<int>> compressed_to_grid_x; // [0...num_layers-1][0...num_columns-1] -> uncompressed x
     std::vector<std::vector<int>> compressed_to_grid_y; // [0...num_layers-1][0...num_rows-1] -> uncompressed y
-    std::vector<int> compressed_to_grid_layer; // [0...num_layers-1] -> uncompressed layer
+    std::vector<int> compressed_to_grid_layer;          // [0...num_layers-1] -> uncompressed layer
 
     //The grid is stored with a full/dense x-dimension (since only
     //x values which exist are considered), while the y-dimension is
