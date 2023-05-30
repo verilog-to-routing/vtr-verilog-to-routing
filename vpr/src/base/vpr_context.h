@@ -142,8 +142,12 @@ struct DeviceContext : public Context {
      * Physical FPGA architecture
      *********************************************************************/
 
-    DeviceGrid grid; ///<FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1]
-
+    /**
+     * @brief The device grid
+     *
+     * This represents the physical layout of the device. To get the physical tile at each location (layer_num, x, y) the helper functions in this data structure should be used.
+     */
+    DeviceGrid grid;
     /*
      * Empty types
      */
@@ -389,6 +393,19 @@ struct PlacementContext : public Context {
      * Used for unique identification and consistency checking
      */
     std::string placement_id;
+
+    /**
+     * @brief Map physical block type to RL-agent block type
+     *
+     * RL-agent block types are the physical block types that are used in the netlist (at least one logical block in the netlist maps to).
+     * As an example:
+     *      Having physical block types (EMPTY, LAB, DSP, IO),
+     *      agent block types would be (LAB,IO) if netlist doesn't contain DSP blocks.
+     * Key   : physical (agent) block type index
+     * Value : agent (physical) block type index
+     */
+    std::unordered_map<int, int> phys_blk_type_to_agent_blk_type_map;
+    std::unordered_map<int, int> agent_blk_type_to_phys_blk_type_map;
 };
 
 /**
@@ -513,7 +530,7 @@ struct NocContext : public Context {
     /**
      * @brief Stores all the communication happening between routers in the NoC 
      *
-     * Contains all of the traffic flows that ddescribe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers. 
+     * Contains all of the traffic flows that describe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers.
      * 
      *
      * This is created from a user supplied .flows file.

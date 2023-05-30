@@ -377,6 +377,10 @@ enum GridDefType {
     FIXED
 };
 
+struct t_layer_def {
+    std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
+};
+
 struct t_grid_def {
     GridDefType grid_type = GridDefType::AUTO; //The type of this grid specification
 
@@ -387,8 +391,7 @@ struct t_grid_def {
 
     float aspect_ratio = 1.; //Aspect ratio for auto-sized devices (only valid for
                              //grid_type == AUTO)
-
-    std::vector<t_grid_loc_def> loc_defs; //The list of grid location definitions for this grid specification
+    std::vector<t_layer_def> layers;
 };
 
 /************************* POWER ***********************************/

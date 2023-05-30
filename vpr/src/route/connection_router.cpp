@@ -39,7 +39,7 @@ inline void update_router_stats(const DeviceContext& device_ctx,
 
     auto node_type = rr_graph->node_type(rr_node_id);
     VTR_ASSERT(node_type != NUM_RR_TYPES);
-    t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)].type;
+    t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(rr_graph->node_xlow(rr_node_id), rr_graph->node_ylow(rr_node_id));
 
     if (is_inter_cluster_node(physical_type,
                               node_type,

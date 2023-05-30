@@ -983,6 +983,18 @@ enum e_agent_algorithm {
     SOFTMAX
 };
 
+/**
+ * @brief Used to determines the dimensionality of the RL agent exploration space
+ *
+ * Agent exploration space can be either based on only move types or
+ * can be based on (block_type, move_type) pair.
+ *
+ */
+enum e_agent_space {
+    MOVE_TYPE,
+    MOVE_BLOCK_TYPE
+};
+
 ///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
     CIRCUIT,       ///<Effort scales based on circuit size only
@@ -1065,6 +1077,8 @@ enum class e_place_delta_delay_algorithm {
  *   @param place_constraint_subtile
  *              True if subtiles should be specified when printing floorplan
  *              constraints. False if not.
+ *
+ *
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1113,6 +1127,7 @@ struct t_placer_opts {
     float place_agent_epsilon;
     float place_agent_gamma;
     float place_dm_rlim;
+    e_agent_space place_agent_space;
     //int place_timing_cost_func;
     std::string place_reward_fun;
     float place_crit_limit;

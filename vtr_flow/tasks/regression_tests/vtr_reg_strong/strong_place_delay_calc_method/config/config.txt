@@ -24,7 +24,7 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params_common=-starting_stage vpr -track_memory_usage
+script_params_common=-starting_stage vpr -track_memory_usage -seed 2
 script_params_list_add=--place_delay_model delta --place_delta_delay_matrix_calculation_method astar
 script_params_list_add=--place_delay_model delta_override --place_delta_delay_matrix_calculation_method astar
 script_params_list_add=--place_delay_model delta --place_delta_delay_matrix_calculation_method dijkstra

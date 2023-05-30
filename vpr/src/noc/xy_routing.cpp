@@ -17,7 +17,7 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
     // keep track of the last router in the route as we build it. Initially we are at the start router, so that will be the current router
     NocRouterId curr_router_id = src_router_id;
 
-    // lets get the sink router
+    // get the sink router
     const NocRouter& sink_router = noc_model.get_single_noc_router(sink_router_id);
 
     // get the position of the sink router
@@ -99,13 +99,13 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
     // keeps track of whether a router was found that we can move to
     bool found_next_router = false;
 
-    // When a acceptable link is found, this variable keeps track of whether the next router visited using the link was already visited or not.
+    // When an acceptable link is found, this variable keeps track of whether the next router visited using the link was already visited or not.
     bool visited_next_router = false;
 
     // get all the outgoing links for the current router
     const std::vector<NocLinkId>& router_connections = noc_model.get_noc_router_connections(curr_router_id);
 
-    // go through each outgoing link and determine whether the link leads towards the inteded route direction
+    // go through each outgoing link and determine whether the link leads towards the intended route direction
     for (auto connecting_link = router_connections.begin(); connecting_link != router_connections.end(); connecting_link++) {
         // get the current outgoing link which is being processed
         const NocLink& curr_outgoing_link = noc_model.get_single_noc_link(*connecting_link);

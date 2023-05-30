@@ -270,11 +270,11 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_physical_tile_type_ptr from_physical_type = device_ctx.grid[rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)].type;
+    t_physical_tile_type_ptr from_physical_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(current_node), rr_graph.node_ylow(current_node));
     t_rr_type from_rr_type = rr_graph.node_type(current_node);
     int from_node_ptc_num = rr_graph.node_ptc_num(current_node);
 
-    t_physical_tile_type_ptr to_physical_type = device_ctx.grid[rr_graph.node_xlow(target_node)][rr_graph.node_ylow(target_node)].type;
+    t_physical_tile_type_ptr to_physical_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(target_node), rr_graph.node_ylow(target_node));
     t_rr_type to_rr_type = rr_graph.node_type(target_node);
     int to_node_ptc_num = rr_graph.node_ptc_num(target_node);
     VTR_ASSERT(to_rr_type == t_rr_type::SINK);
@@ -407,7 +407,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
         //delay to reach the sink.
 
-        t_physical_tile_type_ptr tile_type = device_ctx.grid[rr_graph.node_xlow(from_node)][rr_graph.node_ylow(from_node)].type;
+        t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(from_node), rr_graph.node_ylow(from_node));
         auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
@@ -849,7 +849,8 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
-        t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)].type;
+        t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(child_node), rr_graph.node_ylow(child_node));
+
         if (!is_inter_cluster_node(physical_type,
                                    rr_graph.node_type(child_node),
                                    rr_graph.node_ptc_num(child_node))) {
