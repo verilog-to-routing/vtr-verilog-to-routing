@@ -1030,23 +1030,21 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                            int max_chan_width,
                            FILE* fp) {
     if (fp) {
+        auto& device_ctx = g_vpr_ctx.device();
         for (unsigned int i = 0; i < types.size(); i++) {
-            //todo: sara_todo fix the hardcoding
-            int layer = 0;
-            if(types[i].num_pins != 0){
-                layer = types[i].pin_layer_offset[0];
-            }
             if (!track_to_pin_map[i].empty()) {
-                for (int track = 0; track < max_chan_width; ++track) {
-                    for (int width = 0; width < types[i].width; ++width) {
-                        for (int height = 0; height < types[i].height; ++height) {
-                            for (int side = 0; side < 4; ++side) {
-                                fprintf(fp, "\nTYPE:%s width:%d height:%d\n", types[i].name, width, height);
-                                fprintf(fp, "\nSIDE:%d TRACK:%d \n", side, track);
-                                for (size_t con = 0; con < track_to_pin_map[i][track][width][height][layer][side].size(); con++) {
-                                    fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][layer][side][con]);
+                for(int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
+                    for (int track = 0; track < max_chan_width; ++track) {
+                        for (int width = 0; width < types[i].width; ++width) {
+                            for (int height = 0; height < types[i].height; ++height) {
+                                for (int side = 0; side < 4; ++side) {
+                                    fprintf(fp, "\nTYPE:%s width:%d height:%d layer=%d\n", types[i].name, width, height, layer);
+                                    fprintf(fp, "\nSIDE:%d TRACK:%d \n", side, track);
+                                    for (size_t con = 0; con < track_to_pin_map[i][track][width][height][layer][side].size(); con++) {
+                                        fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][layer][side][con]);
+                                    }
+                                    fprintf(fp, "\n=====================\n");
                                 }
-                                fprintf(fp, "=====================\n");
                             }
                         }
                     }
@@ -1613,38 +1611,35 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                     side = (0 == pass ? RIGHT : LEFT);
                 }
 
-                /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
-                auto type = device_ctx.grid.get_physical_type({x, y, layer});
-                if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
-                    continue;
+                for(int layer_index = 0; layer_index < device_ctx.grid.get_num_layers(); layer_index++) {
+                    /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
+                    auto type = device_ctx.grid.get_physical_type({x, y, layer_index});
+                    if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
+                        continue;
 
-                /* Move from logical (straight) to physical (twisted) track index
-                 * - algorithm assigns ipin connections to same physical track index
-                 * so that the logical track gets distributed uniformly */
+                    /* Move from logical (straight) to physical (twisted) track index
+                     * - algorithm assigns ipin connections to same physical track index
+                     * so that the logical track gets distributed uniformly */
 
-                phy_track = vpr_to_phy_track(track, chan, j, seg_details, directionality);
-                phy_track %= tracks_per_chan;
+                    phy_track = vpr_to_phy_track(track, chan, j, seg_details, directionality);
+                    phy_track %= tracks_per_chan;
 
-                /* We need the type to find the ipin map for this type */
+                    /* We need the type to find the ipin map for this type */
 
-                int width_offset = device_ctx.grid.get_width_offset({x, y, layer});
-                int height_offset = device_ctx.grid.get_height_offset({x, y, layer});
-                //todo: sara_todo avoid hard coding
-                int layer_offset = type->pin_layer_offset[0];
-                if(layer == 1){
-                    layer -= layer_offset;
-                }
+                    int width_offset = device_ctx.grid.get_width_offset({x, y, layer});
+                    int height_offset = device_ctx.grid.get_height_offset({x, y, layer});
 
-                max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer_offset][side].size();
-                for (iconn = 0; iconn < max_conn; iconn++) {
-                    ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer_offset][side][iconn];
+                    max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side].size();
+                    for (iconn = 0; iconn < max_conn; iconn++) {
+                        ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side][iconn];
 
-                    /* Check there is a connection and Fc map isn't wrong */
-                    /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
-                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, x, y, IPIN, ipin, side);
-                    if (to_node) {
-                        rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch);
-                        ++num_conn;
+                        /* Check there is a connection and Fc map isn't wrong */
+                        /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
+                        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer_index, x, y, IPIN, ipin, side);
+                        if (to_node) {
+                            rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch);
+                            ++num_conn;
+                        }
                     }
                 }
             }
