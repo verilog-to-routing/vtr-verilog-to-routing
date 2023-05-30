@@ -7,13 +7,17 @@
 #include "vtr_flat_map.h"
 
 struct t_compressed_block_grid {
-    //TODO: compressed_to_grid_x/y should become a 2d vector
+    // The compressed grid of a block type stores only the coordinates that are occupied by that particular block type.
+    // For instance, if a DSP block exists only in the 2nd, 3rd, and 5th columns, the compressed grid of X axis will solely store the values 2, 3, and 5.
+    // Consequently, the compressed to_grid_x will contain only three members. The same approach is applicable to other compressed directions.
+    // This compressed data structure helps to move blocks in a more efficient way. For instance, if I need to move a DSP block to the next compatible column, I can simply get
+    // the next compatible column number by accessing the next element in the compressed grid instead of iterating over all columns to find the next compatible column.
     //If 'cx' is an index in the compressed grid space, then
     //'compressed_to_grid_x[cx]' is the corresponding location in the
     //full (uncompressed) device grid.
-    std::vector<std::vector<int>> compressed_to_grid_x;
-    std::vector<std::vector<int>> compressed_to_grid_y;
-    std::vector<int> compressed_to_grid_layer;
+    std::vector<std::vector<int>> compressed_to_grid_x; // [0...num_layers-1][0...num_columns-1] -> uncompressed x
+    std::vector<std::vector<int>> compressed_to_grid_y; // [0...num_layers-1][0...num_rows-1] -> uncompressed y
+    std::vector<int> compressed_to_grid_layer;          // [0...num_layers-1] -> uncompressed layer
 
     //The grid is stored with a full/dense x-dimension (since only
     //x values which exist are considered), while the y-dimension is

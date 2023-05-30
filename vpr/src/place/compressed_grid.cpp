@@ -8,7 +8,7 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     const int num_layers = grid.get_num_layers();
 
     //Collect the set of x/y locations for each instace of a block type
-    std::vector<std::vector<std::vector<vtr::Point<int>>>> block_locations(device_ctx.logical_block_types.size());
+    std::vector<std::vector<std::vector<vtr::Point<int>>>> block_locations(device_ctx.logical_block_types.size()); // [logical_block_type][layer_num][0...num_instance_on_layer] -> (x, y)
     for (int block_type_num = 0; block_type_num < (int)device_ctx.logical_block_types.size(); block_type_num++) {
         block_locations[block_type_num].resize(num_layers);
     }
@@ -173,12 +173,7 @@ void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_
                 fprintf(fp, "%d ", grid_loc.y);
             }
             fprintf(fp, "\n");
-            //TODO: This part needs to be fixed
-            //            fprintf(fp, "Subtiles: \n");
-            //            for (const ) {
-            //                fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[s]);
-            //            }
-            //            fprintf(fp, "\n");
+            //TODO: Print the compatible sub-tiles for a logical block type
         }
     }
 

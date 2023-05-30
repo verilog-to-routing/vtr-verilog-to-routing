@@ -245,7 +245,9 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
     VTR_ASSERT(repeat.y > 0);
     VTR_ASSERT(repeat.x > 0);
 
-    int layer_num = 0; //Function *FOR NOW* assumes that layer is always 0
+    // TODO: This function is not adapted to the multi-layer grid
+    VTR_ASSERT(g_vpr_ctx.device().grid.get_num_layers() == 1);
+    int layer_num = 0;
 
     for (unsigned y = x_chan_wire.position; y < grid.height() - 1; y += repeat.y) {
         for (unsigned x_start = x_chan_wire.start; x_start < grid.width() - 1; x_start += repeat.x) {
