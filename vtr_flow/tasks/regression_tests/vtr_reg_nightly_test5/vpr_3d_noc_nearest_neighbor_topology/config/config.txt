@@ -6,7 +6,7 @@
 circuits_dir=benchmarks/noc/Synthetic_Designs/complex_64_noc_nearest_neighbor/
 
 # Path to directory of architectures to use
-archs_dir=arch/noc/mesh_noc_topology
+archs_dir=arch/multi_die/
 
 # Path to directory of NoC Traffic Patterns to use
 noc_traffics_dir=benchmarks/noc/Synthetic_Designs/complex_64_noc_nearest_neighbor
