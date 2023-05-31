@@ -426,8 +426,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
+        int from_layer = rr_graph.node_layer(from_node);
 
-        if (this->src_opin_delays[tile_index][from_ptc].empty()) {
+        if (this->src_opin_delays[from_layer_num][tile_index][from_ptc].empty()) {
             //During lookahead profiling we were unable to find any wires which connected
             //to this PTC.
             //
@@ -451,7 +452,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
             //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
             //and then add the estimates from those wire types for the distance of interest.
             //If there are multiple options we use the minimum value.
-            for (const auto& kv : this->src_opin_delays[tile_index][from_ptc]) {
+            for (const auto& kv : this->src_opin_delays[from_layer_num][tile_index][from_ptc]) {
                 const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
                 Cost_Entry wire_cost_entry;
