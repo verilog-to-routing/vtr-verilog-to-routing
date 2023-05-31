@@ -79,8 +79,9 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
     auto tile_index = tile_type->index;
 
     auto from_ptc = rr_graph.node_ptc_num(from_node);
+    int from_layer_num = rr_graph.node_layer(from_node);
 
-    if (this->src_opin_delays[tile_index][from_ptc].empty()) {
+    if (this->src_opin_delays[from_layer_num][tile_index][from_ptc].empty()) {
         //During lookahead profiling we were unable to find any wires which connected
         //to this PTC.
         //
@@ -107,7 +108,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
         float expected_delay_cost = std::numeric_limits<float>::infinity();
         float expected_cong_cost = std::numeric_limits<float>::infinity();
 
-        for (const auto& kv : this->src_opin_delays[tile_index][from_ptc]) {
+        for (const auto& kv : this->src_opin_delays[from_layer_num][tile_index][from_ptc]) {
             const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
             util::Cost_Entry cost_entry;
@@ -159,10 +160,11 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     auto to_tile_index = to_tile_type->index;
 
     auto to_ptc = rr_graph.node_ptc_num(to_node);
+    int to_layer_num = rr_graph.node_layer(to_node);
 
     float site_pin_delay = 0.f;
-    if (this->chan_ipins_delays[to_tile_index].size() != 0) {
-        auto reachable_wire_inf = this->chan_ipins_delays[to_tile_index][to_ptc];
+    if (this->chan_ipins_delays[to_layer_num][to_tile_index].size() != 0) {
+        auto reachable_wire_inf = this->chan_ipins_delays[to_layer_num][to_tile_index][to_ptc];
 
         site_pin_delay = reachable_wire_inf.delay;
     }
