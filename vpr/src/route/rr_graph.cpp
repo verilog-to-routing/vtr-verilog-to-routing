@@ -1211,7 +1211,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* START OPIN MAP */
     /* Create opin map lookups */
     t_pin_to_track_lookup opin_to_track_map(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-    //todo: sara_todo check this
     if (BI_DIRECTIONAL == directionality) {
         for (unsigned int itype = 0; itype < types.size(); ++itype) {
             auto perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
@@ -1956,7 +1955,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             for (size_t j = 0; j < grid.height(); ++j) {
                 for (e_side side : SIDES) {
                     if (BI_DIRECTIONAL == directionality) {
-                        //todo: sara_todo fix this, layer inside should be added with layer_offset
                         build_bidir_rr_opins(rr_graph_builder, rr_graph, layer, i, j, side,
                                              opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x,
                                              chan_details_y,
@@ -2456,17 +2454,19 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             continue;
         }
 
+        int track_layer = layer + type->pin_layer_offset[pin_index];
+
         /* get number of tracks that this pin connects to */
         int total_pin_Fc = 0;
         for (int iseg = 0; iseg < num_seg_types; iseg++) {
             total_pin_Fc += Fc[pin_index][iseg];
         }
 
-        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(layer, i, j, OPIN, pin_index, side);
+        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(track_layer, i, j, OPIN, pin_index, side);
         VTR_ASSERT(node_index);
 
         if (total_pin_Fc > 0) {
-            get_bidir_opin_connections(rr_graph_builder, layer, i, j, pin_index,
+            get_bidir_opin_connections(rr_graph_builder, track_layer, i, j, pin_index,
                                        node_index, rr_edges_to_create, opin_to_track_map,
                                        chan_details_x,
                                        chan_details_y);
@@ -3285,7 +3285,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
         VTR_ASSERT_MSG(pin_index < num_phys_pins, "Physical block pins bound number of logical block pins");
 
-        //todo: sara_todo double check the logic of this part
+        //todo: should release the assumption that all pin_layer_offset are the same for a physical block type
         int layer_offset = Type->pin_layer_offset[pin_index];
         int pin_layer = type_layer + layer_offset;
 
@@ -3871,11 +3871,12 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
     int width_offset = grid.get_width_offset({i, j, layer});
     int height_offset = grid.get_height_offset({i, j, layer});
-    //todo: sara_todo remove the hardcoding
-    int layer_offset = (type->num_pins != 0) ? type->pin_layer_offset[0] : 0;
 
     /* Go through each pin and find its fanout. */
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
+        /* Check the pin offset and connect it to a different layer if necessary */
+        int track_layer = layer + type->pin_layer_offset[pin_index];
+
         /* Skip global pins and pins that are not of DRIVER type */
         auto pin_type = get_pin_type_from_pin_physical_num(type, pin_index);
         if (pin_type != DRIVER) {
@@ -3945,7 +3946,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             //VTR_ASSERT_MSG(seg_index == 0 || seg_index > 0,"seg_index map not working properly");
 
-            rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer + layer_offset, chan, seg,
+            rr_edge_count += get_unidir_opin_connections(rr_graph_builder, track_layer, chan, seg,
                                                          seg_type_Fc, seg_index, chan_type, seg_details,
                                                          opin_node_index,
                                                          rr_edges_to_create,

@@ -675,7 +675,6 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     type = device_ctx.grid.get_physical_type({i, j, layer});
     int width_offset = device_ctx.grid.get_width_offset({i, j, layer});
     int height_offset = device_ctx.grid.get_height_offset({i, j, layer});
-    int layer_offset = (type->num_pins > 0) ? type->pin_layer_offset[0] : 0;
 
     num_conn = 0;
 
@@ -715,19 +714,18 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 
         /* Iterate of the opin to track connections */
 
-        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][layer_offset][side]) {
+        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][layer][side]) {
             /* Skip unconnected connections */
             if (OPEN == to_track || is_connected_track) {
                 is_connected_track = true;
-                VTR_ASSERT(OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][layer_offset][side][0]);
+                VTR_ASSERT(OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][layer][side][0]);
                 continue;
             }
 
             /* Only connect to wire if there is a CB */
             if (is_cblock(chan, seg, to_track, seg_details)) {
                 to_switch = seg_details[to_track].arch_wire_switch();
-                //todo : sara_todo check if it is actually track not pin
-                //if it is a pin, should change the layer
+
                 RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, tr_i, tr_j, to_type, to_track);
 
                 if (!to_node) {
