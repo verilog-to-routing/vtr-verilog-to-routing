@@ -89,6 +89,7 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr Type,
+                                                                          const int type_layer,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
@@ -1167,27 +1168,53 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_track_to_pin_lookup track_to_pin_lookup_x(types.size());
     t_track_to_pin_lookup track_to_pin_lookup_y(types.size());
 
+    //figure out which layer the type is located at.
+    //NOTE: this code assumes that all the same block types are located at the same layer
+    //using type_layer and pin layer_offset, we can then figure out the TRACK/IPIN and OPIN/TRACK connection
+    //todo: can remove this for loop and move it to device_grid.cpp and do it on checkgrid function to improve time complexity
+    std::vector<int> type_layer;
+    type_layer.resize(types.size(),0);
+    if(device_ctx.grid.get_num_layers() > 0) { //layers do not need any offset if we have only one die
+        for (int layer_index = 0; layer_index < device_ctx.grid.get_num_layers(); layer_index++) {
+            for (int x = 0; x < (int) device_ctx.grid.width(); x++) {
+                for (int y = 0; y < (int) device_ctx.grid.height(); y++) {
+                    const auto &type = grid.get_physical_type({x, y, layer_index});
+                    type_layer[type->index] = layer_index;
+                }
+            }
+        }
+    }
+
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
-        //todo: sara_todo fix the hardcoding part
-        //int type_layer = 0;
-        //if(types[itype].num_pins > 0){
-        //type_layer += types[itype].pin_layer_offset[0];
-        //}
-        int type_layer = 1;
+        //todo: sara_todo pass type to alloc_and_load_track_to_pin_lookup and fix this
+        int layer = type_layer[itype];
+        if(types[itype].num_pins != 0){
+            layer += types[itype].pin_layer_offset[0];
+        }
+
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
-                                                                     Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
+                                                                     Fc_in[itype], &types[itype], type_layer[itype],
+                                                                     perturb_ipins[itype], directionality,
                                                                      segment_inf_x, sets_per_seg_type_x.get());
 
         ipin_to_track_map_y[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
-                                                                     Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
+                                                                     Fc_in[itype], &types[itype], type_layer[itype],
+                                                                     perturb_ipins[itype], directionality,
                                                                      segment_inf_y, sets_per_seg_type_y.get());
 
-        track_to_pin_lookup_x[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_x[itype], Fc_in[itype],type_layer,types[itype].width, types[itype].height,
-                                                                          types[itype].num_pins, nodes_per_chan.x_max, segment_inf_x);
+        track_to_pin_lookup_x[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_x[itype], Fc_in[itype],
+                                                                          layer, types[itype].width,
+                                                                          types[itype].height,
+                                                                          types[itype].num_pins,
+                                                                          nodes_per_chan.x_max, segment_inf_x);
 
-        track_to_pin_lookup_y[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_y[itype], Fc_in[itype], type_layer,types[itype].width, types[itype].height,
-                                                                          types[itype].num_pins, nodes_per_chan.y_max, segment_inf_y);
+        track_to_pin_lookup_y[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_y[itype], Fc_in[itype],
+                                                                          layer, types[itype].width,
+                                                                          types[itype].height,
+                                                                          types[itype].num_pins,
+                                                                          nodes_per_chan.y_max, segment_inf_y);
     }
+
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_TRACK_TO_PIN_MAP)) {
         FILE* fp = vtr::fopen(getEchoFileName(E_ECHO_TRACK_TO_PIN_MAP), "w");
@@ -1202,13 +1229,13 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* START OPIN MAP */
     /* Create opin map lookups */
     t_pin_to_track_lookup opin_to_track_map(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-
+    //todo: sara_todo check this
     if (BI_DIRECTIONAL == directionality) {
         for (unsigned int itype = 0; itype < types.size(); ++itype) {
             auto perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
                                                               max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
-                                                                       Fc_out[itype], &types[itype], perturb_opins, directionality,
+                                                                       Fc_out[itype], &types[itype], type_layer[itype], perturb_opins, directionality,
                                                                        segment_inf, sets_per_seg_type.get());
         }
     }
@@ -3044,6 +3071,7 @@ void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, const t_rr_edge_info
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr Type,
+                                                                          const int type_layer,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
@@ -3069,7 +3097,6 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
     /* allocate 'result' matrix and initialize entries to OPEN. also allocate and intialize matrix which will be
      * used to index into the correct entries when loading up 'result' */
 
-    //SARA_TODO: pins can be connected to what ever track they want -> shouldn't be the same layer
     auto& grid = g_vpr_ctx.device().grid;
     auto result = vtr::NdMatrix<std::vector<int>, 5>({
         size_t(Type->num_pins), //[0..num_pins-1]
@@ -3218,8 +3245,6 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         /* Pins connecting only to global resources get no switches -> keeps area model accurate. */
         if (Type->is_ignored_pin[pin])
             continue;
-
-        //int layer = 0;
 
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
