@@ -675,7 +675,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     type = device_ctx.grid.get_physical_type({i, j, layer});
     int width_offset = device_ctx.grid.get_width_offset({i, j, layer});
     int height_offset = device_ctx.grid.get_height_offset({i, j, layer});
-    int layer_offset = (type->num_pins > 0) ?  type->pin_layer_offset[0] : 0;
+    int layer_offset = (type->num_pins > 0) ? type->pin_layer_offset[0] : 0;
 
     num_conn = 0;
 
@@ -1033,7 +1033,7 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
         auto& device_ctx = g_vpr_ctx.device();
         for (unsigned int i = 0; i < types.size(); i++) {
             if (!track_to_pin_map[i].empty()) {
-                for(int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
+                for (int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
                     for (int track = 0; track < max_chan_width; ++track) {
                         for (int width = 0; width < types[i].width; ++width) {
                             for (int height = 0; height < types[i].height; ++height) {
@@ -1611,7 +1611,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                     side = (0 == pass ? RIGHT : LEFT);
                 }
 
-                for(int layer_index = 0; layer_index < device_ctx.grid.get_num_layers(); layer_index++) {
+                for (int layer_index = 0; layer_index < device_ctx.grid.get_num_layers(); layer_index++) {
                     /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
                     auto type = device_ctx.grid.get_physical_type({x, y, layer_index});
                     if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)

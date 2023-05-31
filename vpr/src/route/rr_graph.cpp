@@ -1175,12 +1175,12 @@ static void build_rr_graph(const t_graph_type graph_type,
     //using type_layer and pin layer_offset, we can then figure out the TRACK/IPIN and OPIN/TRACK connection
     //todo: can remove this for loop and move it to device_grid.cpp and do it on checkgrid function to improve time complexity
     std::vector<int> type_layer;
-    type_layer.resize(types.size(),0);
-    if(device_ctx.grid.get_num_layers() > 0) { //layers do not need any offset if we have only one die
+    type_layer.resize(types.size(), 0);
+    if (device_ctx.grid.get_num_layers() > 0) { //layers do not need any offset if we have only one die
         for (int layer_index = 0; layer_index < device_ctx.grid.get_num_layers(); layer_index++) {
-            for (int x = 0; x < (int) device_ctx.grid.width(); x++) {
-                for (int y = 0; y < (int) device_ctx.grid.height(); y++) {
-                    const auto &type = grid.get_physical_type({x, y, layer_index});
+            for (int x = 0; x < (int)device_ctx.grid.width(); x++) {
+                for (int y = 0; y < (int)device_ctx.grid.height(); y++) {
+                    const auto& type = grid.get_physical_type({x, y, layer_index});
                     type_layer[type->index] = layer_index;
                 }
             }
@@ -1188,7 +1188,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
-
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
                                                                      Fc_in[itype], &types[itype], type_layer[itype],
                                                                      perturb_ipins[itype], directionality,
@@ -1213,7 +1212,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                                                                           types[itype].num_pins,
                                                                           nodes_per_chan.y_max, segment_inf_y);
     }
-
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_TRACK_TO_PIN_MAP)) {
         FILE* fp = vtr::fopen(getEchoFileName(E_ECHO_TRACK_TO_PIN_MAP), "w");
@@ -3098,11 +3096,11 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
 
     auto& grid = g_vpr_ctx.device().grid;
     auto result = vtr::NdMatrix<std::vector<int>, 5>({
-        size_t(Type->num_pins), //[0..num_pins-1]
-        size_t(Type->width),    //[0..width-1]
-        size_t(Type->height),   //[0..height-1]
+        size_t(Type->num_pins),        //[0..num_pins-1]
+        size_t(Type->width),           //[0..width-1]
+        size_t(Type->height),          //[0..height-1]
         size_t(grid.get_num_layers()), //[0..layer-1]
-        4,                      //[0..sides-1]
+        4,                             //[0..sides-1]
     });
 
     /* multiplier for unidirectional vs bidirectional architectures */
@@ -3190,12 +3188,12 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     }
 
     auto tracks_connected_to_pin = vtr::NdMatrix<int, 6>({
-                                                             size_t(Type->num_pins), //[0..num_pins-1]
-                                                             size_t(Type->width),    //[0..width-1]
-                                                             size_t(Type->height),   //[0..height-1]
-                                                             size_t(grid.get_num_layers()),//[0..layer-1]
-                                                             NUM_SIDES,              //[0..NUM_SIDES-1]
-                                                             size_t(Fc)              //[0..Fc-1]
+                                                             size_t(Type->num_pins),        //[0..num_pins-1]
+                                                             size_t(Type->width),           //[0..width-1]
+                                                             size_t(Type->height),          //[0..height-1]
+                                                             size_t(grid.get_num_layers()), //[0..layer-1]
+                                                             NUM_SIDES,                     //[0..NUM_SIDES-1]
+                                                             size_t(Fc)                     //[0..Fc-1]
                                                          },
                                                          OPEN); //Unconnected
 
@@ -3204,10 +3202,10 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //Type->num_pins) if a logical pin has multiple specified physical
     //pinlocations (i.e. appears on multiple sides of the block)
     auto num_dir = vtr::NdMatrix<int, 4>({
-                                             size_t(Type->width),  //[0..width-1]
-                                             size_t(Type->height), //[0..height-1]
+                                             size_t(Type->width),           //[0..width-1]
+                                             size_t(Type->height),          //[0..height-1]
                                              size_t(grid.get_num_layers()), //[0..layer-1]
-                                             NUM_SIDES             //[0..NUM_SIDES-1]
+                                             NUM_SIDES                      //[0..NUM_SIDES-1]
                                          },
                                          0);
 
@@ -3217,20 +3215,20 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //
     //Max possible space alloced for simplicity
     auto dir_list = vtr::NdMatrix<int, 5>({
-                                              size_t(Type->width),   //[0..width-1]
-                                              size_t(Type->height),  //[0..height-1]
+                                              size_t(Type->width),           //[0..width-1]
+                                              size_t(Type->height),          //[0..height-1]
                                               size_t(grid.get_num_layers()), //[0..layer-1]
-                                              NUM_SIDES,             //[0..NUM_SIDES-1]
-                                              size_t(Type->num_pins) //[0..num_pins-1]
+                                              NUM_SIDES,                     //[0..NUM_SIDES-1]
+                                              size_t(Type->num_pins)         //[0..num_pins-1]
                                           },
                                           -1); //Defensive coding: Initialize to invalid
 
     //Number of currently assigned physical pins
     auto num_done_per_dir = vtr::NdMatrix<int, 4>({
-                                                      size_t(Type->width),  //[0..width-1]
-                                                      size_t(Type->height), //[0..height-1]
+                                                      size_t(Type->width),           //[0..width-1]
+                                                      size_t(Type->height),          //[0..height-1]
                                                       size_t(grid.get_num_layers()), //[0..layer-1]
-                                                      NUM_SIDES             //[0..NUM_SIDES-1]
+                                                      NUM_SIDES                      //[0..NUM_SIDES-1]
                                                   },
                                                   0);
 
@@ -3259,10 +3257,10 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
     //Total the number of physical pins
     int num_phys_pins = 0;
-    for(int layer = 0; layer < grid.get_num_layers(); layer++) {
+    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
-                for (e_side side: SIDES) {
+                for (e_side side : SIDES) {
                     num_phys_pins += num_dir[width][height][layer][side]; /* Num. physical pins per type */
                 }
             }
@@ -3812,7 +3810,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
     const int num_seg_types = seg_inf.size();
     auto& grid = g_vpr_ctx.device().grid;
     /* Alloc and zero the the lookup table */
-    auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 5>({size_t(max_chan_width), size_t(type_width),size_t(type_height), size_t(grid.get_num_layers()), 4});
+    auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 5>({size_t(max_chan_width), size_t(type_width), size_t(type_height), size_t(grid.get_num_layers()), 4});
 
     /* Count number of pins to which each track connects  */
     for (int pin = 0; pin < num_pins; ++pin) {
