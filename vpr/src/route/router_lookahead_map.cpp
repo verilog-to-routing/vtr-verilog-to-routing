@@ -404,7 +404,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
     int delta_x, delta_y;
     int from_layer_num = rr_graph.node_layer(from_node);
-    int to_layer_num = rr_graph.node_layer(to_node);
     get_xy_deltas(from_node, to_node, &delta_x, &delta_y);
     delta_x = abs(delta_x);
     delta_y = abs(delta_y);
@@ -426,7 +425,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
-        int from_layer = rr_graph.node_layer(from_node);
 
         if (this->src_opin_delays[from_layer_num][tile_index][from_ptc].empty()) {
             //During lookahead profiling we were unable to find any wires which connected
@@ -467,7 +465,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                     //delay and congestion cost estimates
                     wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type,
                                                           reachable_wire_inf.wire_seg_index,
-                                                          to_layer_num,
+                                                          from_layer_num,
                                                           delta_x,
                                                           delta_y);
                 }
@@ -503,7 +501,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         /* now get the expected cost from our lookahead map */
         Cost_Entry cost_entry = get_wire_cost_entry(from_type,
                                                     from_seg_index,
-                                                    to_layer_num,
+                                                    from_layer_num,
                                                     delta_x,
                                                     delta_y);
 

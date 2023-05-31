@@ -536,7 +536,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
             //Keep costs of the best path to reach each wire type
             if (!src_opin_delays[node_layer_num][itile][ptc].count(seg_index)
-                || curr.delay < src_opin_delays[itile][node_layer_num][ptc][seg_index].delay) {
+                || curr.delay < src_opin_delays[node_layer_num][itile][ptc][seg_index].delay) {
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].wire_rr_type = curr_rr_type;
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].wire_seg_index = seg_index;
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].delay = curr.delay;
