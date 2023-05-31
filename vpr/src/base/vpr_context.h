@@ -164,6 +164,12 @@ struct DeviceContext : public Context {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
+    /*
+     * Keep which layer each physical block type is located at. [0..physical_type.size()-1]
+     * NOTE: this code assumes that all physical block types are located at the same layer.
+     */
+    std::vector<int> physical_type_layer;
+
     /**
      * @brief Boolean that indicates whether the architecture implements an N:M
      *        physical tiles to logical blocks mapping

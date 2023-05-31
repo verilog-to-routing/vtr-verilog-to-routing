@@ -1170,22 +1170,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_track_to_pin_lookup track_to_pin_lookup_x(types.size());
     t_track_to_pin_lookup track_to_pin_lookup_y(types.size());
 
-    //figure out which layer the type is located at.
-    //NOTE: this code assumes that all the same block types are located at the same layer
-    //using type_layer and pin layer_offset, we can then figure out the TRACK/IPIN and OPIN/TRACK connection
-    //todo: can remove this for loop and move it to device_grid.cpp and do it on checkgrid function to improve time complexity
-    std::vector<int> type_layer;
-    type_layer.resize(types.size(), 0);
-    if (device_ctx.grid.get_num_layers() > 0) { //layers do not need any offset if we have only one die
-        for (int layer_index = 0; layer_index < device_ctx.grid.get_num_layers(); layer_index++) {
-            for (int x = 0; x < (int)device_ctx.grid.width(); x++) {
-                for (int y = 0; y < (int)device_ctx.grid.height(); y++) {
-                    const auto& type = grid.get_physical_type({x, y, layer_index});
-                    type_layer[type->index] = layer_index;
-                }
-            }
-        }
-    }
+    auto type_layer = device_ctx.physical_type_layer;
 
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
@@ -3886,6 +3871,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
     int width_offset = grid.get_width_offset({i, j, layer});
     int height_offset = grid.get_height_offset({i, j, layer});
+    //todo: sara_todo remove the hardcoding
     int layer_offset = (type->num_pins != 0) ? type->pin_layer_offset[0] : 0;
 
     /* Go through each pin and find its fanout. */
