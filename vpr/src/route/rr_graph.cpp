@@ -1169,10 +1169,11 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
         //todo: sara_todo fix the hardcoding part
-        int type_layer = 0;
-        if(types[itype].num_pins > 0){
-            type_layer += types[itype].pin_layer_offset[0];
-        }
+        //int type_layer = 0;
+        //if(types[itype].num_pins > 0){
+        //type_layer += types[itype].pin_layer_offset[0];
+        //}
+        int type_layer = 1;
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
                                                                      Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
                                                                      segment_inf_x, sets_per_seg_type_x.get());
@@ -3105,7 +3106,8 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
          * now load up 'result' array with these connections, but offset them so they are relative to the channel
          * as a whole */
         //todo: sara_todo should fix this!
-        int layer = (Type->num_pins != 0) ? Type->pin_layer_offset[0] : 0;
+        //int layer = (Type->num_pins != 0) ? Type->pin_layer_offset[0] : 0;
+        int layer = 1;
         for (int ipin = 0; ipin < Type->num_pins; ipin++) {
             for (int iwidth = 0; iwidth < Type->width; iwidth++) {
                 for (int iheight = 0; iheight < Type->height; iheight++) {
@@ -3158,7 +3160,6 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
     auto& grid = g_vpr_ctx.device().grid;
 
-    //SARA_TODO: FIX this
     if (Type->num_pins < 1) {
         return vtr::NdMatrix<int, 6>();
     }
@@ -3219,12 +3220,14 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
             continue;
 
         //int layer = 0;
-        // todo: sara_todo should get this from pinloc, for testing purposes
+
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
                 for (e_side side : SIDES) {
                     if (Type->pinloc[width][height][side][pin] == 1) {
-                        int layer_offset = Type->pin_layer_offset[pin];
+                        // todo: sara_todo should get this from pinloc, for testing purposes
+                        //int layer_offset = Type->pin_layer_offset[pin];
+                        int layer_offset = 1;
                         dir_list[width][height][layer_offset][side][num_dir[width][height][layer_offset][side]] = pin;
                         num_dir[width][height][layer_offset][side]++;
                     }
@@ -3268,7 +3271,9 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //Determine the order in which physical pins will be considered while building
     //the connection block. This generally tries to order the pins so they are 'spread'
     //out (in hopes of yielding good connection diversity)
-    int layer_offset = Type->pin_layer_offset[0]; //todo: sara_todo should get this from pinloc, for testing purposes
+    // todo: sara_todo should get this from pinloc, for testing purposes
+    //int layer_offset = Type->pin_layer_offset[0];
+    int layer_offset = 1;
     while (pin < num_phys_pins) {
         if (height == init_height && width == init_width && side == init_side) {
             //Completed one loop through all the possible offsets/side combinations
@@ -3788,7 +3793,6 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
     auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 5>({size_t(max_chan_width), size_t(type_width),size_t(type_height), size_t(grid.get_num_layers()), 4});
 
     /* Count number of pins to which each track connects  */
-    //todo : sara_todo fix this
     for (int pin = 0; pin < num_pins; ++pin) {
         for (int width = 0; width < type_width; ++width) {
             for (int height = 0; height < type_height; ++height) {
