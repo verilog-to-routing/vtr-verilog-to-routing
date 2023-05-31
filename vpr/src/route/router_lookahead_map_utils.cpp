@@ -313,16 +313,15 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     t_src_opin_delays src_opin_delays;
 
     src_opin_delays.resize(device_ctx.grid.get_num_layers());
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         src_opin_delays[layer_num].resize(device_ctx.physical_tile_types.size());
     }
 
-
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
-            if(device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], layer_num) == 0) {
+            if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], layer_num) == 0) {
                 continue;
             }
             for (e_rr_type rr_type : {SOURCE, OPIN}) {
@@ -395,15 +394,15 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     t_chan_ipins_delays chan_ipins_delays;
 
     chan_ipins_delays.resize(device_ctx.grid.get_num_layers());
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         chan_ipins_delays[layer_num].resize(device_ctx.physical_tile_types.size());
     }
 
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         for (auto tile_type : device_ctx.physical_tile_types) {
-            if(device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
+            if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
                 continue;
             }
             t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
@@ -565,11 +564,10 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
                     continue;
                 }
 
-                if(rr_graph.node_layer(curr.node) != node_layer_num) {
+                if (rr_graph.node_layer(curr.node) != node_layer_num) {
                     //Don't change the layer
                     continue;
                 }
-
 
                 t_pq_entry next;
                 next.congestion = curr.congestion + incr_cong; //Of current node
@@ -698,8 +696,7 @@ static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_
 
     int y_init = prev.y + 1; //Start searching next element above prev
 
-
-    if(device_ctx.grid.num_instances(tile_type, layer_num) == 0) {
+    if (device_ctx.grid.num_instances(tile_type, layer_num) == 0) {
         return loc;
     }
     for (int x = prev.x; x < int(grid.width()); ++x) {
