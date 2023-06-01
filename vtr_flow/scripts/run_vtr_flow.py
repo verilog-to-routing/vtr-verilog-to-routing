@@ -704,8 +704,7 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     Finds arguments needed in the VPR stage of the flow
     """
     if args.crit_path_router_iterations:
-        if "max_router_iterations" not in vpr_args:
-            vpr_args["max_router_iterations"] = args.crit_path_router_iterations
+        vpr_args["crit_path_router_iterations"] = args.crit_path_router_iterations
     if args.fix_pins:
         new_file = str(temp_dir / Path(args.fix_pins).name)
         shutil.copyfile(str((Path(prog).parent.parent / args.fix_pins)), new_file)
