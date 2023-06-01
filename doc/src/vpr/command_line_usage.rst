@@ -1681,7 +1681,7 @@ Analysis Options
 
             It is possible that by opening a switch between (1,2) to (1,1), CHANY:2113 actually only extends from (1,3) to (1,2).
 
-            2. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
+            1. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
                There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
                The path can also be visualized by VPR graphics, as an illustration of this point:
 
