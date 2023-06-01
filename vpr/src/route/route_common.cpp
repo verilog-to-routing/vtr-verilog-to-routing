@@ -1415,11 +1415,10 @@ void print_route(const Netlist<>& net_list,
                         int sub_tile_rel_cap;
                         std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
                         int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
-                        // TODO: Needs to be updated when RR Graph Nodes know their layer_num
                         ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({ilow - xoffset,
                                                                                          jlow - yoffset,
                                                                                          sub_tile_offset,
-                                                                                         0});
+                                                                                         layer_num});
                         VTR_ASSERT(iblock);
                         const t_pb_graph_pin* pb_pin;
                         if (is_pin_on_tile(physical_tile, pin_num)) {
