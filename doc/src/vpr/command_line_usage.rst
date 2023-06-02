@@ -824,7 +824,7 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 .. option:: --place_cost_exp <float>
 
     Wiring cost is divided by the average channel width over a net's bounding box
-    taken to this exponent.Only impacts devices with different channel widths in 
+    taken to this exponent. Only impacts devices with different channel widths in 
     different directions or regions. 
 
     **Default:** ``1``
@@ -832,13 +832,13 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 .. option:: --RL_agent_placement {on | off}
 
     Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement.
-    It activates the RL agent placement instead of using fixed probability for each move type.
+    It activates the RL agent placement instead of using a fixed probability for each move type.
 
     **Default:** ``on``
 
 .. option:: --place_agent_multistate {on | off}
 
-    Enable multistate agent in the placement. A second state will be activated late in
+    Enable a multistate agent in the placement. A second state will be activated late in
     the annealing and in the Quench that includes all the timing driven directed moves.
 
     **Default:** ``on``
@@ -851,7 +851,7 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 
 .. option:: --place_agent_epsilon <float>
 
-    Placement RL agent's epsilon for epsilon-greedy agent. Epsilon represents
+    Placement RL agent's epsilon for the epsilon-greedy agent. Epsilon represents
     the percentage of exploration actions taken vs the exploitation ones.
 
     **Default:** ``0.3``
@@ -867,7 +867,7 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 
 .. option:: --place_reward_fun {basic | nonPenalizing_basic | runtime_aware | WLbiased_runtime_aware}
 
-    The reward function used by placement RL agent to learn best action at each anneal stage. 
+    The reward function used by the placement RL agent to learn the best action at each anneal stage. 
 
     .. note:: The latter two are only available for timing-driven placement. 
     
@@ -875,8 +875,7 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 
 .. option:: --place_agent_space {move_type | move_block_type}
 
-    Agent exploration space can be either based on only move types or also consider different block types.
-    The available values are: move_type, move_block_type
+    The RL Agent exploration space can be either based on only move types or also consider different block types moved.
 
     **Default:** ``move_block_type``
 
