@@ -358,13 +358,13 @@ Use the options below to override this default naming behaviour.
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
 
-.. option:: --read_vpr_constraints <file>
+.. option:: --read_vpr_constraints <file1>:<file2>:...:<fileN>
 
-    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
+    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file; and/or reads the :ref:`global route constraints <vpr_constraints_file>` that router must respect from the specified XML file. Multiple files are allowed and should be seperated with a colomn char. 
 
 .. option:: --write_vpr_constraints <file>
 
-    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
+    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file; and/or writes out new :ref:`global route constraints <vpr_constraints_file>` based on current global routecounstraints to the specified XML file. Note that a single combined file is written to even there are multiple input constraint files read in.
 
 .. option:: --read_router_lookahead <file>
 

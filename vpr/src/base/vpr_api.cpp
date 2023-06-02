@@ -345,10 +345,15 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         }
     }
 
-    //Initialize vpr floorplanning constraints
+    //Initialize vpr floorplanning and routing constraints
     auto& filename_opts = vpr_setup->FileNameOpts;
     if (!filename_opts.read_vpr_constraints_file.empty()) {
-        load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
+        load_vpr_constraints_files(filename_opts.read_vpr_constraints_file.c_str());
+
+        // give a notificaiton on routing constraints overiding clock modeling
+        if (g_vpr_ctx.routing().constraints.get_route_constraint_num() && options->clock_modeling.provenance() == argparse::Provenance::SPECIFIED) {
+            VTR_LOG_WARN("Route constraint(s) detected and will override clock modeling setting.\n");
+        }
     }
 
     fflush(stdout);
@@ -397,6 +402,9 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     { //Analysis
         vpr_analysis_flow(router_net_list, vpr_setup, arch, route_status, is_flat);
     }
+
+    // write out constratins
+    write_vpr_constraints(vpr_setup);
 
     //close the graphics
     vpr_close_graphics(vpr_setup);
@@ -784,6 +792,11 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         //Assume successful
         route_status = RouteStatus(true, -1);
     } else { //Do or load
+
+        // apply route constraints
+        // use mutable routing context here to apply change on the constraints when binding the constraint to real net
+        apply_route_constraints(g_vpr_ctx.mutable_routing().constraints);
+
         int chan_width = router_opts.fixed_channel_width;
 
         NetPinsMatrix<float> net_delay;
@@ -1007,6 +1020,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        if ((UNI_DIRECTIONAL == det_routing_arch->directionality) && (true == det_routing_arch->tileable)) {
+            graph_type = GRAPH_UNIDIR_TILEABLE;
+        }
     }
 
     t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans, graph_directionality);
@@ -1331,7 +1347,8 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
         VTR_LOG("*****************************************************************************************\n");
     }
 
-    /* If routing is successful, apply post-routing annotations
+    /* If routing is successful and users do not force to skip the sync-up, 
+     * - apply post-routing annotations
      * - apply logic block pin fix-up
      *
      * Note:
@@ -1340,20 +1357,24 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      */
     if (!is_flat) {
         if (route_status.success()) {
-            sync_netlists_to_routing(net_list,
-                                     g_vpr_ctx.device(),
-                                     g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.atom().lookup,
-                                     g_vpr_ctx.mutable_clustering(),
-                                     g_vpr_ctx.placement(),
-                                     g_vpr_ctx.routing(),
-                                     vpr_setup.PackerOpts.pack_verbosity > 2,
-                                     is_flat);
+            if (!analysis_opts.skip_sync_clustering_and_routing_results) {
+                sync_netlists_to_routing(net_list,
+                                         g_vpr_ctx.device(),
+                                         g_vpr_ctx.mutable_atom(),
+                                         g_vpr_ctx.atom().lookup,
+                                         g_vpr_ctx.mutable_clustering(),
+                                         g_vpr_ctx.placement(),
+                                         g_vpr_ctx.routing(),
+                                         vpr_setup.PackerOpts.pack_verbosity > 2,
+                                         is_flat);
 
-            std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
-            write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
-                                         Arch.architecture_id,
-                                         post_routing_packing_output_file_name.c_str());
+                std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
+                write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
+                                             Arch.architecture_id,
+                                             post_routing_packing_output_file_name.c_str());
+            } else {
+                VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to users select to skip it\n");
+            }
         } else {
             VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
         }

@@ -63,13 +63,13 @@ struct alignas(16) t_rr_node_data {
     t_rr_type type_ = NUM_RR_TYPES;
 
     /* The character is a hex number which is a 4-bit truth table for node sides
-     * The 4-bits in serial represent 4 sides on which a node could appear 
-     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0) 
+     * The 4-bits in serial represent 4 sides on which a node could appear
+     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0)
      *   - When a node appears on a given side, it is set to "1"
      *   - When a node does not appear on a given side, it is set to "0"
      * For example,
-     *   - '1' means '0001' in hex number, which means the node appears on TOP 
-     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
+     *   - '1' means '0001' in hex number, which means the node appears on TOP
+     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides,
      */
     union {
         Direction direction;       //Valid only for CHANX/CHANY
@@ -252,6 +252,7 @@ class t_rr_graph_storage {
      * - num_non_configurable_edges(RRNodeId)
      * - edge_id(RRNodeId, t_edge_size)
      * - edge_sink_node(RRNodeId, t_edge_size)
+     * - edge_source_node(RRNodeId, t_edge_size)
      * - edge_switch(RRNodeId, t_edge_size)
      *
      * Only call these methods after partition_edges has been invoked. */
@@ -269,6 +270,7 @@ class t_rr_graph_storage {
     t_edge_size num_edges(const RRNodeId& id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
+    bool edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     bool edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     t_edge_size num_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     t_edge_size num_non_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
@@ -316,6 +318,11 @@ class t_rr_graph_storage {
         return edge_dest_node_[edge];
     }
 
+    // Get the source node for the specified edge.
+    RRNodeId edge_source_node(const RREdgeId& edge) const {
+        return edge_src_node_[edge];
+    }
+
     // Call the `apply` function with the edge id, source, and sink nodes of every edge.
     void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
         for (size_t i = 0; i < edge_dest_node_.size(); i++) {
@@ -330,6 +337,11 @@ class t_rr_graph_storage {
     // last_edge should be used.
     RRNodeId edge_sink_node(const RRNodeId& id, t_edge_size iedge) const {
         return edge_sink_node(edge_id(id, iedge));
+    }
+
+    // Get the source node for the iedge'th edge from specified RRNodeId.
+    RRNodeId edge_source_node(const RRNodeId& id, t_edge_size iedge) const {
+        return edge_source_node(edge_id(id, iedge));
     }
 
     // Get the switch used for the specified edge.
@@ -621,6 +633,7 @@ class t_rr_graph_storage {
         return side_tt[size_t(side)];
     }
 
+  public:
     inline void clear_node_first_edge() {
         node_first_edge_.clear();
     }

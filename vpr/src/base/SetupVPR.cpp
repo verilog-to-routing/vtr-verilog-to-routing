@@ -384,9 +384,11 @@ static void SetupSwitches(const t_arch& Arch,
 static void SetupRoutingArch(const t_arch& Arch,
                              t_det_routing_arch* RoutingArch) {
     RoutingArch->switch_block_type = Arch.SBType;
+    RoutingArch->switch_block_subtype = Arch.SBSubType;
     RoutingArch->R_minW_nmos = Arch.R_minW_nmos;
     RoutingArch->R_minW_pmos = Arch.R_minW_pmos;
     RoutingArch->Fs = Arch.Fs;
+    RoutingArch->subFs = Arch.subFs;
     RoutingArch->directionality = BI_DIRECTIONAL;
     if (Arch.Segments.size()) {
         RoutingArch->directionality = Arch.Segments[0].directionality;
@@ -394,6 +396,10 @@ static void SetupRoutingArch(const t_arch& Arch,
 
     /* copy over the switch block information */
     RoutingArch->switchblocks = Arch.switchblocks;
+
+    /* Copy the tileable routing setting */
+    RoutingArch->tileable = Arch.tileable;
+    RoutingArch->through_channel = Arch.through_channel;
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
@@ -421,6 +427,11 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_algorithm = Options.RouterAlgorithm;
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
+
+    //TODO document these?
+    RouterOpts->trim_empty_channels = false; /* DEFAULT */
+    RouterOpts->trim_obs_channels = false;   /* DEFAULT */
+
     RouterOpts->read_rr_edge_metadata = Options.read_rr_edge_metadata;
     RouterOpts->reorder_rr_graph_nodes_algorithm = Options.reorder_rr_graph_nodes_algorithm;
     RouterOpts->reorder_rr_graph_nodes_threshold = Options.reorder_rr_graph_nodes_threshold;
@@ -686,6 +697,8 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.timing_update_type = Options.timing_update_type;
     analysis_opts.write_timing_summary = Options.write_timing_summary;
+
+    analysis_opts.skip_sync_clustering_and_routing_results = Options.skip_sync_clustering_and_routing_results;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

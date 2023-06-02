@@ -319,6 +319,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown check_route value\n");
         }
 
+        VTR_LOG("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "true" : "false"));
+        VTR_LOG("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "true" : "false"));
         VTR_LOG("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
         VTR_LOG("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
         VTR_LOG("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);

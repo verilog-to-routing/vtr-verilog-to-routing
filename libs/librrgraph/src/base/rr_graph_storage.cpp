@@ -379,7 +379,10 @@ void t_rr_graph_storage::assign_first_edges() {
 
 bool t_rr_graph_storage::verify_first_edges() const {
     size_t num_edges = edge_src_node_.size();
-    VTR_ASSERT(node_first_edge_[RRNodeId(node_storage_.size())] == RREdgeId(num_edges));
+    if (node_first_edge_[RRNodeId(node_storage_.size())] != RREdgeId(num_edges)) {
+        VTR_LOG("node first edge is '%lu' while expected edge id is '%lu'\n", size_t(node_first_edge_[RRNodeId(node_storage_.size())]), num_edges);
+        VTR_ASSERT(node_first_edge_[RRNodeId(node_storage_.size())] == RREdgeId(num_edges));
+    }
 
     // Each edge should belong with the edge range defined by
     // [node_first_edge_[src_node], node_first_edge_[src_node+1]).
@@ -564,6 +567,11 @@ t_edge_size t_rr_graph_storage::num_non_configurable_edges(RRNodeId node, const 
     return num_edges(node) - num_configurable_edges(node, rr_switches);
 }
 
+bool t_rr_graph_storage::edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  auto iswitch = edge_switch(edge);
+  return rr_switches[RRSwitchId(iswitch)].configurable();
+}
+
 bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
   auto iswitch = edge_switch(id, iedge);
   return rr_switches[RRSwitchId(iswitch)].configurable();
@@ -629,21 +637,21 @@ void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
 }
 void t_rr_graph_storage::set_node_pin_num(RRNodeId id, int new_pin_num) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VTR_LOG_ERROR("Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'\n", node_type_string(id));
     }
     node_ptc_[id].ptc_.pin_num = new_pin_num;
 }
 
 void t_rr_graph_storage::set_node_track_num(RRNodeId id, int new_track_num) {
     if (node_type(id) != CHANX && node_type(id) != CHANY) {
-        VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'\n", node_type_string(id));
     }
     node_ptc_[id].ptc_.track_num = new_track_num;
 }
 
 void t_rr_graph_storage::set_node_class_num(RRNodeId id, int new_class_num) {
     if (node_type(id) != SOURCE && node_type(id) != SINK) {
-        VTR_LOG_ERROR("Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'\n", node_type_string(id));
     }
     node_ptc_[id].ptc_.class_num = new_class_num;
 }
@@ -658,7 +666,7 @@ static int get_node_pin_num(
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
     if (node_type != IPIN && node_type != OPIN) {
-        VTR_LOG_ERROR("Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", rr_node_typename[node_type]);
+        VTR_LOG_ERROR("Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'\n", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.pin_num;
 }
@@ -669,7 +677,7 @@ static int get_node_track_num(
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
     if (node_type != CHANX && node_type != CHANY) {
-        VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", rr_node_typename[node_type]);
+        VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'\n", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.track_num;
 }
@@ -680,7 +688,7 @@ static int get_node_class_num(
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
     if (node_type != SOURCE && node_type != SINK) {
-        VTR_LOG_ERROR("Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", rr_node_typename[node_type]);
+        VTR_LOG_ERROR("Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'\n", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.class_num;
 }
@@ -730,7 +738,7 @@ void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, s
 void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
     auto& node = node_storage_[id];
     if ((size_t)new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
-        VTR_LOG_ERROR("Attempted to set cost_index_ %zu above cost_index storage max value.",
+        VTR_LOG_ERROR("Attempted to set cost_index_ %zu above cost_index storage max value.\n",
                       new_cost_index);
     }
     node.cost_index_ = (size_t)new_cost_index;
@@ -747,19 +755,19 @@ void t_rr_graph_storage::set_node_capacity(RRNodeId id, short new_capacity) {
 
 void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction) {
     if (node_type(id) != CHANX && node_type(id) != CHANY) {
-        VTR_LOG_ERROR("Attempted to set RR node 'direction' for non-channel type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'direction' for non-channel type '%s'\n", node_type_string(id));
     }
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VTR_LOG_ERROR("Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'side' for non-channel type '%s'\n", node_type_string(id));
     }
     std::bitset<NUM_SIDES> side_bits = node_storage_[id].dir_side_.sides;
     side_bits[size_t(new_side)] = true;
     if (side_bits.to_ulong() > CHAR_MAX) {
-        VTR_LOG_ERROR("Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
+        VTR_LOG_ERROR("Invalid side '%s' to be added to rr node %u\n", SIDE_STRING[new_side], size_t(id));
     }
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }
