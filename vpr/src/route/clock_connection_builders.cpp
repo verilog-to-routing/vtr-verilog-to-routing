@@ -49,7 +49,8 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     // Initialize random seed
     // Must be done during every call in order for restored rr_graphs after a binary
     // search to be consistent
-    std::srand(seed);
+    std::mt19937 rand_generator;
+    rand_generator.seed(seed);
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
@@ -68,8 +69,8 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
 
     for (auto clock_index : clock_indices) {
         // Select wires to connect to at random
-        std::random_shuffle(x_wire_indices.begin(), x_wire_indices.end());
-        std::random_shuffle(y_wire_indices.begin(), y_wire_indices.end());
+        std::shuffle(x_wire_indices.begin(), x_wire_indices.end(), rand_generator);
+        std::shuffle(y_wire_indices.begin(), y_wire_indices.end(), rand_generator);
 
         // Connect to x-channel wires
         unsigned num_wires_x = x_wire_indices.size() * fc;
@@ -255,15 +256,15 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                 continue;
             }
 
-            auto type = grid[x][y].type;
+            auto type = grid.get_physical_type(x, y);
 
             // Skip EMPTY type
             if (is_empty_type(type)) {
                 continue;
             }
 
-            auto width_offset = grid[x][y].width_offset;
-            auto height_offset = grid[x][y].height_offset;
+            auto width_offset = grid.get_width_offset(x, y);
+            auto height_offset = grid.get_height_offset(x, y);
 
             // Ignore grid locations that do not have blocks
             bool has_pb_type = false;

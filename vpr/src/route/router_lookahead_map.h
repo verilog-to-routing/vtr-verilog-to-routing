@@ -8,12 +8,20 @@
 
 class MapLookahead : public RouterLookahead {
   public:
-    explicit MapLookahead(bool is_flat)
-        : is_flat_(is_flat) {}
+    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
+        : det_routing_arch_(det_routing_arch)
+        , is_flat_(is_flat) {}
 
   private:
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
+    // Lookup table from a tile pins to the primitive classes inside that tile
+    std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays> inter_tile_pin_primitive_pin_delay; // [physical_tile_type][from_pin_physical_num][sink_physical_num] -> cost
+    // Lookup table to store the minimum cost to reach to a primitive pin from the root-level IPINs
+    std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
+    // Lookup table to store the minimum cost for each dx and dy
+    vtr::NdMatrix<util::Cost_Entry, 2> distance_based_min_cost; // [dx][dy] -> cost
+    const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
 
   protected:
@@ -21,8 +29,11 @@ class MapLookahead : public RouterLookahead {
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
+    void compute_intra_tile() override;
     void read(const std::string& file) override;
+    void read_intra_cluster(const std::string& file) override;
     void write(const std::string& file) const override;
+    void write_intra_cluster(const std::string& file) const override;
 };
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates

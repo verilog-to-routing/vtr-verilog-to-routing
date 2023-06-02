@@ -29,7 +29,7 @@ The verify_odin.sh script is designed for generating regression test results.
 
 ## Examples
 
-The following examples are being performed in the ODIN_II directory:
+The following examples are being performed in the odin_ii directory:
 
 ### Generating Results for a New Task
 

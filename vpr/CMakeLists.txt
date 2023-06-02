@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 project("vpr")
 
@@ -252,6 +252,7 @@ if (VPR_USE_SIGNAL_HANDLER)
 endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION include/libvpr)
 
 
 #

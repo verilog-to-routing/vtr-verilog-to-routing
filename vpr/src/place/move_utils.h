@@ -22,17 +22,29 @@ enum e_move_result {
 enum class e_move_type {
     UNIFORM,
     MEDIAN,
-    W_CENTROID,
     CENTROID,
+    W_CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
-    MANUAL_MOVE,
+    NUMBER_OF_AUTO_MOVES,
+    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES
 };
 
 enum class e_create_move {
     VALID, //Move successful and legal
     ABORT, //Unable to perform move
+};
+
+/**
+ * @brief Stores KArmedBanditAgent propose_action output to decide which
+ *        move_type and which block_type should be chosen for the next action.
+ *        The propose_action function can also leave blk_type empty to allow any
+ *        random block type to be chosen to be swapped.
+ */
+struct t_propose_action {
+    e_move_type move_type;         ///<move type that propose_action chooses to perform
+    t_logical_block_type blk_type; ///<propose_action can choose block type or leave it empty to allow any block type to be chosen
 };
 
 /**
@@ -97,7 +109,49 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
 
 std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);
 
+/**
+ * @brief Propose block for the RL agent based on required block type.
+ *
+ *  @param blk_type: the agent type of the moving block.
+ *  @param highly_crit_block: block should be chosen from highly critical blocks.
+ *  @param net_from: if block is chosen from highly critical blocks, should store the critical net id.
+ *  @param pin_from: if block is chosen from highly critical blocks, should save its critical pin id.
+ *
+ * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
+ */
+ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+
+/**
+ * @brief Select a random block to be swapped with another block
+ * 
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ */
 ClusterBlockId pick_from_block();
+
+/**
+ * @brief Find a block with a specific block type to be swapped with another block
+ *
+ *  @param blk_type: the agent type of the moving block.
+ * 
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ */
+ClusterBlockId pick_from_block(t_logical_block_type blk_type);
+
+/**
+ * @brief Select a random highly critical block to be swapped with another block
+ * 
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ */
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from);
+
+/**
+ * @brief Find a block with a specific block type to be swapped with another block
+ *
+ *  @param blk_type: the agent type of the moving block.
+ * 
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ */
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type blk_type);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
@@ -191,5 +245,30 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
 bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type, ClusterBlockId b_from, int& min_cx, int& min_cy, int& max_cx, int& max_cy, int& delta_cx);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
+
+/**
+ * @brief find the physical block type index associated to the agent block type
+ *
+ * Agent block types are defined as physical block types used by the netlist.
+ * More information on agent block type can be found on the placement context in "vpr_context.h"
+ *
+ * @return physical block type index associated with the agent_blk_type_index
+ */
+int convert_agent_to_phys_blk_type(int agent_blk_type_index);
+
+/**
+ * @brief find the agent block type index associated to the physical block type
+ *
+ * Agent block types are defined as physical block types used by the netlist.
+ * More information on agent block type can be found on the placement context in "vpr_context.h"
+ *
+ * @return agent block type index associated with the phys_blk_type_index
+ */
+int convert_phys_to_agent_blk_type(int phys_blk_type_index);
+
+/**
+ * @brief return number of available block types in the RLplace agent.
+ */
+int get_num_agent_types();
 
 #endif
