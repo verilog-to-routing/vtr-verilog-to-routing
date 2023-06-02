@@ -599,7 +599,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
     PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
 
-    //TODO: document?
     PlacerOpts->place_cost_exp = 1;
 
     PlacerOpts->td_place_exp_first = Options.place_exp_first;
@@ -628,7 +627,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->delay_model_type = Options.place_delay_model;
     PlacerOpts->delay_model_reducer = Options.place_delay_model_reducer;
 
-    //TODO: document?
     PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
 
     PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;

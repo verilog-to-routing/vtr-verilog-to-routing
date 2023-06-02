@@ -1038,7 +1038,10 @@ enum class e_place_delta_delay_algorithm {
  *              When in CRITICALITY_TIMING_PLACE mode, what is the
  *              tradeoff between timing and wiring costs.
  *   @param place_cost_exp
- *              Power to which denominator is raised for linear_cong.
+ *              Wiring cost is divided by the average channel width over
+ *              a net's bounding box taken to this exponent.
+ *              Only impacts devices with different channel widths in 
+ *              different directions or regions. (Default: 1)
  *   @param place_chan_width
  *              The channel width assumed if only one placement is performed.
  *   @param pad_loc_type
@@ -1050,7 +1053,7 @@ enum class e_place_delta_delay_algorithm {
  *              File to read pad locations from if pad_loc_type is USER.
  *   @param place_freq
  *              Should the placement be skipped, done once, or done
- *              for each channel width in the binary search.
+ *              for each channel width in the binary search. (Default: ONCE)
  *   @param recompute_crit_iter
  *              How many temperature stages pass before we recompute
  *              criticalities based on the current placement and its
