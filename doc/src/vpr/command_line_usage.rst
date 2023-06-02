@@ -881,8 +881,6 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
     **Default:** ``move_block_type``
 
 
-
-
 .. _timing_driven_placer_options:
 
 Timing-Driven Placer Options
@@ -981,6 +979,78 @@ The following options are only valid when the placement engine is in timing-driv
 .. option:: --post_place_timing_report <file>
 
     Name of the post-placement timing report file to generate (not generated if unspecfied).
+
+
+.. _noc_placement_options:
+
+NoC Options
+^^^^^^^^^^^^^^
+The following options are only used when FPGA device and netlist contain a NoC router.  
+
+.. option:: --noc {on | off}
+
+    Enables a NoC-driven placer that optimizes the placement of routers on the NoC. Also, it enables an option in the graphical display that can be used to
+    display the NoC on the FPGA.
+
+    **Default:** ``off``
+
+.. option:: --noc_flows_file <file>
+    
+    XML file containing the list of traffic flows within the NoC (communication between routers).
+
+    .. note:: noc_flows_file are required to specify if NoC optimization is turned on (--noc on).
+
+.. option:: --noc_routing_algorithm {xy_routing | bfs_routing}
+
+    Controls the algorithm used by the NoC to route packets.
+    xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.
+    bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.
+    This can be used with any NoC topology.
+
+    **Default:** ``bfs_routing``
+
+.. option:: --noc_placement_weighting <float>
+
+    Controls the importance of the NoC placement parameters relative to timing and wirelength of the design.
+    This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength, a value of 1 would
+    mean noc placement is considered equal to timing and wirelength and a value greater than 1 would mean the placement is
+    increasingly dominated by NoC parameters.
+    
+    **Default:** ``0.6``
+
+.. option:: --noc_latency_constraints_weighting <float>
+
+    Controls the importance of meeting all the NoC traffic flow latency constraints.
+    This value can be >=0, where 0 would mean the latency constraints have no relevance to placement,
+    a value of 1 would mean the latency constraints are weighted equally to the sum of other placement cost components
+    and a value greater than 1 would mean the placement is increasingly dominated by meeting the latency constraints of the traffic flows.
+    
+    **Default:** ``1``
+
+.. option:: --noc_latency_weighting <float>
+
+    Controls the importance of reducing the latencies of the NoC traffic flows.
+    This value can be >=0, where 0 would mean the latencies have no relevance to placement,
+    a value of 1 would mean the latencies  are weighted equally to the sum of other placement cost components and a value greater 
+    than 1 would mean the placement is increasingly dominated by reducing the latencies of the traffic flows.
+    
+    **Default:** ``0.05``
+
+.. option:: --noc_swap_percentage <float>
+
+    Sets the minimum fraction of swaps attempted by the placer that are NoC blocks.
+    This value is an integer ranging from 0-100. 
+    0 means NoC blocks will be moved at the same rate as other blocks. 
+    100 means all swaps attempted by the placer are NoC router blocks.
+    
+    **Default:** ``40``    
+
+.. option:: --noc_placement_file_name <file>
+
+    Name of the output file that contains the NoC placement information.
+    The default name is 'vpr_noc_placement_output.txt'
+
+    **Default:** ``vpr_noc_placement_output.txt``
 
 .. _router_options:
 
