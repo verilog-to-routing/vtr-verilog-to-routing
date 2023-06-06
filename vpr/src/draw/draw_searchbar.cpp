@@ -173,21 +173,23 @@ void highlight_nets(char* message, int hit_node, bool is_flat) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        for (tptr = route_ctx.trace[get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat)].head; tptr != nullptr;
-             tptr = tptr->next) {
-            if (draw_state->draw_rr_node[tptr->index].color == ezgl::MAGENTA) {
-                draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
-                if (tptr->index == hit_node) {
-                    std::string orig_msg(message);
-                    sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(),
-                            size_t(net_id),
-                            cluster_ctx.clb_nlist.net_name(net_id).c_str());
+        if (!route_ctx.trace.empty())  { // avoid seg fault from clicking on wire before routing is finished
+            for (tptr = route_ctx.trace[get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat)].head; tptr != nullptr;
+                tptr = tptr->next) {
+                if (draw_state->draw_rr_node[tptr->index].color == ezgl::MAGENTA) {
+                    draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
+                    if (tptr->index == hit_node) {
+                        std::string orig_msg(message);
+                        sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(),
+                                size_t(net_id),
+                                cluster_ctx.clb_nlist.net_name(net_id).c_str());
+                    }
+                } else if (draw_state->draw_rr_node[tptr->index].color
+                        == ezgl::WHITE) {
+                    // If node is de-selected.
+                    draw_state->net_color[net_id] = ezgl::BLACK;
+                    break;
                 }
-            } else if (draw_state->draw_rr_node[tptr->index].color
-                       == ezgl::WHITE) {
-                // If node is de-selected.
-                draw_state->net_color[net_id] = ezgl::BLACK;
-                break;
             }
         }
     }
