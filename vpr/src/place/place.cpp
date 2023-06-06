@@ -3215,6 +3215,15 @@ static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat) {
     float moves, accepted, rejected, aborted;
 
+    VTR_LOG("\n\nPercentage of different move types and block types:\n");
+
+    VTR_LOG(
+        "------------------ ----------------- --------------- ------------ -------------- ------------ \n");
+    VTR_LOG(
+        "    Block Type         Move Type      Percentage(%%)   Accuracy(%%)  Rejection(%%)   Aborted(%%)\n");
+    VTR_LOG(
+        "------------------ ----------------- --------------- ------------ -------------- ------------ \n");
+    
     float total_moves = 0;
     for (size_t iaction = 0; iaction < move_type_stat.blk_type_moves.size(); iaction++) {
         total_moves += move_type_stat.blk_type_moves[iaction];
@@ -3225,8 +3234,7 @@ static void print_placement_move_types_stats(
     std::string move_name;
     int agent_type = 0;
     int num_of_avail_moves = move_type_stat.blk_type_moves.size() / get_num_agent_types();
-
-    VTR_LOG("\n\nPercentage of different move types and block types:\n");
+    
     //Print placement information for each block type
     for (auto itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
@@ -3241,8 +3249,8 @@ static void print_placement_move_types_stats(
                 rejected = move_type_stat.rejected_moves[agent_type * num_of_avail_moves + imove];
                 aborted = moves - (accepted + rejected);
                 VTR_LOG(
-                    "\t%.20s move with type %.20s: %2.6f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",
-                    move_name.c_str(), itype.name, 100 * moves / total_moves,
+                    "%-18.20s %-21.20s %-15.6f %-12.2f %-14.2f %-13.2f\n",
+                    itype.name, move_name.c_str(), 100 * moves / total_moves,
                     100 * accepted / moves, 100 * rejected / moves,
                     100 * aborted / moves);
             }
@@ -3250,6 +3258,7 @@ static void print_placement_move_types_stats(
         agent_type++;
         VTR_LOG("\n");
     }
+    VTR_LOG("\n");
 }
 
 static void calculate_reward_and_process_outcome(
