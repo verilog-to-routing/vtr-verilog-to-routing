@@ -1958,6 +1958,9 @@ struct t_arch {
     t_power_arch* power = nullptr;
     t_clock_arch* clocks = nullptr;
 
+    //determine which layers in multi-die FPGAs require to build global routing resources
+    std::vector<bool> layer_global_routing;
+
     // Constants
     // VCC and GND cells are special virtual cells that are
     // used to handle the constant network of the device.

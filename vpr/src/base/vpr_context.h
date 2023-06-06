@@ -170,6 +170,13 @@ struct DeviceContext : public Context {
      */
     std::vector<int> physical_type_layer;
 
+    /*
+     * Keep which layer in multi-die FPGA require global routing resources [0..number_of_layers-1]
+     * If a layer doesn't require global routing resources, RRGraph generation will ignore building SBs and CBs
+     * for that specific layer.
+     */
+    std::vector<bool> global_routing_layer;
+
     /**
      * @brief Boolean that indicates whether the architecture implements an N:M
      *        physical tiles to logical blocks mapping

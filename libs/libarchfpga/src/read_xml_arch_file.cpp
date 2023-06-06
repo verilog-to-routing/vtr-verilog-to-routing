@@ -219,7 +219,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
-static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
+static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
@@ -2430,7 +2430,7 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
     for (auto layout_type_tag : layout_tag.children()) {
-        t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data, num_of_avail_layer);
+        t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data, arch, num_of_avail_layer);
 
         arch->grid_layouts.emplace_back(std::move(grid_def));
     }
@@ -2439,6 +2439,7 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
 static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
                                     pugi::xml_node layout_type_tag,
                                     const pugiutil::loc_data& loc_data,
+                                    t_arch* arch,
                                     int& num_of_avail_layer) {
     t_grid_def grid_def;
     num_of_avail_layer = get_number_of_layers(layout_type_tag, loc_data);
@@ -2475,6 +2476,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
     }
 
     grid_def.layers.resize(num_of_avail_layer);
+    arch->layer_global_routing.resize(num_of_avail_layer);
     //No layer tag is specified (only one die is specified in the arch file)
     //Need to process layout_type_tag children to get block types locations in the grid
     if (has_layer) {
@@ -2483,9 +2485,12 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
         auto layer_tag_specified = layout_type_tag.children("layer");
         for (auto layer_child : layer_tag_specified) {
             int die_number;
+            bool has_global_routing;
             //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
             //Need to process each <layer> tag children to get block types locations for each grid
             die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+            has_global_routing = get_attribute(layer_child, "global_routing_resources", loc_data).as_bool(true);
+            arch->layer_global_routing.at(die_number) = has_global_routing;
             VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
             auto insert_res = seen_die_numbers.insert(die_number);
             VTR_ASSERT_MSG(insert_res.second, "Two different layers with a same die number may have been specified in the Architecture file");
