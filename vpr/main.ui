@@ -650,7 +650,7 @@
         </child>
         <child>
           <object class="GtkButton" id="ProceedButton">
-            <property name="label" translatable="yes">Done</property>
+            <property name="label" translatable="yes">Proceed</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
