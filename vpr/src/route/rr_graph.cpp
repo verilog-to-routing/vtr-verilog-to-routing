@@ -1990,6 +1990,11 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
+        auto& device_ctx = g_vpr_ctx.device();
+        /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
+        if(!device_ctx.global_routing_layer.at(layer)){
+            continue;
+        }
         for (size_t i = 0; i < grid.width() - 1; ++i) {
             for (size_t j = 0; j < grid.height() - 1; ++j) {
                 if (i > 0) {

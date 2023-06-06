@@ -2489,7 +2489,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
             //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
             //Need to process each <layer> tag children to get block types locations for each grid
             die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-            has_global_routing = get_attribute(layer_child, "global_routing_resources", loc_data).as_bool(true);
+            has_global_routing = get_attribute(layer_child, "global_routing_resources", loc_data, ReqOpt::OPTIONAL).as_bool(true);
             arch->layer_global_routing.at(die_number) = has_global_routing;
             VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
             auto insert_res = seen_die_numbers.insert(die_number);

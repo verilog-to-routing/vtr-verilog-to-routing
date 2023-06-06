@@ -1059,7 +1059,14 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const t_chan_details& chan_details,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index) {
+
+    auto& device_ctx = g_vpr_ctx.device();
+
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
+        /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
+        if(!device_ctx.global_routing_layer.at(layer)){
+            continue;
+        }
         for (int chan = 0; chan < num_chans - 1; ++chan) {
             for (int seg = 1; seg < chan_len - 1; ++seg) {
                 /* Assign an inode to the starts of tracks */
