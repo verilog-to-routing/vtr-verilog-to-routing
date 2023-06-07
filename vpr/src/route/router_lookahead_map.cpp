@@ -207,16 +207,35 @@ t_wire_cost_map f_wire_cost_map;
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
+/***
+ * @brief Compute the cost from pin to sinks of tiles - Compute the minimum cost to get to each tile sink from pins on the cluster
+ * @param inter_tile_pin_primitive_pin_delay
+ * @param tile_min_cost
+ * @param det_routing_arch
+ * @param device_ctx
+ */
 static void compute_tiles_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
                                     std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx);
-
+/***
+ * @brief Compute the cose from tile pins to tile sinks
+ * @param inter_tile_pin_primitive_pin_delay [physical_tile_type_idx][from_pin_ptc_num][sink_ptc_num] -> cost
+ * @param physical_tile
+ * @param det_routing_arch
+ * @param delayless_switch
+ */
 static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
                                    t_physical_tile_type_ptr physical_tile,
                                    const t_det_routing_arch& det_routing_arch,
                                    const int delayless_switch);
 
+/***
+ * @brief Compute the minimum cost to get to the sinks from pins on the cluster
+ * @param tile_min_cost [physical_tile_idx][sink_ptc_num] -> min_cost
+ * @param physical_tile
+ * @param inter_tile_pin_primitive_pin_delay [physical_tile_type_idx][from_pin_ptc_num][sink_ptc_num] -> cost
+ */
 static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     t_physical_tile_type_ptr physical_tile,
                                     const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay);

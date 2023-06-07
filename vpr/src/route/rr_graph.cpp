@@ -307,8 +307,21 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           int i,
                                           int j);
 
-/*
- * Build the internal edges of blocks inside the given location
+/***
+ * @brief Add the intra-cluster edges
+ * @param rr_graph_builder
+ * @param num_collapsed_nodes Return the number of nodes that are removed due to collapsing
+ * @param cluster_blk_id Cluser block id of the cluster that its edges are being added
+ * @param i
+ * @param j
+ * @param cap Capacity number of the location that cluster is being mapped to
+ * @param R_minW_nmos
+ * @param R_minW_pmos
+ * @param rr_edges_to_create
+ * @param nodes_to_collapse Sotre the nodes in the cluster that needs to be collapsed
+ * @param grid
+ * @param is_flat
+ * @param load_rr_graph
  */
 static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          int& num_collapsed_nodes,
@@ -550,7 +563,17 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
                           std::vector<std::vector<t_pin_chain_node>>& all_chains,
                           bool is_new_chain);
 
-// Return the edge id of an intra-tile edge with the same delay. If there isn't any, create a new one and return the ID
+/***
+ * @brief Return a pair. The firt element indicates whether the switch is added or it was already added. The second element is the switch index.
+ * @param rr_graph
+ * @param arch_sw_inf
+ * @param R_minW_nmos Needs to be passed to use create_rr_switch_from_arch_switch
+ * @param R_minW_pmos Needs to be passed to use create_rr_switch_from_arch_switch
+ * @param is_rr_sw If it is true, the function would search in the data structure that store rr switches.
+ *                  Otherwise, it would search in the data structure that store switches that are not rr switches.
+ * @param delay
+ * @return
+ */
 static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_graph,
                                                          std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                                          float R_minW_nmos,
