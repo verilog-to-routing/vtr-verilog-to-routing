@@ -1,3 +1,0 @@
-read_verilog demo.v
-synth_anlogic -top demo
-write_verilog full.v

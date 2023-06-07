@@ -1,7 +1,0 @@
-read_verilog <<EOF
-`ifndef a
-`ifdef b
-`endif
-`else
-`endif
-EOF
