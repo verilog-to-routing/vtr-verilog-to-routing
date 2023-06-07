@@ -41,6 +41,9 @@ If you are considering larger changes its best to discuss them first (e.g. file 
 
 Once you've made your enhancements [open a pull request](#making-pull-requests) to get your changes considered for inclusion in the documentation.
 
+### How do I build the documentation?
+The documentation can be built by using the command `make html` in the `$VTR_ROOT/doc` directory and you can view it in a web browser by loading the file at `$VTR_ROOT/_build/html/index.html`. More information on building
+the documentation can be found on the [README on GitHub](https://github.com/verilog-to-routing/vtr-verilog-to-routing/tree/master/doc).
 
 ### Filling Bug Reports
 First, search for [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues?&=) to see if the bug has already been reported.
