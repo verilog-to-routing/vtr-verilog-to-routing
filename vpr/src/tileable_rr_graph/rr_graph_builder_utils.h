@@ -14,26 +14,31 @@
 
 size_t find_unidir_routing_channel_width(const size_t& chan_width);
 
-int get_grid_pin_class_index(const t_grid_tile& cur_grid,
+int get_grid_pin_class_index(const DeviceGrid& grids,
+                             const size_t& x, const size_t& y,
                              const int pin_index);
 
-std::vector<e_side> find_grid_pin_sides(const t_grid_tile& grid,
+std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
+                                        const size_t& x, const size_t& y,
                                         const size_t& pin_id);
 
 e_side determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
                                   const vtr::Point<size_t>& grid_coordinate);
 
-std::vector<int> get_grid_side_pins(const t_grid_tile& cur_grid,
+std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
+                                    const size_t& x, const size_t& y,
                                     const e_pin_type& pin_type,
                                     const e_side& pin_side,
                                     const int& pin_width,
                                     const int& pin_height);
 
-size_t get_grid_num_pins(const t_grid_tile& cur_grid,
+size_t get_grid_num_pins(const DeviceGrid& grids,
+                         const size_t& x, const size_t& y,
                          const e_pin_type& pin_type,
                          const e_side& io_side);
 
-size_t get_grid_num_classes(const t_grid_tile& cur_grid,
+size_t get_grid_num_classes(const DeviceGrid& grids,
+                            const size_t& x, const size_t& y,
                             const e_pin_type& pin_type);
 
 bool is_chanx_exist(const DeviceGrid& grids,

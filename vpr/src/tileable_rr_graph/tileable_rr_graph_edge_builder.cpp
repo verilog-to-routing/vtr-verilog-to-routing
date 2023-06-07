@@ -33,11 +33,11 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
         /* Now, we have an OPIN node, we get the source node index */
         short xlow = rr_graph.node_xlow(node);
         short ylow = rr_graph.node_ylow(node);
-        short src_node_class_num = get_grid_pin_class_index(grids[xlow][ylow],
+        short src_node_class_num = get_grid_pin_class_index(grids, xlow, ylow,
                                                             rr_graph.node_pin_num(node));
         /* Create edges between SOURCE and OPINs */
-        RRNodeId src_node = rr_graph.node_lookup().find_node(xlow - grids[xlow][ylow].width_offset,
-                                                             ylow - grids[xlow][ylow].height_offset,
+        RRNodeId src_node = rr_graph.node_lookup().find_node(xlow - grids.get_width_offset(xlow, ylow),
+                                                             ylow - grids.get_height_offset(xlow, ylow),
                                                              SOURCE, src_node_class_num);
         VTR_ASSERT(true == rr_graph.valid_node(src_node));
 
@@ -68,11 +68,11 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
         /* Now, we have an OPIN node, we get the source node index */
         short xlow = rr_graph.node_xlow(node);
         short ylow = rr_graph.node_ylow(node);
-        short sink_node_class_num = get_grid_pin_class_index(grids[xlow][ylow],
+        short sink_node_class_num = get_grid_pin_class_index(grids, xlow, ylow,
                                                              rr_graph.node_pin_num(node));
         /* 1. create edges between IPINs and SINKs */
-        const RRNodeId& sink_node = rr_graph.node_lookup().find_node(xlow - grids[xlow][ylow].width_offset,
-                                                                     ylow - grids[xlow][ylow].height_offset,
+        const RRNodeId& sink_node = rr_graph.node_lookup().find_node(xlow - grids.get_width_offset(xlow, ylow),
+                                                                     ylow - grids.get_height_offset(xlow, ylow),
                                                                      SINK, sink_node_class_num, SIDES[0]);
         VTR_ASSERT(true == rr_graph.valid_node(sink_node));
 
@@ -162,12 +162,12 @@ void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
     for (size_t ix = 0; ix < grids.width(); ++ix) {
         for (size_t iy = 0; iy < grids.height(); ++iy) {
             /* Skip EMPTY tiles */
-            if (true == is_empty_type(grids[ix][iy].type)) {
+            if (true == is_empty_type(grids.get_physical_type(ix, iy))) {
                 continue;
             }
             /* Skip height > 1 or width > 1 tiles (mostly heterogeneous blocks) */
-            if ((0 < grids[ix][iy].width_offset)
-                || (0 < grids[ix][iy].height_offset)) {
+            if ((0 < grids.get_width_offset(ix, iy))
+                || (0 < grids.get_height_offset(ix, iy))) {
                 continue;
             }
             vtr::Point<size_t> from_grid_coordinate(ix, iy);

@@ -30,11 +30,13 @@ size_t find_unidir_routing_channel_width(const size_t& chan_width) {
 /************************************************************************
  * Get the class index of a grid pin 
  ***********************************************************************/
-int get_grid_pin_class_index(const t_grid_tile& cur_grid,
+int get_grid_pin_class_index(const DeviceGrid& grids,
+                             const size_t& x, const size_t& y,
                              const int pin_index) {
     /* check */
-    VTR_ASSERT(pin_index < cur_grid.type->num_pins);
-    return cur_grid.type->pin_class[pin_index];
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
+    VTR_ASSERT(pin_index < phy_tile_type->num_pins);
+    return phy_tile_type->pin_class[pin_index];
 }
 
 /* Deteremine the side of a io grid */
@@ -61,12 +63,16 @@ e_side determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
 }
 
 /* Deteremine the side of a pin of a grid */
-std::vector<e_side> find_grid_pin_sides(const t_grid_tile& grid,
+std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
+                                        const size_t& x, const size_t& y,
                                         const size_t& pin_id) {
     std::vector<e_side> pin_sides;
 
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
+    int width_offset = grids.get_width_offset(x, y);
+    int height_offset = grids.get_height_offset(x, y);
     for (const e_side& side : {TOP, RIGHT, BOTTOM, LEFT}) {
-        if (true == grid.type->pinloc[grid.width_offset][grid.height_offset][size_t(side)][pin_id]) {
+        if (true == phy_tile_type->pinloc[width_offset][height_offset][size_t(side)][pin_id]) {
             pin_sides.push_back(side);
         }
     }
@@ -79,7 +85,8 @@ std::vector<e_side> find_grid_pin_sides(const t_grid_tile& grid,
  * For IO_TYPE, only one side will be used, we consider one side of pins 
  * For others, we consider all the sides  
  ***********************************************************************/
-std::vector<int> get_grid_side_pins(const t_grid_tile& cur_grid,
+std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
+                                    const size_t& x, const size_t& y,
                                     const e_pin_type& pin_type,
                                     const e_side& pin_side,
                                     const int& pin_width,
@@ -88,10 +95,11 @@ std::vector<int> get_grid_side_pins(const t_grid_tile& cur_grid,
     /* Make sure a clear start */
     pin_list.clear();
 
-    for (int ipin = 0; ipin < cur_grid.type->num_pins; ++ipin) {
-        int class_id = cur_grid.type->pin_class[ipin];
-        if ((1 == cur_grid.type->pinloc[pin_width][pin_height][pin_side][ipin])
-            && (pin_type == cur_grid.type->class_inf[class_id].type)) {
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
+    for (int ipin = 0; ipin < phy_tile_type->num_pins; ++ipin) {
+        int class_id = phy_tile_type->pin_class[ipin];
+        if ((1 == phy_tile_type->pinloc[pin_width][pin_height][pin_side][ipin])
+            && (pin_type == phy_tile_type->class_inf[class_id].type)) {
             pin_list.push_back(ipin);
         }
     }
@@ -103,22 +111,24 @@ std::vector<int> get_grid_side_pins(const t_grid_tile& cur_grid,
  * For IO_TYPE, only one side will be used, we consider one side of pins 
  * For others, we consider all the sides  
  ***********************************************************************/
-size_t get_grid_num_pins(const t_grid_tile& cur_grid,
+size_t get_grid_num_pins(const DeviceGrid& grids,
+                         const size_t& x, const size_t& y,
                          const e_pin_type& pin_type,
                          const e_side& io_side) {
     size_t num_pins = 0;
 
     /* For IO_TYPE sides */
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
     for (const e_side& side : {TOP, RIGHT, BOTTOM, LEFT}) {
         /* skip unwanted sides */
-        if ((true == is_io_type(cur_grid.type))
+        if ((true == is_io_type(phy_tile_type))
             && (side != io_side) && (NUM_SIDES != io_side)) {
             continue;
         }
         /* Get pin list */
-        for (int width = 0; width < cur_grid.type->width; ++width) {
-            for (int height = 0; height < cur_grid.type->height; ++height) {
-                std::vector<int> pin_list = get_grid_side_pins(cur_grid, pin_type, side, width, height);
+        for (int width = 0; width < phy_tile_type->width; ++width) {
+            for (int height = 0; height < phy_tile_type->height; ++height) {
+                std::vector<int> pin_list = get_grid_side_pins(grids, x, y, pin_type, side, width, height);
                 num_pins += pin_list.size();
             }
         }
@@ -132,13 +142,15 @@ size_t get_grid_num_pins(const t_grid_tile& cur_grid,
  * For IO_TYPE, only one side will be used, we consider one side of pins 
  * For others, we consider all the sides  
  ***********************************************************************/
-size_t get_grid_num_classes(const t_grid_tile& cur_grid,
+size_t get_grid_num_classes(const DeviceGrid& grids,
+                            const size_t& x, const size_t& y,
                             const e_pin_type& pin_type) {
     size_t num_classes = 0;
 
-    for (size_t iclass = 0; iclass < cur_grid.type->class_inf.size(); ++iclass) {
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
+    for (size_t iclass = 0; iclass < phy_tile_type->class_inf.size(); ++iclass) {
         /* Bypass unmatched pin_type */
-        if (pin_type != cur_grid.type->class_inf[iclass].type) {
+        if (pin_type != phy_tile_type->class_inf[iclass].type) {
             continue;
         }
         num_classes++;
@@ -187,7 +199,7 @@ bool is_chanx_exist(const DeviceGrid& grids,
         return true;
     }
 
-    return (grids[chanx_coord.x()][chanx_coord.y()].height_offset == grids[chanx_coord.x()][chanx_coord.y()].type->height - 1);
+    return (grids.get_height_offset(chanx_coord.x(), chanx_coord.y()) == grids.get_height_offset(chanx_coord.x(), chanx_coord.y()) - 1);
 }
 
 /************************************************************************
@@ -225,7 +237,7 @@ bool is_chany_exist(const DeviceGrid& grids,
         return true;
     }
 
-    return (grids[chany_coord.x()][chany_coord.y()].width_offset == grids[chany_coord.x()][chany_coord.y()].type->width - 1);
+    return (grids.get_width_offset(chany_coord.x(), chany_coord.y()) == grids.get_width_offset(chany_coord.x(), chany_coord.y()) - 1);
 }
 
 /************************************************************************
