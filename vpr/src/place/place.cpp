@@ -3215,14 +3215,14 @@ static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat) {
     float moves, accepted, rejected, aborted;
 
-    VTR_LOG("\n\nPercentage of different move types and block types:\n");
+    VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
 
     VTR_LOG(
-        "------------------ ----------------- --------------- -------------- -------------- ------------ \n");
+        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
     VTR_LOG(
-        "    Block Type         Move Type      Percentage(%%)   Acceptance(%%)  Rejection(%%)   Aborted(%%)\n");
+        "    Block Type         Move Type       (%%) of Total      Accepted(%%)     Rejected(%%)    Aborted(%%)\n");
     VTR_LOG(
-        "------------------ ----------------- --------------- -------------- -------------- ------------ \n");
+        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
 
     float total_moves = 0;
     for (size_t iaction = 0; iaction < move_type_stat.blk_type_moves.size(); iaction++) {
@@ -3258,7 +3258,7 @@ static void print_placement_move_types_stats(
                     VTR_LOG("                  ");
                 }
                 VTR_LOG(
-                    " %-21.20s %-15.6f %-12.2f %-14.2f %-13.2f\n",
+                    " %-22.20s %-16.2f %-15.2f %-14.2f %-13.2f\n",
                     move_name.c_str(), 100 * moves / total_moves,
                     100 * accepted / moves, 100 * rejected / moves,
                     100 * aborted / moves);
