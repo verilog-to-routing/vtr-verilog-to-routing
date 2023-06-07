@@ -3223,7 +3223,7 @@ static void print_placement_move_types_stats(
         "    Block Type         Move Type      Percentage(%%)   Acceptance(%%)  Rejection(%%)   Aborted(%%)\n");
     VTR_LOG(
         "------------------ ----------------- --------------- -------------- -------------- ------------ \n");
-    
+
     float total_moves = 0;
     for (size_t iaction = 0; iaction < move_type_stat.blk_type_moves.size(); iaction++) {
         total_moves += move_type_stat.blk_type_moves[iaction];
@@ -3235,7 +3235,7 @@ static void print_placement_move_types_stats(
     int agent_type = 0;
     int count = 0;
     int num_of_avail_moves = move_type_stat.blk_type_moves.size() / get_num_agent_types();
-    
+
     //Print placement information for each block type
     for (auto itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
@@ -3246,17 +3246,15 @@ static void print_placement_move_types_stats(
         count = 0;
 
         for (int imove = 0; imove < num_of_avail_moves; imove++) {
-            
             move_name = move_type_to_string(e_move_type(imove));
             moves = move_type_stat.blk_type_moves[agent_type * num_of_avail_moves + imove];
             if (moves != 0) {
                 accepted = move_type_stat.accepted_moves[agent_type * num_of_avail_moves + imove];
                 rejected = move_type_stat.rejected_moves[agent_type * num_of_avail_moves + imove];
                 aborted = moves - (accepted + rejected);
-                if(count == 0){
+                if (count == 0) {
                     VTR_LOG("%-18.20s", itype.name);
-                }
-                else{
+                } else {
                     VTR_LOG("                  ");
                 }
                 VTR_LOG(
