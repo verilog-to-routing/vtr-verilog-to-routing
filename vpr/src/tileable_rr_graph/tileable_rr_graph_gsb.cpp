@@ -1213,11 +1213,11 @@ t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
         for (size_t inode = 0; inode < rr_gsb.get_num_ipin_nodes(ipin_side); ++inode) {
             const RRNodeId& ipin_node = rr_gsb.get_ipin_node(ipin_side, inode);
             /* Skip EMPTY type */
-            if (true == is_empty_type(grids[rr_graph.node_xlow(ipin_node)][rr_graph.node_ylow(ipin_node)].type)) {
+            if (true == is_empty_type(grids.get_physical_type(rr_graph.node_xlow(ipin_node), rr_graph.node_ylow(ipin_node)))) {
                 continue;
             }
 
-            int grid_type_index = grids[rr_graph.node_xlow(ipin_node)][rr_graph.node_ylow(ipin_node)].type->index;
+            int grid_type_index = grids.get_physical_type(rr_graph.node_xlow(ipin_node), rr_graph.node_ylow(ipin_node))->index;
             /* Get Fc of the ipin */
             /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
             bool skip_conn2track = true;
@@ -1292,10 +1292,10 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
         for (size_t inode = 0; inode < num_opin_nodes; ++inode) {
             const RRNodeId& opin_node = rr_gsb.get_opin_node(opin_side, inode);
             /* Skip EMPTY type */
-            if (true == is_empty_type(grids[rr_graph.node_xlow(opin_node)][rr_graph.node_ylow(opin_node)].type)) {
+            if (true == is_empty_type(grids.get_physical_type(rr_graph.node_xlow(opin_node), rr_graph.node_ylow(opin_node)))) {
                 continue;
             }
-            int grid_type_index = grids[rr_graph.node_xlow(opin_node)][rr_graph.node_ylow(opin_node)].type->index;
+            int grid_type_index = grids.get_physical_type(rr_graph.node_xlow(opin_node), rr_graph.node_ylow(opin_node))->index;
 
             /* Get Fc of the ipin */
             /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
@@ -1344,8 +1344,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
     VTR_ASSERT(directs.size() == clb_to_clb_directs.size());
 
-    const t_grid_tile& from_grid = grids[from_grid_coordinate.x()][from_grid_coordinate.y()];
-    t_physical_tile_type_ptr grid_type = from_grid.type;
+    t_physical_tile_type_ptr grid_type = grids.get_physical_type(from_grid_coordinate.x(), from_grid_coordinate.y());
 
     /* Iterate through all direct connections */
     for (size_t i = 0; i < directs.size(); ++i) {
@@ -1361,7 +1360,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                               from_grid_coordinate.y() + directs[i].y_offset);
 
         /* Bypass unmatched direct clb-to-clb connections */
-        t_physical_tile_type_ptr to_grid_type = grids[to_grid_coordinate.x()][to_grid_coordinate.y()].type;
+        t_physical_tile_type_ptr to_grid_type = grids.get_physical_type(to_grid_coordinate.x(), to_grid_coordinate.y());
         /* Check if to_grid if the same grid */
         if (to_grid_type != clb_to_clb_directs[i].to_clb_type) {
             continue;
@@ -1404,18 +1403,18 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 }
 
                 /* Get the pin index in the rr_graph */
-                int from_grid_width_ofs = from_grid.width_offset;
-                int from_grid_height_ofs = from_grid.height_offset;
-                int to_grid_width_ofs = grids[to_grid_coordinate.x()][to_grid_coordinate.y()].width_offset;
-                int to_grid_height_ofs = grids[to_grid_coordinate.x()][to_grid_coordinate.y()].height_offset;
+                int from_grid_width_ofs = grids.get_width_offset(from_grid_coordinate.x(), from_grid_coordinate.y());
+                int from_grid_height_ofs = grids.get_height_offset(from_grid_coordinate.x(), from_grid_coordinate.y());
+                int to_grid_width_ofs = grids.get_width_offset(to_grid_coordinate.x(), to_grid_coordinate.y());
+                int to_grid_height_ofs = grids.get_height_offset(to_grid_coordinate.x(), to_grid_coordinate.y());
 
                 /* Find the side of grid pins, the pin location should be unique!
                  * Pin location is required by searching a node in rr_graph
                  */
-                std::vector<e_side> opin_grid_side = find_grid_pin_sides(from_grid, opin);
+                std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, from_grid_coordinate.x(), from_grid_coordinate.y(), opin);
                 VTR_ASSERT(1 == opin_grid_side.size());
 
-                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids[to_grid_coordinate.x()][to_grid_coordinate.y()], ipin);
+                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, to_grid_coordinate.x(), to_grid_coordinate.y(), ipin);
                 VTR_ASSERT(1 == ipin_grid_side.size());
 
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(from_grid_coordinate.x() - from_grid_width_ofs,
