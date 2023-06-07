@@ -461,10 +461,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // If the switch name is not present in the architecture, generate an
         // error.
         // If the graph is written when flat-routing is enabled, the types of the switches inside of the rr_graph are also
-        // added to the XML file. These types are not added to the data structure that contain arch switch types. They are added to all_sw_inf under dvice context.
+        // added to the XML file. These types are not added to the data structure that contain arch switch types. They are added to all_sw_inf under device context.
         // It remains as a future work to remove the arch_switch_types and use all_sw info under device_ctx instead.
         bool found_arch_name = false;
         std::string string_name = std::string(name);
+        // The string name has the format of "Internal Switch/dealy". So, I have to use compare to specify the portion I want to be compared.
         bool is_internal_sw = string_name.compare(0, 15, "Internal Switch") == 0;
         for (const auto& arch_sw_inf: arch_switch_inf_) {
             if (string_name == arch_sw_inf.name || is_internal_sw) {
@@ -475,11 +476,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         if (!found_arch_name) {
             report_error("Switch name '%s' not found in architecture\n", string_name.c_str());
         }
-        if(is_internal_sw){
-            sw->intra_tile = true;
-        } else {
-            sw->intra_tile = false;
-        }
+        sw->intra_tile = is_internal_sw;
         sw->name = string_name;
     }
     inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
@@ -927,7 +924,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             bind.set_ignore();
         }
 
-        // The edge ids in the rr graph file are indeed rr edge id not architecture edge id
+        // The edge ids in the rr graph file are rr edge id not architecture edge id
         rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id, true);
         return bind;
     }

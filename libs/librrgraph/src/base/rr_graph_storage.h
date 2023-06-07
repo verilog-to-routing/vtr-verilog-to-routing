@@ -545,10 +545,17 @@ class t_rr_graph_storage {
     // Reserve at least num_edges in the edge backing arrays.
     void reserve_edges(size_t num_edges);
 
-    // Add one edge.  This method is efficient if reserve_edges was called with
-    // the number of edges present in the graph.  This method is still
-    // amortized O(1), like std::vector::emplace_back, but both runtime and
-    // peak memory usage will be higher if reallocation is required.
+    /***
+     * @brief Add one edge.  This method is efficient if reserve_edges was called with
+     * the number of edges present in the graph.  This method is still
+     * amortized O(1), like std::vector::emplace_back, but both runtime and
+     * peak memory usage will be higher if reallocation is required.
+     * @ param remapped This is used later in remap_rr_node_switch_indices to check whether an
+     * end needs to be remapped. This remapping is done to change the switch index from arch_sw_idx
+     * to rr_sw_idx. The difference between these two ids is because some switch delays depend on the fan-in
+     * of the node. Also, the information about switches is flight-weighted and are accessible with IDs. Thus,
+     * the number of rr switch types can be higher than the number of arch switch types.
+     */
     void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped);
 
     // Adds a batch of edges.

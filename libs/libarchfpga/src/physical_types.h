@@ -1688,7 +1688,11 @@ struct t_arch_switch_inf {
  * mux_trans_size:  The area of each transistor in the segment's driving mux *
  *                  measured in minimum width transistor units               *
  * buf_size:  The area of the buffer. If set to zero, area should be         *
- *            calculated from R                                              */
+ *            calculated from R
+ * intra_tile: Indicate whether this rr_switch is a switch type used inside  *
+ *             clusters. These switch types are not specified in the         *
+ *             architecture description file and are added when flat router  *
+ *             is enabled                                                    */
 struct t_rr_switch_inf {
     float R = 0.;
     float Cin = 0.;

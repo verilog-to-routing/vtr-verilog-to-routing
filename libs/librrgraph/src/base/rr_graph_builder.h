@@ -207,9 +207,12 @@ class RRGraphBuilder {
     }
 
     /** @brief emplace_back_edge; It add one edge. This method is efficient if reserve_edges was called with
-     * the number of edges present in the graph. */
-    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool is_rr_id) {
-        node_storage_.emplace_back_edge(src, dest, edge_switch, is_rr_id);
+     * the number of edges present in the graph.
+     * @param remapped If true, it means the switch don't need to be remapped later. Currently, this parameter is true for the switches
+     * that are being added after the rr graph is built. Currently, it is true for the edges of the intra-cluster
+     * resources.*/
+    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
+        node_storage_.emplace_back_edge(src, dest, edge_switch, remapped);
     }
     /** @brief Append 1 more RR node to the RR graph. */
     inline void emplace_back() {
