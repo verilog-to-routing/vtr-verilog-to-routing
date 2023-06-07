@@ -70,11 +70,11 @@ def run_relax_w(
 
     vpr_min_w_log = ".".join([logfile_base, "out"])
     vpr_relaxed_w_log = ".".join([logfile_base, "crit_path", "out"])
-    max_router_iterations = None
+    crit_path_router_iterations = None
 
-    if "max_router_iterations" in vpr_args:
-        max_router_iterations = vpr_args["max_router_iterations"]
-        del vpr_args["max_router_iterations"]
+    if "crit_path_router_iterations" in vpr_args:
+        crit_path_router_iterations = vpr_args["crit_path_router_iterations"]
+        del vpr_args["crit_path_router_iterations"]
 
     if "write_rr_graph" in vpr_args:
         del vpr_args["write_rr_graph"]
@@ -96,8 +96,8 @@ def run_relax_w(
     if explicit and "route" not in vpr_args:
         # Don't look for min W if routing was not run
         return
-    if max_router_iterations:
-        vpr_args["max_router_iterations"] = max_router_iterations
+    if crit_path_router_iterations:
+        vpr_args["max_router_iterations"] = crit_path_router_iterations
     min_w = determine_min_w(str(temp_dir / vpr_min_w_log))
 
     relaxed_w = relax_w(min_w, relax_w_factor)
@@ -165,6 +165,8 @@ def run(
 
 
     """
+    if "crit_path_router_iterations" in vpr_args:
+        del vpr_args["crit_path_router_iterations"]
 
     if vpr_args is None:
         vpr_args = OrderedDict()
