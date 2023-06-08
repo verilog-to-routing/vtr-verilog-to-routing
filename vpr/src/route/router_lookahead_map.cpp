@@ -715,7 +715,9 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
             t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
 
             for (e_rr_type chan_type : chan_types) {
-                if (sample_nodes[chan_type].empty()) {
+                //if arch file specifies die_number="layer_num" doesn't require global routing resources,
+                //then we shouldn't find any sample location, no warning required
+                if (sample_nodes[chan_type].empty() && device_ctx.global_routing_layer[layer_num]) {
                     VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
                                  rr_node_typename[chan_type],
                                  segment_inf[iseg].name.c_str(),
