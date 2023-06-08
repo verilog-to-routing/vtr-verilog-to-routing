@@ -118,6 +118,14 @@ class ClockRRGraphBuilder {
 
     static void map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map);
 
+    /***
+     * @brief Add an edge to the rr graph
+     * @param rr_edges_to_create The interface to rr-graph builder
+     * @param src_node End point of the edge
+     * @param sink_node Start point of the edge
+     * @param arch_switch_idx
+     * @param edge_remapped Indicate whether the edge idx refer to arch edge idx or rr graph edge idx. Currently, we only support arch edge idx
+     */
     void add_edge(t_rr_edge_info_set* rr_edges_to_create,
                   RRNodeId src_node,
                   RRNodeId sink_node,

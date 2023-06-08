@@ -206,6 +206,11 @@ t_wire_cost_map f_wire_cost_map;
 
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
+
+/***
+ * @brief Fill f_wire_cost_map. It is a look-up table from CHANX/CHANY (to SINKs) for various distances
+ * @param segment_inf
+ */
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
 /***
  * @brief Compute the cost from pin to sinks of tiles - Compute the minimum cost to get to each tile sink from pins on the cluster
@@ -240,6 +245,12 @@ static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<i
                                     t_physical_tile_type_ptr physical_tile,
                                     const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay);
 
+/***
+ * @brief Iterate over the first and second dimension of f_wire_cost_map to get the minimum cost for each dx and dy_
+ * @param internal_opin_global_cost_map This map is populated in this function. [dx][dy] -> cost
+ * @param max_dx
+ * @param max_dy
+ */
 static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 2>& internal_opin_global_cost_map,
                                 size_t max_dx,
                                 size_t max_dy);
