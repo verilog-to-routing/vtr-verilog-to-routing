@@ -199,7 +199,7 @@ bool is_chanx_exist(const DeviceGrid& grids,
         return true;
     }
 
-    return (grids.get_height_offset(chanx_coord.x(), chanx_coord.y()) == grids.get_height_offset(chanx_coord.x(), chanx_coord.y()) - 1);
+    return (grids.get_height_offset(chanx_coord.x(), chanx_coord.y()) == grids.get_physical_type(chanx_coord.x(), chanx_coord.y())->height - 1);
 }
 
 /************************************************************************
@@ -237,7 +237,7 @@ bool is_chany_exist(const DeviceGrid& grids,
         return true;
     }
 
-    return (grids.get_width_offset(chany_coord.x(), chany_coord.y()) == grids.get_width_offset(chany_coord.x(), chany_coord.y()) - 1);
+    return (grids.get_width_offset(chany_coord.x(), chany_coord.y()) == grids.get_physical_type(chany_coord.x(), chany_coord.y())->width - 1);
 }
 
 /************************************************************************
