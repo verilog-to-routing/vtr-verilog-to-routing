@@ -322,6 +322,21 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     }
     fprintf(Echo, "*************************************************\n\n");
 
+    //Router Connection List
+    if(arch->noc != nullptr){
+        fprintf(Echo, "*************************************************\n");
+        fprintf(Echo, "NoC Router Connection List:\n");
+
+        for(auto noc_router : arch->noc->router_list){
+            fprintf(Echo, "NoC router %d is connected to:\t",noc_router.id);
+            for(auto noc_conn_id : noc_router.connection_list){
+                fprintf(Echo, "%d\t", noc_conn_id);
+            }
+            fprintf(Echo,"\n");
+        }
+        fprintf(Echo, "*************************************************\n\n");
+    }
+    
     //Architecture Power
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Power:\n");
