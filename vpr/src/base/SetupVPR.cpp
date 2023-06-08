@@ -220,7 +220,7 @@ void SetupVPR(const t_options* Options,
     RoutingArch->write_rr_graph_filename = Options->write_rr_graph_file;
     RoutingArch->read_rr_graph_filename = Options->read_rr_graph_file;
 
-    for(auto has_global_routing : Arch->layer_global_routing){
+    for (auto has_global_routing : Arch->layer_global_routing) {
         device_ctx.global_routing_layer.emplace_back(has_global_routing);
     }
 
