@@ -2497,7 +2497,9 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
             ProcessBlockTypeLocs(grid_def, die_number, strings, layer_child, loc_data);
         }
     } else {
+        //if only one die is available, then global routing resources must exist in that die
         int die_number = 0;
+        arch->layer_global_routing.at(die_number) = true;
         ProcessBlockTypeLocs(grid_def, die_number, strings, layout_type_tag, loc_data);
     }
     return grid_def;
