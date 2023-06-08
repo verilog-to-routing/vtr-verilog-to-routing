@@ -81,7 +81,7 @@ static float do_one_route(int source_node,
         REQUIRE(cheapest.index == sink_node);
 
         // Get the delay
-        vtr::optional<RouteTreeNode&> rt_node_of_sink;
+        vtr::optional<const RouteTreeNode&> rt_node_of_sink;
         std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, router_opts.flat_routing);
         delay = rt_node_of_sink.value().Tdel;
     }
