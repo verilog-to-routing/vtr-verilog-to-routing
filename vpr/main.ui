@@ -330,7 +330,7 @@
           <object class="GtkLabel" id="netAlphaLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Set Net Transparency</property>
+            <property name="label" translatable="yes">Net Transparency (0 - 255)</property>
           </object>
           <packing>
             <property name="expand">False</property>
