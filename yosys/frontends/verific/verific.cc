@@ -200,14 +200,6 @@ RTLIL::IdString VerificImporter::new_verific_id(Verific::DesignObj *obj)
 	return s;
 }
 
-static bool isNumber(const string& str)
-{
-	for (auto &c : str) {
-		if (std::isdigit(c) == 0) return false;
-	}
-	return true;
-}
-
 // When used as attributes or parameter values Verific constants come already processed.
 // - Real string values are already under quotes
 // - Numeric values with specified width are always converted to binary
@@ -215,19 +207,37 @@ static bool isNumber(const string& str)
 // - There could be some internal values that are strings without quotes
 //   so we check if value is all digits or not
 //
-static const RTLIL::Const verific_const(const char *value)
+// Note: For signed values, verific uses <len>'sb<bits> and decimal values can
+// also be negative.
+static const RTLIL::Const verific_const(const char *value, bool allow_string = true, bool output_signed = false)
 {
+	size_t found;
+	char *end;
+	int decimal;
+	bool is_signed = false;
+	RTLIL::Const c;
 	std::string val = std::string(value);
-	if (val.size()>1 && val[0]=='\"' && val.back()=='\"')
-		return RTLIL::Const(val.substr(1,val.size()-2));
-	else
-		if (val.find("'b") != std::string::npos)
-			return RTLIL::Const::from_string(val.substr(val.find("'b") + 2));
-		else
-			if (isNumber(val))
-				return RTLIL::Const(std::stoi(val),32);
-			else
-				return RTLIL::Const(val);
+	if (allow_string && val.size()>1 && val[0]=='\"' && val.back()=='\"') {
+		c = RTLIL::Const(val.substr(1,val.size()-2));
+	} else if ((found = val.find("'sb")) != std::string::npos) {
+		is_signed = output_signed;
+		c = RTLIL::Const::from_string(val.substr(found + 3));
+	} else if ((found = val.find("'b")) != std::string::npos) {
+		c = RTLIL::Const::from_string(val.substr(found + 2));
+	} else if ((value[0] == '-' || (value[0] >= '0' && value[0] <= '9')) &&
+			((decimal = std::strtol(value, &end, 10)), !end[0])) {
+		is_signed = output_signed;
+		c = RTLIL::Const((int)decimal, 32);
+	} else if (allow_string) {
+		c = RTLIL::Const(val);
+	} else {
+		log_error("expected numeric constant but found '%s'", value);
+	}
+
+	if (is_signed)
+		c.flags |= RTLIL::CONST_FLAG_SIGNED;
+
+	return c;
 }
 
 void VerificImporter::import_attributes(dict<RTLIL::IdString, RTLIL::Const> &attributes, DesignObj *obj, Netlist *nl)
@@ -263,21 +273,9 @@ void VerificImporter::import_attributes(dict<RTLIL::IdString, RTLIL::Const> &att
 		const char *k, *v;
 		FOREACH_MAP_ITEM(type_range->GetEnumIdMap(), mi, &k, &v) {
 			if (nl->IsFromVerilog()) {
-				// Expect <decimal>'b<binary>
-				auto p = strchr(v, '\'');
-				if (p) {
-					if (*(p+1) != 'b')
-						p = nullptr;
-					else
-						for (auto q = p+2; *q != '\0'; q++)
-							if (*q != '0' && *q != '1' && *q != 'x' && *q != 'z') {
-								p = nullptr;
-								break;
-							}
-				}
-				if (p == nullptr)
-					log_error("Expected TypeRange value '%s' to be of form <decimal>'b<binary>.\n", v);
-				attributes.emplace(stringf("\\enum_value_%s", p+2), RTLIL::escape_id(k));
+				auto const value = verific_const(v, false);
+
+				attributes.emplace(stringf("\\enum_value_%s", value.as_string().c_str()), RTLIL::escape_id(k));
 			}
 #ifdef VERIFIC_VHDL_SUPPORT
 			else if (nl->IsFromVhdl()) {
@@ -1043,21 +1041,49 @@ bool VerificImporter::import_netlist_instance_cells(Instance *inst, RTLIL::IdStr
 		sw->signal = sig_select;
 		current_case->switches.push_back(sw);
 
-		int select_width = inst->InputSize();
-		int data_width = inst->OutputSize();
-		int select_num = inst->Input1Size() / inst->InputSize();
+		unsigned select_width = inst->InputSize();
+		unsigned data_width = inst->OutputSize();
+		unsigned offset_data = 0;
+		unsigned offset_select = 0;
 
-		int offset_select = 0;
-		int offset_data = 0;
+		OperWideCaseSelector* selector = (OperWideCaseSelector*) inst->View();
 
-		for (int i = 0; i < select_num; i++) {
-			RTLIL::CaseRule *cs = new RTLIL::CaseRule;
-			cs->compare.push_back(sig_select_values.extract(offset_select, select_width));
-			cs->actions.push_back(SigSig(sig_out_val, sig_data_values.extract(offset_data, data_width)));
-			sw->cases.push_back(cs);
-			
-			offset_select += select_width;
+		for (unsigned i = 0 ; i < selector->GetNumBranches() ; ++i) {
+
+			SigSig action(sig_out_val, sig_data_values.extract(offset_data, data_width));
 			offset_data += data_width;
+
+			for (unsigned j = 0 ; j < selector->GetNumConditions(i) ; ++j) {
+				Array left_bound, right_bound ;
+				selector->GetCondition(i, j, &left_bound, &right_bound);
+			
+				SigSpec sel_left = sig_select_values.extract(offset_select, select_width);
+				offset_select += select_width;
+
+				if (right_bound.Size()) {
+					SigSpec sel_right = sig_select_values.extract(offset_select, select_width);
+					offset_select += select_width;
+
+					log_assert(sel_right.is_fully_const() && sel_right.is_fully_def());
+					log_assert(sel_left.is_fully_const() && sel_right.is_fully_def());
+
+					int32_t left = sel_left.as_int();
+					int32_t right = sel_right.as_int();
+					int width = sel_left.size();
+
+					for (int32_t i = right; i<left; i++) {
+						RTLIL::CaseRule *cs = new RTLIL::CaseRule;
+						cs->compare.push_back(RTLIL::Const(i,width));
+						cs->actions.push_back(action);
+						sw->cases.push_back(cs);
+					}
+				}
+
+				RTLIL::CaseRule *cs = new RTLIL::CaseRule;
+				cs->compare.push_back(sel_left);
+				cs->actions.push_back(action);
+				sw->cases.push_back(cs);
+			}
 		}
 		RTLIL::CaseRule *cs_default = new RTLIL::CaseRule;
 		cs_default->actions.push_back(SigSig(sig_out_val, sig_data_default));
@@ -1439,6 +1465,7 @@ void VerificImporter::import_netlist(RTLIL::Design *design, Netlist *nl, std::ma
 					import_attributes(wire->attributes, net, nl);
 				break;
 			}
+			import_attributes(wire->attributes, netbus, nl);
 
 			RTLIL::Const initval = Const(State::Sx, GetSize(wire));
 			bool initval_valid = false;
@@ -1984,6 +2011,28 @@ VerificClocking::VerificClocking(VerificImporter *importer, Net *net, bool sva_a
 
 	Instance *inst = net->Driver();
 
+	// Detect condition expression in sva_at_only mode
+	if (sva_at_only)
+	do {
+		Instance *inst_mux = net->Driver();
+		if (inst_mux->Type() != PRIM_MUX)
+			break;
+
+		bool pwr1 = inst_mux->GetInput1()->IsPwr();
+		bool pwr2 = inst_mux->GetInput2()->IsPwr();
+
+		if (!pwr1 && !pwr2)
+			break;
+
+		Net *sva_net = pwr1 ? inst_mux->GetInput2() : inst_mux->GetInput1();
+		if (!verific_is_sva_net(importer, sva_net))
+			break;
+
+		inst = sva_net->Driver();
+		cond_net = inst_mux->GetControl();
+		cond_pol = pwr1;
+	} while (0);
+
 	if (inst != nullptr && inst->Type() == PRIM_SVA_AT)
 	{
 		net = inst->GetInput1();
@@ -2419,6 +2468,7 @@ std::string verific_import(Design *design, const std::map<std::string,std::strin
 
 	Netlist *nl;
 	int i;
+	std::string cell_name = top;
 
 	FOREACH_ARRAY_ITEM(netlists, i, nl) {
 		if (!nl) continue;
@@ -2426,7 +2476,9 @@ std::string verific_import(Design *design, const std::map<std::string,std::strin
 			continue;
 		nl->AddAtt(new Att(" \\top", NULL));
 		nl_todo.emplace(nl->CellBaseName(), nl);
+		cell_name = nl->Owner()->Name();
 	}
+	if (top.empty()) cell_name = top;
 
 	delete netlists;
 
@@ -2446,7 +2498,7 @@ std::string verific_import(Design *design, const std::map<std::string,std::strin
 		if (nl_done.count(it->first) == 0) {
 			VerificImporter importer(false, false, false, false, false, false, false);
 			nl_done[it->first] = it->second;
-			importer.import_netlist(design, nl, nl_todo, nl->Owner()->Name() == top);
+			importer.import_netlist(design, nl, nl_todo, nl->Owner()->Name() == cell_name);
 		}
 		nl_todo.erase(it);
 	}

@@ -69,6 +69,9 @@ struct SynthMachXO2Pass : public ScriptPass
 		log("    -noiopad\n");
 		log("        do not insert IO buffers\n");
 		log("\n");
+		log("    -ccu2\n");
+		log("        use CCU2 cells in output netlist\n");
+		log("\n");
 		log("    -vpr\n");
 		log("        generate an output netlist (and BLIF file) suitable for VPR\n");
 		log("        (this feature is experimental and incomplete)\n");
@@ -80,7 +83,7 @@ struct SynthMachXO2Pass : public ScriptPass
 	}
 
 	string top_opt, blif_file, edif_file, json_file;
-	bool nobram, nolutram, flatten, vpr, noiopad;
+	bool ccu2, nobram, nolutram, flatten, vpr, noiopad;
 
 	void clear_flags() override
 	{
@@ -88,6 +91,7 @@ struct SynthMachXO2Pass : public ScriptPass
 		blif_file = "";
 		edif_file = "";
 		json_file = "";
+		ccu2 = false;
 		nobram = false;
 		nolutram = false;
 		flatten = true;
@@ -147,6 +151,10 @@ struct SynthMachXO2Pass : public ScriptPass
 				noiopad = true;
 				continue;
 			}
+			if (args[argidx] == "-ccu2") {
+				ccu2 = true;
+				continue;
+			}
 			if (args[argidx] == "-vpr") {
 				vpr = true;
 				continue;
@@ -170,7 +178,7 @@ struct SynthMachXO2Pass : public ScriptPass
 	{
 		if (check_label("begin"))
 		{
-			run("read_verilog -lib -icells +/machxo2/cells_sim.v");
+			run("read_verilog -lib -icells +/machxo2/cells_sim.v +/machxo2/cells_bb.v");
 			run(stringf("hierarchy -check %s", help_mode ? "-top <top>" : top_opt.c_str()));
 		}
 
@@ -204,25 +212,36 @@ struct SynthMachXO2Pass : public ScriptPass
 
 		if (check_label("fine"))
 		{
+			run("opt -fast -mux_undef -undriven -fine");
 			run("memory_map");
-			run("opt -full");
-			run("techmap -map +/techmap.v");
-			run("opt -fast");
+			run("opt -undriven -fine");
 		}
 
-		if (check_label("map_ios", "(unless -noiopad)"))
+		if (check_label("map_gates", "(unless -noiopad)"))
 		{
+			if (!ccu2)
+				run("techmap");
+			else
+				run("techmap -map +/techmap.v -map +/machxo2/arith_map.v");
 			if (!noiopad || help_mode)
 			{
-				run("iopadmap -bits -outpad $__FACADE_OUTPAD I:O -inpad $__FACADE_INPAD O:I -toutpad $__FACADE_TOUTPAD ~T:I:O -tinoutpad $__FACADE_TINOUTPAD ~T:O:I:B A:top");
-				run("attrmvcp -attr src -attr LOC t:$__FACADE_OUTPAD %x:+[O] t:$__FACADE_TOUTPAD %x:+[O] t:$__FACADE_TINOUTPAD %x:+[B]");
-				run("attrmvcp -attr src -attr LOC -driven t:$__FACADE_INPAD %x:+[I]");
+				run("iopadmap -bits -outpad OB I:O -inpad IB O:I -toutpad OBZ ~T:I:O -tinoutpad BB ~T:O:I:B A:top", "(only if '-iopad')");
+				run("attrmvcp -attr src -attr LOC t:OB %x:+[O] t:OBZ %x:+[O] t:BB %x:+[B]");
+				run("attrmvcp -attr src -attr LOC -driven t:IB %x:+[I]");
 			}
 		}
 
 		if (check_label("map_ffs"))
 		{
-			run("dfflegalize -cell $_DFF_P_ 0");
+			run("opt_clean");
+			std::string dfflegalize_args = " -cell $_DFF_?_ 01 -cell $_DFF_?P?_ r -cell $_SDFF_?P?_ r";
+			run("dfflegalize" + dfflegalize_args);
+			run("techmap -D NO_LUT -map +/machxo2/cells_map.v");
+			run("opt_expr -undriven -mux_undef");
+			run("simplemap");
+			run("ecp5_gsr");
+			run("attrmvcp -copy -attr syn_useioff");
+			run("opt_clean");
 		}
 
 		if (check_label("map_luts"))
