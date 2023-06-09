@@ -26,7 +26,7 @@ YOSYS_NAMESPACE_BEGIN
 extern int verific_verbose;
 
 extern bool verific_import_pending;
-extern void verific_import(Design *design, const std::map<std::string,std::string> &parameters, std::string top = std::string());
+extern std::string verific_import(Design *design, const std::map<std::string,std::string> &parameters, std::string top = std::string());
 
 extern pool<int> verific_sva_prims;
 
@@ -44,12 +44,14 @@ struct VerificClocking {
 	SigBit disable_sig = State::S0;
 	bool posedge = true;
 	bool gclk = false;
+	bool cond_pol = true;
 
 	VerificClocking() { }
 	VerificClocking(VerificImporter *importer, Verific::Net *net, bool sva_at_only = false);
 	RTLIL::Cell *addDff(IdString name, SigSpec sig_d, SigSpec sig_q, Const init_value = Const());
 	RTLIL::Cell *addAdff(IdString name, RTLIL::SigSpec sig_arst, SigSpec sig_d, SigSpec sig_q, Const arst_value);
 	RTLIL::Cell *addDffsr(IdString name, RTLIL::SigSpec sig_set, RTLIL::SigSpec sig_clr, SigSpec sig_d, SigSpec sig_q);
+	RTLIL::Cell *addAldff(IdString name, RTLIL::SigSpec sig_aload, RTLIL::SigSpec sig_adata, SigSpec sig_d, SigSpec sig_q);
 
 	bool property_matches_sequence(const VerificClocking &seq) const {
 		if (clock_net != seq.clock_net)
@@ -85,6 +87,7 @@ struct VerificImporter
 	RTLIL::SigSpec operatorInput1(Verific::Instance *inst);
 	RTLIL::SigSpec operatorInput2(Verific::Instance *inst);
 	RTLIL::SigSpec operatorInport(Verific::Instance *inst, const char *portname);
+	RTLIL::SigSpec operatorInportCase(Verific::Instance *inst, const char *portname);
 	RTLIL::SigSpec operatorOutput(Verific::Instance *inst, const pool<Verific::Net*, hash_ptr_ops> *any_all_nets = nullptr);
 
 	bool import_netlist_instance_gates(Verific::Instance *inst, RTLIL::IdString inst_name);
@@ -93,7 +96,7 @@ struct VerificImporter
 	void merge_past_ffs_clock(pool<RTLIL::Cell*> &candidates, SigBit clock, bool clock_pol);
 	void merge_past_ffs(pool<RTLIL::Cell*> &candidates);
 
-	void import_netlist(RTLIL::Design *design, Verific::Netlist *nl, std::set<Verific::Netlist*> &nl_todo, bool norename = false);
+	void import_netlist(RTLIL::Design *design, Verific::Netlist *nl, std::map<std::string,Verific::Netlist*> &nl_todo, bool norename = false);
 };
 
 void verific_import_sva_assert(VerificImporter *importer, Verific::Instance *inst);

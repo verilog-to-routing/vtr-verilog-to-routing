@@ -73,6 +73,8 @@
 #include <limits.h>
 #include <errno.h>
 
+#include "libs/json11/json11.hpp"
+
 YOSYS_NAMESPACE_BEGIN
 
 int autoidx = 1;
@@ -82,6 +84,7 @@ CellTypes yosys_celltypes;
 
 #ifdef YOSYS_ENABLE_TCL
 Tcl_Interp *yosys_tcl_interp = NULL;
+bool yosys_tcl_repl_active = false;
 #endif
 
 std::set<std::string> yosys_input_files, yosys_output_files;
@@ -376,35 +379,54 @@ int run_command(const std::string &command, std::function<void(const std::string
 }
 #endif
 
+std::string get_base_tmpdir()
+{
+	static std::string tmpdir;
+
+	if (!tmpdir.empty()) {
+		return tmpdir;
+	}
+
+#if defined(_WIN32)
+#  ifdef __MINGW32__
+	char longpath[MAX_PATH + 1];
+	char shortpath[MAX_PATH + 1];
+#  else
+	WCHAR longpath[MAX_PATH + 1];
+	TCHAR shortpath[MAX_PATH + 1];
+#  endif
+	if (!GetTempPath(MAX_PATH+1, longpath))
+		log_error("GetTempPath() failed.\n");
+	if (!GetShortPathName(longpath, shortpath, MAX_PATH + 1))
+		log_error("GetShortPathName() failed.\n");
+	for (int i = 0; shortpath[i]; i++)
+		tmpdir += char(shortpath[i]);
+#else
+	char * var = std::getenv("TMPDIR");
+	if (var && strlen(var)!=0) {
+		tmpdir.assign(var);
+		// We return the directory name without the trailing '/'
+		while (!tmpdir.empty() && (tmpdir.back() == '/')) {
+			tmpdir.pop_back();
+		}
+	} else {
+		tmpdir.assign("/tmp");
+	}
+#endif
+	return tmpdir;
+}
+
 std::string make_temp_file(std::string template_str)
 {
-#if defined(__wasm)
 	size_t pos = template_str.rfind("XXXXXX");
 	log_assert(pos != std::string::npos);
+#if defined(__wasm)
 	static size_t index = 0;
 	template_str.replace(pos, 6, stringf("%06zu", index++));
 #elif defined(_WIN32)
-	if (template_str.rfind("/tmp/", 0) == 0) {
-#  ifdef __MINGW32__
-		char longpath[MAX_PATH + 1];
-		char shortpath[MAX_PATH + 1];
-#  else
-		WCHAR longpath[MAX_PATH + 1];
-		TCHAR shortpath[MAX_PATH + 1];
-#  endif
-		if (!GetTempPath(MAX_PATH+1, longpath))
-			log_error("GetTempPath() failed.\n");
-		if (!GetShortPathName(longpath, shortpath, MAX_PATH + 1))
-			log_error("GetShortPathName() failed.\n");
-		std::string path;
-		for (int i = 0; shortpath[i]; i++)
-			path += char(shortpath[i]);
-		template_str = stringf("%s\\%s", path.c_str(), template_str.c_str() + 5);
-	}
-
-	size_t pos = template_str.rfind("XXXXXX");
-	log_assert(pos != std::string::npos);
-
+#ifndef YOSYS_WIN32_UNIX_DIR
+	std::replace(template_str.begin(), template_str.end(), '/', '\\');
+#endif
 	while (1) {
 		for (int i = 0; i < 6; i++) {
 			static std::string y = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -416,9 +438,6 @@ std::string make_temp_file(std::string template_str)
 			break;
 	}
 #else
-	size_t pos = template_str.rfind("XXXXXX");
-	log_assert(pos != std::string::npos);
-
 	int suffixlen = GetSize(template_str) - pos - 6;
 
 	char *p = strdup(template_str.c_str());
@@ -450,8 +469,8 @@ std::string make_temp_dir(std::string template_str)
 #  endif
 
 	char *p = strdup(template_str.c_str());
-	p = mkdtemp(p);
-	log_assert(p != NULL);
+	char *res = mkdtemp(p);
+	log_assert(res != NULL);
 	template_str = p;
 	free(p);
 
@@ -518,11 +537,6 @@ std::string escape_filename_spaces(const std::string& filename)
 	return out;
 }
 
-int GetSize(RTLIL::Wire *wire)
-{
-	return wire->width;
-}
-
 bool already_setup = false;
 
 void yosys_setup()
@@ -579,7 +593,9 @@ void yosys_shutdown()
 
 #ifdef YOSYS_ENABLE_TCL
 	if (yosys_tcl_interp != NULL) {
-		Tcl_DeleteInterp(yosys_tcl_interp);
+		if (!Tcl_InterpDeleted(yosys_tcl_interp)) {
+			Tcl_DeleteInterp(yosys_tcl_interp);
+		}
 		Tcl_Finalize();
 		yosys_tcl_interp = NULL;
 	}
@@ -616,6 +632,23 @@ RTLIL::IdString new_id(std::string file, int line, std::string func)
 		func = func.substr(pos+1);
 
 	return stringf("$auto$%s:%d:%s$%d", file.c_str(), line, func.c_str(), autoidx++);
+}
+
+RTLIL::IdString new_id_suffix(std::string file, int line, std::string func, std::string suffix)
+{
+#ifdef _WIN32
+	size_t pos = file.find_last_of("/\\");
+#else
+	size_t pos = file.find_last_of('/');
+#endif
+	if (pos != std::string::npos)
+		file = file.substr(pos+1);
+
+	pos = func.find_last_of(':');
+	if (pos != std::string::npos)
+		func = func.substr(pos+1);
+
+	return stringf("$auto$%s:%d:%s$%s$%d", file.c_str(), line, func.c_str(), suffix.c_str(), autoidx++);
 }
 
 RTLIL::Design *yosys_get_design()
@@ -679,6 +712,42 @@ void rewrite_filename(std::string &filename)
 }
 
 #ifdef YOSYS_ENABLE_TCL
+
+static Tcl_Obj *json_to_tcl(Tcl_Interp *interp, const json11::Json &json)
+{
+	if (json.is_null())
+		return Tcl_NewStringObj("null", 4);
+	else if (json.is_string()) {
+		auto string = json.string_value();
+		return Tcl_NewStringObj(string.data(), string.size());
+	} else if (json.is_number()) {
+		double value = json.number_value();
+		double round_val = std::nearbyint(value);
+		if (std::isfinite(round_val) && value == round_val && value >= LONG_MIN && value < -double(LONG_MIN))
+			return Tcl_NewLongObj((long)round_val);
+		else
+			return Tcl_NewDoubleObj(value);
+	} else if (json.is_bool()) {
+		return Tcl_NewBooleanObj(json.bool_value());
+	} else if (json.is_array()) {
+		auto list = json.array_items();
+		Tcl_Obj *result = Tcl_NewListObj(list.size(), nullptr);
+		for (auto &item : list)
+			Tcl_ListObjAppendElement(interp, result, json_to_tcl(interp, item));
+		return result;
+	} else if (json.is_object()) {
+		auto map = json.object_items();
+		Tcl_Obj *result = Tcl_NewListObj(map.size() * 2, nullptr);
+		for (auto &item : map) {
+			Tcl_ListObjAppendElement(interp, result, Tcl_NewStringObj(item.first.data(), item.first.size()));
+			Tcl_ListObjAppendElement(interp, result, json_to_tcl(interp, item.second));
+		}
+		return result;
+	} else {
+		log_abort();
+	}
+}
+
 static int tcl_yosys_cmd(ClientData, Tcl_Interp *interp, int argc, const char *argv[])
 {
 	std::vector<std::string> args;
@@ -703,20 +772,73 @@ static int tcl_yosys_cmd(ClientData, Tcl_Interp *interp, int argc, const char *a
 		return TCL_OK;
 	}
 
-	if (args.size() == 1) {
-		Pass::call(yosys_get_design(), args[0]);
-		return TCL_OK;
+	yosys_get_design()->scratchpad_unset("result.json");
+	yosys_get_design()->scratchpad_unset("result.string");
+
+	bool in_repl = yosys_tcl_repl_active;
+	bool restore_log_cmd_error_throw = log_cmd_error_throw;
+
+	log_cmd_error_throw = true;
+
+	try {
+		if (args.size() == 1) {
+			Pass::call(yosys_get_design(), args[0]);
+		} else {
+			Pass::call(yosys_get_design(), args);
+		}
+	} catch (log_cmd_error_exception) {
+		if (in_repl) {
+			auto design = yosys_get_design();
+			while (design->selection_stack.size() > 1)
+				design->selection_stack.pop_back();
+			log_reset_stack();
+		}
+		Tcl_SetResult(interp, (char *)"Yosys command produced an error", TCL_STATIC);
+
+		yosys_tcl_repl_active = in_repl;
+		log_cmd_error_throw = restore_log_cmd_error_throw;
+		return TCL_ERROR;
+	} catch (...) {
+		log_error("uncaught exception during Yosys command invoked from TCL\n");
 	}
 
-	Pass::call(yosys_get_design(), args);
+	yosys_tcl_repl_active = in_repl;
+	log_cmd_error_throw = restore_log_cmd_error_throw;
+
+	auto &scratchpad = yosys_get_design()->scratchpad;
+	auto result = scratchpad.find("result.json");
+	if (result != scratchpad.end()) {
+		std::string err;
+		auto json = json11::Json::parse(result->second, err);
+		if (err.empty()) {
+			Tcl_SetObjResult(interp, json_to_tcl(interp, json));
+		} else
+			log_warning("Ignoring result.json scratchpad value due to parse error: %s\n", err.c_str());
+	} else if ((result = scratchpad.find("result.string")) != scratchpad.end()) {
+		Tcl_SetObjResult(interp, Tcl_NewStringObj(result->second.data(), result->second.size()));
+	}
+
 	return TCL_OK;
+}
+
+int yosys_tcl_iterp_init(Tcl_Interp *interp)
+{
+    if (Tcl_Init(interp)!=TCL_OK)
+		log_warning("Tcl_Init() call failed - %s\n",Tcl_ErrnoMsg(Tcl_GetErrno()));
+	Tcl_CreateCommand(interp, "yosys", tcl_yosys_cmd, NULL, NULL);
+    return TCL_OK ;
+}
+
+void yosys_tcl_activate_repl()
+{
+	yosys_tcl_repl_active = true;
 }
 
 extern Tcl_Interp *yosys_get_tcl_interp()
 {
 	if (yosys_tcl_interp == NULL) {
 		yosys_tcl_interp = Tcl_CreateInterp();
-		Tcl_CreateCommand(yosys_tcl_interp, "yosys", tcl_yosys_cmd, NULL, NULL);
+		yosys_tcl_iterp_init(yosys_tcl_interp);
 	}
 	return yosys_tcl_interp;
 }
@@ -739,6 +861,10 @@ struct TclPass : public Pass {
 		log("If any arguments are specified, these arguments are provided to the script via\n");
 		log("the standard $argc and $argv variables.\n");
 		log("\n");
+		log("Note, tcl will not recieve the output of any yosys command. If the output\n");
+		log("of the tcl commands are needed, use the yosys command 'tee -s result.string'\n");
+		log("to redirect yosys's output to the 'result.string' scratchpad value.\n");
+		log("\n");
 	}
 	void execute(std::vector<std::string> args, RTLIL::Design *) override {
 		if (args.size() < 2)
@@ -749,11 +875,13 @@ struct TclPass : public Pass {
 			script_args.push_back(Tcl_NewStringObj((*it).c_str(), (*it).size()));
 
 		Tcl_Interp *interp = yosys_get_tcl_interp();
+		Tcl_Preserve(interp);
 		Tcl_ObjSetVar2(interp, Tcl_NewStringObj("argc", 4), NULL, Tcl_NewIntObj(script_args.size()), 0);
 		Tcl_ObjSetVar2(interp, Tcl_NewStringObj("argv", 4), NULL, Tcl_NewListObj(script_args.size(), script_args.data()), 0);
 		Tcl_ObjSetVar2(interp, Tcl_NewStringObj("argv0", 5), NULL, Tcl_NewStringObj(args[1].c_str(), args[1].size()), 0);
 		if (Tcl_EvalFile(interp, args[1].c_str()) != TCL_OK)
 			log_cmd_error("TCL interpreter returned an error: %s\n", Tcl_GetStringResult(interp));
+		Tcl_Release(interp);
 	}
 } TclPass;
 #endif
@@ -831,6 +959,35 @@ std::string proc_self_dirname()
 std::string proc_self_dirname()
 {
 	return "/";
+}
+#elif defined(__OpenBSD__)
+char yosys_path[PATH_MAX];
+char *yosys_argv0;
+
+std::string proc_self_dirname(void)
+{
+	char buf[PATH_MAX + 1] = "", *path, *p;
+	// if case argv[0] contains a valid path, return it
+	if (strlen(yosys_path) > 0) {
+		p = strrchr(yosys_path, '/');
+		snprintf(buf, sizeof buf, "%*s/", (int)(yosys_path - p), yosys_path);
+		return buf;
+	}
+	// if argv[0] does not, reconstruct the path out of $PATH
+	path = strdup(getenv("PATH"));
+	if (!path)
+		log_error("getenv(\"PATH\") failed: %s\n",  strerror(errno));
+	for (p = strtok(path, ":"); p; p = strtok(NULL, ":")) {
+		snprintf(buf, sizeof buf, "%s/%s", p, yosys_argv0);
+		if (access(buf, X_OK) == 0) {
+			*(strrchr(buf, '/') + 1) = '\0';
+			free(path);
+			return buf;
+		}
+	}
+	free(path);
+	log_error("Can't determine yosys executable path\n.");
+	return NULL;
 }
 #else
 	#error "Don't know how to determine process executable base path!"
@@ -956,7 +1113,7 @@ static void handle_label(std::string &command, bool &from_to_active, const std::
 	}
 }
 
-void run_frontend(std::string filename, std::string command, std::string *backend_command, std::string *from_to_label, RTLIL::Design *design)
+bool run_frontend(std::string filename, std::string command, RTLIL::Design *design, std::string *from_to_label)
 {
 	if (design == nullptr)
 		design = yosys_design;
@@ -966,11 +1123,11 @@ void run_frontend(std::string filename, std::string command, std::string *backen
 		if (filename_trim.size() > 3 && filename_trim.compare(filename_trim.size()-3, std::string::npos, ".gz") == 0)
 			filename_trim.erase(filename_trim.size()-3);
 		if (filename_trim.size() > 2 && filename_trim.compare(filename_trim.size()-2, std::string::npos, ".v") == 0)
-			command = "verilog";
+			command = " -vlog2k";
 		else if (filename_trim.size() > 2 && filename_trim.compare(filename_trim.size()-3, std::string::npos, ".sv") == 0)
-			command = "verilog -sv";
+			command = " -sv";
 		else if (filename_trim.size() > 3 && filename_trim.compare(filename_trim.size()-4, std::string::npos, ".vhd") == 0)
-			command = "vhdl";
+			command = " -vhdl";
 		else if (filename_trim.size() > 4 && filename_trim.compare(filename_trim.size()-5, std::string::npos, ".blif") == 0)
 			command = "blif";
 		else if (filename_trim.size() > 5 && filename_trim.compare(filename_trim.size()-6, std::string::npos, ".eblif") == 0)
@@ -1056,10 +1213,12 @@ void run_frontend(std::string filename, std::string command, std::string *backen
 		if (filename != "-")
 			fclose(f);
 
-		if (backend_command != NULL && *backend_command == "auto")
-			*backend_command = "";
+		return true;
+	}
 
-		return;
+	if (command == "tcl") {
+		Pass::call(design, vector<string>({command, filename}));
+		return true;
 	}
 
 	if (filename == "-") {
@@ -1068,16 +1227,15 @@ void run_frontend(std::string filename, std::string command, std::string *backen
 		log("\n-- Parsing `%s' using frontend `%s' --\n", filename.c_str(), command.c_str());
 	}
 
-	if (command == "tcl")
-		Pass::call(design, vector<string>({command, filename}));
-	else
+	if (command[0] == ' ') {
+		auto argv = split_tokens("read" + command);
+		argv.push_back(filename);
+		Pass::call(design, argv);
+	} else
 		Frontend::frontend_call(design, NULL, filename, command);
-	design->check();
-}
 
-void run_frontend(std::string filename, std::string command, RTLIL::Design *design)
-{
-	run_frontend(filename, command, nullptr, nullptr, design);
+	design->check();
+	return false;
 }
 
 void run_pass(std::string command, RTLIL::Design *design)
@@ -1391,7 +1549,7 @@ struct ScriptCmdPass : public Pass {
 		else if (args.size() == 2)
 			run_frontend(args[1], "script", design);
 		else if (args.size() == 3)
-			run_frontend(args[1], "script", NULL, &args[2], design);
+			run_frontend(args[1], "script", design, &args[2]);
 		else
 			extra_args(args, 2, design, false);
 	}

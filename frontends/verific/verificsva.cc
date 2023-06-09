@@ -1522,10 +1522,13 @@ struct VerificSvaImporter
 		if (inst == nullptr)
 			return false;
 
-		if (clocking.cond_net != nullptr)
+		if (clocking.cond_net != nullptr) {
 			trig = importer->net_map_at(clocking.cond_net);
-		else
+			if (!clocking.cond_pol)
+				trig = module->Not(NEW_ID, trig);
+		} else {
 			trig = State::S1;
+		}
 
 		if (inst->Type() == PRIM_SVA_S_EVENTUALLY || inst->Type() == PRIM_SVA_EVENTUALLY)
 		{
@@ -1587,17 +1590,25 @@ struct VerificSvaImporter
 
 		SigBit trig = State::S1;
 
-		if (clocking.cond_net != nullptr)
+		if (clocking.cond_net != nullptr) {
 			trig = importer->net_map_at(clocking.cond_net);
+			if (!clocking.cond_pol)
+				trig = module->Not(NEW_ID, trig);
+		}
 
 		if (inst == nullptr)
 		{
-			log_assert(trig == State::S1);
-
-			if (accept_p != nullptr)
-				*accept_p = importer->net_map_at(net);
-			if (reject_p != nullptr)
-				*reject_p = module->Not(NEW_ID, importer->net_map_at(net));
+			if (trig != State::S1) {
+				if (accept_p != nullptr)
+					*accept_p = module->And(NEW_ID, trig, importer->net_map_at(net));
+				if (reject_p != nullptr)
+					*reject_p = module->And(NEW_ID, trig, module->Not(NEW_ID, importer->net_map_at(net)));
+			} else {
+				if (accept_p != nullptr)
+					*accept_p = importer->net_map_at(net);
+				if (reject_p != nullptr)
+					*reject_p = module->Not(NEW_ID, importer->net_map_at(net));
+			}
 		}
 		else
 		if (inst->Type() == PRIM_SVA_OVERLAPPED_IMPLICATION ||
@@ -1771,7 +1782,7 @@ struct VerificSvaImporter
 					if (mode_assert) c = module->addLive(root_name, sig_a_q, sig_en_q);
 					if (mode_assume) c = module->addFair(root_name, sig_a_q, sig_en_q);
 
-					importer->import_attributes(c->attributes, root);
+					if (c) importer->import_attributes(c->attributes, root);
 
 					return;
 				}
@@ -1816,7 +1827,7 @@ struct VerificSvaImporter
 				if (mode_assume) c = module->addAssume(root_name, sig_a_q, sig_en_q);
 				if (mode_cover) c = module->addCover(root_name, sig_a_q, sig_en_q);
 
-				importer->import_attributes(c->attributes, root);
+				if (c) importer->import_attributes(c->attributes, root);
 			}
 		}
 		catch (ParserErrorException)

@@ -117,7 +117,7 @@ void rmunused_module_cells(Module *module, bool verbose)
 	}
 
 	for (Cell *cell : module->cells()) {
-		if (cell->type.in(ID($memwr), ID($meminit), ID($meminit_v2))) {
+		if (cell->type.in(ID($memwr), ID($memwr_v2), ID($meminit), ID($meminit_v2))) {
 			IdString mem_id = cell->getParam(ID::MEMID).decode_string();
 			mem2cells[mem_id].insert(cell);
 		}
@@ -167,7 +167,7 @@ void rmunused_module_cells(Module *module, bool verbose)
 					for (auto bit : sigmap(it.second))
 						bits.insert(bit);
 
-			if (cell->type == ID($memrd)) {
+			if (cell->type.in(ID($memrd), ID($memrd_v2))) {
 				IdString mem_id = cell->getParam(ID::MEMID).decode_string();
 				if (mem_unused.count(mem_id)) {
 					mem_unused.erase(mem_id);
@@ -292,10 +292,12 @@ bool rmunused_module_signals(RTLIL::Module *module, bool purge_mode, bool verbos
 	if (!purge_mode)
 		for (auto &it : module->cells_) {
 			RTLIL::Cell *cell = it.second;
-			if (ct_reg.cell_known(cell->type))
+			if (ct_reg.cell_known(cell->type)) {
+				bool clk2fflogic = cell->get_bool_attribute(ID(clk2fflogic));
 				for (auto &it2 : cell->connections())
-					if (ct_reg.cell_output(cell->type, it2.first))
+					if (clk2fflogic ? it2.first == ID::D : ct_reg.cell_output(cell->type, it2.first))
 						register_signals.add(it2.second);
+			}
 			for (auto &it2 : cell->connections())
 				connected_signals.add(it2.second);
 		}
@@ -339,6 +341,7 @@ bool rmunused_module_signals(RTLIL::Module *module, bool purge_mode, bool verbos
 				used_signals_nodrivers.add(it2.second);
 		}
 	}
+	dict<RTLIL::SigBit, RTLIL::State> init_bits;
 	for (auto &it : module->wires_) {
 		RTLIL::Wire *wire = it.second;
 		if (wire->port_id > 0) {
@@ -354,6 +357,29 @@ bool rmunused_module_signals(RTLIL::Module *module, bool purge_mode, bool verbos
 			assign_map.apply(sig);
 			used_signals.add(sig);
 		}
+		auto it2 = wire->attributes.find(ID::init);
+		if (it2 != wire->attributes.end()) {
+			RTLIL::Const &val = it2->second;
+			SigSpec sig = assign_map(wire);
+			for (int i = 0; i < GetSize(val) && i < GetSize(sig); i++)
+				if (val.bits[i] != State::Sx)
+					init_bits[sig[i]] = val.bits[i];
+			wire->attributes.erase(it2);
+		}
+	}
+
+	for (auto wire : module->wires()) {
+		bool found = false;
+		Const val(State::Sx, wire->width);
+		for (int i = 0; i < wire->width; i++) {
+			auto it = init_bits.find(RTLIL::SigBit(wire, i));
+			if (it != init_bits.end()) {
+				val.bits[i] = it->second;
+				found = true;
+			}
+		}
+		if (found)
+			wire->attributes[ID::init] = val;
 	}
 
 	pool<RTLIL::Wire*> del_wires_queue;
@@ -609,6 +635,7 @@ struct OptCleanPass : public Pass {
 		keep_cache.reset(design);
 
 		ct_reg.setup_internals_mem();
+		ct_reg.setup_internals_anyinit();
 		ct_reg.setup_stdcells_mem();
 
 		ct_all.setup(design);
@@ -670,6 +697,7 @@ struct CleanPass : public Pass {
 		keep_cache.reset(design);
 
 		ct_reg.setup_internals_mem();
+		ct_reg.setup_internals_anyinit();
 		ct_reg.setup_stdcells_mem();
 
 		ct_all.setup(design);

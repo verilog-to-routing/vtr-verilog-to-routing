@@ -64,6 +64,11 @@ struct LoggerPass : public Pass {
 		log("    -expect-no-warnings\n");
 		log("        gives error in case there is at least one warning that is not expected.\n");
 		log("\n");
+		log("    -check-expected\n");
+		log("        verifies that the patterns previously set up by -expect have actually\n");
+		log("        been met, then clears the expected log list.  If this is not called\n");
+		log("        manually, the check will happen at yosys exist time instead.\n");
+		log("\n");
 	}
 
 	void execute(std::vector<std::string> args, RTLIL::Design * design) override
@@ -99,7 +104,7 @@ struct LoggerPass : public Pass {
 					log("Added regex '%s' for warnings to warn list.\n", pattern.c_str());
 					log_warn_regexes.push_back(YS_REGEX_COMPILE(pattern));
 				}
-				catch (const YS_REGEX_NS::regex_error& e) {
+				catch (const std::regex_error& e) {
 					log_cmd_error("Error in regex expression '%s' !\n", pattern.c_str());
 				}
 				continue;
@@ -111,7 +116,7 @@ struct LoggerPass : public Pass {
 					log("Added regex '%s' for warnings to nowarn list.\n", pattern.c_str());
 					log_nowarn_regexes.push_back(YS_REGEX_COMPILE(pattern));
 				}
-				catch (const YS_REGEX_NS::regex_error& e) {
+				catch (const std::regex_error& e) {
 					log_cmd_error("Error in regex expression '%s' !\n", pattern.c_str());
 				}
 				continue;
@@ -123,7 +128,7 @@ struct LoggerPass : public Pass {
 					log("Added regex '%s' for warnings to werror list.\n", pattern.c_str());
 					log_werror_regexes.push_back(YS_REGEX_COMPILE(pattern));
 				}
-				catch (const YS_REGEX_NS::regex_error& e) {
+				catch (const std::regex_error& e) {
 					log_cmd_error("Error in regex expression '%s' !\n", pattern.c_str());
 				}
 				continue;
@@ -167,13 +172,17 @@ struct LoggerPass : public Pass {
 						log_expect_log[pattern] = LogExpectedItem(YS_REGEX_COMPILE(pattern), count);
 					else log_abort();
 				}
-				catch (const YS_REGEX_NS::regex_error& e) {
+				catch (const std::regex_error& e) {
 					log_cmd_error("Error in regex expression '%s' !\n", pattern.c_str());
 				}
 				continue;
 			}
 			if (args[argidx] == "-expect-no-warnings") {
 				log_expect_no_warnings = true;
+				continue;
+			}
+			if (args[argidx] == "-check-expected") {
+				log_check_expected();
 				continue;
 			}
 			break;

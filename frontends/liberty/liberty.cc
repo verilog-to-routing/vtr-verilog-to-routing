@@ -464,6 +464,9 @@ struct LibertyFrontend : public Frontend {
 		log("    -lib\n");
 		log("        only create empty blackbox modules\n");
 		log("\n");
+		log("    -wb\n");
+		log("        mark imported cells as whiteboxes\n");
+		log("\n");
 		log("    -nooverwrite\n");
 		log("        ignore re-definitions of modules. (the default behavior is to\n");
 		log("        create an error message if the existing module is not a blackbox\n");
@@ -489,6 +492,7 @@ struct LibertyFrontend : public Frontend {
 	void execute(std::istream *&f, std::string filename, std::vector<std::string> args, RTLIL::Design *design) override
 	{
 		bool flag_lib = false;
+		bool flag_wb = false;
 		bool flag_nooverwrite = false;
 		bool flag_overwrite = false;
 		bool flag_ignore_miss_func = false;
@@ -496,13 +500,15 @@ struct LibertyFrontend : public Frontend {
 		bool flag_ignore_miss_data_latch = false;
 		std::vector<std::string> attributes;
 
-		log_header(design, "Executing Liberty frontend.\n");
-
 		size_t argidx;
 		for (argidx = 1; argidx < args.size(); argidx++) {
 			std::string arg = args[argidx];
 			if (arg == "-lib") {
 				flag_lib = true;
+				continue;
+			}
+			if (arg == "-wb") {
+				flag_wb = true;
 				continue;
 			}
 			if (arg == "-ignore_redef" || arg == "-nooverwrite") {
@@ -534,6 +540,11 @@ struct LibertyFrontend : public Frontend {
 			break;
 		}
 		extra_args(f, filename, args, argidx);
+
+		if (flag_wb && flag_lib)
+			log_error("-wb and -lib cannot be specified together!\n");
+
+		log_header(design, "Executing Liberty frontend: %s\n", filename.c_str());
 
 		LibertyParser parser(*f);
 		int cell_count = 0;
@@ -571,6 +582,9 @@ struct LibertyFrontend : public Frontend {
 
 			if (flag_lib)
 				module->set_bool_attribute(ID::blackbox);
+
+			if (flag_wb)
+				module->set_bool_attribute(ID::whitebox);
 
 			for (auto &attr : attributes)
 				module->attributes[attr] = 1;

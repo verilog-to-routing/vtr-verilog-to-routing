@@ -187,8 +187,16 @@ endmodule
 
 (* blackbox *) (* keep *)
 module JTAGG(
-	input TCK, TMS, TDI, JTDO2, JTDO1,
-	output TDO, JTDI, JTCK, JRTI2, JRTI1,
+	(* iopad_external_pin *)
+	input TCK, 
+	(* iopad_external_pin *)
+	input TMS, 
+	(* iopad_external_pin *)
+	input TDI,
+	input JTDO2, JTDO1,
+	(* iopad_external_pin *)
+	output TDO,
+	output JTDI, JTCK, JRTI2, JRTI1,
 	output JSHIFT, JUPDATE, JRSTN, JCE2, JCE1
 );
 parameter ER1 = "ENABLED";
@@ -223,7 +231,7 @@ endmodule
 
 (* blackbox *)
 module IDDRX2F(
-	input D, SCLK, ECLK, RST,
+	input D, SCLK, ECLK, RST, ALIGNWD,
 	output Q0, Q1, Q2, Q3
 );
 	parameter GSR = "ENABLED";
@@ -340,6 +348,15 @@ module DDRDLLA(
 endmodule
 
 (* blackbox *)
+module DLLDELD(
+	input A, DDRDEL, LOADN, MOVE, DIRECTION,
+	output Z, CFLAG
+);
+	parameter DEL_ADJ = "PLUS";
+	parameter DEL_VAL = 0;
+endmodule
+
+(* blackbox *)
 module CLKDIVF(
 	input CLKI, RST, ALIGNWD,
 	output CDIVX
@@ -381,7 +398,14 @@ endmodule
 
 (* blackbox *) (* keep *)
 module DCUA(
-	input CH0_HDINP, CH1_HDINP, CH0_HDINN, CH1_HDINN,
+	(* iopad_external_pin *)
+	input CH0_HDINP,
+	(* iopad_external_pin *)
+	input CH1_HDINP,
+	(* iopad_external_pin *)
+	input CH0_HDINN,
+	(* iopad_external_pin *)
+	input CH1_HDINN,
 	input D_TXBIT_CLKP_FROM_ND, D_TXBIT_CLKN_FROM_ND, D_SYNC_ND, D_TXPLL_LOL_FROM_ND,
 	input CH0_RX_REFCLK, CH1_RX_REFCLK, CH0_FF_RXI_CLK, CH1_FF_RXI_CLK, CH0_FF_TXI_CLK, CH1_FF_TXI_CLK, CH0_FF_EBRD_CLK, CH1_FF_EBRD_CLK,
 	input CH0_FF_TX_D_0, CH1_FF_TX_D_0, CH0_FF_TX_D_1, CH1_FF_TX_D_1, CH0_FF_TX_D_2, CH1_FF_TX_D_2, CH0_FF_TX_D_3, CH1_FF_TX_D_3,
@@ -692,7 +716,10 @@ endmodule
 
 (* blackbox *)
 module EXTREFB (
-	input  REFCLKP, REFCLKN,
+	(* iopad_external_pin *)
+	input REFCLKP,
+	(* iopad_external_pin *)
+	input REFCLKN,
 	output REFCLKO
 );
 	parameter REFCK_PWDNB = "0b0";

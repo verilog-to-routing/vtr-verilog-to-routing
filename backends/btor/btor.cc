@@ -28,6 +28,8 @@
 #include "kernel/celltypes.h"
 #include "kernel/log.h"
 #include "kernel/mem.h"
+#include "kernel/json.h"
+#include "kernel/yw.h"
 #include <string>
 
 USING_YOSYS_NAMESPACE
@@ -83,6 +85,22 @@ struct BtorWorker
 	vector<string> info_lines;
 	dict<int, int> info_clocks;
 
+	struct ywmap_btor_sig {
+		SigSpec sig;
+		Cell *cell = nullptr;
+
+		ywmap_btor_sig(const SigSpec &sig) : sig(sig) {}
+		ywmap_btor_sig(Cell *cell) : cell(cell) {}
+	};
+
+	vector<ywmap_btor_sig> ywmap_inputs;
+	vector<ywmap_btor_sig> ywmap_states;
+	dict<SigBit, int> ywmap_clock_bits;
+	dict<SigBit, int> ywmap_clock_inputs;
+
+
+	PrettyJson ywmap_json;
+
 	void btorf(const char *fmt, ...) YS_ATTRIBUTE(format(printf, 2, 3))
 	{
 		va_list ap;
@@ -124,6 +142,50 @@ struct BtorWorker
 			}
 		}
 		return " " + infostr;
+	}
+
+	void ywmap_state(const SigSpec &sig) {
+		if (ywmap_json.active())
+			ywmap_states.emplace_back(sig);
+	}
+
+	void ywmap_state(Cell *cell) {
+		if (ywmap_json.active())
+			ywmap_states.emplace_back(cell);
+	}
+
+	void ywmap_input(const SigSpec &sig) {
+		if (ywmap_json.active())
+			ywmap_inputs.emplace_back(sig);
+	}
+
+	void emit_ywmap_btor_sig(const ywmap_btor_sig &btor_sig) {
+		if (btor_sig.cell == nullptr) {
+			if (btor_sig.sig.empty()) {
+				ywmap_json.value(nullptr);
+				return;
+			}
+			ywmap_json.begin_array();
+			ywmap_json.compact();
+			for (auto &chunk : btor_sig.sig.chunks()) {
+				log_assert(chunk.is_wire());
+
+				ywmap_json.begin_object();
+				ywmap_json.entry("path", witness_path(chunk.wire));
+				ywmap_json.entry("width", chunk.width);
+				ywmap_json.entry("offset", chunk.offset);
+				ywmap_json.end_object();
+			}
+			ywmap_json.end_array();
+		} else {
+			ywmap_json.begin_object();
+			ywmap_json.compact();
+			ywmap_json.entry("path", witness_path(btor_sig.cell));
+			Mem *mem = mem_cells[btor_sig.cell];
+			ywmap_json.entry("width", mem->width);
+			ywmap_json.entry("size", mem->size);
+			ywmap_json.end_object();
+		}
 	}
 
 	void btorf_push(const string &id)
@@ -446,24 +508,27 @@ struct BtorWorker
 			goto okay;
 		}
 
-		if (cell->type.in(ID($not), ID($neg), ID($_NOT_)))
+		if (cell->type.in(ID($not), ID($neg), ID($_NOT_), ID($pos)))
 		{
 			string btor_op;
 			if (cell->type.in(ID($not), ID($_NOT_))) btor_op = "not";
 			if (cell->type == ID($neg)) btor_op = "neg";
-			log_assert(!btor_op.empty());
 
 			int width = std::max(GetSize(cell->getPort(ID::A)), GetSize(cell->getPort(ID::Y)));
 
 			bool a_signed = cell->hasParam(ID::A_SIGNED) ? cell->getParam(ID::A_SIGNED).as_bool() : false;
-
-			int sid = get_bv_sid(width);
 			int nid_a = get_sig_nid(cell->getPort(ID::A), width, a_signed);
-
-			int nid = next_nid++;
-			btorf("%d %s %d %d%s\n", nid, btor_op.c_str(), sid, nid_a, getinfo(cell).c_str());
-
 			SigSpec sig = sigmap(cell->getPort(ID::Y));
+
+			// the $pos cell just passes through, all other cells need an actual operation applied
+			int nid = nid_a;
+			if (cell->type != ID($pos))
+			{
+				log_assert(!btor_op.empty());
+				int sid = get_bv_sid(width);
+				nid = next_nid++;
+				btorf("%d %s %d %d%s\n", nid, btor_op.c_str(), sid, nid_a, getinfo(cell).c_str());
+			}
 
 			if (GetSize(sig) < width) {
 				int sid = get_bv_sid(GetSize(sig));
@@ -609,12 +674,12 @@ struct BtorWorker
 			goto okay;
 		}
 
-		if (cell->type.in(ID($dff), ID($ff), ID($_DFF_P_), ID($_DFF_N), ID($_FF_)))
+		if (cell->type.in(ID($dff), ID($ff), ID($anyinit), ID($_DFF_P_), ID($_DFF_N), ID($_FF_)))
 		{
 			SigSpec sig_d = sigmap(cell->getPort(ID::D));
 			SigSpec sig_q = sigmap(cell->getPort(ID::Q));
 
-			if (!info_filename.empty() && cell->type.in(ID($dff), ID($_DFF_P_), ID($_DFF_N_)))
+			if ((!info_filename.empty() || ywmap_json.active()) && cell->type.in(ID($dff), ID($_DFF_P_), ID($_DFF_N_)))
 			{
 				SigSpec sig_c = sigmap(cell->getPort(cell->type == ID($dff) ? ID::CLK : ID::C));
 				int nid = get_sig_nid(sig_c);
@@ -626,7 +691,11 @@ struct BtorWorker
 				if (cell->type == ID($dff) && !cell->getParam(ID::CLK_POLARITY).as_bool())
 					negedge = true;
 
-				info_clocks[nid] |= negedge ? 2 : 1;
+				if (!info_filename.empty())
+					info_clocks[nid] |= negedge ? 2 : 1;
+
+				if (ywmap_json.active())
+					ywmap_clock_bits[sig_c] |= negedge ? 2 : 1;
 			}
 
 			IdString symbol;
@@ -659,6 +728,11 @@ struct BtorWorker
 			else
 				btorf("%d state %d %s\n", nid, sid, log_id(symbol));
 
+			if (cell->get_bool_attribute(ID(clk2fflogic)))
+				ywmap_state(cell->getPort(ID::D)); // For a clk2fflogic FF the named signal is the D input not the Q output
+			else
+				ywmap_state(sig_q);
+
 			if (nid_init_val >= 0) {
 				int nid_init = next_nid++;
 				if (verbose)
@@ -678,7 +752,9 @@ struct BtorWorker
 			int sid = get_bv_sid(GetSize(sig_y));
 			int nid = next_nid++;
 
-			btorf("%d state %d\n", nid, sid);
+			btorf("%d state %d%s\n", nid, sid, getinfo(cell).c_str());
+
+			ywmap_state(sig_y);
 
 			if (cell->type == ID($anyconst)) {
 				int nid2 = next_nid++;
@@ -699,9 +775,11 @@ struct BtorWorker
 				int one_nid = get_sig_nid(State::S1);
 				int zero_nid = get_sig_nid(State::S0);
 				initstate_nid = next_nid++;
-				btorf("%d state %d\n", initstate_nid, sid);
+				btorf("%d state %d%s\n", initstate_nid, sid, getinfo(cell).c_str());
 				btorf("%d init %d %d %d\n", next_nid++, sid, initstate_nid, one_nid);
 				btorf("%d next %d %d %d\n", next_nid++, sid, initstate_nid, zero_nid);
+
+				ywmap_state(sig_y);
 			}
 
 			add_nid_sig(initstate_nid, sig_y);
@@ -765,6 +843,8 @@ struct BtorWorker
 					nid_init_val = next_nid++;
 					btorf("%d state %d\n", nid_init_val, sid);
 
+					ywmap_state(nullptr);
+
 					for (int i = 0; i < mem->size; i++) {
 						Const thisword = initdata.extract(i*mem->width, mem->width);
 						if (thisword.is_fully_undef())
@@ -789,6 +869,8 @@ struct BtorWorker
 				btorf("%d state %d\n", nid, sid);
 			else
 				btorf("%d state %d %s\n", nid, sid, log_id(mem->memid));
+
+			ywmap_state(cell);
 
 			if (nid_init_val >= 0)
 			{
@@ -865,7 +947,7 @@ struct BtorWorker
 			log_error("Unsupported cell type %s for cell %s.%s -- please run `dffunmap` before `write_btor`.\n",
 					log_id(cell->type), log_id(module), log_id(cell));
 		}
-		if (cell->type.in(ID($adff), ID($adffe), ID($dffsr), ID($dffsre)) || cell->type.str().substr(0, 5) == "$_DFF") {
+		if (cell->type.in(ID($adff), ID($adffe), ID($aldff), ID($aldffe), ID($dffsr), ID($dffsre)) || cell->type.str().substr(0, 5) == "$_DFF" || cell->type.str().substr(0, 7) == "$_ALDFF") {
 			log_error("Unsupported cell type %s for cell %s.%s -- please run `async2sync; dffunmap` or `clk2fflogic` before `write_btor`.\n",
 					log_id(cell->type), log_id(module), log_id(cell));
 		}
@@ -912,10 +994,13 @@ struct BtorWorker
 				int sid = get_bv_sid(GetSize(sig));
 
 				int nid_input = next_nid++;
-				if (is_init)
+				if (is_init) {
 					btorf("%d state %d\n", nid_input, sid);
-				else
+					ywmap_state(sig);
+				} else {
 					btorf("%d input %d\n", nid_input, sid);
+					ywmap_input(sig);
+				}
 
 				int nid_masked_input;
 				if (sig_mask_undef.is_fully_ones()) {
@@ -990,6 +1075,7 @@ struct BtorWorker
 							int sid = get_bv_sid(GetSize(s));
 							int nid = next_nid++;
 							btorf("%d input %d\n", nid, sid);
+							ywmap_input(s);
 							nid_width[nid] = GetSize(s);
 
 							for (int j = 0; j < GetSize(s); j++)
@@ -1072,11 +1158,14 @@ struct BtorWorker
 		return nid;
 	}
 
-	BtorWorker(std::ostream &f, RTLIL::Module *module, bool verbose, bool single_bad, bool cover_mode, bool print_internal_names, string info_filename) :
+	BtorWorker(std::ostream &f, RTLIL::Module *module, bool verbose, bool single_bad, bool cover_mode, bool print_internal_names, string info_filename, string ywmap_filename) :
 			f(f), sigmap(module), module(module), verbose(verbose), single_bad(single_bad), cover_mode(cover_mode), print_internal_names(print_internal_names), info_filename(info_filename)
 	{
 		if (!info_filename.empty())
 			infof("name %s\n", log_id(module));
+
+		if (!ywmap_filename.empty())
+			ywmap_json.write_to_file(ywmap_filename);
 
 		memories = Mem::get_all_memories(module);
 
@@ -1090,6 +1179,20 @@ struct BtorWorker
 				mem_cells[cell] = mem_dict[cell->parameters.at(ID::MEMID).decode_string()];
 
 		btorf_push("inputs");
+
+		if (ywmap_json.active()) {
+			for (auto wire : module->wires())
+			{
+				auto gclk_attr = wire->attributes.find(ID::replaced_by_gclk);
+				if (gclk_attr == wire->attributes.end())
+					continue;
+				SigSpec sig = sigmap(wire);
+				if (gclk_attr->second == State::S1)
+					ywmap_clock_bits[sig] |= 1;
+				else if (gclk_attr->second == State::S0)
+					ywmap_clock_bits[sig] |= 2;
+			}
+		}
 
 		for (auto wire : module->wires())
 		{
@@ -1108,7 +1211,28 @@ struct BtorWorker
 			int nid = next_nid++;
 
 			btorf("%d input %d%s\n", nid, sid, getinfo(wire).c_str());
+			ywmap_input(wire);
 			add_nid_sig(nid, sig);
+
+			if (!info_filename.empty()) {
+				auto gclk_attr = wire->attributes.find(ID::replaced_by_gclk);
+				if (gclk_attr != wire->attributes.end()) {
+					if (gclk_attr->second == State::S1)
+						info_clocks[nid] |= 1;
+					else if (gclk_attr->second == State::S0)
+						info_clocks[nid] |= 2;
+				}
+			}
+
+			if (ywmap_json.active()) {
+				for (int i = 0; i < GetSize(sig); i++) {
+					auto input_bit = SigBit(wire, i);
+					auto bit = sigmap(input_bit);
+					if (!ywmap_clock_bits.count(bit))
+						continue;
+					ywmap_clock_inputs[input_bit] = ywmap_clock_bits[bit];
+				}
+			}
 		}
 
 		btorf_pop("inputs");
@@ -1220,6 +1344,8 @@ struct BtorWorker
 
 			int this_nid = next_nid++;
 			btorf("%d uext %d %d %d%s\n", this_nid, sid, nid, 0, getinfo(wire).c_str());
+			if (info_clocks.count(nid))
+				info_clocks[this_nid] |= info_clocks[nid];
 
 			btorf_pop(stringf("wire %s", log_id(wire)));
 			continue;
@@ -1363,6 +1489,42 @@ struct BtorWorker
 				f << it;
 			f.close();
 		}
+
+		if (ywmap_json.active())
+		{
+			ywmap_json.begin_object();
+			ywmap_json.entry("version", "Yosys Witness BTOR map");
+			ywmap_json.entry("generator", yosys_version_str);
+
+			ywmap_json.name("clocks");
+			ywmap_json.begin_array();
+			for (auto &entry : ywmap_clock_inputs) {
+				if (entry.second != 1 && entry.second != 2)
+					continue;
+				log_assert(entry.first.is_wire());
+				ywmap_json.begin_object();
+				ywmap_json.compact();
+				ywmap_json.entry("path", witness_path(entry.first.wire));
+				ywmap_json.entry("offset", entry.first.offset);
+				ywmap_json.entry("edge", entry.second == 1 ? "posedge" : "negedge");
+				ywmap_json.end_object();
+			}
+			ywmap_json.end_array();
+
+			ywmap_json.name("inputs");
+			ywmap_json.begin_array();
+			for (auto &entry : ywmap_inputs)
+				emit_ywmap_btor_sig(entry);
+			ywmap_json.end_array();
+
+			ywmap_json.name("states");
+			ywmap_json.begin_array();
+			for (auto &entry : ywmap_states)
+				emit_ywmap_btor_sig(entry);
+			ywmap_json.end_array();
+
+			ywmap_json.end_object();
+		}
 	}
 };
 
@@ -1391,13 +1553,23 @@ struct BtorBackend : public Backend {
 		log("  -x\n");
 		log("    Output symbols for internal netnames (starting with '$')\n");
 		log("\n");
+		log("  -ywmap <filename>\n");
+		log("    Create a map file for conversion to and from Yosys witness traces\n");
+		log("\n");
 	}
 	void execute(std::ostream *&f, std::string filename, std::vector<std::string> args, RTLIL::Design *design) override
 	{
 		bool verbose = false, single_bad = false, cover_mode = false, print_internal_names = false;
 		string info_filename;
+		string ywmap_filename;
 
 		log_header(design, "Executing BTOR backend.\n");
+
+		log_push();
+		Pass::call(design, "bmuxmap");
+		Pass::call(design, "demuxmap");
+		Pass::call(design, "bwmuxmap");
+		log_pop();
 
 		size_t argidx;
 		for (argidx = 1; argidx < args.size(); argidx++)
@@ -1422,6 +1594,10 @@ struct BtorBackend : public Backend {
 				print_internal_names = true;
 				continue;
 			}
+			if (args[argidx] == "-ywmap" && argidx+1 < args.size()) {
+				ywmap_filename = args[++argidx];
+				continue;
+			}
 			break;
 		}
 		extra_args(f, filename, args, argidx);
@@ -1434,7 +1610,7 @@ struct BtorBackend : public Backend {
 		*f << stringf("; BTOR description generated by %s for module %s.\n",
 				yosys_version_str, log_id(topmod));
 
-		BtorWorker(*f, topmod, verbose, single_bad, cover_mode, print_internal_names, info_filename);
+		BtorWorker(*f, topmod, verbose, single_bad, cover_mode, print_internal_names, info_filename, ywmap_filename);
 
 		*f << stringf("; end of yosys output\n");
 	}

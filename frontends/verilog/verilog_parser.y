@@ -33,6 +33,8 @@
  *
  */
 
+%require "3.0"
+
 %{
 #include <list>
 #include <stack>
@@ -127,6 +129,15 @@ struct specify_rise_fall {
 	specify_triple fall;
 };
 
+static void addWiretypeNode(std::string *name, AstNode *node)
+{
+	log_assert(node);
+	node->is_custom_type = true;
+	node->children.push_back(new AstNode(AST_WIRETYPE));
+	node->children.back()->str = *name;
+	delete name;
+}
+
 static void addTypedefNode(std::string *name, AstNode *node)
 {
 	log_assert(node);
@@ -162,6 +173,13 @@ static bool isInLocalScope(const std::string *name)
 
 static AstNode *getTypeDefinitionNode(std::string type_name)
 {
+	// check package types
+	if (type_name.find("::") != std::string::npos && pkg_user_types.count(type_name) > 0) {
+		auto typedef_node = pkg_user_types[type_name];
+		log_assert(typedef_node->type == AST_TYPEDEF);
+		return typedef_node->children[0];
+	}
+
 	// check current scope then outer scopes for a name
 	for (auto it = user_type_stack.rbegin(); it != user_type_stack.rend(); ++it) {
 		if (it->count(type_name) > 0) {
@@ -218,9 +236,9 @@ static AstNode *checkRange(AstNode *type_node, AstNode *range_node)
 static void rewriteRange(AstNode *rangeNode)
 {
 	if (rangeNode->type == AST_RANGE && rangeNode->children.size() == 1) {
-		// SV array size [n], rewrite as [n-1:0]
-		rangeNode->children[0] = new AstNode(AST_SUB, rangeNode->children[0], AstNode::mkconst_int(1, true));
-		rangeNode->children.push_back(AstNode::mkconst_int(0, false));
+		// SV array size [n], rewrite as [0:n-1]
+		rangeNode->children.push_back(new AstNode(AST_SUB, rangeNode->children[0], AstNode::mkconst_int(1, true)));
+		rangeNode->children[0] = AstNode::mkconst_int(0, false);
 	}
 }
 
@@ -243,6 +261,65 @@ static void checkLabelsMatch(const char *element, const std::string *before, con
 	if (before && after && *before != *after)
 		frontend_verilog_yyerror("%s (%s) and end label (%s) don't match.",
 			element, before->c_str() + 1, after->c_str() + 1);
+}
+
+// This transforms a loop like
+//   for (genvar i = 0; i < 10; i++) begin : blk
+// to
+//   genvar _i;
+//   for (_i = 0; _i < 10; _i++) begin : blk
+//     localparam i = _i;
+// where `_i` is actually some auto-generated name.
+static void rewriteGenForDeclInit(AstNode *loop)
+{
+	// check if this generate for loop contains an inline declaration
+	log_assert(loop->type == AST_GENFOR);
+	AstNode *decl = loop->children[0];
+	if (decl->type == AST_ASSIGN_EQ)
+		return;
+	log_assert(decl->type == AST_GENVAR);
+	log_assert(loop->children.size() == 5);
+
+	// identify each component of the loop
+	AstNode *init = loop->children[1];
+	AstNode *cond = loop->children[2];
+	AstNode *incr = loop->children[3];
+	AstNode *body = loop->children[4];
+	log_assert(init->type == AST_ASSIGN_EQ);
+	log_assert(incr->type == AST_ASSIGN_EQ);
+	log_assert(body->type == AST_GENBLOCK);
+
+	// create a unique name for the genvar
+	std::string old_str = decl->str;
+	std::string new_str = stringf("$genfordecl$%d$%s", autoidx++, old_str.c_str());
+
+	// rename and move the genvar declaration to the containing description
+	decl->str = new_str;
+	loop->children.erase(loop->children.begin());
+	log_assert(current_ast_mod != nullptr);
+	current_ast_mod->children.push_back(decl);
+
+	// create a new localparam with old name so that the items in the loop
+	// can simply use the old name and shadow it as necessary
+	AstNode *indirect = new AstNode(AST_LOCALPARAM);
+	indirect->str = old_str;
+	AstNode *ident = new AstNode(AST_IDENTIFIER);
+	ident->str = new_str;
+	indirect->children.push_back(ident);
+
+	body->children.insert(body->children.begin(), indirect);
+
+	// only perform the renaming for the initialization, guard, and
+	// incrementation to enable proper shadowing of the synthetic localparam
+	std::function<void(AstNode*)> substitute = [&](AstNode *node) {
+		if (node->type == AST_IDENTIFIER && node->str == old_str)
+			node->str = new_str;
+		for (AstNode *child : node->children)
+			substitute(child);
+	};
+	substitute(init);
+	substitute(cond);
+	substitute(incr);
 }
 
 %}
@@ -295,23 +372,24 @@ static void checkLabelsMatch(const char *element, const std::string *before, con
 %token TOK_POS_INDEXED TOK_NEG_INDEXED TOK_PROPERTY TOK_ENUM TOK_TYPEDEF
 %token TOK_RAND TOK_CONST TOK_CHECKER TOK_ENDCHECKER TOK_EVENTUALLY
 %token TOK_INCREMENT TOK_DECREMENT TOK_UNIQUE TOK_UNIQUE0 TOK_PRIORITY
-%token TOK_STRUCT TOK_PACKED TOK_UNSIGNED TOK_INT TOK_BYTE TOK_SHORTINT TOK_LONGINT TOK_UNION
+%token TOK_STRUCT TOK_PACKED TOK_UNSIGNED TOK_INT TOK_BYTE TOK_SHORTINT TOK_LONGINT TOK_VOID TOK_UNION
 %token TOK_BIT_OR_ASSIGN TOK_BIT_AND_ASSIGN TOK_BIT_XOR_ASSIGN TOK_ADD_ASSIGN
 %token TOK_SUB_ASSIGN TOK_DIV_ASSIGN TOK_MOD_ASSIGN TOK_MUL_ASSIGN
 %token TOK_SHL_ASSIGN TOK_SHR_ASSIGN TOK_SSHL_ASSIGN TOK_SSHR_ASSIGN
-%token TOK_BIND
+%token TOK_BIND TOK_TIME_SCALE
 
 %type <ast> range range_or_multirange non_opt_range non_opt_multirange
 %type <ast> wire_type expr basic_expr concat_list rvalue lvalue lvalue_concat_list non_io_wire_type io_wire_type
 %type <string> opt_label opt_sva_label tok_prim_wrapper hierarchical_id hierarchical_type_id integral_number
 %type <string> type_name
-%type <ast> opt_enum_init enum_type struct_type non_wire_data_type func_return_type
+%type <ast> opt_enum_init enum_type struct_type enum_struct_type func_return_type typedef_base_type
 %type <boolean> opt_property always_comb_or_latch always_or_always_ff
 %type <boolean> opt_signedness_default_signed opt_signedness_default_unsigned
-%type <integer> integer_atom_type
+%type <integer> integer_atom_type integer_vector_type
 %type <al> attr case_attr
 %type <ast> struct_union
 %type <ast_node_type> asgn_binop
+%type <ast> genvar_identifier
 
 %type <specify_target_ptr> specify_target
 %type <specify_triple_ptr> specify_triple specify_opt_triple
@@ -708,6 +786,9 @@ non_opt_delay:
 	'#' TOK_ID { delete $2; } |
 	'#' TOK_CONSTVAL { delete $2; } |
 	'#' TOK_REALVAL { delete $2; } |
+	// our `expr` doesn't have time_scale, so we need the parenthesized variant
+	'#' TOK_TIME_SCALE |
+	'#' '(' TOK_TIME_SCALE ')' |
 	'#' '(' mintypmax_expr ')' |
 	'#' '(' mintypmax_expr ',' mintypmax_expr ')' |
 	'#' '(' mintypmax_expr ',' mintypmax_expr ',' mintypmax_expr ')';
@@ -763,22 +844,10 @@ opt_wire_type_token:
 	wire_type_token | %empty;
 
 wire_type_token:
-	hierarchical_type_id {
-		astbuf3->is_custom_type = true;
-		astbuf3->children.push_back(new AstNode(AST_WIRETYPE));
-		astbuf3->children.back()->str = *$1;
-		delete $1;
+	// nets
+	net_type {
 	} |
-	TOK_WOR {
-		astbuf3->is_wor = true;
-	} |
-	TOK_WAND {
-		astbuf3->is_wand = true;
-	} |
-	// wires
-	TOK_WIRE {
-	} |
-	TOK_WIRE logic_type {
+	net_type logic_type {
 	} |
 	// regs
 	TOK_REG {
@@ -805,6 +874,15 @@ wire_type_token:
 		astbuf3->range_right = 0;
 	};
 
+net_type:
+	TOK_WOR {
+		astbuf3->is_wor = true;
+	} |
+	TOK_WAND {
+		astbuf3->is_wand = true;
+	} |
+	TOK_WIRE;
+
 logic_type:
 	TOK_LOGIC {
 	} |
@@ -812,6 +890,9 @@ logic_type:
 		astbuf3->range_left = $1 - 1;
 		astbuf3->range_right = 0;
 		astbuf3->is_signed = true;
+	} |
+	hierarchical_type_id {
+		addWiretypeNode($1, astbuf3);
 	};
 
 integer_atom_type:
@@ -820,6 +901,10 @@ integer_atom_type:
 	TOK_SHORTINT	{ $$ = 16; } |
 	TOK_LONGINT	{ $$ = 64; } |
 	TOK_BYTE	{ $$ =  8; } ;
+
+integer_vector_type:
+	TOK_LOGIC { $$ = TOK_LOGIC; } |
+	TOK_REG   { $$ = TOK_REG; } ;
 
 non_opt_range:
 	'[' expr ':' expr ']' {
@@ -932,6 +1017,23 @@ task_func_decl:
 		current_function_or_task_port_id = 1;
 		delete $4;
 	} task_func_args_opt ';' task_func_body TOK_ENDTASK {
+		current_function_or_task = NULL;
+		ast_stack.pop_back();
+	} |
+	attr TOK_FUNCTION opt_automatic TOK_VOID TOK_ID {
+		// The difference between void functions and tasks is that
+		// always_comb's implicit sensitivity list behaves as if functions were
+		// inlined, but ignores signals read only in tasks. This only matters
+		// for event based simulation, and for synthesis we can treat a void
+		// function like a task.
+		current_function_or_task = new AstNode(AST_TASK);
+		current_function_or_task->str = *$5;
+		append_attr(current_function_or_task, $1);
+		ast_stack.back()->children.push_back(current_function_or_task);
+		ast_stack.push_back(current_function_or_task);
+		current_function_or_task_port_id = 1;
+		delete $5;
+	} task_func_args_opt ';' task_func_body TOK_ENDFUNCTION {
 		current_function_or_task = NULL;
 		ast_stack.pop_back();
 	} |
@@ -1707,7 +1809,12 @@ enum_decl: enum_type enum_var_list ';'		{ delete $1; }
 // struct or union
 //////////////////
 
-struct_decl: struct_type struct_var_list ';' 	{ delete astbuf2; }
+struct_decl:
+	attr struct_type {
+		append_attr($2, $1);
+	} struct_var_list ';' {
+		delete astbuf2;
+	}
 	;
 
 struct_type: struct_union { astbuf2 = $1; } struct_body { $$ = astbuf2; }
@@ -1985,7 +2092,7 @@ type_name: TOK_ID		// first time seen
 	 ;
 
 typedef_decl:
-	TOK_TYPEDEF non_io_wire_type range type_name range_or_multirange ';' {
+	TOK_TYPEDEF typedef_base_type range type_name range_or_multirange ';' {
 		astbuf1 = $2;
 		astbuf2 = checkRange(astbuf1, $3);
 		if (astbuf2)
@@ -1998,10 +2105,33 @@ typedef_decl:
 			rewriteAsMemoryNode(astbuf1, $5);
 		}
 		addTypedefNode($4, astbuf1); }
-	| TOK_TYPEDEF non_wire_data_type type_name ';'   { addTypedefNode($3, $2); }
+	| TOK_TYPEDEF enum_struct_type type_name ';'   { addTypedefNode($3, $2); }
 	;
 
-non_wire_data_type:
+typedef_base_type:
+	hierarchical_type_id {
+		$$ = new AstNode(AST_WIRE);
+		$$->is_logic = true;
+		addWiretypeNode($1, $$);
+	} |
+	integer_vector_type opt_signedness_default_unsigned {
+		$$ = new AstNode(AST_WIRE);
+		if ($1 == TOK_REG) {
+			$$->is_reg = true;
+		} else {
+			$$->is_logic = true;
+		}
+		$$->is_signed = $2;
+	} |
+	integer_atom_type opt_signedness_default_signed {
+		$$ = new AstNode(AST_WIRE);
+		$$->is_logic = true;
+		$$->is_signed = $2;
+		$$->range_left = $1 - 1;
+		$$->range_right = 0;
+	};
+
+enum_struct_type:
 	  enum_type
 	| struct_type
 	;
@@ -2574,6 +2704,54 @@ asgn_binop:
 	TOK_SSHL_ASSIGN { $$ = AST_SHIFT_SLEFT; } |
 	TOK_SSHR_ASSIGN { $$ = AST_SHIFT_SRIGHT; } ;
 
+for_initialization:
+	TOK_ID '=' expr {
+		AstNode *ident = new AstNode(AST_IDENTIFIER);
+		ident->str = *$1;
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, ident, $3);
+		ast_stack.back()->children.push_back(node);
+		SET_AST_NODE_LOC(node, @1, @3);
+		delete $1;
+	} |
+	non_io_wire_type range TOK_ID {
+		frontend_verilog_yyerror("For loop variable declaration is missing initialization!");
+	} |
+	non_io_wire_type range TOK_ID '=' expr {
+		if (!sv_mode)
+			frontend_verilog_yyerror("For loop inline variable declaration is only supported in SystemVerilog mode!");
+
+		// loop variable declaration
+		AstNode *wire = $1;
+		AstNode *range = checkRange(wire, $2);
+		if (range != nullptr)
+			wire->children.push_back(range);
+		SET_AST_NODE_LOC(wire, @1, @3);
+		SET_AST_NODE_LOC(range, @2, @2);
+
+		AstNode *ident = new AstNode(AST_IDENTIFIER);
+		ident->str = *$3;
+		wire->str = *$3;
+		delete $3;
+
+		AstNode *loop = ast_stack.back();
+		AstNode *parent = ast_stack.at(ast_stack.size() - 2);
+		log_assert(parent->children.back() == loop);
+
+		// loop variable initialization
+		AstNode *asgn = new AstNode(AST_ASSIGN_EQ, ident, $5);
+		loop->children.push_back(asgn);
+		SET_AST_NODE_LOC(asgn, @3, @5);
+		SET_AST_NODE_LOC(ident, @3, @3);
+
+		// inject a wrapping block to declare the loop variable and
+		// contain the current loop
+		AstNode *wrapper = new AstNode(AST_BLOCK);
+		wrapper->str = "$fordecl_block$" + std::to_string(autoidx++);
+		wrapper->children.push_back(wire);
+		wrapper->children.push_back(loop);
+		parent->children.back() = wrapper; // replaces `loop`
+	};
+
 // this production creates the obligatory if-else shift/reduce conflict
 behavioral_stmt:
 	defattr | assert | wire_decl | param_decl | localparam_decl | typedef_decl |
@@ -2634,7 +2812,7 @@ behavioral_stmt:
 		ast_stack.back()->children.push_back(node);
 		ast_stack.push_back(node);
 		append_attr(node, $1);
-	} simple_behavioral_stmt ';' expr {
+	} for_initialization ';' expr {
 		ast_stack.back()->children.push_back($7);
 	} ';' simple_behavioral_stmt ')' {
 		AstNode *block = new AstNode(AST_BLOCK);
@@ -2833,6 +3011,7 @@ rvalue:
 	hierarchical_id '[' expr ']' '.' rvalue {
 		$$ = new AstNode(AST_PREFIX, $3, $6);
 		$$->str = *$1;
+		SET_AST_NODE_LOC($$, @1, @6);
 		delete $1;
 	} |
 	hierarchical_id range {
@@ -2898,16 +3077,50 @@ gen_stmt_or_module_body_stmt:
 		free_attr($1);
 	};
 
+genvar_identifier:
+	TOK_ID {
+		$$ = new AstNode(AST_IDENTIFIER);
+		$$->str = *$1;
+		delete $1;
+	};
+
+genvar_initialization:
+	TOK_GENVAR genvar_identifier {
+		frontend_verilog_yyerror("Generate for loop variable declaration is missing initialization!");
+	} |
+	TOK_GENVAR genvar_identifier '=' expr {
+		if (!sv_mode)
+			frontend_verilog_yyerror("Generate for loop inline variable declaration is only supported in SystemVerilog mode!");
+		AstNode *node = new AstNode(AST_GENVAR);
+		node->is_reg = true;
+		node->is_signed = true;
+		node->range_left = 31;
+		node->range_right = 0;
+		node->str = $2->str;
+		node->children.push_back(checkRange(node, nullptr));
+		ast_stack.back()->children.push_back(node);
+		SET_AST_NODE_LOC(node, @1, @4);
+		node = new AstNode(AST_ASSIGN_EQ, $2, $4);
+		ast_stack.back()->children.push_back(node);
+		SET_AST_NODE_LOC(node, @1, @4);
+	} |
+	genvar_identifier '=' expr {
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, $1, $3);
+		ast_stack.back()->children.push_back(node);
+		SET_AST_NODE_LOC(node, @1, @3);
+	};
+
 // this production creates the obligatory if-else shift/reduce conflict
 gen_stmt:
 	TOK_FOR '(' {
 		AstNode *node = new AstNode(AST_GENFOR);
 		ast_stack.back()->children.push_back(node);
 		ast_stack.push_back(node);
-	} simple_behavioral_stmt ';' expr {
+	} genvar_initialization ';' expr {
 		ast_stack.back()->children.push_back($6);
 	} ';' simple_behavioral_stmt ')' gen_stmt_block {
 		SET_AST_NODE_LOC(ast_stack.back(), @1, @11);
+		rewriteGenForDeclInit(ast_stack.back());
 		ast_stack.pop_back();
 	} |
 	TOK_IF '(' expr ')' {

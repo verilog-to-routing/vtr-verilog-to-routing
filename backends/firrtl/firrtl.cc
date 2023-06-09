@@ -346,6 +346,12 @@ void emit_elaborated_extmodules(RTLIL::Design *design, std::ostream &f)
 			{
 				// Find the module corresponding to this instance.
 				auto modInstance = design->module(cell->type);
+				// Ensure that we actually have a module instance
+				if (modInstance == nullptr) {
+					log_error("Unknown cell type %s\n", cell->type.c_str());
+					return;
+				}
+
 				bool modIsBlackbox = modInstance->get_blackbox_attribute();
 
 				if (modIsBlackbox)
@@ -729,12 +735,12 @@ struct FirrtlWorker
 					always_uint = true;
 					firrtl_width = max(a_width, b_width);
 				}
-				else if ((cell->type == ID($eq)) | (cell->type == ID($eqx))) {
+				else if ((cell->type == ID($eq)) || (cell->type == ID($eqx))) {
 					primop = "eq";
 					always_uint = true;
 					firrtl_width = 1;
 				}
-				else if ((cell->type == ID($ne)) | (cell->type == ID($nex))) {
+				else if ((cell->type == ID($ne)) || (cell->type == ID($nex))) {
 					primop = "neq";
 					always_uint = true;
 					firrtl_width = 1;
@@ -759,7 +765,7 @@ struct FirrtlWorker
 					always_uint = true;
 					firrtl_width = 1;
 				}
-				else if ((cell->type == ID($shl)) | (cell->type == ID($sshl))) {
+				else if ((cell->type == ID($shl)) || (cell->type == ID($sshl))) {
 					// FIRRTL will widen the result (y) by the amount of the shift.
 					// We'll need to offset this by extracting the un-widened portion as Verilog would do.
 					extract_y_bits = true;
@@ -777,7 +783,7 @@ struct FirrtlWorker
 						firrtl_width = a_width + (1 << b_width) - 1;
 					}
 				}
-				else if ((cell->type == ID($shr)) | (cell->type == ID($sshr))) {
+				else if ((cell->type == ID($shr)) || (cell->type == ID($sshr))) {
 					// We don't need to extract a specific range of bits.
 					extract_y_bits = false;
 					// Is the shift amount constant?
@@ -1188,6 +1194,8 @@ struct FirrtlBackend : public Backend {
 		log("Write a FIRRTL netlist of the current design.\n");
 		log("The following commands are executed by this command:\n");
 		log("        pmuxtree\n");
+		log("        bmuxmap\n");
+		log("        demuxmap\n");
 		log("\n");
 	}
 	void execute(std::ostream *&f, std::string filename, std::vector<std::string> args, RTLIL::Design *design) override
@@ -1210,7 +1218,10 @@ struct FirrtlBackend : public Backend {
 		log_header(design, "Executing FIRRTL backend.\n");
 		log_push();
 
-		Pass::call(design, stringf("pmuxtree"));
+		Pass::call(design, "pmuxtree");
+		Pass::call(design, "bmuxmap");
+		Pass::call(design, "demuxmap");
+		Pass::call(design, "bwmuxmap");
 
 		namecache.clear();
 		autoid_counter = 0;
@@ -1232,6 +1243,9 @@ struct FirrtlBackend : public Backend {
 
 		if (top == nullptr)
 			top = last;
+
+		if (!top)
+			log_cmd_error("There is no top module in this design!\n");
 
 		std::string circuitFileinfo = getFileinfo(top);
 		*f << stringf("circuit %s: %s\n", make_id(top->name), circuitFileinfo.c_str());

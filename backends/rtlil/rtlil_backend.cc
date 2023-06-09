@@ -51,15 +51,19 @@ void RTLIL_BACKEND::dump_const(std::ostream &f, const RTLIL::Const &data, int wi
 			}
 		}
 		f << stringf("%d'", width);
-		for (int i = offset+width-1; i >= offset; i--) {
-			log_assert(i < (int)data.bits.size());
-			switch (data.bits[i]) {
-			case State::S0: f << stringf("0"); break;
-			case State::S1: f << stringf("1"); break;
-			case RTLIL::Sx: f << stringf("x"); break;
-			case RTLIL::Sz: f << stringf("z"); break;
-			case RTLIL::Sa: f << stringf("-"); break;
-			case RTLIL::Sm: f << stringf("m"); break;
+		if (data.is_fully_undef_x_only()) {
+			f << "x";
+		} else {
+			for (int i = offset+width-1; i >= offset; i--) {
+				log_assert(i < (int)data.bits.size());
+				switch (data.bits[i]) {
+				case State::S0: f << stringf("0"); break;
+				case State::S1: f << stringf("1"); break;
+				case RTLIL::Sx: f << stringf("x"); break;
+				case RTLIL::Sz: f << stringf("z"); break;
+				case RTLIL::Sa: f << stringf("-"); break;
+				case RTLIL::Sm: f << stringf("m"); break;
+				}
 			}
 		}
 	} else {
@@ -71,7 +75,7 @@ void RTLIL_BACKEND::dump_const(std::ostream &f, const RTLIL::Const &data, int wi
 			else if (str[i] == '\t')
 				f << stringf("\\t");
 			else if (str[i] < 32)
-				f << stringf("\\%03o", str[i]);
+				f << stringf("\\%03o", (unsigned char)str[i]);
 			else if (str[i] == '"')
 				f << stringf("\\\"");
 			else if (str[i] == '\\')
@@ -354,8 +358,8 @@ void RTLIL_BACKEND::dump_module(std::ostream &f, std::string indent, RTLIL::Modu
 
 		bool first_conn_line = true;
 		for (auto it = module->connections().begin(); it != module->connections().end(); ++it) {
-			bool show_conn = !only_selected;
-			if (only_selected) {
+			bool show_conn = !only_selected || design->selected_whole_module(module->name);
+			if (!show_conn) {
 				RTLIL::SigSpec sigs = it->first;
 				sigs.append(it->second);
 				for (auto &c : sigs.chunks()) {
@@ -526,8 +530,9 @@ struct DumpPass : public Pass {
 
 		std::ostream *f;
 		std::stringstream buf;
+		bool empty = filename.empty();
 
-		if (!filename.empty()) {
+		if (!empty) {
 			rewrite_filename(filename);
 			std::ofstream *ff = new std::ofstream;
 			ff->open(filename.c_str(), append ? std::ofstream::app : std::ofstream::trunc);
@@ -542,7 +547,7 @@ struct DumpPass : public Pass {
 
 		RTLIL_BACKEND::dump_design(*f, design, true, flag_m, flag_n);
 
-		if (!filename.empty()) {
+		if (!empty) {
 			delete f;
 		} else {
 			log("%s", buf.str().c_str());

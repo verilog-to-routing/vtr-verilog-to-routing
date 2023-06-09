@@ -52,8 +52,23 @@ struct JsonWriter
 		string newstr = "\"";
 		for (char c : str) {
 			if (c == '\\')
+				newstr += "\\\\";
+			else if (c == '"')
+				newstr += "\\\"";
+			else if (c == '\b')
+				newstr += "\\b";
+			else if (c == '\f')
+				newstr += "\\f";
+			else if (c == '\n')
+				newstr += "\\n";
+			else if (c == '\r')
+				newstr += "\\r";
+			else if (c == '\t')
+				newstr += "\\t";
+			else if (c < 0x20)
+				newstr += stringf("\\u%04X", c);
+			else
 				newstr += c;
-			newstr += c;
 		}
 		return newstr + "\"";
 	}
@@ -379,10 +394,11 @@ struct JsonBackend : public Backend {
 		log("      \"bits\": <bit_vector>\n");
 		log("      \"offset\": <the lowest bit index in use, if non-0>\n");
 		log("      \"upto\": <1 if the port bit indexing is MSB-first>\n");
+		log("      \"signed\": <1 if the port is signed>\n");
 		log("    }\n");
 		log("\n");
-		log("The \"offset\" and \"upto\" fields are skipped if their value would be 0.");
-		log("They don't affect connection semantics, and are only used to preserve original");
+		log("The \"offset\" and \"upto\" fields are skipped if their value would be 0.\n");
+		log("They don't affect connection semantics, and are only used to preserve original\n");
 		log("HDL bit indexing.");
 		log("And <cell_details> is:\n");
 		log("\n");
@@ -428,6 +444,7 @@ struct JsonBackend : public Backend {
 		log("      \"bits\": <bit_vector>\n");
 		log("      \"offset\": <the lowest bit index in use, if non-0>\n");
 		log("      \"upto\": <1 if the port bit indexing is MSB-first>\n");
+		log("      \"signed\": <1 if the port is signed>\n");
 		log("    }\n");
 		log("\n");
 		log("The \"hide_name\" fields are set to 1 when the name of this cell or net is\n");
@@ -442,8 +459,8 @@ struct JsonBackend : public Backend {
 		log("connected to a constant driver are denoted as string \"0\", \"1\", \"x\", or\n");
 		log("\"z\" instead of a number.\n");
 		log("\n");
-		log("Bit vectors (including integers) are written as string holding the binary");
-		log("representation of the value. Strings are written as strings, with an appended");
+		log("Bit vectors (including integers) are written as string holding the binary\n");
+		log("representation of the value. Strings are written as strings, with an appended\n");
 		log("blank in cases of strings of the form /[01xz]* */.\n");
 		log("\n");
 		log("For example the following Verilog code:\n");
@@ -649,8 +666,9 @@ struct JsonPass : public Pass {
 
 		std::ostream *f;
 		std::stringstream buf;
+		bool empty = filename.empty();
 
-		if (!filename.empty()) {
+		if (!empty) {
 			rewrite_filename(filename);
 			std::ofstream *ff = new std::ofstream;
 			ff->open(filename.c_str(), std::ofstream::trunc);
@@ -666,7 +684,7 @@ struct JsonPass : public Pass {
 		JsonWriter json_writer(*f, true, aig_mode, compat_int_mode);
 		json_writer.write_design(design);
 
-		if (!filename.empty()) {
+		if (!empty) {
 			delete f;
 		} else {
 			log("%s", buf.str().c_str());
