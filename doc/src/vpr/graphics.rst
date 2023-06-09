@@ -69,7 +69,7 @@ If the **Placement Macros** drop down is set, any placement macros (e.g. carry c
 
 Visualizing Netlist Connectivity
 --------------------------------
-The **Toggle Nets** drop-down list under the **Net Settings** tab toggles the nets in the circuit to be visible/invisible. Options include **Nets** and **Logical Connections**.
+The **Toggle Nets** drop-down list under the **Net Settings** tab toggles the nets in the circuit to be visible/invisible. Options include **Cluster Nets** and **Primitive Nets**.
 
 .. figure:: ../Images/Net_Settings.png
     :align: center 
