@@ -316,8 +316,8 @@
             <property name="active_id">0</property>
             <items>
               <item id="0" translatable="yes">None</item>
-              <item id="1" translatable="yes">Nets</item>
-              <item id="2" translatable="yes">Logical Connections</item>
+              <item id="1" translatable="yes">Cluster Nets</item>
+              <item id="2" translatable="yes">Primitive Nets</item>
             </items>
           </object>
           <packing>

@@ -224,10 +224,10 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     if (draw_state->pic_on_screen == PLACEMENT) {
         switch (draw_state->show_nets) {
-            case DRAW_NETS:
+            case DRAW_CLUSTER_NETS:
                 drawnets(g);
                 break;
-            case DRAW_LOGICAL_CONNECTIONS:
+            case DRAW_PRIMITIVE_NETS:
                 break;
             default:
                 break;
@@ -235,10 +235,10 @@ static void draw_main_canvas(ezgl::renderer* g) {
     } else { /* ROUTING on screen */
 
         switch (draw_state->show_nets) {
-            case DRAW_NETS:
+            case DRAW_CLUSTER_NETS:
                 drawroute(ALL_NETS, g);
                 break;
-            case DRAW_LOGICAL_CONNECTIONS:
+            case DRAW_PRIMITIVE_NETS:
                 // fall through
             default:
                 draw_rr(g);
