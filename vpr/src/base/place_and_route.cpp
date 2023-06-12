@@ -66,8 +66,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc,
                                   bool is_flat) {
-    vtr::vector<ParentNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
-
+    vtr::vector<ParentNetId, vtr::optional<RouteTree>> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
     bool using_minw_hint = false;
@@ -99,8 +98,6 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
-
-    best_routing = alloc_saved_routing(router_net_list);
 
     VTR_ASSERT(net_delay.size());
 
@@ -226,8 +223,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             }
 
             /* Save routing in case it is best. */
-            save_routing(router_net_list,
-                         best_routing,
+            save_routing(best_routing,
                          route_ctx.clb_opins_used_locally,
                          saved_clb_opins_used_locally);
 
@@ -351,8 +347,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
             if (success && Fc_clipped == false) {
                 final = current;
-                save_routing(router_net_list,
-                             best_routing,
+                save_routing(best_routing,
                              route_ctx.clb_opins_used_locally,
                              saved_clb_opins_used_locally);
 
@@ -401,8 +396,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                        router_opts.has_choking_spot,
                        is_flat);
 
-    restore_routing(router_net_list,
-                    best_routing,
+    restore_routing(best_routing,
                     route_ctx.clb_opins_used_locally,
                     saved_clb_opins_used_locally);
 
@@ -416,7 +410,6 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 filename_opts.RouteFile.c_str(),
                 is_flat);
 
-    free_saved_routing(router_net_list, best_routing);
     fflush(stdout);
 
     return (final);
@@ -497,9 +490,9 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_t
 }
 
 /**
- * @brief Computes the channel width and adjusts it to be an an even number if unidirectional 
+ * @brief Computes the channel width and adjusts it to be an an even number if unidirectional
  *        since unidirectional graphs need to have paired wires.
- * 
+ *
  *   @param cfactor                 Channel width factor: multiplier on the channel width distribution (usually the number of tracks in the widest channel).
  *   @param chan_dist               Channel width distribution.
  *   @param x                       The distance (between 0 and 1) we are across the chip.
