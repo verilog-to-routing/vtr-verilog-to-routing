@@ -108,8 +108,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& arch,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             NetPinsMatrix<float>& net_delay,
-                             bool is_flat);
+                             NetPinsMatrix<float>& net_delay);
 
 /* Analysis */
 
@@ -147,8 +146,7 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name);
 
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
-void vpr_free_all(const Netlist<>& net_list,
-                  t_arch& Arch,
+void vpr_free_all(t_arch& Arch,
                   t_vpr_setup& vpr_setup);
 
 /* Display general info to user */

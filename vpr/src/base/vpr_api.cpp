@@ -96,6 +96,7 @@
 #include "iostream"
 
 #ifdef VPR_USE_TBB
+#    define TBB_PREVIEW_GLOBAL_CONTROL 1
 #    include <tbb/task_arena.h>
 #    include <tbb/global_control.h>
 #endif
@@ -825,8 +826,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
                                             arch,
                                             chan_width,
                                             timing_info,
-                                            net_delay,
-                                            is_flat);
+                                            net_delay);
         }
 
         //Post-implementation
@@ -969,8 +969,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& /*arch*/,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             NetPinsMatrix<float>& net_delay,
-                             bool is_flat) {
+                             NetPinsMatrix<float>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
@@ -984,8 +983,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
         load_net_delay_from_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
-                                    net_delay,
-                                    is_flat);
+                                    net_delay);
 
         timing_info->update();
     }
@@ -1152,7 +1150,6 @@ void free_device(const t_det_routing_arch& /*routing_arch*/) {
     device_ctx.all_sw_inf.clear();
 
     free_complex_block_types();
-    free_chunk_memory_trace();
 }
 
 static void free_complex_block_types() {
@@ -1186,7 +1183,7 @@ static void free_placement() {
 
 static void free_routing() {
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
-    routing_ctx.trace.clear();
+    routing_ctx.route_trees.clear();
     routing_ctx.trace_nodes.clear();
     routing_ctx.net_rr_terminals.clear();
     routing_ctx.rr_blk_source.clear();
@@ -1195,6 +1192,7 @@ static void free_routing() {
     routing_ctx.net_status.clear();
     routing_ctx.route_bb.clear();
 }
+
 /**
  * @brief handles the deletion of NoC related datastructures.
  */
@@ -1216,14 +1214,12 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
     free_noc();
 }
 
-void vpr_free_all(const Netlist<>& net_list,
-                  t_arch& Arch,
+void vpr_free_all(t_arch& Arch,
                   t_vpr_setup& vpr_setup) {
     free_rr_graph();
     if (vpr_setup.RouterOpts.doRouting) {
         free_route_structs();
     }
-    free_trace_structs(net_list);
     vpr_free_vpr_data_structures(Arch, vpr_setup);
 }
 
@@ -1377,9 +1373,7 @@ void vpr_analysis(const Netlist<>& net_list,
     auto& route_ctx = g_vpr_ctx.routing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    //Check the first index to see if a pointer exists
-    //TODO: Implement a better error check
-    if (route_ctx.trace.empty()) {
+    if (route_ctx.route_trees.empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 
@@ -1399,8 +1393,7 @@ void vpr_analysis(const Netlist<>& net_list,
 
         NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
         load_net_delay_from_routing(net_list,
-                                    net_delay,
-                                    vpr_setup.RouterOpts.flat_routing);
+                                    net_delay);
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, vpr_setup.RouterOpts.flat_routing);
