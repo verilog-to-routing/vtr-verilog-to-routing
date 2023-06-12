@@ -174,7 +174,21 @@ void hide_crit_path_button(ezgl::application* app) {
     hide_widget("CritPathLabel", app);
     hide_widget("ToggleCritPath", app);
 }
-
+/*
+ * @brief hides or displays critical path routing / routing delay
+ *
+ * @param app ezgl app
+ */
+void toggle_crit_path_routing(ezgl::application* app, bool hide) {
+    GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
+    if (hide) {
+        gtk_combo_box_text_remove(toggle_crit_path, 4);
+        gtk_combo_box_text_remove(toggle_crit_path, 3);
+    } else {
+        gtk_combo_box_text_insert_text(toggle_crit_path, 3, "Crit Path Routing");
+        gtk_combo_box_text_insert_text(toggle_crit_path, 4, "Crit Path Routing Delays");
+    }
+}
 /*
  * @brief Hides the widget with the given name
  * 

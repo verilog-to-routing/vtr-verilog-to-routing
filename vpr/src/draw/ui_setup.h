@@ -70,6 +70,10 @@ void crit_path_button_setup(ezgl::application* app);
  * @brief Hides Critical Path Button. Called for options that don't show crit. path button
  */
 void hide_crit_path_button(ezgl::application* app);
+/**
+ * @brief Hides or displays Critical Path routing / routing delay option. Called for before routing is finished.
+ */
+void toggle_crit_path_routing(ezgl::application* app, bool hide);
 
 /**
  * @brief Loads block names into Gtk Structures to enable autocomplete
