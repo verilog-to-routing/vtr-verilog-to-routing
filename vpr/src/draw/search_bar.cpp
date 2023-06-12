@@ -4,13 +4,13 @@
  * @brief Contains search/auto-complete related functions
  * @version 0.1
  * @date 2022-07-20
- * 
+ *
  * This file essentially follows the whole search process, from searching, finding the match,
  * and finally highlighting the searched for item. Additionally, auto-complete related stuff is found
  * here.
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 
 #ifndef NO_GRAPHICS
@@ -111,11 +111,11 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     }
 
     else if (search_type == "Block Name") {
-        /* If the block exists in atom netlist, proceeding with highlighting process. 
+        /* If the block exists in atom netlist, proceeding with highlighting process.
          * if highlight atom block fn returns false, that means that the block can't be highlighted
          * We've already confirmed the block exists in the netlist, so that means that at this zoom lvl,
          * the subblock is not shown. Therefore highlight the clb mapping.
-         * 
+         *
          * If the block does not exist in the atom netlist, we will check the CLB netlist to see if
          * they searched for a cluster block*/
         std::string block_name = "";
@@ -273,7 +273,7 @@ void auto_zoom_rr_node(int rr_node_id) {
 
 /**
  * @brief Highlights the given cluster block
- * 
+ *
  * @param clb_index Cluster Index to be highlighted
  */
 void highlight_cluster_block(ClusterBlockId clb_index) {
@@ -306,7 +306,7 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
 
 /**
  * @brief Finds and highlights the atom block. Returns true if block shows, false if not
- * 
+ *
  * @param atom_blk AtomBlockId being searched for
  * @param cl_blk ClusterBlock containing atom_blk
  * @param app ezgl:: application used
@@ -340,7 +340,7 @@ void highlight_nets(ClusterNetId net_id) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //If routing does not exist return
-    if (int(route_ctx.trace.size()) == 0) return;
+    if (route_ctx.route_trees.empty()) return;
     draw_state->net_color[net_id] = ezgl::MAGENTA;
 }
 
@@ -374,11 +374,11 @@ void warning_dialog_box(const char* message) {
 
 /**
  * @brief manages auto-complete options when search type is changed
- * 
+ *
  * Selects appropriate gtkEntryCompletion item when changed signal is sent
- * from gtkComboBox SearchType. Currently only sets a completion model for Block Name options, 
+ * from gtkComboBox SearchType. Currently only sets a completion model for Block Name options,
  * sets null for anything else. brh
- * 
+ *
  * @param self GtkComboBox that holds current Search Setting
  * @param app ezgl app used to access other objects
  */
@@ -411,7 +411,7 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
 /**
  * @brief A non-default matching function. As opposed to simply searching for a prefix(default),
  * searches string for presence of a substring. Case-insensitive
- * 
+ *
  * @param completer the GtkEntryCompletion being used
  * @param key a normalized and case-folded key representing the text
  * @param iter GtkTreeIter pointing at the current entry being compared
@@ -439,7 +439,7 @@ gboolean customMatchingFunction(
 /**
  * @brief Creates a GdkEvent that simulates user pressing key "key".
  * Currently used to fool GtkEntryCompletion into showing options w/o receiving a new input
- * 
+ *
  * @param key character value
  * @param window GdkWindow
  * @return GdkEvent Keypress event
@@ -463,16 +463,16 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
 
 /**
  * @brief Turns on autocomplete
- * 
- * This function enables the auto-complete fuctionality for the search bar. 
+ *
+ * This function enables the auto-complete fuctionality for the search bar.
  * Normally, this is pretty simple, but the idea is to have auto-complete appear as soon
  * as the user hits the "Enter" key. To accomplish this, a fake Gdk event is created
  * to simulate the user hitting a key.
- * 
- * This was done for usability reasons; if this is not done, user will need to input another key before seeing 
+ *
+ * This was done for usability reasons; if this is not done, user will need to input another key before seeing
  * autocomplete results. Considering the enter is supposed to be a search, we want to search for the users
  * key, not the key + another char
- * 
+ *
  * PERFORMANCE DATA
  * Correlation between key length and time is shaky; there might be some correlation to
  * how many strings are similar to it. All tests are performed with the key "1" - pretty common

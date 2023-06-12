@@ -1440,17 +1440,17 @@ struct t_det_routing_arch {
  *                     Note that this index will store the index of the segment
  *                     relative to its **parallel** segment types, not all segments
  *                     as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
- *                     for details but here is an example: say our segment_inf_vec in 
+ *                     for details but here is an example: say our segment_inf_vec in
  *                     device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
- *                     when building the rr_graph, static segment_inf_vectors will be 
- *                     created for each direction, thus you will have the following 
- *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y]. 
- *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec) 
+ *                     when building the rr_graph, static segment_inf_vectors will be
+ *                     created for each direction, thus you will have the following
+ *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y].
+ *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec)
  *                     and != 3 (index in device_ctx segment_inf_vec).
- *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx. 
- *                     Note that the above vector is **unifies** both x-parallel and 
- *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp 
- * 
+ *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx.
+ *                     Note that the above vector is **unifies** both x-parallel and
+ *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
+ *
  *   @param type_name_ptr  pointer to name of the segment type this track belongs
  *                     to. points to the appropriate name in s_segment_inf
  */
@@ -1534,7 +1534,7 @@ class t_chan_seg_details {
     const t_seg_details* seg_detail_ = nullptr;
 };
 
-/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)   
+/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)
  * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
  */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
@@ -1552,33 +1552,6 @@ struct t_linked_f_pointer {
 constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
 constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
 constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == SINK); }
-
-/**
- * @brief Basic element used to store the traceback (routing) of each net.
- *
- *   @param index    Array index (ID) of this routing resource node.
- *   @param net_pin_index:    Net pin index associated with the node. This value       
- *                            ranges from 1 to fanout [1..num_pins-1]. For cases when  
- *                            different speed paths are taken to the same SINK for     
- *                            different pins, node index cannot uniquely identify      
- *                            each SINK, so the net pin index guarantees an unique     
- *                            identification for each SINK node. For non-SINK nodes    
- *                            and for SINK nodes with no associated net pin index      
- *                            (i.e. special SINKs like the source of a clock tree      
- *                            which do not correspond to an actual netlist connection),
- *                            the value for this member should be set to OPEN (-1).
- *   @param iswitch  Index of the switch type used to go from this rr_node to
- *                   the next one in the routing.  OPEN if there is no next node
- *                   (i.e. this node is the last one (a SINK) in a branch of the
- *                   net's routing).
- *   @param next     Pointer to the next traceback element in this route.
- */
-struct t_trace {
-    t_trace* next;
-    int index;
-    int net_pin_index = OPEN;
-    short iswitch;
-};
 
 /**
  * @brief Extra information about each rr_node needed only during routing
@@ -1723,12 +1696,12 @@ struct t_power_opts {
 };
 
 /** @brief Channel width data
- * @param max= Maximum channel width between x_max and y_max. 
- * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
- * @param y_min= Same as above but for vertical channels. 
- * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
- * @param y_max= Same as above but for vertical channels. 
- * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()] 
+ * @param max= Maximum channel width between x_max and y_max.
+ * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param y_min= Same as above but for vertical channels.
+ * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param y_max= Same as above but for vertical channels.
+ * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
  * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
  * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
