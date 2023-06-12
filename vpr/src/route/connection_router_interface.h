@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "heap_type.h"
-#include "route_tree_type.h"
+#include "route_tree_fwd.h"
 #include "vpr_types.h"
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
@@ -51,7 +51,7 @@ class ConnectionRouterInterface {
     // Returns either the last element of the path, or nullptr if no path is
     // found
     virtual std::pair<bool, t_heap> timing_driven_route_connection_from_route_tree(
-        t_rt_node* rt_root,
+        const RouteTreeNode& rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
@@ -65,7 +65,7 @@ class ConnectionRouterInterface {
     // Unlike timing_driven_route_connection_from_route_tree(), only part of
     // the route tree which is spatially close to the sink is added to the heap.
     virtual std::pair<bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
-        t_rt_node* rt_root,
+        const RouteTreeNode& rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
@@ -84,7 +84,7 @@ class ConnectionRouterInterface {
     // empty).  When using cost_params.astar_fac = 0, for efficiency the
     // RouterLookahead used should be the NoOpLookahead.
     virtual std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
-        t_rt_node* rt_root,
+        const RouteTreeNode& rt_root,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         RouterStats& router_stats,

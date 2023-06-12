@@ -1,18 +1,18 @@
 /**
  * @file draw.h
- * 
+ *
  * The main drawing file. Contains the setup for ezgl application, ui setup, and graphis functions
- * 
+ *
  * This is VPR's main graphics application program. The program interacts with ezgl/graphics.hpp,
  * which provides an API for displaying graphics on both X11 and Win32. The most important
- * subroutine in this file is draw_main_canvas(), which is a callback function that will be called 
+ * subroutine in this file is draw_main_canvas(), which is a callback function that will be called
  * whenever the screen needs to be updated. Then, draw_main_canvas() will decide what
  * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen.
- * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions. 
+ * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions.
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
  *
  * Contains all functions that didn't fit in any other draw_*.cpp file.
- * 
+ *
  * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang, Sebastian Lievano
  * Last updated: August 2022
  */
@@ -20,6 +20,7 @@
 #ifndef DRAW_H
 #define DRAW_H
 
+#include "rr_graph_fwd.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
@@ -93,13 +94,12 @@ bool draw_if_net_highlighted(ClusterNetId inet);
 std::vector<int> trace_routed_connection_rr_nodes(
     const ClusterNetId net_id,
     const int driver_pin,
-    const int sink_pin,
-    bool is_flat);
+    const int sink_pin);
 
 /* Helper function for trace_routed_connection_rr_nodes
  * Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path
  * Returns true if rt_node is on the path. */
-bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node,
+bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
                                              int sink_rr_node,
                                              std::vector<int>& rr_nodes_on_path);
 
