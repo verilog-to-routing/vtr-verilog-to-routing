@@ -327,7 +327,7 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     //Showing given functionality
     crit_path_button_setup(app);
     // hide crit path routing / routing delays
-    toggle_crit_path_routing(app,true);
+    toggle_crit_path_routing(app, true);
     //Hiding unused routing menu
     hide_widget("RoutingMenuButton", app);
 }
