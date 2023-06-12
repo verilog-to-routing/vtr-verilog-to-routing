@@ -734,7 +734,10 @@ void create_rr_graph(const t_graph_type graph_type,
 
     print_rr_graph_stats();
 
-    //Write out rr graph file if needed - Currently, writing the flat rr-graph is not supported since loading from a flat rr-graph is not supported
+    // Write out rr graph file if needed - Currently, writing the flat rr-graph is not supported since loading from a flat rr-graph is not supported.
+    // When this function is called in any stage other than routing, the is_flat flag passed to this function is false, regardless of the flag passed
+    // through command line. So, the graph conrresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
+    // is enabled, intra-cluster resources will be added to the graph, but this new bigger graph will not be written down.
     if (!det_routing_arch->write_rr_graph_filename.empty() && !is_flat) {
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
                        &mutable_device_ctx.rr_graph,

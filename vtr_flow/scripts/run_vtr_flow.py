@@ -426,8 +426,10 @@ def vtr_command_argparser(prog=None):
         "-verify_intra_cluster_router_lookahead",
         default=False,
         action="store_true",
-        help="Tells VPR to verify the intra-cluster router lookahead. Intra-cluster router lookahead information \
-        is stored in a separate data structure than the inter-cluster router lookahead information, \
+        help="Tells VPR to verify the intra-cluster router lookahead. \
+        Intra-cluster router lookahead information \
+        is stored in a separate data structure than the \
+        inter-cluster router lookahead information, \
         and they are written into separate files.",
     )
 

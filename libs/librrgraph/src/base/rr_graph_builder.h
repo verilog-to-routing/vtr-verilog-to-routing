@@ -206,11 +206,12 @@ class RRGraphBuilder {
         node_storage_.reserve_edges(num_edges);
     }
 
-    /** @brief emplace_back_edge; It add one edge. This method is efficient if reserve_edges was called with
+    /** @brief emplace_back_edge It adds one edge. This method is efficient if reserve_edges was called with
      * the number of edges present in the graph.
-     * @param remapped If true, it means the switch don't need to be remapped later. Currently, this parameter is true for the switches
-     * that are being added after the rr graph is built. Currently, it is true for the edges of the intra-cluster
-     * resources.*/
+     * @param remapped If true, it means the switch id (edge_switch) corresponds to rr switch id. Thus, when the remapped function is called to
+     * remap the arch switch id to rr switch id, the edge switch id of this edge shouldn't be changed. For example, when the intra-cluster graph
+     * is built and the rr-graph related to global resources are read from a file, this parameter is true since the intra-cluster switches are
+     * also listed in rr-graph file. So, we use that list to use the rr switch id instead of passing arch switch id for intra-cluster edges.*/
     inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
         node_storage_.emplace_back_edge(src, dest, edge_switch, remapped);
     }

@@ -465,7 +465,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // It remains as a future work to remove the arch_switch_types and use all_sw info under device_ctx instead.
         bool found_arch_name = false;
         std::string string_name = std::string(name);
-        // The string name has the format of "Internal Switch/dealy". So, I have to use compare to specify the portion I want to be compared.
+        // The string name has the format of "Internal Switch/delay". So, I have to use compare to specify the portion I want to be compared.
         bool is_internal_sw = string_name.compare(0, 15, "Internal Switch") == 0;
         for (const auto& arch_sw_inf: arch_switch_inf_) {
             if (string_name == arch_sw_inf.name || is_internal_sw) {
