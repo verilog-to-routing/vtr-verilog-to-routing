@@ -179,7 +179,7 @@ void hide_crit_path_button(ezgl::application* app) {
  *
  * @param app ezgl app
  */
-void toggle_crit_path_routing(ezgl::application* app, bool hide) {
+void hide_crit_path_routing(ezgl::application* app, bool hide) {
     GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
     if (hide) {
         gtk_combo_box_text_remove(toggle_crit_path, 4);

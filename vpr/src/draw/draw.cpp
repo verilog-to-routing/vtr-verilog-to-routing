@@ -327,7 +327,7 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     //Showing given functionality
     crit_path_button_setup(app);
     // hide crit path routing / routing delays
-    toggle_crit_path_routing(app,true);
+    hide_crit_path_routing(app,true);
     //Hiding unused routing menu
     hide_widget("RoutingMenuButton", app);
 }
@@ -343,7 +343,7 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
     routing_button_setup(app);
     // hide_crit_path_button(app);
     crit_path_button_setup(app);
-    toggle_crit_path_routing(app, false);
+    hide_crit_path_routing(app, false);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -358,7 +358,7 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
     hide_widget("RoutingMenuButton", app);
     // hide_crit_path_button(app);
     crit_path_button_setup(app);
-    toggle_crit_path_routing(app, false);
+    hide_crit_path_routing(app, false);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -372,7 +372,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     routing_button_setup(app);
     // hide_crit_path_button(app);
     crit_path_button_setup(app);
-    toggle_crit_path_routing(app, false);
+    hide_crit_path_routing(app, false);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -386,7 +386,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
 
     routing_button_setup(app);
     crit_path_button_setup(app);
-    toggle_crit_path_routing(app, false);
+    hide_crit_path_routing(app, false);
 }
 #endif //NO_GRAPHICS
 
