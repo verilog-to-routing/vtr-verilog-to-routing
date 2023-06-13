@@ -48,6 +48,18 @@
 #    include "place_macro.h"
 #    include "buttons.h"
 
+/**
+ * Retrieves the current zoom level based on the visible world and screen dimensions.
+ * The zoom level is calculated as the ratio of the visible world width to the visible screen width.
+ * The zoom level can be adjusted within the specified range and scaled by a default zoom factor.
+ *
+ * @param g The renderer object.
+ * @param default_zoom The default zoom factor for the default zoom level (1.0 by default).
+ * @param min_zoom The minimum allowed zoom level (0.5 by default).
+ * @param max_zoom The maximum allowed zoom level (2.3 by default).
+ * @return The calculated zoom level.
+ */
+double get_zoom_level(ezgl::renderer* g);
 /*
  * Draws a small triangle, at a position along a line from 'start' to 'end'.
  * 'relative_position' [0., 1] defines the triangles position relative to 'start'.
