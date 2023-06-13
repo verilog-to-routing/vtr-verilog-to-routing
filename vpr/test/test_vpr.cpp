@@ -169,7 +169,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        echo_enabled,
                        echo_file_name,
                        false);
-        vpr_free_all((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
+        vpr_free_all(arch, vpr_setup);
 
         auto& atom_ctx = g_vpr_ctx.mutable_atom();
         free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
@@ -234,7 +234,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         REQUIRE(value != nullptr);
         CHECK_THAT(value->as_string().get(&arch.strings), Equals("test edge"));
     }
-    vpr_free_all((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
+    vpr_free_all(arch, vpr_setup);
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
