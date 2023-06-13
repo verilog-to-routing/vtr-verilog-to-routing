@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <unordered_map>
-#include "route_tree_type.h"
+#include "route_tree_fwd.h"
 #include "vpr_types.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
@@ -24,7 +24,7 @@ class Connection_based_routing_resources {
     // contains rt_nodes representing sinks reached legally while pruning the route tree
     // used to populate rt_node_of_sink after building route tree from traceback
     // order does not matter
-    std::vector<t_rt_node*> reached_rt_sinks;
+    std::vector<RRNodeId> reached_rt_sinks;
 
   public:
     Connection_based_routing_resources(const Netlist<>& net_list,
@@ -34,11 +34,11 @@ class Connection_based_routing_resources {
     // mark rr sink node as something that still needs to be reached
     void toreach_rr_sink(int rr_sink_node) { remaining_targets.push_back(rr_sink_node); }
     // mark rt sink node as something that has been legally reached
-    void reached_rt_sink(t_rt_node* rt_sink) { reached_rt_sinks.push_back(rt_sink); }
+    void reached_rt_sink(RRNodeId rt_sink) { reached_rt_sinks.push_back(rt_sink); }
 
     // get a handle on the resources
     std::vector<int>& get_remaining_targets() { return remaining_targets; }
-    std::vector<t_rt_node*>& get_reached_rt_sinks() { return reached_rt_sinks; }
+    std::vector<RRNodeId>& get_reached_rt_sinks() { return reached_rt_sinks; }
 
     bool sanity_check_lookup() const;
 

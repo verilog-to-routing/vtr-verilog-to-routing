@@ -8,9 +8,9 @@
  * multiple interconnected wire types.
  *
  * The lookahead in this file performs undirected Dijkstra searches to evaluate many paths through the routing network,
- * starting from all the different wire types in the routing architecture. This ensures the lookahead captures the 
- * effect of inter-wire connectivity. This information is then reduced into a delta_x delta_y based lookup table for 
- * reach source wire type (f_cost_map). This is used for estimates from CHANX/CHANY -> SINK nodes. See Section 3.2.4 
+ * starting from all the different wire types in the routing architecture. This ensures the lookahead captures the
+ * effect of inter-wire connectivity. This information is then reduced into a delta_x delta_y based lookup table for
+ * reach source wire type (f_cost_map). This is used for estimates from CHANX/CHANY -> SINK nodes. See Section 3.2.4
  * in Oleg Petelin's MASc thesis (2016) for more discussion.
  *
  * To handle estimates starting from SOURCE/OPIN's the lookahead also creates a small side look-up table of the wire types
@@ -1184,7 +1184,7 @@ static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y) {
      *    |  |         |  |
      *    V  +---------+  |
      *                    A
-     *     B----------->                  
+     *     B----------->
      *
      * So wires are located as follows:
      *

@@ -12,7 +12,7 @@ TEST_CASE("default_lut", "[fasm]") {
         fasm::Lut lut(num_inputs);
 
         const LogicVec &table = lut.table();
-        CHECK(table.size() == (1 << num_inputs));
+        CHECK(table.size() == size_t(1 << num_inputs));
 
         for(const vtr::LogicValue & value : table) {
             CHECK(value == vtr::LogicValue::FALSE);
@@ -27,7 +27,7 @@ TEST_CASE("const_true", "[fasm]") {
         lut.SetConstant(vtr::LogicValue::TRUE);
 
         const LogicVec &table = lut.table();
-        CHECK(table.size() == (1 << num_inputs));
+        CHECK(table.size() == size_t(1 << num_inputs));
 
         for(const vtr::LogicValue & value : table) {
             CHECK(value == vtr::LogicValue::TRUE);
@@ -42,7 +42,7 @@ TEST_CASE("const_false", "[fasm]") {
             lut.SetConstant(vtr::LogicValue::FALSE);
 
             const LogicVec &table = lut.table();
-            CHECK(table.size() == (1 << num_inputs));
+            CHECK(table.size() == size_t(1 << num_inputs));
 
             for(const vtr::LogicValue & value : table) {
                 CHECK(value == vtr::LogicValue::FALSE);
@@ -58,7 +58,7 @@ TEST_CASE("wire", "[fasm]") {
             lut.CreateWire(input_pin);
 
             const LogicVec &table = lut.table();
-            CHECK(table.size() == (1 << num_inputs));
+            CHECK(table.size() == size_t(1 << num_inputs));
             for(size_t i = 0; i < table.size(); ++i) {
                 if(((1 << input_pin) & i) != 0) {
                     CHECK(table[i] == vtr::LogicValue::TRUE);
