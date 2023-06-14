@@ -51,15 +51,16 @@
 /**
  * Retrieves the current zoom level based on the visible world and screen dimensions.
  * The zoom level is calculated as the ratio of the visible world width to the visible screen width.
- * The zoom level can be adjusted within the specified range and scaled by a default zoom factor.
+ * For some features which should be scaled when the user zooms in or out (e.g triangle arrows on the critical path display),
+ * this function finds the corresponding scaling factor.
+ * A value > 1 means the triangles will be drawn
  *
  * @param g The renderer object.
- * @param default_zoom The default zoom factor for the default zoom level (1.0 by default).
- * @param min_zoom The minimum allowed zoom level (0.5 by default).
- * @param max_zoom The maximum allowed zoom level (2.3 by default).
- * @return The calculated zoom level.
+ * @param min_zoom The minimum allowed zoom level scaling factor (0.4 by default to prevent objects from getting bigger and bigger as user zooms out).
+ * @param max_zoom The maximum allowed zoom level scaling factor (2 by default to prevent objects from becoming too small to view beyond a certain zoom level).
+ * @return The calculated zoom level as a scaling factor.
  */
-double get_zoom_level(ezgl::renderer* g);
+double get_scaling_factor_from_zoom(ezgl::renderer* g);
 /*
  * Draws a small triangle, at a position along a line from 'start' to 'end'.
  * 'relative_position' [0., 1] defines the triangles position relative to 'start'.
