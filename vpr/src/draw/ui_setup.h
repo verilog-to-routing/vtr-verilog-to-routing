@@ -67,11 +67,8 @@ void routing_button_setup(ezgl::application* app);
 void crit_path_button_setup(ezgl::application* app);
 
 /**
- * @brief Hides Critical Path Button. Called for options that don't show crit. path button
- */
-void hide_crit_path_button(ezgl::application* app);
-/**
- * @brief Hides or displays Critical Path routing / routing delay option. Called for before routing is finished.
+ * @brief Hides or displays Critical Path routing / routing delay UI elements,
+ * Use to ensure we don't show inactive buttons etc. when routing data doesn't exist
  */
 void hide_crit_path_routing(ezgl::application* app, bool hide);
 

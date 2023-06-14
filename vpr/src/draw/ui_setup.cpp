@@ -166,16 +166,7 @@ void crit_path_button_setup(ezgl::application* app) {
 }
 
 /*
- * @brief hides critical path button
- * 
- * @param app ezgl app
- */
-void hide_crit_path_button(ezgl::application* app) {
-    hide_widget("CritPathLabel", app);
-    hide_widget("ToggleCritPath", app);
-}
-/*
- * @brief hides or displays critical path routing / routing delay
+ * @brief Hides or displays critical path routing / routing delay UI elements
  *
  * @param app ezgl app
  */
