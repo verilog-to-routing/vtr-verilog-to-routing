@@ -327,7 +327,7 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     crit_path_button_setup(app);
     /* Routing hasn't been done yet, so hide the display options that show routing
      * as they don't make sense and would crash if clicked on */
-    hide_crit_path_routing(app,true);
+    hide_crit_path_routing(app, true);
     //Hiding unused routing menu
     hide_widget("RoutingMenuButton", app);
 }

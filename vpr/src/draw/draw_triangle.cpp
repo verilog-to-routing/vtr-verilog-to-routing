@@ -111,8 +111,8 @@ void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::poin
  * 'start' and 'end' are the line segment points, and 'arrow_size' is the size of the triangle.
  */
 void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size) {
-    double scaling_factor = get_scaling_factor_from_zoom(g);             // Get the current zoom level
-    float scaled_arrow_size = arrow_size / scaling_factor; // Scale arrow size based on zoom level
+    double scaling_factor = get_scaling_factor_from_zoom(g); // Get the current zoom level
+    float scaled_arrow_size = arrow_size / scaling_factor;   // Scale arrow size based on zoom level
     draw_triangle_along_line(g, loc.x, loc.y, start.x, end.x, start.y, end.y, scaled_arrow_size);
 }
 
