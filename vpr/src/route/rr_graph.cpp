@@ -608,7 +608,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
-                           int* wire_to_rr_ipin_between_dice_switch,
                            bool is_flat,
                            int* Warnings);
 
@@ -700,7 +699,6 @@ void create_rr_graph(const t_graph_type graph_type,
                            router_opts.clock_modeling,
                            directs, num_directs,
                            &det_routing_arch->wire_to_rr_ipin_switch,
-                           &det_routing_arch->wire_to_rr_ipin_switch_between_dice,
                            is_flat,
                            Warnings);
         }
@@ -884,7 +882,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
-                           int* wire_to_rr_ipin_between_dice_switch,
                            bool is_flat,
                            int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
@@ -2485,7 +2482,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(node_index);
 
         if (total_pin_Fc > 0) {
-            get_bidir_opin_connections(rr_graph_builder, track_layer, i, j, pin_index,
+            get_bidir_opin_connections(rr_graph_builder, layer, track_layer, i, j, pin_index,
                                        node_index, rr_edges_to_create, opin_to_track_map,
                                        chan_details_x,
                                        chan_details_y);
@@ -3967,7 +3964,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             //VTR_ASSERT_MSG(seg_index == 0 || seg_index > 0,"seg_index map not working properly");
 
-            rr_edge_count += get_unidir_opin_connections(rr_graph_builder, track_layer, chan, seg,
+            rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer, track_layer, chan, seg,
                                                          seg_type_Fc, seg_index, chan_type, seg_details,
                                                          opin_node_index,
                                                          rr_edges_to_create,

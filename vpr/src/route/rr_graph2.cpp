@@ -294,6 +294,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
 
     int cur_track, ntracks, itrack, length, j, index;
     int arch_wire_switch, arch_opin_switch, fac, num_sets, tmp;
+    int arch_opin_between_dice_switch;
     int group_start, first_track;
     std::unique_ptr<int[]> sets_per_seg_type;
     t_seg_details* seg_details = nullptr;
@@ -344,6 +345,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
 
         arch_wire_switch = segment_inf[i].arch_wire_switch;
         arch_opin_switch = segment_inf[i].arch_opin_switch;
+        arch_opin_between_dice_switch = segment_inf[i].arch_opin_between_dice_switch;
         VTR_ASSERT((arch_wire_switch == arch_opin_switch) || (directionality != UNI_DIRECTIONAL));
 
         /* Set up the tracks of same type */
@@ -409,6 +411,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
 
             seg_details[cur_track].arch_wire_switch = arch_wire_switch;
             seg_details[cur_track].arch_opin_switch = arch_opin_switch;
+            seg_details[cur_track].arch_opin_between_dice_switch = arch_opin_between_dice_switch;
 
             if (BI_DIRECTIONAL == directionality) {
                 seg_details[cur_track].direction = Direction::BIDIR;
@@ -655,7 +658,8 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
 /* Returns the number of tracks to which clb opin #ipin at (i,j) connects.   *
  * Also stores the nodes to which this pin connects in rr_edges_to_create    */
 int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                               const int layer,
+                               const int opin_layer,
+                               const int track_layer,
                                const int i,
                                const int j,
                                const int ipin,
@@ -672,9 +676,9 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    type = device_ctx.grid.get_physical_type({i, j, layer});
-    int width_offset = device_ctx.grid.get_width_offset({i, j, layer});
-    int height_offset = device_ctx.grid.get_height_offset({i, j, layer});
+    type = device_ctx.grid.get_physical_type({i, j, track_layer});
+    int width_offset = device_ctx.grid.get_width_offset({i, j, track_layer});
+    int height_offset = device_ctx.grid.get_height_offset({i, j, track_layer});
 
     num_conn = 0;
 
@@ -714,23 +718,23 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 
         /* Iterate of the opin to track connections */
 
-        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][layer][side]) {
+        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][track_layer][side]) {
             /* Skip unconnected connections */
             if (OPEN == to_track || is_connected_track) {
                 is_connected_track = true;
-                VTR_ASSERT(OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][layer][side][0]);
+                VTR_ASSERT(OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][track_layer][side][0]);
                 continue;
             }
 
             /* Only connect to wire if there is a CB */
             if (is_cblock(chan, seg, to_track, seg_details)) {
-                to_switch = seg_details[to_track].arch_wire_switch();
-
-                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, tr_i, tr_j, to_type, to_track);
+                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(track_layer, tr_i, tr_j, to_type, to_track);
 
                 if (!to_node) {
                     continue;
                 }
+
+                to_switch = (track_layer == opin_layer) ? seg_details[to_track].arch_wire_switch() : seg_details[to_track].arch_opin_between_dice_switch();
 
                 rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch);
                 ++num_conn;
@@ -750,7 +754,8 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
  * 
  */
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                                const int layer,
+                                const int opin_layer,
+                                const int track_layer,
                                 const int chan,
                                 const int seg,
                                 int Fc,
@@ -812,18 +817,22 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
-        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, inc_track);
-        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, dec_track);
+        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(track_layer, x, y, chan_type, inc_track);
+        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(track_layer, x, y, chan_type, dec_track);
 
         if (!inc_inode_index || !dec_inode_index) {
             continue;
         }
 
+
+
         /* Add to the list. */
-        rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, seg_details[inc_track].arch_opin_switch());
+        auto to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_opin_between_dice_switch();
+        rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch);
         ++num_edges;
 
-        rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, seg_details[dec_track].arch_opin_switch());
+        to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[dec_track].arch_opin_between_dice_switch();
+        rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, to_switch);
         ++num_edges;
     }
 

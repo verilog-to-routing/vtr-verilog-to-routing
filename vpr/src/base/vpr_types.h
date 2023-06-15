@@ -1492,6 +1492,11 @@ struct t_det_routing_arch {
  *                     relation to the switches from the architecture file,
  *                     not the expanded list of switches that is is built
  *                     at the end of build_rr_graph
+ *   @param arch_opin_between_dice_switch Index of the switch type that connects output
+ *                     pins (OPINs) *to* this segment from *another dice*.
+ *                     Note that this index is in relation to the switches from
+ *                     the architecture file, not the expanded list of switches that is built
+ *                     at the end of build_rr_graph
  *   @param Cmetal     Capacitance of a routing track, per unit logic block length.
  *   @param Rmetal     Resistance of a routing track, per unit logic block length.
  *   @param direction  The direction of a routing track.
@@ -1521,6 +1526,7 @@ struct t_seg_details {
     std::unique_ptr<bool[]> cb;
     short arch_wire_switch = 0;
     short arch_opin_switch = 0;
+    short arch_opin_between_dice_switch = 0;
     float Rmetal = 0;
     float Cmetal = 0;
     bool twisted = 0;
@@ -1562,6 +1568,7 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
+    short arch_opin_between_dice_switch() const {return seg_detail_->arch_opin_between_dice_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 

@@ -126,7 +126,8 @@ bool is_sblock(const int chan,
                const enum e_directionality directionality);
 
 int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                               const int layer,
+                               const int opin_layer,
+                               const int track_layer,
                                const int i,
                                const int j,
                                const int ipin,
@@ -137,7 +138,8 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                const t_chan_details& chan_details_y);
 
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                                const int layer,
+                                const int opin_layer,
+                                const int track_layer,
                                 const int chan,
                                 const int seg,
                                 int Fc,

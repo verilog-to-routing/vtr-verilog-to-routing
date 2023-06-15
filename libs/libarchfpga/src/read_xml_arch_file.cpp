@@ -3729,7 +3729,7 @@ static void ProcessSegments(pugi::xml_node Parent,
          * (*Segs)[i].Cmetal_per_m = get_attribute(Node, "Cmetal_per_m", false,
          * 0.);*/
 
-        //Set of expected subtags (exact subtags are dependant on parameters)
+        //Set of expected subtags (exact subtags are dependent on parameters)
         std::vector<std::string> expected_subtags;
 
         if (!Segs[i].longline) {
@@ -3753,6 +3753,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             //Unidir requires the following tags
             expected_subtags.push_back("mux");
+            expected_subtags.push_back("mux_inter_die");
         }
 
         else {
@@ -3763,8 +3764,26 @@ static void ProcessSegments(pugi::xml_node Parent,
         //Verify only expected sub-tags are found
         expect_only_children(Node, expected_subtags, loc_data);
 
+        //Get the switch name for different dice wire and track connections
+        SubElem = get_single_child(Node,"mux_inter_die",loc_data, ReqOpt::OPTIONAL);
+        tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string("");
+        if(strlen(tmp) != 0){
+            /* Match names */
+            for (j = 0; j < NumSwitches; ++j) {
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                    break; /* End loop so j is where we want it */
+                }
+            }
+            if (j >= NumSwitches) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                               "'%s' is not a valid mux name.\n", tmp);
+            }
+            Segs[i].arch_opin_between_dice_switch = j;
+        }
+
         /* Get the wire and opin switches, or mux switch if unidir */
         if (UNI_DIRECTIONAL == Segs[i].directionality) {
+            //Get the switch name for same die wire and track connections
             SubElem = get_single_child(Node, "mux", loc_data);
             tmp = get_attribute(SubElem, "name", loc_data).value();
 
@@ -3784,6 +3803,7 @@ static void ProcessSegments(pugi::xml_node Parent,
              * really only the mux in unidir. */
             Segs[i].arch_wire_switch = j;
             Segs[i].arch_opin_switch = j;
+
         }
 
         else {

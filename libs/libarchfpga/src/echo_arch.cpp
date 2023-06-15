@@ -283,6 +283,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             //wire_switch == arch_opin_switch
             fprintf(Echo, "\t\t\t\ttype unidir mux_name %s\n",
                     arch->Switches[seg.arch_wire_switch].name.c_str());
+            //TODO: SM: must update echo file for wire switch between multi-die FPGAs
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
                     arch->Switches[seg.arch_wire_switch].name.c_str(),

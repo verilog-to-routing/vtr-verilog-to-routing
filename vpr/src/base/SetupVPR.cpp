@@ -730,7 +730,7 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
 }
 
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {
-    for(int cb_switch_name_index = 0; cb_switch_name_index < Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
+    for(auto cb_switch_name_index = 0; cb_switch_name_index < (int) Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
         int ipin_cblock_switch_index = UNDEFINED;
         for (int iswitch = 0; iswitch < Arch.num_switches; ++iswitch) {
             if (Arch.Switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
