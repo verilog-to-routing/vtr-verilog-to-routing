@@ -127,6 +127,41 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
         if (!cluster_placement_stats->valid_primitives[i].empty()) {
             t_cluster_placement_primitive* cur_cluster_placement_primitive = cluster_placement_stats->valid_primitives[i].begin()->second;
+                
+            auto& atom_ctx = g_vpr_ctx.atom();
+            bool should_observe = true;
+            auto parent_name = cur_cluster_placement_primitive->pb_graph_node->parent_pb_graph_node->pb_type->name;
+            if (std::string(parent_name) == "lut4") {
+                should_observe = false;
+                AtomBlockId blk_id = molecule->atom_block_ids[0];
+                
+                for (auto pin_id : atom_ctx.nlist.block_output_pins(blk_id)) {
+                    auto net_id = atom_ctx.nlist.pin_net(pin_id);
+                    if(atom_ctx.nlist.net_pins(net_id).size() != 2){
+                        break;
+                    }
+                    int tmp = 0;
+                    for (auto pin_id2 : atom_ctx.nlist.net_pins(net_id)) {
+                        if(tmp == 0){
+                            tmp = 1;
+                            continue;
+                        }
+                        auto blk_id2 = atom_ctx.nlist.pin_block(pin_id2);
+                        const auto& atom_model = atom_ctx.nlist.block_model(blk_id2);
+                        
+                        if (std::string(atom_model->name) == "fa_1bit") {
+                            should_observe = true;
+                            break;
+                        }
+                    }
+                    if (should_observe) {
+                        break;
+                    }
+                }
+            }
+            if (!should_observe )
+                continue;
+
             if (primitive_type_feasible(molecule->atom_block_ids[molecule->root], cur_cluster_placement_primitive->pb_graph_node->pb_type)) {
                 // Iterate over the unordered_multimap of the valid primitives of a specific pb primitive type
                 for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); /*loop increment is done inside the loop*/) {
