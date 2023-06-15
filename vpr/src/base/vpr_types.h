@@ -1438,8 +1438,14 @@ struct t_noc_opts {
  *             things that should have no delay).
  *   @param wire_to_arch_ipin_switch  keeps track of the type of architecture
  *             switch that connects wires to ipins
+ *   @param wire_to_arch_ipin_switch_between_dice keeps track of the type of
+ *             architecture switch that connects wires from another die to
+ *             ipins in different die
  *   @param wire_to_rr_ipin_switch  keeps track of the type of RR graph switch
  *             that connects wires to ipins in the RR graph
+ *   @param wire_to_rr_ipin_switch_between_dice keeps track of the type of
+ *             RR graph switch that connects wires from another die to
+ *             ipins in different die in the RR graph
  *   @param R_minW_nmos  Resistance (in Ohms) of a minimum width nmos transistor.
  *             Used only in the FPGA area model.
  *   @param R_minW_pmos  Resistance (in Ohms) of a minimum width pmos transistor.
@@ -1456,7 +1462,9 @@ struct t_det_routing_arch {
     short global_route_switch;
     short delayless_switch;
     int wire_to_arch_ipin_switch;
+    int wire_to_arch_ipin_switch_between_dice = -1;
     int wire_to_rr_ipin_switch;
+    int wire_to_rr_ipin_switch_between_dice = -1;
     float R_minW_nmos;
     float R_minW_pmos;
 

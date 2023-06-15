@@ -2802,8 +2802,12 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
 
     //<connection_block> tag
     Cur = get_single_child(Node, "connection_block", loc_data);
-    expect_only_attributes(Cur, {"input_switch_name"}, loc_data);
-    arch->ipin_cblock_switch_name = get_attribute(Cur, "input_switch_name", loc_data).as_string();
+    expect_only_attributes(Cur, {"input_switch_name","input_inter_die_switch_name"}, loc_data);
+    arch->ipin_cblock_switch_name.push_back(get_attribute(Cur, "input_switch_name", loc_data).as_string());
+    std::string inter_die_conn = get_attribute(Cur,"input_inter_die_switch_name",loc_data,ReqOpt::OPTIONAL).as_string("");
+    if(inter_die_conn != ""){
+        arch->ipin_cblock_switch_name.push_back(inter_die_conn);
+    }
 
     //<switch_block> tag
     Cur = get_single_child(Node, "switch_block", loc_data);

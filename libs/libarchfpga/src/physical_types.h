@@ -1988,9 +1988,10 @@ struct t_arch {
     std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
     //The name of the switch used for the input connection block (i.e. to
-    //connect routing tracks to block pins).
-    //This should correspond to a switch in Switches
-    std::string ipin_cblock_switch_name;
+    //connect routing tracks to block pins). tracks can be connected to
+    // ipins through the same die or from other dices, each of these
+    //connections requires different switch, all names should correspond to a switch in Switches.
+    std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 

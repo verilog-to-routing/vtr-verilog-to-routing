@@ -231,7 +231,8 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             break;
     }
 
-    fprintf(Echo, "\tInput Connect Block Switch Name: %s\n", arch->ipin_cblock_switch_name.c_str());
+    //TODO: SM must update the echo file to echo inter_die connections
+    fprintf(Echo, "\tInput Connect Block Switch Name: %s\n", arch->ipin_cblock_switch_name[0].c_str());
 
     fprintf(Echo, "*************************************************\n\n");
     //Switch list
