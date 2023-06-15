@@ -824,8 +824,6 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
             continue;
         }
 
-
-
         /* Add to the list. */
         auto to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_opin_between_dice_switch();
         rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch);

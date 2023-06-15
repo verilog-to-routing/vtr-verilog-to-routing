@@ -1568,7 +1568,7 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
-    short arch_opin_between_dice_switch() const {return seg_detail_->arch_opin_between_dice_switch; }
+    short arch_opin_between_dice_switch() const { return seg_detail_->arch_opin_between_dice_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 

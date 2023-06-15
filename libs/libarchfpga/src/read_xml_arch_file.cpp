@@ -2802,10 +2802,10 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
 
     //<connection_block> tag
     Cur = get_single_child(Node, "connection_block", loc_data);
-    expect_only_attributes(Cur, {"input_switch_name","input_inter_die_switch_name"}, loc_data);
+    expect_only_attributes(Cur, {"input_switch_name", "input_inter_die_switch_name"}, loc_data);
     arch->ipin_cblock_switch_name.push_back(get_attribute(Cur, "input_switch_name", loc_data).as_string());
-    std::string inter_die_conn = get_attribute(Cur,"input_inter_die_switch_name",loc_data,ReqOpt::OPTIONAL).as_string("");
-    if(inter_die_conn != ""){
+    std::string inter_die_conn = get_attribute(Cur, "input_inter_die_switch_name", loc_data, ReqOpt::OPTIONAL).as_string("");
+    if (inter_die_conn != "") {
         arch->ipin_cblock_switch_name.push_back(inter_die_conn);
     }
 
@@ -3765,9 +3765,9 @@ static void ProcessSegments(pugi::xml_node Parent,
         expect_only_children(Node, expected_subtags, loc_data);
 
         //Get the switch name for different dice wire and track connections
-        SubElem = get_single_child(Node,"mux_inter_die",loc_data, ReqOpt::OPTIONAL);
+        SubElem = get_single_child(Node, "mux_inter_die", loc_data, ReqOpt::OPTIONAL);
         tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string("");
-        if(strlen(tmp) != 0){
+        if (strlen(tmp) != 0) {
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
                 if (0 == strcmp(tmp, Switches[j].name.c_str())) {

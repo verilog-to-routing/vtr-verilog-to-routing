@@ -49,13 +49,12 @@ static void CheckSwitches(const t_arch& Arch) {
                           CurSwitch->name.c_str(), CurSwitch->R, Arch.R_minW_nmos, get_arch_file_name());
             }
         }
-        for(auto cb_switch_name = 0; cb_switch_name < (int) Arch.ipin_cblock_switch_name.size(); cb_switch_name++) {
+        for (auto cb_switch_name = 0; cb_switch_name < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name++) {
             /* find the ipin cblock switch index, if it exists */
             if (Arch.Switches[i].name == Arch.ipin_cblock_switch_name[cb_switch_name]) {
-                if(cb_switch_name == 0) {
+                if (cb_switch_name == 0) {
                     ipin_cblock_switch_index = i;
-                }
-                else{
+                } else {
                     ipin_cblock_switch_index_between_dice = i;
                 }
             }
@@ -80,7 +79,6 @@ static void CheckSwitches(const t_arch& Arch) {
                             "Not currently allowing an ipin cblock switch to have fanin dependent values");
         }
     }
-
 }
 
 static void CheckSegments(const t_arch& Arch) {

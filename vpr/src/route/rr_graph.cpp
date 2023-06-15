@@ -1465,7 +1465,7 @@ static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                          const float R_minW_nmos,
                                          const float R_minW_pmos,
                                          const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch){
+                                         int* wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
      * each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
      * with this expanded list of switches.

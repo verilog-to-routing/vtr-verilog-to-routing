@@ -336,7 +336,7 @@ static void SetupSwitches(const t_arch& Arch,
     int switches_to_copy = NumArchSwitches;
     int num_arch_switches = NumArchSwitches;
 
-    find_ipin_cblock_switch_index(Arch,RoutingArch->wire_to_arch_ipin_switch,RoutingArch->wire_to_arch_ipin_switch_between_dice);
+    find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
 
     /* Depends on device_ctx.num_arch_switches */
     RoutingArch->delayless_switch = num_arch_switches++;
@@ -730,7 +730,7 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
 }
 
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {
-    for(auto cb_switch_name_index = 0; cb_switch_name_index < (int) Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
+    for (auto cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
         int ipin_cblock_switch_index = UNDEFINED;
         for (int iswitch = 0; iswitch < Arch.num_switches; ++iswitch) {
             if (Arch.Switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
@@ -747,10 +747,9 @@ static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_
         }
 
         //first index in Arch.ipin_cblock_switch_name is related to same die connections
-        if(cb_switch_name_index == 0){
+        if (cb_switch_name_index == 0) {
             wire_to_arch_ipin_switch = ipin_cblock_switch_index;
-        }
-        else{
+        } else {
             wire_to_arch_ipin_switch_between_dice = ipin_cblock_switch_index;
         };
     }
