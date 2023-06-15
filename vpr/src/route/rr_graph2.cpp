@@ -1585,6 +1585,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       enum e_rr_type chan_type,
                       int chan_length,
                       int wire_to_ipin_switch,
+                      int wire_to_pin_between_dice_switch,
                       enum e_directionality directionality) {
     /*
      * Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent
@@ -1640,8 +1641,9 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                         /* Check there is a connection and Fc map isn't wrong */
                         /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
                         RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer_index, x, y, IPIN, ipin, side);
+                        int switch_type = (layer_index == layer) ? wire_to_ipin_switch : wire_to_pin_between_dice_switch;
                         if (to_node) {
-                            rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch);
+                            rr_edges_to_create.emplace_back(from_rr_node, to_node, switch_type);
                             ++num_conn;
                         }
                     }

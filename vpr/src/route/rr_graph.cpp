@@ -188,6 +188,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   vtr::NdMatrix<int, 3>& Fc_yofs,
                                                                   const t_chan_width& chan_width,
                                                                   const int wire_to_ipin_switch,
+                                                                  const int wire_to_pin_between_dice_switch,
                                                                   const int delayless_switch,
                                                                   const enum e_directionality directionality,
                                                                   bool* Fc_clipped,
@@ -450,6 +451,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const t_chan_details& chan_details_y,
                           t_rr_edge_info_set& created_rr_edges,
                           const int wire_to_ipin_switch,
+                          const int wire_to_pin_between_dice_switch,
                           const enum e_directionality directionality);
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
@@ -597,6 +599,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
+                           const int wire_to_pin_between_dice_switch,
                            const int delayless_switch,
                            const float R_minW_nmos,
                            const float R_minW_pmos,
@@ -605,6 +608,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
+                           int* wire_to_rr_ipin_between_dice_switch,
                            bool is_flat,
                            int* Warnings);
 
@@ -639,6 +643,7 @@ void create_rr_graph(const t_graph_type graph_type,
         if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
             free_rr_graph();
 
+            //TODO: SM: delay between two dice is not working for load_rr_file
             load_rr_file(&mutable_device_ctx.rr_graph_builder,
                          &mutable_device_ctx.rr_graph,
                          device_ctx.physical_tile_types,
@@ -687,6 +692,7 @@ void create_rr_graph(const t_graph_type graph_type,
                            segment_inf,
                            det_routing_arch->global_route_switch,
                            det_routing_arch->wire_to_arch_ipin_switch,
+                           det_routing_arch->wire_to_arch_ipin_switch_between_dice,
                            det_routing_arch->delayless_switch,
                            det_routing_arch->R_minW_nmos,
                            det_routing_arch->R_minW_pmos,
@@ -694,6 +700,7 @@ void create_rr_graph(const t_graph_type graph_type,
                            router_opts.clock_modeling,
                            directs, num_directs,
                            &det_routing_arch->wire_to_rr_ipin_switch,
+                           &det_routing_arch->wire_to_rr_ipin_switch_between_dice,
                            is_flat,
                            Warnings);
         }
@@ -868,6 +875,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
+                           const int wire_to_pin_between_dice_switch,
                            const int delayless_switch,
                            const float R_minW_nmos,
                            const float R_minW_pmos,
@@ -876,6 +884,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
+                           int* wire_to_rr_ipin_between_dice_switch,
                            bool is_flat,
                            int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
@@ -1252,6 +1261,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         Fc_out, Fc_xofs, Fc_yofs,
         nodes_per_chan,
         wire_to_arch_ipin_switch,
+        wire_to_pin_between_dice_switch,
         delayless_switch,
         directionality,
         &Fc_clipped,
@@ -1289,6 +1299,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
+    //TODO: sara_todo this function should be fixed as soon as possible
     alloc_and_load_rr_switch_inf(g_vpr_ctx.mutable_device().rr_graph_builder,
                                  g_vpr_ctx.mutable_device().switch_fanin_remap,
                                  device_ctx.all_sw_inf,
@@ -1457,7 +1468,7 @@ static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                          const float R_minW_nmos,
                                          const float R_minW_pmos,
                                          const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch) {
+                                         int* wire_to_rr_ipin_switch){
     /* we will potentially be creating a couple of versions of each arch switch where
      * each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
      * with this expanded list of switches.
@@ -1875,6 +1886,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   vtr::NdMatrix<int, 3>& Fc_yofs,
                                                                   const t_chan_width& chan_width,
                                                                   const int wire_to_ipin_switch,
+                                                                  const int wire_to_pin_between_dice_switch,
                                                                   const int delayless_switch,
                                                                   const enum e_directionality directionality,
                                                                   bool* Fc_clipped,
@@ -2005,6 +2017,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                   sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                                   rr_edges_to_create,
                                   wire_to_ipin_switch,
+                                  wire_to_pin_between_dice_switch,
                                   directionality);
 
                     //Create the actual CHAN->CHAN edges
@@ -2022,6 +2035,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                   sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                                   rr_edges_to_create,
                                   wire_to_ipin_switch,
+                                  wire_to_pin_between_dice_switch,
                                   directionality);
 
                     //Create the actual CHAN->CHAN edges
@@ -2873,6 +2887,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const t_chan_details& chan_details_y,
                           t_rr_edge_info_set& rr_edges_to_create,
                           const int wire_to_ipin_switch,
+                          const int wire_to_pin_between_dice_switch,
                           const enum e_directionality directionality) {
     /* this function builds both x and y-directed channel segments, so set up our
      * coordinates based on channel type */
@@ -2937,7 +2952,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         int num_edges = 0;
         num_edges += get_track_to_pins(rr_graph_builder, layer, start, chan_coord, track, tracks_per_chan, node, rr_edges_to_create,
                                        track_to_pin_lookup, seg_details, chan_type, seg_dimension,
-                                       wire_to_ipin_switch, directionality);
+                                       wire_to_ipin_switch, wire_to_pin_between_dice_switch, directionality);
 
         /* get edges going from the current track into channel segments which are perpendicular to it */
         if (chan_coord > 0) {
@@ -3068,6 +3083,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
 
     int num_parallel_seg_types = seg_inf.size();
 
+    //TODO: SM: this loop should be removed, does nothing special
     for (int iseg = 0; iseg < num_parallel_seg_types; iseg++) {
         /* determine the maximum Fc to this segment type across all pins */
         int max_Fc = 0;

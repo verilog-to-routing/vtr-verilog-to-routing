@@ -164,6 +164,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       enum e_rr_type chan_type,
                       int chan_length,
                       int wire_to_ipin_switch,
+                      int wire_to_pin_between_dice_switch,
                       enum e_directionality directionality);
 
 int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
