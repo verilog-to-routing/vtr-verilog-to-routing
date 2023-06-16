@@ -2470,17 +2470,25 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             continue;
         }
 
-        int track_layer = layer + type->pin_layer_offset[pin_index];
-
         /* get number of tracks that this pin connects to */
         int total_pin_Fc = 0;
         for (int iseg = 0; iseg < num_seg_types; iseg++) {
             total_pin_Fc += Fc[pin_index][iseg];
         }
 
-        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(track_layer, i, j, OPIN, pin_index, side);
+        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(layer, i, j, OPIN, pin_index, side);
         VTR_ASSERT(node_index);
 
+        /* Check the pin physical layer and connect it to the same layer if necessary */
+        if (total_pin_Fc > 0) {
+            get_bidir_opin_connections(rr_graph_builder, layer, layer, i, j, pin_index,
+                                       node_index, rr_edges_to_create, opin_to_track_map,
+                                       chan_details_x,
+                                       chan_details_y);
+        }
+
+        /* Check the pin offset and connect it to a different layer if necessary */
+        int track_layer = layer + type->pin_layer_offset[pin_index];
         if (total_pin_Fc > 0) {
             get_bidir_opin_connections(rr_graph_builder, layer, track_layer, i, j, pin_index,
                                        node_index, rr_edges_to_create, opin_to_track_map,
@@ -3137,16 +3145,29 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                 for (int iheight = 0; iheight < Type->height; iheight++) {
                     for (int iside = 0; iside < 4; iside++) {
                         for (int iconn = 0; iconn < max_Fc; iconn++) {
+                            //each pin in pin_to_seg_type_map can be connected to multiple layer tracks:
+                            //1) the layer that physical pin is located
+                            int relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][type_layer][iside][iconn];
+
+                            if (relative_track_ind != OPEN) {
+                                VTR_ASSERT(relative_track_ind <= num_seg_type_tracks);
+                                int absolute_track_ind = relative_track_ind + seg_type_start_track;
+
+                                VTR_ASSERT(absolute_track_ind >= 0);
+                                result[ipin][iwidth][iheight][type_layer][iside].push_back(absolute_track_ind);
+                            }
+
+                            //2) the layer that specified by pin_offset in the arch file
                             int pin_layer = type_layer + Type->pin_layer_offset[ipin];
-                            int relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][pin_layer][iside][iconn];
+                            relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][pin_layer][iside][iconn];
 
-                            if (relative_track_ind == OPEN) continue;
+                            if (relative_track_ind != OPEN) {
+                                VTR_ASSERT(relative_track_ind <= num_seg_type_tracks);
+                                int absolute_track_ind = relative_track_ind + seg_type_start_track;
 
-                            VTR_ASSERT(relative_track_ind <= num_seg_type_tracks);
-                            int absolute_track_ind = relative_track_ind + seg_type_start_track;
-
-                            VTR_ASSERT(absolute_track_ind >= 0);
-                            result[ipin][iwidth][iheight][pin_layer][iside].push_back(absolute_track_ind);
+                                VTR_ASSERT(absolute_track_ind >= 0);
+                                result[ipin][iwidth][iheight][pin_layer][iside].push_back(absolute_track_ind);
+                            }
                         }
                     }
                 }
@@ -3826,22 +3847,35 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
         for (int width = 0; width < type_width; ++width) {
             for (int height = 0; height < type_height; ++height) {
                 for (int side = 0; side < 4; ++side) {
-                    int pin_layer = type_layer + Type->pin_layer_offset[pin];
-                    if (pin_to_track_map[pin][width][height][pin_layer][side].empty())
-                        continue;
-
                     /* get number of tracks to which this pin connects */
                     int num_tracks = 0;
                     for (int iseg = 0; iseg < num_seg_types; iseg++) {
                         num_tracks += Fc[pin][seg_inf[iseg].seg_index]; // AA: Fc_in and Fc_out matrices are unified for all segments so need to map index.
                     }
 
-                    num_tracks = std::min(num_tracks, (int)pin_to_track_map[pin][width][height][pin_layer][side].size());
-                    for (int conn = 0; conn < num_tracks; ++conn) {
-                        int track = pin_to_track_map[pin][width][height][pin_layer][side][conn];
-                        VTR_ASSERT(track < max_chan_width);
-                        VTR_ASSERT(track >= 0);
-                        track_to_pin_lookup[track][width][height][pin_layer][side].push_back(pin);
+                    //each pin in pin_to_track_map can be connected to multiple layer tracks:
+                    //1) the layer that physical pin is located
+                    if (!pin_to_track_map[pin][width][height][type_layer][side].empty()) {
+                        num_tracks = std::min(num_tracks,
+                                              (int) pin_to_track_map[pin][width][height][type_layer][side].size());
+                        for (int conn = 0; conn < num_tracks; ++conn) {
+                            int track = pin_to_track_map[pin][width][height][type_layer][side][conn];
+                            VTR_ASSERT(track < max_chan_width);
+                            VTR_ASSERT(track >= 0);
+                            track_to_pin_lookup[track][width][height][type_layer][side].push_back(pin);
+                        }
+                    }
+                    //2) the layer that specified by pin_offset in the arch file
+                    int pin_layer = type_layer + Type->pin_layer_offset[pin];
+                    if (!pin_to_track_map[pin][width][height][pin_layer][side].empty()) {
+                        num_tracks = std::min(num_tracks,
+                                              (int) pin_to_track_map[pin][width][height][pin_layer][side].size());
+                        for (int conn = 0; conn < num_tracks; ++conn) {
+                            int track = pin_to_track_map[pin][width][height][pin_layer][side][conn];
+                            VTR_ASSERT(track < max_chan_width);
+                            VTR_ASSERT(track >= 0);
+                            track_to_pin_lookup[track][width][height][pin_layer][side].push_back(pin);
+                        }
                     }
                 }
             }
@@ -3898,8 +3932,6 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
     /* Go through each pin and find its fanout. */
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
-        /* Check the pin offset and connect it to a different layer if necessary */
-        int track_layer = layer + type->pin_layer_offset[pin_index];
 
         /* Skip global pins and pins that are not of DRIVER type */
         auto pin_type = get_pin_type_from_pin_physical_num(type, pin_index);
@@ -3968,8 +4000,17 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             /* Get the list of opin to mux connections for that chan seg. */
             bool clipped;
 
-            //VTR_ASSERT_MSG(seg_index == 0 || seg_index > 0,"seg_index map not working properly");
 
+            /* Check the pin physical layer and connect it to the same layer if necessary */
+            rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer, layer, chan, seg,
+                                                         seg_type_Fc, seg_index, chan_type, seg_details,
+                                                         opin_node_index,
+                                                         rr_edges_to_create,
+                                                         Fc_ofs, max_len, nodes_per_chan,
+                                                         &clipped);
+
+            /* Check the pin offset and connect it to a different layer if necessary */
+            int track_layer = layer + type->pin_layer_offset[pin_index];
             rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer, track_layer, chan, seg,
                                                          seg_type_Fc, seg_index, chan_type, seg_details,
                                                          opin_node_index,
