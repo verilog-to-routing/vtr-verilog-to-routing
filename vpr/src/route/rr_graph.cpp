@@ -3275,7 +3275,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                         num_dir[width][height][type_layer][side]++;
                         //connect the pin to the layer that is specified in the arch file by "pin_offset"
                         int pin_layer = type_layer + Type->pin_layer_offset[pin];
-                        if(pin_layer != type_layer) { //avoid duplication and adding num_dir count
+                        if (pin_layer != type_layer) { //avoid duplication and adding num_dir count
                             dir_list[width][height][pin_layer][side][num_dir[width][height][pin_layer][side]] = pin;
                             num_dir[width][height][pin_layer][side]++;
                         }
@@ -3309,7 +3309,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
      * good low Fc block that leverages the fact that usually lots of pins   *
      * are logically equivalent.                                             */
 
-    for(int layer_index = 0; layer_index < grid.get_num_layers(); layer_index++){
+    for (int layer_index = 0; layer_index < grid.get_num_layers(); layer_index++) {
         const e_side init_side = LEFT;
         const int init_width = 0;
         const int init_height = 0;
@@ -3355,7 +3355,6 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         }
 
         VTR_ASSERT(pin == num_phys_pins_per_layer[layer_index]);
-
     }
 
     if (perturb_switch_pattern) {
@@ -3857,7 +3856,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
                     //1) the layer that physical pin is located
                     if (!pin_to_track_map[pin][width][height][type_layer][side].empty()) {
                         num_tracks = std::min(num_tracks,
-                                              (int) pin_to_track_map[pin][width][height][type_layer][side].size());
+                                              (int)pin_to_track_map[pin][width][height][type_layer][side].size());
                         for (int conn = 0; conn < num_tracks; ++conn) {
                             int track = pin_to_track_map[pin][width][height][type_layer][side][conn];
                             VTR_ASSERT(track < max_chan_width);
@@ -3869,7 +3868,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
                     int pin_layer = type_layer + Type->pin_layer_offset[pin];
                     if (!pin_to_track_map[pin][width][height][pin_layer][side].empty()) {
                         num_tracks = std::min(num_tracks,
-                                              (int) pin_to_track_map[pin][width][height][pin_layer][side].size());
+                                              (int)pin_to_track_map[pin][width][height][pin_layer][side].size());
                         for (int conn = 0; conn < num_tracks; ++conn) {
                             int track = pin_to_track_map[pin][width][height][pin_layer][side][conn];
                             VTR_ASSERT(track < max_chan_width);
@@ -3932,7 +3931,6 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
     /* Go through each pin and find its fanout. */
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
-
         /* Skip global pins and pins that are not of DRIVER type */
         auto pin_type = get_pin_type_from_pin_physical_num(type, pin_index);
         if (pin_type != DRIVER) {
@@ -3999,7 +3997,6 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             /* Get the list of opin to mux connections for that chan seg. */
             bool clipped;
-
 
             /* Check the pin physical layer and connect it to the same layer if necessary */
             rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer, layer, chan, seg,
