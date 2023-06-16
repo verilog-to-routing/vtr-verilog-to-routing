@@ -3249,9 +3249,15 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
             for (int height = 0; height < Type->height; ++height) {
                 for (e_side side : SIDES) {
                     if (Type->pinloc[width][height][side][pin] == 1) {
+                        //connect the pin to its own layer tracks
+                        dir_list[width][height][type_layer][side][num_dir[width][height][type_layer][side]] = pin;
+                        num_dir[width][height][type_layer][side]++;
+                        //connect the pin to the layer that is specified in the arch file by "pin_offset"
                         int pin_layer = type_layer + Type->pin_layer_offset[pin];
-                        dir_list[width][height][pin_layer][side][num_dir[width][height][pin_layer][side]] = pin;
-                        num_dir[width][height][pin_layer][side]++;
+                        if(pin_layer != type_layer) { //avoid duplication and adding num_dir count
+                            dir_list[width][height][pin_layer][side][num_dir[width][height][pin_layer][side]] = pin;
+                            num_dir[width][height][pin_layer][side]++;
+                        }
                     }
                 }
             }
@@ -3259,8 +3265,9 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     }
 
     //Total the number of physical pins
-    int num_phys_pins = 0;
+    std::vector<int> num_phys_pins_per_layer;
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
+        int num_phys_pins = 0;
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
                 for (e_side side : SIDES) {
@@ -3268,6 +3275,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                 }
             }
         }
+        num_phys_pins_per_layer.push_back(num_phys_pins);
     }
 
     std::vector<t_pin_loc> pin_ordering;
@@ -3280,56 +3288,54 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
      * good low Fc block that leverages the fact that usually lots of pins   *
      * are logically equivalent.                                             */
 
-    const e_side init_side = LEFT;
-    const int init_width = 0;
-    const int init_height = 0;
+    for(int layer_index = 0; layer_index < grid.get_num_layers(); layer_index++){
+        const e_side init_side = LEFT;
+        const int init_width = 0;
+        const int init_height = 0;
 
-    e_side side = init_side;
-    int width = init_width;
-    int height = init_height;
-    int pin = 0;
-    int pin_index = -1;
+        e_side side = init_side;
+        int width = init_width;
+        int height = init_height;
+        int pin = 0;
+        int pin_index = -1;
 
-    //Determine the order in which physical pins will be considered while building
-    //the connection block. This generally tries to order the pins so they are 'spread'
-    //out (in hopes of yielding good connection diversity)
-    while (pin < num_phys_pins) {
-        if (height == init_height && width == init_width && side == init_side) {
-            //Completed one loop through all the possible offsets/side combinations
-            pin_index++;
+        //Determine the order in which physical pins will be considered while building
+        //the connection block. This generally tries to order the pins so they are 'spread'
+        //out (in hopes of yielding good connection diversity)
+        while (pin < num_phys_pins_per_layer[layer_index]) {
+            if (height == init_height && width == init_width && side == init_side) {
+                //Completed one loop through all the possible offsets/side combinations
+                pin_index++;
+            }
+
+            advance_to_next_block_side(Type, width, height, side);
+
+            VTR_ASSERT_MSG(pin_index < num_phys_pins_per_layer[layer_index], "Physical block pins bound number of logical block pins");
+
+            if (num_done_per_dir[width][height][layer_index][side] >= num_dir[width][height][layer_index][side]) {
+                continue;
+            }
+
+            int pin_num = dir_list[width][height][layer_index][side][pin_index];
+            VTR_ASSERT(pin_num >= 0);
+            VTR_ASSERT(Type->pinloc[width][height][side][pin_num]);
+
+            t_pin_loc pin_loc;
+            pin_loc.pin_index = pin_num;
+            pin_loc.width_offset = width;
+            pin_loc.height_offset = height;
+            pin_loc.layer_offset = layer_index;
+            pin_loc.side = side;
+
+            pin_ordering.push_back(pin_loc);
+
+            num_done_per_dir[width][height][layer_index][side]++;
+            pin++;
         }
 
-        advance_to_next_block_side(Type, width, height, side);
+        VTR_ASSERT(pin == num_phys_pins_per_layer[layer_index]);
 
-        VTR_ASSERT_MSG(pin_index < num_phys_pins, "Physical block pins bound number of logical block pins");
-
-        //todo: should release the assumption that all pin_layer_offset are the same for a physical block type
-        int layer_offset = Type->pin_layer_offset[pin_index];
-        int pin_layer = type_layer + layer_offset;
-
-        if (num_done_per_dir[width][height][pin_layer][side] >= num_dir[width][height][pin_layer][side]) {
-            continue;
-        }
-
-        int pin_num = dir_list[width][height][pin_layer][side][pin_index];
-        VTR_ASSERT(pin_num >= 0);
-        VTR_ASSERT(Type->pinloc[width][height][side][pin_num]);
-
-        t_pin_loc pin_loc;
-        pin_loc.pin_index = pin_num;
-        pin_loc.width_offset = width;
-        pin_loc.height_offset = height;
-        pin_loc.layer_offset = pin_layer;
-        pin_loc.side = side;
-
-        pin_ordering.push_back(pin_loc);
-
-        num_done_per_dir[width][height][pin_layer][side]++;
-        pin++;
     }
-
-    VTR_ASSERT(pin == num_phys_pins);
-    VTR_ASSERT(pin_ordering.size() == size_t(num_phys_pins));
 
     if (perturb_switch_pattern) {
         load_perturbed_connection_block_pattern(tracks_connected_to_pin,

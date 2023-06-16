@@ -80,7 +80,7 @@
         <corners type="EMPTY" priority="101"/>
         <fill type="clb1" priority="99"/>
       </layer>
-      <layer die="0" global_routing_resources="false">
+      <layer die="0">
         <perimeter type="EMPTY" priority="101"/>
         <!--fill with 'clb'-->
         <fill type="clb0" priority="100"/>
