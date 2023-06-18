@@ -7,12 +7,15 @@
 struct noc_router_id_tag;
 struct noc_link_id_tag;
 
+/** Datatype to index routers within the NoC */
 typedef vtr::StrongId<noc_router_id_tag, int> NocRouterId;
+/** Datatype to index links within the NoC */
 typedef vtr::StrongId<noc_link_id_tag, int> NocLinkId;
 
 // data type to index traffic flows within the noc
 struct noc_traffic_flow_id_tag;
 
+/** Datatype to index traffic flows within the application */
 typedef vtr::StrongId<noc_traffic_flow_id_tag, int> NocTrafficFlowId;
 
 #endif

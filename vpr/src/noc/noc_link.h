@@ -1,7 +1,7 @@
 #ifndef NOC_LINK_H
 #define NOC_LINK_H
 
-/*
+/**
  * @file
  * @brief This file defines the NocLink class.
  *

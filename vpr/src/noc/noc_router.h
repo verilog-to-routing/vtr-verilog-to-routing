@@ -1,7 +1,7 @@
 #ifndef NOC_ROUTER_H
 #define NOC_ROUTER_H
 
-/*
+/**
  * @file
  * @brief This file defines the NocRouter class.
  *
