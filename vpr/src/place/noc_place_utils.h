@@ -391,13 +391,17 @@ void free_noc_placement_structs(void);
 bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
 
 /**
- * @brief Generates a placement move by choosing two router cluster blocks to 
- * swap. First, a random router cluster block is chosen and then another router
- * cluster block is chosen that can be swapped with the initial block such that
- * the distance travelled by either block does not exceed rlim. 
+ * @brief Generates a placement move by first choosing a random router cluster
+ * and then choosing a random physical router where the selected router cluster
+ * can be moved to. If the selected physical router is already occupied,
+ * the proposed move requires swapping two router clusters. If the selected
+ * physical router is empty, the proposed move only requires changing the location
+ * of the random router cluster. The range in which the physical router is selected
+ * is limited such that them maximum distance travelled by the random router cluster
+ * does not exceed rlim.
  * 
- * @param blocks_affected The two router cluster blocks that are proposed to be
- * swapped
+ * @param blocks_affected Contains one or two router clusters that are proposed
+ * to be moved or swapped.
  * @param rlim The maximum distance in the x and y direction that a router 
  * cluster block can travel (this is within the compressed block space) 
  * @return e_create_move Result of proposing the move
