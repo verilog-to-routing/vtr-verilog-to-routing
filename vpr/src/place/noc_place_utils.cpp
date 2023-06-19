@@ -9,7 +9,7 @@ static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, p
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
-void initial_noc_placement(void) {
+void initial_noc_routing(void) {
     // need to get placement information about where the router cluster blocks are placed on the device
     const auto& place_ctx = g_vpr_ctx.placement();
 

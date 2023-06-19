@@ -950,7 +950,7 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
      * logical_block_types contain empty type, needs to be ignored.
      * Not having any type in unplaced_blk_types_index means that it is the first iteration, hence all grids needs to be cleared
      */
-    if (unplaced_blk_types_index.size() == device_ctx.logical_block_types.size() - 1 || unplaced_blk_types_index.size() == 0) {
+    if (unplaced_blk_types_index.size() == device_ctx.logical_block_types.size() - 1) {
         clear_all_block_types = true;
     }
 
@@ -983,6 +983,23 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
             place_ctx.block_locs[blk_id].loc = t_pl_loc();
         }
     }
+}
+
+static void initialize_grid_locs() {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    std::unordered_set<int> blk_types_to_be_cleared;
+    const auto& logical_block_types = device_ctx.logical_block_types;
+
+    // Insert all the logical block types into the set except the empty type
+    // clear_block_type_grid_locs does not expect empty type to be among given types
+    for (const auto& logical_type : logical_block_types) {
+        if (!is_empty_type(&logical_type)) {
+            blk_types_to_be_cleared.insert(logical_type.index);
+        }
+    }
+
+    clear_block_type_grid_locs(blk_types_to_be_cleared);
 }
 
 bool place_one_block(const ClusterBlockId& blk_id,
@@ -1021,8 +1038,261 @@ bool place_one_block(const ClusterBlockId& blk_id,
     return placed_macro;
 }
 
-void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, bool noc_enabled) {
+
+static double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts) {
+    double noc_cost = 0.0;
+    noc_cost = (noc_opts.noc_placement_weighting) * ((costs.noc_aggregate_bandwidth_cost * costs.noc_aggregate_bandwidth_cost_norm) + (costs.noc_latency_cost * costs.noc_latency_cost_norm));
+    return noc_cost;
+}
+
+
+static bool assess_noc_swap(double delta_cost, double prob) {
+
+    if (delta_cost <= 0.0) {
+        return true;
+    }
+
+    if (prob == 0.0) {
+        return false;
+    }
+
+    float random_num = vtr::frand();
+    if (random_num < prob) {
+        return  true;
+    } else {
+        return false;
+    }
+}
+
+static int findFirstInteger(const std::string& str) {
+    std::string numberString;
+    bool foundNumber = false;
+
+    for (char c : str) {
+        if (isdigit(c)) {
+            numberString += c;
+            foundNumber = true;
+        } else if (foundNumber) {
+            // We encountered a non-digit character after finding a number,
+            // so we stop searching.
+            break;
+        }
+    }
+
+    if (!numberString.empty()) {
+        // Convert the string to an integer using stoi() function
+        return std::stoi(numberString);
+    } else {
+        // If no integer is found, return a default value or handle the case
+        // according to your requirements.
+        return -1;
+    }
+}
+
+#include <iomanip>
+
+void print_noc_grid() {
+
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& noc_ctx = g_vpr_ctx.noc();
+
+
+    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
+
+    static int grid_arr[10][10];
+
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            grid_arr[i][j] = -1;
+        }
+    }
+
+    const std::vector<ClusterBlockId>& router_bids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+
+    // Iterate over all routers
+    for (auto router_bid : router_bids) {
+
+        std::string router_name = cluster_ctx.clb_nlist.block_name(router_bid);
+        int router_id = findFirstInteger(router_name);
+        int placed_router_x = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_x, place_ctx.block_locs[router_bid].loc.x);
+        int placed_router_y = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_y, place_ctx.block_locs[router_bid].loc.y);
+        grid_arr[placed_router_x][placed_router_y] = router_id;
+    }
+
+//    std::cout << "Router id " << router_id << " " << place_ctx.block_locs[blk_id].loc.x << " " << place_ctx.block_locs[blk_id].loc.y << std::endl;
+
+
+    std::cout << std::endl;
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            if (grid_arr[j][i] >= 0) {
+                std::cout << std::setw(2) << std::setfill('0') << grid_arr[j][i] << "\t";
+            } else {
+                std::cout << std::setw(2) << std::setfill(' ') << "X-" << "\t";
+            }
+
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl;
+
+}
+
+static void initial_noc_placement(const t_noc_opts& noc_opts) {
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& noc_ctx = g_vpr_ctx.noc();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+
+    std::vector<ClusterBlockId> unplaced_routers;
+
+    for (auto router_blk_id : router_blk_ids) {
+
+        if (is_block_placed((router_blk_id))) {
+            continue;
+        }
+
+        if (is_cluster_constrained(router_blk_id)) {
+            // TODO: try to place the router in its region
+        } else {
+            unplaced_routers.push_back(router_blk_id);
+        }
+    }
+
+    // Make a copy of NoC physical routers
+    vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
+
+    // Shuffle NoC physical routers
+    vtr::RandState rand_state = vtr::irand(1024);
+    vtr::shuffle(noc_phy_routers.begin(), noc_phy_routers.end(), rand_state);
+
+    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
+
+    std::cout << noc_phy_routers.size() << " " << unplaced_routers.size() << std::endl;
+
+    // Iterate over shuffled physical routers to place logical routers
+    for (auto& phy_router : noc_phy_routers) {
+
+        int x = phy_router.get_router_grid_position_x();
+        int y = phy_router.get_router_grid_position_y();
+        t_pl_loc loc(x, y, OPEN);
+
+        if (place_ctx.grid_blocks[x][y].blocks[0] == EMPTY_BLOCK_ID) {
+            auto logical_router_bid = unplaced_routers.back();
+            unplaced_routers.pop_back();
+
+            const auto& type = device_ctx.grid.get_physical_type(loc.x, loc.y);
+            auto& compatible_sub_tiles = compressed_noc_grid.compatible_sub_tiles_for_tile.at(type->index);
+            loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
+
+            t_pl_macro_member macro_member;
+
+            macro_member.blk_index = logical_router_bid;
+            macro_member.offset = t_pl_offset(0, 0, 0);
+            t_pl_macro pl_macro;
+            pl_macro.members.push_back(macro_member);
+
+            bool legal = try_place_macro(pl_macro, loc);
+            VTR_ASSERT(legal);
+            if (!legal) {
+                std::cout << "Illegal" << std::endl;
+                exit(0);
+            }
+
+            if (unplaced_routers.empty()) {
+                break;
+            }
+        }
+
+    }   // end for of random router placement
+
+
+    std::cout << noc_phy_routers.size() << " " << unplaced_routers.size() << std::endl;
+
+    initial_noc_routing();
+
+    print_noc_grid();
+
+    // Only NoC related costs are considered
+    t_placer_costs costs;
+
+    costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
+    costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
+    update_noc_normalization_factors(costs);
+    costs.cost = calculate_noc_cost(costs, noc_opts);
+
+    double best_agg_bw_cost = std::numeric_limits<double>::infinity();
+    double best_lat_cost = std::numeric_limits<double>::infinity();
+
+    float r_lim = 9.0;
+
+    // TODO: Can max_blocks be 2? Does it include only blocks that need to be moved or all the block whose timing is updated?
+    t_pl_blocks_to_be_moved blocks_affected(1024);
+    constexpr int N_MOVES = 2500000;
+    const double starting_prob = 0.5;
+    const double prob_step = starting_prob / N_MOVES;
+
+    // Random moves
+    for (int i_move = 0, n_accepted = 0; i_move < N_MOVES; i_move++) {
+        e_create_move create_move_outcome = e_create_move::ABORT;
+        clear_move_blocks(blocks_affected);
+        float r_lim_decayed = 1.0f + (N_MOVES-i_move) * (r_lim/N_MOVES);
+        create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
+        if (create_move_outcome != e_create_move::ABORT) {
+
+            apply_move_blocks(blocks_affected);
+
+            double noc_aggregate_bandwidth_delta_c = 0.0;
+            double noc_latency_delta_c = 0.0;
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
+            double delta_cost = (noc_opts.noc_placement_weighting) * (noc_latency_delta_c * costs.noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs.noc_aggregate_bandwidth_cost_norm);
+
+
+            double prob = starting_prob - i_move*prob_step;
+            bool move_accepted = assess_noc_swap(delta_cost, prob);
+
+            if (move_accepted) {
+                costs.cost += delta_cost;
+                n_accepted++;
+                commit_move_blocks(blocks_affected);
+                commit_noc_costs();
+                costs.noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
+                costs.noc_latency_cost += noc_latency_delta_c;
+                best_agg_bw_cost = std::min(best_agg_bw_cost, costs.noc_aggregate_bandwidth_cost);
+                best_lat_cost = std::min(best_lat_cost, costs.noc_latency_cost);
+                if (n_accepted % 16 == 0) {
+                    update_noc_normalization_factors(costs);
+                    costs.cost = calculate_noc_cost(costs, noc_opts);
+//                    print_noc_grid();
+                }
+            } else {
+                revert_move_blocks(blocks_affected);
+                revert_noc_traffic_flow_routes(blocks_affected);
+            }
+
+        }
+    }
+
+
+    std::cout << "Best BW cost: " << best_agg_bw_cost << std::endl;
+    std::cout << "Best latency cost: " << best_lat_cost << std::endl;
+
+}
+
+
+void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, const t_noc_opts& noc_opts) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
+
+    /* Initialize the grid blocks to empty.
+     * Initialize all the blocks to unplaced.
+     */
+    initialize_grid_locs();
 
     /* Go through cluster blocks to calculate the tightest placement
      * floorplan constraint for each constrained block
@@ -1032,6 +1302,12 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
      * as fixed so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
     mark_fixed_blocks();
+
+    if (noc_opts.noc) {
+        initial_noc_placement(noc_opts);
+    }
+
+    print_noc_grid();
 
     //Assign scores to blocks and placement macros according to how difficult they are to place
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
@@ -1043,9 +1319,9 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     check_initial_placement_legality();
 
     // route all the traffic flows in the NoC now that all the router cluster block have been placed  (this is done only if the noc optimization is enabled by the user)
-    if (noc_enabled) {
-        initial_noc_placement();
-    }
+//    if (noc_enabled) {
+//        initial_noc_routing();
+//    }
 
     //#ifdef VERBOSE
     //    VTR_LOG("At end of initial_placement.\n");

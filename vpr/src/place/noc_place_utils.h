@@ -49,7 +49,7 @@ struct TrafficFlowPlaceCost {
  * routed. This is why this function should only be used once.
  * 
  */
-void initial_noc_placement(void);
+void initial_noc_routing(void);
 
 /**
  * @brief Goes through all the cluster blocks that were moved

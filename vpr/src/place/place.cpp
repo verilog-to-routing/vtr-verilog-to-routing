@@ -535,7 +535,7 @@ void try_place(const Netlist<>& net_list,
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
-    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str(), noc_opts.noc);
+    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str(), noc_opts);
 
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
@@ -693,6 +693,7 @@ void try_place(const Netlist<>& net_list,
         print_histogram(
             create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
+
     size_t num_macro_members = 0;
     for (auto& macro : g_vpr_ctx.placement().pl_macros) {
         num_macro_members += macro.members.size();
@@ -1012,6 +1013,8 @@ void try_place(const Netlist<>& net_list,
         sprintf(msg,
                 "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g noc_latency_constraints_cost: %d", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, get_number_of_traffic_flows_with_latency_cons_met());
         VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, noc_latency_constraints_cost: %d, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, get_number_of_traffic_flows_with_latency_cons_met());
+
+        print_noc_grid();
     }
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
@@ -1341,11 +1344,11 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     /* We use a constructive initial placement and a low starting temperature 
      * by default, but that can cause problems with NoCs as the initial logical
      * locations are random. Use a higher starting T in that case.*/
-    if (noc_opts.noc) {
-        init_temp = 20. * std_dev;
-    } else {
+//    if (noc_opts.noc) {
+//        init_temp = 20. * std_dev;
+//    } else {
         init_temp = std_dev / 64;
-    }
+//    }
 
     return init_temp;
 }
