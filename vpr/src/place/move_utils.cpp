@@ -738,7 +738,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
         }
     }
 
-    legal = find_compatible_compressed_loc_in_range(type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
+    legal = find_compatible_compressed_loc_in_range(type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false, false);
 
     if (!legal) {
         //No valid position found
@@ -810,7 +810,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
         }
     }
 
-    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, true);
+    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, true, false);
 
     if (!legal) {
         //No valid position found
@@ -895,7 +895,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
         }
     }
 
-    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
+    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false, false);
 
     if (!legal) {
         //No valid position found
@@ -949,8 +949,10 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
     to_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 }
 
-bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median) {
+bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median, bool check_empty) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     std::unordered_set<int> tried_cx_to;
     bool legal = false;
@@ -1028,6 +1030,17 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
 
             if (cx_from == cx_to && cy_from == cy_to) {
                 continue; //Same from/to location -- try again for new y-position
+            } else if (check_empty) {   // Check if the location has at least one empty sub-tile
+                t_pl_loc to_loc;
+                compressed_grid_to_loc(type, cx_to, cy_to, to_loc);
+                const auto& phy_type = device_ctx.grid.get_physical_type(to_loc.x, to_loc.y);
+                const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
+                for (const auto& sub_tile : compatible_sub_tiles) {
+                    if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[sub_tile] == EMPTY_BLOCK_ID) {
+                        legal = true;
+                        break;
+                    }
+                }
             } else {
                 legal = true;
             }
