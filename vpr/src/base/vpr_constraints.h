@@ -6,6 +6,7 @@
 #include "partition.h"
 #include "partition_region.h"
 #include "route_constraint.h"
+#include "packer_constraint.h"
 
 /**
  * @file
@@ -116,6 +117,34 @@ class VprConstraints {
      */
     int get_route_constraint_num(void) const;
 
+    /**
+     * @brief add packer constraint
+     *
+     *   @param net_name the packer constraint 
+     */
+    void add_packer_constraint(PackerConstraint rc);
+
+    /**
+     * @brief returns packer constraint by index
+     *
+     *   @param index the constraint index 
+     */
+    const PackerConstraint get_packer_constraint_by_idx(std::size_t index) const;
+
+    /**
+     * @brief returns packer constraint of a specific net
+     *
+     *   @param net_name the net name
+     */
+    const PackerConstraint get_packer_constraint_by_net_name(std::string net_name);
+
+    /**
+     * @brief returns number of packer constraints
+     *
+     *   @param void
+     */
+    int get_packer_constraint_num(void) const;
+
   private:
     /**
      * Store all constrained atoms
@@ -131,6 +160,12 @@ class VprConstraints {
      * store all route constraints 
      */
     std::unordered_map<std::string, RouteConstraint> route_constraints_;
+
+    /**
+     * store all packer constraints 
+     */
+    std::unordered_map<std::string, PackerConstraint> packer_constraints_;
+
 };
 
 ///@brief used to print floorplanning constraints data from a VprConstraints object

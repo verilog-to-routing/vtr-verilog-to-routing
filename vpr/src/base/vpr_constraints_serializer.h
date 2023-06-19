@@ -3,6 +3,7 @@
 
 #include "region.h"
 #include "route_constraint.h"
+#include "packer_constraint.h"
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "partition_region.h"
@@ -72,6 +73,10 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
     using PartitionListReadContext = void*;
     using SetGlobalSignalReadContext = RouteConstraint;
     using GlobalRouteConstraintsReadContext = void*;
+    using AssignmentReadContext = PackerConstraint;
+    using AssignmentWriteContext = void*;
+    using PackerConstraintsReadContext = void*;
+    using PackerConstraintsWriteContext = void*;
     using VprConstraintsReadContext = void*;
     using AddAtomWriteContext = void*;
     using AddRegionWriteContext = void*;
@@ -358,6 +363,51 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return constraints_.get_route_constraint_by_idx((std::size_t)n);
     }
 
+	/** Generated for complex type "assignment":
+	 * <xs:complexType name="assignment">
+	 *   <xs:attribute name="pin" type="xs:string" use="required" />
+	 *   <xs:attribute name="net" type="xs:string" use="required" />
+	 * </xs:complexType>
+	*/
+	virtual inline const char * get_assignment_net(PackerConstraint& pc) final {
+        temp_name_string_ = pc.net_name();
+        return temp_name_string_.c_str();
+    }
+	virtual inline void set_assignment_net(const char * net, void* &/*ctx*/) final {
+        std::string net_name = std::string(net);
+        loaded_packer_constraint.set_net_name(net_name);
+    }
+	virtual inline const char * get_assignment_pin(PackerConstraint& pc) final {
+        temp_name_string_ = pc.pin_name();
+        return temp_name_string_.c_str();
+    }
+	virtual inline void set_assignment_pin(const char *pin, void *& /*ctx*/) final {
+        std::string pin_name = std::string(pin);
+        loaded_packer_constraint.set_pin_name(pin_name);
+        loaded_packer_constraint.set_is_valid(true);
+    }
+
+	/** Generated for complex type "packer_constraints":
+	 * <xs:complexType name="packer_constraints">
+	 *   <xs:sequence>
+	 *     <xs:element name="assignment" type="assignment" maxOccurs="unbounded" />
+	 *   </xs:sequence>
+	 * </xs:complexType>
+	*/
+	virtual inline void preallocate_packer_constraints_assignment(void*& /*ctx*/, size_t /*size*/) final {}
+	virtual inline void* add_packer_constraints_assignment(void*& /*ctx*/) final {
+        return nullptr;
+    }
+	virtual inline void finish_packer_constraints_assignment(void*& /*ctx*/) final {
+        constraints_.add_packer_constraint(loaded_packer_constraint);
+    }
+	virtual inline size_t num_packer_constraints_assignment(void*& /*ctx*/) final {
+        return constraints_.get_packer_constraint_num(); 
+    }
+	virtual inline PackerConstraint get_packer_constraints_assignment(int n, void*& /*ctx*/) final {
+        return constraints_.get_packer_constraint_by_idx((std::size_t)n);
+    }
+
     /** Generated for complex type "vpr_constraints":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
      *     <xs:choice minOccurs="0" maxOccurs="unbounded">
@@ -420,6 +470,24 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void* get_vpr_constraints_global_route_constraints(int, void*& /*cts*/) final {
         return nullptr;
     }
+   
+	virtual inline void preallocate_vpr_constraints_packer_constraints(void*& /*ctx*/, size_t size) final {
+        return;
+    }
+
+	virtual inline void* add_vpr_constraints_packer_constraints(void*& /*ctx*/) final {
+        return nullptr;
+    }
+
+	virtual inline void finish_vpr_constraints_packer_constraints(void*& /*ctx*/) final {
+        return;
+    };
+	virtual inline size_t num_vpr_constraints_packer_constraints(void*& /*ctx*/) final {
+        return constraints_.get_packer_constraint_num();
+    }
+	virtual inline void* get_vpr_constraints_packer_constraints(int, void*& /*ctx*/) final {
+        return nullptr;
+    }
 
     virtual void finish_load() final {
         return;
@@ -444,6 +512,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     Partition loaded_partition;
     PartitionRegion loaded_part_region;
     RouteConstraint loaded_route_constraint;
+    PackerConstraint loaded_packer_constraint;
 
     //temp string used when a method must return a const char*
     std::string temp_ = "vpr";

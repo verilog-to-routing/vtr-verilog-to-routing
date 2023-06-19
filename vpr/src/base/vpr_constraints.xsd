@@ -79,6 +79,26 @@
     </xs:sequence>
   </xs:complexType>
 
+  <!-- Add for packer constraint, an example
+    <packer_constraints>
+      <assignment pin="clb.local_clk" net=”clk_100MHz”/>
+      <assignment pin="clb.global_clk" net=”clk_10MHz”/>
+      <assignment pin="dsp.local_clk" net=”clk_100MHz”/>
+      <assignment pin="dsp.global_clk" net=”clk_10MHz”/>
+      ...
+    </packer_constraints>
+    -->
+  <xs:complexType name="assignment">
+    <xs:attribute name="pin" type="xs:string" use="required"/>
+    <xs:attribute name="net" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="packer_constraints">
+    <xs:sequence>
+      <xs:element name="assignment" type="assignment" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
 <!-- This last definition is the root tag definition.  The name of the
        xs:element is the root tag, and the contents of the xs:complexType
        defines what attributes and subtags are expected.
@@ -88,6 +108,7 @@
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element name="partition_list" type="partition_list"/>
         <xs:element name="global_route_constraints" type="global_route_constraints"/>
+        <xs:element name="packer_constraints" type="packer_constraints"/>
       </xs:choice>
       <xs:attribute name="tool_name" type="xs:string"/>
     </xs:complexType>

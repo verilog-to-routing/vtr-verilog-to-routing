@@ -1,6 +1,7 @@
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "route_constraint.h"
+#include "packer_constraint.h"
 #include <regex>
 
 void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id) {
@@ -120,6 +121,66 @@ const RouteConstraint VprConstraints::get_route_constraint_by_idx(std::size_t id
 
 int VprConstraints::get_route_constraint_num(void) const {
     return route_constraints_.size();
+}
+
+void VprConstraints::add_packer_constraint(PackerConstraint rc) {
+    packer_constraints_.insert({rc.net_name(), rc});
+    return;
+}
+
+const PackerConstraint VprConstraints::get_packer_constraint_by_net_name(std::string net_name) {
+    PackerConstraint pc;
+    auto const& pc_itr = packer_constraints_.find(net_name);
+    if (pc_itr == packer_constraints_.end()) {
+        // try regexp
+        bool found_thru_regex = false;
+        for (auto constraint : packer_constraints_) {
+            if (std::regex_match(net_name, std::regex(constraint.first))) {
+                pc = constraint.second;
+
+                // mark as invalid so write constraint function will not write constraint
+                // of regexpr name
+                // instead a matched constraint is inserted in
+                constraint.second.set_is_valid(false);
+                pc.set_net_name(net_name);
+                pc.set_is_valid(true);
+                packer_constraints_.insert({net_name, pc});
+
+                found_thru_regex = true;
+                break;
+            }
+        }
+        if (!found_thru_regex) {
+            pc.set_net_name("INVALID");
+            pc.set_pin_name("INVALID");
+            pc.set_is_valid(false);
+        }
+    } else {
+        pc = pc_itr->second;
+    }
+    return pc;
+}
+
+const PackerConstraint VprConstraints::get_packer_constraint_by_idx(std::size_t idx) const {
+    PackerConstraint pc;
+    if ((packer_constraints_.size() == 0) || (idx > packer_constraints_.size() - 1)) {
+        pc.set_net_name("INVALID");
+        pc.set_pin_name("INVALID");
+        pc.set_is_valid(false);
+    } else {
+        std::size_t i = 0;
+        for (auto const& pc_itr : packer_constraints_) {
+            if (i == idx) {
+                pc = pc_itr.second;
+                break;
+            }
+        }
+    }
+    return pc;
+}
+
+int VprConstraints::get_packer_constraint_num(void) const {
+    return packer_constraints_.size();
 }
 
 void print_constraints(FILE* fp, VprConstraints constraints) {
