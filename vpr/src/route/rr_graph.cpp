@@ -2488,6 +2488,9 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Check the pin offset and connect it to a different layer if necessary */
+        if(type->pin_layer_offset[pin_index] == 0){
+            continue;
+        }
         int track_layer = layer + type->pin_layer_offset[pin_index];
         if (total_pin_Fc > 0) {
             get_bidir_opin_connections(rr_graph_builder, layer, track_layer, i, j, pin_index,
@@ -3158,6 +3161,9 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                             }
 
                             //2) the layer that specified by pin_offset in the arch file
+                            if(Type->pin_layer_offset[ipin] == 0) {
+                                continue;
+                            }
                             int pin_layer = type_layer + Type->pin_layer_offset[ipin];
                             relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][pin_layer][iside][iconn];
 
@@ -3865,6 +3871,9 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
                         }
                     }
                     //2) the layer that specified by pin_offset in the arch file
+                    if(Type->pin_layer_offset[pin] == 0){
+                        continue;
+                    }
                     int pin_layer = type_layer + Type->pin_layer_offset[pin];
                     if (!pin_to_track_map[pin][width][height][pin_layer][side].empty()) {
                         num_tracks = std::min(num_tracks,
@@ -4007,6 +4016,9 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                                          &clipped);
 
             /* Check the pin offset and connect it to a different layer if necessary */
+            if(type->pin_layer_offset[pin_index] == 0){
+                continue;
+            }
             int track_layer = layer + type->pin_layer_offset[pin_index];
             rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer, track_layer, chan, seg,
                                                          seg_type_Fc, seg_index, chan_type, seg_details,
