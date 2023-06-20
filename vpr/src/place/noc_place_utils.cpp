@@ -447,35 +447,53 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
     return (vtr::irand(99) < user_supplied_noc_router_swap_percentage) ? true : false;
 }
 
-e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from, t_logical_block_type_ptr& cluster_from_type) {
     // need to access all the router cluster blocks in the design
     auto& noc_ctx = g_vpr_ctx.noc();
+    //
+    auto& place_ctx = g_vpr_ctx.placement();
+    //
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
     // get a reference to the collection of router cluster blocks in the design
     const std::vector<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
 
-    // if there are no router cluster blocks to swap then abort
+    // if there are no router cluster blocks, return false
     if (router_clusters.empty()) {
-        return e_create_move::ABORT;
+        return false;
     }
 
-    int number_of_router_blocks = router_clusters.size();
+    const int number_of_router_blocks = router_clusters.size();
 
     //randomly choose a router block to move
-    int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
-    ClusterBlockId b_from = router_clusters[random_cluster_block_index];
+    const int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
+    b_from = router_clusters[random_cluster_block_index];
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    from = place_ctx.block_locs[b_from].loc;
+    cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    const auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
+    VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
-    //check if the block is movable
-    if (place_ctx.block_locs[b_from].is_fixed) {
+    return true;
+}
+
+e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+
+    // block ID for the randomly selected router cluster
+    ClusterBlockId b_from;
+    // current location of the randomly selected router cluster
+    t_pl_loc from;
+    // logical block type of the randomly selected router cluster
+    t_logical_block_type_ptr cluster_from_type;
+    bool random_select_success = false;
+
+    // Randomly select a router cluster
+    random_select_success = select_random_router_cluster(b_from, from, cluster_from_type);
+
+    // If a random router cluster could not be selected, no move can be proposed
+    if (!random_select_success) {
         return e_create_move::ABORT;
     }
-
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
-    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
-    VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     // now choose a compatible block to swap with
     t_pl_loc to;
@@ -485,6 +503,126 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
     }
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+
+    //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
+
+    return create_move;
+}
+
+e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_affected) {
+
+    auto& noc_ctx = g_vpr_ctx.noc();
+    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid = g_vpr_ctx.device().grid;
+
+
+    // block ID for the randomly selected router cluster
+    ClusterBlockId b_from;
+    // current location of the randomly selected router cluster
+    t_pl_loc from;
+    // logical block type of the randomly selected router cluster
+    t_logical_block_type_ptr cluster_from_type;
+    bool random_select_success = false;
+
+    // Randomly select a router cluster
+    random_select_success = select_random_router_cluster(b_from, from, cluster_from_type);
+
+    const auto& compressed_noc_grid = g_vpr_ctx.placement().compressed_block_grids[cluster_from_type->index];
+
+    // If a random router cluster could not be selected, no move can be proposed
+    if (!random_select_success) {
+        return e_create_move::ABORT;
+    }
+
+    // Get all the traffic flow associated with the selected router cluster
+    const std::vector<NocTrafficFlowId>* associated_flows = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(b_from);
+
+    // There are no associated flows for this router. Centroid location cannot be calculated.
+    if (associated_flows == nullptr) {
+        return e_create_move::ABORT;
+    }
+
+    double acc_x = 0.0;
+    double acc_y = 0.0;
+    double acc_weight = 0.0;
+
+    // iterate over all the flows associated with the given router
+    for (auto flow_id : *associated_flows) {
+        auto& flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(flow_id);
+        ClusterBlockId source_blk_id = flow.source_router_cluster_id;
+        ClusterBlockId sink_blk_id = flow.sink_router_cluster_id;
+
+        if (b_from == source_blk_id) {
+            acc_x += flow.score * place_ctx.block_locs[sink_blk_id].loc.x;
+            acc_y += flow.score * place_ctx.block_locs[sink_blk_id].loc.y;
+            acc_weight += flow.score;
+        } else if (b_from == sink_blk_id) {
+            acc_x += flow.score * place_ctx.block_locs[source_blk_id].loc.x;
+            acc_y += flow.score * place_ctx.block_locs[source_blk_id].loc.y;
+            acc_weight += flow.score;
+        } else {
+            VTR_ASSERT(false);
+        }
+    }
+
+
+    t_pl_loc centroid_loc(OPEN, OPEN, OPEN);
+
+    if (acc_weight > 0.0) {
+        centroid_loc.x = (int)round(acc_x / acc_weight);
+        centroid_loc.y = (int)round(acc_y / acc_weight);
+    } else {
+        return e_create_move::ABORT;
+    }
+
+    if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y)) {
+        return e_create_move::ABORT;
+    }
+
+
+    const auto& physical_type = grid.get_physical_type(centroid_loc.x, centroid_loc.y);
+
+    // If the calculated centroid does not have a compatible type, find a compatible location nearby
+    if (!is_tile_compatible(physical_type, cluster_from_type)) {
+
+        //Determine centroid location in the compressed space of the current block
+        int cx_centroid = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_x, centroid_loc.x);
+        int cy_centroid = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_y, centroid_loc.y);
+
+        const int r_lim = 1;
+        int r_lim_x = std::min<int>(compressed_noc_grid.compressed_to_grid_x.size(), r_lim);
+        int r_lim_y = std::min<int>(compressed_noc_grid.compressed_to_grid_y.size(), r_lim);
+
+        //Determine the valid compressed grid location ranges
+        int min_cx, max_cx, delta_cx;
+        int min_cy, max_cy;
+
+        min_cx = std::max(0, cx_centroid - r_lim_x);
+        max_cx = std::min<int>(compressed_noc_grid.compressed_to_grid_x.size() - 1, cx_centroid + r_lim_x);
+
+        min_cy = std::max(0, cy_centroid - r_lim_y);
+        max_cy = std::min<int>(compressed_noc_grid.compressed_to_grid_y.size() - 1, cy_centroid + r_lim_y);
+
+        delta_cx = max_cx - min_cx;
+
+        int cx_from = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_x, from.x);
+        int cy_from = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_y, from.y);
+
+        int cx_to, cy_to;
+
+        bool legal = find_compatible_compressed_loc_in_range(cluster_from_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false, false);
+
+        if (!legal) {
+            return e_create_move::ABORT;
+        }
+
+        compressed_grid_to_loc(cluster_from_type, cx_to, cy_to, centroid_loc);
+    }
+
+    e_create_move create_move = ::create_move(blocks_affected, b_from, centroid_loc);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {

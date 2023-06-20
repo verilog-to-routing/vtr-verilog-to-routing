@@ -1142,6 +1142,8 @@ void print_noc_grid() {
 
 }
 
+#include <cmath>
+
 static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& noc_ctx = g_vpr_ctx.noc();
@@ -1149,6 +1151,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& device_ctx = g_vpr_ctx.device();
 
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+    const int num_router_clusters = router_blk_ids.size();
 
     std::vector<ClusterBlockId> unplaced_routers;
 
@@ -1175,8 +1178,6 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
     const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
 
-    std::cout << noc_phy_routers.size() << " " << unplaced_routers.size() << std::endl;
-
     // Iterate over shuffled physical routers to place logical routers
     for (auto& phy_router : noc_phy_routers) {
 
@@ -1202,7 +1203,6 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
             bool legal = try_place_macro(pl_macro, loc);
             VTR_ASSERT(legal);
             if (!legal) {
-                std::cout << "Illegal" << std::endl;
                 exit(0);
             }
 
@@ -1213,8 +1213,6 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
 
     }   // end for of random router placement
 
-
-    std::cout << noc_phy_routers.size() << " " << unplaced_routers.size() << std::endl;
 
     initial_noc_routing();
 
@@ -1227,15 +1225,20 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs, noc_opts);
+//    double prev_cost = costs.cost;
 
     double best_agg_bw_cost = std::numeric_limits<double>::infinity();
     double best_lat_cost = std::numeric_limits<double>::infinity();
 
     float r_lim = 9.0;
 
-    // TODO: Can max_blocks be 2? Does it include only blocks that need to be moved or all the block whose timing is updated?
-    t_pl_blocks_to_be_moved blocks_affected(1024);
-    constexpr int N_MOVES = 2500000;
+
+    // At most, two routers are swapped
+    t_pl_blocks_to_be_moved blocks_affected(2);
+
+    // Total number of moves
+    const int N_MOVES = num_router_clusters * 35 * 1000;
+
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
 
@@ -1243,8 +1246,13 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     for (int i_move = 0, n_accepted = 0; i_move < N_MOVES; i_move++) {
         e_create_move create_move_outcome = e_create_move::ABORT;
         clear_move_blocks(blocks_affected);
-        float r_lim_decayed = 1.0f + (N_MOVES-i_move) * (r_lim/N_MOVES);
-        create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
+        if (i_move % 2 == 0) {
+            float r_lim_decayed = 1.0f + (N_MOVES-i_move) * (r_lim/N_MOVES);
+            create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
+        } else {
+            create_move_outcome = propose_router_swap_flow_centroid(blocks_affected);
+        }
+
         if (create_move_outcome != e_create_move::ABORT) {
 
             apply_move_blocks(blocks_affected);
@@ -1253,7 +1261,6 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
             double noc_latency_delta_c = 0.0;
             find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
             double delta_cost = (noc_opts.noc_placement_weighting) * (noc_latency_delta_c * costs.noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs.noc_aggregate_bandwidth_cost_norm);
-
 
             double prob = starting_prob - i_move*prob_step;
             bool move_accepted = assess_noc_swap(delta_cost, prob);
@@ -1267,7 +1274,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 costs.noc_latency_cost += noc_latency_delta_c;
                 best_agg_bw_cost = std::min(best_agg_bw_cost, costs.noc_aggregate_bandwidth_cost);
                 best_lat_cost = std::min(best_lat_cost, costs.noc_latency_cost);
-                if (n_accepted % 16 == 0) {
+                if (n_accepted % 128 == 0) {
                     update_noc_normalization_factors(costs);
                     costs.cost = calculate_noc_cost(costs, noc_opts);
 //                    print_noc_grid();

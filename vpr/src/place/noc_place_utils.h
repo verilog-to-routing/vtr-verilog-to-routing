@@ -408,6 +408,8 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  */
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim);
 
+e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_affected);
+
 /**
  * @brief Writes out the locations of the router cluster blocks in the
  * final placement. This file contains only NoC routers and the 

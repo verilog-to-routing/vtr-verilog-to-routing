@@ -63,6 +63,9 @@ struct t_noc_traffic_flow {
     /** Indicates the importance of the traffic flow. Higher priority traffic flows will have more importance and will be more likely to have their latency reduced and constraints met. Range: [0-inf) */
     int traffic_flow_priority;
 
+    /** When a weighted average is computed over flows or their properties, this score can be used as the contributing weight for its corresponding flow */
+    double score;
+
     /** Constructor initializes all variables*/
     t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency, int flow_priority)
         : source_router_module_name(source_router_name)
@@ -71,7 +74,8 @@ struct t_noc_traffic_flow {
         , sink_router_cluster_id(sink_router_id)
         , traffic_flow_bandwidth(flow_bandwidth)
         , max_traffic_flow_latency(max_flow_latency)
-        , traffic_flow_priority(flow_priority) {}
+        , traffic_flow_priority(flow_priority)
+        , score(0.0) {}
 };
 
 class NocTrafficFlows {
