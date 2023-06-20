@@ -17,6 +17,7 @@
 
 #include <chrono>
 #include <time.h>
+#include <cmath>
 
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
@@ -1142,21 +1143,22 @@ void print_noc_grid() {
 
 }
 
-#include <cmath>
-
 static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& noc_ctx = g_vpr_ctx.noc();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
+    // Get all the router clusters and figure out how many of them exist
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
     const int num_router_clusters = router_blk_ids.size();
 
-    std::vector<ClusterBlockId> unplaced_routers;
+    // Holds all the routers that are not fixed into a specific location by constraints
+    std::vector<ClusterBlockId> unfixed_routers;
 
     for (auto router_blk_id : router_blk_ids) {
 
+        // The block is fixed and was placed in mark_fixed_blocks()
         if (is_block_placed((router_blk_id))) {
             continue;
         }
@@ -1164,56 +1166,62 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
         if (is_cluster_constrained(router_blk_id)) {
             // TODO: try to place the router in its region
         } else {
-            unplaced_routers.push_back(router_blk_id);
+            unfixed_routers.push_back(router_blk_id);
         }
     }
 
-    // Make a copy of NoC physical routers
+    // Make a copy of NoC physical routers because we want to change its order
     vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
 
     // Shuffle NoC physical routers
     vtr::RandState rand_state = vtr::irand(1024);
     vtr::shuffle(noc_phy_routers.begin(), noc_phy_routers.end(), rand_state);
 
+    // Get the logical block type for router
     const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+
+    // Get the compressed grid for NoC
     const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
 
     // Iterate over shuffled physical routers to place logical routers
-    for (auto& phy_router : noc_phy_routers) {
+    // Since physical routers are shuffled, router placement would be random
+    for (const auto& phy_router : noc_phy_routers) {
 
         int x = phy_router.get_router_grid_position_x();
         int y = phy_router.get_router_grid_position_y();
-        t_pl_loc loc(x, y, OPEN);
 
-        if (place_ctx.grid_blocks[x][y].blocks[0] == EMPTY_BLOCK_ID) {
-            auto logical_router_bid = unplaced_routers.back();
-            unplaced_routers.pop_back();
+        // Find a compatible sub-tile
+        const auto& phy_type = device_ctx.grid.get_physical_type(x, y);
+        const auto& compatible_sub_tiles = compressed_noc_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
+        int sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
-            const auto& type = device_ctx.grid.get_physical_type(loc.x, loc.y);
-            auto& compatible_sub_tiles = compressed_noc_grid.compatible_sub_tiles_for_tile.at(type->index);
-            loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
+        t_pl_loc loc(x, y, sub_tile);
 
+        if (place_ctx.grid_blocks[x][y].blocks[sub_tile] == EMPTY_BLOCK_ID) {
+            // Pick one of the unplaced routers
+            auto logical_router_bid = unfixed_routers.back();
+            unfixed_routers.pop_back();
+
+            // Create a macro with a single member
             t_pl_macro_member macro_member;
-
             macro_member.blk_index = logical_router_bid;
             macro_member.offset = t_pl_offset(0, 0, 0);
             t_pl_macro pl_macro;
             pl_macro.members.push_back(macro_member);
 
             bool legal = try_place_macro(pl_macro, loc);
-            VTR_ASSERT(legal);
             if (!legal) {
-                exit(0);
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Could not place a router cluster into an empty physical router.");
             }
 
-            if (unplaced_routers.empty()) {
+            // When all router clusters are placed, stop iterating over remaining physical routers
+            if (unfixed_routers.empty()) {
                 break;
             }
         }
-
     }   // end for of random router placement
 
-
+    // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();
 
     print_noc_grid();
@@ -1225,13 +1233,12 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs, noc_opts);
-//    double prev_cost = costs.cost;
 
     double best_agg_bw_cost = std::numeric_limits<double>::infinity();
     double best_lat_cost = std::numeric_limits<double>::infinity();
 
-    float r_lim = 9.0;
-
+    // Maximum distance in each direction that a router can travel in a move
+    const float max_r_lim = ceil(sqrtf(noc_phy_routers.size()));
 
     // At most, two routers are swapped
     t_pl_blocks_to_be_moved blocks_affected(2);
@@ -1242,16 +1249,16 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
 
-    // Random moves
+    // Generate and evaluate router moves
     for (int i_move = 0, n_accepted = 0; i_move < N_MOVES; i_move++) {
         e_create_move create_move_outcome = e_create_move::ABORT;
         clear_move_blocks(blocks_affected);
-        if (i_move % 2 == 0) {
-            float r_lim_decayed = 1.0f + (N_MOVES-i_move) * (r_lim/N_MOVES);
+//        if (i_move % 2 == 0) {
+            float r_lim_decayed = 1.0f + (N_MOVES-i_move) * (max_r_lim/N_MOVES);
             create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
-        } else {
-            create_move_outcome = propose_router_swap_flow_centroid(blocks_affected);
-        }
+//        } else {
+//            create_move_outcome = propose_router_swap_flow_centroid(blocks_affected);
+//        }
 
         if (create_move_outcome != e_create_move::ABORT) {
 
@@ -1277,20 +1284,14 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 if (n_accepted % 128 == 0) {
                     update_noc_normalization_factors(costs);
                     costs.cost = calculate_noc_cost(costs, noc_opts);
-//                    print_noc_grid();
                 }
             } else {
                 revert_move_blocks(blocks_affected);
                 revert_noc_traffic_flow_routes(blocks_affected);
             }
-
         }
+
     }
-
-
-    std::cout << "Best BW cost: " << best_agg_bw_cost << std::endl;
-    std::cout << "Best latency cost: " << best_lat_cost << std::endl;
-
 }
 
 
@@ -1312,6 +1313,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     mark_fixed_blocks();
 
     if (noc_opts.noc) {
+        // NoC routers are placed before other blocks
         initial_noc_placement(noc_opts);
     }
 
@@ -1325,11 +1327,6 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
     //if any blocks remain unplaced, print an error
     check_initial_placement_legality();
-
-    // route all the traffic flows in the NoC now that all the router cluster block have been placed  (this is done only if the noc optimization is enabled by the user)
-//    if (noc_enabled) {
-//        initial_noc_routing();
-//    }
 
     //#ifdef VERBOSE
     //    VTR_LOG("At end of initial_placement.\n");
