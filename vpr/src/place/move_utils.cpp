@@ -719,11 +719,11 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                           num_layers);
 
     //Determine the valid compressed grid location ranges
-    std::vector<t_search_range> search_range = get_compressed_grid_target_search_range(compressed_block_grid,
+    std::vector<t_bb> search_range = get_compressed_grid_target_search_range(compressed_block_grid,
                                                                                        compressed_locs,
                                                                                        rlim,
                                                                                        num_layers);
-    int delta_cx = search_range[from_layer_num].xmax_ - search_range[from_layer_num].xmin_;
+    int delta_cx = search_range[from_layer_num].xmax - search_range[from_layer_num].xmin;
 
     t_physical_tile_loc to_compressed_loc;
     bool legal = false;
@@ -811,8 +811,10 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_rows(from_layer_num)) - 1 - max_compressed_loc[from_layer_num].y >= 0);
     VTR_ASSERT(max_compressed_loc[from_layer_num].y >= min_compressed_loc[from_layer_num].y);
 
-    t_search_range search_range = {min_compressed_loc[from_layer_num].x, max_compressed_loc[from_layer_num].x,
-                                   min_compressed_loc[from_layer_num].y, max_compressed_loc[from_layer_num].y};
+    t_bb search_range(min_compressed_loc[from_layer_num].x,
+                      max_compressed_loc[from_layer_num].x,
+                      min_compressed_loc[from_layer_num].y,
+                      max_compressed_loc[from_layer_num].y);
 
     t_physical_tile_loc to_compressed_loc;
     bool legal = false;
@@ -878,7 +880,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 
     //Determine the valid compressed grid location ranges
     int delta_cx;
-    std::vector<t_search_range> search_range;
+    std::vector<t_bb> search_range;
 
     // If we are early in the anneal and the range limit still big enough --> search around the center location that the move proposed
     // If not --> search around the current location of the block but in the direction of the center location that the move proposed
@@ -894,7 +896,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                                 std::min<float>(range_limiters.original_rlim, range_limiters.dm_rlim),
                                                                 num_layers);
     }
-    delta_cx = search_range[from_layer_num].xmax_ - search_range[from_layer_num].xmin_;
+    delta_cx = search_range[from_layer_num].xmax - search_range[from_layer_num].xmin;
 
     t_physical_tile_loc to_compressed_loc;
     bool legal = false;
@@ -975,7 +977,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
                                              const t_physical_tile_loc& from_loc,
-                                             t_search_range search_range,
+                                             t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num) {
@@ -994,10 +996,10 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
     while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhaused
         //Pick a random x-location within [min_cx, max_cx],
         //until we find a legal swap, or have exhuasted all possiblites
-        to_loc.x = search_range.xmin_ + vtr::irand(delta_cx);
+        to_loc.x = search_range.xmin + vtr::irand(delta_cx);
 
-        VTR_ASSERT(to_loc.x >= search_range.xmin_);
-        VTR_ASSERT(to_loc.x <= search_range.xmax_);
+        VTR_ASSERT(to_loc.x >= search_range.xmin);
+        VTR_ASSERT(to_loc.x <= search_range.xmax);
 
         //Record this x location as tried
         auto res = tried_cx_to.insert(to_loc.x);
@@ -1013,14 +1015,14 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         //The candidates are stored in a flat_map so we can efficiently find the set of valid
         //candidates with upper/lower bound.
         const auto& block_rows = compressed_block_grid.get_column_block_map(to_loc.x, to_layer_num);
-        auto y_lower_iter = block_rows.lower_bound(search_range.ymin_);
+        auto y_lower_iter = block_rows.lower_bound(search_range.ymin);
         if (y_lower_iter == block_rows.end()) {
             continue;
         }
 
-        auto y_upper_iter = block_rows.upper_bound(search_range.ymax_);
+        auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
 
-        if (y_lower_iter->first > search_range.ymin_) {
+        if (y_lower_iter->first > search_range.ymin) {
             //No valid blocks at this x location which are within rlim_y
             //
             if (type->index != 1)
@@ -1030,8 +1032,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                 y_lower_iter = block_rows.begin();
                 y_upper_iter = block_rows.end();
 
-                search_range.ymin_ = y_lower_iter->first;
-                search_range.ymax_ = (y_upper_iter - 1)->first;
+                search_range.ymin = y_lower_iter->first;
+                search_range.ymax = (y_upper_iter - 1)->first;
             }
         }
 
@@ -1055,8 +1057,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
             //Key in the y-dimension is the compressed index location
             to_loc.y = (y_lower_iter + dy)->first;
 
-            VTR_ASSERT(to_loc.y >= search_range.ymin_);
-            VTR_ASSERT(to_loc.y <= search_range.ymax_);
+            VTR_ASSERT(to_loc.y >= search_range.ymin);
+            VTR_ASSERT(to_loc.y <= search_range.ymax);
 
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
                 continue; //Same from/to location -- try again for new y-position
@@ -1100,11 +1102,11 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
     return compressed_locs;
 }
 
-std::vector<t_search_range> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
+std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
                                                                     const std::vector<t_physical_tile_loc>& compressed_locs,
                                                                     float rlim,
                                                                     int num_layers) {
-    std::vector<t_search_range> search_ranges(num_layers, t_search_range());
+    std::vector<t_bb> search_ranges(num_layers, t_bb());
     for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
         const auto& layer_loc = compressed_locs[layer_num];
         //TODO: This if condition is added because blocks are only moved in the same layer. After the update, this condition should be replaced with an assertion
@@ -1115,22 +1117,22 @@ std::vector<t_search_range> get_compressed_grid_target_search_range(const t_comp
         int rlim_x_max_range = std::min<int>((int)compressed_block_grid.get_num_columns(layer_num), rlim);
         int rlim_y_max_range = std::min<int>((int)compressed_block_grid.get_num_rows(layer_num), rlim); /* for aspect_ratio != 1 case. */
 
-        search_ranges[layer_num].xmin_ = std::max(0, layer_loc.x - rlim_x_max_range);
-        search_ranges[layer_num].xmax_ = std::min<int>(compressed_block_grid.get_num_columns(layer_num) - 1, layer_loc.x + rlim_x_max_range);
+        search_ranges[layer_num].xmin = std::max(0, layer_loc.x - rlim_x_max_range);
+        search_ranges[layer_num].xmax = std::min<int>(compressed_block_grid.get_num_columns(layer_num) - 1, layer_loc.x + rlim_x_max_range);
 
-        search_ranges[layer_num].ymin_ = std::max(0, layer_loc.y - rlim_y_max_range);
-        search_ranges[layer_num].ymax_ = std::min<int>(compressed_block_grid.get_num_rows(layer_num) - 1, layer_loc.y + rlim_y_max_range);
+        search_ranges[layer_num].ymin = std::max(0, layer_loc.y - rlim_y_max_range);
+        search_ranges[layer_num].ymax = std::min<int>(compressed_block_grid.get_num_rows(layer_num) - 1, layer_loc.y + rlim_y_max_range);
     }
 
     return search_ranges;
 }
 
-std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
+std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
                                                                      const std::vector<t_physical_tile_loc>& from_compressed_loc,
                                                                      const std::vector<t_physical_tile_loc>& target_compressed_loc,
                                                                      float rlim,
                                                                      int num_layers) {
-    std::vector<t_search_range> search_range(num_layers, t_search_range());
+    std::vector<t_bb> search_range(num_layers, t_bb());
 
     int min_cx, max_cx, min_cy, max_cy;
 
@@ -1169,7 +1171,7 @@ std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_com
             max_cy = std::min<int>(compressed_block_grid.get_num_rows(layer_num) - 1, cy_from + rlim_y_max_range);
         }
 
-        search_range[layer_num] = t_search_range(min_cx, max_cx, min_cy, max_cy);
+        search_range[layer_num] = t_bb(min_cx, max_cx, min_cy, max_cy);
     }
 
     return search_range;
@@ -1177,18 +1179,18 @@ std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_com
 
 bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
                                                       ClusterBlockId b_from,
-                                                      t_search_range& search_range,
+                                                      t_bb& search_range,
                                                       int& delta_cx,
                                                       int layer_num) {
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
 
-    auto min_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmin_,
-                                                                          search_range.ymin_,
+    auto min_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmin,
+                                                                          search_range.ymin,
                                                                           layer_num});
 
-    auto max_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmax_,
-                                                                          search_range.ymax_,
+    auto max_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmax,
+                                                                          search_range.ymax,
                                                                           layer_num});
 
     Region range_reg;

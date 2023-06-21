@@ -575,10 +575,19 @@ struct t_net_power {
  *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1)
  */
 struct t_bb {
-    int xmin = 0;
-    int xmax = 0;
-    int ymin = 0;
-    int ymax = 0;
+    t_bb() = default;
+    t_bb(int xmin_, int xmax_, int ymin_, int ymax_)
+            : xmin(xmin_)
+            , xmax(xmax_)
+            , ymin(ymin_)
+            , ymax(ymax_) {
+        VTR_ASSERT(xmax_ >= xmin_);
+        VTR_ASSERT(ymax_ >= ymin_);
+    }
+    int xmin = OPEN;
+    int xmax = OPEN;
+    int ymin = OPEN;
+    int ymax = OPEN;
 };
 
 /**
@@ -661,7 +670,7 @@ struct hash<t_pl_offset> {
  * x: x-coordinate
  * y: y-coordinate
  * sub_tile: sub-tile number (capacity position)
- * layer: layer number
+ * layer: layer (die) number
  *
  * @note t_pl_offset should be used to represent an offset between t_pl_loc.
  */

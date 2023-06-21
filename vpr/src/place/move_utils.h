@@ -36,23 +36,6 @@ enum class e_create_move {
     ABORT, //Unable to perform move
 };
 
-struct t_search_range {
-    t_search_range() = default;
-    t_search_range(int xmin, int xmax, int ymin, int ymax)
-        : xmin_(xmin)
-        , xmax_(xmax)
-        , ymin_(ymin)
-        , ymax_(ymax) {
-        VTR_ASSERT(xmax >= xmin);
-        VTR_ASSERT(ymax >= ymin);
-    }
-
-    int xmin_ = OPEN;
-    int xmax_ = OPEN;
-    int ymin_ = OPEN;
-    int ymax_ = OPEN;
-};
-
 /**
  * @brief Stores KArmedBanditAgent propose_action output to decide which
  *        move_type and which block_type should be chosen for the next action.
@@ -235,7 +218,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_physical_tile_loc compressed_loc,
                             t_pl_loc& to_loc);
 /**
- * @brief find compressed location in a compressed range for a specific type in the giver layer (to_layer_num)
+ * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
  * 
  * type: defines the moving block type
  * min_cx, max_cx: the minimum and maximum x coordinates of the range in the compressed grid
@@ -248,7 +231,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
                                              const t_physical_tile_loc& from_loc,
-                                             t_search_range search_range,
+                                             t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num);
@@ -261,12 +244,12 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
                                                            t_pl_loc grid_loc,
                                                            int num_layers);
 
-std::vector<t_search_range> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
+std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
                                                                     const std::vector<t_physical_tile_loc>& compressed_locs,
                                                                     float rlim,
                                                                     int num_layers);
 
-std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
+std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
                                                                      const std::vector<t_physical_tile_loc>& from_compressed_loc,
                                                                      const std::vector<t_physical_tile_loc>& target_compressed_loc,
                                                                      float rlim,
@@ -289,7 +272,7 @@ std::vector<t_search_range> get_compressed_grid_bounded_search_range(const t_com
  */
 bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
                                                       ClusterBlockId b_from,
-                                                      t_search_range& search_range,
+                                                      t_bb& search_range,
                                                       int& delta_cx,
                                                       int layer_num);
 
