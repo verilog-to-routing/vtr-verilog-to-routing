@@ -372,6 +372,8 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
     to_yhigh = rr_graph.node_yhigh(to_rr);
     to_ptc = rr_graph.node_ptc_num(to_rr);
 
+    // Layer numbers are should not be more than one layer apart for connected nodes
+    VTR_ASSERT(abs(from_layer - to_layer) <= 1);
     switch (from_type) {
         case SOURCE:
             VTR_ASSERT(to_type == OPIN);

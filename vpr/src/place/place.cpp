@@ -448,6 +448,11 @@ void try_place(const Netlist<>& net_list,
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
 
+    /*
+     * Currently, the functions that require is_flat as their parameter and are called during placement should
+     * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
+     * if is_flat is false, even if is_flat is set to true from the command line.
+     */
     VTR_ASSERT(!is_flat);
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();

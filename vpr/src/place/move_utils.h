@@ -313,6 +313,8 @@ std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_bl
  * this routine is done for cpu time optimization, so we do not have to necessarily check each
  * complicated case to get correct functionality during place moves.
  *
+ * The intersection takes place in the layer (die) specified by layer_num.
+ *
  */
 bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
                                                       ClusterBlockId b_from,

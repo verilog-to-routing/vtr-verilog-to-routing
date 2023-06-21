@@ -106,7 +106,7 @@ class DeltaDelayModel : public PlaceDelayModel {
     }
 
   private:
-    vtr::NdMatrix<float, 3> delays_;
+    vtr::NdMatrix<float, 3> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
     bool is_flat_;
 };
 
@@ -119,6 +119,8 @@ class OverrideDelayModel : public PlaceDelayModel {
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
+    // returns delay from the specified (x,y) to the specified (x,y) with both endpoints on layer_num and the
+    // specified from and to pins
     float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const override;
     void dump_echo(std::string filepath) const override;
 
