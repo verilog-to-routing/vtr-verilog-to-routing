@@ -1,6 +1,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_all.hpp"
 
+#include "route_common.h"
 #include "vpr_api.h"
 #include "vtr_util.h"
 #include "rr_metadata.h"
@@ -23,7 +24,6 @@ namespace {
 
 // ============================================================================
 
-using Catch::Matchers::Equals;
 using Catch::Matchers::StartsWith;
 using Catch::Matchers::ContainsSubstring;
 
@@ -297,7 +297,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        echo_enabled,
                        echo_file_name,
                        is_flat);
-        vpr_free_all((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
+        vpr_free_all(arch, vpr_setup);
     }
 
     t_vpr_setup vpr_setup;
@@ -587,20 +587,17 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
     // Verify routes
     const auto & route_ctx = g_vpr_ctx.routing();
-    for(const auto &trace : route_ctx.trace) {
-        const t_trace *head = trace.head;
-        while(head != nullptr) {
-            const t_trace *next = head->next;
+    for(const auto& root : route_ctx.route_trees) {
+        if(!root)
+            continue;
 
-            if(next != nullptr && head->iswitch != OPEN) {
-                const auto next_inode = next->index;
-                auto iter = routing_edges.find(std::make_tuple(head->index, next_inode, head->iswitch));
+        for(auto& rt_node: root.value().all_nodes()) {
+            for(auto& child_node: rt_node.child_nodes()){
+                auto iter = routing_edges.find(std::make_tuple(size_t(rt_node.inode), size_t(child_node.inode), size_t(child_node.parent_switch)));
                 if (iter == routing_edges.end()) {
-                    FAIL_CHECK("source: " << head->index << " sink: " << next_inode << " switch:" << head->iswitch);
+                    FAIL_CHECK("source: " << size_t(rt_node.inode) << " sink: " << size_t(child_node.inode) << " switch:" << size_t(child_node.parent_switch));
                 }
             }
-
-            head = next;
         }
     }
 
@@ -636,7 +633,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     CHECK(found_mux4);
 
 
-    vpr_free_all((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
+    vpr_free_all(arch, vpr_setup);
 }
 
 } // namespace

@@ -174,12 +174,14 @@ void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
     //Create overused nodes to congested nets look up by
     //traversing through the net trace backs linked lists
     for (ParentNetId net_id : net_list.nets()) {
-        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-            int inode = tptr->index;
+        if (!route_ctx.route_trees[net_id])
+            continue;
 
-            int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(RRNodeId(inode));
+        for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+            RRNodeId inode = rt_node.inode;
+            int overuse = route_ctx.rr_node_route_inf[size_t(inode)].occ() - rr_graph.node_capacity(inode);
             if (overuse > 0) {
-                nodes_to_nets_lookup[RRNodeId(inode)].insert(net_id);
+                nodes_to_nets_lookup[inode].insert(net_id);
             }
         }
     }
@@ -192,9 +194,11 @@ static void generate_node_to_net_lookup(const Netlist<>& net_list,
     //Create overused nodes to congested nets look up by
     //traversing through the net trace backs linked lists
     for (ParentNetId net_id : net_list.nets()) {
-        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-            int inode = tptr->index;
-            rr_node_to_net_map[RRNodeId(inode)].insert(net_id);
+        if (!route_ctx.route_trees[net_id])
+            continue;
+
+        for (const RouteTreeNode& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+            rr_node_to_net_map[rt_node.inode].insert(net_id);
         }
     }
 }

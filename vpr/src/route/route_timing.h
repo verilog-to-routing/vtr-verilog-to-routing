@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <vector>
 #include "connection_based_routing.h"
+#include "netlist.h"
 #include "vpr_types.h"
 
 #include "vpr_utils.h"
@@ -39,9 +40,9 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  const t_router_opts& router_opts,
                                  CBRR& connections_inf,
                                  RouterStats& router_stats,
-                                 float* pin_criticality,
-                                 t_rt_node** rt_node_of_sink,
-                                 NetPinsMatrix<float>& net_delay,
+                                 std::vector<float>& pin_criticality,
+                                 std::vector<vtr::optional<const RouteTreeNode&>>& rt_node_of_sink,
+                                 ClbNetPinsMatrix<float>& net_delay,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                  NetPinTimingInvalidator* pin_timing_invalidator,
@@ -61,8 +62,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              const t_router_opts& router_opts,
                              CBRR& connections_inf,
                              RouterStats& router_stats,
-                             float* pin_criticality,
-                             t_rt_node** rt_node_of_sink,
+                             std::vector<float>& pin_criticality,
+                             std::vector<vtr::optional<const RouteTreeNode&>>& rt_node_of_sink,
                              float* net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -73,33 +74,30 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                              bool is_flat);
 
-void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
-                                       int** sink_order_ptr,
-                                       t_rt_node*** rt_node_of_sink_ptr,
-                                       int max_sinks);
-
-void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t_rt_node** rt_node_of_sink);
-
 void enable_router_debug(const t_router_opts& router_opts, ParentNetId net, int sink_rr, int router_iteration, ConnectionRouterInterface* router);
 
 bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info, bool rcv_finished);
 
 bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& router_opts);
 
-std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(t_rt_node* rt_root,
-                                                                          const t_conn_cost_params cost_params,
-                                                                          t_bb bounding_box,
-                                                                          std::vector<int>& modified_rr_node_inf,
-                                                                          RouterStats& router_stats);
-
-struct timing_driven_route_structs {
-    // data while timing driven route is active
-    float* pin_criticality;      /* [1..max_pins_per_net-1] */
-    int* sink_order;             /* [1..max_pins_per_net-1] */
-    t_rt_node** rt_node_of_sink; /* [1..max_pins_per_net-1] */
-
-    timing_driven_route_structs(int max_sinks);
-    ~timing_driven_route_structs();
-};
-
 void update_rr_base_costs(int fanout);
+
+/* Data while timing driven route is active */
+class timing_driven_route_structs {
+  public:
+    std::vector<float> pin_criticality;                               /* [1..max_pins_per_net-1] */
+    std::vector<int> sink_order;                                      /* [1..max_pins_per_net-1] */
+    std::vector<vtr::optional<const RouteTreeNode&>> rt_node_of_sink; /* [1..max_pins_per_net-1] */
+
+    timing_driven_route_structs(const Netlist<>& net_list) {
+        int max_sinks = std::max(get_max_pins_per_net(net_list) - 1, 0);
+        pin_criticality.resize(max_sinks + 1);
+        sink_order.resize(max_sinks + 1);
+        rt_node_of_sink.resize(max_sinks + 1);
+
+        /* Set element 0 to invalid values */
+        pin_criticality[0] = std::numeric_limits<float>::quiet_NaN();
+        sink_order[0] = -1;
+        rt_node_of_sink[0] = vtr::nullopt;
+    }
+};

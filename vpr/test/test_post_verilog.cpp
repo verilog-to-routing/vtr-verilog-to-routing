@@ -31,8 +31,8 @@ void do_vpr_flow(const char* input_unc_opt, const char* output_unc_opt) {
 
     bool flow_succeeded = vpr_flow(vpr_setup, arch);
 
-    free_routing_structs((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist);
-    vpr_free_all((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
+    free_routing_structs();
+    vpr_free_all(arch, vpr_setup);
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 

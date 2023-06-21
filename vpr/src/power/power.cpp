@@ -812,28 +812,29 @@ static void power_usage_routing(t_power_usage* power_usage,
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace;
-
-        for (trace = route_ctx.trace[get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat)].head;
-             trace != nullptr; trace = trace->next) {
-            rr_node_power[trace->index].visited = false;
-            rr_node_power[trace->index].net_num = net_id;
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        if (!route_ctx.route_trees[parent_id])
+            continue;
+        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+            rr_node_power[size_t(rt_node.inode)].visited = false;
+            rr_node_power[size_t(rt_node.inode)].net_num = net_id;
         }
     }
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace;
-
-        for (trace = route_ctx.trace[ParentNetId(size_t(net_id))].head; trace != nullptr; trace = trace->next) {
-            t_rr_node_power* node_power = &rr_node_power[trace->index];
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        if (!route_ctx.route_trees[parent_id])
+            continue;
+        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+            t_rr_node_power* node_power = &rr_node_power[size_t(rt_node.inode)];
 
             if (node_power->visited) {
                 continue;
             }
 
-            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(RRNodeId(trace->index)); edge_idx++) {
-                const auto& next_node_id = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), edge_idx));
+            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rt_node.inode); edge_idx++) {
+                const auto& next_node_id = size_t(rr_graph.edge_sink_node(rt_node.inode, edge_idx));
                 if (next_node_id != size_t(OPEN)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 

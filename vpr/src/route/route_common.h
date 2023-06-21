@@ -16,20 +16,14 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
                        ParentNetId net_id,
                        int bb_factor);
 
-void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_sub);
-
 void pathfinder_update_single_node_occupancy(int inode, int add_or_sub);
 
 void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& overuse_info);
 
-float update_pres_fac(float new_pres_fac);
+/** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
+void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_or_sub);
 
-/* Pass in the hptr starting at a SINK with target_net_pin_index, which is the net pin index corresonding *
- * to the sink (ranging from 1 to fanout). Returns a pointer to the first "new" node in the traceback     *
- * (node not previously in trace).                                                                        */
-t_trace* update_traceback(t_heap* hptr,
-                          int target_net_pin_index,
-                          ParentNetId net_id);
+float update_pres_fac(float new_pres_fac);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 
@@ -97,12 +91,6 @@ void mark_ends(const Netlist<>& net_list, ParentNetId net_id);
 
 void mark_remaining_ends(ParentNetId net_id, const std::vector<int>& remaining_sinks);
 
-void free_traceback(ParentNetId net_id);
-
-void drop_traceback_tail(ParentNetId net_id);
-
-void free_traceback(t_trace* tptr);
-
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
 
 void init_route_structs(const Netlist<>& net_list,
@@ -114,22 +102,11 @@ void alloc_and_load_rr_node_route_structs();
 
 void reset_rr_node_route_structs();
 
-void free_trace_structs(const Netlist<>& net_list);
-
 void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
-
-void free_chunk_memory_trace();
-
-bool validate_traceback(t_trace* trace);
-void print_traceback(ParentNetId net_id);
-void print_traceback(const t_trace* trace);
 
 void print_rr_node_route_inf();
 void print_rr_node_route_inf_dot();
 void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat);
-
-t_trace* alloc_trace_data();
-void free_trace_data(t_trace* trace);
 
 bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
 
