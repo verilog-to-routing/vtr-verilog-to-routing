@@ -278,7 +278,6 @@ std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_blo
                                                           float rlim,
                                                           int num_layers);
 
-
 /**
  * @brief This function calculates the search range based on the given rlim value and the number of columns/rows
  * containing the same resource type as the one specified in the compressed_block_grid.

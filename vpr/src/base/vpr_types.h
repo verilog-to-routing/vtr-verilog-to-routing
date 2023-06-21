@@ -577,10 +577,10 @@ struct t_net_power {
 struct t_bb {
     t_bb() = default;
     t_bb(int xmin_, int xmax_, int ymin_, int ymax_)
-            : xmin(xmin_)
-            , xmax(xmax_)
-            , ymin(ymin_)
-            , ymax(ymax_) {
+        : xmin(xmin_)
+        , xmax(xmax_)
+        , ymin(ymin_)
+        , ymax(ymax_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
     }

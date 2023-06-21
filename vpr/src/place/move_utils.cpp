@@ -720,9 +720,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //Determine the valid compressed grid location ranges
     std::vector<t_bb> search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                                                       compressed_locs,
-                                                                                       rlim,
-                                                                                       num_layers);
+                                                                             compressed_locs,
+                                                                             rlim,
+                                                                             num_layers);
     int delta_cx = search_range[from_layer_num].xmax - search_range[from_layer_num].xmin;
 
     t_physical_tile_loc to_compressed_loc;
