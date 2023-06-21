@@ -236,24 +236,68 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              bool is_median,
                                              int to_layer_num);
 
+/**
+ * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
+ * @note This assumes the grid_loc corresponds to a location of the block type that compressed_block_grid stores its
+ * compressed location. Otherwise, it would raise an assertion error.
+ * @param compressed_block_grid The class that stores the compressed block grid of the block
+ * @param grid_loc The actual location of the block
+ * @param num_layers The number of layers (dice) of the FPGA
+ * @return Returns the compressed location of the block on each layer
+ */
 std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
                                                     t_pl_loc grid_loc,
                                                     int num_layers);
 
+/**
+ * @brief Get the the compressed loc from the uncompressed loc (grid_loc). Return the nearest compressed location
+ * if grid_loc doesn't fall on a block of the type that compressed_block_grid stores its compressed location.
+ * @param compressed_block_grid
+ * @param grid_loc
+ * @param num_layers
+ * @return
+ */
 std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
                                                            t_pl_loc grid_loc,
                                                            int num_layers);
 
+/**
+ * @brief This function calculates the search range around the compressed locs, based on the given rlim value and
+ * the number of rows/columns containing the same block type as the one that compressed_loc belongs to.
+ * If rlim is greater than the number of columns containing the block type on the right side of the compressed_loc,
+ * the search range from the right is limited by that number. Similar constraints apply to other sides as well. The
+ * function returns the final search range based on these conditions.
+ * @param compressed_block_grid
+ * @param compressed_locs
+ * @param rlim
+ * @param num_layers
+ * @return A compressed search range for each layer
+ */
 std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                                    const std::vector<t_physical_tile_loc>& compressed_locs,
-                                                                    float rlim,
-                                                                    int num_layers);
+                                                          const std::vector<t_physical_tile_loc>& compressed_locs,
+                                                          float rlim,
+                                                          int num_layers);
 
+
+/**
+ * @brief This function calculates the search range based on the given rlim value and the number of columns/rows
+ * containing the same resource type as the one specified in the compressed_block_grid.
+ * The search range is determined in a square shape, with from_compressed_loc as one of the corners and
+ * directed towards the target_compressed_loc. The function returns the final search range based on these conditions.
+ * @Note This function differs from get_compressed_grid_target_search_range as it doesn't have from_compressed_loc
+ * in the center of the search range.
+ * @param compressed_block_grid
+ * @param from_compressed_loc
+ * @param target_compressed_loc
+ * @param rlim
+ * @param num_layers
+ * @return
+ */
 std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                                     const std::vector<t_physical_tile_loc>& from_compressed_loc,
-                                                                     const std::vector<t_physical_tile_loc>& target_compressed_loc,
-                                                                     float rlim,
-                                                                     int num_layers);
+                                                           const std::vector<t_physical_tile_loc>& from_compressed_loc,
+                                                           const std::vector<t_physical_tile_loc>& target_compressed_loc,
+                                                           float rlim,
+                                                           int num_layers);
 
 /*
  * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords

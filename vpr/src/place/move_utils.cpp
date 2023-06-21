@@ -1103,9 +1103,9 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
 }
 
 std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                                    const std::vector<t_physical_tile_loc>& compressed_locs,
-                                                                    float rlim,
-                                                                    int num_layers) {
+                                                          const std::vector<t_physical_tile_loc>& compressed_locs,
+                                                          float rlim,
+                                                          int num_layers) {
     std::vector<t_bb> search_ranges(num_layers, t_bb());
     for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
         const auto& layer_loc = compressed_locs[layer_num];
@@ -1128,10 +1128,10 @@ std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_blo
 }
 
 std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                                     const std::vector<t_physical_tile_loc>& from_compressed_loc,
-                                                                     const std::vector<t_physical_tile_loc>& target_compressed_loc,
-                                                                     float rlim,
-                                                                     int num_layers) {
+                                                           const std::vector<t_physical_tile_loc>& from_compressed_loc,
+                                                           const std::vector<t_physical_tile_loc>& target_compressed_loc,
+                                                           float rlim,
+                                                           int num_layers) {
     std::vector<t_bb> search_range(num_layers, t_bb());
 
     int min_cx, max_cx, min_cy, max_cy;
