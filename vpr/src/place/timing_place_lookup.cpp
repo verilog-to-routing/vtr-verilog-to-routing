@@ -19,7 +19,6 @@
 #include "globals.h"
 #include "place_and_route.h"
 #include "route_common.h"
-#include "route_tree_timing.h"
 #include "route_timing.h"
 #include "route_export.h"
 #include "rr_graph.h"
@@ -213,7 +212,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
     }
 
     /*free all data structures that are no longer needed */
-    free_routing_structs(net_list);
+    free_routing_structs();
 
     return place_delay_model;
 }

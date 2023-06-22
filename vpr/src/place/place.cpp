@@ -448,6 +448,11 @@ void try_place(const Netlist<>& net_list,
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
 
+    /*
+     * Currently, the functions that require is_flat as their parameter and are called during placement should
+     * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
+     * if is_flat is false, even if is_flat is set to true from the command line.
+     */
     VTR_ASSERT(!is_flat);
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -3234,6 +3239,15 @@ static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat) {
     float moves, accepted, rejected, aborted;
 
+    VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
+
+    VTR_LOG(
+        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
+    VTR_LOG(
+        "    Block Type         Move Type       (%%) of Total      Accepted(%%)     Rejected(%%)    Aborted(%%)\n");
+    VTR_LOG(
+        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
+
     float total_moves = 0;
     for (size_t iaction = 0; iaction < move_type_stat.blk_type_moves.size(); iaction++) {
         total_moves += move_type_stat.blk_type_moves[iaction];
@@ -3243,15 +3257,18 @@ static void print_placement_move_types_stats(
     auto& cluster_ctx = g_vpr_ctx.clustering();
     std::string move_name;
     int agent_type = 0;
+    int count = 0;
     int num_of_avail_moves = move_type_stat.blk_type_moves.size() / get_num_agent_types();
 
-    VTR_LOG("\n\nPercentage of different move types and block types:\n");
     //Print placement information for each block type
     for (auto itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
         if (itype.index == 0 || cluster_ctx.clb_nlist.blocks_per_type(itype).size() == 0) {
             continue;
         }
+
+        count = 0;
+
         for (int imove = 0; imove < num_of_avail_moves; imove++) {
             move_name = move_type_to_string(e_move_type(imove));
             moves = move_type_stat.blk_type_moves[agent_type * num_of_avail_moves + imove];
@@ -3259,16 +3276,23 @@ static void print_placement_move_types_stats(
                 accepted = move_type_stat.accepted_moves[agent_type * num_of_avail_moves + imove];
                 rejected = move_type_stat.rejected_moves[agent_type * num_of_avail_moves + imove];
                 aborted = moves - (accepted + rejected);
+                if (count == 0) {
+                    VTR_LOG("%-18.20s", itype.name);
+                } else {
+                    VTR_LOG("                  ");
+                }
                 VTR_LOG(
-                    "\t%.20s move with type %.20s: %2.6f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",
-                    move_name.c_str(), itype.name, 100 * moves / total_moves,
+                    " %-22.20s %-16.2f %-15.2f %-14.2f %-13.2f\n",
+                    move_name.c_str(), 100 * moves / total_moves,
                     100 * accepted / moves, 100 * rejected / moves,
                     100 * aborted / moves);
             }
+            count++;
         }
         agent_type++;
         VTR_LOG("\n");
     }
+    VTR_LOG("\n");
 }
 
 static void calculate_reward_and_process_outcome(

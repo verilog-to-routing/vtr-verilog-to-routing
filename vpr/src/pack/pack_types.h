@@ -253,7 +253,7 @@ struct t_lb_router_data {
     bool is_routed;                       /* Stores whether or not the current logical-to-physical mapping has a routed solution */
 
     /* Stores state info during Pathfinder iterative routing */
-    t_explored_node_tb* explored_node_tb; /* [0..lb_type_graph->size()-1] Stores mode exploration and traceback info for nodes */
+    t_explored_node_tb* explored_node_tb; /* [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes */
     int explore_id_index;                 /* used in conjunction with node_traceback to determine whether or not a location has been explored.  By using a unique identifier every route, I don't have to clear the previous route exploration */
 
     /* Current type */

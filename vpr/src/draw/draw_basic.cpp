@@ -552,17 +552,12 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
     if (cluster_ctx.clb_nlist.net_is_ignored(convert_to_cluster_net_id(net_id))) /* Don't draw. */
         return;
 
-    if (route_ctx.trace[net_id].head == nullptr) /* No routing->  Skip.  (Allows me to draw */
-        return;                                  /* partially complete routes).            */
-
-    t_trace* tptr = route_ctx.trace[net_id].head; /* SOURCE to start */
-    int inode = tptr->index;
+    if (!route_ctx.route_trees[net_id]) // No routing -> Skip. (Allows me to draw partially complete routes)
+        return;
 
     std::vector<int> rr_nodes_to_draw;
-    rr_nodes_to_draw.push_back(inode);
-    for (;;) {
-        tptr = tptr->next;
-        inode = tptr->index;
+    for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        int inode = size_t(rt_node.inode);
 
         if (draw_if_net_highlighted(convert_to_cluster_net_id(net_id))) {
             /* If a net has been highlighted, highlight the whole net in *
@@ -576,19 +571,12 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
 
         rr_nodes_to_draw.push_back(inode);
 
-        if (tptr->iswitch == OPEN) { //End of branch
+        if (rt_node.is_leaf()) { // End of branch
             draw_partial_route(rr_nodes_to_draw, g);
             rr_nodes_to_draw.clear();
-
-            /* Skip the next segment */
-            tptr = tptr->next;
-            if (tptr == nullptr)
-                break;
-            inode = tptr->index;
-            rr_nodes_to_draw.push_back(inode);
         }
 
-    } /* End loop over traceback. */
+    } /* End loop over route tree. */
 
     draw_partial_route(rr_nodes_to_draw, g);
 }
@@ -1158,8 +1146,7 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
 
             t_draw_state* draw_state = get_draw_state_vars();
 
-            std::vector<int> routed_rr_nodes = trace_routed_connection_rr_nodes(
-                net_id, 0, sink_net_pin_index, draw_state->is_flat);
+            std::vector<int> routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
 
             //Mark all the nodes highlighted
 

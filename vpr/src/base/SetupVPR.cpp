@@ -271,7 +271,6 @@ void SetupVPR(const t_options* Options,
     vtr::out_file_prefix = Options->out_file_prefix;
 
     /* Set seed for pseudo-random placement, default seed to 1 */
-    PlacerOpts->seed = Options->Seed;
     vtr::srandom(PlacerOpts->seed);
 
     {
@@ -604,7 +603,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
     PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
 
-    //TODO: document?
     PlacerOpts->place_cost_exp = 1;
 
     PlacerOpts->td_place_exp_first = Options.place_exp_first;
@@ -633,7 +631,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->delay_model_type = Options.place_delay_model;
     PlacerOpts->delay_model_reducer = Options.place_delay_model_reducer;
 
-    //TODO: document?
     PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
 
     PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;
@@ -670,6 +667,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
+
+    PlacerOpts->seed = Options.Seed;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

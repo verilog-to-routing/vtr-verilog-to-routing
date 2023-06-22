@@ -5,7 +5,7 @@
 #include "rr_graph_storage.h"
 #include "route_common.h"
 #include "router_lookahead.h"
-#include "route_tree_type.h"
+#include "route_tree.h"
 #include "rr_rc_data.h"
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
@@ -68,7 +68,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Returns either the last element of the path, or nullptr if no path is
     // found
     std::pair<bool, t_heap> timing_driven_route_connection_from_route_tree(
-        t_rt_node* rt_root,
+        const RouteTreeNode& rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
@@ -81,7 +81,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Unlike timing_driven_route_connection_from_route_tree(), only part of
     // the route tree which is spatially close to the sink is added to the heap.
     std::pair<bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
-        t_rt_node* rt_root,
+        const RouteTreeNode& rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
@@ -99,7 +99,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // empty).  When using cost_params.astar_fac = 0, for efficiency the
     // RouterLookahead used should be the NoOpLookahead.
     std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
-        t_rt_node* rt_root,
+        const RouteTreeNode& rt_root,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         RouterStats& router_stats,
@@ -148,7 +148,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // timing_driven_route_connection_from_route_tree_high_fanout for running
     // connection router.
     t_heap* timing_driven_route_connection_common_setup(
-        t_rt_node* rt_root,
+        const RouteTreeNode& rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box);
@@ -224,7 +224,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     //Adds the route tree rooted at rt_node to the heap, preparing it to be
     //used as branch-points for further routing.
-    void add_route_tree_to_heap(t_rt_node* rt_node,
+    void add_route_tree_to_heap(const RouteTreeNode& rt_node,
                                 int target_node,
                                 const t_conn_cost_params cost_params,
                                 bool from_high_fanout);
@@ -242,13 +242,13 @@ class ConnectionRouter : public ConnectionRouterInterface {
     //Note that if you want to respect rt_node->re_expand that is the caller's
     //responsibility.
     void add_route_tree_node_to_heap(
-        t_rt_node* rt_node,
+        const RouteTreeNode& rt_node,
         int target_node,
         const t_conn_cost_params cost_params,
         bool is_high_fanout);
 
     t_bb add_high_fanout_route_tree_to_heap(
-        t_rt_node* rt_root,
+        const RouteTreeNode& rt_root,
         int target_node,
         const t_conn_cost_params cost_params,
         const SpatialRouteTreeLookup& spatial_route_tree_lookup,

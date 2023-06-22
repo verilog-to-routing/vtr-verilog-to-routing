@@ -311,7 +311,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
                                                                 first_rlim,
                                                                 num_layers);
 
-    int delta_cx = search_range[centroid_loc_layer_num].xmax_ - search_range[centroid_loc_layer_num].xmin_;
+    int delta_cx = search_range[centroid_loc_layer_num].xmax - search_range[centroid_loc_layer_num].xmin;
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
     int cx_from = OPEN;

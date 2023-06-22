@@ -45,8 +45,8 @@ enum e_draw_crit_path {
 
 enum e_draw_nets {
     DRAW_NO_NETS = 0,
-    DRAW_NETS,
-    DRAW_LOGICAL_CONNECTIONS
+    DRAW_CLUSTER_NETS,
+    DRAW_PRIMITIVE_NETS
 };
 
 /* Draw rr_graph from less detailed to more detailed

@@ -1,10 +1,10 @@
 /*********************************** Top-level Summary *************************************
  * This is VPR's main graphics application program. The program interacts with ezgl/graphics.hpp,
  * which provides an API for displaying graphics on both X11 and Win32. The most important
- * subroutine in this file is draw_main_canvas(), which is a callback function that will be called 
+ * subroutine in this file is draw_main_canvas(), which is a callback function that will be called
  * whenever the screen needs to be updated. Then, draw_main_canvas() will decide what
  * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen.
- * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions. 
+ * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions.
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
  *
  * Contains all functions that didn't fit in any other draw_*.cpp file.
@@ -133,11 +133,6 @@ static void run_graphics_commands(std::string commands);
 
 /************************** File Scope Variables ****************************/
 
-//The arrow head position for turning/straight-thru connections in a switch box
-constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
-constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
-constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
-
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
 //We use these to highlight a relatively small number of things (e.g. stages in a critical path,
@@ -224,10 +219,10 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     if (draw_state->pic_on_screen == PLACEMENT) {
         switch (draw_state->show_nets) {
-            case DRAW_NETS:
+            case DRAW_CLUSTER_NETS:
                 drawnets(g);
                 break;
-            case DRAW_LOGICAL_CONNECTIONS:
+            case DRAW_PRIMITIVE_NETS:
                 break;
             default:
                 break;
@@ -235,10 +230,10 @@ static void draw_main_canvas(ezgl::renderer* g) {
     } else { /* ROUTING on screen */
 
         switch (draw_state->show_nets) {
-            case DRAW_NETS:
+            case DRAW_CLUSTER_NETS:
                 drawroute(ALL_NETS, g);
                 break;
-            case DRAW_LOGICAL_CONNECTIONS:
+            case DRAW_PRIMITIVE_NETS:
                 // fall through
             default:
                 draw_rr(g);
@@ -286,9 +281,9 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
 /**
  * @brief Default setup function, connects signals/sets up ui created in main.ui file
- * 
+ *
  * To minimize code repetition, this function sets up all buttons that ALWAYS get set up.
- * If you want to add to the initial setup functions, and your new setup function will always be called, 
+ * If you want to add to the initial setup functions, and your new setup function will always be called,
  * please put it here instead of writing it 5 independent times. Thanks!
  * @param app ezgl application
  */
@@ -302,8 +297,8 @@ static void default_setup(ezgl::application* app) {
 // Initial Setup functions run default setup if they are a new window. Then, they will run
 // the specific hiding/showing functions that separate them from the other init. setup functions
 
-/* function below intializes the interface window with a set of buttons and links 
- * signals to corresponding functions for situation where the window is opened from 
+/* function below intializes the interface window with a set of buttons and links
+ * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_PLACEMENT */
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
                                                   bool is_new_window) {
@@ -315,8 +310,8 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     hide_crit_path_button(app);
 }
 
-/* function below intializes the interface window with a set of buttons and links 
- * signals to corresponding functions for situation where the window is opened from 
+/* function below intializes the interface window with a set of buttons and links
+ * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_PLACEMENT_with_crit_path */
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     ezgl::application* app,
@@ -331,8 +326,8 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     hide_widget("RoutingMenuButton", app);
 }
 
-/* function below intializes the interface window with a set of buttons and links 
- * signals to corresponding functions for situation where the window is opened from 
+/* function below intializes the interface window with a set of buttons and links
+ * signals to corresponding functions for situation where the window is opened from
  * PLACEMENT_to_ROUTING */
 static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
                                                bool is_new_window) {
@@ -343,8 +338,8 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
     hide_crit_path_button(app);
 }
 
-/* function below intializes the interface window with a set of buttons and links 
- * signals to corresponding functions for situation where the window is opened from 
+/* function below intializes the interface window with a set of buttons and links
+ * signals to corresponding functions for situation where the window is opened from
  * ROUTING_to_PLACEMENT */
 static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
                                                bool is_new_window) {
@@ -356,8 +351,8 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
     hide_crit_path_button(app);
 }
 
-/* function below intializes the interface window with a set of buttons and links 
- * signals to corresponding functions for situation where the window is opened from 
+/* function below intializes the interface window with a set of buttons and links
+ * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_ROUTING */
 static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
                                                 bool is_new_window) {
@@ -368,8 +363,8 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     hide_crit_path_button(app);
 }
 
-/* function below intializes the interface window with a set of buttons and links 
- * signals to corresponding functions for situation where the window is opened from 
+/* function below intializes the interface window with a set of buttons and links
+ * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_ROUTING_with_crit_path */
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
     ezgl::application* app,
@@ -675,7 +670,7 @@ bool draw_if_net_highlighted(ClusterNetId inet) {
 
 /**
  * @brief cbk function for key press
- * 
+ *
  * At the moment, only does something if user is currently typing in searchBar and
  * hits enter, at which point it runs autocomplete
  */
@@ -773,9 +768,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
     //  std::cout << "mouse button at coordinates (" << x << "," << y << ") " << std::endl;
 }
 
-void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y) {
-    //  std::cout << "Mouse move at coordinates (" << x << "," << y << ") "<< std::endl;
-
+void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, double x, double y) {
     // user has clicked the window button, in window mode
     if (window_point_1_collected) {
         // draw a grey, dashed-line box to indicate the zoom-in region
@@ -809,7 +802,6 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
             }
         }
     }
-    event = event; // just for hiding warning message
 }
 
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
@@ -843,61 +835,47 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 std::vector<int> trace_routed_connection_rr_nodes(
     const ClusterNetId net_id,
     const int driver_pin,
-    const int sink_pin,
-    bool is_flat) {
+    const int sink_pin) {
     auto& route_ctx = g_vpr_ctx.routing();
 
-    bool allocated_route_tree_structs = alloc_route_tree_timing_structs(true); //Needed for traceback_to_route_tree
+    VTR_ASSERT(route_ctx.route_trees[net_id]);
+    const RouteTree& tree = route_ctx.route_trees[net_id].value();
 
-    //Conver the traceback into an easily search-able
-    t_rt_node* rt_root = traceback_to_route_tree(ParentNetId(size_t(net_id)), is_flat);
-
-    VTR_ASSERT(
-        rt_root
-        && rt_root->inode
-               == route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][driver_pin]);
+    VTR_ASSERT(tree.root().inode == RRNodeId(route_ctx.net_rr_terminals[net_id][driver_pin]));
 
     int sink_rr_node = route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][sink_pin];
 
     std::vector<int> rr_nodes_on_path;
 
     //Collect the rr nodes
-    trace_routed_connection_rr_nodes_recurr(rt_root, sink_rr_node,
+    trace_routed_connection_rr_nodes_recurr(tree.root(),
+                                            sink_rr_node,
                                             rr_nodes_on_path);
 
     //Traced from sink to source, but we want to draw from source to sink
     std::reverse(rr_nodes_on_path.begin(), rr_nodes_on_path.end());
 
-    free_route_tree(rt_root);
-
-    if (allocated_route_tree_structs) {
-        free_route_tree_timing_structs();
-    }
     return rr_nodes_on_path;
 }
 
 //Helper function for trace_routed_connection_rr_nodes
 //Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path
 //Returns true if rt_node is on the path
-bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node,
+bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
                                              int sink_rr_node,
                                              std::vector<int>& rr_nodes_on_path) {
     //DFS from the current rt_node to the sink_rr_node, when the sink is found trace back the used rr nodes
 
-    if (rt_node->inode == sink_rr_node) {
+    if (rt_node.inode == RRNodeId(sink_rr_node)) {
         rr_nodes_on_path.push_back(sink_rr_node);
         return true;
     }
 
-    for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
-        t_rt_node* child_rt_node = edge->child;
-        VTR_ASSERT(child_rt_node);
-
+    for (const RouteTreeNode& child_rt_node : rt_node.child_nodes()) {
         bool on_path_to_sink = trace_routed_connection_rr_nodes_recurr(
             child_rt_node, sink_rr_node, rr_nodes_on_path);
-
         if (on_path_to_sink) {
-            rr_nodes_on_path.push_back(rt_node->inode);
+            rr_nodes_on_path.push_back(size_t(rt_node.inode));
             return true;
         }
     }
@@ -1439,8 +1417,8 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
 }
 /**
  * @brief Returns the max fanout
- * 
- * @return size_t 
+ *
+ * @return size_t
  */
 size_t get_max_fanout() {
     //find maximum fanout
