@@ -2490,11 +2490,11 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         /* Check the pin offset and connect it to a different layer if necessary */
         int track_layer = layer + type->pin_layer_offset[pin_index];
 
-        if(track_layer == layer){ //avoid adding duplication
+        if (track_layer == layer) { //avoid adding duplication
             continue;
         }
 
-        if(track_layer >= grid.get_num_layers()){
+        if (track_layer >= grid.get_num_layers()) {
             track_layer %= grid.get_num_layers();
         }
 
@@ -3149,7 +3149,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
         /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,num_seg_type_tracks-1] range.
          * now load up 'result' array with these connections, but offset them so they are relative to the channel
          * as a whole */
-        for(auto type_layer_index : type_layer) {
+        for (auto type_layer_index : type_layer) {
             for (int ipin = 0; ipin < Type->num_pins; ipin++) {
                 for (int iwidth = 0; iwidth < Type->width; iwidth++) {
                     for (int iheight = 0; iheight < Type->height; iheight++) {
@@ -3170,11 +3170,11 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                                 //2) the layer that specified by pin_offset in the arch file
                                 int pin_layer = type_layer_index + Type->pin_layer_offset[ipin];
 
-                                if(pin_layer == type_layer_index){ //avoid adding duplicated edge
+                                if (pin_layer == type_layer_index) { //avoid adding duplicated edge
                                     continue;
                                 }
 
-                                if(pin_layer >= grid.get_num_layers()){ //pin layer is invalid, wrap it around
+                                if (pin_layer >= grid.get_num_layers()) { //pin layer is invalid, wrap it around
                                     pin_layer %= grid.get_num_layers();
                                 }
 
@@ -3286,17 +3286,17 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         if (Type->is_ignored_pin[pin])
             continue;
 
-        for(auto type_layer_index : type_layer) {
+        for (auto type_layer_index : type_layer) {
             for (int width = 0; width < Type->width; ++width) {
                 for (int height = 0; height < Type->height; ++height) {
-                    for (e_side side: SIDES) {
+                    for (e_side side : SIDES) {
                         if (Type->pinloc[width][height][side][pin] == 1) {
                             //connect the pin to its own layer tracks
                             dir_list[width][height][type_layer_index][side][num_dir[width][height][type_layer_index][side]] = pin;
                             num_dir[width][height][type_layer_index][side]++;
                             //connect the pin to the layer that is specified in the arch file by "pin_offset"
                             int pin_layer = type_layer_index + Type->pin_layer_offset[pin];
-                            if(pin_layer >= grid.get_num_layers()){ //pin layer is invalid, wrap it around
+                            if (pin_layer >= grid.get_num_layers()) { //pin layer is invalid, wrap it around
                                 pin_layer %= grid.get_num_layers();
                             }
                             if (pin_layer != type_layer_index) { //avoid duplication and adding num_dir count
@@ -3867,7 +3867,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
     auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 5>({size_t(max_chan_width), size_t(type_width), size_t(type_height), size_t(grid.get_num_layers()), 4});
 
     /* Count number of pins to which each track connects  */
-    for(auto type_layer_index : type_layer) {
+    for (auto type_layer_index : type_layer) {
         for (int pin = 0; pin < num_pins; ++pin) {
             for (int width = 0; width < type_width; ++width) {
                 for (int height = 0; height < type_height; ++height) {
@@ -3882,7 +3882,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
                         //1) the layer that physical pin is located
                         if (!pin_to_track_map[pin][width][height][type_layer_index][side].empty()) {
                             num_tracks = std::min(num_tracks,
-                                                  (int) pin_to_track_map[pin][width][height][type_layer_index][side].size());
+                                                  (int)pin_to_track_map[pin][width][height][type_layer_index][side].size());
                             for (int conn = 0; conn < num_tracks; ++conn) {
                                 int track = pin_to_track_map[pin][width][height][type_layer_index][side][conn];
                                 VTR_ASSERT(track < max_chan_width);
@@ -3892,15 +3892,15 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
                         }
                         //2) the layer that specified by pin_offset in the arch file
                         int pin_layer = type_layer_index + Type->pin_layer_offset[pin];
-                        if(pin_layer == type_layer_index){ //avoid adding duplicated edges
+                        if (pin_layer == type_layer_index) { //avoid adding duplicated edges
                             continue;
                         }
-                        if(pin_layer >= grid.get_num_layers()){//pin layer is invalid, wrap it around
+                        if (pin_layer >= grid.get_num_layers()) { //pin layer is invalid, wrap it around
                             pin_layer %= grid.get_num_layers();
                         }
                         if (!pin_to_track_map[pin][width][height][pin_layer][side].empty()) {
                             num_tracks = std::min(num_tracks,
-                                                  (int) pin_to_track_map[pin][width][height][pin_layer][side].size());
+                                                  (int)pin_to_track_map[pin][width][height][pin_layer][side].size());
                             for (int conn = 0; conn < num_tracks; ++conn) {
                                 int track = pin_to_track_map[pin][width][height][pin_layer][side][conn];
                                 VTR_ASSERT(track < max_chan_width);
@@ -4041,10 +4041,10 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             /* Check the pin offset and connect it to a different layer if necessary */
             int track_layer = layer + type->pin_layer_offset[pin_index];
-            if(track_layer == layer){
+            if (track_layer == layer) {
                 continue;
             }
-            if(track_layer >= grid.get_num_layers()){//track layer is invalid, wrap it around
+            if (track_layer >= grid.get_num_layers()) { //track layer is invalid, wrap it around
                 track_layer %= grid.get_num_layers();
             }
             rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer, track_layer, chan, seg,

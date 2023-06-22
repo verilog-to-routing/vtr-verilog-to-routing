@@ -97,7 +97,6 @@ struct t_pin_locs {
     /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..num_of_layer-1][0..3][0..num_tokens-1] */
     vtr::NdMatrix<std::vector<std::string>, 5> assignments;
 
-
     bool is_distribution_set() {
         return distribution_set;
     }
@@ -658,7 +657,6 @@ static void LoadPinLoc(pugi::xml_node Locations,
         VTR_ASSERT(type->pin_width_offset[ipin] >= 0 && type->pin_width_offset[ipin] < type->width);
         VTR_ASSERT(type->pin_height_offset[ipin] >= 0 && type->pin_height_offset[ipin] < type->height);
         VTR_ASSERT(type->pin_layer_offset[ipin] >= 0 && type->pin_layer_offset[ipin] < num_of_avail_layer);
-
     }
 }
 
@@ -3365,7 +3363,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                y_offset, PhysicalTileType->name, PhysicalTileType->height - 1);
             }
 
-            if( (layer_offset < 0) || layer_offset >= num_of_avail_layer){
+            if ((layer_offset < 0) || layer_offset >= num_of_avail_layer) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "'%d' is an invalid layer offset for type '%s' (must be within [0, num_avail_layer-1]).\n",
                                y_offset, PhysicalTileType->name, PhysicalTileType->height - 1);
