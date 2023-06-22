@@ -3294,7 +3294,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                             //connect the pin to its own layer tracks
                             dir_list[width][height][type_layer_index][side][num_dir[width][height][type_layer_index][side]] = pin;
                             num_dir[width][height][type_layer_index][side]++;
-                            //connect the pin to the layer that is specified in the arch file by "pin_offset"
+                            //connect the pin to the layer that is specified in the arch file by "layer_offset"
                             int pin_layer = type_layer_index + Type->pin_layer_offset[pin];
                             if (pin_layer >= grid.get_num_layers()) { //pin layer is invalid, wrap it around
                                 pin_layer %= grid.get_num_layers();
@@ -3307,6 +3307,8 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                     }
                 }
             }
+            //if a physical type appears in more than one layer, we only need to iterate the first type_layer
+            break;
         }
     }
 
