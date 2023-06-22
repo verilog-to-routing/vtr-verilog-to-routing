@@ -636,7 +636,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
                                         type->pinloc[width][height][side][physical_pin_index] = true;
                                         type->pin_width_offset[physical_pin_index] += width;
                                         type->pin_height_offset[physical_pin_index] += height;
-                                        type->pin_layer_offset[physical_pin_index] += layer;
+                                        type->pin_layer_offset[physical_pin_index] = layer;
                                         physical_pin_counts[physical_pin_index] += 1;
                                     }
                                 }
