@@ -477,21 +477,26 @@ static void format_coordinates(int& layer_num, int& x, int& y, std::string coord
     coord = format_name(coord);
 
     std::stringstream coord_stream(coord);
-    if (!(coord_stream >> layer_num)) {
+    std::vector<int> coords;
+    int tmp_coord;
+    while (coord_stream >> tmp_coord) {
+        coords.push_back(tmp_coord);
+        coord_stream.ignore(1, ',');
+    }
+    if (coords.size() != 2 && coords.size() != 3) {
         vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                   "Net %lu has coordinates that is not in the form (layer_num,x,y)", size_t(net));
     }
-    coord_stream.ignore(1, ' ');
 
-    if (!(coord_stream >> x)) {
-        vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                  "Net %lu has coordinates that is not in the form (layer_num,x,y)", size_t(net));
-    }
-    coord_stream.ignore(1, ' ');
-
-    if (!(coord_stream >> y)) {
-        vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                  "Net %lu has coordinates that is not in the form (layer_num,x,y)", size_t(net));
+    if (coords.size() == 2) {
+        layer_num = 0;
+        x = coords[0];
+        y = coords[1];
+    } else {
+        VTR_ASSERT(coords.size() == 3);
+        layer_num = coords[0];
+        x = coords[1];
+        y = coords[2];
     }
 }
 
@@ -589,8 +594,8 @@ void print_route(const Netlist<>& net_list,
                     int jlow = rr_graph.node_ylow(inode);
                     int layer_num = rr_graph.node_layer(inode);
 
-                    fprintf(fp, "Node:\t%zu\t%6s (%d,%d) ", size_t(inode),
-                            rr_graph.node_type_string(inode), ilow, jlow);
+                    fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode),
+                            rr_graph.node_type_string(inode), layer_num, ilow, jlow);
 
                     if ((ilow != rr_graph.node_xhigh(inode))
                         || (jlow != rr_graph.node_yhigh(inode)))
