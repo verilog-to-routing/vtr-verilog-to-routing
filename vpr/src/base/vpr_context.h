@@ -166,9 +166,9 @@ struct DeviceContext : public Context {
 
     /*
      * Keep which layer each physical block type is located at. [0..physical_type.size()-1]
-     * NOTE: this code assumes that all physical block types are located at the same layer.
+     * Each physical block type can be located at multiple layers.
      */
-    std::vector<int> physical_type_layer;
+    std::vector<std::unordered_set<int>> physical_type_layer;
 
     /*
      * Keep which layer in multi-die FPGA require global routing resources [0..number_of_layers-1]
