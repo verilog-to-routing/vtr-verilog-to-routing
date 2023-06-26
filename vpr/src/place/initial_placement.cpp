@@ -240,6 +240,89 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
  */
 static void check_initial_placement_legality();
 
+RouterPlacementCheckpoint::RouterPlacementCheckpoint() :
+    valid_(false),
+    cost_(std::numeric_limits<double>::infinity()) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+
+    // Get all router clusters in the net-list
+    const std::vector<ClusterBlockId>& router_bids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+
+    router_locations_.clear();
+
+    for (const auto& router_bid : router_bids) {
+        router_locations_[router_bid] = t_pl_loc(OPEN, OPEN, OPEN);
+    }
+}
+
+void RouterPlacementCheckpoint::save_checkpoint(double cost) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    const std::vector<ClusterBlockId>& router_bids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+
+    for (const auto& router_bid : router_bids) {
+        t_pl_loc loc = place_ctx.block_locs[router_bid].loc;
+        router_locations_[router_bid] = loc;
+    }
+    valid_ = true;
+    cost_ = cost;
+
+    std::cout << "save checkpoint is called" << std::endl;
+    print_noc_grid();
+}
+
+void RouterPlacementCheckpoint::restore_checkpoint() {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    // Get all physical routers
+    const auto& noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
+
+    // Clear all physical routers in placement
+    for (const auto& phy_router : noc_phy_routers) {
+
+        int x = phy_router.get_router_grid_position_x();
+        int y = phy_router.get_router_grid_position_y();
+
+        place_ctx.grid_blocks[x][y].usage = 0;
+
+        auto tile = device_ctx.grid.get_physical_type(x, y);
+
+        for (auto sub_tile : tile->sub_tiles) {
+            auto capacity = sub_tile.capacity;
+
+            for (int k = 0; k < capacity.total(); k++) {
+                if (place_ctx.grid_blocks[x][y].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
+                    place_ctx.grid_blocks[x][y].blocks[k + capacity.low] = EMPTY_BLOCK_ID;
+                }
+            }
+        }
+    }
+
+    // Place routers based on router_locations_
+    for (const auto& router_loc : router_locations_) {
+        ClusterBlockId router_blk_id = router_loc.first;
+        t_pl_loc location = router_loc.second;
+
+//        place_ctx.grid_blocks[location.x][location.y].blocks[location.sub_tile] = router_blk_id;
+//        place_ctx.grid_blocks[location.x][location.y].usage++;
+
+        set_block_location(router_blk_id, location);
+    }
+
+
+    std::cout << "restore checkpoint is called" << std::endl;
+}
+
+bool RouterPlacementCheckpoint::is_valid() const{
+    return valid_;
+}
+double RouterPlacementCheckpoint::get_cost() const {
+    return cost_;
+}
+
 static void check_initial_placement_legality() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1234,11 +1317,8 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs, noc_opts);
 
-    double best_agg_bw_cost = std::numeric_limits<double>::infinity();
-    double best_lat_cost = std::numeric_limits<double>::infinity();
-
     // Maximum distance in each direction that a router can travel in a move
-    const float max_r_lim = ceil(sqrtf(noc_phy_routers.size()));
+    const float max_r_lim = ceilf(sqrtf(noc_phy_routers.size()));
 
     // At most, two routers are swapped
     t_pl_blocks_to_be_moved blocks_affected(2);
@@ -1249,16 +1329,15 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
 
+    RouterPlacementCheckpoint checkpoint;
+
     // Generate and evaluate router moves
     for (int i_move = 0, n_accepted = 0; i_move < N_MOVES; i_move++) {
         e_create_move create_move_outcome = e_create_move::ABORT;
         clear_move_blocks(blocks_affected);
-//        if (i_move % 2 == 0) {
-            float r_lim_decayed = 1.0f + (N_MOVES-i_move) * (max_r_lim/N_MOVES);
-            create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
-//        } else {
-//            create_move_outcome = propose_router_swap_flow_centroid(blocks_affected);
-//        }
+        // Shrink the range limit over time
+        float r_lim_decayed = 1.0f + (N_MOVES-i_move) * (max_r_lim/N_MOVES);
+        create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
 
         if (create_move_outcome != e_create_move::ABORT) {
 
@@ -1279,9 +1358,11 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 commit_noc_costs();
                 costs.noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
                 costs.noc_latency_cost += noc_latency_delta_c;
-                best_agg_bw_cost = std::min(best_agg_bw_cost, costs.noc_aggregate_bandwidth_cost);
-                best_lat_cost = std::min(best_lat_cost, costs.noc_latency_cost);
                 if (n_accepted % 128 == 0) {
+                    if (!checkpoint.is_valid() || costs.cost < checkpoint.get_cost()) {
+                        checkpoint.save_checkpoint(costs.cost);
+                    }
+
                     update_noc_normalization_factors(costs);
                     costs.cost = calculate_noc_cost(costs, noc_opts);
                 }
@@ -1290,8 +1371,13 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 revert_noc_traffic_flow_routes(blocks_affected);
             }
         }
-
     }
+
+    if (checkpoint.get_cost() < costs.cost) {
+        checkpoint.restore_checkpoint();
+    }
+
+
 }
 
 
@@ -1335,3 +1421,4 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     //    }
     //#endif
 }
+

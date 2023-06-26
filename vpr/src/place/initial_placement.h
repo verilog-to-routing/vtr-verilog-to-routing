@@ -38,6 +38,23 @@ struct t_grid_empty_locs_block_type {
     int num_of_empty_locs_in_y_axis;
 };
 
+class RouterPlacementCheckpoint {
+  private:
+    std::unordered_map<ClusterBlockId, t_pl_loc> router_locations_;
+    bool valid_ = false;
+    double cost_;
+
+  public:
+    RouterPlacementCheckpoint();
+    RouterPlacementCheckpoint(const RouterPlacementCheckpoint& other) = delete;
+    RouterPlacementCheckpoint& operator=(const RouterPlacementCheckpoint& other) = delete;
+
+    void save_checkpoint(double cost);
+    void restore_checkpoint();
+    bool is_valid() const;
+    double get_cost() const;
+};
+
 void print_noc_grid();
 
 /**
