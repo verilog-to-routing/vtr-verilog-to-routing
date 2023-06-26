@@ -429,7 +429,6 @@ class t_rr_graph_storage {
         node_ptc_.clear();
         node_first_edge_.clear();
         node_fan_in_.clear();
-        seen_edge_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
@@ -448,7 +447,6 @@ class t_rr_graph_storage {
         node_ptc_.shrink_to_fit();
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
-        seen_edge_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
@@ -682,8 +680,6 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
     vtr::vector<RREdgeId, bool> edge_remapped_;
-
-    vtr::vector<RREdgeId, bool> seen_edge_;
 
     /***************
      * State flags *
