@@ -679,6 +679,22 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+    /**
+     * The delay of certain switches specified in the architecture file depends on the number of inputs of the edge's sink node (pins or tracks).
+     * For example, in the case of a MUX switch, the delay increases as the number of inputs increases.
+     * During the construction of the RR Graph, switch IDs are assigned to the edges according to the order specified in the architecture file.
+     * These switch IDs are later used to retrieve information such as delay for each edge.
+     * This allows for effective fly-weighting of edge information.
+     *
+     * After building the RR Graph, we iterate over the nodes once more to store their fan-in.
+     * If a switch's characteristics depend on the fan-in of a node, a new switch ID is generated and assigned to the corresponding edge.
+     * This process is known as remapping.
+     * In this vector, we store information about which edges have undergone remapping.
+     * It is necessary to store this information, especially when flat-router is enabled.
+     * Remapping occurs when constructing global resources after placement and when adding intra-cluster resources after placement.
+     * Without storing this information, during subsequent remappings, it would be unclear whether the stored switch ID
+     * corresponds to the architecture ID or the RR Graph switch ID for an edge.
+    */
     vtr::vector<RREdgeId, bool> edge_remapped_;
 
     /***************
