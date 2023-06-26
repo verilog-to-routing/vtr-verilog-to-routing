@@ -818,8 +818,13 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
                         is_flat);
         } else {
             VTR_ASSERT(router_opts.doRouting == STAGE_LOAD);
-
             //Load a previous routing
+            //if the previous load file is generated using flat routing,
+            //we need to create rr_graph with is_flat flag to add additional
+            //internal nodes/edges.
+            if(is_flat){ 
+                vpr_create_device(vpr_setup, arch, is_flat);
+            }
             // TODO: flat routing is not implemented for this part
             route_status = vpr_load_routing(vpr_setup,
                                             arch,
@@ -979,11 +984,11 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
     auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Load the routing from a file
-    bool is_legal = read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests);
-
+    bool is_legal = read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests, is_flat);
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
-        load_net_delay_from_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+        load_net_delay_from_routing(router_net_list,
                                     net_delay,
                                     is_flat);
 

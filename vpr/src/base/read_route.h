@@ -9,6 +9,6 @@
 #ifndef READ_ROUTE_H
 #define READ_ROUTE_H
 
-bool read_route(const char* route_file, const t_router_opts& RouterOpts, bool verify_file_digests);
+bool read_route(const char* route_file, const t_router_opts& RouterOpts, bool verify_file_digests, bool is_flat);
 
 #endif /* READ_ROUTE_H */
