@@ -824,9 +824,9 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             //we need to create rr_graph with is_flat flag to add additional
             //internal nodes/edges.
             if(is_flat){ 
-                vpr_create_device(vpr_setup, arch, is_flat);
+                vpr_create_rr_graph(vpr_setup, arch, chan_width, is_flat);
             }
-            // TODO: flat routing is not implemented for this part
+            
             route_status = vpr_load_routing(vpr_setup,
                                             arch,
                                             chan_width,
