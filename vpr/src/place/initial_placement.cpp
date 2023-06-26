@@ -18,6 +18,7 @@
 #include <chrono>
 #include <time.h>
 #include <cmath>
+#include <iomanip>
 
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
@@ -265,10 +266,12 @@ void RouterPlacementCheckpoint::save_checkpoint(double cost) {
         t_pl_loc loc = place_ctx.block_locs[router_bid].loc;
         router_locations_[router_bid] = loc;
     }
+
+    std::cout << "save checkpoint is called " << cost_ << " " << cost << std::endl;
     valid_ = true;
     cost_ = cost;
 
-    std::cout << "save checkpoint is called" << std::endl;
+//    std::cout << "save checkpoint is called" << std::endl;
     print_noc_grid();
 }
 
@@ -306,14 +309,12 @@ void RouterPlacementCheckpoint::restore_checkpoint() {
         ClusterBlockId router_blk_id = router_loc.first;
         t_pl_loc location = router_loc.second;
 
-//        place_ctx.grid_blocks[location.x][location.y].blocks[location.sub_tile] = router_blk_id;
-//        place_ctx.grid_blocks[location.x][location.y].usage++;
-
         set_block_location(router_blk_id, location);
     }
 
 
     std::cout << "restore checkpoint is called" << std::endl;
+    print_noc_grid();
 }
 
 bool RouterPlacementCheckpoint::is_valid() const{
@@ -1174,7 +1175,7 @@ static int findFirstInteger(const std::string& str) {
     }
 }
 
-#include <iomanip>
+
 
 void print_noc_grid() {
 
@@ -1207,7 +1208,6 @@ void print_noc_grid() {
     }
 
 //    std::cout << "Router id " << router_id << " " << place_ctx.block_locs[blk_id].loc.x << " " << place_ctx.block_locs[blk_id].loc.y << std::endl;
-
 
     std::cout << std::endl;
     for (int i = 0; i < 10; i++) {
@@ -1358,13 +1358,8 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 commit_noc_costs();
                 costs.noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
                 costs.noc_latency_cost += noc_latency_delta_c;
-                if (n_accepted % 128 == 0) {
-                    if (!checkpoint.is_valid() || costs.cost < checkpoint.get_cost()) {
-                        checkpoint.save_checkpoint(costs.cost);
-                    }
-
-                    update_noc_normalization_factors(costs);
-                    costs.cost = calculate_noc_cost(costs, noc_opts);
+                if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
+                    checkpoint.save_checkpoint(costs.cost);
                 }
             } else {
                 revert_move_blocks(blocks_affected);
@@ -1374,6 +1369,8 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     }
 
     if (checkpoint.get_cost() < costs.cost) {
+        std::cout << costs.cost << std::endl;
+        print_noc_grid();
         checkpoint.restore_checkpoint();
     }
 
