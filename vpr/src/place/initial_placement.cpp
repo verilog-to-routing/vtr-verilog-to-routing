@@ -196,7 +196,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
  *
  * @return true if the macro gets placed, false if not.
  */
-static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
+static bool try_random_placement(t_pl_macro pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
 
 /**
  * @brief Looks for a valid placement location for macro exhaustively once the maximum number of random locations have been tried.
@@ -209,7 +209,7 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
  *
  * @return true if the macro gets placed, false if not.
  */
-static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
+static bool try_exhaustive_placement(t_pl_macro pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
 
 /**
  * @brief Looks for a valid placement location for macro in second iteration, tries to place as many macros as possible in one column 
@@ -642,7 +642,7 @@ static inline void fix_IO_block_types(t_pl_macro pl_macro, t_pl_loc loc, enum e_
     }
 }
 
-static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
+static bool try_random_placement(t_pl_macro pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     t_pl_loc loc;
 
@@ -704,7 +704,7 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
     return legal;
 }
 
-static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
+static bool try_exhaustive_placement(t_pl_macro pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -1203,8 +1203,6 @@ void print_noc_grid() {
         grid_arr[placed_router_x][placed_router_y] = router_id;
     }
 
-//    std::cout << "Router id " << router_id << " " << place_ctx.block_locs[blk_id].loc.x << " " << place_ctx.block_locs[blk_id].loc.y << std::endl;
-
     std::cout << std::endl;
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
@@ -1227,6 +1225,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& noc_ctx = g_vpr_ctx.noc();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     // Get all the router clusters and figure out how many of them exist
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
@@ -1243,7 +1242,30 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
         }
 
         if (is_cluster_constrained(router_blk_id)) {
-            // TODO: try to place the router in its region
+
+            auto block_type = cluster_ctx.clb_nlist.block_type(router_blk_id);
+            const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[router_blk_id];
+
+            // Create a macro with a single member
+            t_pl_macro_member macro_member;
+            macro_member.blk_index = router_blk_id;
+            macro_member.offset = t_pl_offset(0, 0, 0);
+            t_pl_macro pl_macro;
+            pl_macro.members.push_back(macro_member);
+
+            bool macro_placed = false;
+            for (int i_try = 0; i_try < MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY && !macro_placed; i_try++) {
+                macro_placed = try_random_placement(pl_macro, pr, block_type, FREE);
+            }
+
+            if (!macro_placed) {
+                macro_placed = try_exhaustive_placement(pl_macro, pr, block_type, FREE);
+            }
+
+            if (!macro_placed) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Could not place a router cluster within its constrained region");
+            }
+
         } else {
             unfixed_routers.push_back(router_blk_id);
         }
