@@ -4682,16 +4682,6 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
 
     if (noc_mesh_topology) {
         processMeshTopology(noc_mesh_topology, loc_data, noc_ref);
-
-        for (auto i = noc_ref->router_list.begin(); i != noc_ref->router_list.end(); i++) {
-            std::cout << "router " << i->id << ": ";
-
-            for (auto j = i->connection_list.begin(); j != i->connection_list.end(); j++) {
-                std::cout << *j << ",";
-            }
-
-            std::cout << "\n";
-        }
     } else {
         noc_topology = pugiutil::get_single_child(noc_tag, "topology", loc_data, pugiutil::REQUIRED);
 
