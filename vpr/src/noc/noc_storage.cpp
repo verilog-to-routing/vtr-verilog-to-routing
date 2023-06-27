@@ -23,6 +23,10 @@ const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
     return link_storage;
 }
 
+vtr::vector<NocLinkId, NocLink>& NocStorage::get_mutable_noc_links(void) {
+    return link_storage;
+}
+
 int NocStorage::get_number_of_noc_links(void) const {
     return link_storage.size();
 }

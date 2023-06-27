@@ -266,16 +266,11 @@ void RouterPlacementCheckpoint::save_checkpoint(double cost) {
         t_pl_loc loc = place_ctx.block_locs[router_bid].loc;
         router_locations_[router_bid] = loc;
     }
-
-    std::cout << "save checkpoint is called " << cost_ << " " << cost << std::endl;
     valid_ = true;
     cost_ = cost;
-
-//    std::cout << "save checkpoint is called" << std::endl;
-    print_noc_grid();
 }
 
-void RouterPlacementCheckpoint::restore_checkpoint() {
+void RouterPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t_placer_costs& costs) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -304,6 +299,7 @@ void RouterPlacementCheckpoint::restore_checkpoint() {
         }
     }
 
+
     // Place routers based on router_locations_
     for (const auto& router_loc : router_locations_) {
         ClusterBlockId router_blk_id = router_loc.first;
@@ -312,14 +308,14 @@ void RouterPlacementCheckpoint::restore_checkpoint() {
         set_block_location(router_blk_id, location);
     }
 
-
-    std::cout << "restore checkpoint is called" << std::endl;
-    print_noc_grid();
+    // Re-initialize routes and static variables that keep track of NoC-related costs
+    reinitialize_noc_routing(noc_opts, costs);
 }
 
 bool RouterPlacementCheckpoint::is_valid() const{
     return valid_;
 }
+
 double RouterPlacementCheckpoint::get_cost() const {
     return cost_;
 }
@@ -1332,7 +1328,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     RouterPlacementCheckpoint checkpoint;
 
     // Generate and evaluate router moves
-    for (int i_move = 0, n_accepted = 0; i_move < N_MOVES; i_move++) {
+    for (int i_move = 0; i_move < N_MOVES; i_move++) {
         e_create_move create_move_outcome = e_create_move::ABORT;
         clear_move_blocks(blocks_affected);
         // Shrink the range limit over time
@@ -1353,7 +1349,6 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
 
             if (move_accepted) {
                 costs.cost += delta_cost;
-                n_accepted++;
                 commit_move_blocks(blocks_affected);
                 commit_noc_costs();
                 costs.noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
@@ -1361,7 +1356,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
                     checkpoint.save_checkpoint(costs.cost);
                 }
-            } else {
+            } else {    // The proposed move is rejected
                 revert_move_blocks(blocks_affected);
                 revert_noc_traffic_flow_routes(blocks_affected);
             }
@@ -1369,9 +1364,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     }
 
     if (checkpoint.get_cost() < costs.cost) {
-        std::cout << costs.cost << std::endl;
-        print_noc_grid();
-        checkpoint.restore_checkpoint();
+        checkpoint.restore_checkpoint(noc_opts, costs);
     }
 
 

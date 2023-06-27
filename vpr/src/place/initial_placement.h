@@ -2,6 +2,7 @@
 #define VPR_INITIAL_PLACEMENT_H
 
 #include "vpr_types.h"
+#include "place_util.h"
 
 /**
  * @brief Used to assign each block a score for how difficult it is to place. 
@@ -50,7 +51,7 @@ class RouterPlacementCheckpoint {
     RouterPlacementCheckpoint& operator=(const RouterPlacementCheckpoint& other) = delete;
 
     void save_checkpoint(double cost);
-    void restore_checkpoint();
+    void restore_checkpoint(const t_noc_opts& noc_opts,  t_placer_costs& costs);
     bool is_valid() const;
     double get_cost() const;
 };
