@@ -51,9 +51,9 @@
 #include "old_traceback.h"
 
 /*************Functions local to this module*************/
-static void process_route(const Netlist<>& net_list,std::ifstream& fp, const char* filename, int& lineno, bool is_flat);
-static void process_nodes(const Netlist<>& net_list,std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
-static void process_nets(const Netlist<>& net_list,std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat);
+static void process_route(const Netlist<>& net_list, std::ifstream& fp, const char* filename, int& lineno, bool is_flat);
+static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
+static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat);
 static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat);
 static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
 static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
@@ -179,7 +179,6 @@ static void process_route(const Netlist<>& net_list, std::ifstream& fp, const ch
 
 ///@brief Check if the net is global or not, and process appropriately
 static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat) {
-
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
         && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
@@ -345,7 +344,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
                     VTR_ASSERT(iblock);
 
                     const t_pb_graph_pin* pb_pin;
-                    
+
                     if (is_pin_on_tile(physical_tile, pin_num)) {
                         pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                     } else {
@@ -361,7 +360,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
 
                     if (pb_name != pb_type->name || port_name != pb_pin->port->name || pb_pin_num != pb_pin->pin_number) {
                         vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                                "%d node does not have correct pins", inode);
+                                  "%d node does not have correct pins", inode);
                     }
                 } else {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
@@ -455,8 +454,8 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
                           "Block %s for block number %lu specified in the routing file does not match given %s",
                           tokens[1].c_str(), size_t(bnum), net_list.block_name(bnum).c_str());
             }
-            
-            auto block_loc = get_block_loc(bnum,is_flat);
+
+            auto block_loc = get_block_loc(bnum, is_flat);
 
             if (block_loc.loc.x != x || block_loc.loc.y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
@@ -464,7 +463,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
                           x, y, block_loc.loc.x, block_loc.loc.y);
             }
 
-            auto pin_class = get_class_range_for_block(bnum,is_flat);
+            auto pin_class = get_class_range_for_block(bnum, is_flat);
             if (pin_class.low > atoi(tokens[7].c_str()) || pin_class.high < atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The pin class %d of %lu net does not match given ",
