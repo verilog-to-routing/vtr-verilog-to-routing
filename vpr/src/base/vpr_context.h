@@ -369,7 +369,7 @@ struct PlacementContext : public Context {
     vtr::vector_map<ClusterPinId, int> physical_pins;
 
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
+    GridBlock grid_blocks;
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
@@ -379,6 +379,7 @@ struct PlacementContext : public Context {
      *
      * Used to efficiently find logically 'adjacent' blocks of the same
      * block type even though the may be physically far apart
+     * Indexed with logical block type index: [0...num_logical_block_types-1] -> logical block compressed grid
      */
     t_compressed_block_grids compressed_block_grids;
 

@@ -16,7 +16,7 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_pl_loc to;
@@ -27,9 +27,10 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
 
 #if 0
     auto& grid = g_vpr_ctx.device().grid;
-	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block ",
-		from.x, from.y, from.sub_tile, grid[from.x][from.y].type->name, size_t(b_from), (b_from ? cluster_ctx.clb_nlist.block_name(b_from).c_str() : ""),
-		to.x, to.y, to.sub_tile, grid[to.x][to.y].type->name);
+    const auto& grid_to_type = grid.get_physical_type(to.x, to.y, to.layer);
+	VTR_LOG( "swap [%d][%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d][%d] %s block ",
+		from.x, from.y, from.sub_tile,from.layer, grid_from_type->name, size_t(b_from), (b_from ? cluster_ctx.clb_nlist.block_name(b_from).c_str() : ""),
+		to.x, to.y, to.sub_tile, to.layer, grid_to_type->name);
     if (b_to) {
         VTR_LOG("%zu \"%s\"", size_t(b_to), cluster_ctx.clb_nlist.block_name(b_to).c_str());
     } else {

@@ -627,11 +627,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
 
-    inline int init_node_loc(int& inode, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
+    inline int init_node_loc(int& inode, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
+        rr_graph_builder_->set_node_layer(node_id, layer);
         rr_graph_builder_->set_node_ptc_num(node_id, ptc);
         return inode;
     }
@@ -642,6 +643,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline int get_node_loc_ptc(const t_rr_node& node) final {
         return rr_graph_->node_ptc_num(node.id());
+    }
+    inline int get_node_loc_layer(const t_rr_node& node) final {
+        return rr_graph_->node_layer(node.id());
     }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
         return rr_graph_->node_xhigh(node.id());
@@ -1453,10 +1457,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 grid_.grid_size(), size);
         }
     }
-    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) final {
-        const auto& type = grid_.get_physical_type(x, y);
-        int grid_width_offset = grid_.get_width_offset(x, y);
-        int grid_height_offset = grid_.get_height_offset(x, y);
+    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y, int layer) final {
+        const auto& type = grid_.get_physical_type({x, y, layer});
+        int grid_width_offset = grid_.get_width_offset({x, y, layer});
+        int grid_height_offset = grid_.get_height_offset({x, y, layer});
 
         if (type->index != block_type_id) {
             report_error(
@@ -1497,12 +1501,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_grid_loc_y(const t_grid_tile*& grid_loc) final {
         return grid_.get_grid_loc_y(grid_loc);
     }
+
+    inline int get_grid_loc_layer(const t_grid_tile*& grid_loc) final{
+        return grid_.get_grid_loc_layer(grid_loc);
+    }
+
     inline size_t num_grid_locs_grid_loc(void*& /*iter*/) final {
         return grid_.grid_size();
     }
     inline const t_grid_tile* get_grid_locs_grid_loc(int n, void*& /*ctx*/) final {
         return grid_.get_grid_locs_grid_loc(n);
     }
+
 
     /** Generated for complex type "rr_graph":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -1627,16 +1637,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
   private:
     /*Allocates and load the rr_node look up table. SINK and SOURCE, IPIN and OPIN
-     *share the same look up table. CHANX and CHANY have individual look ups */
+     *share the same look-up table. CHANX and CHANY have individual look-ups */
     void process_rr_node_indices() {
         auto& rr_graph_builder = (*rr_graph_builder_);
 
         /* Alloc the lookup table */
         for (t_rr_type rr_type : RR_TYPES) {
             if (rr_type == CHANX) {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.height(), grid_.width(), rr_type, NUM_SIDES);
+                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(),grid_.height(), grid_.width(), rr_type, NUM_SIDES);
             } else {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.width(), grid_.height(), rr_type, NUM_SIDES);
+                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(),grid_.width(), grid_.height(), rr_type, NUM_SIDES);
             }
         }
 
