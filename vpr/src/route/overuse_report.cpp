@@ -22,6 +22,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                                   std::ostream& os,
                                   const std::set<ParentNetId>& congested_nets,
                                   bool is_flat,
+                                  int layer_num,
                                   int x,
                                   int y,
                                   bool report_sinks);
@@ -30,6 +31,7 @@ static void log_overused_nodes_header();
 static void log_single_overused_node_status(int overuse_index, RRNodeId inode);
 void print_block_pins_nets(std::ostream& os,
                            t_physical_tile_type_ptr physical_type,
+                           int layer,
                            int root_x,
                            int root_y,
                            int pin_physical_num,
@@ -110,6 +112,7 @@ void report_overused_nodes(const Netlist<>& net_list,
         bool report_sinks = false;
         int x = rr_graph.node_xlow(node_id);
         int y = rr_graph.node_ylow(node_id);
+        int layer_num = rr_graph.node_layer(node_id);
         switch (node_type) {
             case IPIN:
             case OPIN:
@@ -117,8 +120,8 @@ void report_overused_nodes(const Netlist<>& net_list,
                                           node_id,
                                           rr_node_to_net_map);
                 report_sinks = true;
-                x -= g_vpr_ctx.device().grid.get_physical_type(x, y)->width;
-                y -= g_vpr_ctx.device().grid.get_physical_type(x, y)->width;
+                x -= g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num})->width;
+                y -= g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num})->width;
                 break;
             case CHANX:
             case CHANY:
@@ -142,6 +145,7 @@ void report_overused_nodes(const Netlist<>& net_list,
                               os,
                               congested_nets,
                               is_flat,
+                              layer_num,
                               x,
                               y,
                               report_sinks);
@@ -209,47 +213,52 @@ static void report_overused_ipin_opin(std::ostream& os,
 
     auto grid_x = rr_graph.node_xlow(node_id);
     auto grid_y = rr_graph.node_ylow(node_id);
+    auto grid_layer = rr_graph.node_layer(node_id);
+
     VTR_ASSERT_MSG(
         grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
         "Non-track RR node should not span across multiple grid blocks.");
 
-    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type(grid_x, grid_y);
+    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
 
     os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
     if (is_inter_cluster_node(physical_tile, rr_graph.node_type(node_id), rr_graph.node_ptc_num(node_id))) {
         os << "On Tile Pin"
            << "\n";
     } else {
-        auto pb_type_name = get_pb_graph_node_from_pin_physical_num(device_ctx.grid.get_physical_type(grid_x, grid_y),
+        auto pb_type_name = get_pb_graph_node_from_pin_physical_num(device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer}),
                                                                     rr_graph.node_ptc_num(node_id))
                                 ->pb_type->name;
-        auto pb_pin = get_pb_pin_from_pin_physical_num(device_ctx.grid.get_physical_type(grid_x, grid_y), rr_graph.node_ptc_num(node_id));
+        auto pb_pin = get_pb_pin_from_pin_physical_num(device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer}),
+                                                       rr_graph.node_ptc_num(node_id));
         os << "Intra-Tile Pin - Port : " << pb_pin->port->name << " - PB Type : " << std::string(pb_type_name) << "\n";
     }
     print_block_pins_nets(os,
-                          device_ctx.grid.get_physical_type(grid_x, grid_y),
-                          grid_x - device_ctx.grid.get_width_offset(grid_x, grid_y),
-                          grid_y - device_ctx.grid.get_height_offset(grid_x, grid_y),
+                          device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer}),
+                          grid_layer,
+                          grid_x - device_ctx.grid.get_width_offset({grid_x, grid_y, grid_layer}),
+                          grid_y - device_ctx.grid.get_height_offset({grid_x, grid_y, grid_layer}),
                           rr_graph.node_ptc_num(node_id),
                           rr_node_to_net_map);
     os << "Side = " << rr_graph.node_side_string(node_id) << "\n\n";
 
     //Add block type for IPINs/OPINs in overused rr-node report
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& grid_info = place_ctx.grid_blocks[grid_x][grid_y];
+    const auto& grid_info = place_ctx.grid_blocks;
 
     os << "Grid location: X = " << grid_x << ", Y = " << grid_y << '\n';
-    os << "Number of blocks currently occupying this grid location = " << grid_info.usage << '\n';
+    os << "Number of blocks currently occupying this grid location = " << grid_info.get_usage({grid_x, grid_y, grid_layer}) << '\n';
 
     size_t iblock = 0;
-    for (size_t isubtile = 0; isubtile < grid_info.blocks.size(); ++isubtile) {
+    for (int isubtile = 0; isubtile < (int)grid_info.num_blocks_at_location({grid_x, grid_y, grid_layer}); ++isubtile) {
         //Check if there is a valid block at this subtile location
-        if (grid_info.subtile_empty(isubtile)) {
+        if (grid_info.is_sub_tile_empty({grid_x, grid_y, grid_layer}, isubtile)) {
             continue;
         }
 
         //Print out the block index, name and type
-        ClusterBlockId block_id = grid_info.blocks[isubtile];
+        // TODO: Needs to be updated when RR Graph Nodes know their layer_num
+        ClusterBlockId block_id = grid_info.block_at_location({grid_x, grid_y, isubtile, 0});
         os << "Block #" << iblock << ": ";
         os << "Block name = " << clb_nlist.block_pb(block_id)->name << ", ";
         os << "Block type = " << clb_nlist.block_type(block_id)->name << '\n';
@@ -298,6 +307,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                                   std::ostream& os,
                                   const std::set<ParentNetId>& congested_nets,
                                   bool is_flat,
+                                  int layer_num,
                                   int x,
                                   int y,
                                   bool report_sinks) {
@@ -329,11 +339,12 @@ static void report_congested_nets(const Netlist<>& net_list,
                     cluster_block_id = convert_to_cluster_block_id(net_list.pin_block(sink_id));
                 }
                 auto cluster_loc = g_vpr_ctx.placement().block_locs[cluster_block_id];
-                auto physical_type = g_vpr_ctx.device().grid.get_physical_type(x, y);
-                int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type(cluster_loc.loc.x, cluster_loc.loc.y)->width;
-                int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid.get_physical_type(cluster_loc.loc.x, cluster_loc.loc.y)->height;
+                auto physical_type = g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num});
+                int cluster_layer_num = cluster_loc.loc.layer;
+                int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x, cluster_loc.loc.y, cluster_layer_num})->width;
+                int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x, cluster_loc.loc.y, cluster_layer_num})->height;
                 if (cluster_x == x && cluster_y == y) {
-                    VTR_ASSERT(physical_type == g_vpr_ctx.device().grid.get_physical_type(cluster_x, cluster_y));
+                    VTR_ASSERT(physical_type == g_vpr_ctx.device().grid.get_physical_type({cluster_x, cluster_y, cluster_layer_num}));
                     os << "Sink in the same location = "
                        << "\n";
                     if (is_flat) {
@@ -370,7 +381,8 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     const auto& route_ctx = g_vpr_ctx.routing();
     int x = rr_graph.node_xlow(node_id);
     int y = rr_graph.node_ylow(node_id);
-    auto physical_blk = device_ctx.grid.get_physical_type(x, y);
+    int layer_num = rr_graph.node_layer(node_id);
+    auto physical_blk = device_ctx.grid.get_physical_type({x, y, layer_num});
 
     //Determines if direction or side is available for printing
     auto node_type = rr_graph.node_type(node_id);
@@ -429,6 +441,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
 
 void print_block_pins_nets(std::ostream& os,
                            t_physical_tile_type_ptr physical_type,
+                           int layer,
                            int root_x,
                            int root_y,
                            int pin_physical_num,
@@ -457,7 +470,7 @@ void print_block_pins_nets(std::ostream& os,
 
     for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
         t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
-        RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, root_x, root_y, pin);
+        RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, layer, root_x, root_y, pin);
         VTR_ASSERT(node_id != RRNodeId::INVALID());
         auto search_result = rr_node_to_net_map.find(node_id);
         if (rr_type == t_rr_type::OPIN) {

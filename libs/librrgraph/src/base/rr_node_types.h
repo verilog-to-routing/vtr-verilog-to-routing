@@ -112,8 +112,8 @@ struct t_rr_rc_data {
     float C;
 };
 
-// This is the data type of fast lookups of an rr-node given an (rr_type, x, y, and the side)
-//[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
-typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
+// This is the data type of fast lookups of an rr-node given an (rr_type, layer, x, y, and the side)
+//[0..num_rr_types-1][0..num_layer-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
+typedef std::array<vtr::NdMatrix<std::vector<int>, 4>, NUM_RR_TYPES> t_rr_node_indices;
 
 #endif

@@ -55,7 +55,7 @@ static void process_route(std::ifstream& fp, const char* filename, int& lineno);
 static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
 static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno);
 static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
-static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
+static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
 static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
 static std::string format_name(std::string name);
 static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node);
@@ -233,7 +233,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
     /*remember the position of the last line in order to go back*/
     std::streampos oldpos = fp.tellg();
-    int inode, x, y, x2, y2, ptc, switch_id, net_pin_index, offset;
+    int inode, layer_num, x, y, layer_num2, x2, y2, ptc, switch_id, net_pin_index, offset;
     std::string prev_type;
     int node_count = 0;
     std::string input;
@@ -278,11 +278,11 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                           "Node %d has a type that does not match the RR graph", inode);
             }
 
-            format_coordinates(x, y, tokens[3], inet, filename, lineno);
+            format_coordinates(layer_num, x, y, tokens[3], inet, filename, lineno);
             auto rr_node = RRNodeId(inode);
 
             if (tokens[4] == "to") {
-                format_coordinates(x2, y2, tokens[5], inet, filename, lineno);
+                format_coordinates(layer_num2, x2, y2, tokens[5], inet, filename, lineno);
                 if (rr_graph.node_xlow(rr_node) != x || rr_graph.node_xhigh(rr_node) != x2 || rr_graph.node_yhigh(rr_node) != y2 || rr_graph.node_ylow(rr_node) != y) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "The coordinates of node %d does not match the rr graph", inode);
@@ -312,7 +312,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
             /* Verify types and ptc*/
             if (tokens[2] == "SOURCE" || tokens[2] == "SINK" || tokens[2] == "OPIN" || tokens[2] == "IPIN") {
-                const auto& type = device_ctx.grid.get_physical_type(x, y);
+                const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 if (tokens[4 + offset] == "Pad:" && !is_io_type(type)) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "Node %d is of the wrong type", inode);
@@ -333,16 +333,17 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             /*Process switches and pb pin info if it is ipin or opin type*/
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
-                auto type = device_ctx.grid.get_physical_type(x, y);
+                auto type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 if (!is_io_type(type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
-                    int height_offset = device_ctx.grid.get_height_offset(x, y);
+                    int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
 
                     int capacity, relative_pin;
                     std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
 
-                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[capacity];
+                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x, y - height_offset, capacity, layer_num});
+
                     t_pb_graph_pin* pb_pin;
 
                     pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
@@ -419,7 +420,7 @@ static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const ch
     auto& place_ctx = g_vpr_ctx.placement();
 
     std::string block, bnum_str;
-    int x, y;
+    int layer_num, x, y;
     std::vector<std::string> tokens;
     int pin_counter = 0;
 
@@ -439,7 +440,7 @@ static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const ch
             fp.seekg(oldpos);
             return;
         } else {
-            format_coordinates(x, y, tokens[4], inet, filename, lineno);
+            format_coordinates(layer_num, x, y, tokens[4], inet, filename, lineno);
 
             /*remove ()*/
             bnum_str = format_name(tokens[2]);
@@ -472,17 +473,30 @@ static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const ch
 }
 
 ///@brief Parse coordinates in the form of (x,y) into correct x and y values
-static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno) {
+static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno) {
     coord = format_name(coord);
+
     std::stringstream coord_stream(coord);
-    if (!(coord_stream >> x)) {
-        vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                  "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
+    std::vector<int> coords;
+    int tmp_coord;
+    while (coord_stream >> tmp_coord) {
+        coords.push_back(tmp_coord);
+        coord_stream.ignore(1, ',');
     }
-    coord_stream.ignore(1, ' ');
-    if (!(coord_stream >> y)) {
+    if (coords.size() != 2 && coords.size() != 3) {
         vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                  "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
+                  "Net %lu has coordinates that is not in the form (layer_num,x,y)", size_t(net));
+    }
+
+    if (coords.size() == 2) {
+        layer_num = 0;
+        x = coords[0];
+        y = coords[1];
+    } else {
+        VTR_ASSERT(coords.size() == 3);
+        layer_num = coords[0];
+        x = coords[1];
+        y = coords[2];
     }
 }
 
@@ -578,9 +592,10 @@ void print_route(const Netlist<>& net_list,
                     t_rr_type rr_type = rr_graph.node_type(inode);
                     int ilow = rr_graph.node_xlow(inode);
                     int jlow = rr_graph.node_ylow(inode);
+                    int layer_num = rr_graph.node_layer(inode);
 
-                    fprintf(fp, "Node:\t%zu\t%6s (%d,%d) ", size_t(inode),
-                            rr_graph.node_type_string(inode), ilow, jlow);
+                    fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode),
+                            rr_graph.node_type_string(inode), layer_num, ilow, jlow);
 
                     if ((ilow != rr_graph.node_xhigh(inode))
                         || (jlow != rr_graph.node_yhigh(inode)))
@@ -590,7 +605,7 @@ void print_route(const Netlist<>& net_list,
                     switch (rr_type) {
                         case IPIN:
                         case OPIN:
-                            if (is_io_type(device_ctx.grid.get_physical_type(ilow, jlow))) {
+                            if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Pin: ");
@@ -604,7 +619,7 @@ void print_route(const Netlist<>& net_list,
 
                         case SOURCE:
                         case SINK:
-                            if (is_io_type(device_ctx.grid.get_physical_type(ilow, jlow))) {
+                            if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Class: ");
@@ -620,17 +635,18 @@ void print_route(const Netlist<>& net_list,
 
                     fprintf(fp, "%d  ", rr_graph.node_ptc_num(inode));
 
-                    auto physical_tile = device_ctx.grid.get_physical_type(ilow, jlow);
+                    auto physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
                     if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
                         int pin_num = rr_graph.node_pin_num(inode);
-                        int xoffset = device_ctx.grid.get_width_offset(ilow, jlow);
-                        int yoffset = device_ctx.grid.get_height_offset(ilow, jlow);
+                        int xoffset = device_ctx.grid.get_width_offset({ilow, jlow, layer_num});
+                        int yoffset = device_ctx.grid.get_height_offset({ilow, jlow, layer_num});
                         const t_sub_tile* sub_tile;
                         int sub_tile_rel_cap;
                         std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
                         int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
-                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[sub_tile_offset];
+                        ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({ilow - xoffset, jlow - yoffset,
+                                                                                         sub_tile_offset, layer_num});
                         VTR_ASSERT(iblock);
                         const t_pb_graph_pin* pb_pin;
                         if (is_pin_on_tile(physical_tile, pin_num)) {

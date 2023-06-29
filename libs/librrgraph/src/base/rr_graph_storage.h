@@ -77,6 +77,7 @@ struct alignas(16) t_rr_node_data {
     } dir_side_;
 
     uint16_t capacity_ = 0;
+
 };
 
 // t_rr_node_data is a key data structure, so fail at compile time if the
@@ -224,6 +225,14 @@ class t_rr_graph_storage {
     /* Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
         return node_fan_in_[id];
+    }
+
+    /* Find the layer number that RRNodeId is located at.
+     * it is zero if the FPGA only has one die.
+     * The layer number start from the base die (base die: 0, the die above it: 1, etc.)
+     * */
+    short node_layer(RRNodeId id) const{
+        return node_layer_[id];
     }
 
     // This prefetechs hot RR node data required for optimization.
@@ -393,6 +402,7 @@ class t_rr_graph_storage {
         make_room_in_vector(&node_storage_, size_t(elem_position));
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
+        node_layer_.resize(node_storage_.size());
     }
 
     // Reserve storage for RR nodes.
@@ -401,6 +411,7 @@ class t_rr_graph_storage {
         VTR_ASSERT(!edges_read_);
         node_storage_.reserve(size);
         node_ptc_.reserve(size);
+        node_layer_.reserve(size);
     }
 
     // Resize node storage to accomidate size RR nodes.
@@ -409,6 +420,7 @@ class t_rr_graph_storage {
         VTR_ASSERT(!edges_read_);
         node_storage_.resize(size);
         node_ptc_.resize(size);
+        node_layer_.resize(size);
     }
 
     // Number of RR nodes that can be accessed.
@@ -429,6 +441,7 @@ class t_rr_graph_storage {
         node_ptc_.clear();
         node_first_edge_.clear();
         node_fan_in_.clear();
+        node_layer_.clear();
         seen_edge_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
@@ -448,6 +461,7 @@ class t_rr_graph_storage {
         node_ptc_.shrink_to_fit();
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
+        node_layer_.shrink_to_fit();
         seen_edge_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
@@ -461,6 +475,7 @@ class t_rr_graph_storage {
         VTR_ASSERT(!edges_read_);
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
+        node_layer_.emplace_back();
     }
 
     // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
@@ -479,6 +494,7 @@ class t_rr_graph_storage {
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
+    void set_node_layer(RRNodeId id, short layer);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
     void set_node_rc_index(RRNodeId, NodeRCIndex new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
@@ -670,6 +686,12 @@ class t_rr_graph_storage {
     // Fan in counts for each RR node.
     vtr::vector<RRNodeId, t_edge_size> node_fan_in_;
 
+    // Layer number that each RR node is located at
+    // Layer number refers to the die that the node belongs to. The layer number of base die is zero and die above it one, etc.
+    // This data is also considered as a hot data since it is used in inner loop of router, but since it didn't fit nicely into t_rr_node_data due to alignment issues, we had to store it
+    // in a separate vector.
+    vtr::vector<RRNodeId, short> node_layer_;
+
     // Edge storage.
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
@@ -721,6 +743,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
         const vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge,
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
+        const vtr::array_view_id<RRNodeId, const short> node_layer,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch)
@@ -728,6 +751,7 @@ class t_rr_graph_view {
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
         , node_fan_in_(node_fan_in)
+        , node_layer_(node_layer)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch) {}
@@ -784,6 +808,11 @@ class t_rr_graph_view {
         return node_fan_in_[id];
     }
 
+    /* Retrieve layer(die) number that RRNodeId is located at */
+    short node_layer(RRNodeId id) const{
+        return node_layer_[id];
+    }
+
     // This prefetechs hot RR node data required for optimization.
     //
     // Note: This is optional, but may lower time spent on memory stalls in
@@ -824,6 +853,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc_;
     vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge_;
     vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
+    vtr::array_view_id<RRNodeId, const short> node_layer_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
