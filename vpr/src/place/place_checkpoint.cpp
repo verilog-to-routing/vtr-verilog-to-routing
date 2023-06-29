@@ -51,7 +51,10 @@ void restore_best_placement(t_placement_checkpoint& placement_checkpoint, std::s
 
         // Re-initialize static variables that are used to keep track of NoC-related costs
         // and re-compute NoC costs
-        reinitialize_noc_routing(noc_opts, costs);
+        if (noc_opts.noc) {
+            reinitialize_noc_routing(noc_opts, costs);
+        }
+
 
         VTR_LOG("\nCheckpoint restored\n");
     }

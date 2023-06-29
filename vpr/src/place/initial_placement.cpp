@@ -1335,9 +1335,8 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     if (noc_opts.noc) {
         // NoC routers are placed before other blocks
         initial_noc_placement(noc_opts);
+        print_noc_grid();
     }
-
-    print_noc_grid();
 
     //Assign scores to blocks and placement macros according to how difficult they are to place
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
