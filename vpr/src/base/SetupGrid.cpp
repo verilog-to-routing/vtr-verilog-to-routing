@@ -690,16 +690,11 @@ static void set_grid_block_type(int priority,
 
 ///@brief Check grid is valid
 static void CheckGrid(const DeviceGrid& grid) {
-    //resize the physical_type_layer vector in device_ctx to detect layer that each physical type is located at
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    device_ctx.physical_type_layer.resize(device_ctx.physical_tile_types.size());
-
     for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) { //Check each die individually
         for (int i = 0; i < (int)grid.width(); ++i) {
             for (int j = 0; j < (int)grid.height(); ++j) {
                 const t_physical_tile_loc tile_loc(i, j, layer_num);
                 const auto& type = grid.get_physical_type(tile_loc);
-                device_ctx.physical_type_layer[type->index].insert(layer_num);
                 int width_offset = grid.get_width_offset(tile_loc);
                 int height_offset = grid.get_height_offset(tile_loc);
                 if (nullptr == type) {

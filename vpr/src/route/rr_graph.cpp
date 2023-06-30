@@ -84,6 +84,8 @@ struct t_pin_spec {
 /********************* Subroutines local to this module. *******************/
 void print_rr_graph_stats();
 
+std::unordered_set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr Type);
+
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
@@ -849,6 +851,19 @@ void print_rr_graph_stats() {
     VTR_LOG("  RR Graph Edges: %zu\n", num_rr_edges);
 }
 
+
+std::unordered_set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type){
+    auto& device_ctx = g_vpr_ctx.device();
+    std::unordered_set<int> phy_type_layers;
+    for(int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++){
+        if(device_ctx.grid.num_instances(type, layer) != 0) {
+            phy_type_layers.insert(layer);
+        }
+    }
+    return phy_type_layers;
+}
+
+
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
     if (current.max != proposed.max
         || current.x_max != proposed.x_max
@@ -1176,29 +1191,29 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_track_to_pin_lookup track_to_pin_lookup_x(types.size());
     t_track_to_pin_lookup track_to_pin_lookup_y(types.size());
 
-    auto type_layer = device_ctx.physical_type_layer;
-
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
+        auto type_layer = get_layers_of_physical_types(&types[itype]);
+
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
-                                                                     Fc_in[itype], &types[itype], type_layer[itype],
+                                                                     Fc_in[itype], &types[itype], type_layer,
                                                                      perturb_ipins[itype], directionality,
                                                                      segment_inf_x, sets_per_seg_type_x.get());
 
         ipin_to_track_map_y[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
-                                                                     Fc_in[itype], &types[itype], type_layer[itype],
+                                                                     Fc_in[itype], &types[itype], type_layer,
                                                                      perturb_ipins[itype], directionality,
                                                                      segment_inf_y, sets_per_seg_type_y.get());
 
         track_to_pin_lookup_x[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_x[itype], Fc_in[itype],
                                                                           &types[itype],
-                                                                          type_layer[itype], types[itype].width,
+                                                                          type_layer, types[itype].width,
                                                                           types[itype].height,
                                                                           types[itype].num_pins,
                                                                           nodes_per_chan.x_max, segment_inf_x);
 
         track_to_pin_lookup_y[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_y[itype], Fc_in[itype],
                                                                           &types[itype],
-                                                                          type_layer[itype], types[itype].width,
+                                                                          type_layer, types[itype].width,
                                                                           types[itype].height,
                                                                           types[itype].num_pins,
                                                                           nodes_per_chan.y_max, segment_inf_y);
@@ -1219,10 +1234,11 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_pin_to_track_lookup opin_to_track_map(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
     if (BI_DIRECTIONAL == directionality) {
         for (unsigned int itype = 0; itype < types.size(); ++itype) {
+            auto type_layer = get_layers_of_physical_types(&types[itype]);
             auto perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
                                                               max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
-                                                                       Fc_out[itype], &types[itype], type_layer[itype], perturb_opins, directionality,
+                                                                       Fc_out[itype], &types[itype], type_layer, perturb_opins, directionality,
                                                                        segment_inf, sets_per_seg_type.get());
         }
     }

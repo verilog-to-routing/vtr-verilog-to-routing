@@ -166,12 +166,6 @@ struct DeviceContext : public Context {
     std::vector<t_logical_block_type> logical_block_types;
 
     /*
-     * Keep which layer each physical block type is located at. [0..physical_type.size()-1]
-     * Each physical block type can be located at multiple layers.
-     */
-    std::vector<std::unordered_set<int>> physical_type_layer;
-
-    /*
      * Keep which layer in multi-die FPGA require global routing resources [0..number_of_layers-1]
      * If a layer doesn't require global routing resources, RRGraph generation will ignore building SBs and CBs
      * for that specific layer.
