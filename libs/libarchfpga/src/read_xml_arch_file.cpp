@@ -6,7 +6,7 @@
  * help the developer build, and traverse tree (this is also somtime referred to
  * as the Document Object Model or DOM).
  *
- * For convenience it often makes sense to use some wraper functions (provided in
+ * For convenience, it often makes sense to use some wraper functions (provided in
  * the pugiutil namespace of libvtrutil) which simplify loading an XML file and
  * error handling.
  *
@@ -2489,7 +2489,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
             //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
             //Need to process each <layer> tag children to get block types locations for each grid
             die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-            has_global_routing = get_attribute(layer_child, "global_routing_resources", loc_data, ReqOpt::OPTIONAL).as_bool(true);
+            has_global_routing = get_attribute(layer_child, "has_prog_routing", loc_data, ReqOpt::OPTIONAL).as_bool(true);
             arch->layer_global_routing.at(die_number) = has_global_routing;
             VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
             auto insert_res = seen_die_numbers.insert(die_number);
@@ -3402,7 +3402,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                         for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
                             InstPort inst_port(token.c_str());
 
-                            //A pin specification should contain only the block name, and not any instace count information
+                            //A pin specification should contain only the block name, and not any instance count information
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
                                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                "Pin location specification '%s' should not contain an instance range (should only be the block name)",
@@ -3484,13 +3484,12 @@ static void ProcessSubTiles(pugi::xml_node Node,
     unsigned long int num_sub_tiles = count_children(Node, "sub_tile", loc_data);
     unsigned long int width = PhysicalTileType->width;
     unsigned long int height = PhysicalTileType->height;
-    unsigned long int layer = num_of_avail_layer;
     unsigned long int num_sides = 4;
 
     std::map<std::string, int> sub_tile_names;
 
     t_pin_locs pin_locs;
-    pin_locs.assignments.resize({num_sub_tiles, width, height, layer, num_sides});
+    pin_locs.assignments.resize({num_sub_tiles, width, height, (unsigned long int) num_of_avail_layer, num_sides});
 
     if (num_sub_tiles == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),

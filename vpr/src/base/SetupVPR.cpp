@@ -46,7 +46,15 @@ static void SetupSwitches(const t_arch& Arch,
                           int NumArchSwitches);
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
+
+/**
+ * @brief Identify which switch must be used for *track* to *IPIN* connections based on architecture file specification.
+ * @param Arch Architecture file specification
+ * @param wire_to_arch_ipin_switch Switch id that must be used when *track* and *IPIN* are located at the same die
+ * @param wire_to_arch_ipin_switch_between_dice Switch id that must be used when *track* and *IPIN* are located at different dice.
+ */
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice);
+
 // Fill the data structures used when flat_routing is enabled to speed-up routing
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
 static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type);
@@ -221,7 +229,7 @@ void SetupVPR(const t_options* Options,
     RoutingArch->read_rr_graph_filename = Options->read_rr_graph_file;
 
     for (auto has_global_routing : Arch->layer_global_routing) {
-        device_ctx.global_routing_layer.emplace_back(has_global_routing);
+        device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
     }
 
     //Setup the default flow, if no specific stages specified

@@ -2016,8 +2016,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     VTR_ASSERT(Fs % 3 == 0);
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
         auto& device_ctx = g_vpr_ctx.device();
-        /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
-        if (!device_ctx.global_routing_layer.at(layer)) {
+        /* Skip the current die if architecture file specifies that it doesn't require inter-cluster programmable resource routing */
+        if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
         for (size_t i = 0; i < grid.width() - 1; ++i) {

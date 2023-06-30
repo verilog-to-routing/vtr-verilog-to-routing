@@ -575,6 +575,9 @@ constexpr int DEFAULT_SWITCH = -2;
  * pinloc: Is set to true if a given pin exists on a certain position of a
  *         block. Derived from pin_location_distribution/pin_loc_assignments
  *
+ * pin_layer_offset/pin_width_offset/pin_height_offset: offset from the anchor point
+ * of the block type in the x,y, and layer (dice number) direction.
+ *
  * pin_location_distribution: The pin distribution type
  * num_pin_loc_assignments: The number of strings within each pin_loc_assignments
  * pin_loc_assignments: The strings for a custom pin location distribution.
@@ -609,17 +612,18 @@ constexpr int DEFAULT_SWITCH = -2;
  * logical_tile_index: index of the corresponding logical block type
  *
  * In general, the physical tile is a placeable physical resource on the FPGA device,
- * and it is allowed to contain an heterogeneous set of logical blocks (pb_types).
+ * and it is allowed to contain a heterogeneous set of logical blocks (pb_types).
  *
  * Each physical tile must specify at least one sub tile, that is a physical location
  * on the sub tiles stacks. This means that a physical tile occupies an (x, y) location on the grid,
  * and it has at least one sub tile slot that allows for a placement within the (x, y) location.
  *
  * Therefore, to identify the location of a logical block within the device grid, we need to
- * specify three different coordinates:
+ * specify four different coordinates:
  *      - x         : horizontal coordinate
  *      - y         : vertical coordinate
  *      - sub tile  : location within the sub tile stack at an (x, y) physical location
+ *      -layer_num  : the layer that block is located at. In case of a single die, layer_num is 0.
  *
  * A physical tile is heterogeneous as it allows the placement of different kinds of logical blocks within,
  * that can share the same (x, y) placement location.
@@ -1535,10 +1539,10 @@ enum e_Fc_type {
  *                                                                           *
  * @param arch_opin_between_dice_switch: Index of the switch type that       *
  *                   connects output pins (OPINs) *to* this segment from     *
- *                   *another dice*. Note that this index is in relation to  *
- *                   the switches from the architecture file, not the        *
- *                   expanded list of switches that is built at the end of   *
- *                   build_rr_graph                                          *
+ *                   *another die (layer)*. Note that this index is in       *
+ *                   relation to the switches from the architecture file,    *
+ *                   not the expanded list of switches that is built at      *
+ *                   the end of build_rr_graph                               *
  *                                                                           *
  * frac_cb:  The fraction of logic blocks along its length to which this     *
  *           segment can connect.  (i.e. internal population).               *
@@ -1998,8 +2002,8 @@ struct t_arch {
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins). tracks can be connected to
-    // ipins through the same die or from other dices, each of these
-    //connections requires different switch, all names should correspond to a switch in Switches.
+    // ipins through the same die or from other dice, each of these
+    //types of connections requires a different switch, all names should correspond to a switch in Switches.
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts

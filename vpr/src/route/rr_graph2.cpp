@@ -1070,7 +1070,7 @@ static void load_chan_rr_indices(const int max_chan_width,
 
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
-        if (!device_ctx.global_routing_layer.at(layer)) {
+        if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
         for (int chan = 0; chan < num_chans - 1; ++chan) {
