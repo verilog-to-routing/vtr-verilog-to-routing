@@ -140,7 +140,7 @@ class XYRouting : public NocRouting {
      * that is currently being visited on the FPGA
      * @return RouteDirection The direction to travel next
      */
-    RouteDirection get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position);
+    static RouteDirection get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position);
 
     /**
      * @brief Given the direction to travel next, this function determines
@@ -166,7 +166,7 @@ class XYRouting : public NocRouting {
      * @return true A suitable link was found that we can traverse next
      * @return false No suitable link was found that could be traversed
      */
-    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
+    static bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
 };
 
 #endif

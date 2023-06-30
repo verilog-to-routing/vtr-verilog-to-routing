@@ -106,9 +106,9 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
     const std::vector<NocLinkId>& router_connections = noc_model.get_noc_router_connections(curr_router_id);
 
     // go through each outgoing link and determine whether the link leads towards the intended route direction
-    for (auto connecting_link = router_connections.begin(); connecting_link != router_connections.end(); connecting_link++) {
+    for (auto connecting_link : router_connections) {
         // get the current outgoing link which is being processed
-        const NocLink& curr_outgoing_link = noc_model.get_single_noc_link(*connecting_link);
+        const NocLink& curr_outgoing_link = noc_model.get_single_noc_link(connecting_link);
 
         // get the next router that we will visit if we travel across the current link
         next_router_id = curr_outgoing_link.get_sink_router();
@@ -154,7 +154,7 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
         // If the next router was already visited, then this link is not valid, so indicate this and move onto processing the next link.
         if (found_next_router && !visited_next_router) {
             // if we are here then the link is legal to traverse, so add it to the found route and traverse the link by moving to the router connected by this link
-            flow_route.push_back(*connecting_link);
+            flow_route.push_back(connecting_link);
             curr_router_id = next_router_id;
 
             // we found a suitable router to visit next, so add it to the set of visited routers
