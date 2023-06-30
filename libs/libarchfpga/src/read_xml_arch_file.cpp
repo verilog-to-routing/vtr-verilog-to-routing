@@ -3489,7 +3489,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
     std::map<std::string, int> sub_tile_names;
 
     t_pin_locs pin_locs;
-    pin_locs.assignments.resize({num_sub_tiles, width, height, (unsigned long int) num_of_avail_layer, num_sides});
+    pin_locs.assignments.resize({num_sub_tiles, width, height, (unsigned long int)num_of_avail_layer, num_sides});
 
     if (num_sub_tiles == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),

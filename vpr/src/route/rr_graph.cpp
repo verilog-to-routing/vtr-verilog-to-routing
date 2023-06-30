@@ -851,18 +851,16 @@ void print_rr_graph_stats() {
     VTR_LOG("  RR Graph Edges: %zu\n", num_rr_edges);
 }
 
-
-std::unordered_set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type){
+std::unordered_set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type) {
     auto& device_ctx = g_vpr_ctx.device();
     std::unordered_set<int> phy_type_layers;
-    for(int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++){
-        if(device_ctx.grid.num_instances(type, layer) != 0) {
+    for (int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
+        if (device_ctx.grid.num_instances(type, layer) != 0) {
             phy_type_layers.insert(layer);
         }
     }
     return phy_type_layers;
 }
-
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
     if (current.max != proposed.max
