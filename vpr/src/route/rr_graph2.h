@@ -31,6 +31,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          t_physical_tile_type_ptr physical_tile,
+                                         int layer,
                                          int x,
                                          int y,
                                          int* num_rr_nodes);
@@ -125,6 +126,7 @@ bool is_sblock(const int chan,
                const enum e_directionality directionality);
 
 int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                               const int layer,
                                const int i,
                                const int j,
                                const int ipin,
@@ -135,6 +137,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                const t_chan_details& chan_details_y);
 
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                                const int layer,
                                 const int chan,
                                 const int seg,
                                 int Fc,
@@ -149,6 +152,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 bool* Fc_clipped);
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
+                      int layer,
                       int seg,
                       int chan,
                       int track,
@@ -163,6 +167,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       enum e_directionality directionality);
 
 int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
+                        const int layer,
                         const int from_chan,
                         const int from_seg,
                         const int from_track,

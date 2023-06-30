@@ -108,13 +108,17 @@ void drawplace(ezgl::renderer* g) {
     ClusterBlockId bnum;
     int num_sub_tiles;
 
+    //TODO: Change when graphics supports 3D FPGAs
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    int layer_num = 0;
+
     g->set_line_width(0);
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+    for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+        for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
             /* Only the first block of a group should control drawing */
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
-            int width_offset = device_ctx.grid.get_width_offset(i, j);
-            int height_offset = device_ctx.grid.get_height_offset(i, j);
+            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+            int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
+            int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
 
             if (width_offset > 0
                 || height_offset > 0)
@@ -128,7 +132,8 @@ void drawplace(ezgl::renderer* g) {
 
             for (int k = 0; k < num_sub_tiles; ++k) {
                 /* Look at the tile at start of large block */
-                bnum = place_ctx.grid_blocks[i][j].blocks[k];
+                //TODO: Change when graphics supports 3D
+                bnum = place_ctx.grid_blocks.block_at_location({i, j, k, 0});
                 /* Fill background for the clb. Do not fill if "show_blk_internal"
                  * is toggled.
                  */
@@ -161,7 +166,10 @@ void drawplace(ezgl::renderer* g) {
 
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
-                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k,
+                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(layer_num,
+                                                                                  i,
+                                                                                  j,
+                                                                                  k,
                                                                                   logical_block_type);
                 ezgl::point2d center = abs_clb_bbox.center();
 
@@ -544,17 +552,12 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
     if (cluster_ctx.clb_nlist.net_is_ignored(convert_to_cluster_net_id(net_id))) /* Don't draw. */
         return;
 
-    if (route_ctx.trace[net_id].head == nullptr) /* No routing->  Skip.  (Allows me to draw */
-        return;                                  /* partially complete routes).            */
-
-    t_trace* tptr = route_ctx.trace[net_id].head; /* SOURCE to start */
-    int inode = tptr->index;
+    if (!route_ctx.route_trees[net_id]) // No routing -> Skip. (Allows me to draw partially complete routes)
+        return;
 
     std::vector<int> rr_nodes_to_draw;
-    rr_nodes_to_draw.push_back(inode);
-    for (;;) {
-        tptr = tptr->next;
-        inode = tptr->index;
+    for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        int inode = size_t(rt_node.inode);
 
         if (draw_if_net_highlighted(convert_to_cluster_net_id(net_id))) {
             /* If a net has been highlighted, highlight the whole net in *
@@ -568,19 +571,12 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
 
         rr_nodes_to_draw.push_back(inode);
 
-        if (tptr->iswitch == OPEN) { //End of branch
+        if (rt_node.is_leaf()) { // End of branch
             draw_partial_route(rr_nodes_to_draw, g);
             rr_nodes_to_draw.clear();
-
-            /* Skip the next segment */
-            tptr = tptr->next;
-            if (tptr == nullptr)
-                break;
-            inode = tptr->index;
-            rr_nodes_to_draw.push_back(inode);
         }
 
-    } /* End loop over traceback. */
+    } /* End loop over route tree. */
 
     draw_partial_route(rr_nodes_to_draw, g);
 }
@@ -1150,8 +1146,7 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
 
             t_draw_state* draw_state = get_draw_state_vars();
 
-            std::vector<int> routed_rr_nodes = trace_routed_connection_rr_nodes(
-                net_id, 0, sink_net_pin_index, draw_state->is_flat);
+            std::vector<int> routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
 
             //Mark all the nodes highlighted
 

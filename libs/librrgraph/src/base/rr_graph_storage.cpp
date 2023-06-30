@@ -624,6 +624,10 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
     return SIDE_STRING[NUM_SIDES];
 }
 
+void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
+    node_layer_[id] = layer;
+}
+
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
     node_ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
 }
@@ -777,6 +781,7 @@ int t_rr_graph_view::node_class_num(RRNodeId id) const {
     return get_node_class_num(node_storage_, node_ptc_, id);
 }
 
+
 t_rr_graph_view t_rr_graph_storage::view() const {
     VTR_ASSERT(partitioned_);
     VTR_ASSERT(node_storage_.size() == node_fan_in_.size());
@@ -785,6 +790,7 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_ptc_),
         vtr::make_const_array_view_id(node_first_edge_),
         vtr::make_const_array_view_id(node_fan_in_),
+        vtr::make_const_array_view_id(node_layer_),
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_));

@@ -575,10 +575,19 @@ struct t_net_power {
  *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1)
  */
 struct t_bb {
-    int xmin = 0;
-    int xmax = 0;
-    int ymin = 0;
-    int ymax = 0;
+    t_bb() = default;
+    t_bb(int xmin_, int xmax_, int ymin_, int ymax_)
+        : xmin(xmin_)
+        , xmax(xmax_)
+        , ymin(ymin_)
+        , ymax(ymax_) {
+        VTR_ASSERT(xmax_ >= xmin_);
+        VTR_ASSERT(ymax_ >= ymin_);
+    }
+    int xmin = OPEN;
+    int xmax = OPEN;
+    int ymin = OPEN;
+    int ymax = OPEN;
 };
 
 /**
@@ -660,22 +669,26 @@ struct hash<t_pl_offset> {
  *
  * x: x-coordinate
  * y: y-coordinate
- * z: z-coordinate (capacity postion)
+ * sub_tile: sub-tile number (capacity position)
+ * layer: layer (die) number
  *
  * @note t_pl_offset should be used to represent an offset between t_pl_loc.
  */
 struct t_pl_loc {
     t_pl_loc() = default;
-    t_pl_loc(int xloc, int yloc, int sub_tile_loc)
+    t_pl_loc(int xloc, int yloc, int sub_tile_loc, int layer_num)
         : x(xloc)
         , y(yloc)
-        , sub_tile(sub_tile_loc) {}
+        , sub_tile(sub_tile_loc)
+        , layer(layer_num) {}
 
     int x = OPEN;
     int y = OPEN;
     int sub_tile = OPEN;
+    int layer = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
+        VTR_ASSERT(this->layer != OPEN);
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
@@ -683,6 +696,7 @@ struct t_pl_loc {
     }
 
     t_pl_loc& operator-=(const t_pl_offset& rhs) {
+        VTR_ASSERT(this->layer != OPEN);
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
@@ -706,15 +720,17 @@ struct t_pl_loc {
     }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return t_pl_offset(lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile);
+        VTR_ASSERT(lhs.layer == rhs.layer);
+        return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile};
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        VTR_ASSERT(lhs.layer == rhs.layer);
         return std::tie(lhs.x, lhs.y, lhs.sub_tile) < std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.x, rhs.y, rhs.sub_tile);
+        return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
@@ -776,6 +792,50 @@ struct t_grid_blocks {
     inline bool subtile_empty(size_t isubtile) const {
         return blocks[isubtile] == EMPTY_BLOCK_ID;
     }
+};
+
+class GridBlock {
+  public:
+    GridBlock() = default;
+
+    GridBlock(size_t width, size_t height, size_t layers) {
+        grid_blocks_.resize({layers, width, height});
+    }
+
+    inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
+        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
+    }
+
+    inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {
+        grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile] = blk_id;
+    }
+
+    inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
+        return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
+    }
+
+    inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
+    }
+
+    inline int set_usage(const t_physical_tile_loc loc, int usage) {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage = usage;
+    }
+
+    inline int get_usage(const t_physical_tile_loc loc) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage;
+    }
+
+    inline bool is_sub_tile_empty(const t_physical_tile_loc loc, int sub_tile) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].subtile_empty(sub_tile);
+    }
+
+    inline void clear() {
+        grid_blocks_.clear();
+    }
+
+  private:
+    vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
 
 ///@brief Names of various files
@@ -1038,7 +1098,10 @@ enum class e_place_delta_delay_algorithm {
  *              When in CRITICALITY_TIMING_PLACE mode, what is the
  *              tradeoff between timing and wiring costs.
  *   @param place_cost_exp
- *              Power to which denominator is raised for linear_cong.
+ *              Wiring cost is divided by the average channel width over
+ *              a net's bounding box taken to this exponent.
+ *              Only impacts devices with different channel widths in 
+ *              different directions or regions. (Default: 1)
  *   @param place_chan_width
  *              The channel width assumed if only one placement is performed.
  *   @param pad_loc_type
@@ -1050,7 +1113,7 @@ enum class e_place_delta_delay_algorithm {
  *              File to read pad locations from if pad_loc_type is USER.
  *   @param place_freq
  *              Should the placement be skipped, done once, or done
- *              for each channel width in the binary search.
+ *              for each channel width in the binary search. (Default: ONCE)
  *   @param recompute_crit_iter
  *              How many temperature stages pass before we recompute
  *              criticalities based on the current placement and its
@@ -1440,17 +1503,17 @@ struct t_det_routing_arch {
  *                     Note that this index will store the index of the segment
  *                     relative to its **parallel** segment types, not all segments
  *                     as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
- *                     for details but here is an example: say our segment_inf_vec in 
+ *                     for details but here is an example: say our segment_inf_vec in
  *                     device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
- *                     when building the rr_graph, static segment_inf_vectors will be 
- *                     created for each direction, thus you will have the following 
- *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y]. 
- *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec) 
+ *                     when building the rr_graph, static segment_inf_vectors will be
+ *                     created for each direction, thus you will have the following
+ *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y].
+ *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec)
  *                     and != 3 (index in device_ctx segment_inf_vec).
- *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx. 
- *                     Note that the above vector is **unifies** both x-parallel and 
- *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp 
- * 
+ *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx.
+ *                     Note that the above vector is **unifies** both x-parallel and
+ *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
+ *
  *   @param type_name_ptr  pointer to name of the segment type this track belongs
  *                     to. points to the appropriate name in s_segment_inf
  */
@@ -1534,7 +1597,7 @@ class t_chan_seg_details {
     const t_seg_details* seg_detail_ = nullptr;
 };
 
-/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)   
+/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)
  * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
  */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
@@ -1552,33 +1615,6 @@ struct t_linked_f_pointer {
 constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
 constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
 constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == SINK); }
-
-/**
- * @brief Basic element used to store the traceback (routing) of each net.
- *
- *   @param index    Array index (ID) of this routing resource node.
- *   @param net_pin_index:    Net pin index associated with the node. This value       
- *                            ranges from 1 to fanout [1..num_pins-1]. For cases when  
- *                            different speed paths are taken to the same SINK for     
- *                            different pins, node index cannot uniquely identify      
- *                            each SINK, so the net pin index guarantees an unique     
- *                            identification for each SINK node. For non-SINK nodes    
- *                            and for SINK nodes with no associated net pin index      
- *                            (i.e. special SINKs like the source of a clock tree      
- *                            which do not correspond to an actual netlist connection),
- *                            the value for this member should be set to OPEN (-1).
- *   @param iswitch  Index of the switch type used to go from this rr_node to
- *                   the next one in the routing.  OPEN if there is no next node
- *                   (i.e. this node is the last one (a SINK) in a branch of the
- *                   net's routing).
- *   @param next     Pointer to the next traceback element in this route.
- */
-struct t_trace {
-    t_trace* next;
-    int index;
-    int net_pin_index = OPEN;
-    short iswitch;
-};
 
 /**
  * @brief Extra information about each rr_node needed only during routing
@@ -1723,12 +1759,12 @@ struct t_power_opts {
 };
 
 /** @brief Channel width data
- * @param max= Maximum channel width between x_max and y_max. 
- * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
- * @param y_min= Same as above but for vertical channels. 
- * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
- * @param y_max= Same as above but for vertical channels. 
- * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()] 
+ * @param max= Maximum channel width between x_max and y_max.
+ * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param y_min= Same as above but for vertical channels.
+ * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param y_max= Same as above but for vertical channels.
+ * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
  * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
  * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)

@@ -34,6 +34,6 @@ void alloc_routing_structs(t_chan_width chan_width,
                            const int num_directs,
                            bool is_flat);
 
-void free_routing_structs(const Netlist<>& net_list);
+void free_routing_structs();
 
 #endif /* ROUTER_DELAY_PROFILING_H_ */

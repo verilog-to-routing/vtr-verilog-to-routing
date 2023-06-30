@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/oscar/Desktop/vtr-new/libs/librrgraph/src/base/rr_graph.xsd
- * Input file: /home/oscar/Desktop/vtr-new/libs/librrgraph/src/base/rr_graph.xsd
- * md5sum of input file: 41df83ecf127a53590711ddec605742a
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 8672cb3951993f7e0ea3433a02507672
  */
 
 #include <functional>
@@ -332,6 +332,7 @@ public:
 	 * <xs:complexType name="grid_loc">
 	 *   <xs:attribute name="x" type="xs:int" use="required" />
 	 *   <xs:attribute name="y" type="xs:int" use="required" />
+	 *   <xs:attribute name="layer" type="xs:int" use=:"required" />
 	 *   <xs:attribute name="block_type_id" type="xs:int" use="required" />
 	 *   <xs:attribute name="width_offset" type="xs:int" use="required" />
 	 *   <xs:attribute name="height_offset" type="xs:int" use="required" />
@@ -342,6 +343,7 @@ public:
 	virtual inline int get_grid_loc_width_offset(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_x(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_y(typename ContextTypes::GridLocReadContext &ctx) = 0;
+	virtual inline int get_grid_loc_layer(typename ContextTypes::GridLocReadContext &ctx) =0;
 
 	/** Generated for complex type "grid_locs":
 	 * <xs:complexType name="grid_locs">
@@ -351,13 +353,14 @@ public:
 	 * </xs:complexType>
 	*/
 	virtual inline void preallocate_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int width_offset, int x, int y) = 0;
+	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int width_offset, int x, int y, int layer) = 0;
 	virtual inline void finish_grid_locs_grid_loc(typename ContextTypes::GridLocWriteContext &ctx) = 0;
 	virtual inline size_t num_grid_locs_grid_loc(typename ContextTypes::GridLocsReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::GridLocReadContext get_grid_locs_grid_loc(int n, typename ContextTypes::GridLocsReadContext &ctx) = 0;
 
 	/** Generated for complex type "node_loc":
 	 * <xs:complexType name="node_loc">
+	 *   <xs:attribute name="layer" type="xs:int" use="required" />
 	 *   <xs:attribute name="xlow" type="xs:int" use="required" />
 	 *   <xs:attribute name="ylow" type="xs:int" use="required" />
 	 *   <xs:attribute name="xhigh" type="xs:int" use="required" />
@@ -366,6 +369,7 @@ public:
 	 *   <xs:attribute name="ptc" type="xs:int" use="required" />
 	 * </xs:complexType>
 	*/
+	virtual inline int get_node_loc_layer(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline int get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_side(enum_loc_side side, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
@@ -436,7 +440,7 @@ public:
 	virtual inline void set_node_direction(enum_node_direction direction, typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline unsigned int get_node_id(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline enum_node_type get_node_type(typename ContextTypes::NodeReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
+	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
 	virtual inline void finish_node_loc(typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeLocReadContext get_node_loc(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeTimingWriteContext init_node_timing(typename ContextTypes::NodeWriteContext &ctx, float C, float R) = 0;
