@@ -9,6 +9,7 @@
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
+#include <string>
 
 using argparse::ConvertedValue;
 using argparse::Provenance;
@@ -1772,6 +1773,19 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument(args.pack_num_moves, "--pack_num_moves")
+        .help(
+            "The number of moves that can be tried in packing stage")
+        .default_value("100000")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument(args.pack_move_type, "--pack_move_type")
+        .help(
+            "The move type used in packing."
+            "The available values are: randomSwap, semiDirectedSwap, semiDirectedSameTypeSwap")
+        .default_value("semiDirectedSwap")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_grp = parser.add_argument_group("placement options");
 
     place_grp.add_argument(args.Seed, "--seed")
@@ -2000,7 +2014,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
         .help(
             "The reward function used by placement RL agent."
-            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware")
+            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware"
+            "The latter two are only available for timing-driven placement.")
         .default_value("WLbiased_runtime_aware")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2746,6 +2761,19 @@ void set_conditional_defaults(t_options& args) {
             args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
+        }
+    }
+
+    // Check for correct options combinations
+    // If you are running WLdriven placement, the RL reward function should be
+    // either basic or nonPenalizing basic
+    if (args.RL_agent_placement && (args.PlaceAlgorithm == BOUNDING_BOX_PLACE || !args.timing_analysis)) {
+        if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic") {
+            VTR_LOG_WARN(
+                "To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"
+                "you can specify the reward function using --place_reward_fun.\n"
+                "Setting the placement reward function to \"basic\"\n");
+            args.place_reward_fun.set("basic", Provenance::INFERRED);
         }
     }
 

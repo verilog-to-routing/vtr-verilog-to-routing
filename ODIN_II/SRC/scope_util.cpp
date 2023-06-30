@@ -1,4 +1,30 @@
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #include "scope_util.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
@@ -23,22 +49,6 @@ void move_sc_scope_items(sc_scope** source_ref, sc_scope* destination) {
         source = NULL;
     }
     (*source_ref) = source;
-}
-
-void free_sc_scope(sc_scope** to_free_ref, STRING_CACHE** param, STRING_CACHE** defparam) {
-    sc_scope* to_free = (*to_free_ref);
-    if (to_free) {
-        *defparam = to_free->defparam_sc;
-        *param = to_free->param_sc;
-
-        to_free->defparam_sc = NULL;
-        to_free->param_sc = NULL;
-
-        vtr::free(to_free);
-        to_free = NULL;
-    }
-
-    (*to_free_ref) = to_free;
 }
 
 sc_scope* pop_scope() {

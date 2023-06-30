@@ -1,20 +1,40 @@
-/* Standard libraries */
-#include <stdlib.h>
-#include <string.h>
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
 
-/* Odin_II libraries */
-#include "odin_globals.h"
+#include <cstring>
+
 #include "odin_types.h"
 #include "ast_util.h"
 #include "ast_elaborate.h"
 #include "parse_making_ast.h"
 #include "netlist_create_from_ast.h"
 #include "odin_util.h"
+#include "ast_loop_unroll.h"
+
 #include "vtr_memory.h"
 #include "vtr_util.h"
-
-/* This files header */
-#include "ast_loop_unroll.h"
 
 ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrolled, sc_hierarchy* local_ref, bool is_generate) {
     oassert(node && node->type == FOR);

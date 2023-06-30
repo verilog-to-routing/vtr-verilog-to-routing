@@ -35,11 +35,6 @@
         external_url="https://github.com/capnproto/capnproto.git"
         default_external_ref="v0.9.1"/>
     <subtree
-        name="libyosys"
-        internal_path="libs/EXTERNAL/libyosys"
-        external_url="https://github.com/YosysHQ/yosys.git"
-        default_external_ref="master"/>
-    <subtree
         name="libinterchange"
         internal_path="libs/EXTERNAL/libinterchange"
         external_url="https://github.com/chipsalliance/fpga-interchange-schema.git"

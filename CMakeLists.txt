@@ -55,8 +55,8 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
 option(WITH_YOSYS "Enable building Yosys" OFF)
-option(ODIN_USE_YOSYS "Enable building Yosys" OFF)
 option(YOSYS_SV_UHDM_PLUGIN "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
+option(YOSYS_PARMYS_PLUGIN "Enable building and installing Parmys (Partial Mapper for Yosys) plugin" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 1)
@@ -411,8 +411,15 @@ endif()
 # handle cmake params to compile Yosys SystemVerilog/UHDM plugins
 if(${YOSYS_SV_UHDM_PLUGIN})
     # avoid compiling plugins in case the Yosys frontend is not active
-    if(NOT ${WITH_YOSYS} AND NOT ${ODIN_USE_YOSYS})
-        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Yosys frontend. Please set either WITH_YOSYS or ODIN_USE_YOSYS on.")
+    if(NOT ${WITH_YOSYS})
+        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Yosys frontend. Please set WITH_YOSYS.")
+    endif()
+endif()
+
+# check YOSYS_PARMYS_PLUGIN flag
+if(${YOSYS_PARMYS_PLUGIN})
+    if(NOT ${WITH_YOSYS})
+        message(SEND_ERROR "Using YOSYS_PARMYS_PLUGIN requires activating Yosys frontend. Please set WITH_YOSYS.")
     endif()
 endif()
 

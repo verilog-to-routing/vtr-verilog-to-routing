@@ -63,21 +63,6 @@ They will cause VPR to perform only :ref:`packing and placement <general_options
 .. code-block:: bash
 
     # Using the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
-
-    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
-    
-    # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
-    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -elaborator yosys -fflegalize
-
-Passes a Verilog/SystemVerilog/UHDM file to Yosys to perform elaboration. 
-The BLIF elaboration and partial mapping phases will be executed on the generated netlist by Odin-II, and all latches in the Yosys+Odin-II output file will be rising edge.
-Then ABC and VPR perform the default behaviour for the VTR flow, respectively.
-
-.. code-block:: bash
-
-    # Using the Yosys conventional Verilog parser
     ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys
 
     # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
@@ -96,7 +81,14 @@ The parser for these runs is considered the Yosys conventional Verilog/SystemVer
 
 Running the default VTR flow using the Yosys standalone front-end.
 The Yosys HDL parser is considered as Yosys-SystemVerilog plugin (i.e., ``read_systemverilog``) and Yosys UHDM plugin (i.e., ``read_uhdm``), respectively.
-It is worth mentioning that utilizing Yosys plugins requires passing the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to build and install the plugins for the Yosys front-end. 
+It is worth mentioning that utilizing Yosys plugins requires passing the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to build and install the plugins for the Yosys front-end.
+
+.. code-block:: bash
+
+    # Using the Parmys (Partial Mapper for Yosys) plugin as partial mapper
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys -mapper parmys
+
+Will run the VTR flow (default configuration) with Yosys frontend using Parmys plugin as partial mapper. To utilize the Parmys plugin, the ``-DYOSYS_PARMYS_PLUGIN=ON`` compile flag should be passed while building the VTR project with Yosys as a frontend.
 
 Detailed Command-line Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -240,58 +232,9 @@ Detailed Command-line Options
     
     **Default:** 1
 
-.. option:: -elaborator <ELABORATOR>
-    
-    Specifies the elaborator of the synthesis flow for ODIN II [odin, yosys]
-
-    **Default:** odin
-
 .. option:: -top_module <TOP_MODULE>
     
     Specifies the name of the module in the design that should be considered as top
-
-.. option:: -coarsen
-    
-    Notifies ODIN II if the input BLIF is coarse-grained.
-
-    **Default:** False
-
-.. note::
-
-    A coarse-grained BLIF file is defined as a BLIF file inclduing unmapped cells with the Yosys internal cell (listed `here <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/b913727959e22ae7a535ac8b907d0aaa9a3eda3d/ODIN_II/SRC/enum_str.cpp#L402-L494>`_) format which are represented by the ``.subckt`` tag in coarse-grained BLIF.
-    
-.. option:: -fflegalize
-    
-    Makes flip-flops rising edge for coarse-grained input BLIFs in the partial technology mapping phase (ODIN II synthesis flow generates rising edge FFs by default, should be used for Yosys+Odin-II)
-    
-    **Default:** False
-
-.. option:: -encode_names
-    
-    Enables ODIN II utilization of operation-type-encoded naming style for Yosys coarse-grained RTLIL nodes.
-    
-    .. code-block::
-
-        # example of a DFF subcircuit in the Yosys coarse-grained BLIF
-        .subckt $dff CLK=clk D=a Q=inst1.inst2.temp
-        .param CLK_POLARITY 1
-
-        .names inst1.inst2.temp o
-        1 1
-
-        # fine-grained BLIF file with enabled encode_names option for Odin-II partial mapper
-        .latch test^a test^inst1.inst2.temp^FF~0 re test^clk 3
-
-        .names test^inst1.inst2.temp^FF~0 test^o
-        1 1
-
-        # fine-grained BLIF file with disabled encode_names option for Odin-II partial mapper
-        .latch test^a test^$dff^FF~0 re test^clk 3
-
-        .names test^$dff^FF~0 test^o
-        1 1
-
-    **Default:** False
 
 .. option:: -yosys_script <YOSYS_SCRIPT>
     
@@ -313,3 +256,14 @@ Detailed Command-line Options
     The ``yosys-plugins`` parser, which represents the ``read_systemverilog`` command, reads SystemVerilog files directly in Yosys.
     It executes Surelog with provided filenames and converts them (in memory) into UHDM file. Then, this UHDM file is converted into Yosys AST. `[Yosys-SystemVerilog] <https://github.com/antmicro/yosys-systemverilog#usage>`_
     On the other hand, the ``surelog`` parser, which uses the ``read_uhdm`` Yosys command, walks the design tree and converts its nodes into Yosys AST nodes using Surelog. `[UHDM-Yosys <https://github.com/chipsalliance/UHDM-integration-tests#uhdm-yosys>`_, `Surelog] <https://github.com/chipsalliance/Surelog#surelog>`_
+
+.. option:: -mapper <MAPPER>
+
+    Choose a partial mapper for the Yosys synthesizer [yosys (default), parmys (Partial Mapper for Yosys plugin)].
+    The Yosys default partial mapper will be used if no mapper is specified.
+
+    **Default:** yosys
+
+.. note::
+
+    Parmys is a Yosys plugin which provides intelligent partial mapping features (inference, binding, and hard/soft logic trade-offs) from Odin-II for Yosys. For more information on available paramters see the `Parmys <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ plugin page.

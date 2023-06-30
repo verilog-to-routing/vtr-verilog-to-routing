@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2009 Peter Andrew Jamieson (jamieson.peter@gmail.com)
- *
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -22,10 +22,16 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <string>
+#include <iostream>
+#include <vector>
+#include <stack>
+
 #include "odin_types.h"
 #include "adders.h"
 #include "ast_util.h"
@@ -41,71 +47,9 @@
 #include "netlist_create_from_ast.h"
 #include "netlist_utils.h"
 #include "ctype.h"
+
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include <string>
-#include <iostream>
-#include <vector>
-#include <stack>
-
-// #define read_node  1
-// #define write_node 2
-
-// #define e_data  1
-// #define e_operation 2
-// #define e_variable 3
-
-// #define N 64
-// #define Max_size 64
-
-// long count_id = 0;
-// long count_assign = 0;
-// long count;
-// long count_write;
-//enode *head, *p;
-
-// void reduce_assignment_expression();
-// void reduce_assignment_expression(ast_node_t *ast_module);
-// void find_assign_node(ast_node_t *node, std::vector<ast_node_t *> list, char *module_name);
-
-// struct enode
-// {
-// 	struct
-// 	{
-// 		short operation;
-// 		int data;
-// 		std::string variable;
-// 	}type;
-
-// 	int id;
-// 	int flag;
-// 	int priority;
-// 	struct enode *next;
-// 	struct enode *pre;
-
-// };
-
-// void record_tree_info(ast_node_t *node);
-// void store_exp_list(ast_node_t *node);
-// void create_enode(ast_node_t *node);
-// bool simplify_expression();
-// bool adjoin_constant();
-// enode *replace_enode(int data, enode *t, int mark);
-// bool combine_constant();
-// bool delete_continuous_multiply();
-// void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_num);
-// void reduce_enode_list();
-// enode *find_tail(enode *node);
-// int check_exp_list(enode *tail);
-// void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num);
-// void create_op_node(ast_node_t *node, enode *temp, int line_num, int file_num);
-// void free_exp_list();
-// void change_exp_list(enode *beign, enode *end, enode *s, int flag);
-// enode *copy_enode_list(enode *new_head, enode *begin, enode *end);
-// void copy_enode(enode *node, enode *new_node);
-// bool check_tree_operation(ast_node_t *node);
-// void check_operation(enode *begin, enode *end);
-// bool check_mult_bracket(std::vector<int> list);
 
 struct e_data {
     int pass;

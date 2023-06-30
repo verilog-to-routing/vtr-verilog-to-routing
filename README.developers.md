@@ -273,11 +273,12 @@ $ ./run_reg_test.py vtr_reg_basic
 $ ./run_reg_test.py vtr_reg_strong
 ```
 
-The *nightly* and *weekly* regressions require the Titan and ISPD benchmarks
+The *nightly* and *weekly* regressions require the Titan, ISPD, and Symbiflow benchmarks
 which can be integrated into your VTR tree with:
 ```shell
-make get_titan_benchmarks
-make get_ispd_benchmarks
+$ make get_titan_benchmarks
+$ make get_ispd_benchmarks
+$ make get_symbiflow_benchmarks
 ```
 They can then be run using `run_reg_test.py`:
 ```shell
@@ -309,8 +310,7 @@ will be triggered. The following tests are included in the workflow:
 * [vtr_reg_nightly_test1-3](#vtr_reg_nightly_test1-3)
 * [vtr_reg_strong](#vtr_reg_strong)
 * vtr_reg_yosys
-* vtr_reg_yosys_odin
-* odin_tech_strong
+* vtr_reg_yosys_parmys
 * odin_reg_strong
 
 instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).

@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,53 +22,46 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 #include <sstream>
 #include <vector>
 
-#include "vtr_error.h"
-#include "vtr_time.h"
 #include "odin_ii.h"
-
-#include "argparse.hpp"
-
-#include "arch_util.h"
-
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "odin_util.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
-#include "netlist_create_from_ast.h"
-#include "ast_util.h"
 #include "read_xml_config_file.h"
-#include "read_xml_arch_file.h"
 #include "partial_map.h"
-#include "BLIFElaborate.hpp"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "netlist_cleanup.h"
-
 #include "hard_blocks.h"
 #include "memories.h"
-#include "BlockMemories.hpp"
+#include "block_memories.h"
 #include "simulate_blif.h"
-
 #include "netlist_visualizer.h"
 #include "adders.h"
 #include "netlist_statistic.h"
 #include "subtractions.h"
-#include "YYosys.hpp"
+#include "hard_soft_logic_mixer.h"
+#include "generic_reader.h"
+#include "blif.h"
+
+#include "vtr_error.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_memory.h"
-#include "HardSoftLogicMixer.hpp"
 
-#include "GenericReader.hpp"
-#include "BLIF.hpp"
+#include "argparse.hpp"
+
+#include "read_xml_arch_file.h"
+#include "arch_util.h"
 
 #define DEFAULT_OUTPUT "."
 
@@ -77,12 +72,11 @@ global_args_t global_args;
 std::vector<t_physical_tile_type> physical_tile_types;
 std::vector<t_logical_block_type> logical_block_types;
 short physical_lut_size = -1;
-int block_tag = -1;
 ids default_net_type = WIRE;
 HardSoftLogicMixer* mixer;
 
-static GenericReader generic_reader;
-static GenericWriter generic_writer;
+static generic_reader reader;
+static generic_writer writer;
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
 static void set_physical_lut_size();
@@ -99,25 +93,7 @@ static void elaborate() {
 
     module_names_to_idx = sc_new_string_cache();
 
-    switch (configuration.elaborator_type) {
-        case (elaborator_e::_ODIN): {
-            /* parse Verilog/BLIF files */
-            syn_netlist = static_cast<netlist_t*>(generic_reader._read());
-            break;
-        }
-        case (elaborator_e::_YOSYS): {
-            YYosys yosys;
-            /* perform elaboration */
-            yosys.perform_elaboration();
-            /* parse yosys generated BLIF file */
-            syn_netlist = static_cast<netlist_t*>(generic_reader._read());
-            break;
-        }
-        default: {
-            // Invalid elaborator type
-            throw vtr::VtrError("Invalid Elaborator");
-        }
-    }
+    syn_netlist = static_cast<netlist_t*>(reader._read());
 
     if (!syn_netlist) {
         printf("Empty BLIF generated, Empty input or no module declared\n");
@@ -204,7 +180,7 @@ static void techmap() {
 
 static void output() {
     /* creating the output file */
-    generic_writer._create_file(global_args.output_file.value().c_str(), configuration.output_file_type);
+    writer._create_file(global_args.output_file.value().c_str(), configuration.output_file_type);
 
     if (syn_netlist) {
         /**
@@ -213,7 +189,7 @@ static void output() {
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        generic_writer._write(syn_netlist);
+        writer._write(syn_netlist);
 
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
@@ -301,8 +277,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         set_default_config();
 
         /* Intantiating the generic reader and writer */
-        generic_reader = GenericReader();
-        generic_writer = GenericWriter();
+        reader = generic_reader();
+        writer = generic_writer();
 
         /* get the command line options */
         get_options(argc, argv);
@@ -345,13 +321,13 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     printf("Using Lut input width of: %d\n", physical_lut_size);
 
     /* do High level Synthesis */
-    if (!configuration.list_of_file_names.empty() || !configuration.tcl_file.empty()) {
+    if (!configuration.list_of_file_names.empty()) {
         ODIN_ERROR_CODE error_code;
 
         print_input_files_info();
         report_frontend_elaborator();
 
-        if (configuration.input_file_type != file_type_e::_BLIF || configuration.coarsen) {
+        if (configuration.input_file_type != file_type_e::BLIF) {
             try {
                 error_code = synthesize();
                 printf("Odin_II synthesis has finished with code: %d\n", error_code);
@@ -372,28 +348,15 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.input_file_type = file_type_e::_BLIF;
+        configuration.input_file_type = file_type_e::BLIF;
 
-        if (global_args.coarsen.provenance() != argparse::Provenance::SPECIFIED) {
-            // if we started with a verilog file read the output that was made since
-            // the simulator can only simulate blifs
-            if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
-                configuration.list_of_file_names = {global_args.output_file};
-                my_location.file = 0;
-            } else {
-                printf("BLIF: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
-                fflush(stdout);
-            }
-
-        } else {
-            /*
-             * Considering the output blif file (whether specified or default one)
-             * as the blif for simulation process. This is because the input blif 
-             * from other tools are not compatible with Odin simulation process, 
-             * so they need to be processed first.
-             */
+        // the simulator can only simulate blifs
+        if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
             configuration.list_of_file_names = {global_args.output_file};
             my_location.file = 0;
+        } else {
+            printf("BLIF: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+            fflush(stdout);
         }
 
         try {
@@ -401,7 +364,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              * The blif file for simulation should follow odin_ii blif style 
              * So, here we call odin_ii's read_blif
              */
-            sim_netlist = static_cast<netlist_t*>(generic_reader._read());
+            sim_netlist = static_cast<netlist_t*>(reader._read());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load BLIF file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
             exit(ERROR_PARSE_BLIF);
@@ -497,16 +460,6 @@ void get_options(int argc, char** argv) {
         .nargs('+')
         .metavar("VERILOG_FILE");
 
-    input_grp.add_argument(global_args.input_files, "-s")
-        .help("List of SystemVerilog HDL file")
-        .nargs('+')
-        .metavar("SYSTEMVERILOG_FILE");
-
-    input_grp.add_argument(global_args.input_files, "-u")
-        .help("List of UHDM HDL file")
-        .nargs('+')
-        .metavar("UHDM_FILE");
-
     input_grp.add_argument(global_args.blif_file, "-b")
         .help("BLIF file")
         .metavar("BLIF_FILE");
@@ -522,39 +475,6 @@ void get_options(int argc, char** argv) {
         .help("Output file path")
         .default_value("default_out.blif")
         .metavar("OUTPUT_FILE_PATH");
-
-    auto& ext_elaborator_group = parser.add_argument_group("other options");
-
-    ext_elaborator_group.add_argument(global_args.elaborator, "--elaborator")
-        .help("Specify an external elaborator")
-        .default_value("odin")
-        .metavar("ELABORATTOR");
-
-    ext_elaborator_group.add_argument(global_args.show_yosys_log, "--show_yosys_log")
-        .help("Print Yosys log into the standard output stream")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE)
-        .metavar("show_yosys_log");
-
-    ext_elaborator_group.add_argument(global_args.coarsen, "--coarsen")
-        .help("specify the input BLIF is flatten or coarsen")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE)
-        .metavar("INPUT_BLIF_FLATNESS");
-
-    ext_elaborator_group.add_argument(global_args.tcl_file, "-S")
-        .help("TCL file")
-        .metavar("TCL_FILE");
-
-    ext_elaborator_group.add_argument(global_args.tcl_file, "--tcl")
-        .help("TCL file")
-        .metavar("TCL_FILE");
-
-    ext_elaborator_group.add_argument(global_args.decode_names, "--decode_names")
-        .help("Enable extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE)
-        .metavar("DECODE_NAMES");
 
     auto& other_grp = parser.add_argument_group("other options");
 
@@ -589,11 +509,6 @@ void get_options(int argc, char** argv) {
 
     other_grp.add_argument(global_args.all_warnings, "-W")
         .help("Print all warnings (can be substantial)")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE);
-
-    other_grp.add_argument(global_args.fflegalize, "--fflegalize")
-        .help("Make all flip-flops rising edge to be compatible with VPR (may add inverters)")
         .default_value("false")
         .action(argparse::Action::STORE_TRUE);
 
@@ -730,7 +645,6 @@ void get_options(int argc, char** argv) {
     if (!only_one_is_true({
             global_args.config_file.provenance() == argparse::Provenance::SPECIFIED, //have a config file
             global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED,   //have a BLIF file
-            global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED,    //have a TCL file that includes HDL designs
             global_args.input_files.value().size() > 0                               //have a Verilog input list
         })) {
         parser.print_usage();
@@ -739,9 +653,6 @@ void get_options(int argc, char** argv) {
                             a config file(-c)\n\t\
                             a BLIF file(-b)\n\t\
                             a Verilog file(-v)\n\t\
-                            a SystemVerilog file(-s)\n\t\
-                            an UHDM file(-u)\n\t\
-                            a TCL file including HDL designs(-S)\n\
                         Unless is used for infrastructure directly\n");
     }
 
@@ -758,11 +669,7 @@ void get_options(int argc, char** argv) {
         configuration.list_of_file_names = global_args.input_files.value();
         std::string arg_name = string_to_lower(global_args.input_files.argument_name());
         if (arg_name == "-v")
-            configuration.input_file_type = file_type_e::_VERILOG;
-        else if (arg_name == "-s")
-            configuration.input_file_type = file_type_e::_SYSTEM_VERILOG;
-        else if (arg_name == "-u")
-            configuration.input_file_type = file_type_e::_UHDM;
+            configuration.input_file_type = file_type_e::VERILOG;
         else {
             // Unknown argument name, should have been already checked in the argparse library
             error_message(PARSE_ARGS, unknown_location,
@@ -772,31 +679,11 @@ void get_options(int argc, char** argv) {
 
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
-        configuration.input_file_type = file_type_e::_BLIF;
+        configuration.input_file_type = file_type_e::BLIF;
     }
 
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.arch_file = global_args.arch_file;
-    }
-
-    if (global_args.elaborator.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.elaborator_type = elaborator_strmap.at(string_to_lower(global_args.elaborator.value()));
-    }
-
-    if (global_args.show_yosys_log.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.show_yosys_log = global_args.show_yosys_log;
-    }
-
-    if (global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.tcl_file = global_args.tcl_file;
-
-        coarsen_cleanup = true;
-        configuration.coarsen = true;
-        configuration.elaborator_type = elaborator_e::_YOSYS;
-    }
-
-    if (global_args.decode_names.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.decode_names = global_args.decode_names;
     }
 
     if (global_args.write_netlist_as_dot.provenance() == argparse::Provenance::SPECIFIED) {
@@ -813,19 +700,6 @@ void get_options(int argc, char** argv) {
 
     if (global_args.print_parse_tokens.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.print_parse_tokens = global_args.print_parse_tokens;
-    }
-
-    if (global_args.coarsen.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.coarsen = global_args.coarsen;
-        coarsen_cleanup = true;
-    }
-
-    if (global_args.coarsen.provenance() == argparse::Provenance::UNSPECIFIED) {
-        coarsen_cleanup = false;
-    }
-
-    if (global_args.fflegalize.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.fflegalize = global_args.fflegalize;
     }
 
     if (global_args.sim_directory.value() == DEFAULT_OUTPUT) {
@@ -853,17 +727,11 @@ void get_options(int argc, char** argv) {
  *-------------------------------------------------------------------------*/
 void set_default_config() {
     /* Set up the global configuration. */
-    configuration.coarsen = false;
-    configuration.fflegalize = false;
-    configuration.show_yosys_log = false;
-    configuration.decode_names = false;
-    configuration.tcl_file = "";
-    configuration.output_file_type = file_type_e::_BLIF;
-    configuration.elaborator_type = elaborator_e::_ODIN;
+    configuration.output_file_type = file_type_e::BLIF;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;
     configuration.print_parse_tokens = 0;
-    configuration.output_preproc_source = 0; // TODO: unused
+    // TODO: unused
     configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
     configuration.dsp_verilog = "arch_dsp.v";
     configuration.arch_file = "";

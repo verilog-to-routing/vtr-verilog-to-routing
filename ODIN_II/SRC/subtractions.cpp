@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -21,21 +23,19 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
 #include "adders.h"
 #include "subtractions.h"
 #include "netlist_utils.h"
-#include "partial_map.h"
 #include "read_xml_arch_file.h"
 #include "odin_globals.h"
 
 #include "vtr_memory.h"
-#include "vtr_util.h"
 
 using vtr::t_linked_vptr;
 

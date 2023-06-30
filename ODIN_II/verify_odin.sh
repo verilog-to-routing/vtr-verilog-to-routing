@@ -9,7 +9,6 @@ REGRESSION_DIR="${THIS_DIR}/regression_test"
 REG_LIB="${REGRESSION_DIR}/.library"
 PARSER_DIR="${REGRESSION_DIR}/parse_result"
 PARSER_EXEC="${PARSER_DIR}/parse_result.py"
-ELABORATOR_YOSYS="--elaborator yosys"
 
 source "${REG_LIB}/handle_exit.sh"
 source "${REG_LIB}/helper.sh"
@@ -61,14 +60,11 @@ _GENERATE_CONFIG="off"
 _FORCE_SIM="off"
 _DRY_RUN="off"
 _RANDOM_DRY_RUN="off"
-_GENERATE_BLIF="off"
-_REGENERATE_BLIF="off"
 _REGENERATE_EXPECTATION="off"
 _GENERATE_EXPECTATION="off"
 _CONTINUE="off"
 _REPORT="on"
 _STATUS_ONLY="off"
-_RUN_YOSYS_ARGS=""
 
 ##############################################
 # Exit Functions
@@ -127,8 +123,6 @@ printf "Called program with $INPUT
 		--override						$(_prt_cur_arg ${_OVERRIDE_CONFIG}) if a config file is passed in, override arguments rather than append
 		--dry_run                       $(_prt_cur_arg ${_DRY_RUN}) performs a dry run to check the validity of the task and flow 
 		--randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow 
-		--generate_blif                 $(_prt_cur_arg ${_GENERATE_BLIF}) generate the missing blifs of verilog files located in benchmark/_BLIF
-		--regenerate_blif               $(_prt_cur_arg ${_REGENERATE_BLIF}) regenerate the blifs of verilog files located in benchmark/_BLIF
 		--regenerate_expectation        $(_prt_cur_arg ${_REGENERATE_EXPECTATION}) regenerate the expectation and overrides the expected value mismatches only
 		--generate_expectation          $(_prt_cur_arg ${_GENERATE_EXPECTATION}) generate the expectation and overrides the expectation file
 		--continue						$(_prt_cur_arg ${_CONTINUE}) continue running test in the same directory as the last run
@@ -193,28 +187,7 @@ function find_in_bench() {
 	then
 		TMP_BENCH_FIND_ARRAY=()
 	fi
-}
-
-# generate blif files of verilog files in benchmark/blif/_VERILOGS
-function generate_blifs() {
-    
-    BENCHMARK="$1"
-    BENCH_NAME=$(echo ${BENCHMARK} | sed 's/.*\(_BLIF\)/\1/g' )
-
-    if [ _${_GENERATE_BLIF} = "_on" ]; then
-        echo "Generating missed BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${BENCH_NAME}"
-    elif [ _${_REGENERATE_BLIF} = "_on" ]; then
-        _RUN_YOSYS_ARGS+=" --regenerate_blif "
-        echo "Regenerating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${BENCH_NAME}"
-    fi
-
-    RUN_YOSYS_SCRIPT_PARAMS=" -t ${BENCHMARK} "
-    RUN_YOSYS_SCRIPT_PARAMS+="${_RUN_YOSYS_ARGS}"
-
-    ${REGRESSION_DIR}/tools/run_yosys.sh  ${RUN_YOSYS_SCRIPT_PARAMS}
-    _RUN_YOSYS_ARGS=""
-}
-    
+}  
 
 ################################################
 # Init Directories and cleanup
@@ -407,15 +380,6 @@ function parse_args() {
 				;;--randomize)
 					_RANDOM_DRY_RUN="on"
 					echo "random dry run"
-
-				;;--generate_blif)
-					_GENERATE_BLIF="on"
-                    _RUN_YOSYS_ARGS+=""
-					echo "generating missed blifs of benchmark/_BLIF"
-				
-                ;;--regenerate_blif)
-					_REGENERATE_BLIF="on"
-					echo "regenerating blifs of benchmark/_BLIF"
 				
                 ;;--regenerate_expectation)
 					_REGENERATE_EXPECTATION="on"
@@ -996,21 +960,9 @@ function sim() {
 		esac
 		circuit_name="${circuit_file%.*}"
 
-
-        # check if elaborator is yosys, then look up for Yosys sim vectors
-        if [[ "$_synthesis_params" == *"$ELABORATOR_YOSYS"* ]]; then
-            # lookup for input and output vector files to do comparison
-            input_vector_file="${circuits_dir}/${circuit_name}_yosys_input"
-            output_vector_file="${circuits_dir}/${circuit_name}_yosys_output"
-
-        # otherwise, Odin-II vectors should be retrieved
-        else
-            # lookup for input and output vector files to do comparison
-            input_vector_file="${circuits_dir}/${circuit_name}_odin_input"
-            output_vector_file="${circuits_dir}/${circuit_name}_odin_output"
-        fi
-
-		
+        # lookup for input and output vector files to do comparison
+        input_vector_file="${circuits_dir}/${circuit_name}_odin_input"
+        output_vector_file="${circuits_dir}/${circuit_name}_odin_output"
 
 		for arches in "${_arch_list[@]}"
 		do
@@ -1656,10 +1608,6 @@ function run_suite() {
 
 	for (( i = 0; i < ${#task_list[@]}; i++ ));
 	do
-         # check if blif generting flags are active
-        if [ "_${_GENERATE_BLIF}" == "_on" ] || [ "_${_REGENERATE_BLIF}" == "_on" ]; then
-            generate_blifs "${task_list[$i]}"
-        fi
         run_task "${task_list[$i]}"
 		TEST_COUNT=$(( TEST_COUNT + 1 ))
 	done

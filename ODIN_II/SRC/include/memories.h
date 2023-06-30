@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -28,23 +30,12 @@
 
 extern vtr::t_linked_vptr* sp_memory_list;
 extern vtr::t_linked_vptr* dp_memory_list;
-extern vtr::t_linked_vptr* memory_instances;
 extern vtr::t_linked_vptr* memory_port_size_list;
 extern t_model* single_port_rams;
 extern t_model* dual_port_rams;
 
 #define HARD_RAM_ADDR_LIMIT 33
 #define SOFT_RAM_ADDR_LIMIT 10
-
-struct t_memory {
-    long size_d1;
-    long size_d2;
-    long size_addr1;
-    long size_addr2;
-    long size_out1;
-    long size_out2;
-    struct s_memory* next;
-};
 
 struct t_memory_port_sizes {
     long size;
@@ -71,9 +62,6 @@ struct dp_ram_signals {
     npin_t* clk;
 };
 
-extern sp_ram_signals* init_sp_ram_signals();
-extern dp_ram_signals* init_dp_ram_signals();
-
 long get_sp_ram_split_depth();
 long get_dp_ram_split_depth();
 
@@ -86,13 +74,9 @@ void free_dp_ram_signals(dp_ram_signals* signalsvar);
 bool is_sp_ram(nnode_t* node);
 bool is_dp_ram(nnode_t* node);
 
-bool is_blif_sp_ram(nnode_t* node);
-bool is_blif_dp_ram(nnode_t* node);
-
 bool is_ast_sp_ram(ast_node_t* node);
 bool is_ast_dp_ram(ast_node_t* node);
 
-void init_memory_distribution();
 void check_memories_and_report_distribution();
 
 long get_memory_port_size(const char* name);
@@ -117,17 +101,10 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
 extern void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
 extern void add_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
 extern void remap_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
-extern void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
-
-int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
-int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
 
 extern nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node);
 extern nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node);
 
 extern void register_memory_model(nnode_t* mem);
-
-extern void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-extern void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 #endif // MEMORIES_H

@@ -1,7 +1,9 @@
-/**
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
- * FILEs (the "Software"), to deal in the Software without
+ * files (the "Software"), to deal in the Software without
  * restriction, including without limitation the rights to use,
  * copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the
@@ -20,25 +22,23 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "simulate_blif.h"
+
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
-#include <cmath>
-#include "vtr_util.h"
-#include "vtr_memory.h"
-#include "odin_buffer.hpp"
-#include "odin_util.h"
 #include <string>
 #include <sstream>
-#include <chrono>
 #include <dlfcn.h>
-#include <mutex>
-#include <unistd.h>
 #include <thread>
 
+#include "simulate_blif.h"
+#include "odin_buffer.h"
+#include "odin_util.h"
+
+#include "vtr_util.h"
+#include "vtr_memory.h"
+
 #define CLOCK_INITIAL_VALUE 1
-#define MAX_REPEAT_SIM 128
 
 static inline BitSpace::bit_value_t init_value(nnode_t* node) {
     // by default this is undefined
@@ -102,13 +102,6 @@ inline static BitSpace::bit_value_t get_Q(npin_t* Q, int cycle) {
 
 inline static BitSpace::bit_value_t compute_ff(bool trigger, BitSpace::bit_value_t D_val, BitSpace::bit_value_t Q_val, int /*cycle*/) {
     return (trigger) ? D_val : Q_val;
-}
-inline static BitSpace::bit_value_t compute_ff(bool trigger, npin_t* D, BitSpace::bit_value_t Q_val, int cycle) {
-    return compute_ff(trigger, get_D(D, cycle), Q_val, cycle);
-}
-
-inline static BitSpace::bit_value_t compute_ff(bool trigger, BitSpace::bit_value_t D_val, npin_t* Q, int cycle) {
-    return compute_ff(trigger, D_val, get_Q(Q, cycle), cycle);
 }
 
 inline static BitSpace::bit_value_t compute_ff(bool trigger, npin_t* D, npin_t* Q, int cycle) {
@@ -1368,7 +1361,7 @@ static void initialize_pin(npin_t* pin) {
 
     if (pin->net) {
         if (!pin->net->values) {
-            pin->net->values = std::make_shared<AtomicBuffer>(init_value(pin->node));
+            pin->net->values = std::make_shared<atomic_buffer>(init_value(pin->node));
         }
 
         pin->values = pin->net->values;
@@ -1377,7 +1370,7 @@ static void initialize_pin(npin_t* pin) {
             if (pin->net->fanout_pins[i])
                 pin->net->fanout_pins[i]->values = pin->net->values;
     } else {
-        pin->values = std::make_shared<AtomicBuffer>(init_value(pin->node));
+        pin->values = std::make_shared<atomic_buffer>(init_value(pin->node));
     }
 }
 

@@ -1,4 +1,6 @@
 /*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -21,27 +23,20 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include <cstdio>
+#include <cstring>
 
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
 #include "adders.h"
 #include "netlist_utils.h"
-#include "partial_map.h"
 #include "read_xml_arch_file.h"
 #include "odin_globals.h"
-
 #include "multipliers.h"
 #include "subtractions.h"
 
 #include "vtr_memory.h"
-#include "vtr_util.h"
-
 #include "vtr_list.h"
 
 using vtr::t_linked_vptr;
@@ -57,7 +52,6 @@ int min_threshold_adder = 0;
 
 netlist_t* the_netlist;
 
-void record_add_distribution(nnode_t* node);
 void init_split_adder(nnode_t* node, nnode_t* ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index, int flag, netlist_t* netlist);
 static void cleanup_add_old_node(nnode_t* nodeo, netlist_t* netlist);
 
@@ -70,16 +64,6 @@ void init_add_distribution() {
 
     int len = hard_adders->inputs->size + hard_adders->inputs->next->size + 1;
     adder = (int*)vtr::calloc(len, sizeof(int));
-}
-
-/*---------------------------------------------------------------------------
- * (function: record_add_distribution)
- *-------------------------------------------------------------------------*/
-void record_add_distribution(nnode_t* node) {
-    oassert(hard_adders != NULL);
-    oassert(node != NULL);
-    adder[hard_adders->inputs->size] += 1;
-    return;
 }
 
 /*---------------------------------------------------------------------------
@@ -776,14 +760,6 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
         }
     }
 
-    for (i = offset; configuration.coarsen && i < count - 1; i++) {
-        for (j = 0; j < node[i]->num_output_pins - 1; j++) {
-            char* new_output_pin_name = (char*)vtr::malloc((strlen(node[i]->name) + 20) * sizeof(char)); /* 6 chars for pin idx */
-            odin_sprintf(new_output_pin_name, "%s[1]", node[i]->name);
-            node[i]->output_pins[1]->name = new_output_pin_name;
-        }
-    }
-
     /* Freeing the old node! */
     cleanup_add_old_node(nodeo, netlist);
 
@@ -1338,100 +1314,4 @@ static void cleanup_add_old_node(nnode_t* nodeo, netlist_t* netlist) {
 
     // CLEAN UP
     free_nnode(nodeo);
-}
-
-/**
- *-------------------------------------------------------------------------------------------
- * (function: check_missing_ports )
- * 
- * @brief check for missing ports such as carry-in/out in case of 
- * dealing with generated netlist from Yosys blif file.
- * 
- * @param node pointing to the netlist node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- *-----------------------------------------------------------------------------------------*/
-nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    nnode_t* new_node = NULL;
-    int num_input_port = node->num_input_port_sizes;
-
-    /* check for operations that has 2 operands */
-    if (num_input_port == 2) {
-        int i;
-        int in_port1_size = node->input_port_sizes[0];
-        int in_port2_size = node->input_port_sizes[1];
-        int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
-
-        new_node = make_3port_gate(node->type, in_port1_size, in_port2_size, 1,
-                                   out_port_size,
-                                   node, traverse_mark_number);
-
-        /* copy attributes */
-        copy_attribute(new_node->attributes, node->attributes);
-
-        for (i = 0; i < in_port1_size; i++) {
-            remap_pin_to_new_node(node->input_pins[i],
-                                  new_node,
-                                  i);
-        }
-
-        for (i = 0; i < in_port2_size; i++) {
-            remap_pin_to_new_node(node->input_pins[i + in_port1_size],
-                                  new_node,
-                                  i + in_port1_size);
-        }
-
-        /* adding a cin connected to GND */
-        npin_t* cin_pin = get_zero_pin(netlist);
-        cin_pin->type = INPUT;
-        cin_pin->mapping = vtr::strdup("cin");
-
-        add_input_pin_to_node(new_node, cin_pin, new_node->num_input_pins - 1);
-
-        // moving the output pins to the new node
-        for (i = 0; i < out_port_size; i++) {
-            if (i < node->num_output_pins) {
-                remap_pin_to_new_node(node->output_pins[i],
-                                      new_node,
-                                      i);
-            } else {
-                npin_t* new_pin1 = allocate_npin();
-                npin_t* new_pin2 = allocate_npin();
-                nnet_t* new_net = allocate_nnet();
-                new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, i);
-                /* hook the output pin into the node */
-                add_output_pin_to_node(new_node, new_pin1, i);
-                /* hook up new pin 1 into the new net */
-                add_driver_pin_to_net(new_net, new_pin1);
-                /* hook up the new pin 2 to this new net */
-                add_fanout_pin_to_net(new_net, new_pin2);
-            }
-        }
-
-        /**
-         * if number of output pins is greater than the max of input pins, 
-         * here we connect the exceeded pins to the GND 
-         */
-        for (i = out_port_size; i < node->num_output_pins; i++) {
-            /* creating a buf node */
-            nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
-            /* adding the GND input pin to the buf node */
-            add_input_pin_to_node(buf_node,
-                                  get_zero_pin(netlist),
-                                  0);
-            /* remapping the outpin to buf node */
-            remap_pin_to_new_node(node->output_pins[i],
-                                  buf_node,
-                                  0);
-        }
-
-        // CLEAN UP
-        free_nnode(node);
-    }
-    /* otherwise there is unary minus, like -A. no need for any change */
-    else if (num_input_port == 1) {
-        new_node = node;
-    }
-
-    return new_node;
 }

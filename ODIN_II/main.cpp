@@ -1,8 +1,10 @@
+#include <sys/resource.h>
+
 #include "odin_ii.h"
 #include "odin_types.h"
+
 #include "vtr_time.h"
 #include "vtr_version.h"
-#include <sys/resource.h>
 
 int main(int argc, char** argv) {
     vtr::ScopedFinishTimer t("Odin II");

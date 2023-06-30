@@ -1,3 +1,28 @@
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #ifndef ODIN_UTIL_H
 #define ODIN_UTIL_H
 
@@ -24,10 +49,8 @@ const char* ast_node_name_based_on_ids(ast_node_t* node);
 
 char* make_signal_name(char* signal_name, int bit);
 char* make_full_ref_name(const char* previous, const char* module_name, const char* module_instance_name, const char* signal_name, long bit);
-char* make_full_name_w_o_array_ref(const char* previous, const char* module_name, const char* module_instance_name);
 bool output_vector_headers_equal(char* buffer1, char* buffer2);
 
-char* twos_complement(char* str);
 int is_string_of_radix(char* string, int radix);
 char* convert_string_of_radix_to_bit_string(char* string, int radix, int binary_size);
 long convert_string_of_radix_to_long(char* orig_string, int radix);
@@ -40,7 +63,6 @@ char* convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 long int my_power(long int x, long int y);
 long int pow2(int to_the_power);
 
-char* make_string_based_on_id(nnode_t* node);
 std::string make_simple_name(char* input, const char* flatten_string, char flatten_char);
 
 void* my_malloc_struct(long bytes_to_alloc);
@@ -48,8 +70,6 @@ void* my_malloc_struct(long bytes_to_alloc);
 void reverse_string(char* token, int length);
 char* append_string(const char* string, const char* appendage, ...);
 char* string_to_upper(char* string);
-char* string_to_lower(char* string);
-std::string string_to_upper(std::string string);
 std::string string_to_lower(std::string string);
 
 int is_binary_string(char* string);
@@ -60,14 +80,8 @@ int is_dont_care_string(char* string);
 
 char* get_pin_name(char* name);
 char* get_port_name(char* name);
-char* get_hard_block_node_name(char* name);
 char* get_stripped_name(const char* subcircuit_name);
-char* retrieve_node_type_from_subckt_name(const char* subcircuit_name);
 int get_pin_number(char* name);
-short get_bit(char in);
-short get_bit(short in);
-char* search_replace(char* src, const char* sKey, const char* rKey, int flag);
-std::string find_substring(char* src, const char* sKey, int flag);
 
 void print_time(double time);
 double wall_time();
