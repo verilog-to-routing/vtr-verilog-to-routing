@@ -4287,12 +4287,6 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* N
             (*Directs)[i].switch_type = -1;
         }
 
-        /* Check that the direct chain connection is not zero in both direction */
-        if ((*Directs)[i].x_offset == 0 && (*Directs)[i].y_offset == 0 && (*Directs)[i].sub_tile_offset == 0) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                           "The x_offset, y_offset, z_offset are all zero, this is a length 0 direct chain connection.\n");
-        }
-
         (*Directs)[i].line = loc_data.line(Node);
         /* Should I check that the direct chain offset is not greater than the chip? How? */
 
