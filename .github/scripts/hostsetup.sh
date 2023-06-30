@@ -30,7 +30,7 @@ apt install -y \
   build-essential \
   capnproto \
   clang \
-  ctags \
+  exuberant-ctags \
   curl \
   doxygen \
   flex \
@@ -50,32 +50,32 @@ apt install -y \
   libxft-dev \
   libxml++2.6-dev \
   libreadline-dev \
-  python \
+  python2 \
   python3 \
   python3-dev \
   python3-pip \
   python3-virtualenv \
   python3-yaml \
-  tcl-dev \
+  tcllib \
+  tcl8.6-dev \
   libffi-dev \
   perl \
   texinfo \
   time \
   valgrind \
   zip \
-  qt5-default \
+  qtbase5-dev \
   uuid-dev \
   default-jdk \
   g++-9 \
   gcc-9 \
-  wget \
-  libtbb-dev
+  wget
 
 # installing the latest version of cmake
 apt install -y apt-transport-https ca-certificates gnupg
 wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc |apt-key add -
 
-apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+apt-add-repository 'deb https://apt.kitware.com/ubuntu/ jammy main'
 apt update
 apt install -y cmake
 

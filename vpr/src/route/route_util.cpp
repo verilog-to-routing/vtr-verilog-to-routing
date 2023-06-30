@@ -1,7 +1,7 @@
 #include "route_util.h"
 #include "globals.h"
 
-vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
+vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat) {
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -12,30 +12,28 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
     vtr::Matrix<float> usage({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
 
     //Collect all the in-use RR nodes
-    std::set<int> rr_nodes;
+    std::set<RRNodeId> rr_nodes;
     for (auto net : cluster_ctx.clb_nlist.nets()) {
-        t_trace* tptr = route_ctx.trace[net].head;
-        while (tptr != nullptr) {
-            int inode = tptr->index;
+        auto parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net, is_flat);
 
-            if (rr_graph.node_type(RRNodeId(inode)) == rr_type) {
-                rr_nodes.insert(inode);
+        if (!route_ctx.route_trees[parent_id])
+            continue;
+        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+            if (rr_graph.node_type(rt_node.inode) == rr_type) {
+                rr_nodes.insert(rt_node.inode);
             }
-            tptr = tptr->next;
         }
     }
 
     //Record number of used resources in each x/y channel
-    for (int inode : rr_nodes) {
-        RRNodeId rr_node = RRNodeId(inode);
-
+    for (RRNodeId rr_node : rr_nodes) {
         if (rr_type == CHANX) {
             VTR_ASSERT(rr_graph.node_type(rr_node) == CHANX);
             VTR_ASSERT(rr_graph.node_ylow(rr_node) == rr_graph.node_yhigh(rr_node));
 
             int y = rr_graph.node_ylow(rr_node);
             for (int x = rr_graph.node_xlow(rr_node); x <= rr_graph.node_xhigh(rr_node); ++x) {
-                usage[x][y] += route_ctx.rr_node_route_inf[inode].occ();
+                usage[x][y] += route_ctx.rr_node_route_inf[size_t(rr_node)].occ();
             }
         } else {
             VTR_ASSERT(rr_type == CHANY);
@@ -44,7 +42,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
 
             int x = rr_graph.node_xlow(rr_node);
             for (int y = rr_graph.node_ylow(rr_node); y <= rr_graph.node_yhigh(rr_node); ++y) {
-                usage[x][y] += route_ctx.rr_node_route_inf[inode].occ();
+                usage[x][y] += route_ctx.rr_node_route_inf[size_t(rr_node)].occ();
             }
         }
     }

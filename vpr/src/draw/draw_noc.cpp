@@ -14,7 +14,7 @@ void draw_noc(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
 
     // vector of routers in the NoC
-    vtr::vector<NocRouterId, NocRouter> router_list = noc_ctx.noc_model.get_noc_routers();
+    const vtr::vector<NocRouterId, NocRouter>& router_list = noc_ctx.noc_model.get_noc_routers();
 
     // a vector of colors to use for the NoC links, determines the colors used when drawing each link
     vtr::vector<NocLinkId, ezgl::color> noc_link_colors;
@@ -37,14 +37,17 @@ void draw_noc(ezgl::renderer* g) {
     // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anythign as the NoC tile wont be drawn
     /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capcity of a noc router tile
      */
-    int num_subtiles = device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type->capacity;
+    const auto& type = device_ctx.grid.get_physical_type({router_list.begin()->get_router_grid_position_x(),
+                                                          router_list.begin()->get_router_grid_position_y(),
+                                                          router_list.begin()->get_router_layer_position()});
+    int num_subtiles = type->capacity;
 
     if (num_subtiles == 0) {
         return;
     }
 
     // get the logical type of a noc router tile
-    t_logical_block_type_ptr noc_router_logical_type = pick_logical_type(device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type);
+    t_logical_block_type_ptr noc_router_logical_type = pick_logical_type(type);
 
     // Now construct the coordinates for the markers that represent the connections between links (relative to the noc router tile position)
     ezgl::rectangle noc_connection_marker_bbox = get_noc_connection_marker_bbox(noc_router_logical_type);
@@ -90,7 +93,7 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     }
 
     // get the list of links in the NoC
-    vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
+    const vtr::vector<NocLinkId, NocLink>& noc_link_list = noc_ctx.noc_model.get_noc_links();
 
     // store each links bandwidth usage
     double link_bandwidth_usage;
@@ -99,7 +102,7 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     ezgl::color current_noc_link_color;
 
     // now we need to determine the colors for each link
-    for (int link = 0; link < (int)link_list.size(); link++) {
+    for (int link = 0; link < (int)noc_link_list.size(); link++) {
         // get the current link id
         NocLinkId link_id(link);
 
@@ -108,7 +111,7 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
             // if we are here then the link was not updated previously, so assign the color here
 
             //get the current link bandwidth usage (ratio calculation)
-            link_bandwidth_usage = (link_list[link_id].get_bandwidth_usage()) / max_noc_link_bandwidth;
+            link_bandwidth_usage = (noc_link_list[link_id].get_bandwidth_usage()) / max_noc_link_bandwidth;
 
             // check if the link is being overused and if it is then cap it at 1.0
             if (link_bandwidth_usage > 1.0) {
@@ -215,10 +218,10 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // vector of routers in the NoC
-    vtr::vector<NocRouterId, NocRouter> router_list = noc_ctx.noc_model.get_noc_routers();
+    const vtr::vector<NocRouterId, NocRouter>& router_list = noc_ctx.noc_model.get_noc_routers();
 
     // get the links of the NoC
-    vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
+    const vtr::vector<NocLinkId, NocLink>& noc_link_list = noc_ctx.noc_model.get_noc_links();
 
     // set the width of the link
     g->set_line_width(2);
@@ -228,10 +231,12 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
     NocRouterId sink_router;
 
     // source router grid coordinates
+    int source_router_layer_position = 0;
     int source_router_x_position = 0;
     int source_router_y_position = 0;
 
     // sink router grid coordinates
+    int sink_router_layer_position = 0;
     int sink_router_x_position = 0;
     int sink_router_y_position = 0;
 
@@ -251,25 +256,27 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
     double noc_connection_marker_quarter_height = (noc_connection_marker_bbox.center().y - noc_connection_marker_bbox.bottom_left().y) / 2;
 
     // loop through the links and draw them
-    for (int link = 0; link < (int)link_list.size(); link++) {
+    for (int link = 0; link < (int)noc_link_list.size(); link++) {
         // get the converted link if
         NocLinkId link_id(link);
 
         // get the routers
-        source_router = link_list[link_id].get_source_router();
-        sink_router = link_list[link_id].get_sink_router();
+        source_router = noc_link_list[link_id].get_source_router();
+        sink_router = noc_link_list[link_id].get_sink_router();
 
         // calculate the grid positions of the source and sink routers
+        source_router_layer_position = router_list[source_router].get_router_layer_position();
         source_router_x_position = router_list[source_router].get_router_grid_position_x();
         source_router_y_position = router_list[source_router].get_router_grid_position_y();
 
+        sink_router_layer_position = router_list[sink_router].get_router_layer_position();
         sink_router_x_position = router_list[sink_router].get_router_grid_position_x();
         sink_router_y_position = router_list[sink_router].get_router_grid_position_y();
 
         // get the initial drawing coordinates of the noc link
         // it will be drawn from the center of two routers it connects
-        link_coords.start = draw_coords->get_absolute_clb_bbox(source_router_x_position, source_router_y_position, 0, noc_router_logical_block_type).center();
-        link_coords.end = draw_coords->get_absolute_clb_bbox(sink_router_x_position, sink_router_y_position, 0, noc_router_logical_block_type).center();
+        link_coords.start = draw_coords->get_absolute_clb_bbox(source_router_layer_position, source_router_x_position, source_router_y_position, 0, noc_router_logical_block_type).center();
+        link_coords.end = draw_coords->get_absolute_clb_bbox(sink_router_layer_position, sink_router_x_position, sink_router_y_position, 0, noc_router_logical_block_type).center();
 
         // determine the current noc link type
         link_type = determine_noc_link_type(link_coords.start, link_coords.end);

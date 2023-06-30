@@ -243,16 +243,16 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //and a sign
     for (i = 0; i < arch->num_switches; i++) {
         if (arch->Switches[i].type() == SwitchType::MUX) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->Switches[i].name.c_str());
         } else if (arch->Switches[i].type() == SwitchType::TRISTATE) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->Switches[i].name.c_str());
         } else if (arch->Switches[i].type() == SwitchType::SHORT) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->Switches[i].name.c_str());
         } else if (arch->Switches[i].type() == SwitchType::BUFFER) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->Switches[i].name.c_str());
         } else {
             VTR_ASSERT(arch->Switches[i].type() == SwitchType::PASS_GATE);
-            fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->Switches[i].name.c_str());
         }
         fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->Switches[i].R,
                 arch->Switches[i].Cin, arch->Switches[i].Cout);
@@ -281,11 +281,11 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
         if (seg.directionality == UNI_DIRECTIONAL) {
             //wire_switch == arch_opin_switch
             fprintf(Echo, "\t\t\t\ttype unidir mux_name %s\n",
-                    arch->Switches[seg.arch_wire_switch].name);
+                    arch->Switches[seg.arch_wire_switch].name.c_str());
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
-                    arch->Switches[seg.arch_wire_switch].name,
-                    arch->Switches[seg.arch_opin_switch].name);
+                    arch->Switches[seg.arch_wire_switch].name.c_str(),
+                    arch->Switches[seg.arch_opin_switch].name.c_str());
         }
 
         fprintf(Echo, "\t\t\t\tcb ");
@@ -321,6 +321,21 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
                 arch->Directs[i].sub_tile_offset);
     }
     fprintf(Echo, "*************************************************\n\n");
+
+    //Router Connection List
+    if (arch->noc != nullptr) {
+        fprintf(Echo, "*************************************************\n");
+        fprintf(Echo, "NoC Router Connection List:\n");
+
+        for (auto noc_router : arch->noc->router_list) {
+            fprintf(Echo, "NoC router %d is connected to:\t", noc_router.id);
+            for (auto noc_conn_id : noc_router.connection_list) {
+                fprintf(Echo, "%d\t", noc_conn_id);
+            }
+            fprintf(Echo, "\n");
+        }
+        fprintf(Echo, "*************************************************\n\n");
+    }
 
     //Architecture Power
     fprintf(Echo, "*************************************************\n");

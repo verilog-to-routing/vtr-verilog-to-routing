@@ -1,0 +1,8 @@
+/*_pass.sby
+/*_fail.sby
+/*_pass
+/*_fail
+/*.ok
+/*.fst
+/vhdlpsl[0-9][0-9]
+/vhdlpsl[0-9][0-9].sby

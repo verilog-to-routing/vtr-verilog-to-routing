@@ -9,7 +9,8 @@ module 	ode(clock,
 		y_pi_in, 
 		t_pi_in,
 		y_pi_out,
-		t_pi_out 
+		t_pi_out,
+		x1_control 
 );
 
 // SIGNAL DECLARATIONS

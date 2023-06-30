@@ -22,13 +22,12 @@
 #include "atom_netlist_utils.h"
 #include "netlist_writer.h"
 #include "vpr_utils.h"
-#include "route_tree_timing.h"
 
 #include "fasm_utils.h"
 
 namespace fasm {
 
-FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f) : strings_(strings), os_(f),
+FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool is_flat) : strings_(strings), os_(f),
     pb_graph_pin_lookup_from_index_by_type_(g_vpr_ctx.device().logical_block_types),
     fasm_lut(strings->intern_string(vtr::string_view("fasm_lut"))),
     fasm_features(strings->intern_string(vtr::string_view("fasm_features"))),
@@ -36,7 +35,8 @@ FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostre
     fasm_prefix(strings->intern_string(vtr::string_view("fasm_prefix"))),
     fasm_placeholders(strings->intern_string(vtr::string_view("fasm_placeholders"))),
     fasm_type(strings->intern_string(vtr::string_view("fasm_type"))),
-    fasm_mux(strings->intern_string(vtr::string_view("fasm_mux"))) {
+    fasm_mux(strings->intern_string(vtr::string_view("fasm_mux"))),
+    is_flat_(is_flat){
 }
 
 void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
@@ -57,10 +57,11 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     int x = place_ctx.block_locs[blk_id].loc.x;
     int y = place_ctx.block_locs[blk_id].loc.y;
+    int layer_num = place_ctx.block_locs[blk_id].loc.layer;
     int sub_tile = place_ctx.block_locs[blk_id].loc.sub_tile;
-    auto &grid_loc = device_ctx.grid[x][y];
-    physical_tile_ = grid_loc.type;
+    physical_tile_ = device_ctx.grid.get_physical_type({x, y, layer_num});
     logical_block_ = cluster_ctx.clb_nlist.block_type(blk_id);
+    const auto& grid_meta = device_ctx.grid.get_metadata({x, y, layer_num});
 
     blk_prefix_ = "";
     clb_prefix_ = "";
@@ -68,8 +69,8 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     // Get placeholder list (if provided)
     tags_.clear();
-    if(grid_loc.meta != nullptr && grid_loc.meta->has(fasm_placeholders)) {
-      auto* value = grid_loc.meta->get(fasm_placeholders);
+    if(grid_meta != nullptr && grid_meta->has(fasm_placeholders)) {
+      auto* value = grid_meta->get(fasm_placeholders);
       VTR_ASSERT(value != nullptr);
 
       // Parse placeholder definition
@@ -95,8 +96,8 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     }
 
     std::string grid_prefix;
-    if(grid_loc.meta != nullptr && grid_loc.meta->has(fasm_prefix)) {
-      auto* value = grid_loc.meta->get(fasm_prefix);
+    if(grid_meta != nullptr && grid_meta->has(fasm_prefix)) {
+      auto* value = grid_meta->get(fasm_prefix);
       VTR_ASSERT(value != nullptr);
       std::string prefix_unsplit = value->front().as_string().get(strings_);
       std::vector<std::string> fasm_prefixes = vtr::split(prefix_unsplit, " \t\n");
@@ -618,18 +619,19 @@ void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
 }
 
 void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
-  check_for_lut(atom);
-  check_for_param(atom);
+    check_for_lut(atom);
+    check_for_param(atom);
 }
 
-void FasmWriterVisitor::walk_route_tree(const RRGraphBuilder& rr_graph_builder, const t_rt_node *root) {
-    for (t_linked_rt_edge* edge = root->u.child_list; edge != nullptr; edge = edge->next) {
-        auto *meta = vpr::rr_edge_metadata(rr_graph_builder, root->inode, edge->child->inode, edge->iswitch, fasm_features);
+void FasmWriterVisitor::walk_route_tree(const RRGraphBuilder& rr_graph_builder, const RouteTreeNode& root) {
+    for(auto& child: root.child_nodes()){
+        auto* meta = vpr::rr_edge_metadata(rr_graph_builder, size_t(root.inode), size_t(child.inode), size_t(child.parent_switch), fasm_features);
+
         if(meta != nullptr) {
             output_fasm_features(meta->as_string().get(strings_), "", "");
         }
 
-        walk_route_tree(rr_graph_builder, edge->child);
+        walk_route_tree(rr_graph_builder, child);
     }
 }
 
@@ -637,12 +639,9 @@ void FasmWriterVisitor::walk_routing() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     const auto& device_ctx = g_vpr_ctx.device();
 
-    for(const auto &trace : route_ctx.trace) {
-      t_trace *head = trace.head;
-      if (!head) continue;
-      t_rt_node* root = traceback_to_route_tree(head);
-      walk_route_tree(device_ctx.rr_graph_builder, root);
-      free_route_tree(root);
+    for(const auto &tree : route_ctx.route_trees) {
+        if (!tree) continue;
+        walk_route_tree(device_ctx.rr_graph_builder, tree.value().root());
     }
 }
 

@@ -35,9 +35,9 @@ Koios benchmarks are tested by the following regression tests in VTR:
 |---------------|----------------------|---------------|-------------------|
 | Strong        | A test circuit. Goal is to check the architecture files.   | tasks/regression_tests/vtr_reg_strong/koios | 6 seconds |
 | Strong        | Same test circuit without enabling complex dsp features    | tasks/regression_tests/vtr_reg_strong/koios_no_complex_dsp | 6 seconds|
-| Nightly       | Small-to-medium sized designs from Koios run with one arch file                           | tasks/regression_tests/vtr_reg_nightly_test4/koios | 2 hours with -j3 |
-| Nightly       | Small-to-medium sized designs from Koios run with an arch file without enabling complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test4/koios_no_complex_dsp | 2 hours with -j3 |
-| Nightly       | A small design from Koios run with various flavors of the arch file that enables complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test4/koios_multi_arch | 2 hours with -j3 |
+| Nightly       | Small-to-medium sized designs from Koios run with one arch file                           | tasks/regression_tests/vtr_reg_nightly_test6/koios | 2 hours with -j3 |
+| Nightly       | Small-to-medium sized designs from Koios run with an arch file without enabling complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test6/koios_no_complex_dsp | 2 hours with -j3 |
+| Nightly       | A small design from Koios run with various flavors of the arch file that enables complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test6/koios_multi_arch | 2 hours with -j3 |
 | Weekly        | Large designs from Koios run with one arch file                           | tasks/regression_tests/vtr_reg_weekly/koios | a little over 24 hours with -j4 |
 | Weekly        | Large designs from Koios run with an arch file without enabling complex dsp features  | tasks/regression_tests/vtr_reg_weekly/koios_no_complex_dsp | a little over 24 hours with -j4 |
 

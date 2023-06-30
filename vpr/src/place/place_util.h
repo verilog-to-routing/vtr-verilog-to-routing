@@ -37,8 +37,9 @@
  *   @param MAX_INV_TIMING_COST Stops inverse timing cost from going to infinity
  *              with very lax timing constraints, which avoids multiplying by a
  *              gigantic timing_cost_norm when auto-normalizing. The exact value
- *              of this cost has relatively little impact, but should not be large
- *              enough to be on the order of timing costs for normal constraints.
+ *              of this cost has relatively little impact, but should be large
+ *              enough to not affect the timing costs computatation for normal 
+ *              constraints.
  *
  *   @param place_algorithm Determines how the member values are updated upon
  *              each temperature change during the placer annealing process.
@@ -50,6 +51,10 @@ class t_placer_costs {
     double timing_cost = 0.;
     double bb_cost_norm = 0.;
     double timing_cost_norm = 0.;
+    double noc_aggregate_bandwidth_cost = 0.;
+    double noc_aggregate_bandwidth_cost_norm = 0.;
+    double noc_latency_cost = 0.;
+    double noc_latency_cost_norm = 0.;
 
   public: //Constructor
     t_placer_costs(t_place_algorithm algo)
@@ -60,7 +65,7 @@ class t_placer_costs {
     void update_norm_factors();
 
   private:
-    double MAX_INV_TIMING_COST = 1.e9;
+    double MAX_INV_TIMING_COST = 1.e12;
     t_place_algorithm place_algorithm;
 };
 
@@ -128,13 +133,15 @@ class t_annealing_state {
     float UPPER_RLIM;
     float FINAL_RLIM = 1.;
     float INVERSE_DELTA_RLIM;
+    int NUM_LAYERS = 1;
 
   public: //Constructor
     t_annealing_state(const t_annealing_sched& annealing_sched,
                       float first_t,
                       float first_rlim,
                       int first_move_lim,
-                      float first_crit_exponent);
+                      float first_crit_exponent,
+                      int num_layers);
 
   public: //Mutator
     bool outer_loop_update(float success_rate,
@@ -224,10 +231,13 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
 
 /// @brief check if a specified location is within the device grid
-inline bool is_loc_on_chip(int x, int y) {
-    auto& device_ctx = g_vpr_ctx.device();
+inline bool is_loc_on_chip(t_physical_tile_loc loc) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    int x = loc.x;
+    int y = loc.y;
+    int layer_num = loc.layer_num;
     //return false if the location is not within the chip
-    return (x >= 0 && x < int(device_ctx.grid.width()) && y >= 0 && y < int(device_ctx.grid.height()));
+    return (layer_num >= 0 && layer_num < int(grid.get_num_layers()) && x >= 0 && x < int(grid.width()) && y >= 0 && y < int(grid.height()));
 }
 
 /**

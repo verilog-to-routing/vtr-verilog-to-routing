@@ -1,20 +1,18 @@
 #include "router_delay_profiling.h"
 #include "globals.h"
-#include "route_tree_type.h"
 #include "route_common.h"
 #include "route_timing.h"
-#include "route_tree_timing.h"
 #include "route_export.h"
+#include "route_tree.h"
 #include "rr_graph.h"
 #include "vtr_time.h"
 #include "draw.h"
 
-static t_rt_node* setup_routing_resources_no_net(int source_node);
-
-RouterDelayProfiler::RouterDelayProfiler(
-    const RouterLookahead* lookahead,
-    bool is_flat)
-    : router_(
+RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
+                                         const RouterLookahead* lookahead,
+                                         bool is_flat)
+    : net_list_(net_list)
+    , router_(
           g_vpr_ctx.device().grid,
           *lookahead,
           g_vpr_ctx.device().rr_graph.rr_nodes(),
@@ -22,7 +20,8 @@ RouterDelayProfiler::RouterDelayProfiler(
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
-          is_flat) {}
+          is_flat)
+    , is_flat_(is_flat) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
@@ -43,8 +42,8 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     //rr_graph.node_ylow(RRNodeId(sink_node)),
     //rr_node_arch_name(sink_node).c_str()));
 
-    t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node, 0, &router_);
+    RouteTree tree((RRNodeId(source_node)));
+    enable_router_debug(router_opts, ParentNetId(), sink_node, 0, &router_);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
@@ -61,30 +60,35 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     cost_params.astar_fac = router_opts.router_profiler_astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    route_budgets budgeting_inf;
+    route_budgets budgeting_inf(net_list_, is_flat_);
 
     router_.clear_modified_rr_node_info();
     RouterStats router_stats;
 
     bool found_path;
     t_heap cheapest;
+    ConnectionParameters conn_params(ParentNetId::INVALID(),
+                                     -1,
+                                     false,
+                                     std::unordered_map<RRNodeId, int>());
     std::tie(found_path, cheapest) = router_.timing_driven_route_connection_from_route_tree(
-        rt_root,
+        tree.root(),
         sink_node,
         cost_params,
         bounding_box,
-        router_stats);
+        router_stats,
+        conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr);
+        vtr::optional<const RouteTreeNode&> rt_node_of_sink;
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, is_flat_);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
 
-        VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= rr_graph.node_capacity(RRNodeId(rt_root->inode)), "SOURCE should never be congested");
-        free_route_tree(rt_root);
+        VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[size_t(tree.root().inode)].occ() <= rr_graph.node_capacity(tree.root().inode), "SOURCE should never be congested");
     }
 
     //VTR_LOG("Explored %zu of %zu (%.2f) RR nodes: path delay %g\n", router_stats.heap_pops, device_ctx.rr_nodes.size(), float(router_stats.heap_pops) / device_ctx.rr_nodes.size(), *net_delay);
@@ -106,7 +110,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
 
     std::vector<float> path_delays_to(device_ctx.rr_graph.num_nodes(), std::numeric_limits<float>::quiet_NaN());
 
-    t_rt_node* rt_root = setup_routing_resources_no_net(src_rr_node);
+    RouteTree tree((RRNodeId(src_rr_node)));
 
     t_bb bounding_box;
     bounding_box.xmin = 0;
@@ -118,8 +122,12 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
-
-    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
+    /* This function is called during placement. Thus, the flat routing option should be disabled. */
+    //TODO: Placement is run with is_flat=false. However, since is_flat is passed, det_routing_arch should
+    //be also passed
+    VTR_ASSERT(is_flat == false);
+    t_det_routing_arch det_routing_arch;
+    auto router_lookahead = make_router_lookahead(det_routing_arch, e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                   /*segment_inf=*/{},
                                                   is_flat);
@@ -133,13 +141,12 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
         routing_ctx.rr_node_route_inf,
         is_flat);
     RouterStats router_stats;
-
-    std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
+    ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
+    std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
                                                                                                       cost_params,
                                                                                                       bounding_box,
-                                                                                                      router_stats);
-
-    free_route_tree(rt_root);
+                                                                                                      router_stats,
+                                                                                                      conn_params);
 
     VTR_ASSERT(shortest_paths.size() == device_ctx.rr_graph.num_nodes());
     for (int sink_rr_node = 0; sink_rr_node < (int)device_ctx.rr_graph.num_nodes(); ++sink_rr_node) {
@@ -151,14 +158,13 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
             VTR_ASSERT(shortest_paths[sink_rr_node].index == sink_rr_node);
 
             //Build the routing tree to get the delay
-            rt_root = setup_routing_resources_no_net(src_rr_node);
-            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], OPEN, nullptr);
+            tree = RouteTree(RRNodeId(src_rr_node));
+            vtr::optional<const RouteTreeNode&> rt_node_of_sink;
+            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&shortest_paths[sink_rr_node], OPEN, nullptr, router_opts.flat_routing);
 
-            VTR_ASSERT(rt_node_of_sink->inode == sink_rr_node);
+            VTR_ASSERT(rt_node_of_sink->inode == RRNodeId(sink_rr_node));
 
             path_delays_to[sink_rr_node] = rt_node_of_sink->Tdel;
-
-            free_route_tree(rt_root);
         }
     }
     router.reset_path_costs();
@@ -192,26 +198,13 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
     return path_delays_to;
 }
 
-static t_rt_node* setup_routing_resources_no_net(int source_node) {
-    /* Build and return a partial route tree from the legal connections from last iteration.
-     * along the way do:
-     * 	update pathfinder costs to be accurate to the partial route tree
-     *	update the net's traceback to be accurate to the partial route tree
-     * 	find and store the pins that still need to be reached in incremental_rerouting_resources.remaining_targets
-     * 	find and store the rt nodes that have been reached in incremental_rerouting_resources.reached_rt_sinks
-     *	mark the rr_node sinks as targets to be reached */
-
-    t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
-
-    return rt_root;
-}
-
 void alloc_routing_structs(t_chan_width chan_width,
                            const t_router_opts& router_opts,
                            t_det_routing_arch* det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,
                            const t_direct_inf* directs,
-                           const int num_directs) {
+                           const int num_directs,
+                           bool is_flat) {
     int warnings;
     t_graph_type graph_type;
 
@@ -227,21 +220,16 @@ void alloc_routing_structs(t_chan_width chan_width,
                     device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
-                    device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
                     directs, num_directs,
-                    &warnings);
+                    &warnings,
+                    is_flat);
 
     alloc_and_load_rr_node_route_structs();
-
-    alloc_route_tree_timing_structs();
 }
 
 void free_routing_structs() {
     free_route_structs();
-    free_trace_structs();
-
-    free_route_tree_timing_structs();
 }

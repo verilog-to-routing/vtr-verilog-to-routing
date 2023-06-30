@@ -22,15 +22,14 @@ class GridTileLookup {
         max_placement_locations.resize(device_ctx.logical_block_types.size());
 
         for (const auto& type : device_ctx.logical_block_types) {
-            vtr::NdMatrix<int, 2> type_count({device_ctx.grid.width(), device_ctx.grid.height()});
+            int num_layers = device_ctx.grid.get_num_layers();
+            vtr::NdMatrix<int, 3> type_count({static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});
             fill_type_matrix(&type, type_count);
             block_type_matrices.push_back(type_count);
         }
     }
 
-    vtr::NdMatrix<int, 2>& get_type_grid(t_logical_block_type_ptr block_type);
-
-    void fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 2>& type_count);
+    void fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 3>& type_count);
 
     int region_tile_count(const Region& reg, t_logical_block_type_ptr block_type);
 
@@ -46,7 +45,7 @@ class GridTileLookup {
      * give the number of placement locations that are at, or above and to the right of the given [x,y] for
      * the given block type.
      */
-    std::vector<vtr::NdMatrix<int, 2>> block_type_matrices;
+    std::vector<vtr::NdMatrix<int, 3>> block_type_matrices;
 
     /*
      * Stores the total number of placement locations (i.e. compatible subtiles) for each block type.

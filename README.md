@@ -6,7 +6,7 @@
 The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide an open-source framework for conducting FPGA architecture and CAD research and development.
 The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
 It then performs:
-  * Elaboration & Synthesis (ODIN II)
+  * Elaboration, Synthesis & Partial Mapping (PARMYS)
   * Logic Optimization & Technology Mapping (ABC)
   * Packing, Placement, Routing & Timing Analysis (VPR)
 

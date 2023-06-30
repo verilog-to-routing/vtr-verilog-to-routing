@@ -22,7 +22,12 @@
 static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_delays& src_opin_delays);
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays);
 
-static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> start);
+static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev);
+
+static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                    util::t_ipin_primitive_sink_delays& pin_delays,
+                                    t_physical_tile_type_ptr physical_tile,
+                                    RRNodeId starting_node_id);
 
 // Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
 // These are used when finding all the delays to get to the IPINs of all the different tile types
@@ -300,72 +305,80 @@ template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                                              std::vector<PQ_Entry_Base_Cost>,
                                                              std::greater<PQ_Entry_Base_Cost>>* pq);
 
-t_src_opin_delays compute_router_src_opin_lookahead() {
+t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
     t_src_opin_delays src_opin_delays;
 
-    src_opin_delays.resize(device_ctx.physical_tile_types.size());
+    src_opin_delays.resize(device_ctx.grid.get_num_layers());
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        src_opin_delays[layer_num].resize(device_ctx.physical_tile_types.size());
+    }
 
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
-    for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
-        for (e_rr_type rr_type : {SOURCE, OPIN}) {
-            vtr::Point<int> sample_loc(-1, -1);
-
-            size_t num_sampled_locs = 0;
-            bool ptcs_with_no_delays = true;
-            while (ptcs_with_no_delays) { //Haven't found wire connected to ptc
-                ptcs_with_no_delays = false;
-
-                sample_loc = pick_sample_tile(&device_ctx.physical_tile_types[itile], sample_loc);
-
-                if (sample_loc.x() == -1 && sample_loc.y() == -1) {
-                    //No untried instances of the current tile type left
-                    VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
-                                 (num_sampled_locs == 0) ? "" : "more ",
-                                 rr_node_typename[rr_type],
-                                 device_ctx.physical_tile_types[itile].name);
-                    break;
-                }
-
-                //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
-
-                const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.x(), sample_loc.y(), rr_type);
-                for (RRNodeId node_id : rr_nodes_at_loc) {
-                    int ptc = rr_graph.node_ptc_num(node_id);
-                    // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                    if (!is_node_on_tile(&device_ctx.physical_tile_types[itile],
-                                         rr_type,
-                                         ptc)) {
-                        continue;
-                    }
-
-                    if (ptc >= int(src_opin_delays[itile].size())) {
-                        src_opin_delays[itile].resize(ptc + 1); //Inefficient but functional...
-                    }
-
-                    //Find the wire types which are reachable from inode and record them and
-                    //the cost to reach them
-                    dijkstra_flood_to_wires(itile, node_id, src_opin_delays);
-
-                    if (src_opin_delays[itile][ptc].empty()) {
-                        VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d)\n",
-                                       rr_node_typename[rr_type],
-                                       rr_node_arch_name(size_t(node_id)).c_str(),
-                                       sample_loc.x(),
-                                       sample_loc.y());
-
-                        ptcs_with_no_delays = true;
-                    }
-                }
-
-                ++num_sampled_locs;
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
+            if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], layer_num) == 0) {
+                continue;
             }
-            if (ptcs_with_no_delays) {
-                VPR_ERROR(VPR_ERROR_ROUTE, "Some SOURCE/OPINs have no reachable wires\n");
+            for (e_rr_type rr_type : {SOURCE, OPIN}) {
+                t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
+
+                size_t num_sampled_locs = 0;
+                bool ptcs_with_no_delays = true;
+                while (ptcs_with_no_delays) { //Haven't found wire connected to ptc
+                    ptcs_with_no_delays = false;
+
+                    sample_loc = pick_sample_tile(layer_num, &device_ctx.physical_tile_types[itile], sample_loc);
+
+                    if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
+                        //No untried instances of the current tile type left
+                        VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
+                                     (num_sampled_locs == 0) ? "" : "more ",
+                                     rr_node_typename[rr_type],
+                                     device_ctx.physical_tile_types[itile].name);
+                        break;
+                    }
+
+                    //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
+                    const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num, sample_loc.x, sample_loc.y, rr_type);
+                    for (RRNodeId node_id : rr_nodes_at_loc) {
+                        int ptc = rr_graph.node_ptc_num(node_id);
+                        // For the time being, we decide to not let the lookahead explore the node inside the clusters
+                        if (!is_inter_cluster_node(&device_ctx.physical_tile_types[itile],
+                                                   rr_type,
+                                                   ptc)) {
+                            continue;
+                        }
+
+                        if (ptc >= int(src_opin_delays[layer_num][itile].size())) {
+                            src_opin_delays[layer_num][itile].resize(ptc + 1); //Inefficient but functional...
+                        }
+
+                        //Find the wire types which are reachable from inode and record them and
+                        //the cost to reach them
+                        dijkstra_flood_to_wires(itile, node_id, src_opin_delays);
+
+                        if (src_opin_delays[layer_num][itile][ptc].empty()) {
+                            VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d)\n",
+                                           rr_node_typename[rr_type],
+                                           rr_node_arch_name(size_t(node_id), is_flat).c_str(),
+                                           sample_loc.x,
+                                           sample_loc.y,
+                                           is_flat);
+
+                            ptcs_with_no_delays = true;
+                        }
+                    }
+
+                    ++num_sampled_locs;
+                }
+                if (ptcs_with_no_delays) {
+                    VPR_ERROR(VPR_ERROR_ROUTE, "Some SOURCE/OPINs have no reachable wires\n");
+                }
             }
         }
     }
@@ -380,34 +393,42 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
 
     t_chan_ipins_delays chan_ipins_delays;
 
-    chan_ipins_delays.resize(device_ctx.physical_tile_types.size());
+    chan_ipins_delays.resize(device_ctx.grid.get_num_layers());
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        chan_ipins_delays[layer_num].resize(device_ctx.physical_tile_types.size());
+    }
 
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
-    for (auto tile_type : device_ctx.physical_tile_types) {
-        vtr::Point<int> sample_loc(-1, -1);
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (auto tile_type : device_ctx.physical_tile_types) {
+            if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
+                continue;
+            }
+            t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
 
-        sample_loc = pick_sample_tile(&tile_type, sample_loc);
+            sample_loc = pick_sample_tile(layer_num, &tile_type, sample_loc);
 
-        if (sample_loc.x() == -1 && sample_loc.y() == -1) {
-            //No untried instances of the current tile type left
-            VTR_LOG_WARN("Found no sample locations for %s\n",
-                         tile_type.name);
-            continue;
-        }
+            if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
+                //No untried instances of the current tile type left
+                VTR_LOG_WARN("Found no sample locations for %s\n",
+                             tile_type.name);
+                continue;
+            }
 
-        int min_x = std::max(0, sample_loc.x() - X_OFFSET);
-        int min_y = std::max(0, sample_loc.y() - Y_OFFSET);
-        int max_x = std::min(int(device_ctx.grid.width()), sample_loc.x() + X_OFFSET);
-        int max_y = std::min(int(device_ctx.grid.height()), sample_loc.y() + Y_OFFSET);
+            int min_x = std::max(0, sample_loc.x - X_OFFSET);
+            int min_y = std::max(0, sample_loc.y - Y_OFFSET);
+            int max_x = std::min(int(device_ctx.grid.width()), sample_loc.x + X_OFFSET);
+            int max_y = std::min(int(device_ctx.grid.height()), sample_loc.y + Y_OFFSET);
 
-        for (int ix = min_x; ix < max_x; ix++) {
-            for (int iy = min_y; iy < max_y; iy++) {
-                for (auto rr_type : {CHANX, CHANY}) {
-                    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(ix, iy, rr_type)) {
-                        //Find the IPINs which are reachable from the wires within the bounding box
-                        //around the selected tile location
-                        dijkstra_flood_to_ipins(node_id, chan_ipins_delays);
+            for (int ix = min_x; ix < max_x; ix++) {
+                for (int iy = min_y; iy < max_y; iy++) {
+                    for (auto rr_type : {CHANX, CHANY}) {
+                        for (const RRNodeId& node_id : node_lookup.find_channel_nodes(sample_loc.layer_num, ix, iy, rr_type)) {
+                            //Find the IPINs which are reachable from the wires within the bounding box
+                            //around the selected tile location
+                            dijkstra_flood_to_ipins(node_id, chan_ipins_delays);
+                        }
                     }
                 }
             }
@@ -415,6 +436,32 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     }
 
     return chan_ipins_delays;
+}
+
+t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                                         t_physical_tile_type_ptr physical_tile,
+                                                         int layer,
+                                                         int x,
+                                                         int y) {
+    auto tile_pins_vec = get_flat_tile_pins(physical_tile);
+    int max_ptc_num = get_tile_pin_max_ptc(physical_tile, true);
+
+    t_ipin_primitive_sink_delays pin_delays;
+    pin_delays.resize(max_ptc_num);
+
+    for (int pin_physical_num : tile_pins_vec) {
+        RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
+                                                  physical_tile,
+                                                  layer,
+                                                  x,
+                                                  y,
+                                                  pin_physical_num);
+        VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
+
+        run_intra_tile_dijkstra(rr_graph, pin_delays, physical_tile, pin_node_id);
+    }
+
+    return pin_delays;
 }
 
 } // namespace util
@@ -441,6 +488,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
     root.node = node;
 
     int ptc = rr_graph.node_ptc_num(node);
+    int node_layer_num = rr_graph.node_layer(node);
 
     /*
      * Perform Djikstra from the SOURCE/OPIN of interest, stopping at the the first
@@ -487,12 +535,12 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
             }
 
             //Keep costs of the best path to reach each wire type
-            if (!src_opin_delays[itile][ptc].count(seg_index)
-                || curr.delay < src_opin_delays[itile][ptc][seg_index].delay) {
-                src_opin_delays[itile][ptc][seg_index].wire_rr_type = curr_rr_type;
-                src_opin_delays[itile][ptc][seg_index].wire_seg_index = seg_index;
-                src_opin_delays[itile][ptc][seg_index].delay = curr.delay;
-                src_opin_delays[itile][ptc][seg_index].congestion = curr.congestion;
+            if (!src_opin_delays[node_layer_num][itile][ptc].count(seg_index)
+                || curr.delay < src_opin_delays[node_layer_num][itile][ptc][seg_index].delay) {
+                src_opin_delays[node_layer_num][itile][ptc][seg_index].wire_rr_type = curr_rr_type;
+                src_opin_delays[node_layer_num][itile][ptc][seg_index].wire_seg_index = seg_index;
+                src_opin_delays[node_layer_num][itile][ptc][seg_index].delay = curr.delay;
+                src_opin_delays[node_layer_num][itile][ptc][seg_index].congestion = curr.congestion;
             }
 
         } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
@@ -506,10 +554,18 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)].type;
-                if (!is_node_on_tile(physical_type,
-                                     rr_graph.node_type(next_node),
-                                     rr_graph.node_ptc_num(next_node))) {
+                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(next_node),
+                                                                                            rr_graph.node_ylow(next_node),
+                                                                                            rr_graph.node_layer(next_node)});
+                if (!is_inter_cluster_node(physical_type,
+                                           rr_graph.node_type(next_node),
+                                           rr_graph.node_ptc_num(next_node))) {
+                    // Don't go inside the clusters
+                    continue;
+                }
+
+                if (rr_graph.node_layer(curr.node) != node_layer_num) {
+                    //Don't change the layer
                     continue;
                 }
 
@@ -549,6 +605,8 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
     root.node = node;
     root.level = 0;
 
+    int root_layer = rr_graph.node_layer(node);
+
     /*
      * Perform Djikstra from the CHAN of interest, stopping at the the first
      * reachable IPIN
@@ -577,21 +635,22 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
         if (curr_rr_type == IPIN) {
             int node_x = rr_graph.node_xlow(curr.node);
             int node_y = rr_graph.node_ylow(curr.node);
+            int node_layer = rr_graph.node_layer(curr.node);
 
-            auto tile_type = device_ctx.grid[node_x][node_y].type;
+            auto tile_type = device_ctx.grid.get_physical_type({node_x, node_y, node_layer});
             int itile = tile_type->index;
 
             int ptc = rr_graph.node_ptc_num(curr.node);
 
-            if (ptc >= int(chan_ipins_delays[itile].size())) {
-                chan_ipins_delays[itile].resize(ptc + 1); //Inefficient but functional...
+            if (ptc >= int(chan_ipins_delays[root_layer][itile].size())) {
+                chan_ipins_delays[root_layer][itile].resize(ptc + 1); //Inefficient but functional...
             }
 
             site_pin_delay = std::min(curr.delay, site_pin_delay);
             //Keep costs of the best path to reach each wire type
-            chan_ipins_delays[itile][ptc].wire_rr_type = curr_rr_type;
-            chan_ipins_delays[itile][ptc].delay = site_pin_delay;
-            chan_ipins_delays[itile][ptc].congestion = curr.congestion;
+            chan_ipins_delays[root_layer][itile][ptc].wire_rr_type = curr_rr_type;
+            chan_ipins_delays[root_layer][itile][ptc].delay = site_pin_delay;
+            chan_ipins_delays[root_layer][itile][ptc].congestion = curr.congestion;
         } else if (curr_rr_type == CHANX || curr_rr_type == CHANY) {
             if (curr.level >= MAX_EXPANSION_LEVEL) {
                 continue;
@@ -607,6 +666,11 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
 
+                if (rr_graph.node_layer(next_node) != root_layer) {
+                    //Don't change the layer
+                    continue;
+                }
+
                 t_pq_entry next;
                 next.congestion = new_cong; //Of current node
                 next.delay = new_delay;     //To reach next node
@@ -621,18 +685,21 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
     }
 }
 
-static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> prev) {
+static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev) {
     //Very simple for now, just pick the fist matching tile found
-    vtr::Point<int> loc(OPEN, OPEN);
+    t_physical_tile_loc loc(OPEN, OPEN, OPEN);
 
-    //VTR_LOG("Prev: %d,%d\n", prev.x(), prev.y());
+    //VTR_LOG("Prev: %d,%d\n", prev.x, prev.y);
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
-    int y_init = prev.y() + 1; //Start searching next element above prev
+    int y_init = prev.y + 1; //Start searching next element above prev
 
-    for (int x = prev.x(); x < int(grid.width()); ++x) {
+    if (device_ctx.grid.num_instances(tile_type, layer_num) == 0) {
+        return loc;
+    }
+    for (int x = prev.x; x < int(grid.width()); ++x) {
         if (x < 0) continue;
 
         //VTR_LOG("  x: %d\n", x);
@@ -641,20 +708,100 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
             if (y < 0) continue;
 
             //VTR_LOG("   y: %d\n", y);
-            if (grid[x][y].type == tile_type) {
-                loc.set_x(x);
-                loc.set_y(y);
+            if (grid.get_physical_type(t_physical_tile_loc(x, y, layer_num)) == tile_type) {
+                loc.x = x;
+                loc.y = y;
+                loc.layer_num = layer_num;
                 break;
             }
         }
 
-        if (loc.x() != OPEN && loc.y() != OPEN) {
+        if (loc.x != OPEN && loc.y != OPEN && loc.layer_num != OPEN) {
             break;
         } else {
             y_init = 0; //Prepare to search next column
         }
     }
-    //VTR_LOG("Next: %d,%d\n", loc.x(), loc.y());
+
+    //VTR_LOG("Next: %d,%d\n", loc.x, loc.y);
 
     return loc;
+}
+
+static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                    util::t_ipin_primitive_sink_delays& pin_delays,
+                                    t_physical_tile_type_ptr /*physical_tile*/,
+                                    RRNodeId starting_node_id) {
+    // device_ctx should not be used to access rr_graph, since the graph get from device_ctx is not the intra-tile graph
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    vtr::vector<RRNodeId, bool> node_expanded;
+    node_expanded.resize(rr_graph.num_nodes());
+    std::fill(node_expanded.begin(), node_expanded.end(), false);
+
+    vtr::vector<RRNodeId, float> node_seen_cost;
+    node_seen_cost.resize(rr_graph.num_nodes());
+    std::fill(node_seen_cost.begin(), node_seen_cost.end(), -1.);
+
+    struct t_pq_entry {
+        float delay;
+        float congestion;
+        RRNodeId node;
+
+        bool operator<(const t_pq_entry& rhs) const {
+            return this->delay < rhs.delay;
+        }
+
+        bool operator>(const t_pq_entry& rhs) const {
+            return this->delay > rhs.delay;
+        }
+    };
+
+    std::priority_queue<t_pq_entry, std::vector<t_pq_entry>, std::greater<t_pq_entry>> pq;
+
+    t_pq_entry root;
+    root.congestion = 0.;
+    root.delay = 0.;
+    root.node = starting_node_id;
+
+    int root_ptc = rr_graph.node_ptc_num(root.node);
+    std::unordered_map<int, util::Cost_Entry>& starting_pin_delay_map = pin_delays.at(root_ptc);
+    pq.push(root);
+
+    while (!pq.empty()) {
+        t_pq_entry curr = pq.top();
+        pq.pop();
+        if (node_expanded[curr.node]) {
+            continue;
+        } else {
+            node_expanded[curr.node] = true;
+        }
+        auto curr_type = rr_graph.node_type(curr.node);
+        VTR_ASSERT(curr_type != t_rr_type::CHANX && curr_type != t_rr_type::CHANY);
+        if (curr_type != SINK) {
+            for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
+                RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
+                auto cost_index = rr_graph.node_cost_index(next_node);
+                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
+
+                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
+                float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost;
+
+                t_pq_entry next;
+                next.congestion = curr.congestion + incr_cong; //Of current node
+                next.delay = curr.delay + incr_delay;          //To reach next node
+                next.node = next_node;
+
+                if (node_seen_cost[next_node] < 0. || node_seen_cost[next_node] > next.delay) {
+                    node_seen_cost[next_node] = next.delay;
+                    pq.push(next);
+                }
+            }
+        } else {
+            int curr_ptc = rr_graph.node_ptc_num(curr.node);
+            if (starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() || starting_pin_delay_map.at(curr_ptc).delay > curr.delay) {
+                starting_pin_delay_map[curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
+            }
+        }
+    }
 }

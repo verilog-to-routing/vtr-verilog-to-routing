@@ -1,3 +1,4 @@
+#include <tuple>
 #include "catch2/catch_test_macros.hpp"
 
 #include "vpr_api.h"
@@ -5,7 +6,6 @@
 #include "globals.h"
 #include "net_delay.h"
 #include "place_and_route.h"
-#include "route_tree_timing.h"
 #include "timing_place_lookup.h"
 
 static constexpr const char kArchFile[] = "../../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml";
@@ -14,11 +14,15 @@ static constexpr int kMaxHops = 10;
 namespace {
 
 // Route from source_node to sink_node, returning either the delay, or infinity if unroutable.
-static float do_one_route(int source_node, int sink_node, const t_router_opts& router_opts, const std::vector<t_segment_inf>& segment_inf) {
-    auto& device_ctx = g_vpr_ctx.device();
+static float do_one_route(int source_node,
+                          int sink_node,
+                          const t_det_routing_arch& det_routing_arch,
+                          const t_router_opts& router_opts,
+                          const std::vector<t_segment_inf>& segment_inf) {
     bool is_flat = router_opts.flat_routing;
+    auto& device_ctx = g_vpr_ctx.device();
 
-    t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
+    RouteTree tree((RRNodeId(source_node)));
 
     // Update base costs according to fanout and criticality rules.
     update_rr_base_costs(1);
@@ -35,15 +39,16 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    route_budgets budgeting_inf;
+    const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    route_budgets budgeting_inf(net_list, is_flat);
 
     RouterStats router_stats;
-    auto router_lookahead = make_router_lookahead(
-        router_opts.lookahead_type,
-        router_opts.write_router_lookahead,
-        router_opts.read_router_lookahead,
-        segment_inf,
-        is_flat);
+    auto router_lookahead = make_router_lookahead(det_routing_arch,
+                                                  router_opts.lookahead_type,
+                                                  router_opts.write_router_lookahead,
+                                                  router_opts.read_router_lookahead,
+                                                  segment_inf,
+                                                  is_flat);
 
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
@@ -58,7 +63,16 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
     // Find the cheapest route if possible.
     bool found_path;
     t_heap cheapest;
-    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
+    ConnectionParameters conn_params(ParentNetId::INVALID(),
+                                     -1,
+                                     false,
+                                     std::unordered_map<RRNodeId, int>());
+    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
+                                                                                           sink_node,
+                                                                                           cost_params,
+                                                                                           bounding_box,
+                                                                                           router_stats,
+                                                                                           conn_params);
 
     // Default delay is infinity, which indicates that a route was not found.
     float delay = std::numeric_limits<float>::infinity();
@@ -67,11 +81,9 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         REQUIRE(cheapest.index == sink_node);
 
         // Get the delay
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr);
-        delay = rt_node_of_sink->Tdel;
-
-        // Clean up
-        free_route_tree(rt_root);
+        vtr::optional<const RouteTreeNode&> rt_node_of_sink;
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, router_opts.flat_routing);
+        delay = rt_node_of_sink.value().Tdel;
     }
 
     // Reset for the next router call.
@@ -148,7 +160,8 @@ TEST_CASE("connection_router", "[vpr]") {
         &vpr_setup.RoutingArch,
         vpr_setup.Segments,
         arch.Directs,
-        arch.num_directs);
+        arch.num_directs,
+        router_opts.flat_routing);
 
     // Find a source and sink to route
     int source_rr_node, sink_rr_node, hops;
@@ -159,18 +172,19 @@ TEST_CASE("connection_router", "[vpr]") {
     REQUIRE(hops >= 3);
 
     // Find the route
-    float delay = do_one_route(
-        source_rr_node,
-        sink_rr_node,
-        vpr_setup.RouterOpts,
-        vpr_setup.Segments);
+    float delay = do_one_route(source_rr_node,
+                               sink_rr_node,
+                               vpr_setup.RoutingArch,
+                               vpr_setup.RouterOpts,
+                               vpr_setup.Segments);
 
     // Check that a route was found
     REQUIRE(delay < std::numeric_limits<float>::infinity());
 
     // Clean up
     free_routing_structs();
-    vpr_free_all(arch, vpr_setup);
+    vpr_free_all(arch,
+                 vpr_setup);
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     free_pack_molecules(atom_ctx.list_of_pack_molecules.release());

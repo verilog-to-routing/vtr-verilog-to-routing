@@ -9,11 +9,13 @@
 static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int* num_segs_ortho_dir_ptr);
 static int round_up(float x);
 
-static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lookahead router_lookahead_type, bool is_flat) {
+static std::unique_ptr<RouterLookahead> make_router_lookahead_object(const t_det_routing_arch& det_routing_arch,
+                                                                     e_router_lookahead router_lookahead_type,
+                                                                     bool is_flat) {
     if (router_lookahead_type == e_router_lookahead::CLASSIC) {
         return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
-        return std::make_unique<MapLookahead>(is_flat);
+        return std::make_unique<MapLookahead>(det_routing_arch, is_flat);
     } else if (router_lookahead_type == e_router_lookahead::EXTENDED_MAP) {
         return std::make_unique<ExtendedMapLookahead>(is_flat);
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {
@@ -24,13 +26,15 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lo
     return nullptr;
 }
 
-std::unique_ptr<RouterLookahead> make_router_lookahead(
-    e_router_lookahead router_lookahead_type,
-    std::string write_lookahead,
-    std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf,
-    bool is_flat) {
-    std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type, is_flat);
+std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch& det_routing_arch,
+                                                       e_router_lookahead router_lookahead_type,
+                                                       std::string write_lookahead,
+                                                       std::string read_lookahead,
+                                                       const std::vector<t_segment_inf>& segment_inf,
+                                                       bool is_flat) {
+    std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(det_routing_arch,
+                                                                                     router_lookahead_type,
+                                                                                     is_flat);
 
     if (read_lookahead.empty()) {
         router_lookahead->compute(segment_inf);
@@ -192,31 +196,30 @@ void invalidate_router_lookahead_cache() {
     router_ctx.cached_router_lookahead_.clear();
 }
 
-const RouterLookahead* get_cached_router_lookahead(
-    e_router_lookahead router_lookahead_type,
-    std::string write_lookahead,
-    std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf,
-    bool is_flat) {
+const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det_routing_arch,
+                                                   e_router_lookahead router_lookahead_type,
+                                                   std::string write_lookahead,
+                                                   std::string read_lookahead,
+                                                   const std::vector<t_segment_inf>& segment_inf,
+                                                   bool is_flat) {
     auto& router_ctx = g_vpr_ctx.routing();
+    auto& mut_router_ctx = g_vpr_ctx.mutable_routing();
 
     auto cache_key = std::make_tuple(router_lookahead_type, read_lookahead, segment_inf);
+    mut_router_ctx.router_lookahead_cache_key_ = cache_key;
 
     // Check if cache is valid.
     const RouterLookahead* router_lookahead = router_ctx.cached_router_lookahead_.get(cache_key);
     if (router_lookahead) {
         return router_lookahead;
     } else {
-        // Cache is not valid, compute cached object.
-        auto& mut_router_ctx = g_vpr_ctx.mutable_routing();
-
         return mut_router_ctx.cached_router_lookahead_.set(
             cache_key,
-            make_router_lookahead(
-                router_lookahead_type,
-                write_lookahead,
-                read_lookahead,
-                segment_inf,
-                is_flat));
+            make_router_lookahead(det_routing_arch,
+                                  router_lookahead_type,
+                                  write_lookahead,
+                                  read_lookahead,
+                                  segment_inf,
+                                  is_flat));
     }
 }

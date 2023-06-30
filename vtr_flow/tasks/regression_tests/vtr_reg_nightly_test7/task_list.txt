@@ -1,3 +1,0 @@
-#regression_tests/vtr_reg_nightly_test7/koios_yosys_parmys_multi_arch
-regression_tests/vtr_reg_nightly_test7/koios_yosys_parmys
-#regression_tests/vtr_reg_nightly_test7/koios_yosys_parmys_no_hard_block

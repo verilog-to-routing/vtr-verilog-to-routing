@@ -28,6 +28,14 @@ t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) c
     return block_types_[id];
 }
 
+std::vector<ClusterBlockId> ClusteredNetlist::blocks_per_type(const t_logical_block_type blk_type) const {
+    if (blocks_per_type_.count(blk_type.index) == 0) {
+        std::vector<ClusterBlockId> empty_vector;
+        return empty_vector;
+    }
+    return blocks_per_type_.at(blk_type.index);
+}
+
 ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int logical_pin_index) const {
     auto pin_id = block_pin(blk_id, logical_pin_index);
 
@@ -94,17 +102,6 @@ int ClusteredNetlist::net_pin_logical_index(const ClusterNetId net_id, int net_p
  * Nets
  *
  */
-bool ClusteredNetlist::net_is_ignored(const ClusterNetId id) const {
-    VTR_ASSERT_SAFE(valid_net_id(id));
-
-    return net_is_ignored_[id];
-}
-
-bool ClusteredNetlist::net_is_global(const ClusterNetId id) const {
-    VTR_ASSERT_SAFE(valid_net_id(id));
-
-    return net_is_global_[id];
-}
 
 /*
  *
@@ -118,6 +115,8 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
 
         block_pbs_.insert(blk_id, pb);
         block_types_.insert(blk_id, type);
+
+        blocks_per_type_[type->index].push_back(blk_id);
 
         //Allocate and initialize every potential pin of the block
         block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(get_max_num_pins(type), ClusterPinId::INVALID()));
@@ -171,8 +170,6 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
 
     if (net_id == ClusterNetId::INVALID()) {
         net_id = Netlist::create_net(name);
-        net_is_ignored_.push_back(false);
-        net_is_global_.push_back(false);
     }
 
     VTR_ASSERT(validate_net_sizes());
@@ -180,24 +177,15 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
     return net_id;
 }
 
-void ClusteredNetlist::set_net_is_ignored(ClusterNetId net_id, bool state) {
-    VTR_ASSERT(valid_net_id(net_id));
-
-    net_is_ignored_[net_id] = state;
-}
-
-void ClusteredNetlist::set_net_is_global(ClusterNetId net_id, bool state) {
-    VTR_ASSERT(valid_net_id(net_id));
-
-    net_is_global_[net_id] = state;
-}
-
 void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
+    //find the block type, so we can remove it from blocks_per_type_ data structure
+    auto blk_type = block_type(blk_id);
     //Remove & invalidate pointers
     free_pb(block_pbs_[blk_id]);
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);
+    std::remove(blocks_per_type_[blk_type->index].begin(), blocks_per_type_[blk_type->index].end(), blk_id);
     block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>());
 }
 
@@ -229,10 +217,8 @@ void ClusteredNetlist::clean_pins_impl(const vtr::vector_map<ClusterPinId, Clust
     pin_logical_index_ = clean_and_reorder_values(pin_logical_index_, pin_id_map);
 }
 
-void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) {
+void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& /* net_id_map */) {
     //Update all the net values
-    net_is_ignored_ = clean_and_reorder_values(net_is_ignored_, net_id_map);
-    net_is_global_ = clean_and_reorder_values(net_is_global_, net_id_map);
 }
 
 void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/,
@@ -270,8 +256,6 @@ void ClusteredNetlist::shrink_to_fit_impl() {
     pin_logical_index_.shrink_to_fit();
 
     //Net data
-    net_is_ignored_.shrink_to_fit();
-    net_is_global_.shrink_to_fit();
 }
 
 /*
@@ -300,10 +284,7 @@ bool ClusteredNetlist::validate_pin_sizes_impl(size_t num_pins) const {
     return true;
 }
 
-bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
-    if (net_is_ignored_.size() != num_nets && net_is_global_.size() != num_nets) {
-        return false;
-    }
+bool ClusteredNetlist::validate_net_sizes_impl(size_t /* num_nets */) const {
     return true;
 }
 

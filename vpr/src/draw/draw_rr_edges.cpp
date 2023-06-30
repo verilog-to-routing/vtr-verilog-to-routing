@@ -412,8 +412,15 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     auto pin_rr = RRNodeId(pin_node);
     auto chan_rr = RRNodeId(chan_node);
 
-    const t_grid_tile& grid_tile = device_ctx.grid[rr_graph.node_xlow(pin_rr)][rr_graph.node_ylow(pin_rr)];
-    t_physical_tile_type_ptr grid_type = grid_tile.type;
+    const auto& grid_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(pin_rr),
+                                                               rr_graph.node_ylow(pin_rr),
+                                                               rr_graph.node_layer(pin_rr)});
+    int width_offset = device_ctx.grid.get_width_offset({rr_graph.node_xlow(pin_rr),
+                                                         rr_graph.node_ylow(pin_rr),
+                                                         rr_graph.node_layer(pin_rr)});
+    int height_offset = device_ctx.grid.get_height_offset({rr_graph.node_xlow(pin_rr),
+                                                           rr_graph.node_ylow(pin_rr),
+                                                           rr_graph.node_layer(pin_rr)});
 
     float x1 = 0, y1 = 0;
     /* If there is only one side, no need for the following inference!!!
@@ -455,7 +462,7 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     std::vector<e_side> pin_candidate_sides;
     for (const e_side& pin_candidate_side : SIDES) {
         if ((rr_graph.is_node_on_specific_side(pin_rr, pin_candidate_side))
-            && (grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_candidate_side][rr_graph.node_pin_num(pin_rr)])) {
+            && (grid_type->pinloc[width_offset][height_offset][pin_candidate_side][rr_graph.node_pin_num(pin_rr)])) {
             pin_candidate_sides.push_back(pin_candidate_side);
         }
     }

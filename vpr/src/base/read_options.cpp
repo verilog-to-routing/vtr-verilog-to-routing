@@ -461,6 +461,37 @@ struct ParsePlaceAgentAlgorithm {
     }
 };
 
+struct ParsePlaceAgentSpace {
+    ConvertedValue<e_agent_space> from_str(std::string str) {
+        ConvertedValue<e_agent_space> conv_value;
+        if (str == "move_type")
+            conv_value.set_value(MOVE_TYPE);
+        else if (str == "move_block_type")
+            conv_value.set_value(MOVE_BLOCK_TYPE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_agent_space (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_agent_space val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == MOVE_TYPE)
+            conv_value.set_value("move_type");
+        else {
+            VTR_ASSERT(val == MOVE_BLOCK_TYPE);
+            conv_value.set_value("move_block_type");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"move_type", "move_block_type"};
+    }
+};
+
 struct ParseFixPins {
     ConvertedValue<e_pad_loc_type> from_str(std::string str) {
         ConvertedValue<e_pad_loc_type> conv_value;
@@ -1551,8 +1582,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Reads the lookahead data from the specified file instead of computing it.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_intra_cluster_router_lookahead, "--read_intra_cluster_router_lookahead")
+        .help("Reads the intra-cluster lookahead data from the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.write_router_lookahead, "--write_router_lookahead")
         .help("Writes the lookahead data to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_intra_cluster_router_lookahead, "--write_intra_cluster_router_lookahead")
+        .help("Writes the intra-cluster lookahead data to the specified file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_placement_delay_lookup, "--read_placement_delay_lookup")
@@ -2075,6 +2114,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .choices({"e_greedy", "softmax"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<e_agent_space, ParsePlaceAgentSpace>(args.place_agent_space, "--place_agent_space")
+        .help(
+            "Agent exploration space can be either based on only move types or also consider different block types\n"
+            "The available values are: move_type, move_block_type")
+        .default_value("move_block_type")
+        .choices({"move_type", "move_block_type"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
@@ -2319,6 +2366,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_grp.add_argument(args.flat_routing, "--flat_routing")
         .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument(args.has_choking_spot, "--has_choking_spot")
+        .help(
+            ""
+            "Some FPGA architectures, due to the lack of full connectivity inside the cluster, may have"
+            " a choking spot inside the cluster. Thus, if routing doesn't converge, enabling this option may"
+            " help it.")
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2662,6 +2718,42 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n"
             "This can be used with any NoC topology\n")
         .default_value("bfs_routing")
+        .choices({"xy_routing", "bfs_routing"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<double>(args.noc_placement_weighting, "--noc_placement_weighting")
+        .help(
+            "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design."
+            "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength, a value of 1 would mean noc placement is considered equal to timing and wirelength and a value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
+        .default_value("0.6")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_constraints_weighting")
+        .help(
+            "Controls the importance of meeting all the NoC traffic flow latency constraints."
+            "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement, a value of 1 would mean the latency constraints are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by meeting the latency constraints of the traffic flows.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<double>(args.noc_latency_weighting, "--noc_latency_weighting")
+        .help(
+            "Controls the importance of reducing the latencies of the NoC traffic flows."
+            "This value can be >=0, where 0 would mean the latencies have no relevance to placement, a value of 1 would mean the latencies  are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by reducing the latencies of the traffic flows.")
+        .default_value("0.05")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
+        .help(
+            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
+            "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
+        .default_value("40")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
+        .help(
+            "Name of the output file that contains the NoC placement information."
+            "The default name is 'vpr_noc_placement_output.txt'")
+        .default_value("vpr_noc_placement_output.txt")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     return parser;
