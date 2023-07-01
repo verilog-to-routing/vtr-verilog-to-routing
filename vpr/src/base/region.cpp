@@ -9,17 +9,23 @@ Region::Region() {
     region_bounds.set_ymin(999);
     region_bounds.set_xmax(-1);
     region_bounds.set_ymax(-1);
+    layer_num = -1;
 }
 
-vtr::Rect<int> Region::get_region_rect() const {
-    return region_bounds;
+RegionRectCoord Region::get_region_rect() const {
+    return RegionRectCoord(region_bounds, layer_num);
 }
 
-void Region::set_region_rect(int _xmin, int _ymin, int _xmax, int _ymax) {
-    region_bounds.set_xmin(_xmin);
-    region_bounds.set_xmax(_xmax);
-    region_bounds.set_ymin(_ymin);
-    region_bounds.set_ymax(_ymax);
+void Region::set_region_rect(const RegionRectCoord& rect_coord) {
+    region_bounds.set_xmin(rect_coord.xmin);
+    region_bounds.set_xmax(rect_coord.xmax);
+    region_bounds.set_ymin(rect_coord.ymin);
+    region_bounds.set_ymax(rect_coord.ymax);
+    layer_num = rect_coord.layer_num;
+}
+
+int Region::get_layer_num() const {
+    return layer_num;
 }
 
 int Region::get_sub_tile() const {
@@ -31,11 +37,18 @@ void Region::set_sub_tile(int _sub_tile) {
 }
 
 bool Region::empty() {
-    return (region_bounds.xmax() < region_bounds.xmin() || region_bounds.ymax() < region_bounds.ymin());
+    return (region_bounds.xmax() < region_bounds.xmin()
+            || region_bounds.ymax() < region_bounds.ymin()
+            || layer_num < 0);
 }
 
 bool Region::is_loc_in_reg(t_pl_loc loc) {
     bool is_loc_in_reg = false;
+    int loc_layer_num = loc.layer;
+
+    if (layer_num != loc_layer_num) {
+        return is_loc_in_reg;
+    }
 
     vtr::Point<int> loc_coord(loc.x, loc.y);
 
@@ -58,9 +71,20 @@ bool Region::is_loc_in_reg(t_pl_loc loc) {
 bool do_regions_intersect(Region r1, Region r2) {
     bool intersect = true;
 
-    vtr::Rect<int> r1_rect = r1.get_region_rect();
-    vtr::Rect<int> r2_rect = r2.get_region_rect();
+    const auto r1_reg_coord = r1.get_region_rect();
+    const auto r2_reg_coord = r2.get_region_rect();
+
+    vtr::Rect<int> r1_rect(r1_reg_coord.xmin, r1_reg_coord.ymin, r1_reg_coord.xmax, r1_reg_coord.ymax);
+    vtr::Rect<int> r2_rect(r2_reg_coord.xmin, r2_reg_coord.ymin, r2_reg_coord.xmax, r2_reg_coord.ymax);
+
+    int r1_layer_num = r1_reg_coord.layer_num;
+    int r2_layer_num = r2_reg_coord.layer_num;
+
     vtr::Rect<int> intersect_rect;
+
+    if (r1_layer_num != r2_layer_num) {
+        return intersect;
+    }
 
     intersect_rect = intersection(r1_rect, r2_rect);
 
@@ -77,9 +101,21 @@ bool do_regions_intersect(Region r1, Region r2) {
 
 Region intersection(const Region& r1, const Region& r2) {
     Region intersect;
-    vtr::Rect<int> r1_rect = r1.get_region_rect();
-    vtr::Rect<int> r2_rect = r2.get_region_rect();
+
+    const auto r1_reg_coord = r1.get_region_rect();
+    const auto r2_reg_coord = r2.get_region_rect();
+
+    vtr::Rect<int> r1_rect(r1_reg_coord.xmin, r1_reg_coord.ymin, r1_reg_coord.xmax, r1_reg_coord.ymax);
+    vtr::Rect<int> r2_rect(r2_reg_coord.xmin, r2_reg_coord.ymin, r2_reg_coord.xmax, r2_reg_coord.ymax);
+
+    int r1_layer_num = r1_reg_coord.layer_num;
+    int r2_layer_num = r2_reg_coord.layer_num;
+
     vtr::Rect<int> intersect_rect;
+
+    if (r1_layer_num != r2_layer_num) {
+        return intersect;
+    }
 
     /*
      * If the subtiles of two regions match (i.e. they both have no subtile specified, or the same subtile specified),
@@ -97,24 +133,27 @@ Region intersection(const Region& r1, const Region& r2) {
     if (r1.get_sub_tile() == r2.get_sub_tile()) {
         intersect.set_sub_tile(r1.get_sub_tile());
         intersect_rect = intersection(r1_rect, r2_rect);
-        intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
+        intersect.set_region_rect({intersect_rect, r1_layer_num});
 
     } else if (r1.get_sub_tile() == NO_SUBTILE && r2.get_sub_tile() != NO_SUBTILE) {
         intersect.set_sub_tile(r2.get_sub_tile());
         intersect_rect = intersection(r1_rect, r2_rect);
-        intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
+        intersect.set_region_rect({intersect_rect, r1_layer_num});
 
     } else if (r1.get_sub_tile() != NO_SUBTILE && r2.get_sub_tile() == NO_SUBTILE) {
         intersect.set_sub_tile(r1.get_sub_tile());
         intersect_rect = intersection(r1_rect, r2_rect);
-        intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
+        intersect.set_region_rect({intersect_rect, r1_layer_num});
     }
 
     return intersect;
 }
 
 void print_region(FILE* fp, Region region) {
+    const auto region_coord = region.get_region_rect();
+    const auto region_rect = vtr::Rect<int>(region_coord.xmin, region_coord.ymin, region_coord.xmax, region_coord.ymax);
     fprintf(fp, "\tRegion: \n");
-    print_rect(fp, region.get_region_rect());
+    fprintf(fp, "\tlayer: %d\n", region.get_layer_num());
+    print_rect(fp, region_rect);
     fprintf(fp, "\tsubtile: %d\n\n", region.get_sub_tile());
 }

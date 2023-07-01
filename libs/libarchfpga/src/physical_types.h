@@ -814,6 +814,31 @@ struct t_physical_pin {
     }
 };
 
+/**
+ * @brief Describes The location of a physical tile
+ * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
+ *                  on the base die, layer_num is equal to zero. If it is one the die above base die, it is one, etc.
+ * @param x The x location of the physical tile on the given die
+ * @param y The y location of the physical tile on the given die
+ */
+struct t_physical_tile_loc {
+    int x = OPEN;
+    int y = OPEN;
+    int layer_num = OPEN;
+
+    t_physical_tile_loc() = default;
+
+    t_physical_tile_loc(int x_val, int y_val, int layer_num_val)
+        : x(x_val)
+        , y(y_val)
+        , layer_num(layer_num_val) {}
+
+    // Returns true if this type location layer_num/x/y is not equal to OPEN
+    operator bool() const {
+        return !(x == OPEN || y == OPEN || layer_num == OPEN);
+    }
+};
+
 /** Describes I/O and clock ports of a physical tile type
  *
  *  It corresponds to <port/> tags in the FPGA architecture description

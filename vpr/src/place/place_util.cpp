@@ -10,7 +10,7 @@
 #include "place_constraints.h"
 
 /* File-scope routines */
-static vtr::Matrix<t_grid_blocks> init_grid_blocks();
+static GridBlock init_grid_blocks();
 
 /**
  * @brief Initialize the placer's block-grid dual direction mapping.
@@ -38,16 +38,19 @@ void init_placement_context() {
  * The container at each grid block location should have a length equal to the
  * subtile capacity of that block. Unused subtile would be marked EMPTY_BLOCK_ID.
  */
-static vtr::Matrix<t_grid_blocks> init_grid_blocks() {
+static GridBlock init_grid_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
+    int num_layers = device_ctx.grid.get_num_layers();
 
     /* Structure should have the same dimensions as the grid. */
-    auto grid_blocks = vtr::Matrix<t_grid_blocks>({device_ctx.grid.width(), device_ctx.grid.height()});
+    auto grid_blocks = GridBlock(device_ctx.grid.width(), device_ctx.grid.height(), num_layers);
 
-    for (size_t x = 0; x < device_ctx.grid.width(); ++x) {
-        for (size_t y = 0; y < device_ctx.grid.height(); ++y) {
-            auto type = device_ctx.grid.get_physical_type(x, y);
-            grid_blocks[x][y].blocks.resize(type->capacity, EMPTY_BLOCK_ID);
+    for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
+        for (int x = 0; x < (int)device_ctx.grid.width(); ++x) {
+            for (int y = 0; y < (int)device_ctx.grid.height(); ++y) {
+                auto type = device_ctx.grid.get_physical_type({x, y, layer_num});
+                grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
+            }
         }
     }
     return grid_blocks;
@@ -75,7 +78,8 @@ t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
                                      float first_t,
                                      float first_rlim,
                                      int first_move_lim,
-                                     float first_crit_exponent) {
+                                     float first_crit_exponent,
+                                     int num_laters) {
     num_temps = 0;
     alpha = annealing_sched.alpha_min;
     t = first_t;
@@ -90,6 +94,8 @@ t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
     } else {
         move_lim = move_lim_max;
     }
+
+    NUM_LAYERS = num_laters;
 
     /* Store this inverse value for speed when updating crit_exponent. */
     INVERSE_DELTA_RLIM = 1 / (first_rlim - FINAL_RLIM);
@@ -347,8 +353,9 @@ void load_grid_blocks_from_block_locs() {
         VTR_ASSERT(location.x < (int)device_ctx.grid.width());
         VTR_ASSERT(location.y < (int)device_ctx.grid.height());
 
-        place_ctx.grid_blocks[location.x][location.y].blocks[location.sub_tile] = blk_id;
-        place_ctx.grid_blocks[location.x][location.y].usage++;
+        place_ctx.grid_blocks.set_block_at_location(location, blk_id);
+        place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
+                                        place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
     }
 }
 
@@ -358,17 +365,19 @@ void zero_initialize_grid_blocks() {
 
     /* Initialize all occupancy to zero. */
 
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            place_ctx.grid_blocks[i][j].usage = 0;
-            auto tile = device_ctx.grid.get_physical_type(i, j);
+    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
+                auto tile = device_ctx.grid.get_physical_type({i, j, layer_num});
 
-            for (auto sub_tile : tile->sub_tiles) {
-                auto capacity = sub_tile.capacity;
+                for (auto sub_tile : tile->sub_tiles) {
+                    auto capacity = sub_tile.capacity;
 
-                for (int k = 0; k < capacity.total(); k++) {
-                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
-                        place_ctx.grid_blocks[i][j].blocks[k + capacity.low] = EMPTY_BLOCK_ID;
+                    for (int k = 0; k < capacity.total(); k++) {
+                        if (place_ctx.grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) != INVALID_BLOCK_ID) {
+                            place_ctx.grid_blocks.set_block_at_location({i, j, k + capacity.low, layer_num}, EMPTY_BLOCK_ID);
+                        }
                     }
                 }
             }
@@ -398,27 +407,30 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
     }
 
     //load the legal placement positions
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            auto tile = device_ctx.grid.get_physical_type(i, j);
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                auto tile = device_ctx.grid.get_physical_type({i, j, layer_num});
 
-            for (auto sub_tile : tile->sub_tiles) {
-                auto capacity = sub_tile.capacity;
+                for (const auto& sub_tile : tile->sub_tiles) {
+                    auto capacity = sub_tile.capacity;
 
-                for (int k = 0; k < capacity.total(); k++) {
-                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] == INVALID_BLOCK_ID) {
-                        continue;
-                    }
-                    // If this is the anchor position of a block, add it to the legal_pos.
-                    // Otherwise don't, so large blocks aren't added multiple times.
-                    if (device_ctx.grid.get_width_offset(i, j) == 0 && device_ctx.grid.get_height_offset(i, j) == 0) {
-                        int itype = tile->index;
-                        int isub_tile = sub_tile.index;
-                        t_pl_loc temp_loc;
-                        temp_loc.x = i;
-                        temp_loc.y = j;
-                        temp_loc.sub_tile = k + capacity.low;
-                        legal_pos[itype][isub_tile].push_back(temp_loc);
+                    for (int k = 0; k < capacity.total(); k++) {
+                        if (place_ctx.grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) == INVALID_BLOCK_ID) {
+                            continue;
+                        }
+                        // If this is the anchor position of a block, add it to the legal_pos.
+                        // Otherwise don't, so large blocks aren't added multiple times.
+                        if (device_ctx.grid.get_width_offset({i, j, layer_num}) == 0 && device_ctx.grid.get_height_offset({i, j, layer_num}) == 0) {
+                            int itype = tile->index;
+                            int isub_tile = sub_tile.index;
+                            t_pl_loc temp_loc;
+                            temp_loc.x = i;
+                            temp_loc.y = j;
+                            temp_loc.sub_tile = k + capacity.low;
+                            temp_loc.layer = layer_num;
+                            legal_pos[itype][isub_tile].push_back(temp_loc);
+                        }
                     }
                 }
             }
@@ -442,12 +454,10 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     }
 
     //Set the location of the block
-    place_ctx.block_locs[blk_id].loc.x = location.x;
-    place_ctx.block_locs[blk_id].loc.y = location.y;
-    place_ctx.block_locs[blk_id].loc.sub_tile = location.sub_tile;
+    place_ctx.block_locs[blk_id].loc = location;
 
     //Check if block is at an illegal location
-    auto physical_tile = device_ctx.grid.get_physical_type(location.x, location.y);
+    auto physical_tile = device_ctx.grid.get_physical_type({location.x, location.y, location.layer});
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
     if (location.sub_tile >= physical_tile->capacity || location.sub_tile < 0) {
@@ -455,13 +465,18 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     }
 
     if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
-        VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d, %d). \n", block_name.c_str(), blk_id, location.x, location.y);
+        VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d,%d,%d). \n",
+                  block_name.c_str(),
+                  blk_id,
+                  location.x,
+                  location.y,
+                  location.layer);
     }
 
     //Mark the grid location and usage of the block
-    place_ctx.grid_blocks[location.x][location.y].blocks[location.sub_tile] = blk_id;
-    place_ctx.grid_blocks[location.x][location.y].usage++;
-
+    place_ctx.grid_blocks.set_block_at_location(location, blk_id);
+    place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
+                                    place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
     place_sync_external_block_connections(blk_id);
 }
 
@@ -482,7 +497,7 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
 
         //Check that the member location is on the grid
-        if (!is_loc_on_chip(member_pos.x, member_pos.y)) {
+        if (!is_loc_on_chip({member_pos.x, member_pos.y, member_pos.layer})) {
             mac_can_be_placed = false;
             break;
         }
@@ -519,8 +534,8 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
         // Then check whether the location could still accommodate more blocks
         // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
-            && is_tile_compatible(device_ctx.grid.get_physical_type(member_pos.x, member_pos.y), block_type)
-            && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] == EMPTY_BLOCK_ID) {
+            && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
+            && place_ctx.grid_blocks.block_at_location(member_pos) == EMPTY_BLOCK_ID) {
             // Can still accommodate blocks here, check the next position
             continue;
         } else {

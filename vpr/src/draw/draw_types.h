@@ -349,10 +349,10 @@ struct t_draw_coords {
     ezgl::rectangle get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
 
     ///@brief returns bounding box of sub block at given location of given type w. given pb
-    ezgl::rectangle get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type, const t_pb_graph_node& pb_gnode);
+    ezgl::rectangle get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type, const t_pb_graph_node& pb_gnode);
 
     ///@brief returns pb of sub block of given idx/given type at location
-    ezgl::rectangle get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type);
+    ezgl::rectangle get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type);
 
     /**
      * @brief returns a bounding box for the given pb in the given
@@ -367,13 +367,13 @@ struct t_draw_coords {
      * @brief Returns a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
      * even if it is empty.
      */
-    ezgl::rectangle get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
+    ezgl::rectangle get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index);
 
     /**
      * @brief Returns a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
      * of given type even if it is empty.
      */
-    ezgl::rectangle get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr block_type);
+    ezgl::rectangle get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr block_type);
 
   private:
     float tile_width;

@@ -307,7 +307,6 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
 
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
-    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links
@@ -321,7 +320,9 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
 
     //Showing given functionality
     crit_path_button_setup(app);
-
+    /* Routing hasn't been done yet, so hide the display options that show routing
+     * as they don't make sense and would crash if clicked on */
+    hide_crit_path_routing(app, true);
     //Hiding unused routing menu
     hide_widget("RoutingMenuButton", app);
 }
@@ -335,7 +336,8 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
         default_setup(app);
 
     routing_button_setup(app);
-    hide_crit_path_button(app);
+    crit_path_button_setup(app);
+    hide_crit_path_routing(app, false);
 }
 
 /* function below intializes the interface window with a set of buttons and links
@@ -348,7 +350,8 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
 
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
-    hide_crit_path_button(app);
+    crit_path_button_setup(app);
+    hide_crit_path_routing(app, false);
 }
 
 /* function below intializes the interface window with a set of buttons and links
@@ -360,7 +363,8 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
         default_setup(app);
 
     routing_button_setup(app);
-    hide_crit_path_button(app);
+    crit_path_button_setup(app);
+    hide_crit_path_routing(app, false);
 }
 
 /* function below intializes the interface window with a set of buttons and links
@@ -374,6 +378,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
 
     routing_button_setup(app);
     crit_path_button_setup(app);
+    hide_crit_path_routing(app, false);
 }
 #endif //NO_GRAPHICS
 
@@ -985,20 +990,24 @@ static void highlight_blocks(double x, double y) {
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
+    //TODO: Change when graphics supports 3D FPGAs
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    int layer_num = 0;
     // iterate over grid x
-    for (size_t i = 0; i < device_ctx.grid.width(); ++i) {
+    for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
         if (draw_coords->tile_x[i] > x) {
             break; // we've gone to far in the x direction
         }
         // iterate over grid y
-        for (size_t j = 0; j < device_ctx.grid.height(); ++j) {
+        for (int j = 0; j < (int)device_ctx.grid.height(); ++j) {
             if (draw_coords->tile_y[j] > y) {
                 break; // we've gone to far in the y direction
             }
             // iterate over sub_blocks
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
+            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
             for (int k = 0; k < type->capacity; ++k) {
-                clb_index = place_ctx.grid_blocks[i][j].blocks[k];
+                // TODO: Change when graphics supports 3D
+                clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
                 if (clb_index != EMPTY_BLOCK_ID) {
                     clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
                                                                   cluster_ctx.clb_nlist.block_type(clb_index));
@@ -1371,6 +1380,8 @@ bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color) {
     t_pl_loc curr_loc;
     curr_loc.x = x;
     curr_loc.y = y;
+    //TODO: Graphic currently doesn't support 3D FPGAs
+    curr_loc.layer = 0;
 
     //search for the current location in the vector of colored locations
     auto it = std::find_if(draw_state->colored_locations.begin(),

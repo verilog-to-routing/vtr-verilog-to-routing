@@ -1341,7 +1341,7 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``classic``: The classic VPR lookahead
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
 
-     **Default:** ``classic``
+     **Default:** ``map``
 
 .. option:: --router_max_convergence_count <float>
 

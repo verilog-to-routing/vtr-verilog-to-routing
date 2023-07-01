@@ -478,14 +478,14 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
             continue;
         }
 
-        if (device_ctx.grid.num_instances(&type) != 0) {
+        if (device_ctx.grid.num_instances(&type, -1) != 0) {
             VTR_LOG("\tPhysical Tile %s:\n", type.name);
 
             auto equivalent_sites = get_equivalent_sites_set(&type);
 
             for (auto logical_block : equivalent_sites) {
                 float util = 0.;
-                size_t num_inst = device_ctx.grid.num_instances(&type);
+                size_t num_inst = device_ctx.grid.num_instances(&type, -1);
                 if (num_inst != 0) {
                     util = float(num_type_instances[logical_block]) / num_inst;
                 }
@@ -819,14 +819,20 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
                         is_flat);
         } else {
             VTR_ASSERT(router_opts.doRouting == STAGE_LOAD);
-
             //Load a previous routing
-            // TODO: flat routing is not implemented for this part
+            //if the previous load file is generated using flat routing,
+            //we need to create rr_graph with is_flat flag to add additional
+            //internal nodes/edges.
+            if (is_flat) {
+                vpr_create_rr_graph(vpr_setup, arch, chan_width, is_flat);
+            }
+
             route_status = vpr_load_routing(vpr_setup,
                                             arch,
                                             chan_width,
                                             timing_info,
-                                            net_delay);
+                                            net_delay,
+                                            is_flat);
         }
 
         //Post-implementation
@@ -969,7 +975,8 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& /*arch*/,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             NetPinsMatrix<float>& net_delay) {
+                             NetPinsMatrix<float>& net_delay,
+                             bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
@@ -978,13 +985,12 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
     auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Load the routing from a file
-    bool is_legal = read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests);
-
+    bool is_legal = read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests, is_flat);
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
-        load_net_delay_from_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+        load_net_delay_from_routing(router_net_list,
                                     net_delay);
-
         timing_info->update();
     }
     init_draw_coords(fixed_channel_width);

@@ -20,7 +20,7 @@ class MapLookahead : public RouterLookahead {
     // Lookup table to store the minimum cost to reach to a primitive pin from the root-level IPINs
     std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
     // Lookup table to store the minimum cost for each dx and dy
-    vtr::NdMatrix<util::Cost_Entry, 2> distance_based_min_cost; // [dx][dy] -> cost
+    vtr::NdMatrix<util::Cost_Entry, 3> distance_based_min_cost; // [layer_num][dx][dy] -> cost
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
 
@@ -56,7 +56,7 @@ class Cost_Entry {
 
 /* provides delay/congestion estimates to travel specified distances
  * in the x/y direction */
-typedef vtr::NdMatrix<Cost_Entry, 4> t_wire_cost_map; //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+typedef vtr::NdMatrix<Cost_Entry, 5> t_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
                                                       //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
 
 void read_router_lookahead(const std::string& file);
