@@ -129,6 +129,10 @@ class RRGraphBuilder {
      */
     void add_node_to_all_locs(RRNodeId node);
 
+    void init_edge_remap(bool val);
+
+    void clear_temp_storage();
+
     /** @brief Clear all the underlying data storage */
     void clear();
     /** @brief reorder all the nodes

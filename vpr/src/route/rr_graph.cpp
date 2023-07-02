@@ -1350,6 +1350,10 @@ static void build_rr_graph(const t_graph_type graph_type,
     if (clb_to_clb_directs != nullptr) {
         delete[] clb_to_clb_directs;
     }
+
+    // We are done with building the RR Graph. Thus, we can clear the storages only used
+    // to build the RR Graph
+    device_ctx.rr_graph_builder.clear_temp_storage();
 }
 
 static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
@@ -1368,6 +1372,9 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
     vtr::ScopedStartFinishTimer timer("Build intra-cluster routing resource graph");
 
     rr_graph_builder.reset_rr_graph_flags();
+    // When we are building intra-cluster resources, the edges already built are
+    // already remapped.
+    rr_graph_builder.init_edge_remap(true);
 
     vtr::vector<ClusterBlockId, t_cluster_pin_chain> pin_chains(clb_nlist.blocks().size());
     set_clusters_pin_chains(clb_nlist, pin_chains, is_flat);
@@ -1407,6 +1414,8 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
     }
 
     rr_graph_builder.partition_edges();
+
+    rr_graph_builder.clear_temp_storage();
 
     check_rr_graph(device_ctx.rr_graph,
                    types,

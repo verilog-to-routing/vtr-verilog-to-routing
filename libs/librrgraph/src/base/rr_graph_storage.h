@@ -451,6 +451,18 @@ class t_rr_graph_storage {
         remapped_edges_ = false;
     }
 
+    // Clear the data structures that are mainly used during RR graph construction.
+    // After RR Graph is build, we no longer need these data structures.
+    void clear_temp_storage() {
+        edge_remapped_.clear();
+    }
+
+    // Clear edge_remap data structure, and then initialize it with the given value
+    void init_edge_remap(bool val) {
+        edge_remapped_.clear();
+        edge_remapped_.resize(edge_switch_.size(), val);
+    }
+
     // Shrink memory usage of the RR graph storage.
     //
     // Note that this will temporarily increase the amount of storage required
