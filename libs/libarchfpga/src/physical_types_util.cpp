@@ -670,6 +670,24 @@ bool is_opin(int ipin, t_physical_tile_type_ptr type) {
         return false;
 }
 
+bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, int num_of_avail_layer) {
+    if (type->is_empty()) { //if type is empty, there is no pins
+        return false;
+    }
+    //ipin should be a valid pin in physical type
+    VTR_ASSERT(ipin < type->num_pins);
+    int pin_layer = from_layer + type->pin_layer_offset[ipin];
+    //if pin_offset specifies a layer that doesn't exist in arch file, we do a wrap around
+    pin_layer = (pin_layer < num_of_avail_layer) ? pin_layer : pin_layer % num_of_avail_layer;
+    if (from_layer == to_layer || pin_layer == to_layer) {
+        return true;
+    } else {
+        return false;
+    }
+    //not reachable
+    return false;
+}
+
 // TODO: Remove is_input_type / is_output_type / is_io_type as part of
 // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
 bool is_input_type(t_physical_tile_type_ptr type) {

@@ -84,6 +84,8 @@ struct t_pin_spec {
 /********************* Subroutines local to this module. *******************/
 void print_rr_graph_stats();
 
+std::unordered_set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr Type);
+
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
@@ -849,6 +851,17 @@ void print_rr_graph_stats() {
     VTR_LOG("  RR Graph Edges: %zu\n", num_rr_edges);
 }
 
+std::unordered_set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type) {
+    auto& device_ctx = g_vpr_ctx.device();
+    std::unordered_set<int> phy_type_layers;
+    for (int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
+        if (device_ctx.grid.num_instances(type, layer) != 0) {
+            phy_type_layers.insert(layer);
+        }
+    }
+    return phy_type_layers;
+}
+
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
     if (current.max != proposed.max
         || current.x_max != proposed.x_max
@@ -1176,29 +1189,29 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_track_to_pin_lookup track_to_pin_lookup_x(types.size());
     t_track_to_pin_lookup track_to_pin_lookup_y(types.size());
 
-    auto type_layer = device_ctx.physical_type_layer;
-
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
+        auto type_layer = get_layers_of_physical_types(&types[itype]);
+
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
-                                                                     Fc_in[itype], &types[itype], type_layer[itype],
+                                                                     Fc_in[itype], &types[itype], type_layer,
                                                                      perturb_ipins[itype], directionality,
                                                                      segment_inf_x, sets_per_seg_type_x.get());
 
         ipin_to_track_map_y[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
-                                                                     Fc_in[itype], &types[itype], type_layer[itype],
+                                                                     Fc_in[itype], &types[itype], type_layer,
                                                                      perturb_ipins[itype], directionality,
                                                                      segment_inf_y, sets_per_seg_type_y.get());
 
         track_to_pin_lookup_x[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_x[itype], Fc_in[itype],
                                                                           &types[itype],
-                                                                          type_layer[itype], types[itype].width,
+                                                                          type_layer, types[itype].width,
                                                                           types[itype].height,
                                                                           types[itype].num_pins,
                                                                           nodes_per_chan.x_max, segment_inf_x);
 
         track_to_pin_lookup_y[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_y[itype], Fc_in[itype],
                                                                           &types[itype],
-                                                                          type_layer[itype], types[itype].width,
+                                                                          type_layer, types[itype].width,
                                                                           types[itype].height,
                                                                           types[itype].num_pins,
                                                                           nodes_per_chan.y_max, segment_inf_y);
@@ -1219,10 +1232,11 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_pin_to_track_lookup opin_to_track_map(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
     if (BI_DIRECTIONAL == directionality) {
         for (unsigned int itype = 0; itype < types.size(); ++itype) {
+            auto type_layer = get_layers_of_physical_types(&types[itype]);
             auto perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
                                                               max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
-                                                                       Fc_out[itype], &types[itype], type_layer[itype], perturb_opins, directionality,
+                                                                       Fc_out[itype], &types[itype], type_layer, perturb_opins, directionality,
                                                                        segment_inf, sets_per_seg_type.get());
         }
     }
@@ -2000,8 +2014,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     VTR_ASSERT(Fs % 3 == 0);
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
         auto& device_ctx = g_vpr_ctx.device();
-        /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
-        if (!device_ctx.global_routing_layer.at(layer)) {
+        /* Skip the current die if architecture file specifies that it doesn't require inter-cluster programmable resource routing */
+        if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
         for (size_t i = 0; i < grid.width() - 1; ++i) {
@@ -2488,11 +2502,11 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Check the pin offset and connect it to a different layer if necessary */
-        int track_layer = layer + type->pin_layer_offset[pin_index];
-
-        if (track_layer == layer) { //avoid adding duplication
+        if (type->pin_layer_offset[pin_index] == 0) { //avoid adding duplications
             continue;
         }
+
+        int track_layer = layer + type->pin_layer_offset[pin_index];
 
         if (track_layer >= grid.get_num_layers()) {
             track_layer %= grid.get_num_layers();
@@ -3168,11 +3182,10 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                                 }
 
                                 //2) the layer that specified by pin_offset in the arch file
-                                int pin_layer = type_layer_index + Type->pin_layer_offset[ipin];
-
-                                if (pin_layer == type_layer_index) { //avoid adding duplicated edge
+                                if (Type->pin_layer_offset[ipin] == 0) { //avoid adding duplicated edges
                                     continue;
                                 }
+                                int pin_layer = type_layer_index + Type->pin_layer_offset[ipin];
 
                                 if (pin_layer >= grid.get_num_layers()) { //pin layer is invalid, wrap it around
                                     pin_layer %= grid.get_num_layers();
@@ -3893,10 +3906,11 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
                             }
                         }
                         //2) the layer that specified by pin_offset in the arch file
-                        int pin_layer = type_layer_index + Type->pin_layer_offset[pin];
-                        if (pin_layer == type_layer_index) { //avoid adding duplicated edges
+                        if (Type->pin_layer_offset[pin] == 0) { //avoid adding duplicated edges
                             continue;
                         }
+                        int pin_layer = type_layer_index + Type->pin_layer_offset[pin];
+
                         if (pin_layer >= grid.get_num_layers()) { //pin layer is invalid, wrap it around
                             pin_layer %= grid.get_num_layers();
                         }
