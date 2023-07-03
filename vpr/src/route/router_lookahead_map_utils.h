@@ -272,7 +272,7 @@ typedef std::vector<std::vector<std::vector<std::map<int, t_reachable_wire_inf>>
 // [from_layer_num][tile_index][from opin/src ptc num][to_layer_num] -> pair<seg_index, t_reachable_wire_inf>
 typedef std::vector<std::vector<std::vector<std::vector<std::map<int, util::t_reachable_wire_inf>>>>> t_src_opin_inter_layer_delays;
 // [source_layer_num][tile_index][pin number][to_layer_num] -> cost
-typedef std::vector<std::vector<std::vector<std::vector<bool>>>> t_sink_inter_layer_connection;
+typedef std::vector<std::vector<std::vector<std::vector<bool>>>> t_inter_layer_connection;
 
 //[from pin ptc num][target src ptc num]->cost
 typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_delays;
@@ -290,7 +290,7 @@ typedef std::vector<std::vector<std::vector<t_reachable_wire_inf>>> t_chan_ipins
 
 std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_opin_lookahead(bool is_flat);
 
-t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(bool is_flat);
+t_inter_layer_connection register_tiles_with_inter_layer_connection_block(bool is_flat);
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead();
 

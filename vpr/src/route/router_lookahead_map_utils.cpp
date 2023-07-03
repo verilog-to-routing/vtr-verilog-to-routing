@@ -413,7 +413,7 @@ std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_o
     return std::make_pair(src_opin_delays, src_opin_inter_layer_delays);
 }
 
-t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(bool is_flat) {
+t_inter_layer_connection register_tiles_with_inter_layer_connection_block(bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing sink inter layer lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
@@ -421,22 +421,22 @@ t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(b
     int num_layers = device_ctx.grid.get_num_layers();
     bool is_multi_layer = (num_layers > 1);
     if(!is_multi_layer) {
-        return t_sink_inter_layer_connection();
+        return t_inter_layer_connection();
     }
     // AM: Currently, for 3D stuff, I am only focusing on the case that flat-router is not enabled. If flat_router is on, I am not sure whether it works.
     VTR_ASSERT(!is_flat);
 
-    t_sink_inter_layer_connection sink_inter_layer_conn;
-    sink_inter_layer_conn.resize(num_layers);
+    t_inter_layer_connection inter_layer_conn;
+    inter_layer_conn.resize(num_layers);
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         int num_physical_tiles = (int)device_ctx.physical_tile_types.size();
-        sink_inter_layer_conn[from_layer_num].resize(num_physical_tiles);
+        inter_layer_conn[from_layer_num].resize(num_physical_tiles);
         for (int itile = 0; itile < num_physical_tiles; itile++) {
             const auto& physical_tile = device_ctx.physical_tile_types[itile];
             int num_pins = physical_tile.num_pins;
-            sink_inter_layer_conn[from_layer_num][itile].resize(num_pins);
+            inter_layer_conn[from_layer_num][itile].resize(num_pins);
             for(int pin_number = 0; pin_number < num_pins; pin_number++) {
-                sink_inter_layer_conn[from_layer_num][itile][pin_number].resize(num_layers);
+                inter_layer_conn[from_layer_num][itile][pin_number].resize(num_layers);
             }
         }
     }
@@ -448,9 +448,9 @@ t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(b
             for (int pin_num = 0; pin_num < num_pins; pin_num++) {
                 for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
                     if (from_layer_num == to_layer_num) {
-                        sink_inter_layer_conn[from_layer_num][itile][pin_num][to_layer_num] = true;
+                        inter_layer_conn[from_layer_num][itile][pin_num][to_layer_num] = true;
                     } else {
-                        sink_inter_layer_conn[from_layer_num][itile][pin_num][to_layer_num] = is_pin_conencted_to_layer(&device_ctx.physical_tile_types[itile],
+                        inter_layer_conn[from_layer_num][itile][pin_num][to_layer_num] = is_pin_conencted_to_layer(&device_ctx.physical_tile_types[itile],
                                                                                                                         pin_num,
                                                                                                                         from_layer_num,
                                                                                                                         to_layer_num,
@@ -461,7 +461,7 @@ t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(b
         }
     }
 
-    return sink_inter_layer_conn;
+    return inter_layer_conn;
 }
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
