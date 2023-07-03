@@ -44,7 +44,11 @@ void restore_best_placement(t_placement_checkpoint& placement_checkpoint, std::s
                                    timing_info.get(),
                                    &costs);
 
-        // If NoC is enabled, re-compute NoC costs and re-initialize NoC internal data structures
+        /* If NoC is enabled, re-compute NoC costs and re-initialize NoC internal data structures.
+         * If some routers have different locations than the last placement, NoC-related costs and
+         * internal data structures that are used to keep track of each flow's cost are no longer valid,
+         * and need to be re-computed from scratch.
+         */
         if (noc_opts.noc) {
             reinitialize_noc_routing(noc_opts, costs);
         }
