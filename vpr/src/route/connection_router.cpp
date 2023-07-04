@@ -102,9 +102,9 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
         return nullptr;
     }
 
-    VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as normal net (BB: %d,%d x %d,%d)\n", sink_node,
-                   bounding_box.xmin, bounding_box.ymin,
-                   bounding_box.xmax, bounding_box.ymax);
+    VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as normal net (BB: %d,%d,%d x %d,%d,%d)\n", sink_node,
+                   bounding_box.layer_min, bounding_box.xmin, bounding_box.ymin,
+                   bounding_box.layer_max, bounding_box.xmax, bounding_box.ymax);
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
@@ -192,9 +192,9 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
         return std::make_pair(false, t_heap());
     }
 
-    VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as high fanout net (BB: %d,%d x %d,%d)\n", sink_node,
-                   high_fanout_bb.xmin, high_fanout_bb.ymin,
-                   high_fanout_bb.xmax, high_fanout_bb.ymax);
+    VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as high fanout net (BB: %d,%d,%d x %d,%d,%d)\n", sink_node,
+                   high_fanout_bb.layer_min, high_fanout_bb.xmin, high_fanout_bb.ymin,
+                   high_fanout_bb.layer_max, high_fanout_bb.xmax, high_fanout_bb.ymax);
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
@@ -523,11 +523,13 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
         && !rcv_path_manager.is_enabled()) {
         VTR_LOGV_DEBUG(router_debug_,
                        "      Pruned expansion of node %d edge %zu -> %d"
-                       " (to node location %d,%dx%d,%d outside of expanded"
-                       " net bounding box %d,%dx%d,%d)\n",
+                       " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
+                       " net bounding box %d,%d,%d x %d,%d,%d)\n",
                        from_node, size_t(from_edge), to_node_int,
-                       to_xlow, to_ylow, to_xhigh, to_yhigh,
-                       bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
+                       to_layer, to_xlow, to_ylow,
+                       to_layer, to_xhigh, to_yhigh,
+                       bounding_box.layer_min, bounding_box.xmin, bounding_box.ymin,
+                       bounding_box.layer_max, bounding_box.xmax, bounding_box.ymax);
         return; /* Node is outside (expanded) bounding box. */
     }
 
@@ -548,10 +550,11 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                 || to_layer > target_bb.layer_max) {
                 VTR_LOGV_DEBUG(router_debug_,
                                "      Pruned expansion of node %d edge %zu -> %d"
-                               " (to node is IPIN at %d,%dx%d,%d which does not"
-                               " lead to target block %d,%dx%d,%d)\n",
+                               " (to node is IPIN at %d,%d,%d x %d,%d,%d which does not"
+                               " lead to target block %d,%d,%d x %d,%d,%d)\n",
                                from_node, size_t(from_edge), to_node_int,
-                               to_xlow, to_ylow, to_xhigh, to_yhigh,
+                               to_layer, to_xlow, to_ylow,
+                               to_layer, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
             }
