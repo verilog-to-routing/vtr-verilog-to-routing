@@ -203,9 +203,11 @@ static void profile_source(const Netlist<>& net_list,
                     vtr::ScopedStartFinishTimer delay_timer(vtr::string_fmt(
                         "Routing Src: %d Sink: %d", source_rr_node,
                         sink_rr_node));
-                    successfully_routed = profiler.calculate_delay(source_rr_node, sink_rr_node,
-                                                        router_opts,
-                                                        &delays[sink_x][sink_y]);
+                    successfully_routed = profiler.calculate_delay(source_rr_node,
+                                                                   sink_rr_node,
+                                                                   router_opts,
+                                                                   &delays[sink_x][sink_y],
+                                                                   OPEN);
                 }
 
                 if (successfully_routed) {

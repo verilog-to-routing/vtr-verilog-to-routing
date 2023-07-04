@@ -16,7 +16,8 @@ class RouterDelayProfiler {
     bool calculate_delay(int source_node,
                          int sink_node,
                          const t_router_opts& router_opts,
-                         float* net_delay);
+                         float* net_delay,
+                         int layer_num);
 
   private:
     const Netlist<>& net_list_;

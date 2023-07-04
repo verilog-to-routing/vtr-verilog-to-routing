@@ -388,7 +388,8 @@ static float route_connection_delay(
                 successfully_routed = route_profiler.calculate_delay(
                     size_t(source_rr_node), size_t(sink_rr_node),
                     router_opts,
-                    &net_delay_value);
+                    &net_delay_value,
+                    layer_num);
             }
 
             if (successfully_routed) break;
@@ -1196,7 +1197,7 @@ void OverrideDelayModel::compute_override_delay_model(
             VTR_ASSERT(sink_rr != OPEN);
 
             float direct_connect_delay = std::numeric_limits<float>::quiet_NaN();
-            bool found_routing_path = route_profiler.calculate_delay(src_rr, sink_rr, router_opts2, &direct_connect_delay);
+            bool found_routing_path = route_profiler.calculate_delay(src_rr, sink_rr, router_opts2, &direct_connect_delay, OPEN);
 
             if (found_routing_path) {
                 set_delay_override(from_type->index, from_pin_class, to_type->index, to_pin_class, direct->x_offset, direct->y_offset, direct_connect_delay);
