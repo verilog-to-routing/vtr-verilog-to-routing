@@ -648,7 +648,6 @@ void create_rr_graph(const t_graph_type graph_type,
         if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
             free_rr_graph();
 
-            //TODO: SM: delay between two dice is not working for load_rr_file
             load_rr_file(&mutable_device_ctx.rr_graph_builder,
                          &mutable_device_ctx.rr_graph,
                          device_ctx.physical_tile_types,
@@ -663,6 +662,7 @@ void create_rr_graph(const t_graph_type graph_type,
                          router_opts.base_cost_type,
                          device_ctx.virtual_clock_network_root_idx,
                          &det_routing_arch->wire_to_rr_ipin_switch,
+                         &det_routing_arch->wire_to_arch_ipin_switch_between_dice,
                          det_routing_arch->read_rr_graph_filename.c_str(),
                          &det_routing_arch->read_rr_graph_filename,
                          router_opts.read_rr_edge_metadata,
