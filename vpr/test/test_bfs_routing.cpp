@@ -24,12 +24,12 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
 
     // store the reference to device grid with
     // need to add this before routers are added
-    noc_model.set_device_grid_width((int)4);
+    noc_model.set_device_grid_spec((int)4, 0);
 
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            noc_model.add_router((i * 4) + j, j, i);
+            noc_model.add_router((i * 4) + j, j, i, 0);
         }
     }
 

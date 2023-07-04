@@ -126,7 +126,7 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, 
 
 /*
  * Return the floorplan score that will be used for sorting blocks during initial placement. This score is the
- * total number of subtilesfor the block type in the grid, minus the number of subtiles in the block's floorplan PartitionRegion.
+ * total number of subtiles for the block type in the grid, minus the number of subtiles in the block's floorplan PartitionRegion.
  * The resulting number is the number of tiles outside the block's floorplan region, meaning the higher
  * it is, the more difficult the block is to place.
  */

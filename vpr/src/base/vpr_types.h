@@ -575,10 +575,19 @@ struct t_net_power {
  *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1)
  */
 struct t_bb {
-    int xmin = 0;
-    int xmax = 0;
-    int ymin = 0;
-    int ymax = 0;
+    t_bb() = default;
+    t_bb(int xmin_, int xmax_, int ymin_, int ymax_)
+        : xmin(xmin_)
+        , xmax(xmax_)
+        , ymin(ymin_)
+        , ymax(ymax_) {
+        VTR_ASSERT(xmax_ >= xmin_);
+        VTR_ASSERT(ymax_ >= ymin_);
+    }
+    int xmin = OPEN;
+    int xmax = OPEN;
+    int ymin = OPEN;
+    int ymax = OPEN;
 };
 
 /**
@@ -660,22 +669,26 @@ struct hash<t_pl_offset> {
  *
  * x: x-coordinate
  * y: y-coordinate
- * z: z-coordinate (capacity postion)
+ * sub_tile: sub-tile number (capacity position)
+ * layer: layer (die) number
  *
  * @note t_pl_offset should be used to represent an offset between t_pl_loc.
  */
 struct t_pl_loc {
     t_pl_loc() = default;
-    t_pl_loc(int xloc, int yloc, int sub_tile_loc)
+    t_pl_loc(int xloc, int yloc, int sub_tile_loc, int layer_num)
         : x(xloc)
         , y(yloc)
-        , sub_tile(sub_tile_loc) {}
+        , sub_tile(sub_tile_loc)
+        , layer(layer_num) {}
 
     int x = OPEN;
     int y = OPEN;
     int sub_tile = OPEN;
+    int layer = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
+        VTR_ASSERT(this->layer != OPEN);
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
@@ -683,6 +696,7 @@ struct t_pl_loc {
     }
 
     t_pl_loc& operator-=(const t_pl_offset& rhs) {
+        VTR_ASSERT(this->layer != OPEN);
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
@@ -706,15 +720,17 @@ struct t_pl_loc {
     }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return t_pl_offset(lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile);
+        VTR_ASSERT(lhs.layer == rhs.layer);
+        return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile};
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        VTR_ASSERT(lhs.layer == rhs.layer);
         return std::tie(lhs.x, lhs.y, lhs.sub_tile) < std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.x, rhs.y, rhs.sub_tile);
+        return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
@@ -776,6 +792,50 @@ struct t_grid_blocks {
     inline bool subtile_empty(size_t isubtile) const {
         return blocks[isubtile] == EMPTY_BLOCK_ID;
     }
+};
+
+class GridBlock {
+  public:
+    GridBlock() = default;
+
+    GridBlock(size_t width, size_t height, size_t layers) {
+        grid_blocks_.resize({layers, width, height});
+    }
+
+    inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
+        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
+    }
+
+    inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {
+        grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile] = blk_id;
+    }
+
+    inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
+        return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
+    }
+
+    inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
+    }
+
+    inline int set_usage(const t_physical_tile_loc loc, int usage) {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage = usage;
+    }
+
+    inline int get_usage(const t_physical_tile_loc loc) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage;
+    }
+
+    inline bool is_sub_tile_empty(const t_physical_tile_loc loc, int sub_tile) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].subtile_empty(sub_tile);
+    }
+
+    inline void clear() {
+        grid_blocks_.clear();
+    }
+
+  private:
+    vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
 
 ///@brief Names of various files

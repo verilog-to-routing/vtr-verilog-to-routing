@@ -192,7 +192,8 @@ static std::string get_pin_feature (size_t inode) {
     // Get tile physical tile and the pin number
     int ilow = rr_graph.node_xlow(RRNodeId(inode));
     int jlow = rr_graph.node_ylow(RRNodeId(inode));
-    auto physical_tile = device_ctx.grid.get_physical_type(ilow, jlow);
+    int layer_num = rr_graph.node_layer(RRNodeId(inode));
+    auto physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
     // Get the sub tile (type, not instance) and index of its pin that matches

@@ -154,12 +154,15 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+    //TODO: Change when graphics supports 3D FPGAs
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    int layer_num = 0;
+    for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+        for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
             /* Only the first block of a group should control drawing */
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
-            int width_offset = device_ctx.grid.get_width_offset(i, j);
-            int height_offset = device_ctx.grid.get_height_offset(i, j);
+            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+            int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
+            int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
 
             if (width_offset > 0 || height_offset > 0)
                 continue;
@@ -171,11 +174,13 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
             int num_sub_tiles = type->capacity;
             for (int k = 0; k < num_sub_tiles; ++k) {
                 /* Don't draw if block is empty. */
-                if (place_ctx.grid_blocks[i][j].blocks[k] == EMPTY_BLOCK_ID || place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK_ID)
+                // TODO: Change when graphics supports 3D
+                if (place_ctx.grid_blocks.block_at_location({i, j, k, 0}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, 0}) == INVALID_BLOCK_ID)
                     continue;
 
                 /* Get block ID */
-                ClusterBlockId bnum = place_ctx.grid_blocks[i][j].blocks[k];
+                // TODO: Change when graphics supports 3D
+                ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, 0});
                 /* Safety check, that physical blocks exists in the CLB */
                 if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
                     continue;
@@ -282,8 +287,9 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     double left, bot, right, top;
 
     int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
-    const auto& type = device_ctx.grid.get_physical_type(1, 0);
-    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks[1][0].usage != 0
+    // TODO: this is a hack - should be fixed for the layer_num
+    const auto& type = device_ctx.grid.get_physical_type({1, 0, 0});
+    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks.get_usage({1, 0, 0}) != 0
         && type_descrip_index == type->index) {
         // that should test for io blocks, and setting capacity_divisor > 1
         // will squish every thing down

@@ -155,6 +155,9 @@ static void profile_source(const Netlist<>& net_list,
     vtr::ScopedStartFinishTimer timer("Profiling source");
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
+    // TODO: We assume if this function is called, the grid has a 2D structure - It assumes everything is on layer number 0, so it won't work yet for multi-layer FPGAs
+    VTR_ASSERT(grid.get_num_layers() == 1);
+    int layer_num = 0;
 
     auto router_lookahead = make_router_lookahead(det_routing_arch,
                                                   router_opts.lookahead_type,
@@ -175,17 +178,17 @@ static void profile_source(const Netlist<>& net_list,
 
     for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
         for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
-            if(device_ctx.grid.get_physical_type(sink_x, sink_y) == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+            if(device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}) == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 continue;
             }
 
             auto best_sink_ptcs = get_best_classes(RECEIVER,
-                    device_ctx.grid.get_physical_type(sink_x, sink_y));
+                                                   device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}));
             bool successfully_routed;
             for (int sink_ptc : best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
-
-                int sink_rr_node = size_t(device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc));
+                //TODO: should pass layer_num instead of 0 to node_lookup once the multi-die FPGAs support is completed
+                int sink_rr_node = size_t(device_ctx.rr_graph.node_lookup().find_node(0,sink_x, sink_y, SINK, sink_ptc));
 
                 if (directconnect_exists(source_rr_node, sink_rr_node)) {
                     //Skip if we shouldn't measure direct connects and a direct connect exists

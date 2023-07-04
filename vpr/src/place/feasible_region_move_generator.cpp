@@ -22,7 +22,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //from block data
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     /* Calculate the feasible region */
@@ -113,6 +113,8 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         t_pl_loc center;
         center.x = (FR_coords.xmin + FR_coords.xmax) / 2;
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;
+        // TODO: Currently, we don't move blocks between different types of layers
+        center.layer = from.layer;
         if (!find_to_loc_centroid(cluster_from_type, from, center, range_limiters, to, b_from))
             return e_create_move::ABORT;
     }

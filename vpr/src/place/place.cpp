@@ -447,6 +447,13 @@ void try_place(const Netlist<>& net_list,
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
+
+    /*
+     * Currently, the functions that require is_flat as their parameter and are called during placement should
+     * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
+     * if is_flat is false, even if is_flat is set to true from the command line.
+     */
+    VTR_ASSERT(!is_flat);
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -761,8 +768,12 @@ void try_place(const Netlist<>& net_list,
     /* Set the temperature low to ensure that initial placement quality will be preserved */
     first_t = EPSILON;
 
-    t_annealing_state state(annealing_sched, first_t, first_rlim,
-                            first_move_lim, first_crit_exponent);
+    t_annealing_state state(annealing_sched,
+                            first_t,
+                            first_rlim,
+                            first_move_lim,
+                            first_crit_exponent,
+                            device_ctx.grid.get_num_layers());
 
     /* Update the starting temperature for placement annealing to a more appropriate value */
     state.t = starting_t(&state, &costs, annealing_sched,
@@ -2962,53 +2973,66 @@ static int check_block_placement_consistency() {
         cluster_ctx.clb_nlist.blocks().size(), 0);
 
     /* Step through device grid and placement. Check it against blocks */
-    for (size_t i = 0; i < device_ctx.grid.width(); i++)
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
-            if (place_ctx.grid_blocks[i][j].usage
-                > type->capacity) {
-                VTR_LOG_ERROR(
-                    "%d blocks were placed at grid location (%zu,%zu), but location capacity is %d.\n",
-                    place_ctx.grid_blocks[i][j].usage, i, j,
-                    type->capacity);
-                error++;
-            }
-            int usage_check = 0;
-            for (int k = 0; k < type->capacity; k++) {
-                auto bnum = place_ctx.grid_blocks[i][j].blocks[k];
-                if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
-                    continue;
-
-                auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-                auto physical_tile = type;
-
-                if (physical_tile_type(bnum) != physical_tile) {
+    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                const t_physical_tile_loc tile_loc(i, j, layer_num);
+                const auto& type = device_ctx.grid.get_physical_type(tile_loc);
+                if (place_ctx.grid_blocks.get_usage(tile_loc) > type->capacity) {
                     VTR_LOG_ERROR(
-                        "Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
-                        size_t(bnum), logical_block->name, i, j,
-                        physical_tile->name);
+                        "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, layer_num,
+                        type->capacity);
                     error++;
                 }
+                int usage_check = 0;
+                for (int k = 0; k < type->capacity; k++) {
+                    auto bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
+                        continue;
 
-                auto& loc = place_ctx.block_locs[bnum].loc;
-                if (loc.x != int(i) || loc.y != int(j)
-                    || !is_sub_tile_compatible(physical_tile, logical_block,
-                                               loc.sub_tile)) {
+                    auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
+                    auto physical_tile = type;
+
+                    if (physical_tile_type(bnum) != physical_tile) {
+                        VTR_LOG_ERROR(
+                            "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
+                            size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
+                        error++;
+                    }
+
+                    auto& loc = place_ctx.block_locs[bnum].loc;
+                    if (loc.x != i || loc.y != j || loc.layer != layer_num
+                        || !is_sub_tile_compatible(physical_tile, logical_block,
+                                                   loc.sub_tile)) {
+                        VTR_LOG_ERROR(
+                            "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
+                            size_t(bnum),
+                            loc.x,
+                            loc.y,
+                            loc.sub_tile,
+                            tile_loc.x,
+                            tile_loc.y,
+                            tile_loc.layer_num,
+                            layer_num);
+                        error++;
+                    }
+                    ++usage_check;
+                    bdone[bnum]++;
+                }
+                if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
                     VTR_LOG_ERROR(
-                        "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
-                        size_t(bnum), loc.x, loc.y, loc.sub_tile, i, j, k);
+                        "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc),
+                        tile_loc.x,
+                        tile_loc.y,
+                        tile_loc.layer_num,
+                        usage_check);
                     error++;
                 }
-                ++usage_check;
-                bdone[bnum]++;
-            }
-            if (usage_check != place_ctx.grid_blocks[i][j].usage) {
-                VTR_LOG_ERROR(
-                    "%d block(s) were placed at location (%zu,%zu), but location contains %d block(s).\n",
-                    place_ctx.grid_blocks[i][j].usage, i, j, usage_check);
-                error++;
             }
         }
+    }
 
     /* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
@@ -3048,7 +3072,7 @@ int check_macro_placement_consistency() {
             }
 
             // Then check the place_ctx.grid data structure
-            if (place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile]
+            if (place_ctx.grid_blocks.block_at_location(member_pos)
                 != member_iblk) {
                 VTR_LOG_ERROR(
                     "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
@@ -3167,7 +3191,7 @@ static void print_resources_utilization() {
         auto block_loc = place_ctx.block_locs[blk_id];
         auto loc = block_loc.loc;
 
-        auto physical_tile = device_ctx.grid.get_physical_type(loc.x, loc.y);
+        auto physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
         num_type_instances[logical_block]++;

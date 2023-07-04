@@ -646,8 +646,8 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
-
-            RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.x,
+            RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
+                                                              blk_loc.loc.x,
                                                               blk_loc.loc.y,
                                                               (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
                                                               iclass);
@@ -754,7 +754,8 @@ static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RR
                     rr_type = SINK;
                 }
 
-                RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.x,
+                RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
+                                                                  blk_loc.loc.x,
                                                                   blk_loc.loc.y,
                                                                   rr_type,
                                                                   iclass);
