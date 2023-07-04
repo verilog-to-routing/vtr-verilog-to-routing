@@ -62,7 +62,7 @@ class PlaceDelayModel {
      *
      * Either compute or read methods must be invoked before invoking delay.
      */
-    virtual float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const = 0;
+    virtual float delay(const t_physical_tile_loc& from_loc, int from_pin, const t_physical_tile_loc& to_loc, int to_pin) const = 0;
 
     ///@brief Dumps the delay model to an echo file.
     virtual void dump_echo(std::string filename) const = 0;
@@ -96,7 +96,7 @@ class DeltaDelayModel : public PlaceDelayModel {
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
-    float delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/, int layer_num) const override;
+    float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
@@ -107,6 +107,7 @@ class DeltaDelayModel : public PlaceDelayModel {
 
   private:
     vtr::NdMatrix<float, 3> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
+    float cross_layer_delay_;
     bool is_flat_;
 };
 
@@ -121,7 +122,7 @@ class OverrideDelayModel : public PlaceDelayModel {
         int longest_length) override;
     // returns delay from the specified (x,y) to the specified (x,y) with both endpoints on layer_num and the
     // specified from and to pins
-    float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const override;
+    float delay(const t_physical_tile_loc& from_loc, int from_pin, const t_physical_tile_loc& to_loc, int to_pin) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
@@ -135,6 +136,7 @@ class OverrideDelayModel : public PlaceDelayModel {
 
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
+    float cross_layer_delay_;
     bool is_flat_;
 
     void compute_override_delay_model(RouterDelayProfiler& router,
