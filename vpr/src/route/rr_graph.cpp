@@ -88,7 +88,7 @@ void print_rr_graph_stats();
 std::set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type);
 
 ///@brief given a specific pin number and type, it returns layers that the pin should be connected to
-std::set<int> get_layers_pin_is_connected_to (const t_physical_tile_type_ptr type, int from_layers, int pin_index);
+std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type, int from_layers, int pin_index);
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
@@ -866,11 +866,11 @@ std::set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type) 
     return phy_type_layers;
 }
 
-std::set<int> get_layers_pin_is_connected_to (const t_physical_tile_type_ptr type, int from_layers, int pin_index){
+std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type, int from_layers, int pin_index) {
     const auto& device_ctx = g_vpr_ctx.device();
     std::set<int> layer_pin_index_is_connected_to;
     for (int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
-        if (is_pin_conencted_to_layer(type, pin_index,from_layers, layer, device_ctx.grid.get_num_layers())){
+        if (is_pin_conencted_to_layer(type, pin_index, from_layers, layer, device_ctx.grid.get_num_layers())) {
             layer_pin_index_is_connected_to.insert(layer);
         }
     }
@@ -2508,7 +2508,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         RRNodeId node_index = rr_graph_builder.node_lookup().find_node(layer, i, j, OPIN, pin_index, side);
         VTR_ASSERT(node_index);
 
-        for(auto connected_layer : get_layers_pin_is_connected_to(type, layer, pin_index)){
+        for (auto connected_layer : get_layers_pin_is_connected_to(type, layer, pin_index)) {
             if (total_pin_Fc > 0) {
                 get_bidir_opin_connections(rr_graph_builder, layer, connected_layer, i, j, pin_index,
                                            node_index, rr_edges_to_create, opin_to_track_map,
@@ -3104,7 +3104,6 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
                                                                           const int* sets_per_seg_type) {
-
     /* allocate 'result' matrix and initialize entries to OPEN. also allocate and intialize matrix which will be
      * used to index into the correct entries when loading up 'result' */
     auto& grid = g_vpr_ctx.device().grid;
@@ -3149,7 +3148,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                     for (int iheight = 0; iheight < Type->height; iheight++) {
                         for (int iside = 0; iside < 4; iside++) {
                             for (int iconn = 0; iconn < max_Fc; iconn++) {
-                                for(auto connected_layer: get_layers_pin_is_connected_to(Type, type_layer_index, ipin)) {
+                                for (auto connected_layer : get_layers_pin_is_connected_to(Type, type_layer_index, ipin)) {
                                     int relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][connected_layer][iside][iconn];
                                     if (relative_track_ind != OPEN) {
                                         VTR_ASSERT(relative_track_ind <= num_seg_type_tracks);
@@ -3157,7 +3156,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
 
                                         VTR_ASSERT(absolute_track_ind >= 0);
                                         result[ipin][iwidth][iheight][connected_layer][iside].push_back(
-                                                absolute_track_ind);
+                                            absolute_track_ind);
                                     }
                                 }
                             }
@@ -3264,7 +3263,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                 for (int height = 0; height < Type->height; ++height) {
                     for (e_side side : SIDES) {
                         if (Type->pinloc[width][height][side][pin] == 1) {
-                            for(auto connected_layer : get_layers_pin_is_connected_to(Type, type_layer_index, grid.get_num_layers())){
+                            for (auto connected_layer : get_layers_pin_is_connected_to(Type, type_layer_index, grid.get_num_layers())) {
                                 dir_list[width][height][connected_layer][side][num_dir[width][height][connected_layer][side]] = pin;
                                 num_dir[width][height][connected_layer][side]++;
                             }
@@ -3844,7 +3843,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
                         for (int iseg = 0; iseg < num_seg_types; iseg++) {
                             num_tracks += Fc[pin][seg_inf[iseg].seg_index]; // AA: Fc_in and Fc_out matrices are unified for all segments so need to map index.
                         }
-                        for(auto connected_layer : get_layers_pin_is_connected_to(Type, type_layer_index, pin)){
+                        for (auto connected_layer : get_layers_pin_is_connected_to(Type, type_layer_index, pin)) {
                             if (!pin_to_track_map[pin][width][height][connected_layer][side].empty()) {
                                 num_tracks = std::min(num_tracks,
                                                       (int)pin_to_track_map[pin][width][height][connected_layer][side].size());
@@ -3979,7 +3978,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             /* Get the list of opin to mux connections for that chan seg. */
             bool clipped;
 
-            for(auto connected_layer : get_layers_pin_is_connected_to(type, layer, pin_index)){
+            for (auto connected_layer : get_layers_pin_is_connected_to(type, layer, pin_index)) {
                 /* Check the pin physical layer and connect it to the same layer if necessary */
                 rr_edge_count += get_unidir_opin_connections(rr_graph_builder, layer, connected_layer, chan, seg,
                                                              seg_type_Fc, seg_index, chan_type, seg_details,

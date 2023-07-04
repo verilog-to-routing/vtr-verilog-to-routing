@@ -644,6 +644,12 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
     //Profile each wire segment type
     for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+        //if arch file specifies die_number="layer_num" doesn't require inter-cluster
+        //programmable routing resources, then we shouldn't profile wire segment types in
+        //the current layer
+        if (!device_ctx.inter_cluster_prog_routing_resources[layer_num]) {
+            continue;
+        }
         for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
             //First try to pick good representative sample locations for each type
             std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;
@@ -715,9 +721,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
             t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
 
             for (e_rr_type chan_type : chan_types) {
-                //if arch file specifies die_number="layer_num" doesn't require inter-cluster
-                //programmable routing resources, then we shouldn't find any sample location, no warning required
-                if (sample_nodes[chan_type].empty() && device_ctx.inter_cluster_prog_routing_resources[layer_num]) {
+                if (sample_nodes[chan_type].empty()) {
                     VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
                                  rr_node_typename[chan_type],
                                  segment_inf[iseg].name.c_str(),
