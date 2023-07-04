@@ -576,18 +576,23 @@ struct t_net_power {
  */
 struct t_bb {
     t_bb() = default;
-    t_bb(int xmin_, int xmax_, int ymin_, int ymax_)
+    t_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_min_, int layer_max_)
         : xmin(xmin_)
         , xmax(xmax_)
         , ymin(ymin_)
-        , ymax(ymax_) {
+        , ymax(ymax_)
+        , layer_min(layer_min_)
+        , layer_max(layer_max_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
+        VTR_ASSERT(layer_max_ >= layer_min_);
     }
     int xmin = OPEN;
     int xmax = OPEN;
     int ymin = OPEN;
     int ymax = OPEN;
+    int layer_min = OPEN;
+    int layer_max = OPEN;
 };
 
 /**

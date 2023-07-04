@@ -814,7 +814,9 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     t_bb search_range(min_compressed_loc[from_layer_num].x,
                       max_compressed_loc[from_layer_num].x,
                       min_compressed_loc[from_layer_num].y,
-                      max_compressed_loc[from_layer_num].y);
+                      max_compressed_loc[from_layer_num].y,
+                      from_layer_num,
+                      from_layer_num);
 
     t_physical_tile_loc to_compressed_loc;
     bool legal = false;
@@ -1171,7 +1173,7 @@ std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_bl
             max_cy = std::min<int>(compressed_block_grid.get_num_rows(layer_num) - 1, cy_from + rlim_y_max_range);
         }
 
-        search_range[layer_num] = t_bb(min_cx, max_cx, min_cy, max_cy);
+        search_range[layer_num] = t_bb(min_cx, max_cx, min_cy, max_cy, layer_num, layer_num);
     }
 
     return search_range;

@@ -13,7 +13,10 @@ class RouterDelayProfiler {
     RouterDelayProfiler(const Netlist<>& net_list,
                         const RouterLookahead* lookahead,
                         bool is_flat);
-    bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay);
+    bool calculate_delay(int source_node,
+                         int sink_node,
+                         const t_router_opts& router_opts,
+                         float* net_delay);
 
   private:
     const Netlist<>& net_list_;

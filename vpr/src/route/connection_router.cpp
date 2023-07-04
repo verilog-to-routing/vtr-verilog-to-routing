@@ -124,6 +124,8 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
         full_device_bounding_box.ymin = 0;
         full_device_bounding_box.xmax = grid_.width() - 1;
         full_device_bounding_box.ymax = grid_.height() - 1;
+        full_device_bounding_box.layer_min = 0;
+        full_device_bounding_box.layer_max = grid_.get_num_layers() - 1;
 
         //
         //TODO: potential future optimization
@@ -443,6 +445,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
         target_bb.ymin = rr_graph_->node_ylow(RRNodeId(target_node));
         target_bb.xmax = rr_graph_->node_xhigh(RRNodeId(target_node));
         target_bb.ymax = rr_graph_->node_yhigh(RRNodeId(target_node));
+        target_bb.layer_min = rr_graph_->node_layer(RRNodeId(target_node));
+        target_bb.layer_max = rr_graph_->node_layer(RRNodeId(target_node));
     }
 
     // For each node associated with the current heap element, expand all of it's neighbors
@@ -1023,6 +1027,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     highfanout_bb.xmax = rr_graph_->node_xhigh(target_node_id);
     highfanout_bb.ymin = rr_graph_->node_ylow(target_node_id);
     highfanout_bb.ymax = rr_graph_->node_yhigh(target_node_id);
+    highfanout_bb.layer_min = rr_graph_->node_type(target_node_id);
+    highfanout_bb.layer_max = rr_graph_->node_type(target_node_id);
 
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
@@ -1054,6 +1060,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(rr_node_to_add));
                 highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(rr_node_to_add));
                 highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(rr_node_to_add));
+                highfanout_bb.layer_min = std::min<int>(highfanout_bb.layer_min, rr_graph_->node_type(rr_node_to_add));
+                highfanout_bb.layer_max = std::max<int>(highfanout_bb.layer_max, rr_graph_->node_type(rr_node_to_add));
                 if (is_flat_) {
                     if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                         chan_nodes_added++;

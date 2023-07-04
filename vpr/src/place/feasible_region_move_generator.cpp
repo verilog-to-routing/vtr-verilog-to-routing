@@ -98,6 +98,9 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         FR_coords.ymin = std::min(from.y, max_y);
         FR_coords.ymax = std::max(from.y, yt);
     }
+
+    FR_coords.layer_min = from.layer;
+    FR_coords.layer_max = from.layer;
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
     t_range_limiters range_limiters;
