@@ -416,7 +416,6 @@ std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_o
 t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing sink inter layer lookahead");
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_graph;
 
     int num_layers = device_ctx.grid.get_num_layers();
     bool is_multi_layer = (num_layers > 1);

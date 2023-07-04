@@ -280,7 +280,7 @@ MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_f
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     if (num_layers > 1) {
         const auto& sw_inf = g_vpr_ctx.device().all_sw_inf;
-        int inter_layer_sw_id = det_routing_arch_.wire_to_rr_ipin_switch_between_dice;
+        int inter_layer_sw_id = det_routing_arch_.wire_to_arch_ipin_switch_between_dice;
         VTR_ASSERT(inter_layer_sw_id >= 0);
         inter_layer_connection_box_sw_delay = sw_inf.at(inter_layer_sw_id).Tdel();
     } else {
