@@ -509,6 +509,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     int to_ylow = rr_graph_->node_ylow(to_node);
     int to_xhigh = rr_graph_->node_xhigh(to_node);
     int to_yhigh = rr_graph_->node_yhigh(to_node);
+    int to_layer = rr_graph_->node_layer(to_node);
 
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
@@ -516,7 +517,9 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     if ((to_xhigh < bounding_box.xmin    // Strictly left of BB left-edge
          || to_xlow > bounding_box.xmax  // Strictly right of BB right-edge
          || to_yhigh < bounding_box.ymin // Strictly below BB bottom-edge
-         || to_ylow > bounding_box.ymax) // Strictly above BB top-edge
+         || to_ylow > bounding_box.ymax
+         || to_layer < bounding_box.layer_min
+         || to_layer > bounding_box.layer_max) // Strictly above BB top-edge
         && !rcv_path_manager.is_enabled()) {
         VTR_LOGV_DEBUG(router_debug_,
                        "      Pruned expansion of node %d edge %zu -> %d"
@@ -540,7 +543,9 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
             if (to_xlow < target_bb.xmin
                 || to_ylow < target_bb.ymin
                 || to_xhigh > target_bb.xmax
-                || to_yhigh > target_bb.ymax) {
+                || to_yhigh > target_bb.ymax
+                || to_layer < target_bb.layer_min
+                || to_layer > target_bb.layer_max) {
                 VTR_LOGV_DEBUG(router_debug_,
                                "      Pruned expansion of node %d edge %zu -> %d"
                                " (to node is IPIN at %d,%dx%d,%d which does not"
