@@ -166,6 +166,7 @@ static float find_neightboring_average(vtr::NdMatrix<float, 3>& matrix, t_physic
 std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
                                                            const Netlist<>& net_list,
+                                                           const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                                            t_det_routing_arch* det_routing_arch,
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
@@ -193,10 +194,13 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
+    float min_cross_layer_delay = get_min_cross_layer_delay(arch_switch_inf,
+                                                            segment_inf,
+                                                            det_routing_arch->wire_to_arch_ipin_switch_between_dice);
     if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
-        place_delay_model = std::make_unique<DeltaDelayModel>(is_flat);
+        place_delay_model = std::make_unique<DeltaDelayModel>(min_cross_layer_delay, is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        place_delay_model = std::make_unique<OverrideDelayModel>(is_flat);
+        place_delay_model = std::make_unique<OverrideDelayModel>(min_cross_layer_delay, is_flat);
     } else {
         VTR_ASSERT_MSG(false, "Invalid placer delay model");
     }
@@ -240,7 +244,7 @@ void OverrideDelayModel::compute(
         longest_length,
         is_flat_);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, false);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, false);
 
     compute_override_delay_model(route_profiler, router_opts);
 }

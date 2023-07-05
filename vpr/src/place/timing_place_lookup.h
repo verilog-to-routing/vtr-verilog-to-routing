@@ -5,6 +5,7 @@
 std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
                                                            const Netlist<>& net_list,
+                                                           const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                                            t_det_routing_arch* det_routing_arch,
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,

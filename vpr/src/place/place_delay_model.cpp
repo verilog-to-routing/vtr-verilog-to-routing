@@ -37,6 +37,7 @@ float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin
     // I haven't thought about what to do.
     float cross_layer_td = 0;
     if (from_loc.layer_num != to_loc.layer_num) {
+        VTR_ASSERT(std::isfinite(cross_layer_delay_));
         cross_layer_td = cross_layer_delay_;
     }
     return delays_[to_loc.layer_num][delta_x][delta_y] + cross_layer_td;
@@ -266,7 +267,7 @@ void OverrideDelayModel::read(const std::string& file) {
     auto model = reader.getRoot<VprOverrideDelayModel>();
     ToNdMatrix<3, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, is_flat_);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, is_flat_);
 
     // Reading non-scalar capnproto fields is roughly equivilant to using
     // a std::vector of the field type.  Actual type is capnp::List<X>::Reader.
@@ -318,6 +319,7 @@ void OverrideDelayModel::write(const std::string& file) const {
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
+                                                               const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                                                t_chan_width_dist chan_width_dist,
                                                                const t_placer_opts& placer_opts,
                                                                const t_router_opts& router_opts,
@@ -326,8 +328,16 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                                                const t_direct_inf* directs,
                                                                const int num_directs,
                                                                bool is_flat) {
-    return compute_place_delay_model(placer_opts, router_opts, net_list, det_routing_arch, segment_inf,
-                                     chan_width_dist, directs, num_directs, is_flat);
+    return compute_place_delay_model(placer_opts,
+                                     router_opts,
+                                     net_list,
+                                     arch_switch_inf,
+                                     det_routing_arch,
+                                     segment_inf,
+                                     chan_width_dist,
+                                     directs,
+                                     num_directs,
+                                     is_flat);
 }
 
 /**

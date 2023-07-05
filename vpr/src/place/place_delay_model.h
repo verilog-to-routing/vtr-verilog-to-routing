@@ -29,6 +29,7 @@ class PlaceDelayModel;
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
+                                                               const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                                                t_chan_width_dist chan_width_dist,
                                                                const t_placer_opts& place_opts,
                                                                const t_router_opts& router_opts,
@@ -85,10 +86,15 @@ class PlaceDelayModel {
 ///@brief A simple delay model based on the distance (delta) between block locations.
 class DeltaDelayModel : public PlaceDelayModel {
   public:
-    DeltaDelayModel(bool is_flat)
-        : is_flat_(is_flat) {}
-    DeltaDelayModel(vtr::NdMatrix<float, 3> delta_delays, bool is_flat)
+    DeltaDelayModel(float min_cross_layer_delay,
+                    bool is_flat)
+        : cross_layer_delay_(min_cross_layer_delay)
+        , is_flat_(is_flat) {}
+    DeltaDelayModel(float min_cross_layer_delay,
+                    vtr::NdMatrix<float, 3> delta_delays,
+                    bool is_flat)
         : delays_(std::move(delta_delays))
+        , cross_layer_delay_(min_cross_layer_delay)
         , is_flat_(is_flat) {}
 
     void compute(
@@ -113,8 +119,10 @@ class DeltaDelayModel : public PlaceDelayModel {
 
 class OverrideDelayModel : public PlaceDelayModel {
   public:
-    OverrideDelayModel(bool is_flat)
-        : is_flat_(is_flat) {}
+    OverrideDelayModel(float min_cross_layer_delay,
+                       bool is_flat)
+        : cross_layer_delay_(min_cross_layer_delay)
+        , is_flat_(is_flat) {}
     void compute(
         RouterDelayProfiler& route_profiler,
         const t_placer_opts& placer_opts,
