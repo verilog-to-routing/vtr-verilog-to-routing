@@ -43,7 +43,7 @@
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.25"/>
         <pinlocations pattern="custom">
-          <loc side="left">clb.I clb.clk</loc>
+          <loc side="left" layer_offset="1">clb.I clb.clk</loc>
           <!-- layer_offset specifies which layers (in case of multi-die FPGAs) this pin can connect to
                Examples: This arch file has 2 different dice, and clb is located at both dice
                   1) For clbs that are located at layer 0: their pins can be connected to the layer 0 itself, and
