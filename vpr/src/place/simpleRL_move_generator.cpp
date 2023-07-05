@@ -18,6 +18,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
     avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
+    avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformMoveGenerator>();
     avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
     avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
     avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
@@ -32,6 +33,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
     avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
+    avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformMoveGenerator>();
     avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
     avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
     avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();

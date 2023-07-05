@@ -946,6 +946,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 //Array of move type strings
 static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = {
     "Uniform",
+    "UniformInterLayer",
     "Median",
     "W. Centroid",
     "Centroid",
