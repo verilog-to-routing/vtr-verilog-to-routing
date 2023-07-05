@@ -1645,6 +1645,10 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                     for (iconn = 0; iconn < max_conn; iconn++) {
                         ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side][iconn];
 
+                        if(!is_pin_conencted_to_layer(type,ipin,layer_index,layer,device_ctx.grid.get_num_layers())){
+                            continue;
+                        }
+
                         /* Check there is a connection and Fc map isn't wrong */
                         /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
                         RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer_index, x, y, IPIN, ipin, side);

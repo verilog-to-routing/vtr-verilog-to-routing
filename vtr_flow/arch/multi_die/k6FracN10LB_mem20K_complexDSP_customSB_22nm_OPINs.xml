@@ -604,14 +604,14 @@
         <clock name="clock" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
         <pinlocations pattern="custom">
-          <loc side="left" layer_offset="1">io.outpad</loc>
-          <loc side="left">io.inpad io.clock</loc>
-          <loc side="top" layer_offset="1">io.outpad</loc>
-          <loc side="top">io.inpad io.clock</loc>
-          <loc side="right" layer_offset="1">io.outpad</loc>
-          <loc side="right">io.inpad io.clock</loc>
-          <loc side="bottom" layer_offset="1">io.outpad</loc>
-          <loc side="bottom">io.inpad io.clock</loc>
+          <loc side="left" layer_offset="1">io.inpad</loc>
+          <loc side="left">io.outpad io.clock</loc>
+          <loc side="top" layer_offset="1">io.inpad</loc>
+          <loc side="top">io.outpad io.clock</loc>
+          <loc side="right" layer_offset="1">io.inpad</loc>
+          <loc side="right">io.outpad io.clock</loc>
+          <loc side="bottom" layer_offset="1">io.inpad</loc>
+          <loc side="bottom">io.outpad io.clock</loc>
         </pinlocations>
       </sub_tile>
     </tile>

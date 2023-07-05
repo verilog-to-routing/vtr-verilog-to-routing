@@ -88,7 +88,10 @@ void print_rr_graph_stats();
 std::set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type);
 
 ///@brief given a specific pin number and type, it returns layers that the pin should be connected to
-std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type, int from_layers, int pin_index);
+std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type, int from_layer, int pin_index);
+
+///@brief given a specific layer number and type, it returns layers which have same pin_index connected to the given layer
+std::set<int> get_layers_connected_to_pin(const t_physical_tile_type_ptr type, int to_layer, int pin_index);
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
@@ -866,16 +869,28 @@ std::set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type) 
     return phy_type_layers;
 }
 
-std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type, int from_layers, int pin_index) {
+std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type, int from_layer, int pin_index) {
     const auto& device_ctx = g_vpr_ctx.device();
     std::set<int> layer_pin_index_is_connected_to;
     for (int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
-        if (is_pin_conencted_to_layer(type, pin_index, from_layers, layer, device_ctx.grid.get_num_layers())) {
+        if (is_pin_conencted_to_layer(type, pin_index, from_layer, layer, device_ctx.grid.get_num_layers())) {
             layer_pin_index_is_connected_to.insert(layer);
         }
     }
     return layer_pin_index_is_connected_to;
 }
+
+std::set<int> get_layers_connected_to_pin(const t_physical_tile_type_ptr type, int to_layer, int pin_index){
+    const auto& device_ctx = g_vpr_ctx.device();
+    std::set<int> layers_connected_to_pin;
+    for(int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++){
+        if(is_pin_conencted_to_layer(type, pin_index, layer, to_layer, device_ctx.grid.get_num_layers())){
+            layers_connected_to_pin.insert(layer);
+        }
+    }
+    return layers_connected_to_pin;
+}
+
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
     if (current.max != proposed.max
@@ -3261,18 +3276,16 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         for (auto type_layer_index : type_layer) {
             for (int width = 0; width < Type->width; ++width) {
                 for (int height = 0; height < Type->height; ++height) {
-                    for (e_side side : SIDES) {
+                    for (e_side side: SIDES) {
                         if (Type->pinloc[width][height][side][pin] == 1) {
-                            for (auto connected_layer : get_layers_pin_is_connected_to(Type, type_layer_index, grid.get_num_layers())) {
-                                dir_list[width][height][connected_layer][side][num_dir[width][height][connected_layer][side]] = pin;
-                                num_dir[width][height][connected_layer][side]++;
+                            for (auto i = 0; i < (int) get_layers_connected_to_pin(Type, type_layer_index, pin).size(); i++) {
+                                dir_list[width][height][type_layer_index][side][num_dir[width][height][type_layer_index][side]] = pin;
+                                num_dir[width][height][type_layer_index][side]++;
                             }
                         }
                     }
                 }
             }
-            //if a physical type appears in more than one layer, we only need to iterate the first type_layer
-            break;
         }
     }
 
