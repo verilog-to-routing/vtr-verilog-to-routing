@@ -307,11 +307,10 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     int first_rlim = 15;
 
     auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                                compressed_centroid_loc,
-                                                                first_rlim,
-                                                                num_layers);
+                                                                compressed_centroid_loc[centroid_loc_layer_num],
+                                                                first_rlim);
 
-    int delta_cx = search_range[centroid_loc_layer_num].xmax - search_range[centroid_loc_layer_num].xmin;
+    int delta_cx = search_range.xmax - search_range.xmin;
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
     int cx_from = OPEN;
@@ -323,7 +322,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     bool legal = find_compatible_compressed_loc_in_range(block_type,
                                                          delta_cx,
                                                          {cx_from, cy_from, layer_from},
-                                                         search_range[centroid_loc_layer_num],
+                                                         search_range,
                                                          to_compressed_loc,
                                                          false,
                                                          centroid_loc_layer_num);

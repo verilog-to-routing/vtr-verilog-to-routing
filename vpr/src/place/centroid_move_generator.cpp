@@ -29,6 +29,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     range_limiters.first_rlim = place_move_ctx.first_rlim;
 
     t_pl_loc to, centroid;
+    to.layer = from.layer;
 
     /* Calculate the centroid location*/
     calculate_centroid_loc(b_from, false, centroid, NULL);
