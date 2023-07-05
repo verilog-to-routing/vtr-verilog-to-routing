@@ -66,7 +66,6 @@ bool RouterDelayProfiler::calculate_delay(int source_node,
         bounding_box.layer_max = layer_num;
     }
 
-
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.router_profiler_astar_fac;

@@ -19,10 +19,7 @@
 #include "route_common.h"
 #include "route_timing.h"
 
-static void dijkstra_flood_to_wires(int itile, RRNodeId inode,
-                                    util::t_src_opin_delays& src_opin_delays,
-                                    util::t_src_opin_inter_layer_delays& src_opin_inter_layer_delays,
-                                    bool is_multi_layer);
+static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_delays& src_opin_delays, util::t_src_opin_inter_layer_delays& src_opin_inter_layer_delays, bool is_multi_layer);
 
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays);
 
@@ -324,14 +321,13 @@ std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_o
     }
 
     t_src_opin_inter_layer_delays src_opin_inter_layer_delays;
-    if(is_multi_layer) {
+    if (is_multi_layer) {
         src_opin_inter_layer_delays.resize(num_layers);
         for (int layer_num = 0; layer_num < num_layers; layer_num++) {
             int num_physical_tiles = (int)device_ctx.physical_tile_types.size();
             src_opin_inter_layer_delays[layer_num].resize(num_physical_tiles);
         }
     }
-
 
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
@@ -372,7 +368,7 @@ std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_o
 
                         if (ptc >= int(src_opin_delays[layer_num][itile].size())) {
                             src_opin_delays[layer_num][itile].resize(ptc + 1); //Inefficient but functional...
-                            if(is_multi_layer) {
+                            if (is_multi_layer) {
                                 size_t old_size = src_opin_inter_layer_delays[layer_num][itile].size();
                                 src_opin_inter_layer_delays[layer_num][itile].resize(ptc + 1);
                                 for (size_t i = old_size; i < src_opin_inter_layer_delays[layer_num][itile].size(); ++i) {
@@ -419,7 +415,7 @@ t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(b
 
     int num_layers = device_ctx.grid.get_num_layers();
     bool is_multi_layer = (num_layers > 1);
-    if(!is_multi_layer) {
+    if (!is_multi_layer) {
         return t_sink_inter_layer_connection();
     }
     // AM: Currently, for 3D stuff, I am only focusing on the case that flat-router is not enabled. If flat_router is on, I am not sure whether it works.
@@ -448,7 +444,7 @@ t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(b
                 if (get_class_type_from_class_physical_num(&physical_tile, class_num) == e_pin_type::RECEIVER) {
                     for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
                         if (from_layer_num == to_layer_num) {
-                            continue ;
+                            continue;
                         } else {
                             for (int pin_num : get_pin_list_from_class_physical_num(&physical_tile, class_num)) {
                                 if (is_pin_conencted_to_layer(&physical_tile, pin_num, from_layer_num, to_layer_num, num_layers)) {
@@ -547,7 +543,8 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 } // namespace util
 
 static void dijkstra_flood_to_wires(int itile,
-                                    RRNodeId node, util::t_src_opin_delays& src_opin_delays,
+                                    RRNodeId node,
+                                    util::t_src_opin_delays& src_opin_delays,
                                     util::t_src_opin_inter_layer_delays& src_opin_inter_layer_delays,
                                     bool is_multi_layer) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -620,14 +617,13 @@ static void dijkstra_flood_to_wires(int itile,
 
             //Keep costs of the best path to reach each wire type
             if ((!src_opin_delays[node_layer_num][itile][ptc].count(seg_index)
-                || curr.delay < src_opin_delays[node_layer_num][itile][ptc][seg_index].delay)
+                 || curr.delay < src_opin_delays[node_layer_num][itile][ptc][seg_index].delay)
                 && curr_layer_num == node_layer_num) {
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].wire_rr_type = curr_rr_type;
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].wire_seg_index = seg_index;
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].delay = curr.delay;
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].congestion = curr.congestion;
-            } else if (is_multi_layer && (!src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num].count(seg_index)
-                        || curr.delay < src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].delay)
+            } else if (is_multi_layer && (!src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num].count(seg_index) || curr.delay < src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].delay)
                        && curr_layer_num != node_layer_num) {
                 src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].wire_rr_type = curr_rr_type;
                 src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].wire_seg_index = seg_index;

@@ -275,8 +275,8 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 
 /******** Interface class member function definitions ********/
 MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
-    : det_routing_arch_(det_routing_arch) , is_flat_(is_flat) {
-
+    : det_routing_arch_(det_routing_arch)
+    , is_flat_(is_flat) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     if (num_layers > 1) {
         const auto& sw_inf = g_vpr_ctx.device().all_sw_inf;
@@ -440,8 +440,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         //delay to reach the sink.
 
         t_physical_tile_type_ptr from_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
-                                                                                rr_graph.node_ylow(from_node),
-                                                                                from_layer_num});
+                                                                                     rr_graph.node_ylow(from_node),
+                                                                                     from_layer_num});
         t_physical_tile_type_ptr to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
                                                                                    rr_graph.node_ylow(to_node),
                                                                                    to_layer_num});
@@ -452,9 +452,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         auto from_ptc = rr_graph.node_ptc_num(from_node);
         auto to_ptc = rr_graph.node_ptc_num(to_node);
 
-        if (from_layer_num == to_layer_num ||
-            inter_layer_connection[to_layer_num][to_tile_index][to_ptc].find(from_layer_num) !=
-                inter_layer_connection[to_layer_num][to_tile_index][to_ptc].end()) {
+        if (from_layer_num == to_layer_num || inter_layer_connection[to_layer_num][to_tile_index][to_ptc].find(from_layer_num) != inter_layer_connection[to_layer_num][to_tile_index][to_ptc].end()) {
             std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc],
                                                                                        from_layer_num,
                                                                                        delta_x,
@@ -462,16 +460,15 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         }
 
         if (from_layer_num != to_layer_num) {
-                float tmp_expected_delay_cost, tmp_expected_cong_cost;
-                std::tie(tmp_expected_delay_cost, tmp_expected_cong_cost) =
-                    get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
-                                           to_layer_num,
-                                           delta_x,
-                                           delta_y);
-                if (tmp_expected_delay_cost < expected_delay_cost) {
-                    expected_delay_cost = tmp_expected_delay_cost;
-                    expected_cong_cost = tmp_expected_cong_cost;
-                }
+            float tmp_expected_delay_cost, tmp_expected_cong_cost;
+            std::tie(tmp_expected_delay_cost, tmp_expected_cong_cost) = get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
+                                                                                               to_layer_num,
+                                                                                               delta_x,
+                                                                                               delta_y);
+            if (tmp_expected_delay_cost < expected_delay_cost) {
+                expected_delay_cost = tmp_expected_delay_cost;
+                expected_cong_cost = tmp_expected_cong_cost;
+            }
         }
 
         expected_delay_cost *= params.criticality;
@@ -498,17 +495,16 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         bool get_cost_entry = true;
         if (from_layer_num != to_layer_num) {
-                t_physical_tile_type_ptr to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
-                                                                                           rr_graph.node_ylow(to_node),
-                                                                                           to_layer_num});
-                auto to_tile_index = std::distance(&device_ctx.physical_tile_types[0], to_tile_type);
-                auto to_ptc = rr_graph.node_ptc_num(to_node);
-                if(inter_layer_connection[to_layer_num][to_tile_index][to_ptc].find(from_layer_num) ==
-                    inter_layer_connection[to_layer_num][to_tile_index][to_ptc].end()) {
-                    get_cost_entry = false;
-                    expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
-                    expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
-                }
+            t_physical_tile_type_ptr to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
+                                                                                       rr_graph.node_ylow(to_node),
+                                                                                       to_layer_num});
+            auto to_tile_index = std::distance(&device_ctx.physical_tile_types[0], to_tile_type);
+            auto to_ptc = rr_graph.node_ptc_num(to_node);
+            if (inter_layer_connection[to_layer_num][to_tile_index][to_ptc].find(from_layer_num) == inter_layer_connection[to_layer_num][to_tile_index][to_ptc].end()) {
+                get_cost_entry = false;
+                expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
+                expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
+            }
         }
 
         if (get_cost_entry) {
@@ -520,13 +516,12 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                         delta_y);
             expected_delay_cost = cost_entry.delay;
             expected_cong_cost = cost_entry.congestion;
-            if(from_layer_num != to_layer_num) {
-                    expected_delay_cost += inter_layer_connection_box_sw_delay;
+            if (from_layer_num != to_layer_num) {
+                expected_delay_cost += inter_layer_connection_box_sw_delay;
             }
 
             expected_delay_cost *= params.criticality;
             expected_cong_cost *= (1 - params.criticality);
-
         }
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
@@ -557,12 +552,10 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) =
-        util::compute_router_src_opin_lookahead(is_flat_);
+    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
 
     // Store the sinks that have connections to other layers
     this->inter_layer_connection = util::register_tiles_with_inter_layer_connection_block(is_flat_);
-
 }
 
 void MapLookahead::compute_intra_tile() {
@@ -585,8 +578,7 @@ void MapLookahead::read(const std::string& file) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) =
-        util::compute_router_src_opin_lookahead(is_flat_);
+    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
 
     this->inter_layer_connection = util::register_tiles_with_inter_layer_connection_block(is_flat_);
 }
