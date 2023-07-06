@@ -38,12 +38,8 @@ e_create_move UniformInterLayerMoveGenerator::propose_move(t_pl_blocks_to_be_mov
 
     int to_layer = candidate_layers[vtr::irand((int)candidate_layers.size() - 1)];
 
-    t_pl_loc to;
+    t_pl_loc to = from;
     to.layer = to_layer;
-
-    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from)) {
-        return e_create_move::ABORT;
-    }
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 
