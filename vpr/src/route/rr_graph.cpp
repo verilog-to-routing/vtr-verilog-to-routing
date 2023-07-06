@@ -880,17 +880,16 @@ std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type
     return layer_pin_index_is_connected_to;
 }
 
-std::set<int> get_layers_connected_to_pin(const t_physical_tile_type_ptr type, int to_layer, int pin_index){
+std::set<int> get_layers_connected_to_pin(const t_physical_tile_type_ptr type, int to_layer, int pin_index) {
     const auto& device_ctx = g_vpr_ctx.device();
     std::set<int> layers_connected_to_pin;
-    for(int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++){
-        if(is_pin_conencted_to_layer(type, pin_index, layer, to_layer, device_ctx.grid.get_num_layers())){
+    for (int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
+        if (is_pin_conencted_to_layer(type, pin_index, layer, to_layer, device_ctx.grid.get_num_layers())) {
             layers_connected_to_pin.insert(layer);
         }
     }
     return layers_connected_to_pin;
 }
-
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
     if (current.max != proposed.max
@@ -1340,7 +1339,6 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
-    //TODO: sara_todo this function should be fixed as soon as possible
     alloc_and_load_rr_switch_inf(g_vpr_ctx.mutable_device().rr_graph_builder,
                                  g_vpr_ctx.mutable_device().switch_fanin_remap,
                                  device_ctx.all_sw_inf,
@@ -3276,9 +3274,9 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         for (auto type_layer_index : type_layer) {
             for (int width = 0; width < Type->width; ++width) {
                 for (int height = 0; height < Type->height; ++height) {
-                    for (e_side side: SIDES) {
+                    for (e_side side : SIDES) {
                         if (Type->pinloc[width][height][side][pin] == 1) {
-                            for (auto i = 0; i < (int) get_layers_connected_to_pin(Type, type_layer_index, pin).size(); i++) {
+                            for (auto i = 0; i < (int)get_layers_connected_to_pin(Type, type_layer_index, pin).size(); i++) {
                                 dir_list[width][height][type_layer_index][side][num_dir[width][height][type_layer_index][side]] = pin;
                                 num_dir[width][height][type_layer_index][side]++;
                             }

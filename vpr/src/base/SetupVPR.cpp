@@ -758,7 +758,7 @@ static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_
             wire_to_arch_ipin_switch = ipin_cblock_switch_index;
         } else {
             wire_to_arch_ipin_switch_between_dice = ipin_cblock_switch_index;
-        };
+        }
     }
 }
 
