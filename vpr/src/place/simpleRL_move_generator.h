@@ -169,8 +169,8 @@ class SimpleRLMoveGenerator : public MoveGenerator {
 
   public:
     // constructors using a pointer to the agent used
-    SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
-    SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
+    SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent, bool is_multi_layer);
+    SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent, bool is_multi_layer);
 
     // Updates affected_blocks with the proposed move, while respecting the current rlim
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);

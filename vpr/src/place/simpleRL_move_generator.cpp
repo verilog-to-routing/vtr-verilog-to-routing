@@ -14,7 +14,7 @@ static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, fl
  *  RL move generator implementation   *
  *                                     *
  *                                     */
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent, bool is_multi_layer) {
     avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
@@ -24,12 +24,14 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
     avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
     avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
     avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
-    avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformInterLayerMoveGenerator>();
+    if (is_multi_layer) {
+        avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformInterLayerMoveGenerator>();
+    }
 
     karmed_bandit_agent = std::move(agent);
 }
 
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent) {
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent, bool is_multi_layer) {
     avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
@@ -39,7 +41,9 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
     avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
     avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
     avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
-    avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformInterLayerMoveGenerator>();
+    if (is_multi_layer) {
+        avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformInterLayerMoveGenerator>();
+    }
 
     karmed_bandit_agent = std::move(agent);
 }
