@@ -21,13 +21,13 @@ enum e_move_result {
 //This is to list all the available moves
 enum class e_move_type {
     UNIFORM,
-    UniformInterLayer,
     MEDIAN,
     CENTROID,
     W_CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
+    UniformInterLayer,
     NUMBER_OF_AUTO_MOVES,
     MANUAL_MOVE = NUMBER_OF_AUTO_MOVES
 };
