@@ -711,7 +711,6 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    const int from_layer_num = from.layer;
     const int to_layer_num = to.layer;
     VTR_ASSERT(to.layer != OPEN);
 
@@ -722,7 +721,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //Determine the valid compressed grid location ranges
     t_bb search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                                compressed_locs[from_layer_num],
+                                                                compressed_locs[to_layer_num],
                                                                 rlim);
     int delta_cx = search_range.xmax - search_range.xmin;
 
@@ -735,7 +734,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                           b_from,
                                                                           search_range,
                                                                           delta_cx,
-                                                                          from_layer_num);
+                                                                          to_layer_num);
         if (!intersect) {
             return false;
         }
@@ -743,11 +742,11 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //TODO: For now, we only move the blocks on the same tile
     legal = find_compatible_compressed_loc_in_range(type,
                                                     delta_cx,
-                                                    compressed_locs[from_layer_num],
+                                                    compressed_locs[to_layer_num],
                                                     search_range,
                                                     to_compressed_loc,
                                                     false,
-                                                    from_layer_num);
+                                                    to_layer_num);
 
     if (!legal) {
         //No valid position found
