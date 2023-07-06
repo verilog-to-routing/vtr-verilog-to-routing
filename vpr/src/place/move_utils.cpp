@@ -1229,3 +1229,28 @@ std::string e_move_result_to_string(e_move_result move_outcome) {
     std::string move_result_to_string[] = {"Rejected", "Accepted", "Aborted"};
     return move_result_to_string[move_outcome];
 }
+
+int find_free_layer(t_logical_block_type_ptr logical_block, t_pl_loc loc) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    int free_layer = loc.layer;
+    if (device_ctx.grid.get_num_layers() > 1) {
+        const auto& compatible_layers = place_ctx.compressed_block_grids[logical_block->index].get_layer_nums();
+        if (compatible_layers.size() > 1) {
+            if (place_ctx.grid_blocks.block_at_location(loc) != EMPTY_BLOCK_ID) {
+                for (const auto& layer : compatible_layers) {
+                    if (layer != free_layer) {
+                        loc.layer = layer;
+                        if (place_ctx.grid_blocks.block_at_location(loc) == EMPTY_BLOCK_ID) {
+                            free_layer = layer;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return free_layer;
+}

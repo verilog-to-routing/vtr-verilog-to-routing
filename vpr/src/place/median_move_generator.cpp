@@ -121,8 +121,13 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     // TODO: When placer is updated to support moving blocks between dice, this needs to be changed. Currently, we only move blocks within a die.
     median_point.layer = from.layer;
     to.layer = from.layer;
-    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from))
+    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
+    }
+
+    int new_layer = find_free_layer(cluster_from_type, to);
+    VTR_ASSERT(new_layer != OPEN);
+    to.layer = new_layer;
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 
