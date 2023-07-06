@@ -15,6 +15,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             VTR_LOG("Probability of Weighted_median_move : %f \n", placer_opts.place_static_move_prob[4]);
             VTR_LOG("Probability of Timing_feasible_region_move : %f \n", placer_opts.place_static_move_prob[5]);
             VTR_LOG("Probability of Critical_uniform_move : %f \n", placer_opts.place_static_move_prob[6]);
+            VTR_LOG("Probability of Inter Layer Uniform Move : %f \n", placer_opts.place_static_move_prob[7]);
             move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
             move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
         } else { //Non-timing driven placement

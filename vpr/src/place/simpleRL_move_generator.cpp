@@ -18,13 +18,13 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
     avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
-    avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformMoveGenerator>();
     avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
     avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
     avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
     avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
     avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
     avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
+    avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformInterLayerMoveGenerator>();
 
     karmed_bandit_agent = std::move(agent);
 }
@@ -33,13 +33,13 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
     avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
-    avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformMoveGenerator>();
     avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
     avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
     avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
     avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
     avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
     avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
+    avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformInterLayerMoveGenerator>();
 
     karmed_bandit_agent = std::move(agent);
 }
