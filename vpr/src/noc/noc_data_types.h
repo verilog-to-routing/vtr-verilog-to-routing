@@ -1,6 +1,12 @@
 #ifndef NOC_DATA_TYPES_H
 #define NOC_DATA_TYPES_H
 
+/** 
+ * @file 
+ * @brief This file contains datatype definitions which are used by the NoC datastructures.
+ *  
+ */
+
 #include "vtr_strong_id.h"
 
 // data types used to index the routers and links within the noc
