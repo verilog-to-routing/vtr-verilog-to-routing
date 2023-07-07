@@ -8,7 +8,6 @@ inline static bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
                                     const RRGraphView* rr_graph,
                                     RRNodeId from_node,
                                     RRNodeId sink_node) {
-    VTR_ASSERT(rr_graph->node_type(sink_node) == t_rr_type::SINK);
 
     // ASSUMPTION: Only OPINs can connect to other layers
 
@@ -16,7 +15,9 @@ inline static bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
 
     if (rr_graph->node_layer(from_node) == sink_layer) {
         return true;
-    } else if (rr_graph->node_type(from_node) == CHANX || rr_graph->node_type(from_node) == CHANY) {
+    } else if (rr_graph->node_type(from_node) == CHANX ||
+               rr_graph->node_type(from_node) == CHANY ||
+               rr_graph->node_type(from_node) == IPIN) {
         return false;
     } else {
         auto edges = rr_nodes.edge_range(from_node);
