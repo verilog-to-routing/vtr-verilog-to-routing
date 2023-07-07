@@ -644,6 +644,12 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
     //Profile each wire segment type
     for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+        //if arch file specifies die_number="layer_num" doesn't require inter-cluster
+        //programmable routing resources, then we shouldn't profile wire segment types in
+        //the current layer
+        if (!device_ctx.inter_cluster_prog_routing_resources[layer_num]) {
+            continue;
+        }
         for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
             //First try to pick good representative sample locations for each type
             std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;

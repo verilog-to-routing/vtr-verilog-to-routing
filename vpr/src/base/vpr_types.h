@@ -1450,8 +1450,14 @@ struct t_noc_opts {
  *             things that should have no delay).
  *   @param wire_to_arch_ipin_switch  keeps track of the type of architecture
  *             switch that connects wires to ipins
+ *   @param wire_to_arch_ipin_switch_between_dice keeps track of the type of
+ *             architecture switch that connects wires from another die to
+ *             ipins in different die
  *   @param wire_to_rr_ipin_switch  keeps track of the type of RR graph switch
  *             that connects wires to ipins in the RR graph
+ *   @param wire_to_rr_ipin_switch_between_dice keeps track of the type of
+ *             RR graph switch that connects wires from another die to
+ *             ipins in different die in the RR graph
  *   @param R_minW_nmos  Resistance (in Ohms) of a minimum width nmos transistor.
  *             Used only in the FPGA area model.
  *   @param R_minW_pmos  Resistance (in Ohms) of a minimum width pmos transistor.
@@ -1468,7 +1474,9 @@ struct t_det_routing_arch {
     short global_route_switch;
     short delayless_switch;
     int wire_to_arch_ipin_switch;
+    int wire_to_arch_ipin_switch_between_dice = -1;
     int wire_to_rr_ipin_switch;
+    int wire_to_rr_ipin_switch_between_dice = -1;
     float R_minW_nmos;
     float R_minW_pmos;
 
@@ -1495,6 +1503,11 @@ struct t_det_routing_arch {
  *                     (OPINs) *to* this segment. Note that this index is in
  *                     relation to the switches from the architecture file,
  *                     not the expanded list of switches that is is built
+ *                     at the end of build_rr_graph
+ *   @param arch_opin_between_dice_switch Index of the switch type that connects output
+ *                     pins (OPINs) *to* this segment from *another dice*.
+ *                     Note that this index is in relation to the switches from
+ *                     the architecture file, not the expanded list of switches that is built
  *                     at the end of build_rr_graph
  *   @param Cmetal     Capacitance of a routing track, per unit logic block length.
  *   @param Rmetal     Resistance of a routing track, per unit logic block length.
@@ -1525,6 +1538,7 @@ struct t_seg_details {
     std::unique_ptr<bool[]> cb;
     short arch_wire_switch = 0;
     short arch_opin_switch = 0;
+    short arch_opin_between_dice_switch = 0;
     float Rmetal = 0;
     float Cmetal = 0;
     bool twisted = 0;
@@ -1566,6 +1580,7 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
+    short arch_opin_between_dice_switch() const { return seg_detail_->arch_opin_between_dice_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 
