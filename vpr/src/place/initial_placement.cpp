@@ -1072,7 +1072,7 @@ bool place_one_block(const ClusterBlockId& blk_id,
         //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
         //This is done so that the initial placement flow can be the same whether the block belongs to a macro or not
         t_pl_macro_member macro_member;
-        t_pl_offset block_offset(0, 0, 0);
+        t_pl_offset block_offset(0, 0, 0, 0);
 
         macro_member.blk_index = blk_id;
         macro_member.offset = block_offset;

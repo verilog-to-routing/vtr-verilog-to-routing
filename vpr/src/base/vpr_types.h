@@ -604,16 +604,19 @@ struct t_bb {
  */
 struct t_pl_offset {
     t_pl_offset() = default;
-    t_pl_offset(int xoffset, int yoffset, int sub_tile_offset)
-        : x(xoffset)
+    t_pl_offset(int layer_offset, int xoffset, int yoffset, int sub_tile_offset)
+        : layer(layer_offset)
+        , x(xoffset)
         , y(yoffset)
         , sub_tile(sub_tile_offset) {}
 
+    int layer = 0;
     int x = 0;
     int y = 0;
     int sub_tile = 0;
 
     t_pl_offset& operator+=(const t_pl_offset& rhs) {
+        layer += rhs.layer;
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
@@ -621,6 +624,7 @@ struct t_pl_offset {
     }
 
     t_pl_offset& operator-=(const t_pl_offset& rhs) {
+        layer -= rhs.layer;
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
@@ -638,18 +642,19 @@ struct t_pl_offset {
     }
 
     friend t_pl_offset operator-(const t_pl_offset& other) {
-        return t_pl_offset(-other.x, -other.y, -other.sub_tile);
+        return t_pl_offset(-other.layer, -other.x, -other.y, -other.sub_tile);
     }
     friend t_pl_offset operator+(const t_pl_offset& other) {
-        return t_pl_offset(+other.x, +other.y, +other.sub_tile);
+        return t_pl_offset(+other.layer, +other.x, +other.y, +other.sub_tile);
     }
 
     friend bool operator<(const t_pl_offset& lhs, const t_pl_offset& rhs) {
+        VTR_ASSERT(lhs.layer == rhs.layer);
         return std::tie(lhs.x, lhs.y, lhs.sub_tile) < std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator==(const t_pl_offset& lhs, const t_pl_offset& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.x, rhs.y, rhs.sub_tile);
+        return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator!=(const t_pl_offset& lhs, const t_pl_offset& rhs) {
@@ -693,7 +698,7 @@ struct t_pl_loc {
     int layer = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
-        VTR_ASSERT(this->layer != OPEN);
+        layer += rhs.layer;
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
@@ -701,7 +706,7 @@ struct t_pl_loc {
     }
 
     t_pl_loc& operator-=(const t_pl_offset& rhs) {
-        VTR_ASSERT(this->layer != OPEN);
+        layer -= rhs.layer;
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
@@ -725,8 +730,10 @@ struct t_pl_loc {
     }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        VTR_ASSERT(lhs.layer == rhs.layer);
-        return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile};
+        return {lhs.layer - rhs.layer,
+                lhs.x - rhs.x,
+                lhs.y - rhs.y,
+                lhs.sub_tile - rhs.sub_tile};
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
