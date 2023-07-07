@@ -13,13 +13,15 @@ inline static bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
 
     int sink_layer = rr_graph->node_layer(sink_node);
 
-    if (rr_graph->node_layer(from_node) == sink_layer) {
+    if (rr_graph->node_layer(from_node) == sink_layer ||
+        rr_graph->node_type(from_node) == SOURCE) {
         return true;
     } else if (rr_graph->node_type(from_node) == CHANX ||
                rr_graph->node_type(from_node) == CHANY ||
                rr_graph->node_type(from_node) == IPIN) {
         return false;
     } else {
+        VTR_ASSERT(rr_graph->node_type(from_node) == OPIN);
         auto edges = rr_nodes.edge_range(from_node);
 
 //        for (RREdgeId from_edge : edges) {
