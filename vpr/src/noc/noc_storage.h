@@ -54,7 +54,7 @@ constexpr NocLinkId INVALID_LINK_ID(-1);
 class NocStorage {
   private:
     /** Contains all the routers in the NoC*/
-    vtr::vector<NocRouterId, NocRouter> router_storage; 
+    vtr::vector<NocRouterId, NocRouter> router_storage;
 
     // list of outgoing links for each router
     /**
@@ -66,7 +66,7 @@ class NocStorage {
     vtr::vector<NocRouterId, std::vector<NocLinkId>> router_link_list;
 
     /** Contains all the links in the NoC*/
-    vtr::vector<NocLinkId, NocLink> link_storage; 
+    vtr::vector<NocLinkId, NocLink> link_storage;
 
     /**
      * @brief The user provides an ID for the router when describing the NoC
