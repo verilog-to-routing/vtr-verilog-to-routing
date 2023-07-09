@@ -550,6 +550,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     int to_yhigh = rr_graph_->node_yhigh(to_node);
     int to_layer = rr_graph_->node_layer(to_node);
 
+    VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
+
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
     // TODO: Only disable pruning if the net has negative hold slack, maybe go off budgets
@@ -1042,6 +1044,9 @@ static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb) {
     bb.ymin -= HIGH_FANOUT_BB_FAC;
     bb.xmax += HIGH_FANOUT_BB_FAC;
     bb.ymax += HIGH_FANOUT_BB_FAC;
+
+    bb.layer_min = highfanout_bb.layer_min;
+    bb.layer_max = highfanout_bb.layer_max;
 
     return bb;
 }
