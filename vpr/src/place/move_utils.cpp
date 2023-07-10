@@ -454,7 +454,9 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
-        || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
+        || to.y < 0 || to.y >= int(device_ctx.grid.height())
+        || to.layer < 0
+        || to.layer >= int(device_ctx.grid.get_num_layers())) {
         return false;
     }
 
@@ -1234,6 +1236,7 @@ int find_free_layer(t_logical_block_type_ptr logical_block, t_pl_loc loc) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& place_ctx = g_vpr_ctx.placement();
 
+    // TODO: Compatible layer vector should be shuffled first, and then iterated through
     int free_layer = loc.layer;
     if (device_ctx.grid.get_num_layers() > 1) {
         const auto& compatible_layers = place_ctx.compressed_block_grids[logical_block->index].get_layer_nums();
