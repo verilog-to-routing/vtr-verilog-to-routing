@@ -2,7 +2,7 @@
 #define VTR_NOCROUTING_H
 
 /**
- * @file NocRouting.h
+ * @file
  * @brief This file defines the NocRouting class, which handles the
  * packet routing between routers within the NoC. It describes the routing
  * algorithm for the NoC.
