@@ -186,16 +186,21 @@ class t_ext_pin_util_targets {
   public:
     t_ext_pin_util_targets() = default;
     t_ext_pin_util_targets(float default_in_util, float default_out_util);
+    t_ext_pin_util_targets(const std::vector<std::string>& specs);
+    t_ext_pin_util_targets& operator=(t_ext_pin_util_targets&& other) noexcept;
 
     ///@brief Returns the input pin util of the specified block (or default if unspecified)
-    t_ext_pin_util get_pin_util(std::string block_type_name) const;
+    t_ext_pin_util get_pin_util(const std::string& block_type_name) const;
+
+    ///@brief Returns a string describing input/output pin utilization targets
+    std::string to_string() const;
 
   public:
     /**
      * @brief Sets the pin util for the specified block type
      * @return true if non-default was previously set
      */
-    void set_block_pin_util(std::string block_type_name, t_ext_pin_util target);
+    void set_block_pin_util(const std::string& block_type_name, t_ext_pin_util target);
 
     /**
      * @brief Sets the default pin util
@@ -212,15 +217,21 @@ class t_pack_high_fanout_thresholds {
   public:
     t_pack_high_fanout_thresholds() = default;
     t_pack_high_fanout_thresholds(int threshold);
+    t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
+    t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    int get_threshold(std::string block_type_name) const;
+    ///@brief Returns the high fanout threshold of the specified block
+    int get_threshold(const std::string& block_type_name) const;
+
+    ///@brief Returns a string describing high fanout thresholds for different block types
+    std::string to_string() const;
 
   public:
     /**
      * @brief Sets the pin util for the specified block type
      * @return true if non-default was previously set
      */
-    void set(std::string block_type_name, int threshold);
+    void set(const std::string& block_type_name, int threshold);
 
     /**
      * @brief Sets the default pin util

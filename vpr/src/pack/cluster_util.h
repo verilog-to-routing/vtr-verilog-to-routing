@@ -407,7 +407,7 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
                                                const t_molecule_stats& max_molecule_stats,
                                                const vtr::vector<AtomBlockId, float>& atom_criticality);
 
-t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::vector<AtomBlockId> seed_atoms);
+t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index, const std::vector<AtomBlockId>& seed_atoms);
 
 float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures);
 

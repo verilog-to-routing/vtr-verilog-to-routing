@@ -1639,7 +1639,7 @@ t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& pac
     router_data->saved_lb_nets = nullptr;
 
     //Pick a new seed
-    next_seed = get_highest_gain_seed_molecule(&seedindex, seed_atoms);
+    next_seed = get_highest_gain_seed_molecule(seedindex, seed_atoms);
 
     if (packer_opts.timing_driven) {
         if (num_blocks_hill_added > 0) {
@@ -1776,7 +1776,10 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
         /* Optimization: It can be too runtime costly for marking all sinks for
          * a high fanout-net that probably has no hope of ever getting packed,
          * thus ignore those high fanout nets */
-        if (!is_global.count(net_id)) {
+        /* There are VCC and GND nets in the netlist. These nets have a high fanout,
+         * but their sinks do not necessarily have a logical relation with each other.
+         * Therefore, we exclude constant nets when evaluating high fanout connectivity. */
+        if (!is_global.count(net_id) && !atom_ctx.nlist.net_is_constant(net_id)) {
             /* If no low/medium fanout nets, we may need to consider
              * high fan-out nets for packing, so select one and store it */
             AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
@@ -2098,9 +2101,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
 
     //Try packing into each candidate type
     bool success = false;
-    for (size_t i = 0; i < candidate_types.size(); i++) {
-        auto type = candidate_types[i];
-
+    for (auto type : candidate_types) {
         t_pb* pb = new t_pb;
         pb->pb_graph_node = type->pb_graph_head;
         alloc_and_load_pb_stats(pb, feasible_block_array_size);
@@ -2823,15 +2824,18 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
     return seed_atoms;
 }
 
-t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::vector<AtomBlockId> seed_atoms) {
+t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index, const std::vector<AtomBlockId>& seed_atoms) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    while (*seedindex < static_cast<int>(seed_atoms.size())) {
-        AtomBlockId blk_id = seed_atoms[(*seedindex)++];
+    while (seed_index < static_cast<int>(seed_atoms.size())) {
+        AtomBlockId blk_id = seed_atoms[seed_index++];
 
+        // Check if the atom has already been assigned to a cluster
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
             t_pack_molecule* best = nullptr;
 
+            // Iterate over all the molecules associated with the selected atom
+            // and select the one with the highest gain
             auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
             for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 t_pack_molecule* molecule = kv.second;
@@ -3343,11 +3347,15 @@ std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primiti
     auto& device_ctx = g_vpr_ctx.device();
 
     std::set<const t_model*> unique_models;
+    // Find all logic models used in the netlist
     for (auto blk : atom_nlist.blocks()) {
         auto model = atom_nlist.block_model(blk);
         unique_models.insert(model);
     }
 
+    /* For each technology-mapped logic model, find logical block types
+     * that can accommodate that logic model
+     */
     for (auto model : unique_models) {
         model_candidates[model] = {};
 
