@@ -50,6 +50,43 @@ constexpr int INVALID_X = -1;
 static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index);
 
 /**
+ * @brief Initializes the grid to empty. It also initialized the location for
+ * all blocks to unplaced.
+ */
+static void initialize_grid_locs();
+
+/**
+ * @brief Calculates total NoC cost.
+ *
+ *   @param costs Contains latency and aggregate bandwidth costs
+ *   along with their corresponding normalization factors.
+ *   @param noc_opts Contains NoC placement weighting factor.
+ *
+ * @return Calculated total NoC cost.
+ */
+static double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts);
+
+/**
+ * @brief Evaluates whether a NoC router swap should be accepted or not.
+ *
+ *   @param delta_cost Specifies how much the total cost would change if
+ *   the proposed swap is accepted.
+ *   @param prob The probability by which a router swap that increases
+ *   the cost is accepted.
+ *
+ * @return true if the proposed swap is accepted, false if not.
+ */
+static bool assess_noc_swap(double delta_cost, double prob);
+
+/**
+ * @brief Randomly places NoC routers, then runs a quick simulated annealing
+ * to minimize NoC costs.
+ *
+ *   @param noc_opts NoC-related options. Used to calculate NoC-related costs.
+ */
+static void initial_noc_placement(const t_noc_opts& noc_opts);
+
+    /**
  * @brief Places the macro if the head position passed in is legal, and all the resulting
  * member positions are legal
  *   
@@ -1310,7 +1347,6 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     if (checkpoint.get_cost() < costs.cost) {
         checkpoint.restore_checkpoint(noc_opts, costs);
     }
-
 
 }
 
