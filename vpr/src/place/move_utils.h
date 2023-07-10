@@ -347,6 +347,6 @@ int convert_phys_to_agent_blk_type(int phys_blk_type_index);
  */
 int get_num_agent_types();
 
-int find_free_layer(t_logical_block_type_ptr logical_block, t_pl_loc loc);
+int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc);
 
 #endif

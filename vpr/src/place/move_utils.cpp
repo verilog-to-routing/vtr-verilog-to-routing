@@ -1232,7 +1232,7 @@ std::string e_move_result_to_string(e_move_result move_outcome) {
     return move_result_to_string[move_outcome];
 }
 
-int find_free_layer(t_logical_block_type_ptr logical_block, t_pl_loc loc) {
+int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& place_ctx = g_vpr_ctx.placement();
 
@@ -1244,7 +1244,6 @@ int find_free_layer(t_logical_block_type_ptr logical_block, t_pl_loc loc) {
             if (place_ctx.grid_blocks.block_at_location(loc) != EMPTY_BLOCK_ID) {
                 for (const auto& layer : compatible_layers) {
                     if (layer != free_layer) {
-                        loc.layer = layer;
                         if (place_ctx.grid_blocks.block_at_location(loc) == EMPTY_BLOCK_ID) {
                             free_layer = layer;
                             break;
