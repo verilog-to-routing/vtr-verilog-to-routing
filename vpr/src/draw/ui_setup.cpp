@@ -144,6 +144,25 @@ void routing_button_setup(ezgl::application* app) {
 }
 
 /*
+ * @brief configures and connects signals/functions for 3D buttons
+ *
+ * Determines how many layers there are and displays depending on number of layers
+ */
+void three_dimension_button_setup(ezgl::application* app) {
+    auto& device_ctx = g_vpr_ctx.device();
+    int num_layers = device_ctx.grid.get_num_layers();
+    // Hide the button if we only have one layer
+    if (num_layers == 1)  {
+        hide_widget("3DMenuButton", app);
+    } else {
+        // Checkboxes for each layer
+        for (int i = 0; i < 5; i++) {
+            std::string label = "Layer " + std::to_string(i);
+            GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
+        }
+    }
+}
+/*
  * @brief Loads required data for search autocomplete, sets up special completion fn
  */
 void search_setup(ezgl::application* app) {
