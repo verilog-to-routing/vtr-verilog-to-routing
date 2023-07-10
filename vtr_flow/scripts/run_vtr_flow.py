@@ -338,6 +338,18 @@ def vtr_command_argparser(prog=None):
         dest="top_module",
         help="Specify the name of the module in the design that should be considered as top",
     )
+    odin.add_argument(
+        "-mults_ratio",
+        default=-1.0,
+        dest="mults_ratio",
+        help="Specify the percentage of multipliers optimizations",
+    )
+    odin.add_argument(
+        "-adders_ratio",
+        default=-1.0,
+        dest="adders_ratio",
+        help="Specify the percentage of adders optimizations",
+    )
     #
     # PARMYS arguments
     #
@@ -676,6 +688,8 @@ def process_odin_args(args):
     odin_args["parser"] = args.parser
     odin_args["adder_type"] = args.adder_type
     odin_args["top_module"] = args.top_module
+    odin_args["mults_ratio"] = args.mults_ratio
+    odin_args["adders_ratio"] = args.adders_ratio
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True
