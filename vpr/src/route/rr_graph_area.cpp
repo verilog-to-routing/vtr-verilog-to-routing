@@ -492,7 +492,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
     VTR_LOG("\n");
     VTR_LOG("Routing area (in minimum width transistor areas)...\n");
-    VTR_LOG("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float)(device_ctx.grid.width() * device_ctx.grid.height()));
+    VTR_LOG("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float)(device_ctx.grid.get_num_layers() * device_ctx.grid.width() * device_ctx.grid.height()));
 }
 
 static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch, int max_inputs_to_cblock, float trans_sram_bit) {
