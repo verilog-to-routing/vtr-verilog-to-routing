@@ -3232,7 +3232,7 @@ static void print_placement_swaps_stats(const t_annealing_state& state) {
             num_swap_accepted, 100 * accept_rate);
     VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits,
             num_swap_rejected, 100 * reject_rate);
-    VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits,
+    VTR_LOG("\tSwaps aborted: %*d (%4.1f %%)\n", num_swap_print_digits,
             num_swap_aborted, 100 * abort_rate);
 }
 
