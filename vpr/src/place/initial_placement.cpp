@@ -86,7 +86,7 @@ static bool assess_noc_swap(double delta_cost, double prob);
  */
 static void initial_noc_placement(const t_noc_opts& noc_opts);
 
-    /**
+/**
  * @brief Places the macro if the head position passed in is legal, and all the resulting
  * member positions are legal
  *   
@@ -195,7 +195,7 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
  *
  * @return a vector of blocks that are connected to this block but not yet placed so their scores can later be updated.
  */
-static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_loc& centroid);
+static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro, t_pl_loc& centroid);
 
 /**
  * @brief  Tries to find a nearest location to the centroid location if calculated centroid location is not legal or is occupied.
@@ -220,7 +220,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
  *
  * @return true if the macro gets placed, false if not.
  */
-static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores);
+static bool try_centroid_placement(const t_pl_macro& pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 /**
  * @brief  tries to place a macro at a random location
@@ -277,7 +277,6 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
  * floorplanning constraints. 
  */
 static void check_initial_placement_legality();
-
 
 static void check_initial_placement_legality() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -372,7 +371,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     return legal;
 }
 
-static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_loc& centroid) {
+static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro, t_pl_loc& centroid) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int x, y;
@@ -449,7 +448,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
     return connected_blocks_to_update;
 }
 
-static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
+static bool try_centroid_placement(const t_pl_macro& pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     t_pl_loc centroid_loc(OPEN, OPEN, OPEN);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
 
