@@ -90,6 +90,15 @@ class MixingOpt {
     virtual void instantiate_soft_logic(netlist_t* netlist, std::vector<nnode_t*> nodes);
 
     /**
+     * @brief Instantiates an alternative (not on hard blocks)
+     * implementation for the operation
+     *
+     * @param netlist pointer to netlist
+     * @param nodes vector of hard adders
+     */
+    virtual void instantiate_hard_logic(netlist_t* netlist, std::vector<nnode_t*> nodes);
+
+    /**
      * @brief performs the optimization pass, varies between kinds.
      * If the implementation is not provided within the inherited class
      * will throw ODIN error
@@ -229,6 +238,104 @@ class MultsOpt : public MixingOpt {
      * @param nnode_t* pointer to the node
      */
     virtual bool hardenable(nnode_t*);
+};
+
+class AddersOpt : public MixingOpt {
+  public:
+    /**
+     * @brief Construct a new Adders Opt object for disabled optimization
+     * usable for querying 'hardenable' condition
+     */
+    AddersOpt()
+        : MixingOpt() {}
+
+    /**
+     * @brief Construct a new Adders Opt object
+     * from ratio parameter
+     * @param ratio
+     */
+    AddersOpt(float ratio);
+    /**
+     * @brief Construct a new Adders Opt object
+     * allowing to set exact number of adders
+     * that will be used
+     * @param exact
+     */
+    AddersOpt(int exact);
+
+    /**
+     * @brief assign weights to the candidate nodes vector, according to netlist_statistic
+     *
+     * @param nodes pointer to the vector with adders
+     */
+    virtual void assign_weights(netlist_t* netlist, std::vector<nnode_t*> nodes);
+
+    /**
+     * @brief allowing for replacing with dynamic polymorphism for different
+     * kinds of nodes
+     *
+     * @param nnode_t* pointer to the node
+     */
+    virtual void partial_map_node(nnode_t*, short, netlist_t*, HardSoftLogicMixer*);
+    /**
+     * @brief Instantiates an alternative (not on hard blocks)
+     * implementation for the operation
+     *
+     * @param netlist
+     * @param nodes
+     */
+    virtual void instantiate_soft_logic(netlist_t* netlist, std::vector<nnode_t*> nodes);
+    /**
+     * @brief Instantiates an alternative (not on hard blocks)
+     * implementation for the operation
+     *
+     * @param netlist pointer to netlist
+     * @param nodes vector of hard adders
+     */
+    virtual void instantiate_hard_logic(netlist_t* netlist, std::vector<nnode_t*> nodes);
+
+    /**
+     * @brief performs the optimization pass, specifically for adders.
+     * If the implementation is not provided within the inherited class
+     * will throw ODIN error
+     *
+     * @param netlist_t* pointer to a global netlist
+     * @param std::vector<nnode_t*> a vector with nodes the optimization
+     * pass is concerned (all of which are potential candidates to
+     * be implemented in hard blocks for a given _kind)
+     */
+    virtual void perform(netlist_t* netlist, std::vector<nnode_t*>&);
+
+    /**
+     * @brief Set the blocks of blocks required
+     * by counting in netlist. Has to be overriden, to account
+     * with specifics of optimization
+     *
+     * @param count
+     */
+    virtual void set_blocks_needed(int);
+
+    /**
+     * @brief based on criteria for hardening given kind of operation, return
+     * if the node should be implemented in hard blocks
+     *
+     * @param nnode_t* pointer to the node
+     */
+    virtual bool hardenable(nnode_t*);
+
+    /**
+     * @brief check if the given add node is already processed to soft logic
+     *
+     * @param nnode_t* pointer to the node
+     */
+    virtual bool processed(nnode_t*);
+
+  protected:
+    /**
+     * @brief a routine that will multiply
+     * required blocks by the ratio
+     */
+    virtual void scale_counts();
 };
 
 #endif
