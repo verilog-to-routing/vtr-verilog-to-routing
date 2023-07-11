@@ -5,12 +5,12 @@
   <object class="GtkPopover" id="3Dpopover">
     <property name="can-focus">False</property>
     <child>
-      <object class="GtkBox" id="RoutingBox1">
+      <object class="GtkBox" id="3Dbox">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel" id="ToggleRRLabel1">
+          <object class="GtkLabel" id="LayerLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Select Layers:</property>
@@ -22,196 +22,46 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer">
-            <property name="label" translatable="yes">Layer 1</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer2">
-            <property name="label" translatable="yes">Layer 2</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">2</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer3">
-            <property name="label" translatable="yes">Layer 3</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">3</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer4">
-            <property name="label" translatable="yes">Layer 4</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">4</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer5">
-            <property name="label" translatable="yes">Layer 5</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">5</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer6">
-            <property name="label" translatable="yes">Layer 6</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">6</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer7">
-            <property name="label" translatable="yes">Layer 7 </property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">7</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer8">
-            <property name="label" translatable="yes">Layer 8</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">8</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer9">
-            <property name="label" translatable="yes">Layer 9</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">9</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer10">
-            <property name="label" translatable="yes">Layer 10</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">10</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer1">
-            <property name="label" translatable="yes">Layer 11</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">11</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkCheckButton" id="Layer12">
-            <property name="label" translatable="yes">Layer 12</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="xalign">0</property>
-            <property name="yalign">0.5</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">12</property>
-          </packing>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
       </object>
     </child>

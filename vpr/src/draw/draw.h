@@ -132,6 +132,8 @@ void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 
 size_t get_max_fanout();
 
+//static void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer data);
+
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */
