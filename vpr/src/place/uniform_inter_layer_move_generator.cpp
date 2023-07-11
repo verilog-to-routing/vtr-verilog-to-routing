@@ -32,12 +32,13 @@ e_create_move UniformInterLayerMoveGenerator::propose_move(t_pl_blocks_to_be_mov
     std::vector<int> candidate_layers;
     candidate_layers.reserve(compatible_layers.size() - 1);
 
-    for(const auto& layer_num : candidate_layers) {
+    for(const auto& layer_num : compatible_layers) {
         if(layer_num != from.layer) {
             candidate_layers.push_back(layer_num);
         }
     }
 
+    VTR_ASSERT(!candidate_layers.empty());
     int to_layer = candidate_layers[vtr::irand((int)candidate_layers.size() - 1)];
 
     t_pl_loc to = from;
