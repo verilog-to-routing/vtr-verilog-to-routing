@@ -261,12 +261,11 @@ std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_
     }
     for (size_t iseg_x = 0; iseg_x < segment_inf_x.size(); ++iseg_x) {
         auto seg_in_x_dir = all_segs_index.find(segment_inf_x[iseg_x]);
-        if(seg_in_x_dir != all_segs_index.end()){
+        if (seg_in_x_dir != all_segs_index.end()) {
             ordered_seg_track_counts[seg_in_x_dir->second] = segment_sets_x[iseg_x];
-        }
-        else{
+        } else {
             VTR_ASSERT_MSG(seg_in_x_dir != all_segs_index.end(),
-                       "Segment in the x-direction must be a part of all segments.");
+                           "Segment in the x-direction must be a part of all segments.");
         }
     }
     for (size_t iseg_y = 0; iseg_y < segment_inf_y.size(); ++iseg_y) {
@@ -274,12 +273,11 @@ std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_
             continue;
         }
         auto seg_in_y_dir = all_segs_index.find(segment_inf_y[iseg_y]);
-        if(seg_in_y_dir != all_segs_index.end()){
+        if (seg_in_y_dir != all_segs_index.end()) {
             ordered_seg_track_counts[seg_in_y_dir->second] = segment_sets_y[iseg_y];
-        }
-        else{
+        } else {
             VTR_ASSERT_MSG(seg_in_y_dir != all_segs_index.end(),
-                       "Segment in the x-direction must be a part of all segments.");
+                           "Segment in the x-direction must be a part of all segments.");
         }
     }
 
@@ -744,8 +742,8 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                 }
 
                 to_switch = (track_layer == opin_layer) ? seg_details[to_track].arch_wire_switch() : seg_details[to_track].arch_opin_between_dice_switch();
+                rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch, false);
 
-                rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch);
                 ++num_conn;
             }
         }
@@ -835,11 +833,11 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 
         /* Add to the list. */
         auto to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_opin_between_dice_switch();
-        rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch);
+        rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch, false);
         ++num_edges;
 
         to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[dec_track].arch_opin_between_dice_switch();
-        rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, to_switch);
+        rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, to_switch, false);
         ++num_edges;
     }
 
@@ -1653,7 +1651,6 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                     max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side].size();
                     for (iconn = 0; iconn < max_conn; iconn++) {
                         ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side][iconn];
-
                         if (!is_pin_conencted_to_layer(type, ipin, layer_index, layer, device_ctx.grid.get_num_layers())) {
                             continue;
                         }
@@ -1663,7 +1660,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                         RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer_index, x, y, IPIN, ipin, side);
                         int switch_type = (layer_index == layer) ? wire_to_ipin_switch : wire_to_pin_between_dice_switch;
                         if (to_node) {
-                            rr_edges_to_create.emplace_back(from_rr_node, to_node, switch_type);
+                            rr_edges_to_create.emplace_back(from_rr_node, to_node, switch_type, false);
                             ++num_conn;
                         }
                     }
@@ -2005,7 +2002,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
             }
 
             /* Add the edge to the list */
-            rr_edges_to_create.emplace_back(from_rr_node, to_node, switch_types[i]);
+            rr_edges_to_create.emplace_back(from_rr_node, to_node, switch_types[i], false);
             ++num_conn;
         }
     }
@@ -2076,14 +2073,14 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                 src_switch = switch_override;
             }
 
-            rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch);
+            rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch, false);
             ++edge_count;
 
             auto& device_ctx = g_vpr_ctx.device();
 
             if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
                 //Add reverse edge since bi-directional
-                rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch);
+                rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
                 ++edge_count;
             }
         }
@@ -2174,13 +2171,13 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
             VTR_ASSERT(iswitch != OPEN);
 
             /* Add edge to list. */
-            rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch);
+            rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch, false);
             ++count;
 
             auto& device_ctx = g_vpr_ctx.device();
             if (device_ctx.arch_switch_inf[iswitch].directionality() == BI_DIRECTIONAL) {
                 //Add reverse edge since bi-directional
-                rr_edges_to_create.emplace_back(to_node, from_rr_node, iswitch);
+                rr_edges_to_create.emplace_back(to_node, from_rr_node, iswitch, false);
                 ++count;
             }
         }

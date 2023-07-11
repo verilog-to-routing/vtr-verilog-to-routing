@@ -82,3 +82,4 @@ regression_tests/vtr_reg_strong/koios_no_complex_dsp
 regression_tests/vtr_reg_strong/strong_timing_fail
 regression_tests/vtr_reg_strong/strong_timing_no_fail
 regression_tests/vtr_reg_strong/strong_noc
+regression_tests/vtr_reg_strong/strong_flat_router
