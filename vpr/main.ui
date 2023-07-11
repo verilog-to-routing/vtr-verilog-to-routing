@@ -5,12 +5,12 @@
   <object class="GtkPopover" id="3Dpopover">
     <property name="can-focus">False</property>
     <child>
-      <object class="GtkBox" id="RoutingBox1">
+      <object class="GtkBox" id="3Dbox">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel" id="ToggleRRLabel1">
+          <object class="GtkLabel" id="LayerLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Select Layers:</property>
