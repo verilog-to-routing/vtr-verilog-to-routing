@@ -22,6 +22,7 @@
 #    include "ezgl/point.hpp"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
+std::vector<bool> three_dimension_layer_vector; // Stores the states of the 3d layer checkboxes
 
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
@@ -149,19 +150,30 @@ void routing_button_setup(ezgl::application* app) {
  * Determines how many layers there are and displays depending on number of layers
  */
 void three_dimension_button_setup(ezgl::application* app) {
-    auto& device_ctx = g_vpr_ctx.device();
-    int num_layers = device_ctx.grid.get_num_layers();
+//    auto& device_ctx = g_vpr_ctx.device();
+//    int num_layers = device_ctx.grid.get_num_layers();
+
+    int num_layers = 5; // temporarily 5
+
     // Hide the button if we only have one layer
-    if (num_layers == 1)  {
+    if (num_layers == 1) {
         hide_widget("3DMenuButton", app);
     } else {
-        // Checkboxes for each layer
-        for (int i = 0; i < 5; i++) {
-            std::string label = "Layer " + std::to_string(i);
+        GtkPopover* popover = GTK_POPOVER(app->get_object("3Dpopover"));
+        // Box is child of popover
+        GtkBox* box = GTK_BOX(app->get_object("3Dbox"));
+
+        // Create checkboxes for each layer
+        for (int i = 0; i < num_layers; i++) {
+            std::string label = "Layer " + std::to_string(i + 1);
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
+            gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
         }
+        three_dimension_layer_vector.resize(num_layers); // resize the 3d layer vector accordingly
+//        gtk_widget_show_all(GTK_WIDGET(popover));
     }
 }
+
 /*
  * @brief Loads required data for search autocomplete, sets up special completion fn
  */
