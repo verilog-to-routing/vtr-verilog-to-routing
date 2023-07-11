@@ -460,11 +460,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         //
         // If the switch name is not present in the architecture, generate an
         // error.
+        // If the graph is written when flat-routing is enabled, the types of the switches inside of the rr_graph are also
+        // added to the XML file. These types are not added to the data structure that contain arch switch types. They are added to all_sw_inf under device context.
+        // It remains as a future work to remove the arch_switch_types and use all_sw info under device_ctx instead.
         bool found_arch_name = false;
         std::string string_name = std::string(name);
+        // The string name has the format of "Internal Switch/delay". So, I have to use compare to specify the portion I want to be compared.
+        bool is_internal_sw = string_name.compare(0, 15, "Internal Switch") == 0;
         for (const auto& arch_sw_inf: arch_switch_inf_) {
-            if (string_name == arch_sw_inf.name) {
-                string_name = arch_sw_inf.name;
+            if (string_name == arch_sw_inf.name || is_internal_sw) {
                 found_arch_name = true;
                 break;
             }
@@ -472,7 +476,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         if (!found_arch_name) {
             report_error("Switch name '%s' not found in architecture\n", string_name.c_str());
         }
-
+        sw->intra_tile = is_internal_sw;
         sw->name = string_name;
     }
     inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
@@ -832,6 +836,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void finish_rr_nodes_node(int& /*inode*/) final {
     }
     inline size_t num_rr_nodes_node(void*& /*ctx*/) final {
+
         return rr_nodes_->size();
     }
     inline const t_rr_node get_rr_nodes_node(int n, void*& /*ctx*/) final {
@@ -923,7 +928,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             bind.set_ignore();
         }
 
-        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
+        // The edge ids in the rr graph file are rr edge id not architecture edge id
+        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id, true);
         return bind;
     }
     inline void finish_rr_edges_edge(MetadataBind& bind) final {

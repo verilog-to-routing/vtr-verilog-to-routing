@@ -190,14 +190,16 @@ void ClockRRGraphBuilder::map_relative_seg_indices(const t_unified_to_parallel_s
 void ClockRRGraphBuilder::add_edge(t_rr_edge_info_set* rr_edges_to_create,
                                    RRNodeId src_node,
                                    RRNodeId sink_node,
-                                   int arch_switch_idx) const {
+                                   int arch_switch_idx,
+                                   bool edge_remapped) const {
+    VTR_ASSERT(edge_remapped == false);
     const auto& device_ctx = g_vpr_ctx.device();
     VTR_ASSERT(arch_switch_idx < (int)device_ctx.arch_switch_inf.size());
-    rr_edges_to_create->emplace_back(src_node, sink_node, arch_switch_idx);
+    rr_edges_to_create->emplace_back(src_node, sink_node, arch_switch_idx, edge_remapped);
 
     const auto& sw = device_ctx.arch_switch_inf[arch_switch_idx];
     if (!sw.buffered() && !sw.configurable()) {
         // This is short, create a reverse edge.
-        rr_edges_to_create->emplace_back(sink_node, src_node, arch_switch_idx);
+        rr_edges_to_create->emplace_back(sink_node, src_node, arch_switch_idx, edge_remapped);
     }
 }
