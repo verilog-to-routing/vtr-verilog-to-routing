@@ -155,7 +155,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     //TODO: Change when graphics supports 3D FPGAs
-    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+   // VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int layer_num = 0;
     for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
         for (int j = 0; j < (int)device_ctx.grid.height(); j++) {

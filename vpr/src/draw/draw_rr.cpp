@@ -681,7 +681,7 @@ int draw_check_rr_node_hit(float click_x, float click_y) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     //TODO: Change when graphics supports 3D FPGAs
-    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    //VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int layer_num = 0;
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {

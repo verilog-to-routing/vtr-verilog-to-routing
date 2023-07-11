@@ -119,7 +119,7 @@ void clear_colored_locations();
 // This routine takes in a (x,y) location.
 // If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
 // otherwise, the function returns false (the location isn't among the highlighted locations)
-bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color);
+bool highlight_loc_with_specific_color(int x, int y, int layer, ezgl::color& loc_color);
 
 /* Because the list of possible block type colours is finite, we wrap around possible colours if there are more
  * block types than colour choices. This ensures we support any number of types, although the colours may repeat.*/

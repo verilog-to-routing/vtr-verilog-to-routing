@@ -408,7 +408,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
 
     // TODO: CutSpreader is not compatible with 3D FPGA
-    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    //VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int layer_num = 0;
 
     std::vector<ClusterBlockId> cut_blks;
