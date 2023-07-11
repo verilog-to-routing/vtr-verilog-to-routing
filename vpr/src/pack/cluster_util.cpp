@@ -1497,6 +1497,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       bool allow_unrelated_clustering,
                       const int& high_fanout_threshold,
                       const std::unordered_set<AtomNetId>& is_clock,
+                      const std::unordered_set<AtomNetId>& is_global,
                       const std::shared_ptr<SetupTimingInfo>& timing_info,
                       t_lb_router_data* router_data,
                       t_ext_pin_util target_ext_pin_util,
@@ -1592,7 +1593,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
 
     update_cluster_stats(next_molecule, clb_index,
                          is_clock, //Set of all clocks
-                         is_clock, //Set of all global signals (currently clocks)
+                         is_global, //Set of all global signals (currently clocks)
                          packer_opts.global_clocks, packer_opts.alpha, packer_opts.beta, packer_opts.timing_driven,
                          packer_opts.connection_driven,
                          high_fanout_threshold,
@@ -2668,13 +2669,10 @@ t_molecule_stats calc_max_molecules_stats(const t_pack_molecule* molecule_head) 
 std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
                                                const t_molecule_stats& max_molecule_stats,
                                                const vtr::vector<AtomBlockId, float>& atom_criticality) {
-    std::vector<AtomBlockId> seed_atoms;
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     //Put all atoms in seed list
-    auto& atom_ctx = g_vpr_ctx.atom();
-    for (auto blk : atom_ctx.nlist.blocks()) {
-        seed_atoms.emplace_back(blk);
-    }
+    std::vector<AtomBlockId> seed_atoms(atom_ctx.nlist.blocks().begin(), atom_ctx.nlist.blocks().end());
 
     //Initially all gains are zero
     vtr::vector<AtomBlockId, float> atom_gains(atom_ctx.nlist.blocks().size(), 0.);

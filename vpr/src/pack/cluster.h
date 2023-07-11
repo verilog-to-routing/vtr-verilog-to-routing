@@ -16,6 +16,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          const t_arch* arch,
                                                          t_pack_molecule* molecule_head,
                                                          const std::unordered_set<AtomNetId>& is_clock,
+                                                         const std::unordered_set<AtomNetId>& is_global,
                                                          const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
                                                          bool allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,

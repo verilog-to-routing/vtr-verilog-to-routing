@@ -89,6 +89,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          const t_arch* arch,
                                                          t_pack_molecule* molecule_head,
                                                          const std::unordered_set<AtomNetId>& is_clock,
+                                                         const std::unordered_set<AtomNetId>& is_global,
                                                          const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
                                                          bool allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,
@@ -281,7 +282,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             int high_fanout_threshold = helper_ctx.high_fanout_thresholds.get_threshold(cluster_ctx.clb_nlist.block_type(clb_index)->name);
             update_cluster_stats(istart, clb_index,
                                  is_clock, //Set of clock nets
-                                 is_clock, //Set of global nets (currently all clocks)
+                                 is_global, //Set of global nets (currently all clocks)
                                  packer_opts.global_clocks,
                                  packer_opts.alpha, packer_opts.beta,
                                  packer_opts.timing_driven, packer_opts.connection_driven,
@@ -350,6 +351,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  allow_unrelated_clustering,
                                  high_fanout_threshold,
                                  is_clock,
+                                 is_global,
                                  timing_info,
                                  router_data,
                                  target_ext_pin_util,
