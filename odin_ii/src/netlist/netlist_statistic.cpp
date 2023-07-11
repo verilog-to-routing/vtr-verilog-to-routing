@@ -81,6 +81,13 @@ void mixing_optimization_stats(nnode_t* node, netlist_t* netlist) {
             vtr::free(multiply_stats);
             break;
         }
+
+        case ADD: {
+            stat_t* adder_stats = get_stats(node, netlist, adder_optimization_traverse_value);
+            node->weight = adder_stats->downward.max_depth;
+            vtr::free(adder_stats);
+            break;
+        }
         default:
             error_message(NETLIST, unknown_location, "Counting weights for mixing optimization for %i: Hard block type is unimplemented", node->type);
             break;
