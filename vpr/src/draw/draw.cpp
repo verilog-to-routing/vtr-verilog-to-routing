@@ -528,6 +528,10 @@ void alloc_draw_structs(const t_arch* arch) {
      * not yet know information about the routing resources.				  */
     draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
 
+    draw_state->draw_layer_display.resize(device_ctx.grid.get_num_layers());
+    draw_state->draw_layer_display = {false};
+    draw_state->draw_layer_display[0] = true;
+
     draw_state->arch_info = arch;
 
     deselect_all(); /* Set initial colors */
@@ -1110,10 +1114,9 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     g_signal_connect(draw_partitions, "toggled", G_CALLBACK(set_draw_partitions), app);
 
     // Connect 3d layer checkboxes
-    //    auto& device_ctx = g_vpr_ctx.device();
-    //    int num_layers = device_ctx.grid.get_num_layers();
+        auto& device_ctx = g_vpr_ctx.device();
+        int num_layers = device_ctx.grid.get_num_layers();
 
-    int num_layers = 5; // temporarily 5
 
     for (int i = 0; i < num_layers; i++) {
         std::string label = "Layer " + std::to_string(i + 1);
@@ -1170,13 +1173,16 @@ static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer 
 
 // Callback function for the 3d layer checkboxes
 static void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer data) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
     // Retrieve the index of the checkbox
     int index = GPOINTER_TO_INT(data);
 
     // Get the state of the checkbox (toggled or not)
     gboolean state = gtk_toggle_button_get_active((GtkToggleButton*)widget);
 
-    three_dimension_layer_vector[index] = state;
+
+    draw_state->draw_layer_display[index] = state;
 
     // Perform additional actions based on the checkbox state and index
     if (state) {

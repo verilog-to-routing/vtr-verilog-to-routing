@@ -150,10 +150,9 @@ void routing_button_setup(ezgl::application* app) {
  * Determines how many layers there are and displays depending on number of layers
  */
 void three_dimension_button_setup(ezgl::application* app) {
-//    auto& device_ctx = g_vpr_ctx.device();
-//    int num_layers = device_ctx.grid.get_num_layers();
+    auto& device_ctx = g_vpr_ctx.device();
+    int num_layers = device_ctx.grid.get_num_layers();
 
-    int num_layers = 5; // temporarily 5
 
     // Hide the button if we only have one layer
     if (num_layers == 1) {
@@ -169,8 +168,7 @@ void three_dimension_button_setup(ezgl::application* app) {
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
             gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
         }
-        three_dimension_layer_vector.resize(num_layers); // resize the 3d layer vector accordingly
-//        gtk_widget_show_all(GTK_WIDGET(popover));
+        gtk_widget_show_all(GTK_WIDGET(popover));
     }
 }
 

@@ -27,7 +27,6 @@ t_draw_coords* get_draw_coords_vars();
 
 t_draw_state* get_draw_state_vars();
 
-extern std::vector<bool> three_dimension_layer_vector; // Stores the states of the 3d layer checkboxes
 #endif // NO_GRAPHICS
 
 #endif

@@ -272,6 +272,10 @@ struct t_draw_state {
 
     std::vector<Breakpoint> list_of_breakpoints;
 
+    //instead of bool, we need to make a struct called t_layer_display
+    std::vector<bool> draw_layer_display;
+
+
     ///@brief base of save graphics file name (i.e before extension)
     std::string save_graphics_file_base = "vpr";
 
