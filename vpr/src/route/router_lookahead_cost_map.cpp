@@ -397,6 +397,8 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
  * the cost map data structures, exploiting the capnp serialization.
  */
 
+#ifdef VTR_ENABLE_CAPNPROTO
+
 static void ToCostEntry(util::Cost_Entry* out, const VprCostEntry::Reader& in) {
     out->delay = in.getDelay();
     out->congestion = in.getCongestion();
@@ -491,3 +493,15 @@ void CostMap::write(const std::string& file) const {
 
     writeMessageToFile(file, &builder);
 }
+
+#else
+
+void CostMap::read(const std::string& /*file*/) {
+    VPR_FATAL_ERROR("Read CostMap requires the support of capnp");
+}
+
+void CostMap::write(const std::string& /*file*/) const {
+    VPR_FATAL_ERROR("Write CostMap requires the support of capnp");
+}
+
+#endif
