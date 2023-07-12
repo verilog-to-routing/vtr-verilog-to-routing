@@ -497,11 +497,11 @@ void CostMap::write(const std::string& file) const {
 #else
 
 void CostMap::read(const std::string& /*file*/) {
-    VPR_FATAL_ERROR("Read CostMap requires the support of capnp");
+    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Read CostMap requires the support of capnp");
 }
 
 void CostMap::write(const std::string& /*file*/) const {
-    VPR_FATAL_ERROR("Write CostMap requires the support of capnp");
+    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Write CostMap requires the support of capnp");
 }
 
 #endif
