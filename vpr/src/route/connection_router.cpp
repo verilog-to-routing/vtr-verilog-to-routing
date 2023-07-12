@@ -1082,8 +1082,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     highfanout_bb.xmax = rr_graph_->node_xhigh(target_node_id);
     highfanout_bb.ymin = rr_graph_->node_ylow(target_node_id);
     highfanout_bb.ymax = rr_graph_->node_yhigh(target_node_id);
-    highfanout_bb.layer_min = rr_graph_->node_type(target_node_id);
-    highfanout_bb.layer_max = rr_graph_->node_type(target_node_id);
+    highfanout_bb.layer_min = rr_graph_->node_layer(target_node_id);
+    highfanout_bb.layer_max = rr_graph_->node_layer(target_node_id);
 
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
