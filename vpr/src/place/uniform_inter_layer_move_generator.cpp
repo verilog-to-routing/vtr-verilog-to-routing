@@ -25,15 +25,15 @@ e_create_move UniformInterLayerMoveGenerator::propose_move(t_pl_blocks_to_be_mov
 
     const auto& compatible_layers = block_compressed_grid.get_layer_nums();
 
-    if(compatible_layers.size() < 2) {
+    if (compatible_layers.size() < 2) {
         return e_create_move::ABORT;
     }
 
     std::vector<int> candidate_layers;
     candidate_layers.reserve(compatible_layers.size() - 1);
 
-    for(const auto& layer_num : compatible_layers) {
-        if(layer_num != from.layer) {
+    for (const auto& layer_num : compatible_layers) {
+        if (layer_num != from.layer) {
             candidate_layers.push_back(layer_num);
         }
     }

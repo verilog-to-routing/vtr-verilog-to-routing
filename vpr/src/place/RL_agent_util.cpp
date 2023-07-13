@@ -61,7 +61,6 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             num_2nd_state_avail_moves = NUM_PL_NONTIMING_MOVE_TYPES;
         }
 
-
         if (placer_opts.place_agent_algorithm == E_GREEDY) {
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent1, karmed_bandit_agent2;
             //agent's 1st state

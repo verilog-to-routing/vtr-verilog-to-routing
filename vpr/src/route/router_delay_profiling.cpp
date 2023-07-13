@@ -129,7 +129,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
     bounding_box.layer_min = 0;
-    bounding_box.layer_max = device_ctx.grid.get_num_layers() + 1;
+    bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;

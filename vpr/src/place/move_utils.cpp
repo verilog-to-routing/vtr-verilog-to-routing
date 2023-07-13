@@ -1098,7 +1098,6 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
     const auto& compatible_layers = compressed_block_grid.get_layer_nums();
 
     for (const auto& layer_num : compatible_layers) {
-
         compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc_approx({grid_loc.x, grid_loc.y, layer_num});
     }
 
@@ -1128,7 +1127,6 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
                                               const t_physical_tile_loc& from_compressed_loc,
                                               const t_physical_tile_loc& target_compressed_loc,
                                               float rlim) {
-
     t_bb search_range;
 
     int min_cx, max_cx, min_cy, max_cy;

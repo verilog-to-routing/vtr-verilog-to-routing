@@ -895,7 +895,6 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
         VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
 
-
         xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
         xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
         ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
