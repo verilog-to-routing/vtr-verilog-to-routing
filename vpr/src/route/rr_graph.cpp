@@ -3341,7 +3341,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                                               size_t(Type->height),                                  //[0..height-1]
                                               size_t(grid.get_num_layers()),                         //[0..layer-1]
                                               NUM_SIDES,                                             //[0..NUM_SIDES-1]
-                                              size_t(Type->num_pins) * size_t(grid.get_num_layers()) //[0..num_pins-1]
+                                              size_t(Type->num_pins) * size_t(grid.get_num_layers()) //[0..num_pins * num_layers-1]
                                           },
                                           -1); //Defensive coding: Initialize to invalid
 
