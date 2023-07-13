@@ -23,7 +23,7 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 std::vector<bool> three_dimension_layer_vector; // Stores the states of the 3d layer checkboxes
-
+static void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer data);
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -150,9 +150,10 @@ void routing_button_setup(ezgl::application* app) {
  * Determines how many layers there are and displays depending on number of layers
  */
 void three_dimension_button_setup(ezgl::application* app) {
-    auto& device_ctx = g_vpr_ctx.device();
-    int num_layers = device_ctx.grid.get_num_layers();
+//    auto& device_ctx = g_vpr_ctx.device();
+//    int num_layers = device_ctx.grid.get_num_layers();
 
+    int num_layers = 5;
 
     // Hide the button if we only have one layer
     if (num_layers == 1) {
@@ -167,6 +168,8 @@ void three_dimension_button_setup(ezgl::application* app) {
             std::string label = "Layer " + std::to_string(i + 1);
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
             gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
+
+            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers), GINT_TO_POINTER(i));
         }
         gtk_widget_show_all(GTK_WIDGET(popover));
     }
@@ -270,6 +273,31 @@ void load_net_names(ezgl::application* app) {
                            0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
         i++;
     }
+}
+
+static void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer data) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // Retrieve the index of the checkbox
+    int index = GPOINTER_TO_INT(data);
+
+    // Get the state of the checkbox (toggled or not)
+    gboolean state = gtk_toggle_button_get_active((GtkToggleButton*)widget);
+
+
+    draw_state->draw_layer_display[index] = state;
+
+    // Perform additional actions based on the checkbox state and index
+    if (state) {
+        std::string label = "Layer " + std::to_string(index + 1);
+        application.update_message(label.c_str());
+        std::cout << "Layer toggled" << index <<  std::endl;
+    } else {
+        std::cout << "not on" << index << std::endl;
+        g_print("Checkbox %d is toggled OFF\n", index);
+        // Additional actions when the checkbox is toggled OFF
+    }
+    application.refresh_drawing();
 }
 
 #endif /* NO_GRAPHICS */
