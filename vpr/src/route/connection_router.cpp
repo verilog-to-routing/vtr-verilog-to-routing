@@ -950,7 +950,7 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
-        if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node))) {
+        if ((target_node != OPEN) && !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node))) {
             return;
         }
         add_route_tree_node_to_heap(rt_node,
