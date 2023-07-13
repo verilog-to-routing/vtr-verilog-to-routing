@@ -46,13 +46,15 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 #include "echo_files.h"
-
+// \cond
 // represents the id of a link that does not exist in the NoC
 constexpr NocLinkId INVALID_LINK_ID(-1);
+// \endcond
 
 class NocStorage {
   private:
-    vtr::vector<NocRouterId, NocRouter> router_storage; /*<! Contains all the routers in the NoC*/
+    /** Contains all the routers in the NoC*/
+    vtr::vector<NocRouterId, NocRouter> router_storage;
 
     // list of outgoing links for each router
     /**
@@ -63,7 +65,8 @@ class NocStorage {
      */
     vtr::vector<NocRouterId, std::vector<NocLinkId>> router_link_list;
 
-    vtr::vector<NocLinkId, NocLink> link_storage; /*<! Contains all the links in the NoC*/
+    /** Contains all the links in the NoC*/
+    vtr::vector<NocLinkId, NocLink> link_storage;
 
     /**
      * @brief The user provides an ID for the router when describing the NoC
@@ -409,14 +412,14 @@ class NocStorage {
      * link is returned.
      * 
      * Example:
-     * 
+     * ```
      *  ----------                       ----------
      *  /        /        link 1         /        /
      *  / router / --------------------->/ router /
      *  /   a    / <---------------------/   b    /
      *  /        /        link 2         /        /
      *  /--------/                       /--------/
-     * 
+     * ```
      * In the example above, link 1 and link 2 are parallel.
      * 
      * @param current_link A unique identifier that represents a link

@@ -23,7 +23,7 @@
  * design.
  * 
  * This class will be primarily used during 
- * placement to identify which routers inside the NoC(NocStorage) need to be
+ * placement to identify which routers inside the NoC ( NocStorage ) need to be
  * routed to each other.This is important since the router modules can be moved
  * around to different tiles on the FPGA device.
  * 
@@ -46,12 +46,14 @@
  * 
  */
 struct t_noc_traffic_flow {
-    /** stores the partial names of the router blocks communicating within this traffic flow. Names must uniquely identify router blocks in the netlist.*/
+    /** stores the partial name of the source router block communicating within this traffic flow. Names must uniquely identify router blocks in the netlist.*/
     std::string source_router_module_name;
+    /** stores the partial name of the sink router block communicating within this traffic flow. Names must uniquely identify router blocks in the netlist.*/
     std::string sink_router_module_name;
 
-    /** stores the block id of the two router blocks communicating within this traffic flow. This can be used to retrieve the block information from the clustered netlist*/
+    /** stores the block id of the source router block communicating within this traffic flow. This can be used to retrieve the block information from the clustered netlist*/
     ClusterBlockId source_router_cluster_id;
+    /** stores the block id of the destination router block communicating within this traffic flow. This can be used to retrieve the block information from the clustered netlist*/
     ClusterBlockId sink_router_cluster_id;
 
     /** The bandwidth of the information transferred between the two routers. Units in bytes per second. This parameters will be used to update the link usage in the noc model after routing the traffic flow.*/
