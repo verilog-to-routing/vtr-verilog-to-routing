@@ -138,7 +138,7 @@ class NocStorage {
      * 
      */
     int device_grid_width;
-    int num_layer_blocks;
+    int layer_num_blocks;
 
     // prevent "copying" of this object
     NocStorage(const NocStorage&) = delete;
