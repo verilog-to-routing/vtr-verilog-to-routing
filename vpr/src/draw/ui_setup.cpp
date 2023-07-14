@@ -22,7 +22,6 @@
 #    include "ezgl/point.hpp"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
-std::vector<bool> three_dimension_layer_vector; // Stores the states of the 3d layer checkboxes
 void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
@@ -150,9 +149,10 @@ void routing_button_setup(ezgl::application* app) {
  * Determines how many layers there are and displays depending on number of layers
  */
 void three_dimension_button_setup(ezgl::application* app) {
-    int num_layers = 5;
-    t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->draw_layer_display.resize(num_layers);
+    int num_layers;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    num_layers = device_ctx.grid.get_num_layers();
 
     // Hide the button if we only have one layer
     if (num_layers == 1) {
@@ -166,6 +166,11 @@ void three_dimension_button_setup(ezgl::application* app) {
             std::string label = "Layer " + std::to_string(i + 1);
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
             gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
+
+            if (i == 0) {
+                // Set the initial state of the first checkbox to checked to represent the dafault view.
+                gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox), TRUE);
+            }
 
             g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers), app);
         }
@@ -291,17 +296,18 @@ void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*
 
             // Change the the boolean of the draw_layer_display vector depending on checkbox
             if (state) {
-                std::cout << "Checkbox On " << index + 1 << std::endl;
+                std::cout << "Layer " << index + 1 << " on" <<std::endl;
                 draw_state->draw_layer_display[index] = true;
 
             } else {
                 draw_state->draw_layer_display[index] = false;
-                std::cout << "Checkbox Off " << index + 1 << std::endl;
+                std::cout << "Layer " << index + 1 << " on" << std::endl;
             }
             index++;
         }
     }
     g_list_free(children);
+    application.refresh_drawing();
 }
 
 #endif /* NO_GRAPHICS */
