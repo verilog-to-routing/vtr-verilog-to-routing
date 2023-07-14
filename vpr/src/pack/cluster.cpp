@@ -91,6 +91,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          const std::unordered_set<AtomNetId>& is_clock,
                                                          const std::unordered_set<AtomNetId>& is_global,
                                                          const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+                                                         bool allow_high_fanout_connectivity_clustering,
                                                          bool allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,
                                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
@@ -301,6 +302,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,
+                                                     allow_high_fanout_connectivity_clustering,
                                                      allow_unrelated_clustering,
                                                      packer_opts.prioritize_transitive_connectivity,
                                                      packer_opts.transitive_fanout_threshold,
@@ -348,6 +350,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  detailed_routing_stage,
                                  attraction_groups,
                                  clb_inter_blk_nets,
+                                 allow_high_fanout_connectivity_clustering,
                                  allow_unrelated_clustering,
                                  high_fanout_threshold,
                                  is_clock,

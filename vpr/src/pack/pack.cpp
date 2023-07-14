@@ -73,7 +73,7 @@ bool try_pack(t_packer_opts* packer_opts,
     helper_ctx.num_models += count_models(library_models);
 
     is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
-    is_global = find_likely_global_ctrl_nets(is_clock);
+//    is_global = find_likely_global_ctrl_nets(is_clock);
     is_global.insert(is_clock.begin(), is_clock.end());
 
     size_t num_p_inputs = 0;
@@ -142,6 +142,7 @@ bool try_pack(t_packer_opts* packer_opts,
 
     int pack_iteration = 1;
     bool floorplan_regions_overfull = false;
+    bool allow_high_fanout_connectivity_clustering = false;
 
     while (true) {
         free_clustering_data(*packer_opts, clustering_data);
@@ -154,6 +155,7 @@ bool try_pack(t_packer_opts* packer_opts,
             is_clock,
             is_global,
             expected_lowest_cost_pb_gnode,
+            allow_high_fanout_connectivity_clustering,
             allow_unrelated_clustering,
             balance_block_type_util,
             lb_type_rr_graphs,
@@ -173,6 +175,13 @@ bool try_pack(t_packer_opts* packer_opts,
         if (fits_on_device && !floorplan_regions_overfull) {
             break; //Done
         } else if (pack_iteration == 1 && !floorplan_not_fitting) {
+            VTR_ASSERT(allow_high_fanout_connectivity_clustering == false);
+            allow_high_fanout_connectivity_clustering = true;
+            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s allow_high_fanout_connectivity_clustering=%s\n",
+                    (allow_unrelated_clustering ? "true" : "false"),
+                    (balance_block_type_util ? "true" : "false"),
+                    (allow_high_fanout_connectivity_clustering ? "true" : "false"));
+        } else if (pack_iteration == 2 && !floorplan_not_fitting) {
             //1st pack attempt was unsucessful (i.e. not dense enough) and we have control of unrelated clustering
             //
             //Turn it on to increase packing density
@@ -184,9 +193,10 @@ bool try_pack(t_packer_opts* packer_opts,
                 VTR_ASSERT(balance_block_type_util == false);
                 balance_block_type_util = true;
             }
-            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
+            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s allow_high_fanout_connectivity_clustering=%s\n",
                     (allow_unrelated_clustering ? "true" : "false"),
-                    (balance_block_type_util ? "true" : "false"));
+                    (balance_block_type_util ? "true" : "false"),
+                    (allow_high_fanout_connectivity_clustering ? "true" : "false"));
             /*
              * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
              * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we

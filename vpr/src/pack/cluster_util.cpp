@@ -1494,6 +1494,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       const int detailed_routing_stage,
                       AttractionInfo& attraction_groups,
                       vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                      bool allow_high_fanout_connectivity_clustering,
                       bool allow_unrelated_clustering,
                       const int& high_fanout_threshold,
                       const std::unordered_set<AtomNetId>& is_clock,
@@ -1554,6 +1555,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
 
         next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                  attraction_groups,
+                                                 allow_high_fanout_connectivity_clustering,
                                                  allow_unrelated_clustering,
                                                  packer_opts.prioritize_transitive_connectivity,
                                                  packer_opts.transitive_fanout_threshold,
@@ -1607,6 +1609,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
     }
     next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                              attraction_groups,
+                                             allow_high_fanout_connectivity_clustering,
                                              allow_unrelated_clustering,
                                              packer_opts.prioritize_transitive_connectivity,
                                              packer_opts.transitive_fanout_threshold,
@@ -2204,6 +2207,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                            const ClusterBlockId cluster_index,
                                            bool prioritize_transitive_connectivity,
+                                           bool allow_high_fanout_connectivity_clustering,
                                            int transitive_fanout_threshold,
                                            const int feasible_block_array_size,
                                            std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
@@ -2230,12 +2234,12 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         }
 
         // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
-        if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
+        if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net && allow_high_fanout_connectivity_clustering) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, feasible_block_array_size, attraction_groups);
         }
     } else { //Reverse order
         // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
-        if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
+        if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net && allow_high_fanout_connectivity_clustering) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, feasible_block_array_size, attraction_groups);
         }
 
@@ -2508,6 +2512,7 @@ bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, t_clust
 /*****************************************/
 t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           AttractionInfo& attraction_groups,
+                                          const bool allow_high_fanout_connectivity_clustering,
                                           const bool allow_unrelated_clustering,
                                           const bool prioritize_transitive_connectivity,
                                           const int transitive_fanout_threshold,
@@ -2531,7 +2536,7 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
 
     auto best_molecule = get_highest_gain_molecule(cur_pb, attraction_groups,
                                                    NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets,
-                                                   cluster_index, prioritize_transitive_connectivity,
+                                                   cluster_index, prioritize_transitive_connectivity, allow_high_fanout_connectivity_clustering,
                                                    transitive_fanout_threshold, feasible_block_array_size, primitive_candidate_block_types);
 
     /* If no blocks have any gain to the current cluster, the code above      *
