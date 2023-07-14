@@ -44,6 +44,7 @@ using vtr::t_linked_vptr;
 t_model* hard_adders = NULL;
 t_linked_vptr* add_list = NULL;
 t_linked_vptr* processed_adder_list = NULL;
+t_linked_vptr* split_adder_list = NULL;
 t_linked_vptr* chain_list = NULL;
 int total = 0;
 int* adder = NULL;
@@ -646,7 +647,7 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
             init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag, netlist);
 
         //store the processed hard adder node for optimization
-        processed_adder_list = insert_in_vptr_list(processed_adder_list, node[i]);
+        split_adder_list = insert_in_vptr_list(split_adder_list, node[i]);
     }
 
     chain_information_t* adder_chain = allocate_chain_info();
@@ -767,21 +768,21 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
     return;
 }
 
-/*-------------------------------------------------------------------------
- * (function: iterate_adders)
- *
- * This function will iterate over all of the add operations that
- *	exist in the netlist and perform a splitting so that they can
- *	fit into a basic hard adder block that exists on the FPGA.
- *	If the proper option is set, then it will be expanded as well
- *	to just use a fixed size hard adder.
- *-----------------------------------------------------------------------*/
-void iterate_adders(netlist_t* netlist) {
+/**
+ * -------------------------------------------------------------------------
+ * (function: split_instantiate_hard_adder) 
+ * 
+ * @brief to split a hard adder into an adder chain of single
+ * bit adders and instantiate each of them
+ * 
+ * @param node multibit hard adder node
+ * @param netlist pointer to netlist
+ * -----------------------------------------------------------------------*/
+void split_instantiate_hard_adder(nnode_t* node, uintptr_t mark, netlist_t* netlist) {
     int sizea, sizeb, sizecin; //the size of
     int a, b;
     int count, counta, countb;
     int num = 0;
-    nnode_t* node;
 
     // offset to the adder size in case a dummy adder is added to
     // start of the adder chain to feed the first cin with gnd
@@ -796,6 +797,60 @@ void iterate_adders(netlist_t* netlist) {
     sizea = hard_adders->inputs->next->size;
 
     oassert(sizecin == 1);
+    oassert(node != NULL);
+
+    if (node->type == HARD_IP)
+        node->type = ADD;
+
+    oassert(node->type == ADD);
+
+    a = node->input_port_sizes[0];
+    b = node->input_port_sizes[1];
+    num = (a >= b) ? a : b;
+    node->bit_width = num;
+    oassert(num >= min_threshold_adder && num >= min_add);
+    // if the first cin in a chain is fed by a global input (offset = 0) the adder width is the
+    // input width + 1 (to pass the last cout -> sumout) divided by size of the adder input ports
+    // otherwise (offset = 1) a dummy adder is added to the chain to feed the first cin with gnd
+    // how many adders a can split
+    counta = (a + 1) / sizea + offset;
+    // how many adders b can split
+    countb = (b + 1) / sizeb + offset;
+    // how many adders need to be split
+    if (counta >= countb)
+        count = counta;
+    else
+        count = countb;
+    total++;
+    split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+
+    while (split_adder_list != NULL) {
+        nnode_t* hard_adder = (nnode_t*)split_adder_list->data_vptr;
+        split_adder_list = delete_in_vptr_list(split_adder_list);
+        instantiate_hard_adder(hard_adder, mark, netlist);
+    }
+    return;
+}
+
+/*-------------------------------------------------------------------------
+ * (function: iterate_adders)
+ *
+ * This function will iterate over all of the add operations that
+ *	exist in the netlist and perform a splitting so that they can
+ *	fit into a basic hard adder block that exists on the FPGA.
+ *	If the proper option is set, then it will be expanded as well
+ *	to just use a fixed size hard adder.
+ *-----------------------------------------------------------------------*/
+void iterate_adders(netlist_t* /* netlist */) {
+    int a, b;
+    int num = 0;
+    nnode_t* node;
+
+    /* Can only perform the optimization if hard adders exist! */
+    if (hard_adders == NULL)
+        return;
+
+    t_linked_vptr* new_add_list = NULL;
 
     while (add_list != NULL) {
         node = (nnode_t*)add_list->data_vptr;
@@ -811,25 +866,13 @@ void iterate_adders(netlist_t* netlist) {
         num = (a >= b) ? a : b;
         node->bit_width = num;
         if (num >= min_threshold_adder && num >= min_add) {
-            // if the first cin in a chain is fed by a global input (offset = 0) the adder width is the
-            // input width + 1 (to pass the last cout -> sumout) divided by size of the adder input ports
-            // otherwise (offset = 1) a dummy adder is added to the chain to feed the first cin with gnd
-            // how many adders a can split
-            counta = (a + 1) / sizea + offset;
-            // how many adders b can split
-            countb = (b + 1) / sizeb + offset;
-            // how many adders need to be split
-            if (counta >= countb)
-                count = counta;
-            else
-                count = countb;
-            total++;
-            split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+            new_add_list = insert_in_vptr_list(new_add_list, node);
         }
         // Store the node into processed_adder_list if the threshold is bigger than num
         else
             processed_adder_list = insert_in_vptr_list(processed_adder_list, node);
     }
+    add_list = new_add_list;
     return;
 }
 
@@ -1222,8 +1265,56 @@ static nnode_t* make_adder(operation_list funct, nnode_t* current_adder, nnode_t
     return new_funct;
 }
 
+/*--------------------------------------------------------------------------
+ * (function: instantiate_simple_soft_adder )
+ * 	This is simply a copy of instantiate_add_w_carry;
+ *	need to be worked out
+ *	to use a single copy to avoid code repetition.
+ *------------------------------------------------------------------------*/
+void instantiate_simple_soft_adder(nnode_t* node, short mark, netlist_t* netlist) {
+    // define locations in array when fetching pins
+    const int out = 0, input_a = 1, input_b = 2, pinout_count = 3;
+
+    oassert(node->num_input_pins > 0);
+
+    int* width = (int*)vtr::malloc(pinout_count * sizeof(int));
+
+    if (node->num_input_port_sizes == 2)
+        width[out] = node->output_port_sizes[0];
+    else
+        width[out] = node->num_output_pins;
+
+    width[input_a] = node->input_port_sizes[0];
+    width[input_b] = node->input_port_sizes[1];
+
+    instantiate_add_w_carry_block(width, node, mark, netlist, 0);
+
+    vtr::free(width);
+}
+
 void instantiate_add_w_carry_block(int* width, nnode_t* node, short mark, netlist_t* netlist, short subtraction) {
-    nnode_t* previous_carry = (subtraction) ? netlist->vcc_node : netlist->gnd_node;
+    nnode_t* previous_carry;
+    /**
+     * while hard adders are available, the function "iterate_adders"
+     * explode the add node into an adder chain in which each adders has cin
+     * pin. This is required due to adder hardblock structure. However, the 
+     * cin pin need to be handled in the case of inferring a chain add node 
+     * as soft logic (using MixingOptimization) since the soft logic inferrence
+     * automatically consider GND or VCC as cin pin according to the node type
+     */
+    // check if node has cin port
+    if (node->num_input_port_sizes == 3) {
+        npin_t* cin = node->input_pins[width[1] + width[2]];
+        previous_carry = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
+        /* hook the GND as cin pin */
+        add_input_pin_to_node(previous_carry, get_zero_pin(netlist), 0);
+        /* connect the add node's cin as CARRY_FUNC inputs */
+        add_input_pin_to_node(previous_carry, get_one_pin(netlist), 1);
+        remap_pin_to_new_node(cin, previous_carry, 2);
+    } else {
+        /* considering VCC or GND as cin based on node type */
+        previous_carry = (subtraction) ? netlist->vcc_node : netlist->gnd_node;
+    }
 
     for (int i = 0; i < width[0]; i++) {
         /* set of flags for building purposes */

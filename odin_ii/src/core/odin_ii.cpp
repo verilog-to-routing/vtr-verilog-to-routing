@@ -639,6 +639,16 @@ void get_options(int argc, char** argv) {
         .default_value("-1.0")
         .action(argparse::Action::STORE);
 
+    mixing_opt_grp.add_argument(global_args.exact_adders, "--exact_adders")
+        .help("To enable mixing hard block and soft logic implementation of adders")
+        .default_value("-1")
+        .action(argparse::Action::STORE);
+
+    mixing_opt_grp.add_argument(global_args.adders_ratio, "--adders_ratio")
+        .help("To enable mixing hard block and soft logic implementation of adders")
+        .default_value("-1.0")
+        .action(argparse::Action::STORE);
+
     parser.parse_args(argc, argv);
 
     //Check required options
@@ -719,6 +729,14 @@ void get_options(int argc, char** argv) {
     } else if (global_args.exact_mults >= 0) {
         delete mixer->_opts[MULTIPLY];
         mixer->_opts[MULTIPLY] = new MultsOpt(global_args.exact_mults);
+    }
+
+    if (global_args.adders_ratio >= 0.0 && global_args.adders_ratio <= 1.0) {
+        delete mixer->_opts[ADD];
+        mixer->_opts[ADD] = new AddersOpt(global_args.adders_ratio);
+    } else if (global_args.exact_adders >= 0) {
+        delete mixer->_opts[ADD];
+        mixer->_opts[ADD] = new AddersOpt(global_args.exact_adders);
     }
 }
 
