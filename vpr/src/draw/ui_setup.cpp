@@ -301,7 +301,7 @@ void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*
 
             } else {
                 draw_state->draw_layer_display[index] = false;
-                std::cout << "Layer " << index + 1 << " on" << std::endl;
+                std::cout << "Layer " << index + 1 << " off" << std::endl;
             }
             index++;
         }
