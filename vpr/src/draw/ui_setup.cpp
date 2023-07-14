@@ -23,7 +23,7 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 std::vector<bool> three_dimension_layer_vector; // Stores the states of the 3d layer checkboxes
-static void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer data);
+void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -150,17 +150,15 @@ void routing_button_setup(ezgl::application* app) {
  * Determines how many layers there are and displays depending on number of layers
  */
 void three_dimension_button_setup(ezgl::application* app) {
-//    auto& device_ctx = g_vpr_ctx.device();
-//    int num_layers = device_ctx.grid.get_num_layers();
-
     int num_layers = 5;
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->draw_layer_display.resize(num_layers);
 
     // Hide the button if we only have one layer
     if (num_layers == 1) {
         hide_widget("3DMenuButton", app);
     } else {
         GtkPopover* popover = GTK_POPOVER(app->get_object("3Dpopover"));
-        // Box is child of popover
         GtkBox* box = GTK_BOX(app->get_object("3Dbox"));
 
         // Create checkboxes for each layer
@@ -169,11 +167,13 @@ void three_dimension_button_setup(ezgl::application* app) {
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
             gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
 
-            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers), GINT_TO_POINTER(i));
+            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers), app);
         }
         gtk_widget_show_all(GTK_WIDGET(popover));
     }
 }
+
+
 
 /*
  * @brief Loads required data for search autocomplete, sets up special completion fn
@@ -275,29 +275,33 @@ void load_net_names(ezgl::application* app) {
     }
 }
 
-static void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer data) {
+void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // Retrieve the index of the checkbox
-    int index = GPOINTER_TO_INT(data);
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    GtkBox* box = GTK_BOX(parent);
 
-    // Get the state of the checkbox (toggled or not)
-    gboolean state = gtk_toggle_button_get_active((GtkToggleButton*)widget);
+    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
+    int index = 0;
+    // Iterate over the checkboxes
+    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
+        if (GTK_IS_CHECK_BUTTON(iter->data)) {
+            GtkWidget* checkbox = GTK_WIDGET(iter->data);
+            gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
 
+            // Change the the boolean of the draw_layer_display vector depending on checkbox
+            if (state) {
+                std::cout << "Checkbox On " << index + 1 << std::endl;
+                draw_state->draw_layer_display[index] = true;
 
-    draw_state->draw_layer_display[index] = state;
-
-    // Perform additional actions based on the checkbox state and index
-    if (state) {
-        std::string label = "Layer " + std::to_string(index + 1);
-        application.update_message(label.c_str());
-        std::cout << "Layer toggled" << index <<  std::endl;
-    } else {
-        std::cout << "not on" << index << std::endl;
-        g_print("Checkbox %d is toggled OFF\n", index);
-        // Additional actions when the checkbox is toggled OFF
+            } else {
+                draw_state->draw_layer_display[index] = false;
+                std::cout << "Checkbox Off " << index + 1 << std::endl;
+            }
+            index++;
+        }
     }
-    application.refresh_drawing();
+    g_list_free(children);
 }
 
 #endif /* NO_GRAPHICS */
