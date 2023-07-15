@@ -23,7 +23,6 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 std::vector<bool> three_dimension_layer_vector; // Stores the states of the 3d layer checkboxes
-void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -167,7 +166,7 @@ void three_dimension_button_setup(ezgl::application* app) {
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
             gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
 
-            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers), app);
+            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layer_cbk), app);
         }
         gtk_widget_show_all(GTK_WIDGET(popover));
     }
@@ -273,35 +272,6 @@ void load_net_names(ezgl::application* app) {
                            0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
         i++;
     }
-}
-
-void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    GtkBox* box = GTK_BOX(parent);
-
-    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
-    int index = 0;
-    // Iterate over the checkboxes
-    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
-        if (GTK_IS_CHECK_BUTTON(iter->data)) {
-            GtkWidget* checkbox = GTK_WIDGET(iter->data);
-            gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
-
-            // Change the the boolean of the draw_layer_display vector depending on checkbox
-            if (state) {
-                std::cout << "Checkbox On " << index + 1 << std::endl;
-                draw_state->draw_layer_display[index] = true;
-
-            } else {
-                draw_state->draw_layer_display[index] = false;
-                std::cout << "Checkbox Off " << index + 1 << std::endl;
-            }
-            index++;
-        }
-    }
-    g_list_free(children);
 }
 
 #endif /* NO_GRAPHICS */
