@@ -953,7 +953,7 @@ void try_place(const Netlist<>& net_list,
     if (placer_opts.place_checkpointing)
         restore_best_placement(placement_checkpoint, timing_info, costs,
                                placer_criticalities, placer_setup_slacks, place_delay_model,
-                               pin_timing_invalidator, crit_params);
+                               pin_timing_invalidator, crit_params, noc_opts);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",

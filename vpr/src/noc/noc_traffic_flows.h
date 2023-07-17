@@ -31,6 +31,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 #include "clustered_netlist_fwd.h"
 #include "noc_data_types.h"
@@ -67,8 +68,8 @@ struct t_noc_traffic_flow {
 
     /** Constructor initializes all variables*/
     t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency, int flow_priority)
-        : source_router_module_name(source_router_name)
-        , sink_router_module_name(sink_router_name)
+        : source_router_module_name(std::move(source_router_name))
+        , sink_router_module_name(std::move(sink_router_name))
         , source_router_cluster_id(source_router_id)
         , sink_router_cluster_id(sink_router_id)
         , traffic_flow_bandwidth(flow_bandwidth)
@@ -254,7 +255,7 @@ class NocTrafficFlows {
      * at the sink router.
      * @param traffic_flow_priority The importance of a given traffic flow.
      */
-    void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
+    void create_noc_traffic_flow(const std::string& source_router_module_name, const std::string& sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
 
     /**
      * @brief Copies the passed in router_cluster_id_in_netlist vector to the
@@ -304,7 +305,7 @@ class NocTrafficFlows {
      * @return true The block has traffic flows that it is a part of
      * @return false The block has no traffic flows it is a prt of
      */
-    bool check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id);
+    bool check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id) const;
 
     /**
      * @brief Writes out the NocTrafficFlows class information to a file.
