@@ -482,6 +482,7 @@ void three_dimension_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer
             }
         }
     }
+    application.refresh_drawing();
     g_list_free(children);
 }
 
