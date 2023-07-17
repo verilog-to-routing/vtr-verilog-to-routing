@@ -172,7 +172,7 @@ void three_dimension_button_setup(ezgl::application* app) {
                 gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox), TRUE);
             }
 
-            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers_cbk), app);
+            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layer_cbk), app);
         }
         gtk_widget_show_all(GTK_WIDGET(popover));
     }
@@ -194,6 +194,7 @@ void search_setup(ezgl::application* app) {
  * 
  * @param app ezgl application
  */
+
 void crit_path_button_setup(ezgl::application* app) {
     GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
     g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
@@ -278,34 +279,13 @@ void load_net_names(ezgl::application* app) {
     }
 }
 
-void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
-    t_draw_state* draw_state = get_draw_state_vars();
+void layer_select_setup(ezgl::application* app)  {
 
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    GtkBox* box = GTK_BOX(parent);
-
-    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
-    int index = 0;
-    // Iterate over the checkboxes
-    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
-        if (GTK_IS_CHECK_BUTTON(iter->data)) {
-            GtkWidget* checkbox = GTK_WIDGET(iter->data);
-            gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
-
-            // Change the the boolean of the draw_layer_display vector depending on checkbox
-            if (state) {
-                std::cout << "Layer " << index + 1 << " on" <<std::endl;
-                draw_state->draw_layer_display[index] = true;
-
-            } else {
-                draw_state->draw_layer_display[index] = false;
-                std::cout << "Layer " << index + 1 << " on" << std::endl;
-            }
-            index++;
-        }
-    }
-    g_list_free(children);
-    application.refresh_drawing();
 }
+
+void transparency_setup(ezgl::application* app)  {
+
+}
+
 
 #endif /* NO_GRAPHICS */
