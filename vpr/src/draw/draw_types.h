@@ -143,6 +143,12 @@ typedef struct {
     bool node_highlighted;
 } t_draw_rr_node;
 
+typedef struct{
+    bool visible = false;
+    int alpha = 0;
+}t_draw_layer_display;
+
+
 /**
  * @brief Structure used to store variables related to highlighting/drawing
  * 
@@ -272,8 +278,8 @@ struct t_draw_state {
 
     std::vector<Breakpoint> list_of_breakpoints;
 
-    //instead of bool, we need to make a struct called t_layer_display
-    std::vector<bool> draw_layer_display;
+    //draw state for drawing multiple layers
+    std::vector<t_draw_layer_display> draw_layer_display;
 
 
     ///@brief base of save graphics file name (i.e before extension)

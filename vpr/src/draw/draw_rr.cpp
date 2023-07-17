@@ -682,7 +682,6 @@ int draw_check_rr_node_hit(float click_x, float click_y) {
 
     //TODO: Change when graphics supports 3D FPGAs
     //VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
-    int layer_num = 0;
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
@@ -691,6 +690,7 @@ int draw_check_rr_node_hit(float click_x, float click_y) {
             case OPIN: {
                 int i = rr_graph.node_xlow(rr_id);
                 int j = rr_graph.node_ylow(rr_id);
+                int layer_num = rr_graph.node_layer(rr_id);
                 t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                 int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});

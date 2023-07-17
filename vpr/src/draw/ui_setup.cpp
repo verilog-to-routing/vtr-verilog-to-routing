@@ -172,7 +172,7 @@ void three_dimension_button_setup(ezgl::application* app) {
                 gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox), TRUE);
             }
 
-            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers_cbk), app);
+            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layer_cbk), app);
         }
         gtk_widget_show_all(GTK_WIDGET(popover));
     }
@@ -295,10 +295,10 @@ void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*
             // Change the the boolean of the draw_layer_display vector depending on checkbox
             if (state) {
                 std::cout << "Layer " << index + 1 << " on" <<std::endl;
-                draw_state->draw_layer_display[index] = true;
+                draw_state->draw_layer_display[index].visible = true;
 
             } else {
-                draw_state->draw_layer_display[index] = false;
+                draw_state->draw_layer_display[index].visible = false;
                 std::cout << "Layer " << index + 1 << " off" << std::endl;
             }
             index++;

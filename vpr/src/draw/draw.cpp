@@ -527,9 +527,9 @@ void alloc_draw_structs(const t_arch* arch) {
      * not yet know information about the routing resources.				  */
     draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
 
+
     draw_state->draw_layer_display.resize(device_ctx.grid.get_num_layers());
-    draw_state->draw_layer_display = {false};
-    draw_state->draw_layer_display[0] = true;
+    draw_state->draw_layer_display[0].visible = true;
 
     draw_state->arch_info = arch;
 

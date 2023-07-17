@@ -156,35 +156,40 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
 
     //TODO: Change when graphics supports 3D FPGAs
    // VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
-    int layer_num = 0;
-    for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-        for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-            /* Only the first block of a group should control drawing */
-            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
-            int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
-            int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
+    int total_layer_num = device_ctx.grid.get_num_layers();
 
-            if (width_offset > 0 || height_offset > 0)
-                continue;
+    for(int layer_num = 0; layer_num < total_layer_num; layer_num++) {
+        if(draw_state->draw_layer_display[layer_num].visible) {
+            for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+                for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                    /* Only the first block of a group should control drawing */
+                    const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                    int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
+                    int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
 
-            /* Don't draw if tile is empty. This includes corners. */
-            if (is_empty_type(type))
-                continue;
+                    if (width_offset > 0 || height_offset > 0)
+                        continue;
 
-            int num_sub_tiles = type->capacity;
-            for (int k = 0; k < num_sub_tiles; ++k) {
-                /* Don't draw if block is empty. */
-                // TODO: Change when graphics supports 3D
-                if (place_ctx.grid_blocks.block_at_location({i, j, k, 0}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, 0}) == INVALID_BLOCK_ID)
-                    continue;
+                    /* Don't draw if tile is empty. This includes corners. */
+                    if (is_empty_type(type))
+                        continue;
 
-                /* Get block ID */
-                // TODO: Change when graphics supports 3D
-                ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, 0});
-                /* Safety check, that physical blocks exists in the CLB */
-                if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
-                    continue;
-                draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0), cluster_ctx.clb_nlist.block_type(bnum), g);
+                    int num_sub_tiles = type->capacity;
+                    for (int k = 0; k < num_sub_tiles; ++k) {
+                        /* Don't draw if block is empty. */
+                        // TODO: Change when graphics supports 3D
+                        if (place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == INVALID_BLOCK_ID)
+                            continue;
+
+                        /* Get block ID */
+                        // TODO: Change when graphics supports 3D
+                        ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                        /* Safety check, that physical blocks exists in the CLB */
+                        if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
+                            continue;
+                        draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0), cluster_ctx.clb_nlist.block_type(bnum), g);
+                    }
+                }
             }
         }
     }

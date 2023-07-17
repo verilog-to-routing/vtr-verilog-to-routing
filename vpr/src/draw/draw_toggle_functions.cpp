@@ -473,9 +473,9 @@ void three_dimension_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer
                 // Change the the boolean of the draw_layer_display vector depending on checkbox
                 if (state) {
                     std::cout << "Checkbox On " << index + 1 << std::endl;
-                    draw_state->draw_layer_display[index] = true;
+                    draw_state->draw_layer_display[index].visible = true;
                 } else {
-                    draw_state->draw_layer_display[index] = false;
+                    draw_state->draw_layer_display[index].visible = false;
                     std::cout << "Checkbox Off " << index + 1 << std::endl;
                 }
                 index++;
