@@ -446,4 +446,43 @@ void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
     app->refresh_drawing();
 }
 
+/**
+ * @brief Callback function for 3d layer checkboxes
+ * Updates draw_state->draw_layer_display based on which checkboxes are checked
+ *
+ * @param self
+ * @param app
+ */
+void three_dimension_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    GtkBox* box = GTK_BOX(parent);
+
+    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
+    int index = 0;
+    // Iterate over the checkboxes
+    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
+        if (GTK_IS_CHECK_BUTTON(iter->data)) {
+            GtkWidget* checkbox = GTK_WIDGET(iter->data);
+            gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
+            const gchar* name = gtk_button_get_label(GTK_BUTTON(checkbox));
+
+            // Only iterate through checkboxes with name "Layer ..."
+            if (std::string(name).find("Layer") != std::string::npos) {
+                // Change the the boolean of the draw_layer_display vector depending on checkbox
+                if (state) {
+                    std::cout << "Checkbox On " << index + 1 << std::endl;
+                    draw_state->draw_layer_display[index] = true;
+                } else {
+                    draw_state->draw_layer_display[index] = false;
+                    std::cout << "Checkbox Off " << index + 1 << std::endl;
+                }
+                index++;
+            }
+        }
+    }
+    g_list_free(children);
+}
+
 #endif

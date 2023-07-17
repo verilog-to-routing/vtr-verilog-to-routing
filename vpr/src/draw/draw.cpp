@@ -129,7 +129,6 @@ static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer 
 static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-//static void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer data);
 static void run_graphics_commands(std::string commands);
 
 /************************** File Scope Variables ****************************/
@@ -294,18 +293,6 @@ static void default_setup(ezgl::application* app) {
     block_button_setup(app);
     search_setup(app);
     three_dimension_button_setup(app);
-    // Connect 3d layer checkboxes
-    //        auto& device_ctx = g_vpr_ctx.device();
-    //        int num_layers = device_ctx.grid.get_num_layers();
-
-//    int num_layers = 5;
-//    for (int i = 0; i < num_layers; i++) {
-//        std::string label = "Layer " + std::to_string(i + 1);
-//        GObject* checkbox = app->get_object(label.c_str());
-//
-//        // Connect checkbox with callback function
-//        g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers), GINT_TO_POINTER(i));
-//    }
 }
 
 // Initial Setup functions run default setup if they are a new window. Then, they will run
@@ -1170,32 +1157,6 @@ static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer 
     application.update_message(draw_state->default_message);
     application.refresh_drawing();
 }
-
-// Callback function for the 3d layer checkboxes
-//static void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer data) {
-//    t_draw_state* draw_state = get_draw_state_vars();
-//
-//    // Retrieve the index of the checkbox
-//    int index = GPOINTER_TO_INT(data);
-//
-//    // Get the state of the checkbox (toggled or not)
-//    gboolean state = gtk_toggle_button_get_active((GtkToggleButton*)widget);
-//
-//
-//    draw_state->draw_layer_display[index] = state;
-//
-//    // Perform additional actions based on the checkbox state and index
-//    if (state) {
-//        std::string label = "Layer " + std::to_string(index + 1);
-//        application.update_message(label.c_str());
-//        std::cout << "Layer toggled" << index <<  std::endl;
-//    } else {
-//        std::cout << "not on" << index << std::endl;
-//        g_print("Checkbox %d is toggled OFF\n", index);
-//        // Additional actions when the checkbox is toggled OFF
-//    }
-//    application.refresh_drawing();
-//}
 
 
 static void on_dialog_response(GtkDialog* dialog, gint response_id, gpointer /* user_data*/) {

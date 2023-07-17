@@ -172,13 +172,11 @@ void three_dimension_button_setup(ezgl::application* app) {
                 gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox), TRUE);
             }
 
-            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers), app);
+            g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layers_cbk), app);
         }
         gtk_widget_show_all(GTK_WIDGET(popover));
     }
 }
-
-
 
 /*
  * @brief Loads required data for search autocomplete, sets up special completion fn
