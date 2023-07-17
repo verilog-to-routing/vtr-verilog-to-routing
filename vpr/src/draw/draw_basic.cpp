@@ -115,7 +115,7 @@ void drawplace(ezgl::renderer* g) {
 
     g->set_line_width(0);
     for(int layer_num = 0; layer_num < total_num_layers; layer_num++){
-        if(draw_state->draw_layer_display[layer_num]) {
+        if(draw_state->draw_layer_display[layer_num].visible) {
             for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
                 for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                     /* Only the first block of a group should control drawing */
