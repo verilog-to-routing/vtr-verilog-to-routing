@@ -169,8 +169,8 @@ void view_button_setup(ezgl::application* app) {
 
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
             // add margins to checkboxes to match the transparency spin buttons
-            gtk_widget_set_margin_top(checkbox, 4);
-            gtk_widget_set_margin_bottom(checkbox, 4);
+            gtk_widget_set_margin_top(checkbox, 6);
+            gtk_widget_set_margin_bottom(checkbox, 6);
 
             gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
             GtkWidget* spin_button = gtk_spin_button_new_with_range(0,255, 1);
@@ -186,16 +186,7 @@ void view_button_setup(ezgl::application* app) {
         }
         gtk_widget_show_all(GTK_WIDGET(box));
         gtk_widget_show_all(GTK_WIDGET(trans_box));
-
-        // adding cross layer connection ui
-        GtkGrid* new_grid = GTK_GRID(gtk_grid_new());
-
-        gtk_container_add(GTK_CONTAINER(popover), GTK_WIDGET(new_grid));
-
-        GtkWidget* cross_layer = gtk_check_button_new_with_label("Cross Layer Connections");
-        gtk_grid_attach(new_grid, cross_layer, 0, 0, 2, 1);
-        gtk_widget_show_all(GTK_WIDGET(new_grid));
-        // need to add callback function
+        // need to add callback function to cross layer connection
     }
 }
 /*
