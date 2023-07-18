@@ -72,20 +72,7 @@
                   <placeholder/>
                 </child>
                 <child>
-                  <object class="GtkCheckButton">
-                    <property name="label" translatable="yes">Cross Layer Connections</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="margin-top">4</property>
-                    <property name="margin-bottom">5</property>
-                    <property name="draw-indicator">True</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">34</property>
-                  </packing>
+                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -150,15 +137,7 @@
                   <placeholder/>
                 </child>
                 <child>
-                  <object class="GtkSpinButton">
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">14</property>
-                  </packing>
+                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -172,9 +151,6 @@
             <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </object>
     </child>
