@@ -62,11 +62,11 @@ void search_setup(ezgl::application* app);
 void routing_button_setup(ezgl::application* app);
 
 /*
- * @brief configures and connects signals/functions for 3D buttons
+ * @brief configures and connects signals/functions for View button
  *
  * Determines how many layers there are and displays depending on number of layers
  */
-void three_dimension_button_setup(ezgl::application* app);
+void view_button_setup(ezgl::application* app);
 
 /**
  * @brief connects critical path button to its cbk fn. Called in all setup options that show crit. path

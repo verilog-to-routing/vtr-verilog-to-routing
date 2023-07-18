@@ -485,5 +485,33 @@ void three_dimension_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer
     application.refresh_drawing();
     g_list_free(children);
 }
+/**
+ * @brief Callback function for 3d layer transparency spin boxes
+ * Updates draw_state->draw_layer_display based on the values in spin boxes
+ *
+ * @param self
+ * @param app
+ */
+void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
 
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    GtkBox* box = GTK_BOX(parent);
+    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
+
+    int index = 0;
+    // Iterate over transparency layers
+    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
+        if (GTK_IS_SPIN_BUTTON(iter->data)) {
+            GtkWidget* spin_button = GTK_WIDGET(iter->data);
+            gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin_button));
+
+            std::cout << "Value of" << index + 1 << ": " << value << std::endl;
+            draw_state->draw_layer_display[index].alpha = value;
+            index++;
+        }
+    }
+    application.refresh_drawing();
+    g_list_free(children);
+}
 #endif

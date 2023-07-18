@@ -144,11 +144,11 @@ void routing_button_setup(ezgl::application* app) {
 }
 
 /*
- * @brief configures and connects signals/functions for 3D buttons
+ * @brief configures and connects signals/functions for View buttons
  *
  * Determines how many layers there are and displays depending on number of layers
  */
-void three_dimension_button_setup(ezgl::application* app) {
+void view_button_setup(ezgl::application* app) {
     int num_layers;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -159,13 +159,22 @@ void three_dimension_button_setup(ezgl::application* app) {
         hide_widget("3DMenuButton", app);
     } else {
         GtkPopover* popover = GTK_POPOVER(app->get_object("3Dpopover"));
-        GtkBox* box = GTK_BOX(app->get_object("3Dbox"));
+        GtkBox* box = GTK_BOX(app->get_object("LayerBox"));
+        GtkBox* trans_box = GTK_BOX(app->get_object("TransparencyBox"));
 
-        // Create checkboxes for each layer
+        // Create checkboxes and spin buttons for each layer
         for (int i = 0; i < num_layers; i++) {
             std::string label = "Layer " + std::to_string(i + 1);
+            std::string trans_label = "Transparency " + std::to_string(i + 1);
+
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
+            // add margins to checkboxes to match the transparency spin buttons
+            gtk_widget_set_margin_top(checkbox, 4);
+            gtk_widget_set_margin_bottom(checkbox, 4);
+
             gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
+            GtkWidget* spin_button = gtk_spin_button_new_with_range(0,255, 1);
+            gtk_box_pack_start(GTK_BOX(trans_box), spin_button, FALSE, FALSE, 0);
 
             if (i == 0) {
                 // Set the initial state of the first checkbox to checked to represent the dafault view.
@@ -173,11 +182,38 @@ void three_dimension_button_setup(ezgl::application* app) {
             }
 
             g_signal_connect(checkbox, "toggled", G_CALLBACK(three_dimension_layer_cbk), app);
+            g_signal_connect(spin_button, "value-changed", G_CALLBACK(transparency_cbk), app);
         }
-        gtk_widget_show_all(GTK_WIDGET(popover));
+        gtk_widget_show_all(GTK_WIDGET(box));
+        gtk_widget_show_all(GTK_WIDGET(trans_box));
+
+        // adding cross layer connection ui
+        GtkGrid* new_grid = GTK_GRID(gtk_grid_new());
+
+        gtk_container_add(GTK_CONTAINER(popover), GTK_WIDGET(new_grid));
+
+        GtkWidget* cross_layer = gtk_check_button_new_with_label("Cross Layer Connections");
+        gtk_grid_attach(new_grid, cross_layer, 0, 0, 2, 1);
+        gtk_widget_show_all(GTK_WIDGET(new_grid));
+        // need to add callback function
     }
 }
+/*
+ * @brief configures and connects transparency options to the View button
+ *
+ * Adds options for transparency
+ */
+void transparency_setup(ezgl::application* app)  {
 
+}
+/*
+ * @brief configures and connects cross layer connection to view button
+ *
+ * Adds checkbox for cross layer connections
+ */
+void cross_layer_setup(ezgl::application* app)  {
+
+}
 /*
  * @brief Loads required data for search autocomplete, sets up special completion fn
  */

@@ -292,7 +292,7 @@ static void default_setup(ezgl::application* app) {
     net_button_setup(app);
     block_button_setup(app);
     search_setup(app);
-    three_dimension_button_setup(app);
+    view_button_setup(app);
 }
 
 // Initial Setup functions run default setup if they are a new window. Then, they will run

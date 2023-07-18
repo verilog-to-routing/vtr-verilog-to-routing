@@ -130,5 +130,10 @@ void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /
 /* Callback function for the 3d layer checkboxesin ui_setup.cpp
  * Updates draw_state->draw_layer_display based on which checkboxes are checked */
 void three_dimension_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+/**
+ * @brief Callback function for 3d layer transparency spin boxes
+ * Updates draw_state->draw_layer_display based on the values in spin boxes */
+void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+
 #endif /* NO_GRAPHICS */
 #endif /* DRAW_TOGGLE_FUNCTIONS_H */
