@@ -670,7 +670,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_node_loc_layer(int layer_num, int& inode) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
-        const auto& rr_graph = (*rr_graph_);
+
 
         VTR_ASSERT(layer_num >= 0);
         rr_graph_builder_->set_node_layer(node_id, layer_num);
