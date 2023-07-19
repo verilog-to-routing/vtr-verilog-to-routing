@@ -633,12 +633,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
 
-    inline int init_node_loc(int& inode, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
+    inline int init_node_loc(int& inode, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
-        rr_graph_builder_->set_node_layer(node_id, layer);
+        // We set the layer num 0 - If it is specified in the XML, it will be overwritten
+        rr_graph_builder_->set_node_layer(node_id, 0);
         rr_graph_builder_->set_node_ptc_num(node_id, ptc);
         return inode;
     }
@@ -664,6 +665,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline int get_node_loc_ylow(const t_rr_node& node) final {
         return rr_graph_->node_ylow(node.id());
+    }
+
+    inline void set_node_loc_layer(int layer_num, int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+        const auto& rr_graph = (*rr_graph_);
+
+        VTR_ASSERT(layer_num >= 0);
+        rr_graph_builder_->set_node_layer(node_id, layer_num);
     }
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
