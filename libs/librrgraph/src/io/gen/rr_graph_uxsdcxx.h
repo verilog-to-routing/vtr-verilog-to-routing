@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 8a13fa50b87a91c2baab7c6ced02f573
+ * md5sum of input file: 38649d034e0edccbcb511ddb8915cdff
  */
 
 #include <functional>
@@ -3965,8 +3965,7 @@ inline void write_grid_locs(T &in, std::ostream &os, Context &context){
 			os << "<grid_loc";
 			os << " block_type_id=\"" << in.get_grid_loc_block_type_id(child_context) << "\"";
 			os << " height_offset=\"" << in.get_grid_loc_height_offset(child_context) << "\"";
-			if((bool)in.get_grid_loc_layer(child_context))
-				os << " layer=\"" << in.get_grid_loc_layer(child_context) << "\"";
+			os << " layer=\"" << in.get_grid_loc_layer(child_context) << "\"";
 			os << " width_offset=\"" << in.get_grid_loc_width_offset(child_context) << "\"";
 			os << " x=\"" << in.get_grid_loc_x(child_context) << "\"";
 			os << " y=\"" << in.get_grid_loc_y(child_context) << "\"";
@@ -4008,8 +4007,7 @@ inline void write_node(T &in, std::ostream &os, Context &context){
 	{
 		auto child_context = in.get_node_loc(context);
 		os << "<loc";
-		if((bool)in.get_node_loc_layer(child_context))
-			os << " layer=\"" << in.get_node_loc_layer(child_context) << "\"";
+		os << " layer=\"" << in.get_node_loc_layer(child_context) << "\"";
 		os << " ptc=\"" << in.get_node_loc_ptc(child_context) << "\"";
 		if((bool)in.get_node_loc_side(child_context))
 			os << " side=\"" << lookup_loc_side[(int)in.get_node_loc_side(child_context)] << "\"";

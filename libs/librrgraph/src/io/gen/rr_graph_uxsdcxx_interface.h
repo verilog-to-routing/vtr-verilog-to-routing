@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 8a13fa50b87a91c2baab7c6ced02f573
+ * md5sum of input file: 38649d034e0edccbcb511ddb8915cdff
  */
 
 #include <functional>
@@ -330,7 +330,7 @@ public:
 
 	/** Generated for complex type "grid_loc":
 	 * <xs:complexType name="grid_loc">
-	 *   <xs:attribute name="layer" type="xs:int" />
+	 *   <xs:attribute name="layer" type="xs:int" default="0" />
 	 *   <xs:attribute name="x" type="xs:int" use="required" />
 	 *   <xs:attribute name="y" type="xs:int" use="required" />
 	 *   <xs:attribute name="block_type_id" type="xs:int" use="required" />
@@ -361,7 +361,7 @@ public:
 
 	/** Generated for complex type "node_loc":
 	 * <xs:complexType name="node_loc">
-	 *   <xs:attribute name="layer" type="xs:int" />
+	 *   <xs:attribute name="layer" type="xs:int" default="0" />
 	 *   <xs:attribute name="xlow" type="xs:int" use="required" />
 	 *   <xs:attribute name="ylow" type="xs:int" use="required" />
 	 *   <xs:attribute name="xhigh" type="xs:int" use="required" />

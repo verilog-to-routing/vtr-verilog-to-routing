@@ -4,9 +4,9 @@
 #
 # Cmdline: uxsdcxx/uxsdcap.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 # Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: 8a13fa50b87a91c2baab7c6ced02f573
+# md5sum of input file: 38649d034e0edccbcb511ddb8915cdff
 
-@0xe05e6a59b7f502a0;
+@0xf8328695afe65adc;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -151,7 +151,7 @@ struct BlockTypes {
 struct GridLoc {
 	blockTypeId @0 :Int32;
 	heightOffset @1 :Int32;
-	layer @2 :Int32;
+	layer @2 :Int32 = 0;
 	widthOffset @3 :Int32;
 	x @4 :Int32;
 	y @5 :Int32;
@@ -162,7 +162,7 @@ struct GridLocs {
 }
 
 struct NodeLoc {
-	layer @0 :Int32;
+	layer @0 :Int32 = 0;
 	ptc @1 :Int32;
 	side @2 :LocSide;
 	xhigh @3 :Int32;

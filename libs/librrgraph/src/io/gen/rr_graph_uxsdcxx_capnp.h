@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcap.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 8a13fa50b87a91c2baab7c6ced02f573
+ * md5sum of input file: 38649d034e0edccbcb511ddb8915cdff
  */
 
 #include <functional>
@@ -1119,8 +1119,7 @@ inline void write_grid_locs_capnp_type(T &in, ucap::GridLocs::Builder &root, Con
 		auto child_context = in.get_grid_locs_grid_loc(i, context);
 		grid_locs_grid_loc.setBlockTypeId(in.get_grid_loc_block_type_id(child_context));
 		grid_locs_grid_loc.setHeightOffset(in.get_grid_loc_height_offset(child_context));
-		if((bool)in.get_grid_loc_layer(child_context))
-			grid_locs_grid_loc.setLayer(in.get_grid_loc_layer(child_context));
+		grid_locs_grid_loc.setLayer(in.get_grid_loc_layer(child_context));
 		grid_locs_grid_loc.setWidthOffset(in.get_grid_loc_width_offset(child_context));
 		grid_locs_grid_loc.setX(in.get_grid_loc_x(child_context));
 		grid_locs_grid_loc.setY(in.get_grid_loc_y(child_context));
@@ -1157,8 +1156,7 @@ inline void write_node_capnp_type(T &in, ucap::Node::Builder &root, Context &con
 	{
 		auto child_context = in.get_node_loc(context);
 		auto node_loc = root.initLoc();
-		if((bool)in.get_node_loc_layer(child_context))
-			node_loc.setLayer(in.get_node_loc_layer(child_context));
+		node_loc.setLayer(in.get_node_loc_layer(child_context));
 		node_loc.setPtc(in.get_node_loc_ptc(child_context));
 		if((bool)in.get_node_loc_side(child_context))
 			node_loc.setSide(conv_to_enum_loc_side(in.get_node_loc_side(child_context)));
