@@ -325,6 +325,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , is_flat_(is_flat) {
         // Initialize internal data
         init_side_map();
+        curr_tmp_block_type_id = -1;
+        curr_tmp_height_offset = -1;
+        curr_tmp_width_offset = -1;
+        curr_tmp_layer = 0;
+        curr_tmp_x = -1;
+        curr_tmp_y = -1;
     }
 
     /* A truth table to help understand the conversion from VPR side mask to uxsd side code
