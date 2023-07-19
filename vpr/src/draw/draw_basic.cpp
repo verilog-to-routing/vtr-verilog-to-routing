@@ -230,11 +230,15 @@ void drawnets(ezgl::renderer* g) {
 
     ClusterBlockId b1, b2;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     float NET_ALPHA = draw_state->net_alpha;
 
     g->set_line_dash(ezgl::line_dash::none);
     g->set_line_width(0);
+
+    int driver_block_layer_num = -1;
+    int sink_block_layer_num = -1;
 
     /* Draw the net as a star from the source to each sink. Draw from centers of *
      * blocks (or sub blocks in the case of IOs).                                */
@@ -243,15 +247,33 @@ void drawnets(ezgl::renderer* g) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue; /* Don't draw */
 
+        b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
+
+        //The layer of the net driver block
+        driver_block_layer_num = place_ctx.block_locs[b1].loc.layer;
+
+        //To only show nets that are connected to currently active layers on the screen
+        if(draw_state->draw_layer_display[driver_block_layer_num].visible == false){
+            continue; /* Don't draw */
+        }
 
         g->set_color(draw_state->net_color[net_id],
                      draw_state->net_color[net_id].alpha * NET_ALPHA);
-        b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
+
         ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1,
                                                                          cluster_ctx.clb_nlist.block_type(b1))
                                           .center();
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
+
+            //the layer of the pin block (net sinks)
+            sink_block_layer_num = place_ctx.block_locs[b2].loc.layer;
+
+            //To only show nets that are connected to currently active layers on the screen
+            if(draw_state->draw_layer_display[sink_block_layer_num].visible == false){
+                continue; /* Don't draw */
+            }
+
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2,
                                                                            cluster_ctx.clb_nlist.block_type(b2))
                                             .center();
