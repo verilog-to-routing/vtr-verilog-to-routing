@@ -531,6 +531,7 @@ void alloc_draw_structs(const t_arch* arch) {
     draw_state->draw_layer_display.resize(device_ctx.grid.get_num_layers());
     draw_state->draw_layer_display[0].visible = true;
 
+
     draw_state->arch_info = arch;
 
     deselect_all(); /* Set initial colors */

@@ -123,6 +123,10 @@ void drawplace(ezgl::renderer* g) {
                     int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                     int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
 
+                    //The transparency level for the current layer being drawn (0-255)
+                    // 0 - opaque, 255 - transparent
+                    int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
+
                     if (width_offset > 0
                         || height_offset > 0)
                         continue;
@@ -166,11 +170,7 @@ void drawplace(ezgl::renderer* g) {
                         }
 
                         logical_block_type = pick_logical_type(type);
-                        g->set_color(block_color);
-
-                        if(layer_num == 1){
-                            g->set_color(blk_GREEN);
-                        }
+                        g->set_color(block_color, transparency_factor);
 
                         /* Get coords of current sub_tile */
                         ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(layer_num,
@@ -182,7 +182,7 @@ void drawplace(ezgl::renderer* g) {
 
                         g->fill_rectangle(abs_clb_bbox);
 
-                        g->set_color(ezgl::BLACK);
+                        g->set_color(ezgl::BLACK, transparency_factor);
 
                         g->set_line_dash(
                             (EMPTY_BLOCK_ID == bnum) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
@@ -242,6 +242,7 @@ void drawnets(ezgl::renderer* g) {
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue; /* Don't draw */
+
 
         g->set_color(draw_state->net_color[net_id],
                      draw_state->net_color[net_id].alpha * NET_ALPHA);

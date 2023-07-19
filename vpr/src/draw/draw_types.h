@@ -145,7 +145,7 @@ typedef struct {
 
 typedef struct{
     bool visible = false;
-    int alpha = 0;
+    int alpha = 255;
 }t_draw_layer_display;
 
 

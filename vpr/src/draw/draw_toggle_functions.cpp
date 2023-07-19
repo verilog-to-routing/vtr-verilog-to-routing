@@ -472,11 +472,11 @@ void three_dimension_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer
             if (std::string(name).find("Layer") != std::string::npos) {
                 // Change the the boolean of the draw_layer_display vector depending on checkbox
                 if (state) {
-                    std::cout << "Checkbox On " << index + 1 << std::endl;
+                    std::cout << "Layer " << index + 1 << " On" <<std::endl;
                     draw_state->draw_layer_display[index].visible = true;
                 } else {
                     draw_state->draw_layer_display[index].visible = false;
-                    std::cout << "Checkbox Off " << index + 1 << std::endl;
+                    std::cout << "Layer " << index + 1 << " Off" <<std::endl;
                 }
                 index++;
             }
@@ -506,8 +506,8 @@ void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/
             GtkWidget* spin_button = GTK_WIDGET(iter->data);
             gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin_button));
 
-            std::cout << "Value of" << index + 1 << ": " << value << std::endl;
-            draw_state->draw_layer_display[index].alpha = value;
+            std::cout << "alpha value of " << index + 1 << ": " << value << std::endl;
+            draw_state->draw_layer_display[index].alpha = 255 - value;
             index++;
         }
     }
