@@ -188,6 +188,15 @@ class NocStorage {
     const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
 
     /**
+     * @brief Get all the links in the NoC. The links themselves can
+     * be modified. This function should be used when information on
+     * every link needs to be modified.
+     *
+     * @return A vector of links.
+     */
+    vtr::vector<NocLinkId, NocLink>& get_mutable_noc_links(void);
+
+    /**
      * @return An integer representing the total number of links within the
      * NoC.
      */
