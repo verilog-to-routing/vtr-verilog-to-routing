@@ -272,6 +272,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const t_graph_type graph_type,
         const enum e_base_cost_type base_cost_type,
         int* wire_to_rr_ipin_switch,
+        int* wire_to_rr_ipin_switch_between_dice,
         bool do_check_rr_graph,
         const char* read_rr_graph_name,
         std::string* read_rr_graph_filename,
@@ -295,6 +296,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::string_internment* strings,
         bool is_flat)
         : wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
+        , wire_to_rr_ipin_switch_between_dice_(wire_to_rr_ipin_switch_between_dice)
         , chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
         , rr_graph_builder_(rr_graph_builder)
@@ -460,11 +462,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         //
         // If the switch name is not present in the architecture, generate an
         // error.
+        // If the graph is written when flat-routing is enabled, the types of the switches inside of the rr_graph are also
+        // added to the XML file. These types are not added to the data structure that contain arch switch types. They are added to all_sw_inf under device context.
+        // It remains as a future work to remove the arch_switch_types and use all_sw info under device_ctx instead.
         bool found_arch_name = false;
         std::string string_name = std::string(name);
+        // The string name has the format of "Internal Switch/delay". So, I have to use compare to specify the portion I want to be compared.
+        bool is_internal_sw = string_name.compare(0, 15, "Internal Switch") == 0;
         for (const auto& arch_sw_inf: arch_switch_inf_) {
-            if (string_name == arch_sw_inf.name) {
-                string_name = arch_sw_inf.name;
+            if (string_name == arch_sw_inf.name || is_internal_sw) {
                 found_arch_name = true;
                 break;
             }
@@ -472,7 +478,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         if (!found_arch_name) {
             report_error("Switch name '%s' not found in architecture\n", string_name.c_str());
         }
-
+        sw->intra_tile = is_internal_sw;
         sw->name = string_name;
     }
     inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
@@ -832,6 +838,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void finish_rr_nodes_node(int& /*inode*/) final {
     }
     inline size_t num_rr_nodes_node(void*& /*ctx*/) final {
+
         return rr_nodes_->size();
     }
     inline const t_rr_node get_rr_nodes_node(int n, void*& /*ctx*/) final {
@@ -923,7 +930,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             bind.set_ignore();
         }
 
-        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
+        // The edge ids in the rr graph file are rr edge id not architecture edge id
+        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id, true);
         return bind;
     }
     inline void finish_rr_edges_edge(MetadataBind& bind) final {
@@ -984,8 +992,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const auto& rr_graph = (*rr_graph_);
         std::vector<int> count_for_wire_to_ipin_switches;
         count_for_wire_to_ipin_switches.resize(rr_switch_inf_->size(), 0);
+        //switch for same layer Track to IPIN connection
         //first is index, second is count
         std::pair<int, int> most_frequent_switch(-1, 0);
+        //switch for different layer Track to IPIN connection
+        std::vector<int> count_for_wire_to_ipin_switches_between_dice;
+        count_for_wire_to_ipin_switches_between_dice.resize(rr_switch_inf_->size(), 0);
+        std::pair<int,int> most_frequent_switch_between_dice(-1,0);
 
         // Partition the rr graph edges for efficient access to
         // configurable/non-configurable edge subsets. Must be done after RR
@@ -1014,11 +1027,21 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
                  * use the pair data structure to keep the maximum*/
                 if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
-                    if (rr_graph.node_type(RRNodeId(sink_node)) == IPIN) {
-                        count_for_wire_to_ipin_switches[switch_id]++;
-                        if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
-                            most_frequent_switch.first = switch_id;
-                            most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
+                    if(rr_graph.node_type(RRNodeId(sink_node)) == IPIN){
+                        if (rr_graph.node_layer(RRNodeId(sink_node)) == rr_graph.node_layer(RRNodeId(source_node))) {
+                            count_for_wire_to_ipin_switches[switch_id]++;
+                            if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
+                                most_frequent_switch.first = switch_id;
+                                most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
+                            }
+                        }
+                        else{
+                            VTR_ASSERT(rr_graph.node_layer(RRNodeId(sink_node)) != rr_graph.node_layer(RRNodeId(source_node)));
+                            count_for_wire_to_ipin_switches_between_dice[switch_id]++;
+                            if(count_for_wire_to_ipin_switches_between_dice[switch_id] > most_frequent_switch_between_dice.second){
+                                most_frequent_switch_between_dice.first = switch_id;
+                                most_frequent_switch_between_dice.second = count_for_wire_to_ipin_switches_between_dice[switch_id];
+                            }
                         }
                     }
                 }
@@ -1027,6 +1050,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
         *wire_to_rr_ipin_switch_ = most_frequent_switch.first;
+
+        VTR_ASSERT(wire_to_rr_ipin_switch_between_dice_ != nullptr);
+        *wire_to_rr_ipin_switch_between_dice_ = most_frequent_switch_between_dice.first;
     }
 
     inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
@@ -1920,6 +1946,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     // Output for loads, and constant data for writes.
     int* wire_to_rr_ipin_switch_;
+    int* wire_to_rr_ipin_switch_between_dice_;
     t_chan_width* chan_width_;
     t_rr_graph_storage* rr_nodes_;
     RRGraphBuilder* rr_graph_builder_;

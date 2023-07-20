@@ -165,6 +165,13 @@ struct DeviceContext : public Context {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
+    /*
+     * Keep which layer in multi-die FPGA require inter-cluster programmable routing resources [0..number_of_layers-1]
+     * If a layer doesn't require inter-cluster programmable routing resources,
+     * RRGraph generation will ignore building SBs and CBs for that specific layer.
+     */
+    std::vector<bool> inter_cluster_prog_routing_resources;
+
     /**
      * @brief Boolean that indicates whether the architecture implements an N:M
      *        physical tiles to logical blocks mapping

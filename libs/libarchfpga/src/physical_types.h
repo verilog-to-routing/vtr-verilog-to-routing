@@ -575,6 +575,9 @@ constexpr int DEFAULT_SWITCH = -2;
  * pinloc: Is set to true if a given pin exists on a certain position of a
  *         block. Derived from pin_location_distribution/pin_loc_assignments
  *
+ * pin_layer_offset/pin_width_offset/pin_height_offset: offset from the anchor point
+ * of the block type in the x,y, and layer (dice number) direction.
+ *
  * pin_location_distribution: The pin distribution type
  * num_pin_loc_assignments: The number of strings within each pin_loc_assignments
  * pin_loc_assignments: The strings for a custom pin location distribution.
@@ -609,17 +612,18 @@ constexpr int DEFAULT_SWITCH = -2;
  * logical_tile_index: index of the corresponding logical block type
  *
  * In general, the physical tile is a placeable physical resource on the FPGA device,
- * and it is allowed to contain an heterogeneous set of logical blocks (pb_types).
+ * and it is allowed to contain a heterogeneous set of logical blocks (pb_types).
  *
  * Each physical tile must specify at least one sub tile, that is a physical location
  * on the sub tiles stacks. This means that a physical tile occupies an (x, y) location on the grid,
  * and it has at least one sub tile slot that allows for a placement within the (x, y) location.
  *
  * Therefore, to identify the location of a logical block within the device grid, we need to
- * specify three different coordinates:
+ * specify four different coordinates:
  *      - x         : horizontal coordinate
  *      - y         : vertical coordinate
  *      - sub tile  : location within the sub tile stack at an (x, y) physical location
+ *      -layer_num  : the layer that block is located at. In case of a single die, layer_num is 0.
  *
  * A physical tile is heterogeneous as it allows the placement of different kinds of logical blocks within,
  * that can share the same (x, y) placement location.
@@ -650,6 +654,7 @@ struct t_physical_tile_type {
     int primitive_class_starting_idx = -1;
     std::unordered_map<int, t_class> primitive_class_inf; // [primitive_class_num] -> primitive_class_inf
 
+    std::vector<int> pin_layer_offset;                // [0..num_pins-1]
     std::vector<int> pin_width_offset;                // [0..num_pins-1]
     std::vector<int> pin_height_offset;               // [0..num_pins-1]
     std::vector<int> pin_class;                       // [0..num_pins-1]
@@ -1531,6 +1536,14 @@ enum e_Fc_type {
  *                   relation to the switches from the architecture file,    *
  *                   not the expanded list of switches that is built         *
  *                   at the end of build_rr_graph                            *
+ *                                                                           *
+ * @param arch_opin_between_dice_switch: Index of the switch type that       *
+ *                   connects output pins (OPINs) *to* this segment from     *
+ *                   *another die (layer)*. Note that this index is in       *
+ *                   relation to the switches from the architecture file,    *
+ *                   not the expanded list of switches that is built at      *
+ *                   the end of build_rr_graph                               *
+ *                                                                           *
  * frac_cb:  The fraction of logic blocks along its length to which this     *
  *           segment can connect.  (i.e. internal population).               *
  * frac_sb:  The fraction of the length + 1 switch blocks along the segment  *
@@ -1554,6 +1567,7 @@ struct t_segment_inf {
     int length;
     short arch_wire_switch;
     short arch_opin_switch;
+    short arch_opin_between_dice_switch = -1;
     float frac_cb;
     float frac_sb;
     bool longline;
@@ -1568,7 +1582,7 @@ struct t_segment_inf {
 };
 
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
-    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
+    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.arch_opin_between_dice_switch == b.arch_opin_between_dice_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
 }
 
 /*provide hashing for t_segment_inf to enable the use of many std containers.
@@ -1713,7 +1727,11 @@ struct t_arch_switch_inf {
  * mux_trans_size:  The area of each transistor in the segment's driving mux *
  *                  measured in minimum width transistor units               *
  * buf_size:  The area of the buffer. If set to zero, area should be         *
- *            calculated from R                                              */
+ *            calculated from R
+ * intra_tile: Indicate whether this rr_switch is a switch type used inside  *
+ *             clusters. These switch types are not specified in the         *
+ *             architecture description file and are added when flat router  *
+ *             is enabled                                                    */
 struct t_rr_switch_inf {
     float R = 0.;
     float Cin = 0.;
@@ -1725,6 +1743,8 @@ struct t_rr_switch_inf {
     std::string name;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
     float power_buffer_size = 0.;
+
+    bool intra_tile = false;
 
   public:
     //Returns the type of switch
@@ -1957,6 +1977,9 @@ struct t_arch {
     t_power_arch* power = nullptr;
     t_clock_arch* clocks = nullptr;
 
+    //determine which layers in multi-die FPGAs require to build global routing resources
+    std::vector<bool> layer_global_routing;
+
     // Constants
     // VCC and GND cells are special virtual cells that are
     // used to handle the constant network of the device.
@@ -1984,9 +2007,10 @@ struct t_arch {
     std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
     //The name of the switch used for the input connection block (i.e. to
-    //connect routing tracks to block pins).
-    //This should correspond to a switch in Switches
-    std::string ipin_cblock_switch_name;
+    //connect routing tracks to block pins). tracks can be connected to
+    // ipins through the same die or from other dice, each of these
+    //types of connections requires a different switch, all names should correspond to a switch in Switches.
+    std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 

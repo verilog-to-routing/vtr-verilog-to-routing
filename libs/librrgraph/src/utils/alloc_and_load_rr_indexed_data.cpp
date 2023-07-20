@@ -85,6 +85,8 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
         rr_indexed_data[RRIndexedDataId(i)].T_quadratic = 0.;
         rr_indexed_data[RRIndexedDataId(i)].C_load = 0.;
     }
+
+    //TODO: SM: IPIN t_linear assumes wire_to_ipin_switch which corresponds to within die switch connection
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
 
     std::vector<int> ortho_costs;
