@@ -345,11 +345,17 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
+
+    auto& place_ctx = g_vpr_ctx.placement();
+
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
     t_pb_type* pb_type = pb->pb_graph_node->pb_type;
     ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
     ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
+
+    int layer_num = place_ctx.block_locs[clb_index].loc.layer;
+    int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
     // if we've gone too far, don't draw anything
     if (pb_type->depth > draw_state->show_blk_internal) {
@@ -364,13 +370,13 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
         // determine default background color
         if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(SELECTED_COLOR);
+            g->set_color(SELECTED_COLOR,transparency_factor);
         } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(DRIVES_IT_COLOR);
+            g->set_color(DRIVES_IT_COLOR,transparency_factor);
         } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(DRIVEN_BY_IT_COLOR);
+            g->set_color(DRIVEN_BY_IT_COLOR,transparency_factor);
         } else {
-            g->set_color(draw_state->block_color(clb_index));
+            g->set_color(draw_state->block_color(clb_index),transparency_factor);
         }
     } else {
         // If block is not used, draw as empty block (ie. white
@@ -380,7 +386,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->set_color(ezgl::WHITE);
     }
     g->fill_rectangle(abs_bbox);
-    g->set_color(ezgl::BLACK);
+    g->set_color(ezgl::BLACK,transparency_factor);
 
     if (draw_state->draw_block_outlines) {
         g->draw_rectangle(abs_bbox);
