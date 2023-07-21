@@ -59,16 +59,13 @@ int main() {
     }
     
     return 0;
-}
+    }
 
-## License
 
-The libencrypt library is released under the [MIT License](LICENSE).
+##License
 
-## Contributing
+This project is licensed under the MIT License
 
-Contributions to the libencrypt library are welcome! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.
+##Contributing
 
-## Acknowledgments
-
-The libencrypt library utilizes the OpenSSL library for encryption operations and the pugixml library for XML document handling.
+Contributions are welcome! If you find any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request. We appreciate your contributions to make this project better.

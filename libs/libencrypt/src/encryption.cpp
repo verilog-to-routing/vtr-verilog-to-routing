@@ -1,5 +1,9 @@
 #include "encryption.h"
-std::string passphrase_enc = "abcd"; // Set your PEM pass phrase here
+#ifdef PASSPHRASE
+std::string passphrase_enc = PASSPHRASE; 
+#else
+std::string passphrase_enc = ""; // Set your PEM pass phrase here
+#endif
 /**
  * @brief Loads a public key from a file.
  *
@@ -115,9 +119,9 @@ bool Encryption::encryptFile(const std::string& filePath) {
     const char* publicKeyFile = AY_OBFUSCATE(PUBLIC_KEY);
 #else
     const char* publicKeyFile = AY_OBFUSCATE(
-        "-----BEGIN RSA PRIVATE KEY-----\n"
+        "-----BEGIN RSA PUBLIC KEY-----\n"
         "dummykey\n"
-        "-----END RSA PRIVATE KEY-----\n"); // Replace with your private key string
+        "-----END RSA PUBLIC KEY-----\n"); // Replace with your PUBLIC key string
 #endif
     // Load public key
     RSA* publicKey = loadPublicKey(publicKeyFile);

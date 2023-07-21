@@ -31,15 +31,15 @@ endforeach()
 list(REMOVE_DUPLICATES LIB_INCLUDE_DIRS)
 
 # Create the library
-add_library(libencrypt STATIC ${LIB_HEADERS} ${LIB_SOURCES})
-target_include_directories(libencrypt PUBLIC ${LIB_INCLUDE_DIRS})
-set_target_properties(libencrypt PROPERTIES PREFIX "") # Avoid extra 'lib' prefix
+#add_library(libencrypt STATIC ${LIB_HEADERS} ${LIB_SOURCES})
+#target_include_directories(libencrypt PUBLIC ${LIB_INCLUDE_DIRS})
+#set_target_properties(libencrypt PROPERTIES PREFIX "") # Avoid extra 'lib' prefix
 
-target_link_libraries(libencrypt PRIVATE  ${OPENSSL_LIBRARIES})
+#target_link_libraries(libencrypt PRIVATE  ${OPENSSL_LIBRARIES})
 
 # Add executable
-#add_executable(encrypt main.cpp)
-#target_link_libraries(encrypt PRIVATE libencrypt )
+add_executable(encrypt main.cpp)
+target_link_libraries(encrypt PRIVATE  ${LIB_HEADERS} ${LIB_SOURCES} ${OPENSSL_LIBRARIES})
 
-install(TARGETS libencrypt DESTINATION bin)
-install(FILES ${LIB_HEADERS} DESTINATION include/libencrypt)
+#install(TARGETS libencrypt DESTINATION bin)
+#install(FILES ${LIB_HEADERS} DESTINATION include/libencrypt
