@@ -274,7 +274,23 @@ void drawnets(ezgl::renderer* g) {
                 continue; /* Don't draw */
             }
             // Check for cross-layer connection
-
+            bool cross_layer_enabled = draw_state->cross_layer_display.visible;
+            // Don't draw if cross layer is not enabled and driver and sink are different layers.
+            if (!cross_layer_enabled) {
+                // Change opacity to back default
+                g->set_color(draw_state->net_color[net_id],
+                             draw_state->net_color[net_id].alpha * NET_ALPHA);
+                // Don't draw if cross layer
+                if (driver_block_layer_num != sink_block_layer_num)
+                    continue;
+            } else {
+                // Change opacity based on cross layer connection opacity
+                if (driver_block_layer_num != sink_block_layer_num) {
+                    int transparency_factor = draw_state->cross_layer_display.alpha;
+                    g->set_color(draw_state->net_color[net_id],
+                                 transparency_factor);
+                }
+            }
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2,
                                                                            cluster_ctx.clb_nlist.block_type(b2))
                                             .center();
