@@ -281,6 +281,8 @@ struct t_draw_state {
     //draw state for drawing multiple layers
     std::vector<t_draw_layer_display> draw_layer_display;
 
+    // cross layer connection
+    t_draw_layer_display cross_layer_display;
 
     ///@brief base of save graphics file name (i.e before extension)
     std::string save_graphics_file_base = "vpr";

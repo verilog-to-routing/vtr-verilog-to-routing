@@ -273,6 +273,7 @@ void drawnets(ezgl::renderer* g) {
             if(draw_state->draw_layer_display[sink_block_layer_num].visible == false){
                 continue; /* Don't draw */
             }
+            // Check for cross-layer connection
 
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2,
                                                                            cluster_ctx.clb_nlist.block_type(b2))

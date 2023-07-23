@@ -453,7 +453,7 @@ void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
  * @param self
  * @param app
  */
-void three_dimension_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     GtkWidget* parent = gtk_widget_get_parent(widget);
@@ -468,8 +468,9 @@ void three_dimension_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer
             gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
             const gchar* name = gtk_button_get_label(GTK_BUTTON(checkbox));
 
-            // Only iterate through checkboxes with name "Layer ..."
-            if (std::string(name).find("Layer") != std::string::npos) {
+            // Only iterate through checkboxes with name "Layer ...", skip Cross Layer Connection
+            if (std::string(name).find("Layer") != std::string::npos
+                && std::string(name).find("Cross") == std::string::npos) {
                 // Change the the boolean of the draw_layer_display vector depending on checkbox
                 if (state) {
                     std::cout << "Layer " << index + 1 << " On" <<std::endl;
@@ -504,14 +505,59 @@ void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/
     for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
         if (GTK_IS_SPIN_BUTTON(iter->data)) {
             GtkWidget* spin_button = GTK_WIDGET(iter->data);
-            gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin_button));
+            const gchar* name = gtk_widget_get_name(spin_button);
 
-            std::cout << "alpha value of " << index + 1 << ": " << value << std::endl;
-            draw_state->draw_layer_display[index].alpha = 255 - value;
-            index++;
+            if (std::string(name).find("Transparency") != std::string::npos
+                && std::string(name).find("Cross") == std::string::npos) {
+                gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin_button));
+
+                std::cout << "alpha value of " << index + 1 << ": " << value << std::endl;
+                draw_state->draw_layer_display[index].alpha = 255 - value;
+                index++;
+            }
         }
     }
     application.refresh_drawing();
     g_list_free(children);
+}
+
+/**
+ * @brief Callback function for cross layer connection checkbox
+ * Updates draw_state->cross_layer_display.visible based on whether the cross layer
+ * connection checkbox is checked.
+ *
+ * @param self
+ * @param app
+ */
+void cross_layer_checkbox_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+
+    if (state) {
+        std::cout << "Cross Layer " << " On" <<std::endl;
+        draw_state->cross_layer_display.visible = true;
+    } else {
+        draw_state->cross_layer_display.visible = false;
+        std::cout << "Cross Layer " << " Off" << std::endl;
+    }
+
+    application.refresh_drawing();
+}
+/**
+ * @brief Callback function for cross layer connection spin button
+ * Updates draw_state->cross_layer_display.alpha based spin button value
+ *
+ * @param self
+ * @param app
+ */
+void cross_layer_transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
+    std::cout << "alpha value of cross layer: " << value << std::endl;
+    draw_state->cross_layer_display.alpha = 255 - value;
+
+    application.refresh_drawing();
 }
 #endif
