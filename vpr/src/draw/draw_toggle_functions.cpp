@@ -473,11 +473,9 @@ void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/
                 && std::string(name).find("Cross") == std::string::npos) {
                 // Change the the boolean of the draw_layer_display vector depending on checkbox
                 if (state) {
-                    std::cout << "Layer " << index + 1 << " On" <<std::endl;
                     draw_state->draw_layer_display[index].visible = true;
                 } else {
                     draw_state->draw_layer_display[index].visible = false;
-                    std::cout << "Layer " << index + 1 << " Off" <<std::endl;
                 }
                 index++;
             }
@@ -510,8 +508,6 @@ void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/
             if (std::string(name).find("Transparency") != std::string::npos
                 && std::string(name).find("Cross") == std::string::npos) {
                 gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin_button));
-
-                std::cout << "alpha value of " << index + 1 << ": " << value << std::endl;
                 draw_state->draw_layer_display[index].alpha = 255 - value;
                 index++;
             }
@@ -535,11 +531,9 @@ void cross_layer_checkbox_cbk(GtkWidget* widget, gint /*response_id*/, gpointer 
     gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 
     if (state) {
-        std::cout << "Cross Layer " << " On" <<std::endl;
         draw_state->cross_layer_display.visible = true;
     } else {
         draw_state->cross_layer_display.visible = false;
-        std::cout << "Cross Layer " << " Off" << std::endl;
     }
 
     application.refresh_drawing();
@@ -555,7 +549,6 @@ void cross_layer_transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpoin
     t_draw_state* draw_state = get_draw_state_vars();
 
     gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
-    std::cout << "alpha value of cross layer: " << value << std::endl;
     draw_state->cross_layer_display.alpha = 255 - value;
 
     application.refresh_drawing();
