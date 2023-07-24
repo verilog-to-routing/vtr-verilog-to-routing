@@ -174,7 +174,7 @@ void view_button_setup(ezgl::application* app) {
 
             gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
 
-            GtkWidget* spin_button = gtk_spin_button_new_with_range(0,255, 1);
+            GtkWidget* spin_button = gtk_spin_button_new_with_range(0, 255, 1);
             gtk_widget_set_name(spin_button, g_strdup(trans_label.c_str()));
             gtk_box_pack_start(GTK_BOX(trans_box), spin_button, FALSE, FALSE, 0);
 
@@ -196,7 +196,7 @@ void view_button_setup(ezgl::application* app) {
         gtk_widget_set_margin_bottom(checkbox, 7);
         gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
 
-        GtkWidget* spin_button = gtk_spin_button_new_with_range(0,255, 1);
+        GtkWidget* spin_button = gtk_spin_button_new_with_range(0, 255, 1);
         gtk_widget_set_name(spin_button, g_strdup(trans_label.c_str()));
         gtk_box_pack_start(GTK_BOX(trans_box), spin_button, FALSE, FALSE, 0);
 
@@ -214,16 +214,14 @@ void view_button_setup(ezgl::application* app) {
  *
  * Adds options for transparency
  */
-void transparency_setup(ezgl::application* app)  {
-
+void transparency_setup(ezgl::application* app) {
 }
 /*
  * @brief configures and connects cross layer connection to view button
  *
  * Adds checkbox for cross layer connections
  */
-void cross_layer_setup(ezgl::application* app)  {
-
+void cross_layer_setup(ezgl::application* app) {
 }
 /*
  * @brief Loads required data for search autocomplete, sets up special completion fn
@@ -341,7 +339,7 @@ void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*
 
             // Change the the boolean of the draw_layer_display vector depending on checkbox
             if (state) {
-                std::cout << "Layer " << index + 1 << " on" <<std::endl;
+                std::cout << "Layer " << index + 1 << " on" << std::endl;
                 draw_state->draw_layer_display[index].visible = true;
 
             } else {

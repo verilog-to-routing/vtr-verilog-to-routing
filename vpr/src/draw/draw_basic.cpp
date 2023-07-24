@@ -112,10 +112,9 @@ void drawplace(ezgl::renderer* g) {
     //VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int total_num_layers = device_ctx.grid.get_num_layers();
 
-
     g->set_line_width(0);
-    for(int layer_num = 0; layer_num < total_num_layers; layer_num++){
-        if(draw_state->draw_layer_display[layer_num].visible) {
+    for (int layer_num = 0; layer_num < total_num_layers; layer_num++) {
+        if (draw_state->draw_layer_display[layer_num].visible) {
             for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
                 for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                     /* Only the first block of a group should control drawing */
@@ -142,8 +141,8 @@ void drawplace(ezgl::renderer* g) {
                         //TODO: Change when graphics supports 3D
                         bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Fill background for the clb. Do not fill if "show_blk_internal"
-                    * is toggled.
-                    */
+                         * is toggled.
+                         */
                         if (bnum == INVALID_BLOCK_ID)
                             continue;
 
@@ -253,7 +252,7 @@ void drawnets(ezgl::renderer* g) {
         driver_block_layer_num = place_ctx.block_locs[b1].loc.layer;
 
         //To only show nets that are connected to currently active layers on the screen
-        if(draw_state->draw_layer_display[driver_block_layer_num].visible == false){
+        if (draw_state->draw_layer_display[driver_block_layer_num].visible == false) {
             continue; /* Don't draw */
         }
 
@@ -270,7 +269,7 @@ void drawnets(ezgl::renderer* g) {
             sink_block_layer_num = place_ctx.block_locs[b2].loc.layer;
 
             //To only show nets that are connected to currently active layers on the screen
-            if(draw_state->draw_layer_display[sink_block_layer_num].visible == false){
+            if (draw_state->draw_layer_display[sink_block_layer_num].visible == false) {
                 continue; /* Don't draw */
             }
             // Check for cross-layer connection

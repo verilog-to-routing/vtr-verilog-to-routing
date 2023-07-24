@@ -143,11 +143,10 @@ typedef struct {
     bool node_highlighted;
 } t_draw_rr_node;
 
-typedef struct{
+typedef struct {
     bool visible = false;
     int alpha = 255;
-}t_draw_layer_display;
-
+} t_draw_layer_display;
 
 /**
  * @brief Structure used to store variables related to highlighting/drawing
