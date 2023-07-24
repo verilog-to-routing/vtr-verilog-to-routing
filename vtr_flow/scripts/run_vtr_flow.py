@@ -10,7 +10,7 @@ import textwrap
 import socket
 from datetime import datetime
 from collections import OrderedDict
-
+import os
 # pylint: disable=wrong-import-position, import-error
 sys.path.insert(0, str(Path(__file__).resolve().parent / "python_libs"))
 import vtr
@@ -186,7 +186,7 @@ def vtr_command_argparser(prog=None):
 
     house_keeping.add_argument(
         "-temp_dir",
-        default=None,
+        default=os.getcwd() + "/temp",
         help="Directory to run the flow in (will be created if non-existant).",
     )
 
@@ -368,6 +368,18 @@ def vtr_command_argparser(prog=None):
         help="Specify a parser for the Yosys synthesizer [default (Verilog-2005), surelog (UHDM), "
         + "system-verilog]. The script used the Yosys conventional Verilog"
         + " parser if this argument is not specified.",
+    )
+    parmys.add_argument(
+        "-top",
+        default=None,
+        dest="topmodule",
+        help="Specify the name of the module in the design that should be considered as top",
+    )
+    parmys.add_argument(
+        '-search',
+        default=os.getcwd(),
+        dest='searchpath',
+        help='search path for verilog files'
     )
     #
     # VPR arguments
@@ -725,7 +737,8 @@ def process_parmys_args(args):
     """
     parmys_args = OrderedDict()
     parmys_args["parser"] = args.parser
-
+    parmys_args["topmodule"] = args.topmodule
+    parmys_args['searchpath'] = args.searchpath
     return parmys_args
 
 

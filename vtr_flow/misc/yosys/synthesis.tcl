@@ -20,10 +20,10 @@ if {$env(PARSER) == "surelog" } {
 	puts "Using Yosys read_systemverilog command"
 	plugin -i systemverilog
 	yosys -import
-	read_systemverilog -debug XXX
+	read_systemverilog -I"SEARCHPATH" -debug XXX
 } elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
-	read_verilog -sv -nolatches XXX
+	read_verilog -I"SEARCHPATH" -sv -nolatches XXX
 } else {
 	error "Invalid PARSER"
 }
@@ -33,7 +33,7 @@ scc -select
 select -assert-none %
 select -clear
 
-hierarchy -check -auto-top -purge_lib
+hierarchy -check TOPMODULE -purge_lib
 
 opt_expr
 opt_clean
@@ -76,6 +76,6 @@ opt -fast -noff
 
 tee -o /dev/stdout stat
 
-hierarchy -check -auto-top -purge_lib
+hierarchy -check TOPMODULE -purge_lib
 
 write_blif -true + vcc -false + gnd -undef + unconn -blackbox ZZZ
