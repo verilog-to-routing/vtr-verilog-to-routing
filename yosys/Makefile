@@ -1,5 +1,5 @@
 
-CONFIG := clang
+CONFIG := gcc
 # CONFIG := gcc
 # CONFIG := afl-gcc
 # CONFIG := emcc
