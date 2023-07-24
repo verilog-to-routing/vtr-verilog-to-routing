@@ -382,7 +382,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         side_map_[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT;
     }
 
+    /**
+     * @brief This function separates the segments in segment_inf_ based on whether their parallel axis 
+     *        is X or Y, and it stores them in segment_inf_x_ and segment_inf_y_.
+     */
     void init_segment_inf_x_y(){
+
         /* Create a temp copy to convert from vtr::vector to std::vector
          * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
          * type for ``rr_segments``
@@ -401,7 +406,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     }
 
-    int find_segment_index_along_axis(int seg_index, e_parallel_axis axis) const {
+    /**
+     * @brief Search for a segment with a matching segment ID and return its position index
+     *        in the list of segments along the corresponding axis (X or Y).
+     * @param segment_id The ID of the segment to search for.
+     * @param axis The axis along which to search for the segment (X or Y).
+     * @return int The position index of the matching segment.
+     */
+    int find_segment_index_along_axis(int segment_id, e_parallel_axis axis) const {
         const std::vector<t_segment_inf>* segment_inf_vec_ptr;
 
         if (axis == X_AXIS)
@@ -410,10 +422,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             segment_inf_vec_ptr = &segment_inf_y_;
 
         for(std::vector<t_segment_inf>::size_type i=0; i < (*segment_inf_vec_ptr).size(); i++){
-            if((*segment_inf_vec_ptr)[i].seg_index == seg_index)
+            if((*segment_inf_vec_ptr)[i].seg_index == segment_id)
                 return static_cast<int>(i);
         }
-        return 0;
+
+        if (axis == X_AXIS)
+            VTR_LOG_ERROR("Segment ID %d not found in the list of segments along X axis.\n", segment_id);
+        else
+            VTR_LOG_ERROR("Segment ID %d not found in the list of segments along Y axis.\n", segment_id);
+        
+        return -1;
     }
 
   public:
@@ -2000,8 +2018,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * the methods following routines:rr_graph_rr_nodes and init_node_segment according to the changes in 
      * rr_graph_indexed_data.cpp */
     const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
-    std::vector<t_segment_inf> segment_inf_x_;
-    std::vector<t_segment_inf> segment_inf_y_;
+    std::vector<t_segment_inf> segment_inf_x_; // [num_segs_along_x_axis-1:0] - vector of segment information for segments along the x-axis.
+    std::vector<t_segment_inf> segment_inf_y_; // [num_segs_along_y_axis-1:0] - vector of segment information for segments along the y-axis.
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;
     MetadataStorage<int>* rr_node_metadata_;
