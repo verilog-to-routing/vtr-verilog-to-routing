@@ -564,11 +564,13 @@ void draw_logical_connections(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     g->set_line_dash(ezgl::line_dash::none);
 
     //constexpr float NET_ALPHA = 0.0275;
     float NET_ALPHA = draw_state->net_alpha;
+    int transparency_factor;
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.nlist.nets()) {
@@ -578,8 +580,15 @@ void draw_logical_connections(ezgl::renderer* g) {
 
         AtomPinId driver_pin_id = atom_ctx.nlist.net_driver(net_id);
         AtomBlockId src_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
-        const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(src_blk_id);
         ClusterBlockId src_clb = atom_ctx.lookup.atom_clb(src_blk_id);
+
+        int src_layer_num = place_ctx.block_locs[src_clb].loc.layer;
+        //To only show primitive nets that are connected to currently active layers on the screen
+        if(!draw_state->draw_layer_display[src_layer_num].visible){
+            continue; /* Don't Draw */
+        }
+
+        const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(src_blk_id);
         bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
         bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
@@ -589,14 +598,34 @@ void draw_logical_connections(ezgl::renderer* g) {
             const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(sink_blk_id);
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
 
+            int sink_layer_num = place_ctx.block_locs[sink_clb].loc.layer;
+
+            bool cross_layer_enabled = draw_state->cross_layer_display.visible;
+
+            //To only show primitive nets that are connected to currently active layers on the screen
+            if(!draw_state->draw_layer_display[sink_layer_num].visible || (!cross_layer_enabled && src_layer_num != sink_layer_num)){
+                continue; /* Don't Draw */
+            }
+
+            if(src_layer_num != sink_layer_num){
+                //assign transparency from cross layer option if connection is between different layers
+                transparency_factor = draw_state->cross_layer_display.alpha;
+            }
+            else{
+                //otherwise assign transparency of current layer
+                transparency_factor = draw_state->draw_layer_display[src_layer_num].alpha;
+            }
+
+            //color selection
+            //transparency factor is the greater of the 2 options that the user selects from the UI
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVES_IT_COLOR, DRIVES_IT_COLOR.alpha * NET_ALPHA);
+                g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor,DRIVES_IT_COLOR.alpha * NET_ALPHA));
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVEN_BY_IT_COLOR, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA);
+                g->set_color(DRIVEN_BY_IT_COLOR, fmin(transparency_factor,DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA));
             } else if (draw_state->show_nets == DRAW_PRIMITIVE_NETS && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-                g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA); // if showing all, draw the other ones in black
+                g->set_color(ezgl::BLACK, fmin(transparency_factor,ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
             } else {
-                continue; // not showing all, and not the sperified block, so skip
+                continue; // not showing all, and not the specified block, so skip
             }
 
             draw_one_logical_connection(driver_pin_id, sink_pin_id, g);

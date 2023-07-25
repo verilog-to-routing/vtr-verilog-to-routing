@@ -232,6 +232,7 @@ void drawnets(ezgl::renderer* g) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     float layer_transparency;
+    float transparency_factor;
     float NET_ALPHA = draw_state->net_alpha;
 
     g->set_line_dash(ezgl::line_dash::none);
@@ -276,35 +277,24 @@ void drawnets(ezgl::renderer* g) {
 
             //the layer of the pin block (net sinks)
             sink_block_layer_num = place_ctx.block_locs[b2].loc.layer;
+            bool cross_layer_enabled = draw_state->cross_layer_display.visible;
 
             //To only show nets that are connected to currently active layers on the screen
-            if (draw_state->draw_layer_display[sink_block_layer_num].visible == false) {
+            if (draw_state->draw_layer_display[sink_block_layer_num].visible == false || (!cross_layer_enabled && driver_block_layer_num != sink_block_layer_num)) {
                 continue; /* Don't draw */
             }
-            // Check for cross-layer connection
-            bool cross_layer_enabled = draw_state->cross_layer_display.visible;
-            // Don't draw if cross layer is not enabled and driver and sink are different layers.
-            if (!cross_layer_enabled) {
-                // Change opacity to back default
-                g->set_color(draw_state->net_color[net_id],
-                             layer_transparency);
-                // Don't draw if cross layer
-                if (driver_block_layer_num != sink_block_layer_num)
-                    continue;
-            } else {
+            else {
                 // Change opacity based on cross layer connection opacity
                 if (driver_block_layer_num != sink_block_layer_num) {
-                    float cross_layer_transparency = draw_state->cross_layer_display.alpha;
-
-                    //Take the higher of the 2 transparency values that the user can select from the UI
-                    // Compare the current cross layer transparency to the overall Net transparency set by the user.
-                    if(cross_layer_transparency > (draw_state->net_color[net_id].alpha * NET_ALPHA)){
-                        cross_layer_transparency = draw_state->net_color[net_id].alpha * NET_ALPHA;
-                    }
-                    g->set_color(draw_state->net_color[net_id],
-                                 cross_layer_transparency);
+                    transparency_factor = draw_state->cross_layer_display.alpha;
+                } else {
+                    transparency_factor = layer_transparency;
                 }
             }
+            //Take the higher of the 2 transparency values that the user can select from the UI
+            // Compare the current cross layer transparency to the overall Net transparency set by the user.
+            g->set_color(draw_state->net_color[net_id],fmin(transparency_factor,draw_state->net_color[net_id].alpha * NET_ALPHA));
+
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2,
                                                                            cluster_ctx.clb_nlist.block_type(b2))
                                             .center();
