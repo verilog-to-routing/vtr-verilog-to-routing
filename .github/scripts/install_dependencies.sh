@@ -56,7 +56,8 @@ sudo apt install -y \
   clang-13 \
   clang-14 \
   clang-format-14 \
-  libtbb-dev
+  libtbb-dev \
+  openssl
 
 pip install -r requirements.txt
 
