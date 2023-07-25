@@ -158,7 +158,6 @@ void view_button_setup(ezgl::application* app) {
     if (num_layers == 1) {
         hide_widget("3DMenuButton", app);
     } else {
-        GtkPopover* popover = GTK_POPOVER(app->get_object("3Dpopover"));
         GtkBox* box = GTK_BOX(app->get_object("LayerBox"));
         GtkBox* trans_box = GTK_BOX(app->get_object("TransparencyBox"));
 
@@ -209,20 +208,7 @@ void view_button_setup(ezgl::application* app) {
         gtk_widget_show_all(GTK_WIDGET(trans_box));
     }
 }
-/*
- * @brief configures and connects transparency options to the View button
- *
- * Adds options for transparency
- */
-void transparency_setup(ezgl::application* app) {
-}
-/*
- * @brief configures and connects cross layer connection to view button
- *
- * Adds checkbox for cross layer connections
- */
-void cross_layer_setup(ezgl::application* app) {
-}
+
 /*
  * @brief Loads required data for search autocomplete, sets up special completion fn
  */
