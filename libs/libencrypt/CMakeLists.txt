@@ -42,4 +42,4 @@ add_executable(encrypt main.cpp)
 target_link_libraries(encrypt PRIVATE  ${LIB_HEADERS} ${LIB_SOURCES} ${OPENSSL_LIBRARIES})
 
 #install(TARGETS libencrypt DESTINATION bin)
-#install(FILES ${LIB_HEADERS} DESTINATION include/libencrypt
+#install(FILES ${LIB_HEADERS} DESTINATION include/libencrypt)
