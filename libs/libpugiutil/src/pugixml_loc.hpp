@@ -7,7 +7,8 @@
 
 #include <vector>
 #include "pugixml.hpp"
-
+#include "decryption.h"
+#include <cstring>
 namespace pugiutil {
 
 //pugi offset to line/col data based on: https://stackoverflow.com/questions/21003471/convert-pugixmls-result-offset-to-column-line
@@ -18,6 +19,10 @@ class loc_data {
     loc_data(std::string filename_val)
         : filename_(filename_val) {
         build_loc_data();
+    }
+
+    loc_data(char* filename_val, size_t buffersize) {
+        build_loc_data_from_string(filename_val, buffersize);
     }
 
     //The filename this location data is for
@@ -42,7 +47,7 @@ class loc_data {
 
   private:
     void build_loc_data();
-
+    void build_loc_data_from_string(char* filename_val, size_t buffersize);
     std::string filename_;
     std::vector<std::ptrdiff_t> offsets_;
 };

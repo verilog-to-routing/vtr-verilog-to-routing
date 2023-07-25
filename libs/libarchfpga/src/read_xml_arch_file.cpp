@@ -406,7 +406,7 @@ void XmlReadArch(const char* ArchFile,
     if (!vtr::check_file_name_extension(ArchFile, ".xml")) {
         VTR_LOG_WARN(
             "Architecture file '%s' may be in incorrect format. "
-            "Expecting .xml format for architecture files.\n",
+            "Expecting .xml or .xmle format for architecture files.\n",
             ArchFile);
     }
 

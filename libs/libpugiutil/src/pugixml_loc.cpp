@@ -52,4 +52,17 @@ void loc_data::build_loc_data() {
     fclose(f);
 }
 
+
+void loc_data::build_loc_data_from_string(char* filename_val, size_t buffersize) {
+    std::ptrdiff_t offset = 0;
+    char buffer[1024];
+    std::size_t size;
+    for (std::size_t i = 0; i < buffersize; ++i) {
+    	if (filename_val[i] == '\0')
+    		break;
+    	else   if (filename_val[i] == '\n') {
+                 offsets_.push_back( i);
+            }
+        }
+    }
 } // namespace pugiutil
