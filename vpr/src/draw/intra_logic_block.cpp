@@ -155,11 +155,11 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     //TODO: Change when graphics supports 3D FPGAs
-   // VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    // VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int total_layer_num = device_ctx.grid.get_num_layers();
 
-    for(int layer_num = 0; layer_num < total_layer_num; layer_num++) {
-        if(draw_state->draw_layer_display[layer_num].visible) {
+    for (int layer_num = 0; layer_num < total_layer_num; layer_num++) {
+        if (draw_state->draw_layer_display[layer_num].visible) {
             for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
                 for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                     /* Only the first block of a group should control drawing */
@@ -370,13 +370,13 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
         // determine default background color
         if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(SELECTED_COLOR,transparency_factor);
+            g->set_color(SELECTED_COLOR, transparency_factor);
         } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(DRIVES_IT_COLOR,transparency_factor);
+            g->set_color(DRIVES_IT_COLOR, transparency_factor);
         } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(DRIVEN_BY_IT_COLOR,transparency_factor);
+            g->set_color(DRIVEN_BY_IT_COLOR, transparency_factor);
         } else {
-            g->set_color(draw_state->block_color(clb_index),transparency_factor);
+            g->set_color(draw_state->block_color(clb_index), transparency_factor);
         }
     } else {
         // If block is not used, draw as empty block (ie. white
@@ -386,7 +386,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->set_color(ezgl::WHITE);
     }
     g->fill_rectangle(abs_bbox);
-    g->set_color(ezgl::BLACK,transparency_factor);
+    g->set_color(ezgl::BLACK, transparency_factor);
 
     if (draw_state->draw_block_outlines) {
         g->draw_rectangle(abs_bbox);

@@ -103,7 +103,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     std::vector<int> vertical_cuts;
 
     // This function has not been tested for multi-layer grids
-   // VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    // VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int horizontal_interval = device_ctx.grid.width() / horizontal_cutpoints;
     VTR_LOG("Device grid width is %d, horizontal interval is %d\n", device_ctx.grid.width(), horizontal_interval);
 

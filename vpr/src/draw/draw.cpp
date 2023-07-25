@@ -527,10 +527,8 @@ void alloc_draw_structs(const t_arch* arch) {
      * not yet know information about the routing resources.				  */
     draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
 
-
     draw_state->draw_layer_display.resize(device_ctx.grid.get_num_layers());
     draw_state->draw_layer_display[0].visible = true;
-
 
     draw_state->arch_info = arch;
 
@@ -1000,7 +998,7 @@ static void highlight_blocks(double x, double y) {
     //VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
 
     //iterate over grid z (layers)
-    for(int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         // iterate over grid x
         for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
             if (draw_coords->tile_x[i] > x) {
@@ -1112,7 +1110,6 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Draw Partitions Checkbox
     GObject* draw_partitions = app->get_object("drawPartitions");
     g_signal_connect(draw_partitions, "toggled", G_CALLBACK(set_draw_partitions), app);
-
 }
 
 // Callback function for Block Outline checkbox
@@ -1158,7 +1155,6 @@ static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer 
     application.update_message(draw_state->default_message);
     application.refresh_drawing();
 }
-
 
 static void on_dialog_response(GtkDialog* dialog, gint response_id, gpointer /* user_data*/) {
     switch (response_id) {
