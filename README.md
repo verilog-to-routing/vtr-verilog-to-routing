@@ -1,3 +1,6 @@
+# ORCA Special Edition
+This version of VTR is modified by @xilai based on the official version `5a6249a0cd84b2315a9f0fbd767ef26b903761a5`. I changed the default compiler, updated Python packages, and updated Yosys and Parmys to fit our purpose. This is tested on ORCA.
+
 # Verilog to Routing (VTR)
 [![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/verilog-to-routing/vtr-verilog-to-routing.git)
 [![Build Status](https://github.com/verilog-to-routing/vtr-verilog-to-routing/workflows/Test/badge.svg)](https://github.com/verilog-to-routing/vtr-verilog-to-routing/actions?query=workflow%3ATest) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/)
