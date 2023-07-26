@@ -247,8 +247,8 @@ constexpr const char *atok_lookup_t_segment_timing[] = {"C_per_meter", "R_per_me
 
 enum class gtok_t_segment {TIMING};
 constexpr const char *gtok_lookup_t_segment[] = {"timing"};
-enum class atok_t_segment {ID, NAME};
-constexpr const char *atok_lookup_t_segment[] = {"id", "name"};
+enum class atok_t_segment {ID, NAME, RES_TYPE};
+constexpr const char *atok_lookup_t_segment[] = {"id", "name", "res_type"};
 
 enum class gtok_t_segments {SEGMENT};
 constexpr const char *gtok_lookup_t_segments[] = {"segment"};
@@ -788,6 +788,14 @@ inline atok_t_segment lex_attr_t_segment(const char *in, const std::function<voi
 		switch(*((triehash_uu32*)&in[0])){
 		case onechar('n', 0, 32) | onechar('a', 8, 32) | onechar('m', 16, 32) | onechar('e', 24, 32):
 			return atok_t_segment::NAME;
+		break;
+		default: break;
+		}
+		break;
+	case 8:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('r', 0, 64) | onechar('e', 8, 64) | onechar('s', 16, 64) | onechar('_', 24, 64) | onechar('t', 32, 64) | onechar('y', 40, 64) | onechar('p', 48, 64) | onechar('e', 56, 64):
+			return atok_t_segment::RES_TYPE;
 		break;
 		default: break;
 		}
@@ -1573,6 +1581,7 @@ constexpr const char *lookup_pin_type[] = {"UXSD_INVALID", "OPEN", "OUTPUT", "IN
 constexpr const char *lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "SOURCE", "SINK", "OPIN", "IPIN"};
 constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR"};
 constexpr const char *lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM", "RIGHT_LEFT", "RIGHT_BOTTOM", "RIGHT_BOTTOM_LEFT", "TOP_RIGHT", "TOP_BOTTOM", "TOP_LEFT", "TOP_RIGHT_BOTTOM", "TOP_RIGHT_LEFT", "TOP_BOTTOM_LEFT", "TOP_RIGHT_BOTTOM_LEFT", "BOTTOM_LEFT"};
+constexpr const char *lookup_seg_res_type[] = {"GCLK", "GENERIC"};
 
 /* Lexers(string->token functions) for enums. */
 inline enum_switch_type lex_enum_switch_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
@@ -2241,6 +2250,9 @@ inline void load_segment_required_attributes(const pugi::xml_node &root, int * i
 		case atok_t_segment::NAME:
 			/* Attribute name set after element init */
 			break;
+		case atok_t_segment::RES_TYPE:
+			/* Attribute res_type set after element init */
+			break;			
 		default: break; /* Not possible. */
 		}
 	}
@@ -2821,8 +2833,10 @@ inline void load_segment(const pugi::xml_node &root, T &out, Context &context, c
 	// Update current file offset in case an error is encountered.
 	*offset_debug = root.offset_debug();
 
+	std::bitset<3> gstate_seg = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_segment in = lex_attr_t_segment(attr.name(), report_error);
+		if(gstate_seg[(int)in] == 0) gstate_seg[(int)in] = 1;
 		switch(in){
 		case atok_t_segment::ID:
 			/* Attribute id is already set */
@@ -2830,8 +2844,17 @@ inline void load_segment(const pugi::xml_node &root, T &out, Context &context, c
 		case atok_t_segment::NAME:
 			out.set_segment_name(attr.value(), context);
 			break;
+		case atok_t_segment::RES_TYPE:
+			out.set_segment_res_type(attr.value(), context);
+			break;
 		default: break; /* Not possible. */
 		}
+	}
+	if(gstate_seg.test(2))
+	{
+		// If attribute res_type is not specified in the tag then set the res_type
+		// to the default value "GENERIC"
+		out.set_segment_res_type("GENERIC", context);
 	}
 
 	std::bitset<1> gstate = 0;
@@ -3866,6 +3889,10 @@ inline void write_segments(T &in, std::ostream &os, Context &context){
 			os << "<segment";
 			os << " id=\"" << in.get_segment_id(child_context) << "\"";
 			os << " name=\"" << in.get_segment_name(child_context) << "\"";
+			if(in.get_segment_res_type(child_context) != e_seg_res_type::GENERIC){
+				// Print out the res_type attribute if it doesn't have a default value of GENERIC
+				os << " res_type=\"" << lookup_seg_res_type[(int)in.get_segment_res_type(child_context)] << "\"";
+			}
 			os << ">";
 			write_segment(in, os, child_context);
 			os << "</segment>\n";
