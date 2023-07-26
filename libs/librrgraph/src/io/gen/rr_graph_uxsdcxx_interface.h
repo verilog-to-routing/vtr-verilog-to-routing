@@ -242,11 +242,14 @@ public:
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
+	 *   <xs:attribute name="res_type" type="xs:string" use="optional" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_segment_id(typename ContextTypes::SegmentReadContext &ctx) = 0;
 	virtual inline const char * get_segment_name(typename ContextTypes::SegmentReadContext &ctx) = 0;
 	virtual inline void set_segment_name(const char * name, typename ContextTypes::SegmentWriteContext &ctx) = 0;
+	virtual inline e_seg_res_type get_segment_res_type(typename ContextTypes::SegmentReadContext &ctx) = 0;
+	virtual inline void set_segment_res_type(const char * res_type, typename ContextTypes::SegmentWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::SegmentTimingWriteContext init_segment_timing(typename ContextTypes::SegmentWriteContext &ctx) = 0;
 	virtual inline void finish_segment_timing(typename ContextTypes::SegmentTimingWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::SegmentTimingReadContext get_segment_timing(typename ContextTypes::SegmentReadContext &ctx) = 0;
