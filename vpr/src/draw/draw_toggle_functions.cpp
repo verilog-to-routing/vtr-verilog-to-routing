@@ -80,10 +80,10 @@ void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     // assign corresponding enum value to draw_state->show_nets
     if (strcmp(setting, "None") == 0)
         new_state = DRAW_NO_NETS;
-    else if (strcmp(setting, "Nets") == 0) {
-        new_state = DRAW_NETS;
-    } else { // "Logical Connections"
-        new_state = DRAW_LOGICAL_CONNECTIONS;
+    else if (strcmp(setting, "Cluster Nets") == 0) {
+        new_state = DRAW_CLUSTER_NETS;
+    } else { // Primitive Nets - Used to be called "Logical Connections"
+        new_state = DRAW_PRIMITIVE_NETS;
     }
     draw_state->reset_nets_congestion_and_rr();
     draw_state->show_nets = new_state;

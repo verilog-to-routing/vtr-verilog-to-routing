@@ -40,7 +40,7 @@ void setup_noc(const t_arch& arch) {
 
     // store the reference to device grid with
     // need to set this first before adding routers to the model
-    noc_ctx.noc_model.set_device_grid_width((int)device_ctx.grid.width());
+    noc_ctx.noc_model.set_device_grid_spec((int)device_ctx.grid.width(), (int)device_ctx.grid.height());
 
     // generate noc model
     generate_noc(arch, noc_ctx, noc_router_tiles);
@@ -59,9 +59,7 @@ void setup_noc(const t_arch& arch) {
 }
 
 void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& noc_router_tiles, std::string noc_router_tile_name) {
-    int grid_width = device_grid.width();
-    int grid_height = device_grid.height();
-
+    const int num_layers = device_grid.get_num_layers();
     int curr_tile_width;
     int curr_tile_height;
     int curr_tile_width_offset;
@@ -72,35 +70,37 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
     double curr_tile_centroid_y;
 
     // go through the device
-    for (int i = 0; i < grid_width; i++) {
-        for (int j = 0; j < grid_height; j++) {
-            // get some information from the current tile
-            const auto& type = device_grid.get_physical_type(i, j);
-            int width_offset = device_grid.get_width_offset(i, j);
-            int height_offset = device_grid.get_height_offset(i, j);
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        int grid_width = (int)device_grid.width();
+        int grid_height = (int)device_grid.height();
+        for (int i = 0; i < grid_width; i++) {
+            for (int j = 0; j < grid_height; j++) {
+                // get some information from the current tile
+                const auto& type = device_grid.get_physical_type({i, j, layer_num});
+                int width_offset = device_grid.get_width_offset({i, j, layer_num});
+                int height_offset = device_grid.get_height_offset({i, j, layer_num});
 
-            curr_tile_name.assign(type->name);
-            curr_tile_width_offset = width_offset;
-            curr_tile_height_offset = height_offset;
+                curr_tile_name.assign(type->name);
+                curr_tile_width_offset = width_offset;
+                curr_tile_height_offset = height_offset;
 
-            curr_tile_height = type->height;
-            curr_tile_width = type->width;
+                curr_tile_height = type->height;
+                curr_tile_width = type->width;
 
-            /* 
-             * Only store the tile position if it is a noc router.
-             * Additionally, since a router tile can span multiple grid locations, we only add the tile if the height and width offset are zero (this prevents the router from being added multiple times for each grid location it spans).
-             */
-            if (!(noc_router_tile_name.compare(curr_tile_name)) && !curr_tile_width_offset && !curr_tile_height_offset) {
-                // calculating the centroid position of the current tile
-                curr_tile_centroid_x = (curr_tile_width - 1) / (double)2 + i;
-                curr_tile_centroid_y = (curr_tile_height - 1) / (double)2 + j;
+                /*
+                 * Only store the tile position if it is a noc router.
+                 * Additionally, since a router tile can span multiple grid locations, we only add the tile if the height and width offset are zero (this prevents the router from being added multiple times for each grid location it spans).
+                 */
+                if (!(noc_router_tile_name.compare(curr_tile_name)) && !curr_tile_width_offset && !curr_tile_height_offset) {
+                    // calculating the centroid position of the current tile
+                    curr_tile_centroid_x = (curr_tile_width - 1) / (double)2 + i;
+                    curr_tile_centroid_y = (curr_tile_height - 1) / (double)2 + j;
 
-                noc_router_tiles.push_back({i, j, curr_tile_centroid_x, curr_tile_centroid_y});
+                    noc_router_tiles.emplace_back(i, j, layer_num, curr_tile_centroid_x, curr_tile_centroid_y);
+                }
             }
         }
     }
-
-    return;
 }
 
 void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_router_tile_position>& noc_router_tiles) {
@@ -215,8 +215,10 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
 
         // at this point, the closest user described router to the current physical router was found
         // so add the router to the NoC
-        noc_model->add_router(logical_router->id, noc_router_tiles[closest_physical_router].grid_width_position,
-                              noc_router_tiles[closest_physical_router].grid_height_position);
+        noc_model->add_router(logical_router->id,
+                              noc_router_tiles[closest_physical_router].grid_width_position,
+                              noc_router_tiles[closest_physical_router].grid_height_position,
+                              noc_router_tiles[closest_physical_router].layer_position);
 
         // add the new assignment to the tracker
         router_assignments[closest_physical_router] = logical_router->id;

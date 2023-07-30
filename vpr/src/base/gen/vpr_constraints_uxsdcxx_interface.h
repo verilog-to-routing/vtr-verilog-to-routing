@@ -58,6 +58,7 @@ class VprConstraintsBase {
      *   <xs:attribute name="subtile" type="xs:int" />
      * </xs:complexType>
      */
+    virtual inline int get_add_region_layer_num(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline int get_add_region_subtile(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline void set_add_region_subtile(int subtile, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_x_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;

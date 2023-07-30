@@ -64,6 +64,10 @@ class Cost_Entry {
     bool valid() const {
         return std::isfinite(delay) && std::isfinite(congestion);
     }
+
+    bool operator==(const Cost_Entry& other) const {
+        return delay == other.delay && congestion == other.congestion;
+    }
 };
 
 /**
@@ -268,7 +272,7 @@ struct t_reachable_wire_inf {
 //
 // When querying this data structure, the minimum cost is computed for each delay/congestion pair, and returned
 // as the lookahead expected cost.
-typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin_delays;
+typedef std::vector<std::vector<std::vector<std::map<int, t_reachable_wire_inf>>>> t_src_opin_delays;
 
 //[from pin ptc num][target src ptc num]->cost
 typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_delays;
@@ -282,13 +286,14 @@ typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_d
 //
 // This data structure stores the minimum delay to reach a specific SINK from the last connection between the wire (CHANX/CHANY)
 // and the tile's IPIN. If there are many connections to the same IPIN, the one with the minimum delay is selected.
-typedef std::vector<std::vector<t_reachable_wire_inf>> t_chan_ipins_delays;
+typedef std::vector<std::vector<std::vector<t_reachable_wire_inf>>> t_chan_ipins_delays;
 
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat);
 t_chan_ipins_delays compute_router_chan_ipin_lookahead();
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
+                                                         int layer,
                                                          int x,
                                                          int y);
 

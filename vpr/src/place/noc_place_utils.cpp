@@ -38,7 +38,6 @@ void initial_noc_routing(void) {
 }
 
 void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs) {
-
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
     // Zero out bandwidth usage for all links
@@ -486,9 +485,14 @@ static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from,
     const int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
     b_from = router_clusters[random_cluster_block_index];
 
+    //check if the block is movable
+    if (place_ctx.block_locs[b_from].is_fixed) {
+        return false;
+    }
+
     from = place_ctx.block_locs[b_from].loc;
     cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    const auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     return true;
@@ -535,6 +539,7 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
     auto& place_ctx = g_vpr_ctx.placement();
     const auto& grid = g_vpr_ctx.device().grid;
 
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     // block ID for the randomly selected router cluster
     ClusterBlockId b_from;
@@ -586,28 +591,38 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
     }
 
 
-    t_pl_loc centroid_loc(OPEN, OPEN, OPEN);
+    t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
 
     if (acc_weight > 0.0) {
         centroid_loc.x = (int)round(acc_x / acc_weight);
         centroid_loc.y = (int)round(acc_y / acc_weight);
+        // NoC routers are not swapped across layers
+        // TODO: Is a 3d NoC feasible? If so, calculate the target layer
+        centroid_loc.layer = from.layer;
     } else {
         return e_create_move::ABORT;
     }
 
-    if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y)) {
+    t_physical_tile_loc phy_centroid_loc{centroid_loc.x, centroid_loc.y, centroid_loc.y};
+
+    if (!is_loc_on_chip(phy_centroid_loc)) {
         return e_create_move::ABORT;
     }
 
 
-    const auto& physical_type = grid.get_physical_type(centroid_loc.x, centroid_loc.y);
+    const auto& physical_type = grid.get_physical_type({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
 
     // If the calculated centroid does not have a compatible type, find a compatible location nearby
     if (!is_tile_compatible(physical_type, cluster_from_type)) {
 
+
+
         //Determine centroid location in the compressed space of the current block
-        int cx_centroid = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_x, centroid_loc.x);
-        int cy_centroid = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_y, centroid_loc.y);
+        auto compressed_centroid_loc = get_compressed_loc_approx(compressed_noc_grid,
+                                                                 {centroid_loc.x, centroid_loc.y, 0, centroid_loc.layer},
+                                                                 num_layers);
+        int cx_centroid = compressed_centroid_loc[0].x;
+        int cy_centroid = compressed_centroid_loc[0].y;
 
         const int r_lim = 1;
         int r_lim_x = std::min<int>(compressed_noc_grid.compressed_to_grid_x.size(), r_lim);
@@ -625,18 +640,26 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
 
         delta_cx = max_cx - min_cx;
 
-        int cx_from = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_x, from.x);
-        int cy_from = grid_to_compressed_approx(compressed_noc_grid.compressed_to_grid_y, from.y);
+        auto compressed_from_loc = get_compressed_loc_approx(compressed_noc_grid,
+                                                             {from.x, from.y, 0, from.layer},
+                                                             num_layers);
 
-        int cx_to, cy_to;
+        t_physical_tile_loc compressed_to_loc;
 
-        bool legal = find_compatible_compressed_loc_in_range(cluster_from_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false, false);
+        bool legal = find_compatible_compressed_loc_in_range(cluster_from_type,
+                                                             delta_cx,
+                                                             compressed_from_loc[0],
+                                                            {min_cx, max_cx, min_cy, max_cy},
+                                                             compressed_to_loc,
+                                                             false,
+                                                             compressed_from_loc[0].layer_num,
+                                                             false);
 
         if (!legal) {
             return e_create_move::ABORT;
         }
 
-        compressed_grid_to_loc(cluster_from_type, cx_to, cy_to, centroid_loc);
+        compressed_grid_to_loc(cluster_from_type, compressed_to_loc, centroid_loc);
     }
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, centroid_loc);

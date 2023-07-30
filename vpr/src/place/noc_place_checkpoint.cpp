@@ -13,7 +13,7 @@ RouterPlacementCheckpoint::RouterPlacementCheckpoint() :
     router_locations_.clear();
 
     for (const auto& router_bid : router_bids) {
-        router_locations_[router_bid] = t_pl_loc(OPEN, OPEN, OPEN);
+        router_locations_[router_bid] = t_pl_loc(OPEN, OPEN, OPEN, OPEN);
     }
 }
 
@@ -42,19 +42,18 @@ void RouterPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t
     // Clear all physical routers in placement
     for (const auto& phy_router : noc_phy_routers) {
 
-        int x = phy_router.get_router_grid_position_x();
-        int y = phy_router.get_router_grid_position_y();
+        auto phy_loc = phy_router.get_router_physical_location();
 
-        place_ctx.grid_blocks[x][y].usage = 0;
-
-        auto tile = device_ctx.grid.get_physical_type(x, y);
+        place_ctx.grid_blocks.set_usage(phy_loc, 0);
+        auto tile = device_ctx.grid.get_physical_type(phy_loc);
 
         for (auto sub_tile : tile->sub_tiles) {
             auto capacity = sub_tile.capacity;
 
             for (int k = 0; k < capacity.total(); k++) {
-                if (place_ctx.grid_blocks[x][y].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
-                    place_ctx.grid_blocks[x][y].blocks[k + capacity.low] = EMPTY_BLOCK_ID;
+                const t_pl_loc loc(phy_loc, k + capacity.low);
+                if (place_ctx.grid_blocks.block_at_location(loc) != INVALID_BLOCK_ID) {
+                    place_ctx.grid_blocks.set_block_at_location(loc, EMPTY_BLOCK_ID);
                 }
             }
         }

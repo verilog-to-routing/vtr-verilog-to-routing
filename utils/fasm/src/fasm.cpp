@@ -22,7 +22,6 @@
 #include "atom_netlist_utils.h"
 #include "netlist_writer.h"
 #include "vpr_utils.h"
-#include "route_tree_timing.h"
 
 #include "fasm_utils.h"
 
@@ -58,10 +57,11 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     int x = place_ctx.block_locs[blk_id].loc.x;
     int y = place_ctx.block_locs[blk_id].loc.y;
+    int layer_num = place_ctx.block_locs[blk_id].loc.layer;
     int sub_tile = place_ctx.block_locs[blk_id].loc.sub_tile;
-    physical_tile_ = device_ctx.grid.get_physical_type(x, y);
+    physical_tile_ = device_ctx.grid.get_physical_type({x, y, layer_num});
     logical_block_ = cluster_ctx.clb_nlist.block_type(blk_id);
-    const auto& grid_meta = device_ctx.grid.get_metadata(x, y);
+    const auto& grid_meta = device_ctx.grid.get_metadata({x, y, layer_num});
 
     blk_prefix_ = "";
     clb_prefix_ = "";
@@ -619,18 +619,19 @@ void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
 }
 
 void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
-  check_for_lut(atom);
-  check_for_param(atom);
+    check_for_lut(atom);
+    check_for_param(atom);
 }
 
-void FasmWriterVisitor::walk_route_tree(const RRGraphBuilder& rr_graph_builder, const t_rt_node *root) {
-    for (t_linked_rt_edge* edge = root->u.child_list; edge != nullptr; edge = edge->next) {
-        auto *meta = vpr::rr_edge_metadata(rr_graph_builder, root->inode, edge->child->inode, edge->iswitch, fasm_features);
+void FasmWriterVisitor::walk_route_tree(const RRGraphBuilder& rr_graph_builder, const RouteTreeNode& root) {
+    for(auto& child: root.child_nodes()){
+        auto* meta = vpr::rr_edge_metadata(rr_graph_builder, size_t(root.inode), size_t(child.inode), size_t(child.parent_switch), fasm_features);
+
         if(meta != nullptr) {
             output_fasm_features(meta->as_string().get(strings_), "", "");
         }
 
-        walk_route_tree(rr_graph_builder, edge->child);
+        walk_route_tree(rr_graph_builder, child);
     }
 }
 
@@ -638,12 +639,9 @@ void FasmWriterVisitor::walk_routing() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     const auto& device_ctx = g_vpr_ctx.device();
 
-    for(const auto &trace : route_ctx.trace) {
-      t_trace *head = trace.head;
-      if (!head) continue;
-      t_rt_node* root = traceback_to_route_tree(head, is_flat_);
-      walk_route_tree(device_ctx.rr_graph_builder, root);
-      free_route_tree(root);
+    for(const auto &tree : route_ctx.route_trees) {
+        if (!tree) continue;
+        walk_route_tree(device_ctx.rr_graph_builder, tree.value().root());
     }
 }
 

@@ -77,6 +77,7 @@ struct alignas(16) t_rr_node_data {
     } dir_side_;
 
     uint16_t capacity_ = 0;
+
 };
 
 // t_rr_node_data is a key data structure, so fail at compile time if the
@@ -224,6 +225,14 @@ class t_rr_graph_storage {
     /* Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
         return node_fan_in_[id];
+    }
+
+    /* Find the layer number that RRNodeId is located at.
+     * it is zero if the FPGA only has one die.
+     * The layer number start from the base die (base die: 0, the die above it: 1, etc.)
+     * */
+    short node_layer(RRNodeId id) const{
+        return node_layer_[id];
     }
 
     // This prefetechs hot RR node data required for optimization.
@@ -393,6 +402,7 @@ class t_rr_graph_storage {
         make_room_in_vector(&node_storage_, size_t(elem_position));
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
+        node_layer_.resize(node_storage_.size());
     }
 
     // Reserve storage for RR nodes.
@@ -401,6 +411,7 @@ class t_rr_graph_storage {
         VTR_ASSERT(!edges_read_);
         node_storage_.reserve(size);
         node_ptc_.reserve(size);
+        node_layer_.reserve(size);
     }
 
     // Resize node storage to accomidate size RR nodes.
@@ -409,6 +420,7 @@ class t_rr_graph_storage {
         VTR_ASSERT(!edges_read_);
         node_storage_.resize(size);
         node_ptc_.resize(size);
+        node_layer_.resize(size);
     }
 
     // Number of RR nodes that can be accessed.
@@ -429,7 +441,7 @@ class t_rr_graph_storage {
         node_ptc_.clear();
         node_first_edge_.clear();
         node_fan_in_.clear();
-        seen_edge_.clear();
+        node_layer_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
@@ -437,6 +449,18 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
+    }
+
+    // Clear the data structures that are mainly used during RR graph construction.
+    // After RR Graph is build, we no longer need these data structures.
+    void clear_temp_storage() {
+        edge_remapped_.clear();
+    }
+
+    // Clear edge_remap data structure, and then initialize it with the given value
+    void init_edge_remap(bool val) {
+        edge_remapped_.clear();
+        edge_remapped_.resize(edge_switch_.size(), val);
     }
 
     // Shrink memory usage of the RR graph storage.
@@ -448,7 +472,7 @@ class t_rr_graph_storage {
         node_ptc_.shrink_to_fit();
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
-        seen_edge_.shrink_to_fit();
+        node_layer_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
@@ -461,6 +485,7 @@ class t_rr_graph_storage {
         VTR_ASSERT(!edges_read_);
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
+        node_layer_.emplace_back();
     }
 
     // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
@@ -479,6 +504,7 @@ class t_rr_graph_storage {
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
+    void set_node_layer(RRNodeId id, short layer);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
     void set_node_rc_index(RRNodeId, NodeRCIndex new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
@@ -545,11 +571,18 @@ class t_rr_graph_storage {
     // Reserve at least num_edges in the edge backing arrays.
     void reserve_edges(size_t num_edges);
 
-    // Add one edge.  This method is efficient if reserve_edges was called with
-    // the number of edges present in the graph.  This method is still
-    // amortized O(1), like std::vector::emplace_back, but both runtime and
-    // peak memory usage will be higher if reallocation is required.
-    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch);
+    /***
+     * @brief Add one edge.  This method is efficient if reserve_edges was called with
+     * the number of edges present in the graph.  This method is still
+     * amortized O(1), like std::vector::emplace_back, but both runtime and
+     * peak memory usage will be higher if reallocation is required.
+     * @param remapped This is used later in remap_rr_node_switch_indices to check whether an
+     * edge needs its switch ID remapped from the arch_sw_idx to rr_sw_idx.
+     * The difference between these two ids is because some switch delays depend on the fan-in
+     * of the node. Also, the information about switches is fly-weighted and are accessible with IDs. Thus,
+     * the number of rr switch types can be higher than the number of arch switch types.
+     */
+    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped);
 
     // Adds a batch of edges.
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
@@ -670,13 +703,33 @@ class t_rr_graph_storage {
     // Fan in counts for each RR node.
     vtr::vector<RRNodeId, t_edge_size> node_fan_in_;
 
+    // Layer number that each RR node is located at
+    // Layer number refers to the die that the node belongs to. The layer number of base die is zero and die above it one, etc.
+    // This data is also considered as a hot data since it is used in inner loop of router, but since it didn't fit nicely into t_rr_node_data due to alignment issues, we had to store it
+    // in a separate vector.
+    vtr::vector<RRNodeId, short> node_layer_;
+
     // Edge storage.
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+    /**
+     * The delay of certain switches specified in the architecture file depends on the number of inputs of the edge's sink node (pins or tracks).
+     * For example, in the case of a MUX switch, the delay increases as the number of inputs increases.
+     * During the construction of the RR Graph, switch IDs are assigned to the edges according to the order specified in the architecture file.
+     * These switch IDs are later used to retrieve information such as delay for each edge.
+     * This allows for effective fly-weighting of edge information.
+     *
+     * After building the RR Graph, we iterate over the nodes once more to store their fan-in.
+     * If a switch's characteristics depend on the fan-in of a node, a new switch ID is generated and assigned to the corresponding edge.
+     * This process is known as remapping.
+     * In this vector, we store information about which edges have undergone remapping.
+     * It is necessary to store this information, especially when flat-router is enabled.
+     * Remapping occurs when constructing global resources after placement and when adding intra-cluster resources after placement.
+     * Without storing this information, during subsequent remappings, it would be unclear whether the stored switch ID
+     * corresponds to the architecture ID or the RR Graph switch ID for an edge.
+    */
     vtr::vector<RREdgeId, bool> edge_remapped_;
-
-    vtr::vector<RREdgeId, bool> seen_edge_;
 
     /***************
      * State flags *
@@ -721,6 +774,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
         const vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge,
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
+        const vtr::array_view_id<RRNodeId, const short> node_layer,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch)
@@ -728,6 +782,7 @@ class t_rr_graph_view {
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
         , node_fan_in_(node_fan_in)
+        , node_layer_(node_layer)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch) {}
@@ -784,6 +839,11 @@ class t_rr_graph_view {
         return node_fan_in_[id];
     }
 
+    /* Retrieve layer(die) number that RRNodeId is located at */
+    short node_layer(RRNodeId id) const{
+        return node_layer_[id];
+    }
+
     // This prefetechs hot RR node data required for optimization.
     //
     // Note: This is optional, but may lower time spent on memory stalls in
@@ -824,6 +884,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc_;
     vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge_;
     vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
+    vtr::array_view_id<RRNodeId, const short> node_layer_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;

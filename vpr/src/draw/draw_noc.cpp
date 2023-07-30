@@ -37,8 +37,9 @@ void draw_noc(ezgl::renderer* g) {
     // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anythign as the NoC tile wont be drawn
     /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capcity of a noc router tile
      */
-    const auto& type = device_ctx.grid.get_physical_type(router_list.begin()->get_router_grid_position_x(),
-                                                         router_list.begin()->get_router_grid_position_y());
+    const auto& type = device_ctx.grid.get_physical_type({router_list.begin()->get_router_grid_position_x(),
+                                                          router_list.begin()->get_router_grid_position_y(),
+                                                          router_list.begin()->get_router_layer_position()});
     int num_subtiles = type->capacity;
 
     if (num_subtiles == 0) {
@@ -230,10 +231,12 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
     NocRouterId sink_router;
 
     // source router grid coordinates
+    int source_router_layer_position = 0;
     int source_router_x_position = 0;
     int source_router_y_position = 0;
 
     // sink router grid coordinates
+    int sink_router_layer_position = 0;
     int sink_router_x_position = 0;
     int sink_router_y_position = 0;
 
@@ -262,16 +265,18 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
         sink_router = noc_link_list[link_id].get_sink_router();
 
         // calculate the grid positions of the source and sink routers
+        source_router_layer_position = router_list[source_router].get_router_layer_position();
         source_router_x_position = router_list[source_router].get_router_grid_position_x();
         source_router_y_position = router_list[source_router].get_router_grid_position_y();
 
+        sink_router_layer_position = router_list[sink_router].get_router_layer_position();
         sink_router_x_position = router_list[sink_router].get_router_grid_position_x();
         sink_router_y_position = router_list[sink_router].get_router_grid_position_y();
 
         // get the initial drawing coordinates of the noc link
         // it will be drawn from the center of two routers it connects
-        link_coords.start = draw_coords->get_absolute_clb_bbox(source_router_x_position, source_router_y_position, 0, noc_router_logical_block_type).center();
-        link_coords.end = draw_coords->get_absolute_clb_bbox(sink_router_x_position, sink_router_y_position, 0, noc_router_logical_block_type).center();
+        link_coords.start = draw_coords->get_absolute_clb_bbox(source_router_layer_position, source_router_x_position, source_router_y_position, 0, noc_router_logical_block_type).center();
+        link_coords.end = draw_coords->get_absolute_clb_bbox(sink_router_layer_position, sink_router_x_position, sink_router_y_position, 0, noc_router_logical_block_type).center();
 
         // determine the current noc link type
         link_type = determine_noc_link_type(link_coords.start, link_coords.end);
