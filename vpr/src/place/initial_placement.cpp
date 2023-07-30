@@ -1192,57 +1192,55 @@ static int findFirstInteger(const std::string& str) {
     }
 }
 
-
-
-void print_noc_grid() {
-
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& noc_ctx = g_vpr_ctx.noc();
-    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
-    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
-    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
-
-    static int grid_arr[10][10];
-
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            grid_arr[i][j] = -1;
-        }
-    }
-
-    const std::vector<ClusterBlockId>& router_bids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
-
-    // Iterate over all routers
-    for (auto router_bid : router_bids) {
-
-        std::string router_name = cluster_ctx.clb_nlist.block_name(router_bid);
-        int router_id = findFirstInteger(router_name);
-
-        auto compressed_loc = get_compressed_loc_approx(compressed_noc_grid,place_ctx.block_locs[router_bid].loc, num_layers);
-
-        int placed_router_x = compressed_loc[0].x;
-        int placed_router_y = compressed_loc[0].y;
-        grid_arr[placed_router_x][placed_router_y] = router_id;
-    }
-
-    std::cout << std::endl;
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            if (grid_arr[j][i] >= 0) {
-                std::cout << std::setw(2) << std::setfill('0') << grid_arr[j][i] << "\t";
-            } else {
-                std::cout << std::setw(2) << std::setfill(' ') << "X-" << "\t";
-            }
-
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl;
-
-}
+//void print_noc_grid() {
+//
+//    auto& place_ctx = g_vpr_ctx.placement();
+//    auto& cluster_ctx = g_vpr_ctx.clustering();
+//    auto& noc_ctx = g_vpr_ctx.noc();
+//    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+//
+//    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+//    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
+//
+//    static int grid_arr[10][10];
+//
+//    for (int i = 0; i < 10; i++) {
+//        for (int j = 0; j < 10; j++) {
+//            grid_arr[i][j] = -1;
+//        }
+//    }
+//
+//    const std::vector<ClusterBlockId>& router_bids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+//
+//    // Iterate over all routers
+//    for (auto router_bid : router_bids) {
+//
+//        std::string router_name = cluster_ctx.clb_nlist.block_name(router_bid);
+//        int router_id = findFirstInteger(router_name);
+//
+//        auto compressed_loc = get_compressed_loc_approx(compressed_noc_grid,place_ctx.block_locs[router_bid].loc, num_layers);
+//
+//        int placed_router_x = compressed_loc[0].x;
+//        int placed_router_y = compressed_loc[0].y;
+//        grid_arr[placed_router_x][placed_router_y] = router_id;
+//    }
+//
+//    std::cout << std::endl;
+//    for (int i = 0; i < 10; i++) {
+//        for (int j = 0; j < 10; j++) {
+//            if (grid_arr[j][i] >= 0) {
+//                std::cout << std::setw(2) << std::setfill('0') << grid_arr[j][i] << "\t";
+//            } else {
+//                std::cout << std::setw(2) << std::setfill(' ') << "X-" << "\t";
+//            }
+//
+//        }
+//        std::cout << std::endl;
+//    }
+//
+//    std::cout << std::endl;
+//
+//}
 
 static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1347,8 +1345,6 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();
 
-    print_noc_grid();
-
     // Only NoC related costs are considered
     t_placer_costs costs;
 
@@ -1434,7 +1430,6 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     if (noc_opts.noc) {
         // NoC routers are placed before other blocks
         initial_noc_placement(noc_opts);
-        print_noc_grid();
     }
 
     //Assign scores to blocks and placement macros according to how difficult they are to place

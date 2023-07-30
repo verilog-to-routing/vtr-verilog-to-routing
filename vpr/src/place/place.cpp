@@ -1024,8 +1024,6 @@ void try_place(const Netlist<>& net_list,
         sprintf(msg,
                 "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g noc_latency_constraints_cost: %d", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, get_number_of_traffic_flows_with_latency_cons_met());
         VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, noc_latency_constraints_cost: %d, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, get_number_of_traffic_flows_with_latency_cons_met());
-
-        print_noc_grid();
     }
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
@@ -1350,16 +1348,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
-    float init_temp = 0.0;
-
-    /* We use a constructive initial placement and a low starting temperature 
-     * by default, but that can cause problems with NoCs as the initial logical
-     * locations are random. Use a higher starting T in that case.*/
-//    if (noc_opts.noc) {
-//        init_temp = 20. * std_dev;
-//    } else {
-        init_temp = std_dev / 64;
-//    }
+    float init_temp = std_dev / 64;
 
     return init_temp;
 }

@@ -38,10 +38,6 @@ struct t_grid_empty_locs_block_type {
     int num_of_empty_locs_in_y_axis;
 };
 
-
-
-void print_noc_grid();
-
 /**
  * @brief Tries to find an initial placement location for each block considering floorplanning constraints
  * and throws an error out if it fails after max number of attempts.
