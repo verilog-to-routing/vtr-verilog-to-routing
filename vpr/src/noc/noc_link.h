@@ -48,9 +48,10 @@ class NocLink {
     NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
 
     double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)*/
+    double bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
 
   public:
-    NocLink(NocRouterId source_router, NocRouterId sink_router);
+    NocLink(NocRouterId source_router, NocRouterId sink_router, double bw);
 
     // getters
 
@@ -97,6 +98,14 @@ class NocLink {
      * @param new_bandwidth_usage The new value of the bandwidth of the link
      */
     void set_bandwidth_usage(double new_bandwidth_usage);
+
+    void set_bandwidth(double new_bandwidth);
+
+    double get_bandwidth() const;
+
+    double get_congested_bandwidth() const;
+
+    double get_congested_bandwidth_ratio() const;
 };
 
 #endif

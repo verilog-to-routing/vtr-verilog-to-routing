@@ -24,13 +24,13 @@
  * 
  * Link
  * ----
- * A link is a component of the NoC ans is defined by the
+ * A link is a component of the NoC and is defined by the
  * NocLink class. Links are connections between two routers.
  * Links are used by routers to communicate with other routers
  * in the NoC. They can be thought of as edges in a graph. Links
  * have a source router where they exit from and sink router where
  * they enter. It is important to note that the links are not
- * unidirectional, the legal way to traverse a link is from the
+ * bi-directional, the legal way to traverse a link is from the
  * source router of the link to the sink router.
  * 
  */
