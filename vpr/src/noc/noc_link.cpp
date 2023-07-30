@@ -1,8 +1,9 @@
 #include "noc_link.h"
 
 // constructor
-NocLink::NocLink(NocRouterId source, NocRouterId sink, double bw)
-    : source_router(source)
+NocLink::NocLink(NocLinkId link_id, NocRouterId source, NocRouterId sink, double bw)
+    : id(link_id)
+    , source_router(source)
     , sink_router(sink)
     , bandwidth_usage(0.0)
     , bandwidth(bw) { }
@@ -58,4 +59,12 @@ double NocLink::get_congested_bandwidth_ratio() const {
 
     VTR_ASSERT(congested_bw_ratio >= 0.0);
     return congested_bw_ratio;
+}
+
+NocLinkId NocLink::get_link_id() const {
+    return id;
+}
+
+NocLink::operator NocLinkId() const {
+    return get_link_id();
 }

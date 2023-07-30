@@ -43,6 +43,8 @@
 
 class NocLink {
   private:
+    NocLinkId id;
+
     // the two routers that are connected by this link
     NocRouterId source_router; /*!< The router which uses this link as an outgoing edge*/
     NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
@@ -51,7 +53,7 @@ class NocLink {
     double bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
 
   public:
-    NocLink(NocRouterId source_router, NocRouterId sink_router, double bw);
+    NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router, double bw);
 
     // getters
 
@@ -106,6 +108,10 @@ class NocLink {
     double get_congested_bandwidth() const;
 
     double get_congested_bandwidth_ratio() const;
+
+    NocLinkId get_link_id() const;
+
+    operator NocLinkId() const;
 };
 
 #endif
