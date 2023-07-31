@@ -1164,6 +1164,7 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string po
 
 const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index) {
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
+        /*Adding = is to remove the memory error when pb_gnode->num_input_pins[iport] is equal to index.*/
         if (pb_gnode->num_input_pins[iport] <= index) continue;
 
         const t_pb_graph_pin* gpin = &pb_gnode->input_pins[iport][index];
