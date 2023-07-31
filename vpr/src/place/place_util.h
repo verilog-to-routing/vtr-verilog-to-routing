@@ -11,7 +11,6 @@
 #include "vtr_util.h"
 #include "vtr_vector_map.h"
 #include "globals.h"
-#include "noc_place_utils.h"
 
 /**
  * @brief Data structure that stores different cost values in the placer.
@@ -66,8 +65,6 @@ class t_placer_costs {
     double noc_latency_cost_norm = 0.;
     double noc_congestion_cost = 0.;
     double noc_congestion_cost_norm = 0.;
-  public:
-    void add_noc_cost_terms(const NocDeltaCost& noc_delta_cost);
 
   public: //Constructor
     t_placer_costs(t_place_algorithm algo)

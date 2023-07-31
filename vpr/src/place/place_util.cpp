@@ -57,17 +57,6 @@ static GridBlock init_grid_blocks() {
 }
 
 /**
- * @brief Accumulates NoC cost difference terms
- *
- * @param noc_delta_cost NoC cost difference if the swap is accepted
- */
-void t_placer_costs::add_noc_cost_terms(const NocDeltaCost& noc_delta_cost) {
-    noc_aggregate_bandwidth_cost += noc_delta_cost.aggregate_bandwidth_delta_c;
-    noc_latency_cost += noc_delta_cost.latency_delta_c;
-    noc_congestion_cost += noc_delta_cost.congestion_delta_c;
-}
-
-/**
  * @brief Mutator: updates the norm factors in the outer loop iteration.
  *
  * At each temperature change we update these values to be used
