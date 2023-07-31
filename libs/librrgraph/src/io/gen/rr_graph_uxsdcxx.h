@@ -294,8 +294,8 @@ enum class gtok_t_metadata {META};
 constexpr const char *gtok_lookup_t_metadata[] = {"meta"};
 enum class gtok_t_node {LOC, TIMING, SEGMENT, METADATA};
 constexpr const char *gtok_lookup_t_node[] = {"loc", "timing", "segment", "metadata"};
-enum class atok_t_node {CAPACITY, DIRECTION, ID, TYPE};
-constexpr const char *atok_lookup_t_node[] = {"capacity", "direction", "id", "type"};
+enum class atok_t_node {CAPACITY, DIRECTION, ID, TYPE, CLK_RES_TYPE};
+constexpr const char *atok_lookup_t_node[] = {"capacity", "direction", "id", "type", "clk_res_type"};
 
 enum class gtok_t_rr_nodes {NODE};
 constexpr const char *gtok_lookup_t_rr_nodes[] = {"node"};
@@ -1368,6 +1368,19 @@ inline atok_t_node lex_attr_t_node(const char *in, const std::function<void(cons
 		default: break;
 		}
 		break;
+	case 12:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('c', 0, 64) | onechar('l', 8, 64) | onechar('k', 16, 64) | onechar('_', 24, 64) | onechar('r', 32, 64) | onechar('e', 40, 64) | onechar('s', 48, 64) | onechar('_', 56, 64):
+			switch(*((triehash_uu32*)&in[8])){
+			case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
+				return atok_t_node::CLK_RES_TYPE;
+			break;
+			default: break;
+			}
+		break;
+		default: break;
+		}
+		break;
 	default: break;
 	}
 	noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <node>.").c_str());
@@ -1580,6 +1593,7 @@ constexpr const char *lookup_switch_type[] = {"UXSD_INVALID", "mux", "tristate",
 constexpr const char *lookup_pin_type[] = {"UXSD_INVALID", "OPEN", "OUTPUT", "INPUT"};
 constexpr const char *lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "SOURCE", "SINK", "OPIN", "IPIN"};
 constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR"};
+constexpr const char *lookup_node_clk_res_type[] = {"UXSD_INVALID", "VIRTUAL_SINK"};
 constexpr const char *lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM", "RIGHT_LEFT", "RIGHT_BOTTOM", "RIGHT_BOTTOM_LEFT", "TOP_RIGHT", "TOP_BOTTOM", "TOP_LEFT", "TOP_RIGHT_BOTTOM", "TOP_RIGHT_LEFT", "TOP_BOTTOM_LEFT", "TOP_RIGHT_BOTTOM_LEFT", "BOTTOM_LEFT"};
 constexpr const char *lookup_seg_res_type[] = {"GCLK", "GENERIC"};
 
@@ -1838,6 +1852,29 @@ inline enum_node_direction lex_enum_node_direction(const char *in, bool throw_on
 	if(throw_on_invalid)
 		noreturn_report(report_error, ("Found unrecognized enum value " + std::string(in) + " of enum_node_direction.").c_str());
 	return enum_node_direction::UXSD_INVALID;
+}
+
+inline enum_node_clk_res_type lex_enum_node_clk_res_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
+	unsigned int len = strlen(in);
+	switch(len){
+	case 12:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('V', 0, 64) | onechar('I', 8, 64) | onechar('R', 16, 64) | onechar('T', 24, 64) | onechar('U', 32, 64) | onechar('A', 40, 64) | onechar('L', 48, 64) | onechar('_', 56, 64):
+			switch(*((triehash_uu32*)&in[8])){
+			case onechar('St', 0, 32) | onechar('I', 8, 32) | onechar('N', 16, 32) | onechar('K', 24, 32):
+				return enum_node_clk_res_type::VIRTUAL_SINK;
+			break;
+			default: break;
+			}
+		break;
+		default: break;
+		}
+		break;
+	default: break;
+	}
+	if(throw_on_invalid)
+		noreturn_report(report_error, ("Found unrecognized enum value " + std::string(in) + " of enum_node_clk_res_type.").c_str());
+	return enum_node_clk_res_type::UXSD_INVALID;
 }
 
 inline enum_loc_side lex_enum_loc_side(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
@@ -2238,7 +2275,7 @@ inline void load_switch_required_attributes(const pugi::xml_node &root, int * id
 }
 
 inline void load_segment_required_attributes(const pugi::xml_node &root, int * id, const std::function<void(const char *)> * report_error){
-	std::bitset<2> astate = 0;
+	std::bitset<3> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_segment in = lex_attr_t_segment(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
@@ -2256,7 +2293,7 @@ inline void load_segment_required_attributes(const pugi::xml_node &root, int * i
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<2> test_astate = astate | std::bitset<2>(0b00);
+	std::bitset<3> test_astate = astate | std::bitset<3>(0b100);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_segment, report_error);
 }
 
@@ -2424,7 +2461,7 @@ inline void load_node_segment_required_attributes(const pugi::xml_node &root, in
 }
 
 inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, const std::function<void(const char *)> * report_error){
-	std::bitset<4> astate = 0;
+	std::bitset<5> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_node in = lex_attr_t_node(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
@@ -2442,10 +2479,13 @@ inline void load_node_required_attributes(const pugi::xml_node &root, unsigned i
 		case atok_t_node::TYPE:
 			*type = lex_enum_node_type(attr.value(), true, report_error);
 			break;
+		case atok_t_node::CLK_RES_TYPE:
+			/* Attribute clk_res_type set after element init */
+			break;
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<4> test_astate = astate | std::bitset<4>(0b0010);
+	std::bitset<5> test_astate = astate | std::bitset<5>(0b10010);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node, report_error);
 }
 
@@ -2850,7 +2890,7 @@ inline void load_segment(const pugi::xml_node &root, T &out, Context &context, c
 		default: break; /* Not possible. */
 		}
 	}
-	if(gstate_seg.test(2))
+	if(gstate_seg.test(2) == 0)
 	{
 		// If attribute res_type is not specified in the tag then set the res_type
 		// to the default value "GENERIC"
@@ -3444,6 +3484,9 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 			break;
 		case atok_t_node::TYPE:
 			/* Attribute type is already set */
+			break;
+		case atok_t_node::CLK_RES_TYPE:
+			out.set_node_clk_res_type(lex_enum_node_clk_res_type(attr.value(), true, report_error), context);
 			break;
 		default: break; /* Not possible. */
 		}
