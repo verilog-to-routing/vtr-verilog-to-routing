@@ -153,11 +153,12 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         ParentNetId routing_net_id = ParentNetId::INVALID();
         std::vector<RRNodeId> visited_rr_nodes;
         short valid_routing_net_cnt = 0;
-        int addToY = 0, addToX = 0;
-        addToY = physical_tile->height;
-        addToX = physical_tile->width;
-        for (int ix = 0; ix < addToX; ix++) {
-            for (int iy = 0; iy < addToY; iy++) {
+        /*
+         * When a block's width and height are greater than 1 (e.g. in bram and dsp)
+         * its pins may be spread around it, so we should search all sides and coordinates.
+        */
+        for (int ix = 0; ix < physical_tile->width; ix++) {
+            for (int iy = 0; iy < physical_tile->height; iy++) {
 				for (const e_side& pin_side : pin_sides) {
 					/* Find the net mapped to this pin in routing results */
 					RRNodeId rr_node = node_lookup.find_node(grid_coord.x() + ix, grid_coord.y() + iy, rr_node_type, physical_pin, pin_side);
@@ -586,7 +587,11 @@ static void rec_remove_downstream_pb_routes(t_pb_routes& curr_pb_routes,
         curr_pb_routes.erase(sink_pb_route);
     }
 }
-
+/********************************************************************
+ * Recursively remove all the downstream pb_routes with a given starting point
+ * excluding the pb_routes inside usedItems vector, 
+ * until reach the primitive nodes 
+ *******************************************************************/
 static void rec_remove_downstream_pb_routes_ignore_used_items(t_pb_routes& curr_pb_routes,
                                             const int& src_pb_route_id, std::vector<int>& usedItems) {
     for (const auto& sink_pb_route : curr_pb_routes.at(src_pb_route_id).sink_pb_pin_ids) {
