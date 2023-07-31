@@ -1380,11 +1380,10 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
 
             apply_move_blocks(blocks_affected);
 
-            double noc_aggregate_bandwidth_delta_c = 0.0;
-            double noc_latency_delta_c = 0.0;
-            double noc_congestion_delta_c = 0.0;
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_congestion_delta_c, noc_opts);
-            double delta_cost = (noc_opts.noc_placement_weighting) * (noc_latency_delta_c * costs.noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs.noc_aggregate_bandwidth_cost_norm);
+
+            NocDeltaCost noc_delta_c {0.0, 0.0, 0.0};
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
+            double delta_cost = (noc_opts.noc_placement_weighting) * (noc_delta_c.latency_delta_c * costs.noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth_delta_c * costs.noc_aggregate_bandwidth_cost_norm);
 
             double prob = starting_prob - i_move*prob_step;
             bool move_accepted = assess_noc_swap(delta_cost, prob);
@@ -1393,8 +1392,8 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 costs.cost += delta_cost;
                 commit_move_blocks(blocks_affected);
                 commit_noc_costs();
-                costs.noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
-                costs.noc_latency_cost += noc_latency_delta_c;
+                costs.noc_aggregate_bandwidth_cost += noc_delta_c.aggregate_bandwidth_delta_c;
+                costs.noc_latency_cost += noc_delta_c.latency_delta_c;
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
                     checkpoint.save_checkpoint(costs.cost);
                 }

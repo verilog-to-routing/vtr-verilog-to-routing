@@ -39,6 +39,12 @@ struct TrafficFlowPlaceCost {
     double latency = -1;
 };
 
+struct NocDeltaCost {
+    double aggregate_bandwidth_delta_c = 0.0;
+    double latency_delta_c = 0.0;
+    double congestion_delta_c = 0.0;
+};
+
 /**
  * @brief Routes all the traffic flows within the NoC and updates the link usage
  * for all links. This should be called after initial placement, where all the 
@@ -103,7 +109,7 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
  * NoC latency cost caused by a placer move is stored
  * here.
  */
-void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, double& noc_congestion_delta_c, const t_noc_opts& noc_opts);
+void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, NocDeltaCost& delta_c, const t_noc_opts& noc_opts);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
