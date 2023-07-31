@@ -72,6 +72,12 @@ void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw,
                         ezgl::renderer* g);
 
+/* Helper function that checks whether the edges between the current and previous nodes can be drawn
+ * based on whether the cross-layer connections option is enabled and whether the layer on which the
+ * nodes are located are enabled.
+ */
+bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node);
+
 /* Draws a heat map of routing wire utilization (i.e. fraction of wires used in each channel)
  * when a routing is shown on-screen and Routing Util (on the GUI) is selected.
  * Lighter colours (e.g. yellow) correspond to highly utilized

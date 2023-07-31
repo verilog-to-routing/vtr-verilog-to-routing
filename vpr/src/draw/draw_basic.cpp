@@ -669,10 +669,16 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
         auto rr_type = rr_graph.node_type(rr_node);
 
         int prev_node = rr_nodes_to_draw[i - 1];
+        RRNodeId prev_rr_node = RRNodeId(prev_node);
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
         auto iedge = find_edge(prev_node, inode);
         auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
+
+        //Don't draw node if the layer of the node is not set to visible on screen
+        if(!draw_state->draw_layer_display[rr_graph.node_layer(rr_node)].visible){
+            continue;
+        }
 
         switch (rr_type) {
             case OPIN: {
@@ -681,10 +687,12 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
             }
             case IPIN: {
                 draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
-                if (rr_graph.node_type(RRNodeId(prev_node)) == OPIN) {
-                    draw_pin_to_pin(prev_node, inode, g);
-                } else {
-                    draw_pin_to_chan_edge(inode, prev_node, g);
+                if(is_edge_valid_to_draw(rr_node,prev_rr_node)) {
+                    if (rr_graph.node_type(prev_rr_node) == OPIN) {
+                        draw_pin_to_pin(prev_node, inode, g);
+                    } else {
+                        draw_pin_to_chan_edge(inode, prev_node, g);
+                    }
                 }
                 break;
             }
@@ -694,26 +702,28 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
 
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
 
-                switch (prev_type) {
-                    case CHANX: {
-                        draw_chanx_to_chanx_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                 switch_type, g);
-                        break;
-                    }
-                    case CHANY: {
-                        draw_chanx_to_chany_edge(inode, prev_node,
+                if(is_edge_valid_to_draw(rr_node,prev_rr_node)) {
+                    switch (prev_type) {
+                            case CHANX: {
+                                draw_chanx_to_chanx_edge(RRNodeId(prev_node), RRNodeId(inode),
+                                                         switch_type, g);
+                                break;
+                            }
+                            case CHANY: {
+                                draw_chanx_to_chany_edge(inode, prev_node,
 
-                                                 FROM_Y_TO_X, switch_type, g);
-                        break;
-                    }
-                    case OPIN: {
-                        draw_pin_to_chan_edge(prev_node, inode, g);
-                        break;
-                    }
-                    default: {
-                        VPR_ERROR(VPR_ERROR_OTHER,
-                                  "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                  prev_type, rr_type);
+                                                         FROM_Y_TO_X, switch_type, g);
+                                break;
+                            }
+                            case OPIN: {
+                                draw_pin_to_chan_edge(prev_node, inode, g);
+                                break;
+                            }
+                            default: {
+                                VPR_ERROR(VPR_ERROR_OTHER,
+                                          "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                          prev_type, rr_type);
+                            }
                     }
                 }
 
@@ -725,35 +735,60 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
 
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
 
-                switch (prev_type) {
-                    case CHANX: {
-                        draw_chanx_to_chany_edge(prev_node, inode,
-                                                 FROM_X_TO_Y, switch_type, g);
-                        break;
-                    }
-                    case CHANY: {
-                        draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                 switch_type, g);
-                        break;
-                    }
-                    case OPIN: {
-                        draw_pin_to_chan_edge(prev_node, inode, g);
+                if (is_edge_valid_to_draw(rr_node, prev_rr_node)) {
+                    switch (prev_type) {
+                            case CHANX: {
+                                draw_chanx_to_chany_edge(prev_node, inode,
+                                                         FROM_X_TO_Y, switch_type, g);
+                                break;
+                            }
+                            case CHANY: {
+                                draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
+                                                         switch_type, g);
+                                break;
+                            }
+                            case OPIN: {
+                                draw_pin_to_chan_edge(prev_node, inode, g);
 
-                        break;
-                    }
-                    default: {
-                        VPR_ERROR(VPR_ERROR_OTHER,
-                                  "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                  prev_type, rr_type);
+                                break;
+                            }
+                            default: {
+                                VPR_ERROR(VPR_ERROR_OTHER,
+                                          "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                          prev_type, rr_type);
+                            }
                     }
                 }
-
-                break;
+                    break;
             }
             default: {
                 break;
             }
         }
+    }
+}
+
+/* Helper function that checks whether the edges between the current and previous nodes can be drawn
+ * based on whether the cross-layer connections option is enabled and whether the layer on which the
+ * nodes are located are enabled.
+ */
+bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node){
+    t_draw_state* draw_state = get_draw_state_vars();
+    auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    int current_node_layer = rr_graph.node_layer(current_node);
+    int prev_node_layer = rr_graph.node_layer(prev_node);
+
+    if(current_node_layer != prev_node_layer) {
+        if (draw_state->cross_layer_display.visible && draw_state->draw_layer_display[current_node_layer].visible && draw_state->draw_layer_display[prev_node_layer].visible) {
+            return true; //if both layers are enabled and cross layer connections are enabled
+        }
+        else{
+            return false; //if cross layer connections are disabled or if either the current or prev node's layers are disabled
+        }
+    }
+    else{
+        return true; //if both nodes are from the same layer
     }
 }
 
