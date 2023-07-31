@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstring>
 #include <algorithm>
+#include <iostream>
 
 #include "rr_graph_uxsdcxx_interface.h"
 
@@ -1281,11 +1282,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return segment->res_type;
     }
     inline void set_segment_res_type(const char* res_type, const t_segment_inf*& segment) final {
-        std::string res_type_str(res_type);
+        std::string res_type_str = res_type;
         if (RES_TYPE_STRING[segment->res_type] != res_type_str) {
             report_error(
                 "Architecture file does not match RR graph's segment res_type: arch uses %s, RR graph uses %s",
-               RES_TYPE_STRING[segment->res_type], res_type_str);
+               RES_TYPE_STRING[segment->res_type], res_type);
         }
     }
 
