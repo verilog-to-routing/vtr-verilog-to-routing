@@ -243,6 +243,11 @@ class t_rr_graph_storage {
         VTR_PREFETCH(&node_storage_[id], 0, 0);
     }
 
+    // Get the node id of the virtual sink for the clock network 
+    int virtual_clock_network_root_idx() const {
+        return virtual_clock_network_root_idx_;
+    }
+
     /* Edge accessors
      *
      * Preferred access methods:
@@ -515,6 +520,9 @@ class t_rr_graph_storage {
      */
     void add_node_side(RRNodeId, e_side new_side);
 
+    // Set the node id of the virtual sink for the clock network 
+    void set_virtual_clock_network_root_idx(int virtual_clock_network_root_idx);
+
     /****************
      * Edge methods *
      ****************/
@@ -709,6 +717,13 @@ class t_rr_graph_storage {
     // in a separate vector.
     vtr::vector<RRNodeId, short> node_layer_;
 
+    /**
+     * @brief rr_node idx that connects to all the nodes that are clock network entry points
+     *
+     * Useful for two stage clock routing
+     */
+    int virtual_clock_network_root_idx_;
+
     // Edge storage.
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
@@ -777,7 +792,8 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const short> node_layer,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
-        const vtr::array_view_id<RREdgeId, const short> edge_switch)
+        const vtr::array_view_id<RREdgeId, const short> edge_switch,
+        const int& virtual_clock_network_root_idx)
         : node_storage_(node_storage)
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
@@ -785,7 +801,8 @@ class t_rr_graph_view {
         , node_layer_(node_layer)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
-        , edge_switch_(edge_switch) {}
+        , edge_switch_(edge_switch)
+        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx) {}
 
     /****************
      * Node methods *
@@ -852,6 +869,11 @@ class t_rr_graph_view {
         VTR_PREFETCH(&node_storage_[id], 0, 0);
     }
 
+    // Returns the node id of the virtual sink
+    int virtual_clock_network_root_idx() const{
+        return virtual_clock_network_root_idx_;
+    }
+
     /* Edge accessors */
 
     // Returns a range of RREdgeId's belonging to RRNodeId id.
@@ -888,6 +910,8 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
+    const int& virtual_clock_network_root_idx_;
+
 };
 
 #endif /* _RR_GRAPH_STORAGE_ */

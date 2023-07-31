@@ -1061,6 +1061,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    const auto& rr_nodes_view = rr_graph.rr_nodes().view();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     unsigned int num_sinks = net_list.net_sinks(net_id).size();
@@ -1131,7 +1132,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     // Pre-route to clock source for clock nets (marked as global nets)
     if (net_list.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
         //VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
-        int sink_node = device_ctx.virtual_clock_network_root_idx;
+        int sink_node = rr_nodes_view.virtual_clock_network_root_idx();
 
         enable_router_debug(router_opts, net_id, sink_node, itry, &router);
 

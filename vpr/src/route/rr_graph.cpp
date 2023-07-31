@@ -689,7 +689,6 @@ void create_rr_graph(const t_graph_type graph_type,
                          device_ctx.arch,
                          &mutable_device_ctx.chan_width,
                          router_opts.base_cost_type,
-                         device_ctx.virtual_clock_network_root_idx,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          &det_routing_arch->wire_to_arch_ipin_switch_between_dice,
                          det_routing_arch->read_rr_graph_filename.c_str(),
@@ -785,7 +784,6 @@ void create_rr_graph(const t_graph_type graph_type,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
                        det_routing_arch->write_rr_graph_filename.c_str(),
-                       device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
                        echo_file_name,
                        is_flat);
@@ -1394,7 +1392,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                    grid,
                    device_ctx.chan_width,
                    graph_type,
-                   device_ctx.virtual_clock_network_root_idx,
                    is_flat);
 
     /* Free all temp structs */
@@ -1489,7 +1486,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                    grid,
                    device_ctx.chan_width,
                    graph_type,
-                   device_ctx.virtual_clock_network_root_idx,
                    is_flat);
 }
 

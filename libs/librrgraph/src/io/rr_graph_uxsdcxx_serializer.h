@@ -287,7 +287,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         std::vector<t_rr_rc_data>* rr_rc_data,
-        const int virtual_clock_network_root_idx,
         const std::vector<t_arch_switch_inf>& arch_switch_inf,
         const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -306,7 +305,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_indexed_data_(rr_indexed_data)
         , read_rr_graph_filename_(read_rr_graph_filename)
         , rr_rc_data_(rr_rc_data)
-        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx)
         , graph_type_(graph_type)
         , base_cost_type_(base_cost_type)
         , do_check_rr_graph_(do_check_rr_graph)
@@ -1714,7 +1712,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                            grid_,
                            *chan_width_,
                            graph_type_,
-                           virtual_clock_network_root_idx_,
                            is_flat_);
         }
     }
@@ -2014,7 +2011,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
     std::vector<t_rr_rc_data>* rr_rc_data_;
-    const int virtual_clock_network_root_idx_;
 
     // Constant data for loads and writes.
     const t_graph_type graph_type_;

@@ -1861,7 +1861,7 @@ inline enum_node_clk_res_type lex_enum_node_clk_res_type(const char *in, bool th
 		switch(*((triehash_uu64*)&in[0])){
 		case onechar('V', 0, 64) | onechar('I', 8, 64) | onechar('R', 16, 64) | onechar('T', 24, 64) | onechar('U', 32, 64) | onechar('A', 40, 64) | onechar('L', 48, 64) | onechar('_', 56, 64):
 			switch(*((triehash_uu32*)&in[8])){
-			case onechar('St', 0, 32) | onechar('I', 8, 32) | onechar('N', 16, 32) | onechar('K', 24, 32):
+			case onechar('S', 0, 32) | onechar('I', 8, 32) | onechar('N', 16, 32) | onechar('K', 24, 32):
 				return enum_node_clk_res_type::VIRTUAL_SINK;
 			break;
 			default: break;
@@ -3486,7 +3486,7 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 			/* Attribute type is already set */
 			break;
 		case atok_t_node::CLK_RES_TYPE:
-			out.set_node_clk_res_type(lex_enum_node_clk_res_type(attr.value(), true, report_error), context);
+			// out.set_node_clk_res_type(lex_enum_node_clk_res_type(attr.value(), true, report_error), context);
 			break;
 		default: break; /* Not possible. */
 		}

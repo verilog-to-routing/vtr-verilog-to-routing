@@ -762,6 +762,10 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }
 
+void t_rr_graph_storage::set_virtual_clock_network_root_idx(int virtual_clock_network_root_idx) {
+    virtual_clock_network_root_idx_ = virtual_clock_network_root_idx;
+}
+
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
@@ -787,7 +791,8 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_layer_),
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
-        vtr::make_const_array_view_id(edge_switch_));
+        vtr::make_const_array_view_id(edge_switch_),
+        virtual_clock_network_root_idx_);
 }
 
 // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),

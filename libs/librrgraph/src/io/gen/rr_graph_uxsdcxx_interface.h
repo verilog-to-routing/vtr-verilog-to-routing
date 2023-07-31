@@ -29,6 +29,11 @@ enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, I
 
 enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR};
 
+// For the current level of support, we only need to distinguish the virtual sink node for
+// the clock network in order to store the id of the node. However, more values can be added
+// to this enum in the future if more node types need to be detected.
+enum class enum_node_clk_res_type {UXSD_INVALID = 0, VIRTUAL_SINK};
+
 enum class enum_loc_side {UXSD_INVALID = 0, LEFT, RIGHT, TOP, BOTTOM, RIGHT_LEFT, RIGHT_BOTTOM, RIGHT_BOTTOM_LEFT, TOP_RIGHT, TOP_BOTTOM, TOP_LEFT, TOP_RIGHT_BOTTOM, TOP_RIGHT_LEFT, TOP_BOTTOM_LEFT, TOP_RIGHT_BOTTOM_LEFT, BOTTOM_LEFT};
 
 /* Base class for the schema. */
