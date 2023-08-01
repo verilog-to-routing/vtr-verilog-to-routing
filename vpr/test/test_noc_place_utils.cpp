@@ -33,7 +33,6 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
-    delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
 
     // store the reference to device grid with
@@ -142,8 +141,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
 
     // now go and route all the traffic flows //
     // start by creating the routing algorithm
-    NocRouting* routing_algorithm_global = new XYRouting();
-    noc_ctx.noc_flows_router = routing_algorithm_global;
+    noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
@@ -213,7 +211,6 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
-    delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
 
     // store the reference to device grid with
@@ -330,8 +327,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
 
     // now go and route all the traffic flows //
     // start by creating the routing algorithm
-    NocRouting* routing_algorithm_global = new XYRouting();
-    noc_ctx.noc_flows_router = routing_algorithm_global;
+    noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
@@ -455,7 +451,6 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
-    delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
 
     // store the reference to device grid with
@@ -581,8 +576,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // now go and route all the traffic flows //
     // start by creating the routing algorithm
-    NocRouting* routing_algorithm_global = new XYRouting();
-    noc_ctx.noc_flows_router = routing_algorithm_global;
+    noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
@@ -597,8 +591,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     golden_traffic_flow_latency_costs.resize(noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows());
 
     // stores the change in bandwidth and latency costs from the test function
-    double test_noc_bandwidth_costs = 0;
-    double test_noc_latency_costs = 0;
+    NocCostTerms test_noc_costs {0.0, 0.0, 0.0};
 
     // we need to route all the traffic flows based on their initial positions
     for (int traffic_flow_number = 0; traffic_flow_number < number_of_created_traffic_flows; traffic_flow_number++) {
@@ -640,8 +633,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number] = (noc_opts.noc_latency_constraints_weighting * (std::max(0., curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency))) + (noc_opts.noc_latency_weighting * curr_traffic_flow_latency);
         golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number] *= curr_traffic_flow.traffic_flow_priority;
 
-        test_noc_bandwidth_costs += golden_traffic_flow_bandwidth_costs[(NocTrafficFlowId)traffic_flow_number];
-        test_noc_latency_costs += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
+        test_noc_costs.aggregate_bandwidth += golden_traffic_flow_bandwidth_costs[(NocTrafficFlowId)traffic_flow_number];
+        test_noc_costs.latency += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
     }
 
     // initialize noc placement structs
@@ -778,8 +771,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
         // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-        test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth;
-        test_noc_latency_costs += delta_cost.latency;
+        test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
+        test_noc_costs.latency += delta_cost.latency;
 
         // need this function to update the local datastructures that store all the traffic flow costs
         commit_noc_costs();
@@ -908,8 +901,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth;
-    test_noc_latency_costs += delta_cost.latency;
+    test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
+    test_noc_costs.latency += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -999,8 +992,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth;
-    test_noc_latency_costs += delta_cost.latency;
+    test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
+    test_noc_costs.latency += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -1062,8 +1055,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth;
-    test_noc_latency_costs += delta_cost.latency;
+    test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
+    test_noc_costs.latency += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -1090,22 +1083,22 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     }
 
     // now check whether the expected noc costs that we manually calculated above match the noc costs found through the test function (we allow for a tolerance of difference)
-    REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_latency_costs));
-    REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_bandwidth_costs));
+    REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_costs.aggregate_bandwidth));
+    REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_costs.latency));
 
     // now test the recompute cost function //
     // The recompute cost function just adds up all traffic flow costs, so it match the expected noc costs that we manually calculated above by summing up all the expected individual traffic flow costs. //
 
     // start by resetting the test cost variables
-    test_noc_bandwidth_costs = 0.;
-    test_noc_latency_costs = 0.;
+    test_noc_costs.aggregate_bandwidth = 0.;
+    test_noc_costs.latency = 0.;
 
     // now execute the test function
-    recompute_noc_costs(test_noc_bandwidth_costs, test_noc_latency_costs);
+    recompute_noc_costs(test_noc_costs);
 
     // now verify
-    REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_latency_costs));
-    REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_bandwidth_costs));
+    REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_costs.aggregate_bandwidth));
+    REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_costs.latency));
 
     // delete local datastructures
     free_noc_placement_structs();
@@ -1194,7 +1187,6 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
-    delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
 
     // store the reference to device grid with
@@ -1316,8 +1308,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
 
     // now go and route all the traffic flows //
     // start by creating the routing algorithm
-    NocRouting* routing_algorithm_global = new XYRouting();
-    noc_ctx.noc_flows_router = routing_algorithm_global;
+    noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
@@ -1519,7 +1510,6 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
-    delete noc_ctx.noc_flows_router;
     place_ctx.block_locs.clear();
 
     // store the reference to device grid with
@@ -1649,8 +1639,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
 
     // now go and route all the traffic flows //
     // start by creating the routing algorithm
-    NocRouting* routing_algorithm_global = new XYRouting();
-    noc_ctx.noc_flows_router = routing_algorithm_global;
+    noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
