@@ -772,14 +772,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
             }
         }
 
-        NocDeltaCost delta_cost {0.0, 0.0, 0.0};
+        NocCostTerms delta_cost {0.0, 0.0, 0.0};
 
         // call the test function
         find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
         // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-        test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth_delta_c;
-        test_noc_latency_costs += delta_cost.latency_delta_c;
+        test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth;
+        test_noc_latency_costs += delta_cost.latency;
 
         // need this function to update the local datastructures that store all the traffic flow costs
         commit_noc_costs();
@@ -902,14 +902,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
     }
 
-    NocDeltaCost delta_cost {0.0, 0.0, 0.0};
+    NocCostTerms delta_cost {0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth_delta_c;
-    test_noc_latency_costs += delta_cost.latency_delta_c;
+    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth;
+    test_noc_latency_costs += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -993,14 +993,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     }
 
     // reset the delta costs
-    delta_cost = NocDeltaCost {0.0, 0.0, 0.0};
+    delta_cost = NocCostTerms {0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth_delta_c;
-    test_noc_latency_costs += delta_cost.latency_delta_c;
+    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth;
+    test_noc_latency_costs += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -1056,14 +1056,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // we don't have to calculate the costs or update bandwidths because the swapped router blocks do not have any associated traffic flows //
 
     // reset the delta costs
-    delta_cost = NocDeltaCost {0.0, 0.0, 0.0};
+    delta_cost = NocCostTerms {0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth_delta_c;
-    test_noc_latency_costs += delta_cost.latency_delta_c;
+    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth;
+    test_noc_latency_costs += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
