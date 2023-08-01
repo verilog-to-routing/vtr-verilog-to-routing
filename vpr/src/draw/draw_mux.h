@@ -40,7 +40,7 @@
 /* Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6, labelled with its size.
  * Takes in point of origin, orientation, height, mux size and renderer.
  */
-void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g);
+void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, int transparency_factor, ezgl::renderer* g);
 
 /* Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6.
  * Takes in point of origin, orientation, height and renderer.
