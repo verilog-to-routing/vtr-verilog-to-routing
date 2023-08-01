@@ -260,8 +260,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     if (DETAILED == RouterOpts.route_type) {
         VTR_LOG("RouterOpts.router_algorithm: ");
         switch (RouterOpts.router_algorithm) {
-            case BREADTH_FIRST:
-                VTR_LOG("BREADTH_FIRST\n");
+            case PARALLEL:
+                VTR_LOG("PARALLEL\n");
                 break;
             case TIMING_DRIVEN:
                 VTR_LOG("TIMING_DRIVEN\n");
@@ -432,8 +432,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
         VTR_LOG("RouterOpts.router_algorithm: ");
         switch (RouterOpts.router_algorithm) {
-            case BREADTH_FIRST:
-                VTR_LOG("BREADTH_FIRST\n");
+            case PARALLEL:
+                VTR_LOG("PARALLEL\n");
                 break;
             case TIMING_DRIVEN:
                 VTR_LOG("TIMING_DRIVEN\n");

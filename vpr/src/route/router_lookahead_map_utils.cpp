@@ -6,7 +6,7 @@
  *
  * In general, this utility library contains:
  *
- * - Different dijkstra expansion alogrithms used to perform specific tasks, such as computing the SROURCE/OPIN --> CHAN lookup tables
+ * - Different dijkstra expansion algorithms used to perform specific tasks, such as computing the SOURCE/OPIN --> CHAN lookup tables
  * - Cost Entries definitions used when generating and querying the lookahead
  *
  * To access the utility functions, the util namespace needs to be used.
@@ -96,7 +96,7 @@ PQ_Entry::PQ_Entry(
 
         float base_cost = 0.f;
         if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).configurable()) {
-            base_cost = get_single_rr_cong_base_cost(size_t(set_rr_node));
+            base_cost = get_single_rr_cong_base_cost(set_rr_node);
         }
 
         VTR_ASSERT(T_linear >= 0.);
@@ -148,7 +148,7 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
         auto& device_ctx = g_vpr_ctx.device();
         const auto& rr_graph = device_ctx.rr_graph;
         if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).configurable()) {
-            this->base_cost = parent->base_cost + get_single_rr_cong_base_cost(size_t(set_rr_node));
+            this->base_cost = parent->base_cost + get_single_rr_cong_base_cost(set_rr_node);
         } else {
             this->base_cost = parent->base_cost;
         }
@@ -365,7 +365,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         if (src_opin_delays[layer_num][itile][ptc].empty()) {
                             VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d)\n",
                                            rr_node_typename[rr_type],
-                                           rr_node_arch_name(size_t(node_id), is_flat).c_str(),
+                                           rr_node_arch_name(node_id, is_flat).c_str(),
                                            sample_loc.x,
                                            sample_loc.y,
                                            is_flat);

@@ -7,6 +7,7 @@
 #include <chrono>
 #include <vtr_ndmatrix.h>
 
+#include "NetPinTimingInvalidator.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
@@ -608,11 +609,15 @@ void try_place(const Netlist<>& net_list,
         placer_criticalities = std::make_unique<PlacerCriticalities>(
             cluster_ctx.clb_nlist, netlist_pin_lookup);
 
-        pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>(
-            net_list, netlist_pin_lookup,
-            atom_ctx.nlist, atom_ctx.lookup,
+        pin_timing_invalidator = make_net_pin_timing_invalidator(
+            placer_opts.timing_update_type,
+            net_list,
+            netlist_pin_lookup,
+            atom_ctx.nlist,
+            atom_ctx.lookup,
             *timing_info->timing_graph(),
             is_flat);
+
         //First time compute timing and costs, compute from scratch
         PlaceCritParams crit_params;
         crit_params.crit_exponent = first_crit_exponent;

@@ -1,6 +1,8 @@
-#ifndef VPR_SLACK_EVALUATOR
-#define VPR_SLACK_EVALUATOR
+#pragma once
+
 #include <map>
+#include <set>
+
 #include "atom_netlist_fwd.h"
 #include "DomainPair.h"
 #include "tatum/timing_analyzers.hpp"
@@ -8,7 +10,7 @@
 
 /*
  * SetupSlackCrit converts raw timing analysis results (i.e. timing tags associated with
- * tatum::NodeIds calculated by the timign analyzer), to the shifted slacks and relaxed
+ * tatum::NodeIds calculated by the timing analyzer), to the shifted slacks and relaxed
  * criticalities associated with atom netlist connections (i.e. associated withAtomPinIds).
  *
  * For efficiency, when update_slacks_and_criticalities() is called it attempts to incrementally
@@ -22,7 +24,6 @@ class SetupSlackCrit {
 
   public: //Types
     typedef std::vector<AtomPinId>::const_iterator modified_pin_iterator;
-
     typedef vtr::Range<modified_pin_iterator> modified_pin_range;
 
   public: //Accessors
@@ -176,5 +177,3 @@ class HoldSlackCrit {
     vtr::vector<AtomPinId, float> pin_slacks_;
     vtr::vector<AtomPinId, float> pin_criticalities_;
 };
-
-#endif

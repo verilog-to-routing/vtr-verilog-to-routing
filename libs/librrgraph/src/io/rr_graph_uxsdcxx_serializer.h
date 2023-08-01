@@ -950,11 +950,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // If the node id doesn't match the node id of the clock virtual sink
         // the function returns UXSD_INVALID
         const auto& rr_graph = (*rr_graph_);
-        if (int(size_t(node.id())) == rr_graph.virtual_clock_network_root_idx()) {
+        if (int(node.id()) == int(rr_graph.virtual_clock_network_root_idx())) {
             return uxsd::enum_node_clk_res_type::VIRTUAL_SINK;
-        } else {
-            return uxsd::enum_node_clk_res_type::UXSD_INVALID;
-        }
+        return uxsd::enum_node_clk_res_type::UXSD_INVALID;
     }
 
     inline void* init_rr_graph_rr_nodes(void*& /*ctx*/) final {

@@ -73,7 +73,7 @@ const ezgl::color DRIVEN_BY_IT_COLOR = ezgl::LIGHT_MEDIUM_BLUE;
 const float WIRE_DRAWING_WIDTH = 0.5;
 
 /* Find the edge between two rr nodes */
-t_edge_size find_edge(int prev_inode, int inode);
+t_edge_size find_edge(RRNodeId prev_inode, RRNodeId inode);
 
 /* Returns the track number of this routing resource node inode. */
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track);
@@ -91,17 +91,17 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
  * could be caused by the user clicking on a routing resource, toggled, or
  * fan-in/fan-out of a highlighted node. */
 bool draw_if_net_highlighted(ClusterNetId inet);
-std::vector<int> trace_routed_connection_rr_nodes(
-    const ClusterNetId net_id,
-    const int driver_pin,
-    const int sink_pin);
+std::vector<RRNodeId> trace_routed_connection_rr_nodes(
+    ClusterNetId net_id,
+    int driver_pin,
+    int sink_pin);
 
 /* Helper function for trace_routed_connection_rr_nodes
  * Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path
  * Returns true if rt_node is on the path. */
 bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
-                                             int sink_rr_node,
-                                             std::vector<int>& rr_nodes_on_path);
+                                             RRNodeId sink_rr_node,
+                                             std::vector<RRNodeId>& rr_nodes_on_path);
 
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *

@@ -214,7 +214,7 @@ class RRGraphBuilder {
     }
 
     /** @brief Set the node id for clock network virtual sink */
-    inline void set_virtual_clock_network_root_idx(int virtual_clock_network_root_idx) {
+    inline void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
         node_storage_.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
     }
 

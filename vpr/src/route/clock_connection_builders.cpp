@@ -58,7 +58,7 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
     RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.layer, switch_location.x, switch_location.y);
-    rr_graph_builder.set_virtual_clock_network_root_idx(size_t(virtual_clock_network_root_idx));
+    rr_graph_builder.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
     auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, CHANX);

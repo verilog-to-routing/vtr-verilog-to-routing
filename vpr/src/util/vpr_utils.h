@@ -115,7 +115,7 @@ inline ParentNetId get_cluster_net_parent_id(const AtomLookup& atom_look_up, Clu
 void sync_grid_to_blocks();
 
 //Returns a user-friendly architectural identifier for the specified RR node
-std::string rr_node_arch_name(int inode, bool is_flat);
+std::string rr_node_arch_name(RRNodeId inode, bool is_flat);
 
 /**************************************************************
  * Intra-Logic Block Utility Functions

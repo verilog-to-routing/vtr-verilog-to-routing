@@ -454,7 +454,6 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
-        virtual_clock_network_root_idx_ = -1;
     }
 
     // Clear the data structures that are mainly used during RR graph construction.
@@ -522,7 +521,7 @@ class t_rr_graph_storage {
     void add_node_side(RRNodeId, e_side new_side);
 
     // Set the node id of the virtual sink for the clock network 
-    void set_virtual_clock_network_root_idx(int virtual_clock_network_root_idx);
+    void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx);
 
     /****************
      * Edge methods *
@@ -723,7 +722,7 @@ class t_rr_graph_storage {
      *
      * Useful for two stage clock routing
      */
-    int virtual_clock_network_root_idx_;
+    RRNodeId virtual_clock_network_root_idx_;
 
     // Edge storage.
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
@@ -794,7 +793,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
-        const int& virtual_clock_network_root_idx)
+        const RRNodeId& virtual_clock_network_root_idx)
         : node_storage_(node_storage)
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
@@ -871,7 +870,7 @@ class t_rr_graph_view {
     }
 
     // Returns the node id of the virtual sink
-    int virtual_clock_network_root_idx() const{
+    RRNodeId virtual_clock_network_root_idx() const{
         return virtual_clock_network_root_idx_;
     }
 
@@ -911,7 +910,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
-    const int& virtual_clock_network_root_idx_;
+    const RRNodeId& virtual_clock_network_root_idx_;
 
 };
 
