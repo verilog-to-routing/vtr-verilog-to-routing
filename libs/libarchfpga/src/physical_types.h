@@ -1510,13 +1510,13 @@ enum e_parallel_axis {
 };
 
 /* GCLK: Describes a segment type that is part of the clock network                   *
- * GENERIC: Describes a segment type that is part of the general routing resources    */
+ * GENERAL: Describes a segment type that is part of the general routing resources    */
 enum e_seg_res_type {
     GCLK=0,
-    GENERIC=1,
+    GENERAL=1,
     NUM_RES_TYPES
 };
-constexpr std::array<const char*, NUM_RES_TYPES> RES_TYPE_STRING = {{"GCLK", "GENERIC"}}; //String versions of segment resource types
+constexpr std::array<const char*, NUM_RES_TYPES> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
 
 enum e_switch_block_type {
     SUBSET,
@@ -1572,7 +1572,7 @@ enum e_Fc_type {
  *            interms of track distribution and segment type.                *
  * res_type: Determines the routing network to which the segment belongs.    *
  *           Possible values are:
- *              - GENERIC: The segment is part of the general routing        *
+ *              - GENERAL: The segment is part of the general routing        *
  *                         resources.                                        *
  *              - GCLK: The segment is part of the generic clock network.    *
  *           For backward compatibility, this attribute is optional. If not  *
@@ -1596,7 +1596,7 @@ struct t_segment_inf {
     std::vector<bool> cb;
     std::vector<bool> sb;
     int seg_index;
-    enum e_seg_res_type res_type = e_seg_res_type::GENERIC;
+    enum e_seg_res_type res_type = e_seg_res_type::GENERAL;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 

@@ -1595,7 +1595,7 @@ constexpr const char *lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "S
 constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR"};
 constexpr const char *lookup_node_clk_res_type[] = {"UXSD_INVALID", "VIRTUAL_SINK"};
 constexpr const char *lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM", "RIGHT_LEFT", "RIGHT_BOTTOM", "RIGHT_BOTTOM_LEFT", "TOP_RIGHT", "TOP_BOTTOM", "TOP_LEFT", "TOP_RIGHT_BOTTOM", "TOP_RIGHT_LEFT", "TOP_BOTTOM_LEFT", "TOP_RIGHT_BOTTOM_LEFT", "BOTTOM_LEFT"};
-constexpr const char *lookup_seg_res_type[] = {"GCLK", "GENERIC"};
+constexpr const char *lookup_seg_res_type[] = {"GCLK", "GENERAL"};
 
 /* Lexers(string->token functions) for enums. */
 inline enum_switch_type lex_enum_switch_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
@@ -2893,8 +2893,8 @@ inline void load_segment(const pugi::xml_node &root, T &out, Context &context, c
 	if(gstate_seg.test(2) == 0)
 	{
 		// If attribute res_type is not specified in the tag then set the res_type
-		// to the default value "GENERIC"
-		out.set_segment_res_type("GENERIC", context);
+		// to the default value "GENERAL"
+		out.set_segment_res_type("GENERAL", context);
 	}
 
 	std::bitset<1> gstate = 0;
@@ -3932,8 +3932,8 @@ inline void write_segments(T &in, std::ostream &os, Context &context){
 			os << "<segment";
 			os << " id=\"" << in.get_segment_id(child_context) << "\"";
 			os << " name=\"" << in.get_segment_name(child_context) << "\"";
-			if(in.get_segment_res_type(child_context) != e_seg_res_type::GENERIC){
-				// Print out the res_type attribute if it doesn't have a default value of GENERIC
+			if(in.get_segment_res_type(child_context) != e_seg_res_type::GENERAL){
+				// Print out the res_type attribute if it doesn't have a default value of GENERAL
 				os << " res_type=\"" << lookup_seg_res_type[(int)in.get_segment_res_type(child_context)] << "\"";
 			}
 			os << ">";
