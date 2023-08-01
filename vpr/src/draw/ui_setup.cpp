@@ -163,8 +163,8 @@ void view_button_setup(ezgl::application* app) {
 
         // Create checkboxes and spin buttons for each layer
         for (int i = 0; i < num_layers; i++) {
-            std::string label = "Layer " + std::to_string(i + 1);
-            std::string trans_label = "Transparency " + std::to_string(i + 1);
+            std::string label = "Layer " + std::to_string(i);
+            std::string trans_label = "Transparency " + std::to_string(i);
 
             GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
             // Add margins to checkboxes to match the transparency spin button height

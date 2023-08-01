@@ -179,7 +179,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     }
 
     // now call the test function
-    initial_noc_placement();
+    initial_noc_routing();
 
     // now verify the function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set
     int number_of_links = golden_link_bandwidths.size();
@@ -357,7 +357,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
 
     // assume this works
     // this is needed to set up the global noc packet router and also global datastructures
-    initial_noc_placement();
+    initial_noc_routing();
 
     SECTION("test_comp_noc_aggregate_bandwidth_cost") {
         //initialize all the cost calculator datastructures
@@ -613,7 +613,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // assume this works
     // this is needed to set up the global noc packet router and also global datastructures
-    initial_noc_placement();
+    initial_noc_routing();
 
     // datastructure below will store the bandwidth usages of all the links
     // and will be updated throughout this test.
@@ -1344,7 +1344,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
 
     // assume this works
     // this is needed to set up the global noc packet router and also global datastructures
-    initial_noc_placement();
+    initial_noc_routing();
 
     // datastructure below will store the bandwidth usages of all the links
     // and will be updated throughout this test.
