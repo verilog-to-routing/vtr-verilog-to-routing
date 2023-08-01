@@ -92,17 +92,15 @@ void draw_routing_util(ezgl::renderer* g);
  */
 void draw_crit_path(ezgl::renderer* g);
 
+/*Checks whether a flyline should be drawn or not based on the layer control settings in the UI
+ * If the source and sink are on the same active layer - returns true
+ * If the source and sink are on different active layers & Cross-layer connections is toggled on - returns true
+ * Otherwise returns false
+ */
+bool is_flyline_valid_to_draw(int src_layer, int sink_layer);
+
 /* Draws critical path shown as flylines. Takes in start and end coordinates, time delay, & renderer.*/
 void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g);
-
-/* Draws critical path shown by both flylines and routed net connections. Takes in start and end nodes,
- * time delay, colour, & renderer.
- */
-void draw_routed_timing_edge(tatum::NodeId start_tnode,
-                             tatum::NodeId end_tnode,
-                             float incr_delay,
-                             ezgl::color color,
-                             ezgl::renderer* g);
 
 /* Collects all the drawing locations associated with the timing edge between start and end.
  * Only traces interconnect edges in detail, and treats all others as flylines.
