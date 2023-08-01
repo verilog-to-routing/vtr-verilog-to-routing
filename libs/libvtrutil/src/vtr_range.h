@@ -41,21 +41,21 @@ template<typename T>
 class Range {
   public:
     ///@brief constructor
-    Range(T b, T e)
+    constexpr Range(T b, T e)
         : begin_(b)
         , end_(e) {}
     ///@brief Return an iterator to the start of the range
-    T begin() { return begin_; }
+    constexpr T begin() { return begin_; }
     ///@brief Return an iterator to the end of the range
-    T end() { return end_; }
+    constexpr T end() { return end_; }
     ///@brief Return an iterator to the start of the range (immutable)
-    const T begin() const { return begin_; }
+    constexpr const T begin() const { return begin_; }
     ///@brief Return an iterator to the end of the range (immutable)
-    const T end() const { return end_; }
+    constexpr const T end() const { return end_; }
     ///@brief Return true if empty
-    bool empty() { return begin_ == end_; }
+    constexpr bool empty() { return begin_ == end_; }
     ///@brief Return the range size
-    size_t size() { return std::distance(begin_, end_); }
+    constexpr size_t size() { return std::distance(begin_, end_); }
 
   private:
     T begin_;
@@ -72,13 +72,13 @@ class Range {
  *  auto my_range = vtr::make_range(my_vec.begin(), my_vec.end());
  */
 template<typename T>
-auto make_range(T b, T e) { return Range<T>(b, e); }
+constexpr auto make_range(T b, T e) { return Range<T>(b, e); }
 
 /**
  * @brief Creates a vtr::Range from a container
  */
 template<typename Container>
-auto make_range(const Container& c) { return make_range(std::begin(c), std::end(c)); }
+inline auto make_range(const Container& c) { return make_range(std::begin(c), std::end(c)); }
 
 } // namespace vtr
 

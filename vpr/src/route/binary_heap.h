@@ -22,8 +22,6 @@ class BinaryHeap : public HeapInterface {
     void build_heap() final;
     void set_prune_limit(size_t max_index, size_t prune_limit) final;
 
-    void invalidate_heap_entries(int sink_node, int ipin_node) final;
-
     void free_all_memory() final;
 
   private:

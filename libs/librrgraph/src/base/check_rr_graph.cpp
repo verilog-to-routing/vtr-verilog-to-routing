@@ -608,7 +608,7 @@ static void check_rr_edge(const RRGraphView& rr_graph,
                 std::string msg = "Non-configurable BUFFER type switch must have only one driver. ";
                 msg += vtr::string_fmt(" Actual fan-in was %d (expected 1).\n", to_fanin);
                 msg += "  Possible cause is complex block output pins connecting to:\n";
-                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, to_node, is_flat);
+                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, RRNodeId(to_node), is_flat);
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
             break;
