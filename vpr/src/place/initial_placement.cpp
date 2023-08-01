@@ -56,17 +56,6 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
 static void initialize_grid_locs();
 
 /**
- * @brief Calculates total NoC cost.
- *
- *   @param costs Contains latency and aggregate bandwidth costs
- *   along with their corresponding normalization factors.
- *   @param noc_opts Contains NoC placement weighting factor.
- *
- * @return Calculated total NoC cost.
- */
-static double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts);
-
-/**
  * @brief Evaluates whether a NoC router swap should be accepted or not.
  *
  *   @param delta_cost Specifies how much the total cost would change if
@@ -1141,14 +1130,6 @@ bool place_one_block(const ClusterBlockId& blk_id,
     return placed_macro;
 }
 
-
-static double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts) {
-    double noc_cost = 0.0;
-    noc_cost = (noc_opts.noc_placement_weighting) * ((costs.noc_aggregate_bandwidth_cost * costs.noc_aggregate_bandwidth_cost_norm) + (costs.noc_latency_cost * costs.noc_latency_cost_norm));
-    return noc_cost;
-}
-
-
 static bool assess_noc_swap(double delta_cost, double prob) {
 
     if (delta_cost <= 0.0) {
@@ -1352,7 +1333,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
     costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
     update_noc_normalization_factors(costs);
-    costs.cost = calculate_noc_cost(costs, noc_opts);
+    costs.cost = calculate_noc_cost(NocCostTerms(costs), costs, noc_opts);
 
     // Maximum distance in each direction that a router can travel in a move
     const float max_r_lim = ceilf(sqrtf((float)noc_phy_routers.size()));
@@ -1380,10 +1361,11 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
 
             apply_move_blocks(blocks_affected);
 
-
             NocCostTerms noc_delta_c {0.0, 0.0, 0.0};
             find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
-            double delta_cost = (noc_opts.noc_placement_weighting) * (noc_delta_c.latency * costs.noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth * costs.noc_aggregate_bandwidth_cost_norm);
+            double delta_cost = calculate_noc_cost(noc_delta_c, costs, noc_opts);
+
+                (noc_opts.noc_placement_weighting) * (noc_delta_c.latency * costs.noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth * costs.noc_aggregate_bandwidth_cost_norm);
 
             double prob = starting_prob - i_move*prob_step;
             bool move_accepted = assess_noc_swap(delta_cost, prob);

@@ -42,6 +42,17 @@ struct TrafficFlowPlaceCost {
 };
 
 struct NocCostTerms {
+  public:
+    explicit NocCostTerms(const t_placer_costs& costs)
+        : aggregate_bandwidth(costs.noc_aggregate_bandwidth_cost)
+        , latency(costs.noc_latency_cost)
+        , congestion(costs.noc_congestion_cost) { }
+
+    NocCostTerms(double agg_bw, double lat, double congest)
+        : aggregate_bandwidth(agg_bw)
+        , latency(lat)
+        , congestion(congest) { }
+
     double aggregate_bandwidth = 0.0;
     double latency = 0.0;
     double congestion = 0.0;
@@ -377,6 +388,8 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
 double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts);
 
 double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc_opts);
+
+double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& norm_factors, const t_noc_opts& noc_opts);
 
 /**
  * @brief Goes through all the traffic flows and determines whether the
