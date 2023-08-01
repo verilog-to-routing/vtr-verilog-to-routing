@@ -454,6 +454,7 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
+        virtual_clock_network_root_idx_ = -1;
     }
 
     // Clear the data structures that are mainly used during RR graph construction.

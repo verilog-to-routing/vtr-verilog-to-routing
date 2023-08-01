@@ -302,11 +302,6 @@
       <sb type="pattern">1 1 1 1 1</sb>
       <cb type="pattern">1 1 1 1</cb>
     </segment>
-    <!-- <segment name="spine1_drive" freq="1.000000" length="1" type="unidir" Rmetal="50.4199982" Cmetal="2.06999995e-14">
-      <mux name="ipin_cblock"/>
-      <sb type="pattern">1 1</sb>
-      <cb type="pattern">1</cb>
-    </segment> -->
   </segmentlist>
   <directlist>
     <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
