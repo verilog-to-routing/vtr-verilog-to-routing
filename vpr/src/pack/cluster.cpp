@@ -148,6 +148,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    const auto& cl_helper_ctx = g_vpr_ctx.cl_helper();
 
     helper_ctx.enable_pin_feasibility_filter = packer_opts.enable_pin_feasibility_filter;
     helper_ctx.feasible_block_array_size = packer_opts.feasible_block_array_size;
@@ -173,6 +174,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     vtr::vector<ClusterBlockId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_ctx.nlist.blocks().size());
 
     istart = nullptr;
+
+    // load external attraction data
+    load_external_attraction_data(packer_opts.external_attraction_file);
 
     /* determine bound on cluster size and primitive input size */
     helper_ctx.max_cluster_size = 0;
@@ -304,6 +308,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,
+                                                     cl_helper_ctx.external_atom_attraction_data,
                                                      allow_unrelated_clustering,
                                                      packer_opts.prioritize_transitive_connectivity,
                                                      packer_opts.transitive_fanout_threshold,
@@ -350,6 +355,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  clb_index,
                                  detailed_routing_stage,
                                  attraction_groups,
+                                 cl_helper_ctx.external_atom_attraction_data,
                                  clb_inter_blk_nets,
                                  allow_unrelated_clustering,
                                  high_fanout_threshold,

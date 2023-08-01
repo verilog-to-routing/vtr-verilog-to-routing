@@ -340,6 +340,10 @@ struct ClusteringHelperContext : public Context {
     // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
+
+    // 2D vector to store the external attraction data from one atom to another, default set to DBL_MIN
+    std::vector<std::vector<double>> external_atom_attraction_data;
+
     ~ClusteringHelperContext() {
         delete[] primitives_list;
     }
