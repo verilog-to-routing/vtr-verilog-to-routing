@@ -6,9 +6,11 @@
 #include "vtr_math.h"
 
 #include "globals.h"
-#include "timing_util.h"
-#include "timing_info.h"
 #include "timing_fail_error.h"
+#include "timing_info.h"
+#include "timing_util.h"
+
+#include "tatum/report/graphviz_dot_writer.hpp"
 
 double sec_to_nanosec(double seconds) {
     return 1e9 * seconds;
@@ -800,7 +802,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         VTR_ASSERT_SAFE_MSG(!std::isnan(crit), "Criticality not be nan");
         VTR_ASSERT_SAFE_MSG(std::isfinite(crit), "Criticality should not be infinite");
         VTR_ASSERT_MSG(crit >= 0. - CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be negative");
-        VTR_ASSERT_MSG(crit <= 1. + CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be greather than one");
+        VTR_ASSERT_MSG(crit <= 1. + CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be greater than one");
 
         //Clamp criticality to [0., 1.] to correct round-off
         crit = std::max(0.f, crit);
@@ -809,7 +811,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         max_crit = std::max(max_crit, crit);
     }
     VTR_ASSERT_MSG(max_crit >= 0., "Criticality should never be negative");
-    VTR_ASSERT_MSG(max_crit <= 1., "Criticality should never be greather than one");
+    VTR_ASSERT_MSG(max_crit <= 1., "Criticality should never be greater than one");
 
     return max_crit;
 }

@@ -2,6 +2,7 @@
 
 #include "binary_heap.h"
 #include "bucket.h"
+#include "rr_graph_fwd.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 
@@ -26,9 +27,9 @@ HeapStorage::alloc() {
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
     temp_ptr->R_upstream = 0.;
-    temp_ptr->index = OPEN;
+    temp_ptr->index = RRNodeId::INVALID();
     temp_ptr->path_data = nullptr;
-    temp_ptr->set_prev_node(NO_PREVIOUS);
+    temp_ptr->set_prev_node(RRNodeId::INVALID());
     temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);
 }

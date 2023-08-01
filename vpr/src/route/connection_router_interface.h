@@ -5,6 +5,7 @@
 
 #include "heap_type.h"
 #include "route_tree_fwd.h"
+#include "rr_graph_fwd.h"
 #include "vpr_types.h"
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
@@ -43,35 +44,43 @@ class ConnectionRouterInterface {
     // Reset modified data in rr_node_route_inf based on modified_rr_node_inf.
     virtual void reset_path_costs() = 0;
 
-    // Finds a path from the route tree rooted at rt_root to sink_node
-    //
-    // This is used when you want to allow previous routing of the same net to
-    // serve as valid start locations for the current connection.
-    //
-    // Returns either the last element of the path, or nullptr if no path is
-    // found
-    virtual std::pair<bool, t_heap> timing_driven_route_connection_from_route_tree(
+    /** Finds a path from the route tree rooted at rt_root to sink_node.
+     * This is used when you want to allow previous routing of the same net to
+     * serve as valid start locations for the current connection.
+     *
+     * Returns a tuple of:
+     * bool: path exists? (hard failure, rr graph disconnected)
+     * bool: should retry with full bounding box? (only used in parallel routing)
+     * t_heap: heap element of cheapest path */
+    virtual std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree(
         const RouteTreeNode& rt_root,
-        int sink_node,
+        RRNodeId sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params)
+        const ConnectionParameters& conn_params,
+        bool can_grow_bb)
         = 0;
 
-    // Finds a path from the route tree rooted at rt_root to sink_node for a
-    // high fanout net.
-    //
-    // Unlike timing_driven_route_connection_from_route_tree(), only part of
-    // the route tree which is spatially close to the sink is added to the heap.
-    virtual std::pair<bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
+    /** Finds a path from the route tree rooted at rt_root to sink_node for a
+     * high fanout net.
+     *
+     * Unlike timing_driven_route_connection_from_route_tree(), only part of
+     * the route tree which is spatially close to the sink is added to the heap.
+     *
+     * Returns a tuple of:
+     * bool: path exists? (hard failure, rr graph disconnected)
+     * bool: should retry with full bounding box? (only used in parallel routing)
+     * t_heap: heap element of cheapest path */
+    virtual std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
         const RouteTreeNode& rt_root,
-        int sink_node,
+        RRNodeId sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params)
+        const ConnectionParameters& conn_params,
+        bool can_grow_bb)
         = 0;
 
     // Finds a path from the route tree rooted at rt_root to all sinks
@@ -83,7 +92,7 @@ class ConnectionRouterInterface {
     // Dijkstra's algorithm with a modified exit condition (runs until heap is
     // empty).  When using cost_params.astar_fac = 0, for efficiency the
     // RouterLookahead used should be the NoOpLookahead.
-    virtual std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
+    virtual vtr::vector<RRNodeId, t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
         const RouteTreeNode& rt_root,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
