@@ -299,6 +299,12 @@ class RRGraphView {
     inline const char* node_side_string(RRNodeId node) const {
         return node_storage_.node_side_string(node);
     }
+
+    /** @brief Get the node id of the clock network virtual sink */
+    inline int virtual_clock_network_root_idx() const {
+        return node_storage_.virtual_clock_network_root_idx();
+    }
+
     /** @brief Get the switch id that represents the iedge'th outgoing edge from a specific node
      * TODO: We may need to revisit this API and think about higher level APIs, like ``switch_delay()``
      **/

@@ -3486,7 +3486,7 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 			/* Attribute type is already set */
 			break;
 		case atok_t_node::CLK_RES_TYPE:
-			// out.set_node_clk_res_type(lex_enum_node_clk_res_type(attr.value(), true, report_error), context);
+			out.set_node_clk_res_type(lex_enum_node_clk_res_type(attr.value(), true, report_error), context);
 			break;
 		default: break; /* Not possible. */
 		}
@@ -4108,6 +4108,8 @@ inline void write_rr_nodes(T &in, std::ostream &os, Context &context){
 			os << " capacity=\"" << in.get_node_capacity(child_context) << "\"";
 			if((bool)in.get_node_direction(child_context))
 				os << " direction=\"" << lookup_node_direction[(int)in.get_node_direction(child_context)] << "\"";
+			if((bool)in.get_node_clk_res_type(child_context))
+				os << " clk_res_type=\"" << lookup_node_clk_res_type[(int)in.get_node_clk_res_type(child_context)] << "\"";
 			os << " id=\"" << in.get_node_id(child_context) << "\"";
 			os << " type=\"" << lookup_node_type[(int)in.get_node_type(child_context)] << "\"";
 			os << ">";
