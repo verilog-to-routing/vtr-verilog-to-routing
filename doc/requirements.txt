@@ -2,7 +2,7 @@
 # used by Read The Docs to install python required
 # modules with pip.
 
-sphinx
+sphinx<7
 sphinx_rtd_theme
 
 # Support custom domains
