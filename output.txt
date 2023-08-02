@@ -1,5 +1,0 @@
-vpr_status=exited with return code 1
-vpr_seconds=0
-rundir=/home/bualan/vtr/vtr-verilog-to-routing
-hostname=betzgrp-wintermute.eecg.utoronto.ca
-error=
