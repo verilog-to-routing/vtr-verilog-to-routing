@@ -37,11 +37,35 @@ vtr::vector<RRNodeId, std::vector<short>>& RRGraphBuilder::node_ptc_storage() {
     return node_ptc_nums_;
 }
 
-void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
+static short calculate_node_ptc(t_graph_type graph_type, short node_ptc_base, Direction node_dir, int offset){
+    if(graph_type == t_graph_type::GRAPH_UNIDIR_TILEABLE){
+        if(node_dir != Direction::NONE){ //only chanX and chanY has length more than 1
+            //Incrementing wires should have their ptc number increased by 2, otherwise decremented by 2 in each step
+            int fac = (node_dir == Direction::INC) ? 2 : -2;
+            return node_ptc_base + fac*offset;
+        }
+        else{ //other rr node types (sink,source,IPIN,OPIN)
+            return node_ptc_base;
+        }
+    }
+    else{
+        return node_ptc_base;
+    }
+
+    //unreachable statement
+    return node_ptc_base;
+}
+
+void RRGraphBuilder::add_node_to_all_locs(RRNodeId node, t_graph_type graph_type) {
     t_rr_type node_type = node_storage_.node_type(node);
-    short node_ptc_num = node_storage_.node_ptc_num(node);
+    short node_ptc_base = node_storage_.node_ptc_num(node);
+    Direction node_dir = (node_type == CHANX || node_type == CHANY) ? node_storage_.node_direction(node): Direction::NONE;
+
+    int offset = 0;
     for (int ix = node_storage_.node_xlow(node); ix <= node_storage_.node_xhigh(node); ix++) {
         for (int iy = node_storage_.node_ylow(node); iy <= node_storage_.node_yhigh(node); iy++) {
+            short node_ptc_num = calculate_node_ptc(graph_type, node_ptc_base, node_dir , offset);
+            offset += 1;
             switch (node_type) {
                 case SOURCE:
                 case SINK:

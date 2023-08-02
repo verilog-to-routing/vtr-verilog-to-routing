@@ -1643,7 +1643,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         /* Add the correct node into the vector */
         for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
             auto node = (*rr_nodes_)[inode];
-            rr_graph_builder.add_node_to_all_locs(node.id());
+            rr_graph_builder.add_node_to_all_locs(node.id(), graph_type_);
         }
     }
 

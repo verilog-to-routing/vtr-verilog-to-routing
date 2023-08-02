@@ -17,6 +17,7 @@
 #include "rr_spatial_lookup.h"
 #include "metadata_storage.h"
 #include "rr_edge.h"
+#include "rr_graph_type.h"
 
 class RRGraphBuilder {
     /* -- Constructors -- */
@@ -134,9 +135,12 @@ class RRGraphBuilder {
      *   - valid geometry information: xlow/ylow/xhigh/yhigh
      *   - a valid node type
      *   - a valid node ptc number
-     *   - a valid side (applicable to OPIN and IPIN nodes only
+     *   - a valid side (applicable to OPIN and IPIN nodes only)
+     * 
+     * In tileable rr-graph, ptc number is assigned differently for chanX and chanY. Hence, passing the graph 
+     * type will guide the function to add nodes with correct ptc number in all locations.
      */
-    void add_node_to_all_locs(RRNodeId node);
+    void add_node_to_all_locs(RRNodeId node, t_graph_type graph_type);
 
     /** @brief Clear all the underlying data storage */
     void clear();
