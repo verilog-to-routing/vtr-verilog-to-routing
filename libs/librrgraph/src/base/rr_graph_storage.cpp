@@ -762,7 +762,7 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }
 
-void t_rr_graph_storage::set_virtual_clock_network_root_idx(int virtual_clock_network_root_idx) {
+void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
     virtual_clock_network_root_idx_ = virtual_clock_network_root_idx;
 }
 

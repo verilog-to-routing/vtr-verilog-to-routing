@@ -76,7 +76,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
         }
 
         // Virtual clock network sink is special, ignore.
-        if (int(rr_graph_nodes_view.virtual_clock_network_root_idx()) == int(inode)) {
+        if (int(size_t(rr_graph_nodes_view.virtual_clock_network_root_idx())) == int(inode)) {
             continue;
         }
 

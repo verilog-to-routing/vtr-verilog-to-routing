@@ -244,7 +244,7 @@ class t_rr_graph_storage {
     }
 
     // Get the node id of the virtual sink for the clock network 
-    int virtual_clock_network_root_idx() const {
+    RRNodeId virtual_clock_network_root_idx() const {
         return virtual_clock_network_root_idx_;
     }
 
