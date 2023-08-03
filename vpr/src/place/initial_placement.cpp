@@ -1365,8 +1365,6 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
             find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
             double delta_cost = calculate_noc_cost(noc_delta_c, costs, noc_opts);
 
-                (noc_opts.noc_placement_weighting) * (noc_delta_c.latency * costs.noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth * costs.noc_aggregate_bandwidth_cost_norm);
-
             double prob = starting_prob - i_move*prob_step;
             bool move_accepted = assess_noc_swap(delta_cost, prob);
 
