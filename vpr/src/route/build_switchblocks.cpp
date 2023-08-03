@@ -331,8 +331,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                     continue;
                 }
                 /* now we iterate over all the potential side1->side2 connections */
-                for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                for (e_side from_side : SIDES) {
+                    for (e_side to_side : SIDES) {
                         /* Fill appropriate entry of the sb_conns map with vector specifying the wires
                          * the current wire will connect to */
                         compute_wire_connections(x_coord, y_coord, from_side, to_side,

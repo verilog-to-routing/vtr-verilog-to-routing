@@ -1202,7 +1202,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                      * Deposit all the sides
                      */
                     if (wanted_sides.empty()) {
-                        for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
+                        for (e_side side : SIDES) {
                             wanted_sides.push_back(side);
                         }
                     }
@@ -2419,7 +2419,7 @@ void load_sblock_pattern_lookup(const int i,
     int num_wire_muxes[NUM_SIDES];
 
     /* "Label" the wires around the switch block by connectivity. */
-    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+    for (e_side side : SIDES) {
         /* Assume the channel segment doesn't exist. */
         wire_mux_on_track[side].clear();
         incoming_wire_label[side].clear();
@@ -2493,7 +2493,7 @@ void load_sblock_pattern_lookup(const int i,
                          false, wire_mux_on_track[side], &num_wire_muxes[side], &dummy);
     }
 
-    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+    for (e_side to_side : SIDES) {
         /* Can't do anything if no muxes on this side. */
         if (num_wire_muxes[to_side] == 0)
             continue;
