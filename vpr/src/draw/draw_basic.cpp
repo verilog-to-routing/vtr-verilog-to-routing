@@ -108,8 +108,6 @@ void drawplace(ezgl::renderer* g) {
     ClusterBlockId bnum;
     int num_sub_tiles;
 
-    //TODO: Change when graphics supports 3D FPGAs
-    //VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int total_num_layers = device_ctx.grid.get_num_layers();
 
     g->set_line_width(0);
@@ -138,7 +136,6 @@ void drawplace(ezgl::renderer* g) {
 
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Look at the tile at start of large block */
-                        //TODO: Change when graphics supports 3D
                         bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Fill background for the clb. Do not fill if "show_blk_internal"
                          * is toggled.
@@ -1034,8 +1031,6 @@ void draw_crit_path(ezgl::renderer* g) {
 
     t_draw_state* draw_state = get_draw_state_vars();
     auto& timing_ctx = g_vpr_ctx.timing();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& atom_ctx = g_vpr_ctx.atom();
 
     if (draw_state->show_crit_path == DRAW_NO_CRIT_PATH) {
         return;
@@ -1070,17 +1065,8 @@ void draw_crit_path(ezgl::renderer* g) {
 
             float delay = arr_time - prev_arr_time;
 
-            AtomPinId atom_src_pin = atom_ctx.lookup.tnode_atom_pin(prev_node);
-            AtomPinId atom_sink_pin = atom_ctx.lookup.tnode_atom_pin(node);
-
-            AtomBlockId atom_src_block = atom_ctx.nlist.pin_block(atom_src_pin);
-            AtomBlockId atom_sink_block = atom_ctx.nlist.pin_block(atom_sink_pin);
-
-            ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
-            ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
-
-            int src_block_layer = place_ctx.block_locs[clb_src_block].loc.layer;
-            int sink_block_layer = place_ctx.block_locs[clb_sink_block].loc.layer;
+            int src_block_layer = get_timing_path_node_layer_num(node);
+            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
 
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES
                 || draw_state->show_crit_path
@@ -1120,6 +1106,16 @@ void draw_crit_path(ezgl::renderer* g) {
         prev_node = node;
         prev_arr_time = arr_time;
     }
+}
+
+int get_timing_path_node_layer_num(tatum::NodeId node){
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
+    AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
+    ClusterBlockId clb_block = atom_ctx.lookup.atom_clb(atom_block);
+    int block_layer = place_ctx.block_locs[clb_block].loc.layer;
 }
 
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer){
