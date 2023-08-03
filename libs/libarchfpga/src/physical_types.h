@@ -175,10 +175,17 @@ enum e_side : unsigned char {
     RIGHT = 1,
     BOTTOM = 2,
     LEFT = 3,
-    NUM_SIDES
+    NUM_SIDES = 4,
+    ABOVE = 5,
+    UNDER = 6,
+    NUM_OF_TOTAL_SIDES,
 };
+
 constexpr std::array<e_side, NUM_SIDES> SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                    //Set of all side orientations
 constexpr std::array<const char*, NUM_SIDES> SIDE_STRING = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+
+constexpr std::array<e_side, NUM_OF_TOTAL_SIDES> TOTAL_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}}; //Set of all side orientations including different layers
+constexpr std::array<const char*, NUM_OF_TOTAL_SIDES> TOTAL_SIDE_STRING = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
 
 /* pin location distributions */
 enum e_pin_location_distr {
