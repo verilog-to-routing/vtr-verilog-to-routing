@@ -591,7 +591,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     golden_traffic_flow_latency_costs.resize(noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows());
 
     // stores the change in bandwidth and latency costs from the test function
-    NocCostTerms test_noc_costs {0.0, 0.0, 0.0};
+    NocCostTerms test_noc_costs{0.0, 0.0, 0.0};
 
     // we need to route all the traffic flows based on their initial positions
     for (int traffic_flow_number = 0; traffic_flow_number < number_of_created_traffic_flows; traffic_flow_number++) {
@@ -765,7 +765,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
             }
         }
 
-        NocCostTerms delta_cost {0.0, 0.0, 0.0};
+        NocCostTerms delta_cost{0.0, 0.0, 0.0};
 
         // call the test function
         find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
@@ -895,7 +895,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
     }
 
-    NocCostTerms delta_cost {0.0, 0.0, 0.0};
+    NocCostTerms delta_cost{0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
@@ -986,7 +986,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     }
 
     // reset the delta costs
-    delta_cost = NocCostTerms {0.0, 0.0, 0.0};
+    delta_cost = NocCostTerms{0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
@@ -1049,7 +1049,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // we don't have to calculate the costs or update bandwidths because the swapped router blocks do not have any associated traffic flows //
 
     // reset the delta costs
-    delta_cost = NocCostTerms {0.0, 0.0, 0.0};
+    delta_cost = NocCostTerms{0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);

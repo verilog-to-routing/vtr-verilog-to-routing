@@ -8,11 +8,10 @@ static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, p
 /* Keeps track of traffic flows that have been updated at each attempted placement move*/
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 
-static vtr::vector<NocLinkId , double> link_congestion_costs, proposed_link_congestion_costs;
+static vtr::vector<NocLinkId, double> link_congestion_costs, proposed_link_congestion_costs;
 
 static std::unordered_set<NocLinkId> affected_noc_links;
 /*********************************************************** *****************************/
-
 
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links, std::vector<NocLinkId>& curr_links);
 
@@ -130,7 +129,7 @@ void commit_noc_costs() {
     }
 
     // Iterate over all the NoC links whose bandwidth utilization was affected by the proposed move
-    for(auto link_id : affected_noc_links) {
+    for (auto link_id : affected_noc_links) {
         // get the affected link
         const auto& link = noc_ctx.noc_model.get_single_noc_link(link_id);
 
@@ -403,7 +402,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     vtr::vector<NocLinkId, NocLink> temp_noc_link_storage = noc_model.get_noc_links();
 
     // reset bandwidth utilization for all links
-    std::for_each(temp_noc_link_storage.begin(), temp_noc_link_storage.end(), [](NocLink& link) {link.set_bandwidth_usage(0.0); });
+    std::for_each(temp_noc_link_storage.begin(), temp_noc_link_storage.end(), [](NocLink& link) { link.set_bandwidth_usage(0.0); });
 
     // need to create a temporary noc routing algorithm
     std::unique_ptr<NocRouting> temp_noc_routing_algorithm = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_opts.noc_routing_algorithm);
@@ -447,7 +446,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     }
 
     // Iterate over all NoC links and accumulate congestion cost
-    for(const auto& link : temp_noc_link_storage) {
+    for (const auto& link : temp_noc_link_storage) {
         cost_check.congestion += calculate_link_congestion_cost(link, noc_opts);
     }
 
@@ -525,10 +524,7 @@ double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& 
      * 2) Traffic flow aggregate bandwidth costs
      * 3) Link congestion costs
      */
-    cost = noc_opts.noc_placement_weighting * (
-               cost_terms.latency * norm_factors.noc_latency_cost_norm +
-               cost_terms.aggregate_bandwidth * norm_factors.noc_aggregate_bandwidth_cost_norm +
-               cost_terms.congestion * norm_factors.noc_congestion_cost_norm);
+    cost = noc_opts.noc_placement_weighting * (cost_terms.latency * norm_factors.noc_latency_cost_norm + cost_terms.aggregate_bandwidth * norm_factors.noc_aggregate_bandwidth_cost_norm + cost_terms.congestion * norm_factors.noc_congestion_cost_norm);
 
     return cost;
 }
@@ -575,11 +571,11 @@ int get_number_of_congested_noc_links(void) {
 
     // Iterate over all NoC links and count the congested ones
     for (const auto& link : noc_links) {
-      double congested_bw_ratio = link.get_congested_bandwidth_ratio();
+        double congested_bw_ratio = link.get_congested_bandwidth_ratio();
 
-      if (congested_bw_ratio > MIN_EXPECTED_NOC_CONGESTION_COST) {
+        if (congested_bw_ratio > MIN_EXPECTED_NOC_CONGESTION_COST) {
             num_congested_links++;
-      }
+        }
     }
 
     return num_congested_links;
@@ -593,8 +589,8 @@ double get_total_congestion_bandwidth_ratio(void) {
 
     // Iterate over all NoC links and count the congested ones
     for (const auto& link : noc_links) {
-      double congested_bw_ratio = link.get_congested_bandwidth_ratio();
-      accum_congestion_ratio += congested_bw_ratio;
+        double congested_bw_ratio = link.get_congested_bandwidth_ratio();
+        accum_congestion_ratio += congested_bw_ratio;
     }
 
     return accum_congestion_ratio;
@@ -608,8 +604,8 @@ std::vector<NocLink> get_top_n_congested_links(int n) {
     // stable_sort is used to make sure the order is the same across different machines/compilers
     // Note that when the vector is sorted, indexing it with NocLinkId does return the corresponding link
     std::stable_sort(noc_links.begin(), noc_links.end(), [](const NocLink& l1, const NocLink& l2) {
-                         return l1.get_congested_bandwidth_ratio() > l2.get_congested_bandwidth_ratio();
-                     });
+        return l1.get_congested_bandwidth_ratio() > l2.get_congested_bandwidth_ratio();
+    });
 
     int pick_n = std::min((int)noc_links.size(), n);
 
@@ -691,7 +687,6 @@ static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from,
 }
 
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
-
     // block ID for the randomly selected router cluster
     ClusterBlockId b_from;
     // current location of the randomly selected router cluster
@@ -726,7 +721,6 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 }
 
 e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_affected) {
-
     auto& noc_ctx = g_vpr_ctx.noc();
     auto& place_ctx = g_vpr_ctx.placement();
     const auto& grid = g_vpr_ctx.device().grid;
@@ -782,7 +776,6 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
         }
     }
 
-
     t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
 
     if (acc_weight > 0.0) {
@@ -801,14 +794,10 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-
     const auto& physical_type = grid.get_physical_type({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
 
     // If the calculated centroid does not have a compatible type, find a compatible location nearby
     if (!is_tile_compatible(physical_type, cluster_from_type)) {
-
-
-
         //Determine centroid location in the compressed space of the current block
         auto compressed_centroid_loc = get_compressed_loc_approx(compressed_noc_grid,
                                                                  {centroid_loc.x, centroid_loc.y, 0, centroid_loc.layer},
@@ -841,7 +830,7 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
         bool legal = find_compatible_compressed_loc_in_range(cluster_from_type,
                                                              delta_cx,
                                                              compressed_from_loc[0],
-                                                            {min_cx, max_cx, min_cy, max_cy},
+                                                             {min_cx, max_cx, min_cy, max_cy},
                                                              compressed_to_loc,
                                                              false,
                                                              compressed_from_loc[0].layer_num,

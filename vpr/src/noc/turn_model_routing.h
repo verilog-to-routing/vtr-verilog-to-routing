@@ -14,11 +14,11 @@ class TurnModelRouting : public NocRouting {
      * choose to travel.
      */
     enum class Direction {
-        LEFT,        /*!< Moving towards the negative X-axis*/
-        RIGHT,       /*!< Moving towards the positive X-axis*/
-        UP,          /*!< Moving towards the positive Y-axis*/
-        DOWN,        /*!< Moving towards the negative Y-axis*/
-        INVALID      /*!< Invalid direction*/
+        LEFT,   /*!< Moving towards the negative X-axis*/
+        RIGHT,  /*!< Moving towards the positive X-axis*/
+        UP,     /*!< Moving towards the positive Y-axis*/
+        DOWN,   /*!< Moving towards the negative Y-axis*/
+        INVALID /*!< Invalid direction*/
     };
 
     NocLinkId move_to_next_router(NocRouterId& curr_router_id,
@@ -30,24 +30,26 @@ class TurnModelRouting : public NocRouting {
     size_t get_hash_value(NocRouterId src_router_id, NocRouterId dst_router_id, NocRouterId curr_router_id, NocTrafficFlowId traffic_flow_id);
 
   private:
-    template <class T>
+    template<class T>
     inline void hash_combine(std::size_t& seed, T const& v);
 
     virtual const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId curr_router_id,
                                                                                  NocRouterId dst_router_id,
-                                                                                 const NocStorage& noc_model) = 0;
+                                                                                 const NocStorage& noc_model)
+        = 0;
 
     virtual TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                                   NocRouterId src_router_id,
-                                                                   NocRouterId dst_router_id,
-                                                                   NocRouterId curr_router_id,
-                                                                   NocTrafficFlowId traffic_flow_id,
-                                                                   const NocStorage& noc_model) = 0;
+                                                              NocRouterId src_router_id,
+                                                              NocRouterId dst_router_id,
+                                                              NocRouterId curr_router_id,
+                                                              NocTrafficFlowId traffic_flow_id,
+                                                              const NocStorage& noc_model)
+        = 0;
 };
 
 template<class T>
 void TurnModelRouting::hash_combine(std::size_t& seed, const T& v) {
-    seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+    seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
 #endif //VTR_TURN_MODEL_ROUTING_H

@@ -1131,7 +1131,6 @@ bool place_one_block(const ClusterBlockId& blk_id,
 }
 
 static bool assess_noc_swap(double delta_cost, double prob) {
-
     if (delta_cost <= 0.0) {
         return true;
     }
@@ -1142,7 +1141,7 @@ static bool assess_noc_swap(double delta_cost, double prob) {
 
     float random_num = vtr::frand();
     if (random_num < prob) {
-        return  true;
+        return true;
     } else {
         return false;
     }
@@ -1238,14 +1237,12 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     std::vector<ClusterBlockId> unfixed_routers;
 
     for (auto router_blk_id : router_blk_ids) {
-
         // The block is fixed and was placed in mark_fixed_blocks()
         if (is_block_placed((router_blk_id))) {
             continue;
         }
 
         if (is_cluster_constrained(router_blk_id)) {
-
             auto block_type = cluster_ctx.clb_nlist.block_type(router_blk_id);
             const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[router_blk_id];
 
@@ -1321,7 +1318,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 break;
             }
         }
-    }   // end for of random router placement
+    } // end for of random router placement
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();
@@ -1354,18 +1351,17 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
         e_create_move create_move_outcome = e_create_move::ABORT;
         clear_move_blocks(blocks_affected);
         // Shrink the range limit over time
-        float r_lim_decayed = 1.0f + (N_MOVES-i_move) * (max_r_lim/N_MOVES);
+        float r_lim_decayed = 1.0f + (N_MOVES - i_move) * (max_r_lim / N_MOVES);
         create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
 
         if (create_move_outcome != e_create_move::ABORT) {
-
             apply_move_blocks(blocks_affected);
 
-            NocCostTerms noc_delta_c {0.0, 0.0, 0.0};
+            NocCostTerms noc_delta_c{0.0, 0.0, 0.0};
             find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
             double delta_cost = calculate_noc_cost(noc_delta_c, costs, noc_opts);
 
-            double prob = starting_prob - i_move*prob_step;
+            double prob = starting_prob - i_move * prob_step;
             bool move_accepted = assess_noc_swap(delta_cost, prob);
 
             if (move_accepted) {
@@ -1378,7 +1374,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
                     checkpoint.save_checkpoint(costs.cost);
                 }
-            } else {    // The proposed move is rejected
+            } else { // The proposed move is rejected
                 revert_move_blocks(blocks_affected);
                 revert_noc_traffic_flow_routes(blocks_affected);
             }
@@ -1388,9 +1384,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     if (checkpoint.get_cost() < costs.cost) {
         checkpoint.restore_checkpoint(noc_opts, costs);
     }
-
 }
-
 
 void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, const t_noc_opts& noc_opts) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");

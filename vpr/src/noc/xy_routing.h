@@ -84,7 +84,6 @@
 
 #include "turn_model_routing.h"
 
-
 class XYRouting : public TurnModelRouting {
   public:
     ~XYRouting() override;
@@ -112,7 +111,7 @@ class XYRouting : public TurnModelRouting {
      * @param noc_model A model of the NoC. This is used to traverse the
      * NoC and find a route between the two routers.
      */
-//    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
+    //    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
 
     // internally used helper functions
   private:
@@ -140,7 +139,7 @@ class XYRouting : public TurnModelRouting {
      * that is currently being visited on the FPGA
      * @return RouteDirection The direction to travel next
      */
-//    RouteDirection get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position);
+    //    RouteDirection get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position);
 
     /**
      * @brief Given the direction to travel next, this function determines
@@ -166,11 +165,11 @@ class XYRouting : public TurnModelRouting {
      * @return true A suitable link was found that we can traverse next
      * @return false No suitable link was found that could be traversed
      */
-//    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
+    //    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
 
   private:
-    const std::vector<TurnModelRouting::Direction> x_axis_directions {TurnModelRouting::Direction::LEFT, TurnModelRouting::Direction::RIGHT};
-    const std::vector<TurnModelRouting::Direction> y_axis_directions {TurnModelRouting::Direction::UP, TurnModelRouting::Direction::DOWN};
+    const std::vector<TurnModelRouting::Direction> x_axis_directions{TurnModelRouting::Direction::LEFT, TurnModelRouting::Direction::RIGHT};
+    const std::vector<TurnModelRouting::Direction> y_axis_directions{TurnModelRouting::Direction::UP, TurnModelRouting::Direction::DOWN};
 };
 
 #endif

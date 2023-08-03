@@ -2,9 +2,9 @@
 #include "noc_place_checkpoint.h"
 #include "noc_place_utils.h"
 
-RouterPlacementCheckpoint::RouterPlacementCheckpoint() :
-    valid_(false),
-    cost_(std::numeric_limits<double>::infinity()) {
+RouterPlacementCheckpoint::RouterPlacementCheckpoint()
+    : valid_(false)
+    , cost_(std::numeric_limits<double>::infinity()) {
     const auto& noc_ctx = g_vpr_ctx.noc();
 
     // Get all router clusters in the net-list
@@ -41,7 +41,6 @@ void RouterPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t
 
     // Clear all physical routers in placement
     for (const auto& phy_router : noc_phy_routers) {
-
         auto phy_loc = phy_router.get_router_physical_location();
 
         place_ctx.grid_blocks.set_usage(phy_loc, 0);
@@ -59,7 +58,6 @@ void RouterPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t
         }
     }
 
-
     // Place routers based on router_locations_
     for (const auto& router_loc : router_locations_) {
         ClusterBlockId router_blk_id = router_loc.first;
@@ -72,7 +70,7 @@ void RouterPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t
     reinitialize_noc_routing(noc_opts, costs);
 }
 
-bool RouterPlacementCheckpoint::is_valid() const{
+bool RouterPlacementCheckpoint::is_valid() const {
     return valid_;
 }
 

@@ -19,7 +19,7 @@ const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(
     /* In XY-routing, we first move along the X-axis until
      * the current router has the same x-coordinate as the
      * destination. Then we start moving along the y-axis.
-    */
+     */
     if (curr_router_pos.x != dst_router_pos.x) {
         return x_axis_directions;
     } else {

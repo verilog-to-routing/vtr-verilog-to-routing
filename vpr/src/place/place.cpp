@@ -683,7 +683,8 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
             costs.bb_cost, costs.timing_cost);
     if (noc_opts.noc) {
-        VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, "
+        VTR_LOG(
+            "NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, "
             "noc_latency_cost: %g, "
             "noc_latency_constraints_cost: %d, "
             "noc_congestion_cost: %g, "
@@ -1058,7 +1059,8 @@ void try_place(const Netlist<>& net_list,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
 
-        VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, "
+        VTR_LOG(
+            "NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, "
             "noc_latency_cost: %g, "
             "noc_latency_constraints_cost: %d, "
             "noc_congestion_cost: %g, "
@@ -1601,8 +1603,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             delta_c = bb_delta_c * costs->bb_cost_norm;
         }
 
-
-        NocCostTerms noc_delta_c {0.0, 0.0, 0.0}; // change in NoC cost
+        NocCostTerms noc_delta_c{0.0, 0.0, 0.0}; // change in NoC cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
             find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);

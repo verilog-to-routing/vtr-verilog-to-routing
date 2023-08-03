@@ -86,7 +86,6 @@ class NocRouter {
      */
     int get_router_layer_position(void) const;
 
-
     /**
      * @brief Gets the physical location where the the physical router is located
      * @return t_physical_tile_loc that contains x-y coordinates and the layer number

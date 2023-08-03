@@ -48,12 +48,12 @@ struct NocCostTerms {
     explicit NocCostTerms(const t_placer_costs& costs)
         : aggregate_bandwidth(costs.noc_aggregate_bandwidth_cost)
         , latency(costs.noc_latency_cost)
-        , congestion(costs.noc_congestion_cost) { }
+        , congestion(costs.noc_congestion_cost) {}
 
     NocCostTerms(double agg_bw, double lat, double congest)
         : aggregate_bandwidth(agg_bw)
         , latency(lat)
-        , congestion(congest) { }
+        , congestion(congest) {}
 
     double aggregate_bandwidth = 0.0;
     double latency = 0.0;
