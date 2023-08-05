@@ -1,4 +1,4 @@
-/******** Function prototypes for functions in route_common.c that ***********
+/******** Function prototypes for functions in route_common.cpp that ***********
  ******** are used outside the router modules.                     ***********/
 #include "vpr_types.h"
 #include <memory>
@@ -32,9 +32,9 @@ bool try_route(const Netlist<>& net_list,
 
 bool feasible_routing();
 
-std::vector<int> collect_congested_rr_nodes();
+std::vector<RRNodeId> collect_congested_rr_nodes();
 
-std::vector<std::set<ClusterNetId>> collect_rr_node_nets();
+vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets();
 
 t_clb_opins_used alloc_route_structs();
 

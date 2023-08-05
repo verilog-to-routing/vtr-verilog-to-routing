@@ -5,14 +5,12 @@
 
 // incremental rerouting resources class definitions
 Connection_based_routing_resources::Connection_based_routing_resources(const Netlist<>& net_list,
-                                                                       const vtr::vector<ParentNetId, std::vector<int>>& net_terminals,
+                                                                       const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_terminals,
                                                                        bool is_flat)
     : net_list_(net_list)
     , net_terminals_(net_terminals)
     , is_flat_(is_flat)
-    , current_inet(NO_PREVIOUS)
-    , // not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
-    last_stable_critical_path_delay{0.0f}
+    , last_stable_critical_path_delay{0.0f}
     , critical_path_growth_tolerance{1.001f}
     , connection_criticality_tolerance{0.9f}
     , connection_delay_optimality_tolerance{1.1f} {
@@ -31,6 +29,8 @@ Connection_based_routing_resources::Connection_based_routing_resources(const Net
     reached_rt_sinks.reserve(max_sink_pins_per_net);
 
     size_t routing_num_nets = net_list_.nets().size();
+    remaining_targets.resize(routing_num_nets);
+    reached_rt_sinks.resize(routing_num_nets);
     lower_bound_connection_delay.resize(routing_num_nets);
     forcible_reroute_connection_flag.resize(routing_num_nets);
 
@@ -125,15 +125,13 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
     return !any_connection_rerouted;
 }
 
-void Connection_based_routing_resources::clear_force_reroute_for_connection(int rr_sink_node) {
-    forcible_reroute_connection_flag[current_inet][rr_sink_node] = false;
+void Connection_based_routing_resources::clear_force_reroute_for_connection(ParentNetId net_id, RRNodeId rr_sink_node) {
+    forcible_reroute_connection_flag[net_id][rr_sink_node] = false;
     profiling::perform_forced_reroute();
 }
 
-void Connection_based_routing_resources::clear_force_reroute_for_net() {
-    VTR_ASSERT(current_inet != ParentNetId::INVALID());
-
-    auto& net_flags = forcible_reroute_connection_flag[current_inet];
+void Connection_based_routing_resources::clear_force_reroute_for_net(ParentNetId net_id) {
+    auto& net_flags = forcible_reroute_connection_flag[net_id];
     for (auto& force_reroute_flag : net_flags) {
         if (force_reroute_flag.second) {
             force_reroute_flag.second = false;

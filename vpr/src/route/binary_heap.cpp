@@ -1,4 +1,5 @@
 #include "binary_heap.h"
+#include "rr_graph_fwd.h"
 #include "vtr_log.h"
 
 static size_t parent(size_t i) { return i >> 1; }
@@ -81,7 +82,7 @@ t_heap* BinaryHeap::get_heap_head() {
         }
         sift_up(hole, heap_[heap_tail_]);
 
-    } while (cheapest->index == OPEN); /* Get another one if invalid entry. */
+    } while (!cheapest->index.is_valid()); /* Get another one if invalid entry. */
 
     return (cheapest);
 }
@@ -167,26 +168,6 @@ bool BinaryHeap::is_valid() const {
     return true;
 }
 
-void BinaryHeap::invalidate_heap_entries(int sink_node, int ipin_node) {
-    /* marks all the heap entries consisting of sink_node, where it was reached
-     * via ipin_node, as invalid (open).  used only by the breadth_first router
-     * and even then only in rare circumstances.
-     *
-     * This function enables forcing the breadth-first router to route to a
-     * sink more than once, using multiple ipins, which is useful in some
-     * architectures.
-     * */
-
-    for (size_t i = 1; i < heap_tail_; i++) {
-        if (heap_[i]->index == sink_node) {
-            if (heap_[i]->prev_node() == ipin_node) {
-                heap_[i]->index = OPEN; /* Invalid. */
-                break;
-            }
-        }
-    }
-}
-
 void BinaryHeap::free_all_memory() {
     if (!heap_.empty()) {
         empty_heap();
@@ -220,16 +201,18 @@ void BinaryHeap::prune_heap() {
             continue;
         }
 
-        if (heap_[i]->index == OPEN) {
+        if (!heap_[i]->index.is_valid()) {
             free(heap_[i]);
             heap_[i] = nullptr;
             continue;
         }
 
-        VTR_ASSERT(static_cast<size_t>(heap_[i]->index) < max_index_);
+        auto idx = size_t(heap_[i]->index);
 
-        if (best_heap_item[heap_[i]->index] == nullptr || best_heap_item[heap_[i]->index]->cost > heap_[i]->cost) {
-            best_heap_item[heap_[i]->index] = heap_[i];
+        VTR_ASSERT(idx < max_index_);
+
+        if (best_heap_item[idx] == nullptr || best_heap_item[idx]->cost > heap_[i]->cost) {
+            best_heap_item[idx] = heap_[i];
         }
     }
 
@@ -239,7 +222,9 @@ void BinaryHeap::prune_heap() {
             continue;
         }
 
-        if (best_heap_item[heap_[i]->index] != heap_[i]) {
+        auto idx = size_t(heap_[i]->index);
+
+        if (best_heap_item[idx] != heap_[i]) {
             free(heap_[i]);
             heap_[i] = nullptr;
         }
