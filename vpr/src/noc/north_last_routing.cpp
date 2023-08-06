@@ -84,9 +84,9 @@ TurnModelRouting::Direction NorthLastRouting::select_next_direction(const std::v
     int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
 
     // compute the probability of going to the down (south) direction
-    uint32_t east_probability = delta_y * (max_uint32_t_val / (delta_x + delta_y));
+    uint32_t south_probability = delta_y * (max_uint32_t_val / (delta_x + delta_y));
 
-    if (hash_val < east_probability) { // sometimes turn south
+    if (hash_val < south_probability) { // sometimes turn south
         return TurnModelRouting::Direction::DOWN;
     }
     else { // if turning south was rejected, take the other option (east/west)
