@@ -1,4 +1,3 @@
-
 #ifndef VTR_NORTH_LAST_ROUTING_H
 #define VTR_NORTH_LAST_ROUTING_H
 

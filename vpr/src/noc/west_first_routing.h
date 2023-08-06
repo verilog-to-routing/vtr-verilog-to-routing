@@ -1,5 +1,5 @@
-#ifndef VTR_WESTFIRST_ROUTING_H
-#define VTR_WESTFIRST_ROUTING_H
+#ifndef VTR_WEST_FIRST_ROUTING_H
+#define VTR_WEST_FIRST_ROUTING_H
 
 #include "turn_model_routing.h"
 
@@ -20,4 +20,4 @@ class WestFirstRouting : public TurnModelRouting {
                                                       const NocStorage& noc_model) override;
 };
 
-#endif //VTR_WESTFIRST_ROUTING_H
+#endif //VTR_WEST_FIRST_ROUTING_H
