@@ -23,6 +23,7 @@
 #include "noc_routing.h"
 #include "xy_routing.h"
 #include "bfs_routing.h"
+#include "westfirst_routing.h"
 
 class NocRoutingAlgorithmCreator {
   public:

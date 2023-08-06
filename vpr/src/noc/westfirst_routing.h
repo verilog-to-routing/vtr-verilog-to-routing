@@ -4,6 +4,9 @@
 #include "turn_model_routing.h"
 
 class WestFirstRouting : public TurnModelRouting {
+  public:
+    ~WestFirstRouting() override;
+
   private:
     const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId curr_router_id,
                                                                          NocRouterId dst_router_id,
@@ -15,11 +18,6 @@ class WestFirstRouting : public TurnModelRouting {
                                                       NocRouterId curr_router_id,
                                                       NocTrafficFlowId traffic_flow_id,
                                                       const NocStorage& noc_model) override;
-
-  private:
-    const std::vector<TurnModelRouting::Direction> other_directions{TurnModelRouting::Direction::UP,
-                                                                    TurnModelRouting::Direction::DOWN,
-                                                                    TurnModelRouting::Direction::RIGHT};
 };
 
 #endif //VTR_WESTFIRST_ROUTING_H

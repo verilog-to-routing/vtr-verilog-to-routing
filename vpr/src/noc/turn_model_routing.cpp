@@ -1,5 +1,7 @@
 #include "turn_model_routing.h"
 
+TurnModelRouting::~TurnModelRouting() = default;
+
 size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id, NocRouterId dst_router_id, NocRouterId curr_router_id, NocTrafficFlowId traffic_flow_id) {
     std::size_t seed = 0;
 
