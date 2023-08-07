@@ -3,7 +3,7 @@
 
 #include "turn_model_routing.h"
 
-class NegativeFirstRouting : TurnModelRouting {
+class NegativeFirstRouting : public TurnModelRouting {
   public:
     ~NegativeFirstRouting() override;
 
