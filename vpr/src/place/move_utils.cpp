@@ -1236,6 +1236,7 @@ int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc)
 
     // TODO: Compatible layer vector should be shuffled first, and then iterated through
     int free_layer = loc.layer;
+    VTR_ASSERT(loc.layer != OPEN);
     if (device_ctx.grid.get_num_layers() > 1) {
         const auto& compatible_layers = place_ctx.compressed_block_grids[logical_block->index].get_layer_nums();
         if (compatible_layers.size() > 1) {
