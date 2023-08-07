@@ -9,7 +9,6 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(float default_in_util, float defa
 
 t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& specs)
     : t_ext_pin_util_targets(1., 1.) {
-
     if (specs.size() == 1 && specs[0] == "auto") {
         //No user-specified pin utilizations, infer them automatically.
         //
@@ -168,7 +167,6 @@ t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(int threshold)
 
 t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(const std::vector<std::string>& specs)
     : t_pack_high_fanout_thresholds(128) {
-
     if (specs.size() == 1 && specs[0] == "auto") {
         //No user-specified high fanout thresholds, infer them automatically.
         //

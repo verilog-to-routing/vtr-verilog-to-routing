@@ -16,7 +16,7 @@ class RouterPlacementCheckpoint {
     RouterPlacementCheckpoint& operator=(const RouterPlacementCheckpoint& other) = delete;
 
     void save_checkpoint(double cost);
-    void restore_checkpoint(const t_noc_opts& noc_opts,  t_placer_costs& costs);
+    void restore_checkpoint(const t_noc_opts& noc_opts, t_placer_costs& costs);
     bool is_valid() const;
     double get_cost() const;
 };

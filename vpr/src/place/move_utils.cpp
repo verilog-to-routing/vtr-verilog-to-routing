@@ -1067,8 +1067,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
             VTR_ASSERT(to_loc.y <= search_range.ymax);
 
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
-                continue; //Same from/to location -- try again for new y-position
-            } else if (check_empty) {   // Check if the location has at least one empty sub-tile
+                continue;             //Same from/to location -- try again for new y-position
+            } else if (check_empty) { // Check if the location has at least one empty sub-tile
                 t_pl_loc to_uncompressed_loc;
                 compressed_grid_to_loc(type, to_loc, to_uncompressed_loc);
                 const t_physical_tile_loc to_phy_uncompressed_loc{to_uncompressed_loc.x, to_uncompressed_loc.y, to_uncompressed_loc.layer};

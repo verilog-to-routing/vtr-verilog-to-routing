@@ -282,7 +282,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
             int high_fanout_threshold = helper_ctx.high_fanout_thresholds.get_threshold(cluster_ctx.clb_nlist.block_type(clb_index)->name);
             update_cluster_stats(istart, clb_index,
-                                 is_clock, //Set of clock nets
+                                 is_clock,  //Set of clock nets
                                  is_global, //Set of global nets (currently all clocks)
                                  packer_opts.global_clocks,
                                  packer_opts.alpha, packer_opts.beta,

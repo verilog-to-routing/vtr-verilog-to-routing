@@ -89,7 +89,6 @@ void NocTrafficFlows::finished_noc_traffic_flows_setup(void) {
     int number_of_traffic_flows = noc_traffic_flows.size();
     traffic_flow_routes.resize(number_of_traffic_flows);
 
-
     const int num_flows = get_number_of_traffic_flows();
     double bandwidth_sum = 0.0;
     double inverse_latency_sum = 0.0;

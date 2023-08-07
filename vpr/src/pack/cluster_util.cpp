@@ -1594,7 +1594,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       attraction_groups);
 
     update_cluster_stats(next_molecule, clb_index,
-                         is_clock, //Set of all clocks
+                         is_clock,  //Set of all clocks
                          is_global, //Set of all global signals (currently clocks)
                          packer_opts.global_clocks, packer_opts.alpha, packer_opts.beta, packer_opts.timing_driven,
                          packer_opts.connection_driven,
