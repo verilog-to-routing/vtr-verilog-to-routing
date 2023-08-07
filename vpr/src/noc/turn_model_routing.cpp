@@ -202,3 +202,39 @@ uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t
     h ^= h >> 16;
     return h;
 }
+
+TurnModelRouting::Direction TurnModelRouting::select_vertical_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+    // iterate over the given iterations and return the first vertical one
+    for (const auto& direction : directions) {
+        if (direction == TurnModelRouting::Direction::DOWN || direction == TurnModelRouting::Direction::UP) {
+            return direction;
+        }
+    }
+
+    // if there was not any vertical directions, return INVALID
+    return TurnModelRouting::Direction::INVALID;
+}
+
+TurnModelRouting::Direction TurnModelRouting::select_horizontal_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+    // iterate over the given iterations and return the first horizontal one
+    for (const auto& direction : directions) {
+        if (direction == TurnModelRouting::Direction::RIGHT || direction == TurnModelRouting::Direction::LEFT) {
+            return direction;
+        }
+    }
+
+    // if there was not any horizontal directions, return INVALID
+    return TurnModelRouting::Direction::INVALID;
+}
+
+TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const std::vector<TurnModelRouting::Direction>& directions, TurnModelRouting::Direction other_than) {
+    // Iterate over all given directions and return the first one which is not "other_than"
+    for (const auto& direction : directions) {
+        if (direction != other_than) {
+            return direction;
+        }
+    }
+
+    // if there was not any direction different from "other_than", return INVALID
+    return TurnModelRouting::Direction::INVALID;
+}

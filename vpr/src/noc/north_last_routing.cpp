@@ -87,16 +87,13 @@ TurnModelRouting::Direction NorthLastRouting::select_next_direction(const std::v
     // compute the probability of going to the down (south) direction
     uint32_t south_probability = delta_y * (max_uint32_t_val / (delta_x + delta_y));
 
+    TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
+
     if (hash_val < south_probability) { // sometimes turn south
-        return TurnModelRouting::Direction::DOWN;
-    }
-    else { // if turning south was rejected, take the other option (east/west)
-        for (const auto& direction : legal_directions) {
-            if (direction != TurnModelRouting::Direction::DOWN) {
-                return direction;
-            }
-        }
+        selected_direction = TurnModelRouting::Direction::DOWN;
+    } else { // if turning south was rejected, take the other option (east/west)
+        selected_direction = select_direction_other_than(legal_directions, TurnModelRouting::Direction::DOWN);
     }
 
-    return TurnModelRouting::Direction::INVALID;
+    return selected_direction;
 }

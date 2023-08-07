@@ -84,16 +84,13 @@ TurnModelRouting::Direction WestFirstRouting::select_next_direction(const std::v
     // compute the probability of going to the right direction
     uint32_t east_probability = delta_x * (max_uint32_t_val / (delta_x + delta_y));
 
+    TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
+
     if (hash_val < east_probability) { // sometimes turn right
-        return TurnModelRouting::Direction::RIGHT;
-    }
-    else { // if turning right was rejected, take the other option (north or south)
-        for (const auto& direction : legal_directions) {
-            if (direction != TurnModelRouting::Direction::RIGHT) {
-                return direction;
-            }
-        }
+        selected_direction = TurnModelRouting::Direction::RIGHT;
+    } else { // if turning right was rejected, take the other option (north or south)
+        selected_direction = select_direction_other_than(legal_directions, TurnModelRouting::Direction::RIGHT);
     }
 
-    return TurnModelRouting::Direction::INVALID;
+    return selected_direction;
 }

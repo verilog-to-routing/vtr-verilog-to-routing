@@ -98,19 +98,13 @@ TurnModelRouting::Direction NegativeFirstRouting::select_next_direction(const st
     // compute the probability of going to north/south direction
     uint32_t ns_probability = delta_y * (max_uint32_t_val / (delta_x + delta_y));
 
+    TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
+
     if (hash_val < ns_probability) {
-        for (const auto& direction : legal_directions) {
-            if (direction == TurnModelRouting::Direction::DOWN || direction == TurnModelRouting::Direction::UP) {
-                return direction;
-            }
-        }
+        selected_direction = select_vertical_direction(legal_directions);
     } else {
-        for (const auto& direction : legal_directions) {
-            if (direction == TurnModelRouting::Direction::RIGHT || direction == TurnModelRouting::Direction::LEFT) {
-                return direction;
-            }
-        }
+        selected_direction = select_horizontal_direction(legal_directions);
     }
 
-    return TurnModelRouting::Direction::INVALID;
+    return selected_direction;
 }
