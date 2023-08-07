@@ -2,7 +2,10 @@
 
 TurnModelRouting::~TurnModelRouting() = default;
 
-size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id, NocRouterId dst_router_id, NocRouterId curr_router_id, NocTrafficFlowId traffic_flow_id) {
+size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id,
+                                        NocRouterId dst_router_id,
+                                        NocRouterId curr_router_id,
+                                        NocTrafficFlowId traffic_flow_id) {
     // clear inputs from the last time this function was called
     inputs_to_murmur3_hahser.clear();
 
@@ -22,7 +25,11 @@ size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id, NocRouterId d
     return hash_val;
 }
 
-void TurnModelRouting::route_flow(NocRouterId src_router_id, NocRouterId dst_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) {
+void TurnModelRouting::route_flow(NocRouterId src_router_id,
+                                  NocRouterId dst_router_id,
+                                  NocTrafficFlowId traffic_flow_id,
+                                  std::vector<NocLinkId>& flow_route,
+                                  const NocStorage& noc_model) {
     // ensure that the route container is empty
     flow_route.clear();
 
@@ -54,7 +61,7 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id, NocRouterId dst_rou
         auto curr_router_pos = curr_router.get_router_physical_location();
 
         // get all directions that moves us closer to the destination router
-        const auto legal_directions = get_legal_directions(curr_router_id, dst_router_id, noc_model);
+        const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id, noc_model);
 
         // select the next direction from the available options
         auto next_step_direction = select_next_direction(legal_directions,
@@ -78,7 +85,11 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id, NocRouterId dst_rou
     }
 }
 
-NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id, const t_physical_tile_loc& curr_router_position, TurnModelRouting::Direction next_step_direction, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model) {
+NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
+                                                const t_physical_tile_loc& curr_router_position,
+                                                TurnModelRouting::Direction next_step_direction,
+                                                std::unordered_set<NocRouterId>& visited_routers,
+                                                const NocStorage& noc_model) {
     // represents the router that will be visited when taking an outgoing link
     NocRouterId next_router_id(-1);
 
@@ -106,7 +117,11 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id, con
         // get the coordinates of the next router
         auto next_router_position = next_router.get_router_physical_location();
 
-        // Using the position of the next router we will visit if we take the current link, determine if the travel direction through the link matches the direction the algorithm determined we must travel in. If the directions do not match, then this link is not valid.
+        /* Using the position of the next router we will visit if we take the current link,
+         * determine if the travel direction through the link matches
+         * the direction the algorithm determined we must travel in.
+         * If the directions do not match, then this link is not valid.
+         */
         switch (next_step_direction) {
             case TurnModelRouting::Direction::LEFT:
                 if (next_router_position.x < curr_router_position.x) {

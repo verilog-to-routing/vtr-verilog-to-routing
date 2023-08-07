@@ -8,7 +8,8 @@ class NorthLastRouting : public TurnModelRouting {
     ~NorthLastRouting() override;
 
   private:
-    const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId curr_router_id,
+    const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
+                                                                         NocRouterId curr_router_id,
                                                                          NocRouterId dst_router_id,
                                                                          const NocStorage& noc_model) override;
 
