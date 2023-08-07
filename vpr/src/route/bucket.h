@@ -220,8 +220,6 @@ class Bucket : public HeapInterface {
     // Print items contained in buckets.
     void print();
 
-    void invalidate_heap_entries(int sink_node, int ipin_node) final;
-
   private:
     // Factor used to convert cost from float to int.  Should be scaled to
     // enable sufficent precision in bucketting.

@@ -38,7 +38,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -58,7 +58,10 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         id_of_all_hard_routers_in_device.push_back(router_number);
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -93,7 +96,10 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         // now add the cluster and its placed location to the placement datastructures
         place_ctx.block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
@@ -173,7 +179,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     }
 
     // now call the test function
-    initial_noc_placement();
+    initial_noc_routing();
 
     // now verify the function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set
     int number_of_links = golden_link_bandwidths.size();
@@ -212,7 +218,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -232,7 +238,10 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         id_of_all_hard_routers_in_device.push_back(router_number);
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -267,7 +276,10 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         // now add the cluster and its placed location to the placement datastructures
         place_ctx.block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
@@ -345,7 +357,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
 
     // assume this works
     // this is needed to set up the global noc packet router and also global datastructures
-    initial_noc_placement();
+    initial_noc_routing();
 
     SECTION("test_comp_noc_aggregate_bandwidth_cost") {
         //initialize all the cost calculator datastructures
@@ -448,7 +460,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -480,7 +492,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -515,7 +530,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 
@@ -595,7 +613,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // assume this works
     // this is needed to set up the global noc packet router and also global datastructures
-    initial_noc_placement();
+    initial_noc_routing();
 
     // datastructure below will store the bandwidth usages of all the links
     // and will be updated throughout this test.
@@ -658,12 +676,24 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         blocks_affected.num_moved_blocks = 2;
 
         blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
-        blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-        blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+        blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                           -1,
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+        blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                           -1,
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
         blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-        blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-        blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+        blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                           -1,
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+        blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                           -1,
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
         // swap the hard router blocks where the two cluster blocks are placed on
         NocRouterId router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
@@ -785,12 +815,24 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
-    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
     blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
     // swap the hard router blocks where the two cluster blocks are placed on
     NocRouterId router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
@@ -892,12 +934,24 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
-    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
     blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
     // swap the hard router blocks where the two cluster blocks are placed on
     router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
@@ -974,12 +1028,24 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
-    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
     blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
     // swap the hard router blocks where the two cluster blocks are placed on
     router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
@@ -1137,7 +1203,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -1166,7 +1232,10 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -1201,7 +1270,10 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 
@@ -1272,7 +1344,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
 
     // assume this works
     // this is needed to set up the global noc packet router and also global datastructures
-    initial_noc_placement();
+    initial_noc_routing();
 
     // datastructure below will store the bandwidth usages of all the links
     // and will be updated throughout this test.
@@ -1319,12 +1391,24 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     blocks_affected.num_moved_blocks = 2;
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
-    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
     blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
     // swap the hard router blocks where the two cluster blocks are placed on
     // this is needed to that we can
@@ -1444,7 +1528,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -1481,7 +1565,10 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -1516,7 +1603,10 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 

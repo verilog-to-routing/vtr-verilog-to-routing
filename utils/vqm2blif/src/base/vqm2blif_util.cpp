@@ -3,6 +3,7 @@
 #include "vtr_memory.h"
 #include "vtr_assert.h"
 
+#define dsp_clock_count 15
 //============================================================================================
 //============================================================================================
 
@@ -214,10 +215,14 @@ string get_wire_name(t_pin_def* net, int index){
 //============================================================================================
 //============================================================================================
 
-string generate_opname (t_node* vqm_node, t_model* arch_models){
+string generate_opname (t_node* vqm_node, t_model* arch_models, string device){
     //Add support for different architectures here.
-    // Currently only support Stratix IV
-    string mode_hash = generate_opname_stratixiv(vqm_node, arch_models);
+    // Currently only support Stratix IV and Stratix 10
+    string mode_hash;
+    if(device == "stratix10")
+        mode_hash = generate_opname_stratix10(vqm_node, arch_models);    
+    if(device == "stratixiv")
+        mode_hash = generate_opname_stratixiv(vqm_node, arch_models);
     
     //Final sanity check
     if (NULL == find_arch_model_by_name(mode_hash, arch_models)){
@@ -292,7 +297,7 @@ string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
      * RAM Blocks
      */
     if(strcmp(vqm_node->type, "stratixiv_ram_block") == 0) {
-        generate_opname_stratixiv_ram(vqm_node, arch_models, mode_hash);
+        generate_opname_ram(vqm_node, arch_models, mode_hash, "stratixiv");
     }
 
     return mode_hash;
@@ -520,10 +525,15 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* /*arch_models
 
 }
         
-void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash) {
-    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash, string device) {
     
-    RamInfo ram_info = get_ram_info(vqm_node);
+    if(device == "stratixiv")
+        VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+    else
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_ram_block") == 0);
+
+    
+    RamInfo ram_info = get_ram_info(vqm_node, device);
 
     /*
      *  The following code attempts to identify RAM bocks which do and do not use
@@ -578,10 +588,10 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
      *
      *  This is done in several steps:
      *      1) If it is a single port memory, just append both the opmode and address_width
-     *          e.g. stratixiv_ram_block.opmode{single_port}.port_a_address_width{7}
+     *          e.g. $ram_primitive_name.opmode{single_port}.port_a_address_width{7}
      *
      *      2) If it is a dual_port memory, with two ports of the same width, append the opmode and address_widths
-     *          e.g. stratixiv_ram_block.opmode{dual_port}.port_a_address_width{5}.port_b_address_width{5}
+     *          e.g. $ram_primitive_name.opmode{dual_port}.port_a_address_width{5}.port_b_address_width{5}
      *
      *      3) If it is a dual_port memory, with two ports of different width:
      *          a) Use the simplest name (no extra width or address info appended)
@@ -644,6 +654,237 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
         }
     }
 }
+
+string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
+/*  Generates a mode-hash string based on a node's name and parameter set
+ *
+ *	ARGUMENTS
+ *  vqm_node:
+ *	the particular node in the VQM file to be translated
+ */
+    string mode_hash;	//temporary container for the mode-hashed block name
+    mode_hash = (string)vqm_node->type;	//begin by copying the entire block name
+    t_node_parameter* temp_param;	//temporary container for the node's parameters
+
+    //The blocks operation mode
+    t_node_parameter* operation_mode = NULL;
+    
+    for (int i = 0; i < vqm_node->number_of_params; i++){
+        //Each parameter specifies a configuration of the node in the circuit.
+        temp_param = vqm_node->array_of_params[i];
+
+        //Save the operation mode parameter
+        if (strcmp (temp_param->name, "operation_mode") == 0){
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            operation_mode = temp_param;
+            break;
+	} 
+    }
+
+    //Simple opmode name appended
+    //    NOTE: this applies to all blocks
+    if (operation_mode != NULL) {
+        //Copy the string
+        char* temp_string_value = vtr::strdup(operation_mode->value.string_value);
+
+        //Remove characters that are invalid in blif
+        clean_name(temp_string_value);
+
+        //Add the opmode
+        mode_hash.append(".opmode{" + (string)temp_string_value + "}");
+
+        free(temp_string_value);
+    }
+
+    /*
+     * Fracturable LUT
+     */
+    if(strcmp(vqm_node->type, "fourteennm_lcell_comb") == 0) {
+        generate_opname_stratix10_lut(vqm_node, mode_hash);  
+    }
+
+    /*
+     * DSP Block - fixed point
+     */
+    if(strcmp(vqm_node->type, "fourteennm_mac") == 0) {
+        generate_opname_stratix10_dsp(vqm_node, arch_models, mode_hash, 0);
+        
+    }
+
+    /*
+     * DSP Block - floating point
+     */
+    if(strcmp(vqm_node->type, "fourteennm_fp_mac") == 0) {
+        generate_opname_stratix10_dsp(vqm_node, arch_models, mode_hash, 1);
+        
+    }
+
+    /*
+     * RAM Blocks
+     */
+    if(strcmp(vqm_node->type, "fourteennm_ram_block") == 0) {
+        generate_opname_ram(vqm_node, arch_models, mode_hash, "stratix10");
+    }
+
+    return mode_hash;
+}
+
+void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash, bool dsp_mode) {
+    //
+    // It is not practical to model all of the internal registers of the mac block, as this
+    // would significantly increase the size of the architecture description.  As a result, we
+    // only identify whether the input or output registers are used.
+    //
+    // We check for all mac's input ports to see if any use a clock
+    // if so, we set ALL input ports to be registered 
+    //  While this is an approximation,
+    // it would be very unusually to have only some of the ports registered.
+    //
+    // E.g. data input registered, but associated sign bit not registered.
+    //
+    // The only exception to this might be if one data input was regisetered, while
+    // the other was not - however more detailed modeling like this would bloat the
+    // architecture description significantly, so we make the above assumption.
+    //
+    // For the output register, we check only for the final register.
+    //
+    // We attempt to inform the users of any approximations being made during the conversion
+    // process.
+    //
+    // Provided that an input/outputs clock parameter value is 'none', then it is combinational (doesn't use the register)
+    //
+    // The boolean variable dsp_mode indicates wether the dsp block is in fixed point mode (dsp_mode = 0) or floating point mode (dsp_mode = 1)
+    if(dsp_mode == 0)
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac") == 0);
+    else
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_fp_mac") == 0);
+
+    if(elab_mode == MODES_TIMING) {
+        //Only elaborate registered/combinational behaviour if in timing accurate
+        // mode elaboration
+        
+        //an array of all the input clocks
+        // if one of the following clocks are active then all inputs are assumed to be registered
+        const char *input_regs [6] = {"ax_clock", "ay_clock", "az_clock", "bx_clock", "by_clock", "bz_clock"};
+        int inputs_regs_size;
+        
+        // in fixed point mode there are can be up to six data inputs while in floating point mode there are up to three inputs only
+        if(dsp_mode == 0)
+            inputs_regs_size = 6;
+        else
+            inputs_regs_size = 3;
+        //Variables indicating whether input or output ports are registered
+        bool input_reg = false;
+        bool output_reg = true;
+
+        // checking the clock related parameters to see if the in/out ports are registered
+        for (int i = 0; i < vqm_node->number_of_params; i++) {
+
+            //each parameter specifies a configuration of the node in the circuit.
+            t_node_parameter* temp_param = vqm_node->array_of_params[i];
+            
+            // check if the current parameter is related to an input clock
+            for(int j = 0; j < inputs_regs_size; j++) {
+
+                if(strcmp(temp_param->name, input_regs[j]) == 0) {
+                    VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+                    // if the found input clock is activated set the input_reg to true
+                    if(strcmp(temp_param->value.string_value, "none") != 0) {
+
+                        input_reg = true;
+                        break;
+                    }
+                }
+            }
+
+            //Check the parameter indicating the source of output clock
+            if (strcmp (temp_param->name, "output_clock") == 0){
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+                // if the output clock source is none set the output reg to false
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    output_reg = false;
+                }
+                break;
+            }
+        }
+        
+        //Check for input registers
+        if(input_reg) {
+            //Mark this pimitive instance as having registered inputs
+            mode_hash.append(".input_type{reg}");
+
+        } else {
+            //Mark this primitive instance as having unregistered inputs
+            mode_hash.append(".input_type{comb}");
+        }
+
+        //Check for output registers
+        if(output_reg) {
+            //Mark this pimitive instance as having registered outputs
+            mode_hash.append(".output_type{reg}");
+
+        } else {
+            //Mark this primitive instance as having unregistered outputs
+            mode_hash.append(".output_type{comb}");
+        }   
+    }
+}
+
+//Generates an alphabetically continuous series of LUT input ports,
+// e.g. if the logical LUT has the inputs dataa, datac, and datad used
+// these inputs get remapped to dataa, datab, and datac ports
+// The 5-LUT physical primitive described in S10 arch 
+// has input ports dataa to datae.  
+// Without this remapping some of the 5-input logical primitives that use ports
+// such as dataf or datag cannot be mapped to the physical 5-LUT primitive
+// defined in the arch file
+void remap_lut_ports(t_node* vqm_node){
+    char lut_in_start_char = 'a';
+    int lut_input_idx = 0;
+    for(int i = 0; i < vqm_node->number_of_ports; ++i) {
+
+        t_node_port_association* vqm_port = vqm_node->array_of_ports[i];
+
+        // If the port name starts with data, then the port is a LUT input
+        if(strncmp(vqm_port->port_name, "data", 4) == 0) {
+            vqm_port->port_name[4] = lut_in_start_char + lut_input_idx;
+            lut_input_idx += 1;
+        }
+    }
+
+}
+
+void generate_opname_stratix10_lut (t_node* vqm_node, string& mode_hash) {
+    // Stratix 10 has a 6-input FLUT that can be configured either as a single 8-input
+    // LUT (under certain conditions the 6-input FLUT can implement up to 8-input functions 
+    // so in the primitive description there are 8 inputs rather than 6) or two 5-input LUTs with two shared inputs.
+    // To enable VPR to distinguish between 5-input LUTs (used in fractured mode) and 6-8 inputs LUTs (used in non-fractured mode)
+    // we convert the fourteennm_lcell_comb primitives to one of the fourteennm_lcell_comb5 or fourteennm_lcell_comb6
+    // based on the number of inputs
+
+    
+    VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_lcell_comb") == 0);
+
+    int num_of_inputs = 0;
+
+    for(int i = 0; i < vqm_node->number_of_ports; ++i) {
+        t_node_port_association* vqm_port = vqm_node->array_of_ports[i];
+
+        // If the port name starts with data, then the port is a LUT input
+        if(strncmp(vqm_port->port_name, "data", 4) == 0) {
+            num_of_inputs += 1;
+        }
+    }
+
+    if(num_of_inputs < 6) {
+        mode_hash = "fourteennm_lcell_comb5";
+        // remap the input ports of the logical primitive to the set of fourteennm_lcell_comb5 input ports described in the arch file
+        remap_lut_ports(vqm_node);
+    } else {
+        mode_hash = "fourteennm_lcell_comb6";
+    }
+}
+
 
 //============================================================================================
 //============================================================================================
@@ -749,8 +990,11 @@ void verify_module (t_module* module){
 	}
 }
 
-RamInfo get_ram_info(const t_node* vqm_node) {
-    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+RamInfo get_ram_info(const t_node* vqm_node, string device) {
+    if(device=="stratixiv")
+        VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+    if(device=="stratix10")
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_ram_block") == 0);
 
     t_node_parameter* operation_mode = NULL;
     
@@ -760,6 +1004,16 @@ RamInfo get_ram_info(const t_node* vqm_node) {
     t_node_parameter* port_b_address_clock = NULL;
     t_node_parameter* port_b_data_out_clock = NULL;
     
+    //We need to save clock enable information about the RAM to determine whether clock enables for registers are used - For Stratix 10 only
+    t_node_parameter* clk0_input_clock_enable = NULL;
+    t_node_parameter* clk0_output_clock_enable = NULL;
+    t_node_parameter* clk1_input_clock_enable = NULL;
+    t_node_parameter* clk1_output_clock_enable = NULL;
+
+    //We need to save clear information about the RAM to determine whether clear signals for output registers are used - For Stratix 10 only
+    t_node_parameter* port_a_dataout_clear = NULL;
+    t_node_parameter* port_b_dataout_clear = NULL;
+
     //We need to save the ram data and address widths, to identfy the RAM type (singel port, rom, simple dual port, true dual port)
     t_node_parameter* port_a_data_width = NULL;
     t_node_parameter* port_a_addr_width = NULL;
@@ -796,7 +1050,7 @@ RamInfo get_ram_info(const t_node* vqm_node) {
             port_b_addr_width = temp_param;
             continue;
         }
-        if (strcmp (temp_param->name, "port_a_address_clock") == 0){
+        if (strcmp (temp_param->name, "port_a_address_clock") == 0){ // This parameter doesn't exist for Stratix 10 - clock0 is always used for port address_a
             VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             port_a_address_clock = temp_param;
             continue;
@@ -816,6 +1070,37 @@ RamInfo get_ram_info(const t_node* vqm_node) {
             port_b_data_out_clock = temp_param;
             continue;
         }
+        if (strcmp (temp_param->name, "clk0_input_clock_enable") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            clk0_input_clock_enable = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "clk0_output_clock_enable") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            clk0_output_clock_enable = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "clk1_input_clock_enable") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            clk1_input_clock_enable = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "clk1_output_clock_enable") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            clk1_output_clock_enable = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_a_data_out_clear") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            port_a_dataout_clear = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_data_out_clear") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            port_b_dataout_clear = temp_param;
+            continue;
+        }
+        
     }
 
     RamInfo ram_info;
@@ -848,6 +1133,22 @@ RamInfo get_ram_info(const t_node* vqm_node) {
     t_node_port_association* clk_portaout = nullptr;
     t_node_port_association* clk_portbin = nullptr;
     t_node_port_association* clk_portbout = nullptr;
+
+    //find the enable ports
+    t_node_port_association* ena0_port = nullptr;
+    t_node_port_association* ena1_port = nullptr;
+
+    // find the enables ports correspodning to each register
+    t_node_port_association* clk0_enable_in_port = nullptr;
+    t_node_port_association* clk0_enable_out_port = nullptr;
+    t_node_port_association* clk1_enable_in_port = nullptr;
+    t_node_port_association* clk1_enable_out_port = nullptr;
+
+    // find the clear ports
+    t_node_port_association* sclr_port = nullptr;
+    t_node_port_association* aclr_port = nullptr;
+
+
     for(int i = 0; i < vqm_node->number_of_ports; ++i) {
         t_node_port_association* check_port = vqm_node->array_of_ports[i];
         if(check_port->port_name == std::string("clk0")) {
@@ -868,6 +1169,18 @@ RamInfo get_ram_info(const t_node* vqm_node) {
         if(check_port->port_name == std::string("clk_portbout")) {
             clk_portbout = check_port;
         }
+        if(check_port->port_name == std::string("ena0")) {
+            ena0_port = check_port;
+        }
+        if(check_port->port_name == std::string("ena1")) {
+            ena1_port = check_port;
+        }
+        if(check_port->port_name == std::string("sclr")) {
+            sclr_port = check_port;
+        }
+        if(check_port->port_name == std::string("aclr")) {
+            aclr_port = check_port;
+        }
     }
 
     if(clk0_port) {
@@ -876,27 +1189,116 @@ RamInfo get_ram_info(const t_node* vqm_node) {
         VTR_ASSERT(!clk_portaout);
         VTR_ASSERT(!clk_portbin);
         VTR_ASSERT(!clk_portbout);
+        if (device == "stratix10"){
+        // set the clock enable_in and enable_out ports for clock0 and clock1 
+            if (clk0_input_clock_enable) {
+                if (clk0_input_clock_enable->value.string_value == std::string("ena0")){
+                    VTR_ASSERT(ena0_port);
+                    clk0_enable_in_port = ena0_port;
+                } else if (clk0_input_clock_enable->value.string_value == std::string("ena1")) {
+                    VTR_ASSERT(ena1_port);
+                    clk0_enable_in_port = ena1_port;
+                } else {
+                    VTR_ASSERT(clk0_input_clock_enable->value.string_value == std::string("none"));
+                    clk0_enable_in_port = nullptr;
+                }
+            }
+            if (clk0_output_clock_enable) {
+                if (clk0_output_clock_enable->value.string_value == std::string("ena0")){
+                    VTR_ASSERT(ena0_port);
+                    clk0_enable_out_port = ena0_port;
+                } else if (clk0_output_clock_enable->value.string_value == std::string("ena1")) {
+                    VTR_ASSERT(ena1_port);
+                    clk0_enable_out_port = ena1_port;
+                } else {
+                    VTR_ASSERT(clk0_output_clock_enable->value.string_value == std::string("none"));
+                    clk0_enable_out_port = nullptr;
+                }
+            }
+            if (clk1_input_clock_enable) {
+                if (clk1_input_clock_enable->value.string_value == std::string("ena0")){
+                    VTR_ASSERT(ena0_port);
+                    clk1_enable_in_port = ena0_port;
+                } else if (clk1_input_clock_enable->value.string_value == std::string("ena1")) {
+                    VTR_ASSERT(ena1_port);
+                    clk1_enable_in_port = ena1_port;
+                } else {
+                    VTR_ASSERT(clk1_input_clock_enable->value.string_value == std::string("none"));
+                    clk1_enable_in_port = nullptr;
+                }
+            }
+            if (clk1_output_clock_enable) {
+                if (clk1_output_clock_enable->value.string_value == std::string("ena0")){
+                    VTR_ASSERT(ena0_port);
+                    clk1_enable_out_port = ena0_port;
+                } else if (clk1_output_clock_enable->value.string_value == std::string("ena1")) {
+                    VTR_ASSERT(ena1_port);
+                    clk1_enable_out_port = ena1_port;
+                } else {
+                    VTR_ASSERT(clk1_output_clock_enable->value.string_value == std::string("none"));
+                    clk1_enable_out_port = nullptr;
+                }
+            }
+            // set the clear ports for output registers 
+            if (port_a_dataout_clear) {
+                if (port_a_dataout_clear->value.string_value == std::string("aclear")){
+                    VTR_ASSERT(aclr_port);
+                    ram_info.port_a_dataout_aclr = aclr_port;
+                    ram_info.port_a_dataout_sclr = nullptr;
 
-        //Port a input clock
+                } else if (port_a_dataout_clear->value.string_value == std::string("sclear")) {
+                    VTR_ASSERT(sclr_port);
+                    ram_info.port_a_dataout_aclr = nullptr;
+                    ram_info.port_a_dataout_sclr = sclr_port;
+                } else {
+                    VTR_ASSERT(port_a_dataout_clear->value.string_value == std::string("none"));
+                    ram_info.port_a_dataout_aclr = nullptr;
+                    ram_info.port_a_dataout_sclr = nullptr;
+                }
+            }
+            if (port_b_dataout_clear) {
+                if (port_b_dataout_clear->value.string_value == std::string("aclear")){
+                    VTR_ASSERT(aclr_port);
+                    ram_info.port_b_dataout_aclr = aclr_port;
+                    ram_info.port_b_dataout_sclr = nullptr;
+                } else if (port_b_dataout_clear->value.string_value == std::string("sclear")) {
+                    VTR_ASSERT(sclr_port);
+                    ram_info.port_b_dataout_aclr = nullptr;
+                    ram_info.port_b_dataout_sclr = sclr_port;
+                } else {
+                    VTR_ASSERT(port_b_dataout_clear->value.string_value == std::string("none"));
+                    ram_info.port_b_dataout_aclr = nullptr;
+                    ram_info.port_b_dataout_sclr = nullptr;
+                }
+            }
+        }
+
+        //Port a input clock and the corresponding enable
         if(!port_a_address_clock) {
             //Assumed that port a input is always controlled by clk0, 
             //none of the VQM files have produced a port_a_address_clock param
             ram_info.port_a_input_clock = clk0_port;
+            ram_info.port_a_input_ena = clk0_enable_in_port;
+
         } else if (port_a_address_clock->value.string_value == std::string("clock0")){
             ram_info.port_a_input_clock = clk0_port;
+            ram_info.port_a_input_ena = clk0_enable_in_port;
         } else {
             VTR_ASSERT(port_a_address_clock->value.string_value == std::string("clock1"));
             VTR_ASSERT(clk1_port);
             ram_info.port_a_input_clock = clk1_port;
+            ram_info.port_a_input_ena = clk1_enable_in_port;
         }
 
         //Port a output clock
         VTR_ASSERT(port_a_data_out_clock);
         if (port_a_data_out_clock->value.string_value == std::string("clock0")){
             ram_info.port_a_output_clock = clk0_port;
+            ram_info.port_a_output_ena = clk0_enable_out_port;
         } else if (port_a_data_out_clock->value.string_value == std::string("clock1")) {
             VTR_ASSERT(clk1_port);
             ram_info.port_a_output_clock = clk1_port;
+            ram_info.port_a_output_ena = clk1_enable_out_port;
         } else {
             VTR_ASSERT(port_a_data_out_clock->value.string_value == std::string("none"));
             ram_info.port_a_output_clock = nullptr;
@@ -906,27 +1308,38 @@ RamInfo get_ram_info(const t_node* vqm_node) {
         if (port_b_address_clock) {
             if (port_b_address_clock->value.string_value == std::string("clock0")){
                 ram_info.port_b_input_clock = clk0_port;
+                ram_info.port_b_input_ena = clk0_enable_in_port;
+
             } else if (port_b_address_clock->value.string_value == std::string("clock1")) {
                 VTR_ASSERT(clk1_port);
                 ram_info.port_b_input_clock = clk1_port;
+                ram_info.port_b_input_ena = clk1_enable_in_port;
+
             } else {
                 VTR_ASSERT(port_b_address_clock->value.string_value == std::string("none"));
                 ram_info.port_b_input_clock = nullptr;
+                ram_info.port_b_input_ena = nullptr;
+
             }
         }
 
-        //Port b output clock
+        //Port b output clock and enable
         if (port_b_data_out_clock) {
             if (port_b_data_out_clock->value.string_value == std::string("clock0")){
                 ram_info.port_b_output_clock = clk0_port;
+                ram_info.port_b_output_ena = clk0_enable_out_port;
             } else if (port_b_data_out_clock->value.string_value == std::string("clock1")) {
                 VTR_ASSERT(clk1_port);
                 ram_info.port_b_output_clock = clk1_port;
+                ram_info.port_b_output_ena = clk1_enable_out_port;
             } else {
                 VTR_ASSERT(port_b_data_out_clock->value.string_value == std::string("none"));
                 ram_info.port_b_output_clock = nullptr;
+                ram_info.port_b_output_ena = nullptr;
+
             }
         }
+        
     } else {
         VTR_ASSERT(!clk0_port);
         VTR_ASSERT(!clk1_port);
@@ -937,6 +1350,136 @@ RamInfo get_ram_info(const t_node* vqm_node) {
         ram_info.port_b_output_clock = clk_portbout;
     }
     return ram_info;
+}
+//============================================================================================
+//============================================================================================
+
+void set_dsp_clk(DSPInfo& dsp_info, t_node_port_association* source_clk, std::string clock_name){
+   
+        if(clock_name.compare("ax_clock") == 0){ 
+            dsp_info.port_ax_clock = source_clk;
+        }        
+        if(clock_name.compare("ay_clock") == 0){ 
+            dsp_info.port_ay_clock = source_clk;
+        }        
+        if(clock_name.compare("az_clock") == 0){ 
+            dsp_info.port_az_clock = source_clk;
+        }        
+        if(clock_name.compare("bx_clock") == 0){ 
+            dsp_info.port_bx_clock = source_clk;
+        }        
+        if(clock_name.compare("by_clock") == 0){ 
+            dsp_info.port_by_clock = source_clk;
+        }        
+        if(clock_name.compare("bz_clock") == 0){ 
+            dsp_info.port_bz_clock = source_clk;
+        }        
+        if(clock_name.compare("coef_sel_a_clock") == 0){ 
+            dsp_info.port_coef_sel_a_clock = source_clk;
+        }        
+        if(clock_name.compare("coef_sel_b_clock") == 0){ 
+            dsp_info.port_coef_sel_b_clock = source_clk;
+        }        
+        if(clock_name.compare("ay_scan_in_clock") == 0){ 
+            dsp_info.port_ay_scan_in_clock = source_clk;
+        }        
+        if(clock_name.compare("accumulate_clock") == 0){
+            dsp_info.port_accumulate_clock = source_clk;
+        }        
+        if(clock_name.compare("load_const_clock") == 0){
+            dsp_info.port_load_const_clock = source_clk;
+        }        
+        if(clock_name.compare("negate_clock") == 0){
+            dsp_info.port_negate_clock = source_clk;
+        }        
+        if(clock_name.compare("sub_clock") == 0){
+            dsp_info.port_sub_clock = source_clk;
+        }        
+        if(clock_name.compare("chainout_clock") == 0){
+            dsp_info.port_chainout_clock = source_clk;
+        }        
+        if(clock_name.compare("output_clock") == 0){
+            dsp_info.port_output_clock = source_clk; 
+        }
+}
+
+
+DSPInfo get_dsp_info(const t_node* vqm_node) {
+
+    VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac") == 0 || strcmp(vqm_node->type, "fourteennm_fp_mac") == 0);
+
+    const char* clock_param_name[dsp_clock_count] = { 
+        "ax_clock", 
+        "ay_clock", 
+        "az_clock", 
+        "bx_clock", 
+        "by_clock", 
+        "bz_clock", 
+        "coef_sel_a_clock", 
+        "coef_sel_b_clock", 
+        "ay_scan_in_clock", 
+        "accumulate_clock",
+        "load_const_clock",
+        "negate_clock",
+        "sub_clock",
+        "chainout_clock",
+        "output_clock"
+    };
+    //We need to save clock-related parameters of a dsp block to determine which clock signal is driving which register
+    map<std::string, t_node_parameter*> clock_param;
+
+
+	for (int i = 0; i < vqm_node->number_of_params; i++){
+
+		t_node_parameter* temp_param = vqm_node->array_of_params[i];
+
+        for (int j = 0; j < dsp_clock_count; j++){
+
+            if (strcmp (temp_param->name, clock_param_name[j]) == 0){
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+                clock_param.insert({clock_param_name[j],temp_param});
+                continue;
+            }
+
+        }
+    }
+
+    //There are three distinct clock signals at most
+    t_node_port_association* clk_port [] = {nullptr, nullptr, nullptr};
+    // find the three bit clock port in the vqm_node
+    for(int i = 0; i < vqm_node->number_of_ports; ++i) {
+        t_node_port_association* check_port = vqm_node->array_of_ports[i];
+        if(check_port->port_name == std::string("clk")) {
+            clk_port[check_port->port_index] = check_port;
+        }
+    }
+
+    DSPInfo dsp_info;
+
+    if(clk_port[0] || clk_port[1] || clk_port[2]) {
+
+        for (auto const& param : clock_param){
+
+    //         set the new register-based clock ports to one of the three clock signals based on the corrosponding parameters 
+            if (param.second) {
+                if (param.second->value.string_value == std::string("0")){
+                    VTR_ASSERT(clk_port[0]);
+                    set_dsp_clk(dsp_info, clk_port[0], param.first);
+                } else if (param.second->value.string_value == std::string("1")) {
+                    VTR_ASSERT(clk_port[1]);
+                    set_dsp_clk(dsp_info, clk_port[1], param.first);
+                } else if (param.second->value.string_value == std::string("2")) {
+                    VTR_ASSERT(clk_port[2]);
+                    set_dsp_clk(dsp_info, clk_port[2], param.first);
+                } else {
+                    VTR_ASSERT(param.second->value.string_value == std::string("none"));
+                    set_dsp_clk(dsp_info, nullptr, param.first);
+                }
+            }
+        }
+    }
+
+    return dsp_info;
 }
 //============================================================================================
 //============================================================================================

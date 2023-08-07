@@ -27,26 +27,30 @@
 #endif /* VTR_ENABLE_CAPNPROTO */
 
 ///@brief DeltaDelayModel methods.
-float DeltaDelayModel::delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/) const {
+float DeltaDelayModel::delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/, int layer_num) const {
     int delta_x = std::abs(from_x - to_x);
     int delta_y = std::abs(from_y - to_y);
 
-    return delays_[delta_x][delta_y];
+    return delays_[layer_num][delta_x][delta_y];
 }
 
 void DeltaDelayModel::dump_echo(std::string filepath) const {
     FILE* f = vtr::fopen(filepath.c_str(), "w");
     fprintf(f, "         ");
-    for (size_t dx = 0; dx < delays_.dim_size(0); ++dx) {
-        fprintf(f, " %9zu", dx);
-    }
-    fprintf(f, "\n");
-    for (size_t dy = 0; dy < delays_.dim_size(1); ++dy) {
-        fprintf(f, "%9zu", dy);
-        for (size_t dx = 0; dx < delays_.dim_size(0); ++dx) {
-            fprintf(f, " %9.2e", delays_[dx][dy]);
+    for (size_t layer_num = 0; layer_num < delays_.dim_size(0); ++layer_num) {
+        fprintf(f, " %9zu", layer_num);
+        fprintf(f, "\n");
+        for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
+            fprintf(f, " %9zu", dx);
         }
         fprintf(f, "\n");
+        for (size_t dy = 0; dy < delays_.dim_size(2); ++dy) {
+            fprintf(f, "%9zu", dy);
+            for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
+                fprintf(f, " %9.2e", delays_[layer_num][dx][dy]);
+            }
+            fprintf(f, "\n");
+        }
     }
     vtr::fclose(f);
 }
@@ -56,13 +60,13 @@ const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
 }
 
 ///@brief OverrideDelayModel methods.
-float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const {
+float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const {
     //First check to if there is an override delay value
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
-    t_physical_tile_type_ptr from_type_ptr = grid.get_physical_type(from_x, from_y);
-    t_physical_tile_type_ptr to_type_ptr = grid.get_physical_type(to_x, to_y);
+    t_physical_tile_type_ptr from_type_ptr = grid.get_physical_type({from_x, from_y, layer_num});
+    t_physical_tile_type_ptr to_type_ptr = grid.get_physical_type({to_x, to_y, layer_num});
 
     t_override override_key;
     override_key.from_type = from_type_ptr->index;
@@ -82,7 +86,7 @@ float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, 
         delay_val = override_iter->second;
     } else {
         //Fall back to the base delay model if no override was found
-        delay_val = base_delay_model_->delay(from_x, from_y, from_pin, to_x, to_y, to_pin);
+        delay_val = base_delay_model_->delay(from_x, from_y, from_pin, to_x, to_y, to_pin, layer_num);
     }
 
     return delay_val;
@@ -221,7 +225,7 @@ void DeltaDelayModel::read(const std::string& file) {
     //
     // The second argument should be of type Matrix<X>::Reader where X is the
     // capnproto element type.
-    ToNdMatrix<2, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
+    ToNdMatrix<3, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
 }
 
 void DeltaDelayModel::write(const std::string& file) const {
@@ -237,7 +241,7 @@ void DeltaDelayModel::write(const std::string& file) const {
     // Matrix message.  It is the mirror function of ToNdMatrix described in
     // read above.
     auto delay_values = model.getDelays();
-    FromNdMatrix<2, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
+    FromNdMatrix<3, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
 
     // writeMessageToFile writes message to the specified file.
     writeMessageToFile(file, &builder);
@@ -250,9 +254,9 @@ void OverrideDelayModel::read(const std::string& file) {
     ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
-    vtr::Matrix<float> delays;
+    vtr::NdMatrix<float, 3> delays;
     auto model = reader.getRoot<VprOverrideDelayModel>();
-    ToNdMatrix<2, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
+    ToNdMatrix<3, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
 
     base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, is_flat_);
 
@@ -280,7 +284,7 @@ void OverrideDelayModel::write(const std::string& file) const {
     auto model = builder.initRoot<VprOverrideDelayModel>();
 
     auto delays = model.getDelays();
-    FromNdMatrix<2, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
+    FromNdMatrix<3, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
 
     // Non-scalar capnproto fields should be first initialized with
     // init<field  name>(count), and then accessed from the returned
@@ -344,6 +348,7 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
         int source_y = place_ctx.block_locs[source_block].loc.y;
         int sink_x = place_ctx.block_locs[sink_block].loc.x;
         int sink_y = place_ctx.block_locs[sink_block].loc.y;
+        int sink_layer_num = place_ctx.block_locs[sink_block].loc.layer;
 
         /**
          * This heuristic only considers delta_x and delta_y, a much better
@@ -357,7 +362,8 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
                                                   source_block_ipin,
                                                   sink_x,
                                                   sink_y,
-                                                  sink_block_ipin);
+                                                  sink_block_ipin,
+                                                  sink_layer_num);
         if (delay_source_to_sink < 0) {
             VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"

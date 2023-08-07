@@ -24,7 +24,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     /* Calculate the median region */
@@ -47,7 +47,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
-        /* To speedup the calculation, we found it is useful to ignore high fanout nets.
+        /* To speed up the calculation, we found it is useful to ignore high fanout nets.
          * Especially that in most cases, these high fanout nets are scattered in many locations of
          * the device and don't guide to a specific location. We also assuered these assumpitions experimentally.
          */
@@ -118,6 +118,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
+    // TODO: When placer is updated to support moving blocks between dice, this needs to be changed. Currently, we only move blocks within a die.
+    median_point.layer = from.layer;
     if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from))
         return e_create_move::ABORT;
 

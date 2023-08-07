@@ -46,7 +46,6 @@
 #include <regex>
 
 #include "vqm_dll.h"	//VQM Parser
-#include "hash.h"				//Hash Table Functions
 
 #include "read_xml_arch_file.h"	//Architecture Parser
 
@@ -101,12 +100,46 @@ struct RamInfo {
     int port_a_addr_width = 0;
     int port_a_data_width = 0;
     t_node_port_association* port_a_input_clock = nullptr;
+    t_node_port_association* port_a_input_ena = nullptr;
     t_node_port_association* port_a_output_clock = nullptr;
+    t_node_port_association* port_a_output_ena = nullptr;
+    t_node_port_association* port_a_dataout_aclr = nullptr;
+    t_node_port_association* port_a_dataout_sclr = nullptr;
 
     int port_b_addr_width = 0;
     int port_b_data_width = 0;
     t_node_port_association* port_b_input_clock = nullptr;
+    t_node_port_association* port_b_input_ena = nullptr;
     t_node_port_association* port_b_output_clock = nullptr;
+    t_node_port_association* port_b_output_ena = nullptr;
+    t_node_port_association* port_b_dataout_aclr = nullptr;
+    t_node_port_association* port_b_dataout_sclr = nullptr;
+};
+
+
+
+struct DSPInfo {
+
+    t_node_port_association* port_ax_clock = nullptr;
+    t_node_port_association* port_ay_clock = nullptr;
+    t_node_port_association* port_az_clock = nullptr;
+    t_node_port_association* port_bx_clock = nullptr;
+    t_node_port_association* port_by_clock = nullptr;
+    t_node_port_association* port_bz_clock = nullptr;
+  
+    t_node_port_association* port_coef_sel_a_clock = nullptr;
+    t_node_port_association* port_coef_sel_b_clock = nullptr;
+
+    t_node_port_association* port_ay_scan_in_clock = nullptr;
+    t_node_port_association* port_accumulate_clock = nullptr;
+    t_node_port_association* port_load_const_clock = nullptr;
+    t_node_port_association* port_negate_clock = nullptr;
+    t_node_port_association* port_sub_clock = nullptr;
+
+    t_node_port_association* port_chainout_clock = nullptr;
+    t_node_port_association* port_output_clock = nullptr;
+
+
 };
 
 // stores relevant information for a given FPGA device
@@ -142,12 +175,19 @@ void construct_filename (char* filename, const char* path, const char* ext);	//c
 
 //Naming Conventions
 
-string generate_opname (t_node* vqm_node, t_model* arch_models);	//generates a mode-hashed name for a subcircuit instance
+string generate_opname (t_node* vqm_node, t_model* arch_models, string device);	//generates a mode-hashed name for a subcircuit instance
+
+void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash, string device); //mode-hash for RAM blocks
 
 string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models); //mode-hash for Stratix IV
-void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV RAM blocks
 void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV DSP Multiplers
 void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV DSP Output (MAC)
+
+string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models); //mode-hash for Stratix 10
+void generate_opname_stratix10_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix 10 RAM blocks
+void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* arch_models, string& mode_hash, bool dsp_mode); //mode-hash for Stratix 10 DSP fixed point Multiplers
+void generate_opname_stratix10_lut (t_node* vqm_node, string& mode_hash); //mode-hash for Stratix 10 LUTs
+void remap_lut_ports(t_node* vqm_node); // remaps the input ports of the LUT atom to the ports [dataa-datae]
 
 t_model* find_arch_model_by_name(string model_name, t_model* arch_models); //returns the pointer to a module from the arch file, searches by name
 
@@ -155,7 +195,11 @@ string get_wire_name(t_pin_def* net, int index);	//returns a string with the app
 
 string append_index_to_str (string busname, int index);	//appends an integer index to the end of a string
 
-RamInfo get_ram_info(const t_node* vqm_node);
+RamInfo get_ram_info(const t_node* vqm_node, string device);
+
+DSPInfo get_dsp_info(const t_node* vqm_node);
+
+void set_dsp_clk(DSPInfo& dsp_info, t_node_port_association* source_clk, std::string clock_name);
 
 //Other
 
