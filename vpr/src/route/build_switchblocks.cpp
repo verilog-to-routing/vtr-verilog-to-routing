@@ -253,10 +253,10 @@ static void get_switchpoint_wires(
     std::vector<t_wire_switchpoint>* output_wires,
     std::vector<t_wire_switchpoint>* scratch_wires);
 
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int* chan_x, int* chan_y, t_rr_type* chan_type);
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type);
 
 /* checks whether the specified coordinates are out of bounds */
-static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coord, e_rr_type chan_type);
+static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coord, e_rr_type chan_type, int layer_coord = 0);
 
 /* returns the subsegment number of the specified wire at seg_coord*/
 static int get_wire_subsegment_num(const DeviceGrid& grid, e_rr_type chan_type, const t_chan_seg_details& wire_details, int seg_coord);
@@ -331,8 +331,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                     continue;
                 }
                 /* now we iterate over all the potential side1->side2 connections */
-                for (e_side from_side : SIDES) {
-                    for (e_side to_side : SIDES) {
+                for (e_side from_side : TOTAL_SIDES) {
+                    for (e_side to_side : TOTAL_SIDES) {
                         /* Fill appropriate entry of the sb_conns map with vector specifying the wires
                          * the current wire will connect to */
                         compute_wire_connections(x_coord, y_coord, from_side, to_side,
@@ -554,10 +554,12 @@ static void get_switchpoint_wires(
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side) should connect to.
  * sb_conns is updated with the result */
 static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, t_switchblock_inf* sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
-    int from_x, from_y;                     /* index into source channel */
-    int to_x, to_y;                         /* index into destination channel */
+    int from_x, from_y, from_layer;                     /* index into source channel */
+    int to_x, to_y, to_layer;                          /* index into destination channel */
     t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
-    from_x = from_y = to_x = to_y = UNDEFINED;
+    from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
+    //TODO: SM: this should be function argument coming from the callee
+    int layer_coord = 0;
 
     SB_Side_Connection side_conn(from_side, to_side);                 /* for indexing into this switchblock's permutation funcs */
     Switchblock_Lookup sb_conn(x_coord, y_coord, from_side, to_side); /* for indexing into FPGA's switchblock map */
@@ -576,15 +578,15 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
      * destination channels. also return the channel type (ie chanx/chany) into which we are
      * indexing */
     /* details for source channel */
-    const t_chan_details& from_chan_details = index_into_correct_chan(x_coord, y_coord, from_side, chan_details_x, chan_details_y,
-                                                                      &from_x, &from_y, &from_chan_type);
+    const t_chan_details& from_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, from_side, chan_details_x, chan_details_y,
+                                                                      from_x, from_y, from_layer, from_chan_type);
 
     /* details for destination channel */
-    const t_chan_details& to_chan_details = index_into_correct_chan(x_coord, y_coord, to_side, chan_details_x, chan_details_y,
-                                                                    &to_x, &to_y, &to_chan_type);
+    const t_chan_details& to_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, to_side, chan_details_x, chan_details_y,
+                                                                    to_x, to_y, to_layer, to_chan_type);
 
     /* make sure from_x/y and to_x/y aren't out of bounds */
-    if (coords_out_of_bounds(grid, to_x, to_y, to_chan_type) || coords_out_of_bounds(grid, from_x, from_y, from_chan_type)) {
+    if (coords_out_of_bounds(grid, to_x, to_y, to_chan_type, to_layer) || coords_out_of_bounds(grid, from_x, from_y, from_chan_type, from_layer)) {
         return;
     }
 
@@ -797,39 +799,47 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
 /* Here we find the correct channel (x or y), and the coordinates to index into it based on the
  * specified tile coordinates and the switchblock side. Also returns the type of channel
  * that we are indexing into (ie, CHANX or CHANY */
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int* set_x, int* set_y, t_rr_type* chan_type) {
-    *chan_type = CHANX;
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type){
+    chan_type = CHANX;
+    //TODO: SM: must figure out how each track is connected to next layer
+    chan_layer = tile_layer;
 
     /* here we use the VPR convention that a tile 'owns' the channels directly to the right
      * and above it */
     switch (side) {
         case TOP:
             /* this is y-channel belonging to tile above */
-            *set_x = tile_x;
-            *set_y = tile_y + 1;
-            *chan_type = CHANY;
+            chan_x = tile_x;
+            chan_y = tile_y + 1;
+            chan_type = CHANY;
             return chan_details_y;
             break;
         case RIGHT:
             /* this is x-channel belonging to tile to the right */
-            *set_x = tile_x + 1;
-            *set_y = tile_y;
-            *chan_type = CHANX;
+            chan_x = tile_x + 1;
+            chan_y = tile_y;
+            chan_type = CHANX;
             return chan_details_x;
             break;
         case BOTTOM:
             /* this is y-channel on the right of the tile */
-            *set_x = tile_x;
-            *set_y = tile_y;
-            *chan_type = CHANY;
+            chan_x = tile_x;
+            chan_y = tile_y;
+            chan_type = CHANY;
             return chan_details_y;
             break;
         case LEFT:
             /* this is x-channel on top of the tile */
-            *set_x = tile_x;
-            *set_y = tile_y;
-            *chan_type = CHANX;
+            chan_x = tile_x;
+            chan_y = tile_y;
+            chan_type = CHANX;
             return chan_details_x;
+            break;
+        case ABOVE:
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: un-supported side specified: %d\n", side);
+            break;
+        case UNDER:
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: un-supported side specified: %d\n", side);
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: unknown side specified: %d\n", side);
@@ -840,18 +850,24 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, enu
 }
 
 /* checks whether the specified coordinates are out of bounds */
-static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coord, e_rr_type chan_type) {
-    bool result = true;
+static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coord, e_rr_type chan_type, int layer_coord) {
+    bool result = false;
+
+    /* the layer that channel is located at must be legal regardless of chan_type*/
+    if(layer_coord < 0 || layer_coord > grid.get_num_layers()){
+        return result;
+    }
 
     if (CHANX == chan_type) {
-        if (x_coord <= 0 || x_coord >= int(grid.width()) - 1 || /* there is no x-channel at x=0 */
-            y_coord < 0 || y_coord >= int(grid.height()) - 1) {
+        /* there is no x-channel at x=0 */
+        if (x_coord <= 0 || x_coord >= int(grid.width()) - 1 || y_coord < 0 || y_coord >= int(grid.height()) - 1) {
             result = true;
         } else {
             result = false;
         }
     } else if (CHANY == chan_type) {
-        if (x_coord < 0 || x_coord >= int(grid.width()) - 1 || y_coord <= 0 || y_coord >= int(grid.height()) - 1) { /* there is no y-channel at y=0 */
+        /* there is no y-channel at y=0 */
+        if (x_coord < 0 || x_coord >= int(grid.width()) - 1 || y_coord <= 0 || y_coord >= int(grid.height()) - 1) {
             result = true;
         } else {
             result = false;
