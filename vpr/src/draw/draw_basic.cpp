@@ -1115,7 +1115,7 @@ int get_timing_path_node_layer_num(tatum::NodeId node){
     AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
     AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
     ClusterBlockId clb_block = atom_ctx.lookup.atom_clb(atom_block);
-    int block_layer = place_ctx.block_locs[clb_block].loc.layer;
+    return place_ctx.block_locs[clb_block].loc.layer;
 }
 
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer){
