@@ -132,6 +132,11 @@ void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 
 size_t get_max_fanout();
 
+/**
+ * @brief Takes in two colors and compares rgb values
+ * Sets both transparencies to opaque and then compares the colors.
+ */
+bool rgb_is_same(ezgl::color color1, ezgl::color color2);
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */

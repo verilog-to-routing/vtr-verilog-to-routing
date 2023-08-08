@@ -1450,4 +1450,9 @@ size_t get_max_fanout() {
     return max;
 }
 
+bool rgb_is_same(ezgl::color color1, ezgl::color color2) {
+    color1.alpha = 255;
+    color2.alpha = 255;
+    return (color1 == color2);
+}
 #endif /* NO_GRAPHICS */

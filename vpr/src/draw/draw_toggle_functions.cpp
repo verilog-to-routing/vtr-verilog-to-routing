@@ -448,10 +448,6 @@ void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
 
 /**
  * @brief Callback function for 3d layer checkboxes
- * Updates draw_state->draw_layer_display based on which checkboxes are checked
- *
- * @param self
- * @param app
  */
 void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -485,11 +481,7 @@ void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/
     g_list_free(children);
 }
 /**
- * @brief Callback function for 3d layer transparency spin boxes
- * Updates draw_state->draw_layer_display based on the values in spin boxes
- *
- * @param self
- * @param app
+ * @brief Callback function for 3d layer transparency spin buttons
  */
 void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -519,11 +511,6 @@ void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/
 
 /**
  * @brief Callback function for cross layer connection checkbox
- * Updates draw_state->cross_layer_display.visible based on whether the cross layer
- * connection checkbox is checked.
- *
- * @param self
- * @param app
  */
 void cross_layer_checkbox_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -538,12 +525,9 @@ void cross_layer_checkbox_cbk(GtkWidget* widget, gint /*response_id*/, gpointer 
 
     application.refresh_drawing();
 }
+
 /**
  * @brief Callback function for cross layer connection spin button
- * Updates draw_state->cross_layer_display.alpha based spin button value
- *
- * @param self
- * @param app
  */
 void cross_layer_transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();

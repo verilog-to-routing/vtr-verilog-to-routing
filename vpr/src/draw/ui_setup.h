@@ -61,8 +61,8 @@ void search_setup(ezgl::application* app);
  */
 void routing_button_setup(ezgl::application* app);
 
-/*
- * @brief configures and connects signals/functions for View button
+/**
+ * @brief configures and connects signals/functions for View buttons
  *
  * Determines how many layers there are and displays depending on number of layers
  */

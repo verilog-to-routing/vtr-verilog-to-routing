@@ -22,7 +22,6 @@
 #    include "ezgl/point.hpp"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
-void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -104,7 +103,7 @@ void block_button_setup(ezgl::application* app) {
     }
 }
 
-/*
+/**
  * @brief configures and connects signals/functions for routing buttons
  * 
  * Connects signals/sets default values for toggleRRButton, ToggleCongestion,
@@ -143,11 +142,6 @@ void routing_button_setup(ezgl::application* app) {
     show_widget("RoutingMenuButton", app);
 }
 
-/*
- * @brief configures and connects signals/functions for View buttons
- *
- * Determines how many layers there are and displays depending on number of layers
- */
 void view_button_setup(ezgl::application* app) {
     int num_layers;
 
@@ -307,36 +301,6 @@ void load_net_names(ezgl::application* app) {
                            0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
         i++;
     }
-}
-
-void three_dimension_layers(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    GtkBox* box = GTK_BOX(parent);
-
-    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
-    int index = 0;
-    // Iterate over the checkboxes
-    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
-        if (GTK_IS_CHECK_BUTTON(iter->data)) {
-            GtkWidget* checkbox = GTK_WIDGET(iter->data);
-            gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
-
-            // Change the the boolean of the draw_layer_display vector depending on checkbox
-            if (state) {
-                std::cout << "Layer " << index + 1 << " on" << std::endl;
-                draw_state->draw_layer_display[index].visible = true;
-
-            } else {
-                draw_state->draw_layer_display[index].visible = false;
-                std::cout << "Layer " << index + 1 << " off" << std::endl;
-            }
-            index++;
-        }
-    }
-    g_list_free(children);
-    application.refresh_drawing();
 }
 
 #endif /* NO_GRAPHICS */

@@ -381,6 +381,11 @@ void draw_congestion(ezgl::renderer* g) {
 
     //Draw each congested node
     for (int inode : congested_rr_nodes) {
+        auto rr_node = RRNodeId(inode);
+        int layer_num = rr_graph.node_layer(rr_node);
+        int transparency_factor = get_rr_node_transparency(rr_node);
+        if (!draw_state->draw_layer_display[layer_num].visible)
+            continue;
         short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = rr_graph.node_capacity(RRNodeId(inode));
 
@@ -390,6 +395,7 @@ void draw_congestion(ezgl::renderer* g) {
         VTR_ASSERT(node_congested);
 
         ezgl::color color = to_ezgl_color(cmap->color(congestion_ratio));
+        color.alpha = transparency_factor;
 
         switch (rr_graph.node_type(RRNodeId(inode))) {
             case CHANX: //fallthrough
