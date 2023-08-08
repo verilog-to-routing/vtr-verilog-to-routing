@@ -1066,7 +1066,8 @@ NetResultFlags timing_driven_route_net(ConnectionRouter& router,
                                                                                                   is_flat,
                                                                                                   can_grow_bb);
 
-        return flags;
+        if (flags.success == false)
+            return flags;
     }
 
     if (budgeting_inf.if_set()) {
