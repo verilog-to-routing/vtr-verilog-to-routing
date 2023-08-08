@@ -44,6 +44,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const RRGraphView& rr_graph,
                                 const vtr::Point<size_t>& device_chan_width,
                                 const std::vector<t_segment_inf>& segment_inf,
+                                const size_t& layer,
                                 const vtr::Point<size_t>& gsb_coordinate);
 
 void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,

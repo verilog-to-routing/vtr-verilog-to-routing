@@ -35,6 +35,7 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraphView& rr_graph,
  * of a specific IPIN/OPIN at a specific grid tile (x,y) location.
  **********************************************************************/
 std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
+                                          const size_t& layer,
                                           const int& x,
                                           const int& y,
                                           const t_rr_type& rr_type,
@@ -45,7 +46,7 @@ std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
         //For pins we need to look at all the sides of the current grid tile
 
         for (e_side side : SIDES) {
-            RRNodeId rr_node_index = rr_graph.node_lookup().find_node(x, y, rr_type, ptc, side);
+            RRNodeId rr_node_index = rr_graph.node_lookup().find_node(layer, x, y, rr_type, ptc, side);
 
             if (rr_node_index != RRNodeId::INVALID()) {
                 indices.push_back(rr_node_index);
@@ -53,7 +54,7 @@ std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
         }
     } else {
         //Sides do not effect non-pins so there should only be one per ptc
-        RRNodeId rr_node_index = rr_graph.node_lookup().find_node(x, y, rr_type, ptc);
+        RRNodeId rr_node_index = rr_graph.node_lookup().find_node(layer, x, y, rr_type, ptc);
 
         if (rr_node_index != RRNodeId::INVALID()) {
             indices.push_back(rr_node_index);
@@ -67,6 +68,7 @@ std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
  * Find a list of rr nodes in a routing channel at (x,y)
  **********************************************************************/
 std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
+                                               const size_t& layer,
                                                const int& x,
                                                const int& y,
                                                const t_rr_type& rr_type) {
@@ -74,7 +76,7 @@ std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
 
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
-    for (const RRNodeId& rr_node_index : rr_graph.node_lookup().find_channel_nodes(x, y, rr_type)) {
+    for (const RRNodeId& rr_node_index : rr_graph.node_lookup().find_channel_nodes(layer, x, y, rr_type)) {
         if (rr_node_index != RRNodeId::INVALID()) {
             indices.push_back(rr_node_index);
         }
