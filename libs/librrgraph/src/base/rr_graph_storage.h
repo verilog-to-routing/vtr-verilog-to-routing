@@ -253,8 +253,22 @@ class t_rr_graph_storage {
     }
 
     // Get the node id of the virtual sink for the clock network 
-    RRNodeId virtual_clock_network_root_idx() const {
-        return virtual_clock_network_root_idx_;
+    RRNodeId virtual_clock_network_root_idx(std::string clock_network_name) const {
+        auto it = virtual_clock_network_root_idx_.find(clock_network_name);
+        if (it != virtual_clock_network_root_idx_.end()) {
+            return it->second; // Get 
+        }
+        return RRNodeId::INVALID();
+    }
+
+    // Returns a bool indicating whether the input node id is a virtual sink for a clock network.
+    bool is_virtual_clock_network_root(RRNodeId id) const{
+        for (const auto& pair : virtual_clock_network_root_idx_) {
+            if (pair.second == id) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /* Edge accessors
@@ -738,11 +752,13 @@ class t_rr_graph_storage {
     std::unordered_map<RRNodeId, std::string> node_name_;
 
     /**
-     * @brief rr_node idx that connects to all the nodes that are clock network entry points
+     * @brief A map that uses the name for each clock network as the key and stores 
+     * the rr_node index for the virtual sink that connects to all the nodes that 
+     * are clock network entry points.
      *
-     * Useful for two stage clock routing
+     * This map is particularly useful for two-stage clock routing.
      */
-    RRNodeId virtual_clock_network_root_idx_;
+    std::unordered_map<std::string, RRNodeId> virtual_clock_network_root_idx_;
 
     // Edge storage.
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
@@ -814,7 +830,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
-        const RRNodeId& virtual_clock_network_root_idx)
+        const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx)
         : node_storage_(node_storage)
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
@@ -901,9 +917,24 @@ class t_rr_graph_view {
         VTR_PREFETCH(&node_storage_[id], 0, 0);
     }
 
-    // Returns the node id of the virtual sink
-    RRNodeId virtual_clock_network_root_idx() const{
-        return virtual_clock_network_root_idx_;
+    // Returns the node id of the virtual sink for the given clock network name
+    RRNodeId virtual_clock_network_root_idx(std::string clock_network_name) const{
+        auto it = virtual_clock_network_root_idx_.find(clock_network_name);
+        if (it != virtual_clock_network_root_idx_.end()) {
+            return it->second; // Get 
+        }
+        return RRNodeId::INVALID();
+    }
+
+    
+    // Returns a bool indicating whether the input node id is a virtual sink for a clock network.
+    bool is_virtual_clock_network_root(RRNodeId id) const{
+        for (const auto& pair : virtual_clock_network_root_idx_) {
+            if (pair.second == id) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /* Edge accessors */
@@ -943,7 +974,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
-    const RRNodeId& virtual_clock_network_root_idx_;
+    const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
 
 };
 

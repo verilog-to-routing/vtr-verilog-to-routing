@@ -767,7 +767,12 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
 }
 
 void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
-    virtual_clock_network_root_idx_ = virtual_clock_network_root_idx;
+    std::string clock_network_name = node_name(virtual_clock_network_root_idx);
+    if(clock_network_name == "")
+    {
+        VTR_LOG_ERROR("Attribute name is not specified for virtual sink node '%u'", size_t(virtual_clock_network_root_idx));
+    }
+    virtual_clock_network_root_idx_.insert(std::make_pair(clock_network_name, virtual_clock_network_root_idx));
 }
 
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {

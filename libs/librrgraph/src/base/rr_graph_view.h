@@ -306,8 +306,13 @@ class RRGraphView {
     }
 
     /** @brief Get the node id of the clock network virtual sink */
-    inline RRNodeId virtual_clock_network_root_idx() const {
-        return node_storage_.virtual_clock_network_root_idx();
+    inline RRNodeId virtual_clock_network_root_idx(std::string clock_network_name) const {
+        return node_storage_.virtual_clock_network_root_idx(clock_network_name);
+    }
+
+    /** @brief Get the node id of the clock network virtual sink */
+    inline bool is_virtual_clock_network_root(RRNodeId id) const {
+        return node_storage_.is_virtual_clock_network_root(id);
     }
 
     /** @brief Get the switch id that represents the iedge'th outgoing edge from a specific node

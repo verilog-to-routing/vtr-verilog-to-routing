@@ -62,7 +62,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
     auto total_edges_to_node = std::vector<int>(rr_graph.num_nodes());
     auto switch_types_from_current_to_node = std::vector<unsigned char>(rr_graph.num_nodes());
     const int num_rr_switches = rr_graph.num_rr_switches();
-    const auto& rr_graph_nodes_view = rr_graph.rr_nodes().view();
 
     std::vector<std::pair<int, int>> edges;
 
@@ -76,7 +75,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
         }
 
         // Virtual clock network sink is special, ignore.
-        if (int(size_t(rr_graph_nodes_view.virtual_clock_network_root_idx())) == int(inode)) {
+        if (rr_graph.is_virtual_clock_network_root(rr_node)) {
             continue;
         }
 
