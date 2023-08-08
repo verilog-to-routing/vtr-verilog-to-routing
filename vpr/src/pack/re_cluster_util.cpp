@@ -676,7 +676,7 @@ void commit_mol_removal(const t_pack_molecule* molecule,
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
     }
-    free_router_data(router_data);
+    //free_router_data(router_data);
 }
 
 bool check_type_and_mode_compitability(const ClusterBlockId& old_clb,
