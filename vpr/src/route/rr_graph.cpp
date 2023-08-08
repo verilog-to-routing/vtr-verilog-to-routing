@@ -1200,13 +1200,14 @@ static void build_rr_graph(const t_graph_type graph_type,
     //is deterministic -- always producing the same RR graph.
     constexpr unsigned SWITCHPOINT_RNG_SEED = 1;
     vtr::RandState switchpoint_rand_state = SWITCHPOINT_RNG_SEED;
+    const auto inter_cluster_prog_rr = device_ctx.inter_cluster_prog_routing_resources;
 
     if (is_global_graph) {
         switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, SUBSET, 3);
     } else if (BI_DIRECTIONAL == directionality) {
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
-                                                                  grid,
+                                                                  grid, inter_cluster_prog_rr,
                                                                   switchblocks, &nodes_per_chan, directionality,
                                                                   switchpoint_rand_state);
         } else {
@@ -1218,6 +1219,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
                                                                   grid,
+                                                                  inter_cluster_prog_rr,
                                                                   switchblocks, &nodes_per_chan, directionality,
                                                                   switchpoint_rand_state);
         } else {

@@ -268,16 +268,19 @@ int get_wire_segment_length(const DeviceGrid& grid, e_rr_type chan_type, const t
 static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, const t_chan_seg_details& wire_details, int seg_coord, e_side sb_side);
 
 /* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
-static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location location);
+static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer, e_sb_location location);
 
 /* checks if the specified coordinates represent a corner of the FPGA */
-static bool is_corner(const DeviceGrid& grid, int x, int y);
+static bool is_corner(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
 
 /* checks if the specified coordinates correspond to one of the perimeter switchblocks */
-static bool is_perimeter(const DeviceGrid& grid, int x, int y);
+static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
 
 /* checks if the specified coordinates correspond to the core of the FPGA (i.e. not perimeter) */
-static bool is_core(const DeviceGrid& grid, int x, int y);
+static bool is_core(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
+
+/* checks if the specified layer has programmable routing resources described in the architecture file */
+static bool is_prog_routing_avail(const DeviceGrid& grid,  const std::vector<bool>& inter_cluster_rr, int layer);
 
 /* adjusts a negative destination wire index calculated from a permutation formula */
 static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int connection_ind);
@@ -287,6 +290,7 @@ static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int conne
 t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x,
                                                              const t_chan_details& chan_details_y,
                                                              const DeviceGrid& grid,
+                                                             const std::vector<bool>& inter_cluster_rr,
                                                              std::vector<t_switchblock_inf> switchblocks,
                                                              t_chan_width* nodes_per_chan,
                                                              e_directionality directionality,
@@ -325,20 +329,23 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
         }
         /* Iterate over the x,y coordinates spanning the FPGA. */
-        for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
-            for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
-                if (sb_not_here(grid, x_coord, y_coord, sb.location)) {
-                    continue;
-                }
-                /* now we iterate over all the potential side1->side2 connections */
-                //TODO: SM: this must change to TOTAL_SIDES INSTEAD OF SIDES
-                for (e_side from_side : SIDES) {
-                    for (e_side to_side : SIDES) {
-                        /* Fill appropriate entry of the sb_conns map with vector specifying the wires
-                         * the current wire will connect to */
-                        compute_wire_connections(x_coord, y_coord, from_side, to_side,
-                                                 chan_details_x, chan_details_y, &sb, grid,
-                                                 &wire_type_sizes_x, &wire_type_sizes_y, directionality, sb_conns, rand_state, &scratchpad);
+        for(int layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
+            for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
+                for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
+                    if (sb_not_here(grid, inter_cluster_rr, x_coord, y_coord, layer_coord, sb.location)) {
+                        continue;
+                    }
+                    /* now we iterate over all the potential side1->side2 connections */
+                    //TODO: SM: this must change to TOTAL_SIDES INSTEAD OF SIDES
+                    for (e_side from_side: SIDES) {
+                        for (e_side to_side: SIDES) {
+                            /* Fill appropriate entry of the sb_conns map with vector specifying the wires
+                             * the current wire will connect to */
+                            compute_wire_connections(x_coord, y_coord, from_side, to_side,
+                                                     chan_details_x, chan_details_y, &sb, grid,
+                                                     &wire_type_sizes_x, &wire_type_sizes_y, directionality, sb_conns,
+                                                     rand_state, &scratchpad);
+                        }
                     }
                 }
             }
@@ -363,7 +370,7 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
 }
 
 /* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
-static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location location) {
+static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer, e_sb_location location) {
     bool sb_not_here = true;
 
     switch (location) {
@@ -371,22 +378,22 @@ static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location loca
             sb_not_here = false;
             break;
         case E_PERIMETER:
-            if (is_perimeter(grid, x, y)) {
+            if (is_perimeter(grid, inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
         case E_CORNER:
-            if (is_corner(grid, x, y)) {
+            if (is_corner(grid, inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
         case E_CORE:
-            if (is_core(grid, x, y)) {
+            if (is_core(grid,inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
         case E_FRINGE:
-            if (is_perimeter(grid, x, y) && !is_corner(grid, x, y)) {
+            if (is_perimeter(grid, inter_cluster_rr, x, y, layer) && !is_corner(grid, inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
@@ -398,7 +405,10 @@ static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location loca
 }
 
 /* checks if the specified coordinates represent a corner of the FPGA */
-static bool is_corner(const DeviceGrid& grid, int x, int y) {
+static bool is_corner(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
+    if(!is_prog_routing_avail(grid,inter_cluster_rr,layer)){
+        return false;
+    }
     bool is_corner = false;
     if ((x == 0 && y == 0) || (x == 0 && y == int(grid.height()) - 2) || //-2 for no perim channels
         (x == int(grid.width()) - 2 && y == 0) ||                        //-2 for no perim channels
@@ -409,7 +419,10 @@ static bool is_corner(const DeviceGrid& grid, int x, int y) {
 }
 
 /* checks if the specified coordinates correspond to one of the perimeter switchblocks */
-static bool is_perimeter(const DeviceGrid& grid, int x, int y) {
+static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
+    if(!is_prog_routing_avail(grid,inter_cluster_rr,layer)){
+        return false;
+    }
     bool is_perimeter = false;
     if (x == 0 || x == int(grid.width()) - 2 || y == 0 || y == int(grid.height()) - 2) {
         is_perimeter = true;
@@ -418,9 +431,23 @@ static bool is_perimeter(const DeviceGrid& grid, int x, int y) {
 }
 
 /* checks if the specified coordinates correspond to the core of the FPGA (i.e. not perimeter) */
-static bool is_core(const DeviceGrid& grid, int x, int y) {
-    bool is_core = !is_perimeter(grid, x, y);
+static bool is_core(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
+    if(!is_prog_routing_avail(grid,inter_cluster_rr,layer)){
+        return false;
+    }
+    bool is_core = !is_perimeter(grid, inter_cluster_rr, x, y, layer);
     return is_core;
+}
+
+static bool is_prog_routing_avail(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int layer){
+    bool is_prog_avail = true;
+    //make sure layer number is legal
+    VTR_ASSERT(layer >= 0 && layer < grid.get_num_layers());
+    //check if the current layer has programmable routing resources before trying to build a custom switch blocks
+    if(!inter_cluster_rr.at(layer)){
+        is_prog_avail = false;
+    }
+    return is_prog_avail;
 }
 
 /* Counts the number of wires in each wire type in the specified channel */
