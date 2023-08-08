@@ -201,6 +201,7 @@ static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_p
 static void compute_wire_connections(
     int x_coord,
     int y_coord,
+    int layer_coord,
     enum e_side from_side,
     enum e_side to_side,
     const t_chan_details& chan_details_x,
@@ -223,8 +224,10 @@ static void compute_wireconn_connections(
     Switchblock_Lookup sb_conn,
     int from_x,
     int from_y,
+    int from_layer,
     int to_x,
     int to_y,
+    int to_layer,
     t_rr_type from_chan_type,
     t_rr_type to_chan_type,
     const t_wire_type_sizes* wire_type_sizes_x,
@@ -341,7 +344,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                         for (e_side to_side: SIDES) {
                             /* Fill appropriate entry of the sb_conns map with vector specifying the wires
                              * the current wire will connect to */
-                            compute_wire_connections(x_coord, y_coord, from_side, to_side,
+                            compute_wire_connections(x_coord, y_coord, layer_coord, from_side, to_side,
                                                      chan_details_x, chan_details_y, &sb, grid,
                                                      &wire_type_sizes_x, &wire_type_sizes_y, directionality, sb_conns,
                                                      rand_state, &scratchpad);
@@ -579,18 +582,16 @@ static void get_switchpoint_wires(
     }
 }
 
-/* Compute the wire(s) that the wire at (x, y, from_side, to_side) should connect to.
+/* Compute the wire(s) that the wire at (x, y, layer, from_side, to_side) should connect to.
  * sb_conns is updated with the result */
-static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, t_switchblock_inf* sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
+static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, t_switchblock_inf* sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
     int from_x, from_y, from_layer;         /* index into source channel */
     int to_x, to_y, to_layer;               /* index into destination channel */
     t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
-    //TODO: SM: this should be function argument coming from the callee
-    int layer_coord = 0;
 
     SB_Side_Connection side_conn(from_side, to_side);                 /* for indexing into this switchblock's permutation funcs */
-    Switchblock_Lookup sb_conn(x_coord, y_coord, from_side, to_side); /* for indexing into FPGA's switchblock map */
+    Switchblock_Lookup sb_conn(x_coord, y_coord, layer_coord, from_side, to_side); /* for indexing into FPGA's switchblock map */
 
     /* can't connect a switchblock side to itself */
     if (from_side == to_side) {
@@ -634,7 +635,7 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
         /* compute the destination wire segments to which the source wire segment should connect based on the
          * current wireconn */
         compute_wireconn_connections(grid, directionality, from_chan_details, to_chan_details,
-                                     sb_conn, from_x, from_y, to_x, to_y, from_chan_type, to_chan_type, wire_type_sizes_from,
+                                     sb_conn, from_x, from_y, from_layer, to_x, to_y, to_layer, from_chan_type, to_chan_type, wire_type_sizes_from,
                                      wire_type_sizes_to, sb, wireconn_ptr, sb_conns, rand_state, scratchpad);
     }
 
@@ -653,8 +654,10 @@ static void compute_wireconn_connections(
     Switchblock_Lookup sb_conn,
     int from_x,
     int from_y,
+    int from_layer,
     int to_x,
     int to_y,
+    int to_layer,
     t_rr_type from_chan_type,
     t_rr_type to_chan_type,
     const t_wire_type_sizes* wire_type_sizes_from,
@@ -788,7 +791,7 @@ static void compute_wireconn_connections(
             sb_edge.from_wire = from_wire;
             sb_edge.to_wire = to_wire;
 
-            // if the switch override has been set, use that. Otherwise use default
+            // if the switch override has been set, use that, Otherwise use default
             if (wireconn_ptr->switch_override_indx != DEFAULT_SWITCH) {
                 sb_edge.switch_ind = wireconn_ptr->switch_override_indx;
             } else {
@@ -805,9 +808,9 @@ static void compute_wireconn_connections(
                 std::swap(sb_reverse_edge.from_wire, sb_reverse_edge.to_wire);
                 //Since we are implementing the reverse connection we have swapped from and to.
                 //
-                //Coverity flags this (false positive), so annotatate so coverity ignores it:
+                //Coverity flags this (false positive), so annotate coverity ignores it:
                 // coverity[swapped_arguments : Intentional]
-                Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.to_side, sb_conn.from_side);
+                Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
                 (*sb_conns)[sb_conn_reverse].push_back(sb_reverse_edge);
             }
         }
@@ -829,9 +832,6 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
  * that we are indexing into (ie, CHANX or CHANY */
 static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type) {
     chan_type = CHANX;
-    //TODO: SM: must figure out how each track is connected to next layer
-    chan_layer = tile_layer;
-
     /* here we use the VPR convention that a tile 'owns' the channels directly to the right
      * and above it */
     switch (side) {
@@ -839,6 +839,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             /* this is y-channel belonging to tile above */
             chan_x = tile_x;
             chan_y = tile_y + 1;
+            chan_layer = tile_layer;
             chan_type = CHANY;
             return chan_details_y;
             break;
@@ -846,6 +847,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             /* this is x-channel belonging to tile to the right */
             chan_x = tile_x + 1;
             chan_y = tile_y;
+            chan_layer = tile_layer;
             chan_type = CHANX;
             return chan_details_x;
             break;
@@ -854,6 +856,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_type = CHANY;
+            chan_layer = tile_layer;
             return chan_details_y;
             break;
         case LEFT:
@@ -861,13 +864,24 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_type = CHANX;
+            chan_layer = tile_layer;
             return chan_details_x;
             break;
         case ABOVE:
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: un-supported side specified: %d\n", side);
+            chan_x = tile_x;
+            chan_y = tile_y;
+            chan_layer = tile_layer + 1;
+            //TODO: SM : chanx or chany?
+            chan_type = CHANX;
+            return chan_details_x;
             break;
         case UNDER:
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: un-supported side specified: %d\n", side);
+            chan_x = tile_x;
+            chan_y = tile_y;
+            chan_layer = tile_layer - 1;
+            //TODO: SM : chanx or chany?
+            chan_type = CHANX;
+            return chan_details_x;
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: unknown side specified: %d\n", side);

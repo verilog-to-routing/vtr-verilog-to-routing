@@ -19,23 +19,30 @@ class Switchblock_Lookup {
   public:
     int x_coord; /* x coordinate of switchblock connection */ //TODO: redundant comment?? add range
     int y_coord;                                              /* y coordinate of switchblock connection */
+    int layer_coord;                                          /* layer number of switchblock */
     e_side from_side;                                         /* source side of switchblock connection */
     e_side to_side;                                           /* destination side of switchblock connection */
 
     /* Empty constructor initializes everything to 0 */
     Switchblock_Lookup() {
-        x_coord = y_coord = -1; //TODO: use set function
+        x_coord = y_coord = layer_coord = -1; //TODO: use set function
     }
 
     /* Constructor for initializing member variables */
-    Switchblock_Lookup(int set_x, int set_y, e_side set_from, e_side set_to) {
-        this->set_coords(set_x, set_y, set_from, set_to); //TODO: use set function
+    Switchblock_Lookup(int set_x, int set_y, int set_layer, e_side set_from, e_side set_to) {
+        this->set_coords(set_x, set_y, set_layer, set_from, set_to); //TODO: use set function
+    }
+
+    /* Constructor for initializing member variables with default layer number (0), used for single die FPGA */
+    Switchblock_Lookup(int set_x, int set_y, e_side set_from, e_side set_to){
+        this->set_coords(set_x,set_y,0,set_from,set_to);
     }
 
     /* Function for setting the segment coordinates */
-    void set_coords(int set_x, int set_y, e_side set_from, e_side set_to) {
+    void set_coords(int set_x, int set_y, int set_layer, e_side set_from, e_side set_to) {
         x_coord = set_x;
         y_coord = set_y;
+        layer_coord = set_layer;
         from_side = set_from;
         to_side = set_to;
     }
@@ -44,7 +51,8 @@ class Switchblock_Lookup {
     bool operator==(const Switchblock_Lookup& obj) const {
         bool result;
         if (x_coord == obj.x_coord && y_coord == obj.y_coord
-            && from_side == obj.from_side && to_side == obj.to_side) {
+            && from_side == obj.from_side && to_side == obj.to_side
+            && layer_coord == obj.layer_coord) {
             result = true;
         } else {
             result = false;
@@ -52,7 +60,7 @@ class Switchblock_Lookup {
         return result;
     }
 };
-
+//TODO: SM: check if this require to include layer_coord
 struct t_hash_Switchblock_Lookup {
     size_t operator()(const Switchblock_Lookup& obj) const noexcept {
         //TODO: use vtr::hash_combine
