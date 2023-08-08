@@ -534,7 +534,8 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
 }
 
 /* Build a RRChan Object with the given channel type and coorindators */
-static RRChan build_one_tileable_rr_chan(const vtr::Point<size_t>& chan_coordinate,
+static RRChan build_one_tileable_rr_chan(const size_t& layer,
+                                         const vtr::Point<size_t>& chan_coordinate,
                                          const t_rr_type& chan_type,
                                          const RRGraphView& rr_graph,
                                          const ChanNodeDetails& chan_details) {
@@ -548,7 +549,7 @@ static RRChan build_one_tileable_rr_chan(const vtr::Point<size_t>& chan_coordina
 
     /* Collect rr_nodes for this channel */
     chan_rr_nodes = find_rr_graph_chan_nodes(rr_graph,
-                                             chan_coordinate.x(), chan_coordinate.y(),
+                                             layer, chan_coordinate.x(), chan_coordinate.y(),
                                              chan_type);
 
     /* Reserve */
@@ -619,6 +620,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const RRGraphView& rr_graph,
                                 const vtr::Point<size_t>& device_chan_width,
                                 const std::vector<t_segment_inf>& segment_inf,
+                                const size_t& layer,
                                 const vtr::Point<size_t>& gsb_coordinate) {
     /* Create an object to return */
     RRGSB rr_gsb;
@@ -662,7 +664,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* Routing channels*/
                 /* SideManager: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
                 /* Create a rr_chan object and check if it is unique in the graph */
-                rr_chan = build_one_tileable_rr_chan(coordinate, CHANY, rr_graph, chany_details);
+                rr_chan = build_one_tileable_rr_chan(layer, coordinate, CHANY, rr_graph, chany_details);
                 chan_dir_to_port_dir_mapping[0] = OUT_PORT; /* INC_DIRECTION => OUT_PORT */
                 chan_dir_to_port_dir_mapping[1] = IN_PORT;  /* DEC_DIRECTION => IN_PORT */
 
@@ -675,11 +677,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* Build the Switch block: opin and opin_grid_side */
                 /* Include Grid[x][y+1] RIGHT side outputs pins */
                 temp_opin_rr_nodes[0] = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                                 gsb_coordinate.x(), gsb_coordinate.y() + 1,
+                                                                 layer, gsb_coordinate.x(), gsb_coordinate.y() + 1,
                                                                  OPIN, opin_grid_side[0]);
                 /* Include Grid[x+1][y+1] Left side output pins */
                 temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                                 gsb_coordinate.x() + 1, gsb_coordinate.y() + 1,
+                                                                 layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1,
                                                                  OPIN, opin_grid_side[1]);
 
                 break;
@@ -693,7 +695,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* SideManager: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
                 /* Collect rr_nodes for Tracks for top: chany[x][y+1] */
                 /* Create a rr_chan object and check if it is unique in the graph */
-                rr_chan = build_one_tileable_rr_chan(coordinate, CHANX, rr_graph, chanx_details);
+                rr_chan = build_one_tileable_rr_chan(layer, coordinate, CHANX, rr_graph, chanx_details);
                 chan_dir_to_port_dir_mapping[0] = OUT_PORT; /* INC_DIRECTION => OUT_PORT */
                 chan_dir_to_port_dir_mapping[1] = IN_PORT;  /* DEC_DIRECTION => IN_PORT */
 
@@ -706,11 +708,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* Build the Switch block: opin and opin_grid_side */
                 /* include Grid[x+1][y+1] Bottom side output pins */
                 temp_opin_rr_nodes[0] = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                                 gsb_coordinate.x() + 1, gsb_coordinate.y() + 1,
+                                                                 layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1,
                                                                  OPIN, opin_grid_side[0]);
                 /* include Grid[x+1][y] Top side output pins */
                 temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                                 gsb_coordinate.x() + 1, gsb_coordinate.y(),
+                                                                 layer, gsb_coordinate.x() + 1, gsb_coordinate.y(),
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case BOTTOM: /* BOTTOM = 2*/
@@ -723,7 +725,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* SideManager: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
                 /* Collect rr_nodes for Tracks for bottom: chany[x][y] */
                 /* Create a rr_chan object and check if it is unique in the graph */
-                rr_chan = build_one_tileable_rr_chan(coordinate, CHANY, rr_graph, chany_details);
+                rr_chan = build_one_tileable_rr_chan(layer, coordinate, CHANY, rr_graph, chany_details);
                 chan_dir_to_port_dir_mapping[0] = IN_PORT;  /* INC_DIRECTION => IN_PORT */
                 chan_dir_to_port_dir_mapping[1] = OUT_PORT; /* DEC_DIRECTION => OUT_PORT */
 
@@ -736,11 +738,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* Build the Switch block: opin and opin_grid_side */
                 /* include Grid[x+1][y] Left side output pins */
                 temp_opin_rr_nodes[0] = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                                 gsb_coordinate.x() + 1, gsb_coordinate.y(),
+                                                                 layer, gsb_coordinate.x() + 1, gsb_coordinate.y(),
                                                                  OPIN, opin_grid_side[0]);
                 /* include Grid[x][y] Right side output pins */
                 temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                                 gsb_coordinate.x(), gsb_coordinate.y(),
+                                                                 layer, gsb_coordinate.x(), gsb_coordinate.y(),
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case LEFT: /* LEFT = 3 */
@@ -753,7 +755,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* SideManager: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
                 /* Collect rr_nodes for Tracks for left: chanx[x][y] */
                 /* Create a rr_chan object and check if it is unique in the graph */
-                rr_chan = build_one_tileable_rr_chan(coordinate, CHANX, rr_graph, chanx_details);
+                rr_chan = build_one_tileable_rr_chan(layer, coordinate, CHANX, rr_graph, chanx_details);
                 chan_dir_to_port_dir_mapping[0] = IN_PORT;  /* INC_DIRECTION => IN_PORT */
                 chan_dir_to_port_dir_mapping[1] = OUT_PORT; /* DEC_DIRECTION => OUT_PORT */
 
@@ -765,11 +767,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* Build the Switch block: opin and opin_grid_side */
                 /* include Grid[x][y+1] Bottom side outputs pins */
                 temp_opin_rr_nodes[0] = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                                 gsb_coordinate.x(), gsb_coordinate.y() + 1,
+                                                                 layer, gsb_coordinate.x(), gsb_coordinate.y() + 1,
                                                                  OPIN, opin_grid_side[0]);
                 /* include Grid[x][y] Top side output pins */
                 temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                                 gsb_coordinate.x(), gsb_coordinate.y(),
+                                                                 layer, gsb_coordinate.x(), gsb_coordinate.y(),
                                                                  OPIN, opin_grid_side[1]);
 
                 break;
@@ -899,7 +901,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         }
         /* Collect IPIN rr_nodes*/
         temp_ipin_rr_nodes = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                      ix, iy, IPIN, ipin_rr_node_grid_side);
+                                                      layer, ix, iy, IPIN, ipin_rr_node_grid_side);
         /* Fill the ipin nodes of RRGSB */
         for (const RRNodeId& inode : temp_ipin_rr_nodes) {
             rr_gsb.add_ipin_node(inode, side_manager.get_side());

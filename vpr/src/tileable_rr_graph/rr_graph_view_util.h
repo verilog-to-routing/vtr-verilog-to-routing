@@ -14,12 +14,14 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraphView& rr_graph,
                                                const RRNodeId& to_node);
 
 std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
+                                          const size_t& layer,
                                           const int& x,
                                           const int& y,
                                           const t_rr_type& rr_type,
                                           const int& ptc);
 
 std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
+                                               const size_t& layer,
                                                const int& x,
                                                const int& y,
                                                const t_rr_type& rr_type);
