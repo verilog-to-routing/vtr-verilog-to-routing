@@ -554,8 +554,8 @@ static void get_switchpoint_wires(
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side) should connect to.
  * sb_conns is updated with the result */
 static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, t_switchblock_inf* sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
-    int from_x, from_y, from_layer;                     /* index into source channel */
-    int to_x, to_y, to_layer;                          /* index into destination channel */
+    int from_x, from_y, from_layer;         /* index into source channel */
+    int to_x, to_y, to_layer;               /* index into destination channel */
     t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
     //TODO: SM: this should be function argument coming from the callee
@@ -799,7 +799,7 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
 /* Here we find the correct channel (x or y), and the coordinates to index into it based on the
  * specified tile coordinates and the switchblock side. Also returns the type of channel
  * that we are indexing into (ie, CHANX or CHANY */
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type){
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type) {
     chan_type = CHANX;
     //TODO: SM: must figure out how each track is connected to next layer
     chan_layer = tile_layer;
@@ -854,7 +854,7 @@ static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coor
     bool result = false;
 
     /* the layer that channel is located at must be legal regardless of chan_type*/
-    if(layer_coord < 0 || layer_coord > grid.get_num_layers()){
+    if (layer_coord < 0 || layer_coord > grid.get_num_layers()) {
         return result;
     }
 
