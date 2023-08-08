@@ -88,6 +88,7 @@ std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
  **********************************************************************/
 std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
                                                const DeviceGrid& device_grid,
+                                               const size_t& layer,
                                                const int& x,
                                                const int& y,
                                                const t_rr_type& rr_type,
@@ -104,23 +105,24 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
     VTR_ASSERT(side != NUM_SIDES);
 
     /* Find all the pins on the side of the grid */
-    int width_offset = device_grid.get_width_offset(x, y);
-    int height_offset = device_grid.get_height_offset(x, y);
-    for (int pin = 0; pin < device_grid.get_physical_type(x, y)->num_pins; ++pin) {
+    t_physical_tile_loc tile_loc(x, y, layer);
+    int width_offset = device_grid.get_width_offset(tile_loc);
+    int height_offset = device_grid.get_height_offset(tile_loc);
+    for (int pin = 0; pin < device_grid.get_physical_type(tile_loc)->num_pins; ++pin) {
         /* Skip those pins have been ignored during rr_graph build-up */
-        if (true == device_grid.get_physical_type(x, y)->is_ignored_pin[pin]) {
+        if (true == device_grid.get_physical_type(tile_loc)->is_ignored_pin[pin]) {
             /* If specified, force to include all the clock pins */
-            if (!include_clock || std::find(device_grid.get_physical_type(x, y)->get_clock_pins_indices().begin(), device_grid.get_physical_type(x, y)->get_clock_pins_indices().end(), pin) == device_grid.get_physical_type(x, y)->get_clock_pins_indices().end()) {
+            if (!include_clock || std::find(device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().begin(), device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().end(), pin) == device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().end()) {
                 continue;
             }
         }
-        if (false == device_grid.get_physical_type(x, y)->pinloc[width_offset][height_offset][side][pin]) {
+        if (false == device_grid.get_physical_type(tile_loc)->pinloc[width_offset][height_offset][side][pin]) {
             /* Not the pin on this side, we skip */
             continue;
         }
 
         /* Try to find the rr node */
-        RRNodeId rr_node_index = rr_graph.node_lookup().find_node(x, y, rr_type, pin, side);
+        RRNodeId rr_node_index = rr_graph.node_lookup().find_node(layer, x, y, rr_type, pin, side);
         if (rr_node_index != RRNodeId::INVALID()) {
             indices.push_back(rr_node_index);
         }

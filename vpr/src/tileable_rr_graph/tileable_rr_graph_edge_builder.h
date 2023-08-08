@@ -24,6 +24,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           RRGraphBuilder& rr_graph_builder,
                           const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                           const DeviceGrid& grids,
+                          const size_t& layer,
                           const vtr::Point<size_t>& device_chan_width,
                           const std::vector<t_segment_inf>& segment_inf,
                           const std::vector<vtr::Matrix<int>>& Fc_in,
@@ -37,6 +38,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
 void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
                                        RRGraphBuilder& rr_graph_builder,
                                        const DeviceGrid& grids,
+                                       const size_t& layer,
                                        const RRSwitchId& delayless_switch,
                                        const std::vector<t_direct_inf>& directs,
                                        const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs);
@@ -45,12 +47,14 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                            RRGraphBuilder& rr_graph_builder,
                                            const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                            const DeviceGrid& grids,
+                                           const size_t& layer,
                                            size_t& num_edges_to_create);
 
 void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
                                          RRGraphBuilder& rr_graph_builder,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                          const DeviceGrid& grids,
+                                         const size_t& layer,
                                          size_t& num_edges_to_create);
 
 #endif

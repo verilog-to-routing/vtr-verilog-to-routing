@@ -122,7 +122,7 @@ class RRGraphBuilder {
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
      *  Return a valid node id if succeed. Otherwise, return an invalid id.
      */
-    RRNodeId create_node(int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
+    RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *
@@ -197,11 +197,6 @@ class RRGraphBuilder {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
-    /** @brief set the layer number at which RRNodeId is located at */
-    inline void set_node_layer(RRNodeId id, int layer){
-        node_storage_.set_node_layer(id, layer);
-    }
-
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
     inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
         node_storage_.set_node_pin_num(id, new_pin_num);
@@ -233,7 +228,7 @@ class RRGraphBuilder {
 
     /** @brief Add a new edge to the cache of edges to be built 
      *  .. note:: This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */
-    void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch);
+    void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
 
     /** @brief Allocate and build actual edges in storage. 
      *  Once called, the cached edges will be uniquified and added to routing resource nodes, 
