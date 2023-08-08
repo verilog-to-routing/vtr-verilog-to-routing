@@ -31,10 +31,11 @@ size_t find_unidir_routing_channel_width(const size_t& chan_width) {
  * Get the class index of a grid pin 
  ***********************************************************************/
 int get_grid_pin_class_index(const DeviceGrid& grids,
-                             const size_t& x, const size_t& y,
+                             const size_t& layer, const size_t& x, const size_t& y,
                              const int pin_index) {
     /* check */
-    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
+    t_physical_tile_loc tile_loc(x, y, layer);
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
     VTR_ASSERT(pin_index < phy_tile_type->num_pins);
     return phy_tile_type->pin_class[pin_index];
 }
@@ -64,13 +65,14 @@ e_side determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
 
 /* Deteremine the side of a pin of a grid */
 std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
-                                        const size_t& x, const size_t& y,
+                                        const size_t& layer, const size_t& x, const size_t& y,
                                         const size_t& pin_id) {
     std::vector<e_side> pin_sides;
 
-    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
-    int width_offset = grids.get_width_offset(x, y);
-    int height_offset = grids.get_height_offset(x, y);
+    t_physical_tile_loc tile_loc(x, y, layer);
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
+    int width_offset = grids.get_width_offset(tile_loc);
+    int height_offset = grids.get_height_offset(tile_loc);
     for (const e_side& side : {TOP, RIGHT, BOTTOM, LEFT}) {
         if (true == phy_tile_type->pinloc[width_offset][height_offset][size_t(side)][pin_id]) {
             pin_sides.push_back(side);
@@ -86,7 +88,7 @@ std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
  * For others, we consider all the sides  
  ***********************************************************************/
 std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
-                                    const size_t& x, const size_t& y,
+                                    const size_t& layer, const size_t& x, const size_t& y,
                                     const e_pin_type& pin_type,
                                     const e_side& pin_side,
                                     const int& pin_width,
@@ -95,7 +97,7 @@ std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
     /* Make sure a clear start */
     pin_list.clear();
 
-    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(t_physical_tile_loc(x, y, layer));
     for (int ipin = 0; ipin < phy_tile_type->num_pins; ++ipin) {
         int class_id = phy_tile_type->pin_class[ipin];
         if ((1 == phy_tile_type->pinloc[pin_width][pin_height][pin_side][ipin])
@@ -112,13 +114,13 @@ std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
  * For others, we consider all the sides  
  ***********************************************************************/
 size_t get_grid_num_pins(const DeviceGrid& grids,
-                         const size_t& x, const size_t& y,
+                         const size_t& layer, const size_t& x, const size_t& y,
                          const e_pin_type& pin_type,
                          const e_side& io_side) {
     size_t num_pins = 0;
 
     /* For IO_TYPE sides */
-    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(t_physical_tile_loc(x, y, layer));
     for (const e_side& side : {TOP, RIGHT, BOTTOM, LEFT}) {
         /* skip unwanted sides */
         if ((true == is_io_type(phy_tile_type))
@@ -128,7 +130,7 @@ size_t get_grid_num_pins(const DeviceGrid& grids,
         /* Get pin list */
         for (int width = 0; width < phy_tile_type->width; ++width) {
             for (int height = 0; height < phy_tile_type->height; ++height) {
-                std::vector<int> pin_list = get_grid_side_pins(grids, x, y, pin_type, side, width, height);
+                std::vector<int> pin_list = get_grid_side_pins(grids, layer, x, y, pin_type, side, width, height);
                 num_pins += pin_list.size();
             }
         }
@@ -143,11 +145,11 @@ size_t get_grid_num_pins(const DeviceGrid& grids,
  * For others, we consider all the sides  
  ***********************************************************************/
 size_t get_grid_num_classes(const DeviceGrid& grids,
-                            const size_t& x, const size_t& y,
+                            const size_t& layer, const size_t& x, const size_t& y,
                             const e_pin_type& pin_type) {
     size_t num_classes = 0;
 
-    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(x, y);
+    t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(t_physical_tile_loc(x, y, layer));
     for (size_t iclass = 0; iclass < phy_tile_type->class_inf.size(); ++iclass) {
         /* Bypass unmatched pin_type */
         if (pin_type != phy_tile_type->class_inf[iclass].type) {
@@ -185,6 +187,7 @@ size_t get_grid_num_classes(const DeviceGrid& grids,
  *  When height_offset == height - 1, it means that the grid is at the top side of this multi-width and multi-height block
  ***********************************************************************/
 bool is_chanx_exist(const DeviceGrid& grids,
+                    const size_t& layer,
                     const vtr::Point<size_t>& chanx_coord,
                     const bool& through_channel) {
     if ((1 > chanx_coord.x()) || (chanx_coord.x() > grids.width() - 2)) {
@@ -199,7 +202,7 @@ bool is_chanx_exist(const DeviceGrid& grids,
         return true;
     }
 
-    return (grids.get_height_offset(chanx_coord.x(), chanx_coord.y()) == grids.get_physical_type(chanx_coord.x(), chanx_coord.y())->height - 1);
+    return (grids.get_height_offset(t_physical_tile_loc(chanx_coord.x(), chanx_coord.y(), layer)) == grids.get_physical_type(t_physical_tile_loc(chanx_coord.x(), chanx_coord.y(), layer))->height - 1);
 }
 
 /************************************************************************
@@ -223,6 +226,7 @@ bool is_chanx_exist(const DeviceGrid& grids,
  *  unless it falls out of the grid array
  ***********************************************************************/
 bool is_chany_exist(const DeviceGrid& grids,
+                    const size_t& layer,
                     const vtr::Point<size_t>& chany_coord,
                     const bool& through_channel) {
     if (chany_coord.x() > grids.width() - 2) {
@@ -237,7 +241,7 @@ bool is_chany_exist(const DeviceGrid& grids,
         return true;
     }
 
-    return (grids.get_width_offset(chany_coord.x(), chany_coord.y()) == grids.get_physical_type(chany_coord.x(), chany_coord.y())->width - 1);
+    return (grids.get_width_offset(t_physical_tile_loc(chany_coord.x(), chany_coord.y(), layer)) == grids.get_physical_type(t_physical_tile_loc(chany_coord.x(), chany_coord.y(), layer))->width - 1);
 }
 
 /************************************************************************
@@ -254,6 +258,7 @@ bool is_chany_exist(const DeviceGrid& grids,
  *     +-----------------+
  ***********************************************************************/
 bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
+                                         const size_t& layer,
                                          const vtr::Point<size_t>& chanx_coord,
                                          const bool& through_channel) {
     VTR_ASSERT(0 < chanx_coord.x());
@@ -267,7 +272,7 @@ bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
     if (false == through_channel) {
         /* We check the left neighbor of chanx, if it does not exist, the chanx is left to a multi-height grid */
         vtr::Point<size_t> left_chanx_coord(chanx_coord.x() - 1, chanx_coord.y());
-        if (false == is_chanx_exist(grids, left_chanx_coord)) {
+        if (false == is_chanx_exist(grids, layer, left_chanx_coord)) {
             return true;
         }
     }
@@ -289,6 +294,7 @@ bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
  *                            +-----------------+
  ***********************************************************************/
 bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
+                                        const size_t& layer,
                                         const vtr::Point<size_t>& chanx_coord,
                                         const bool& through_channel) {
     VTR_ASSERT(chanx_coord.x() < grids.width() - 1);
@@ -302,7 +308,7 @@ bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
     if (false == through_channel) {
         /* We check the right neighbor of chanx, if it does not exist, the chanx is left to a multi-height grid */
         vtr::Point<size_t> right_chanx_coord(chanx_coord.x() + 1, chanx_coord.y());
-        if (false == is_chanx_exist(grids, right_chanx_coord)) {
+        if (false == is_chanx_exist(grids, layer, right_chanx_coord)) {
             return true;
         }
     }
@@ -329,6 +335,7 @@ bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
  *     +-----------------+
  ***********************************************************************/
 bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
+                                      const size_t& layer,
                                       const vtr::Point<size_t>& chany_coord,
                                       const bool& through_channel) {
     VTR_ASSERT(0 < chany_coord.y());
@@ -342,7 +349,7 @@ bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
     if (false == through_channel) {
         /* We check the bottom neighbor of chany, if it does not exist, the chany is top to a multi-height grid */
         vtr::Point<size_t> bottom_chany_coord(chany_coord.x(), chany_coord.y() - 1);
-        if (false == is_chany_exist(grids, bottom_chany_coord)) {
+        if (false == is_chany_exist(grids, layer, bottom_chany_coord)) {
             return true;
         }
     }
@@ -369,6 +376,7 @@ bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
  *
  ***********************************************************************/
 bool is_chany_bottom_to_multi_width_grid(const DeviceGrid& grids,
+                                         const size_t& layer,
                                          const vtr::Point<size_t>& chany_coord,
                                          const bool& through_channel) {
     VTR_ASSERT(chany_coord.y() < grids.height() - 1);
@@ -382,7 +390,7 @@ bool is_chany_bottom_to_multi_width_grid(const DeviceGrid& grids,
     if (false == through_channel) {
         /* We check the top neighbor of chany, if it does not exist, the chany is left to a multi-height grid */
         vtr::Point<size_t> top_chany_coord(chany_coord.x(), chany_coord.y() + 1);
-        if (false == is_chany_exist(grids, top_chany_coord)) {
+        if (false == is_chany_exist(grids, layer, top_chany_coord)) {
             return true;
         }
     }
