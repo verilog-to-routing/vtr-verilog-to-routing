@@ -73,10 +73,6 @@ void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw,
                         ezgl::renderer* g);
 
-/* Helper function that checks whether the edges between the current and previous nodes can be drawn
- * based on whether the cross-layer connections option is enabled and whether the layer on which the
- * nodes are located are enabled.
- */
 
 /**
  * @brief Returns the layer number of a timing path node
@@ -109,13 +105,6 @@ void draw_routing_util(ezgl::renderer* g);
  * b) during routing, critical path is shown by both flylines and routed net connections.
  */
 void draw_crit_path(ezgl::renderer* g);
-
-/*
- * Checks whether a flyline should be drawn or not based on the layer control settings in the UI
- * If the source and sink are on the same active(visible) layer - returns true
- * If the source and sink are on different active layers & Cross-layer connections is toggled on - returns true
- * Otherwise returns false
- */
 
 /**
  * @brief  Checks whether a flyline should be drawn or not based on the layer control settings in the UI
