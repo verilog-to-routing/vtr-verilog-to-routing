@@ -1568,33 +1568,6 @@ constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY)
 constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == SINK); }
 
 /**
- * @brief Basic element used to store the traceback (routing) of each net.
- *
- *   @param index    Array index (ID) of this routing resource node.
- *   @param net_pin_index:    Net pin index associated with the node. This value
- *                            ranges from 1 to fanout [1..num_pins-1]. For cases when
- *                            different speed paths are taken to the same SINK for
- *                            different pins, node index cannot uniquely identify
- *                            each SINK, so the net pin index guarantees an unique
- *                            identification for each SINK node. For non-SINK nodes
- *                            and for SINK nodes with no associated net pin index
- *                            (i.e. special SINKs like the source of a clock tree
- *                            which do not correspond to an actual netlist connection),
- *                            the value for this member should be set to OPEN (-1).
- *   @param iswitch  Index of the switch type used to go from this rr_node to
- *                   the next one in the routing.  OPEN if there is no next node
- *                   (i.e. this node is the last one (a SINK) in a branch of the
- *                   net's routing).
- *   @param next     Pointer to the next traceback element in this route.
- */
-struct t_trace {
-    t_trace* next;
-    int index;
-    int net_pin_index = OPEN;
-    short iswitch;
-};
-
-/**
  * @brief Extra information about each rr_node needed only during routing
  *        (i.e. during the maze expansion).
  *
