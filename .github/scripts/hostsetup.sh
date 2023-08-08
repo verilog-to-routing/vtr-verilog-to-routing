@@ -70,7 +70,8 @@ apt install -y \
   g++-9 \
   gcc-9 \
   wget \
-  libtbb-dev
+  libtbb-dev \
+  openssl
 
 # installing the latest version of cmake
 apt install -y apt-transport-https ca-certificates gnupg
