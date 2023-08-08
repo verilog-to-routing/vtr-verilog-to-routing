@@ -4,8 +4,6 @@
 #include "cluster_placement.h"
 #include "cluster_router.h"
 
-const char* move_suffix = "_m";
-
 bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              bool during_packing,
                              int verbosity,
@@ -140,7 +138,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
 
     //Add the atom to the new cluster
     t_lb_router_data* new_router_data = nullptr;
-    is_added = pack_mol_in_existing_cluster(molecule, molecule_size, new_clb, new_clb_atoms, during_packing, false, clustering_data, new_router_data, thread_id);
+    is_added = pack_mol_in_existing_cluster(molecule, molecule_size, new_clb, new_clb_atoms, during_packing, clustering_data, new_router_data, thread_id);
 
     //Commit or revert the move
     if (is_added) {
@@ -163,7 +161,6 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
     return (is_added);
 }
 
-#if 1
 bool swap_two_molecules(t_pack_molecule* molecule_1,
                         t_pack_molecule* molecule_2,
                         bool during_packing,
@@ -212,12 +209,6 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     std::string clb_pb_1_name = (std::string)clb_pb_1->name;
     t_pb* clb_pb_2 = cluster_ctx.clb_nlist.block_pb(clb_2);
     std::string clb_pb_2_name = (std::string)clb_pb_2->name;
-    /* // Elgammal debugging
-    if(clb_1 == ClusterBlockId(721))
-        VTR_LOG("before clb1: %p --> %s\n", cluster_ctx.clb_nlist.block_pb(clb_1), cluster_ctx.clb_nlist.block_pb(clb_1)->name);
-    if(clb_2 == ClusterBlockId(721))
-        VTR_LOG("before clb2: %p --> %s\n", cluster_ctx.clb_nlist.block_pb(clb_2), cluster_ctx.clb_nlist.block_pb(clb_2)->name);
-    */
 
     //remove the molecule from its current cluster
     remove_mol_from_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, false, old_1_router_data);
@@ -227,15 +218,10 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     commit_mol_removal(molecule_2, molecule_2_size, clb_2, during_packing, old_2_router_data, clustering_data);
 
     //Add the atom to the new cluster
-    mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);
+    mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, during_packing, clustering_data, old_2_router_data, thread_id);
     if (!mol_1_success) {
-        /* // Elgammal debugging
-        if(clb_1 ==  ClusterBlockId(721) || clb_2 == ClusterBlockId(721)) {
-            VTR_LOG("packing clb2 failed\n");
-        }
-         */
-        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
-        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);
+        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, clustering_data, old_1_router_data, thread_id);
+        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, clustering_data, old_2_router_data, thread_id);
 
         VTR_ASSERT(mol_1_success && mol_2_success);
         free_router_data(old_1_router_data);
@@ -243,35 +229,21 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         old_1_router_data = nullptr;
         old_2_router_data = nullptr;
 
-        //if (molecule_2->is_chain())
-        {
-            free(clb_pb_1->name);
-            cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
-        }
-        //if (molecule_1->is_chain())
-        {
-            free(clb_pb_2->name);
-            cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
-        }
+
+        free(clb_pb_1->name);
+        cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+        free(clb_pb_2->name);
+        cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
 
         return false;
     }
-    /* // Elgammal debugging
-    if(clb_1 ==  ClusterBlockId(721) || clb_2 == ClusterBlockId(721)) {
-        VTR_LOG("packing clb2 success, %s\n", cluster_ctx.clb_nlist.block_pb(clb_2)->name);
-    }
-     */
-    mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
+
+    mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, clustering_data, old_1_router_data, thread_id);
     if (!mol_2_success) {
-        /* //Elgammal debugging
-        if(clb_1 == ClusterBlockId(721)) {
-            VTR_LOG("packing clb1 failed\n");
-        }
-        */
         remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, false, old_2_router_data);
         commit_mol_removal(molecule_1, molecule_1_size, clb_2, during_packing, old_2_router_data, clustering_data);
-        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
-        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);
+        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, clustering_data, old_1_router_data, thread_id);
+        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, clustering_data, old_2_router_data, thread_id);
 
         VTR_ASSERT(mol_1_success && mol_2_success);
         free_router_data(old_1_router_data);
@@ -279,53 +251,35 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         old_1_router_data = nullptr;
         old_2_router_data = nullptr;
 
-        //if (molecule_2->is_chain())
-        {
-            free(clb_pb_1->name);
-            cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
-        }
-        //if (molecule_1->is_chain())
-        {
-            free(clb_pb_2->name);
-            cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
-        }
+        free(clb_pb_1->name);
+        cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+        free(clb_pb_2->name);
+        cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
 
         return false;
     }
-    /* // Elgammal debugging
-    if(clb_2 ==  ClusterBlockId(721) || clb_1 == ClusterBlockId(721)) {
-        VTR_LOG("packing clb1 succes, %s\n", cluster_ctx.clb_nlist.block_pb(clb_1)->name);
-    }
-    */
+
     //commit the move if succeeded or revert if failed
     VTR_ASSERT(mol_1_success && mol_2_success);
 
-    //if (molecule_2->is_chain())
-    {
-        free(clb_pb_1->name);
-        cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
-    }
-    //if(molecule_1->is_chain())
-    {
-        free(clb_pb_2->name);
-        cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
-    }
-    /* //Elgammal debugging
-    if(clb_1 == ClusterBlockId(721))
-        VTR_LOG("after clb1: %p --> %s\n\n", cluster_ctx.clb_nlist.block_pb(clb_1), cluster_ctx.clb_nlist.block_pb(clb_1)->name);
-    if(clb_2 == ClusterBlockId(721))
-        VTR_LOG("after clb2: %p --> %s\n\n", cluster_ctx.clb_nlist.block_pb(clb_2), cluster_ctx.clb_nlist.block_pb(clb_2)->name);
-    */
+    //Fix block names
+    free(clb_pb_1->name);
+    cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+    free(clb_pb_2->name);
+    cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
+
+
+
     //If the move is done after packing not during it, some fixes need to be done on the clustered netlist
     if (!during_packing) {
         fix_clustered_netlist(molecule_1, molecule_1_size, clb_1, clb_2);
         fix_clustered_netlist(molecule_2, molecule_2_size, clb_2, clb_1);
     }
 
+    //Free
     free_router_data(old_1_router_data);
     free_router_data(old_2_router_data);
     old_1_router_data = nullptr;
     old_2_router_data = nullptr;
     return true;
 }
-#endif
