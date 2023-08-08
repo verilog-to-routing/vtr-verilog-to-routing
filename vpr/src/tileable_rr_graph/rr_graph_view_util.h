@@ -26,6 +26,7 @@ std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
 
 std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
                                                const DeviceGrid& device_grid,
+                                               const size_t& layer,
                                                const int& x,
                                                const int& y,
                                                const t_rr_type& rr_type,

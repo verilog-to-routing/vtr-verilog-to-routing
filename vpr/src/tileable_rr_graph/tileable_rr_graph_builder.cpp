@@ -148,7 +148,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
      ************************/
     alloc_tileable_rr_graph_nodes(device_ctx.rr_graph_builder,
                                   rr_node_driver_switches,
-                                  grids,
+                                  grids, 0,
                                   device_chan_width,
                                   segment_inf,
                                   through_channel);
@@ -161,7 +161,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    rr_node_driver_switches,
                                    rr_node_track_ids,
                                    device_ctx.rr_rc_data,
-                                   grids,
+                                   grids, 0,
                                    device_chan_width,
                                    segment_inf,
                                    wire_to_ipin_rr_switch,
@@ -234,7 +234,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     build_rr_graph_edges(device_ctx.rr_graph,
                          device_ctx.rr_graph_builder,
                          rr_node_driver_switches,
-                         grids,
+                         grids, 0,
                          device_chan_width,
                          segment_inf,
                          Fc_in, Fc_out,
@@ -257,7 +257,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
         clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
     }
 
-    build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, delayless_rr_switch,
+    build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0, delayless_rr_switch,
                                       arch_directs, clb2clb_directs);
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
