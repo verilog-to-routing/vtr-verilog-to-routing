@@ -595,6 +595,24 @@ struct t_bb {
     int layer_max = OPEN;
 };
 
+struct t_2D_tbb {
+    t_2D_tbb() = default;
+    t_2D_tbb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
+        : xmin(xmin_)
+        , xmax(xmax_)
+        , ymin(ymin_)
+        , ymax(ymax_)
+        , layer_num (layer_num_){
+        VTR_ASSERT(xmax_ >= xmin_);
+        VTR_ASSERT(ymax_ >= ymin_);
+    }
+    int xmin = OPEN;
+    int xmax = OPEN;
+    int ymin = OPEN;
+    int ymax = OPEN;
+    int layer_num = OPEN;
+};
+
 /**
  * @brief An offset between placement locations (t_pl_loc)
  *
