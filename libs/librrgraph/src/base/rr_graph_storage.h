@@ -235,6 +235,15 @@ class t_rr_graph_storage {
         return node_layer_[id];
     }
 
+    /* Retrieve the name assigned to the node id. If no name is assigned, empty string is returned */
+    std::string node_name(RRNodeId id) const{
+        auto it = node_name_.find(id);
+        if (it != node_name_.end()) {
+            return it->second;  // Return the value if key is found
+        }
+        return "";  // Return an empty string if key is not found
+    }
+
     // This prefetechs hot RR node data required for optimization.
     //
     // Note: This is optional, but may lower time spent on memory stalls in
@@ -508,6 +517,7 @@ class t_rr_graph_storage {
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
+    void set_node_name(RRNodeId id, std::string new_name);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
     void set_node_layer(RRNodeId id, short layer);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
@@ -717,6 +727,16 @@ class t_rr_graph_storage {
     // in a separate vector.
     vtr::vector<RRNodeId, short> node_layer_;
 
+   /**
+     * @brief Stores the assigned names for the rr_node IDs.
+     *
+     * The primary use case for this attribute is to find the name of the clock network that a given virtual sink belongs to.
+     * If the user is modeling a clock network, they need to specify the clock network virtual sink in the rr_graph
+     * using the attribute clk_res_type. If the clk_res_type is specified, the attribute name is used as the name for the clock
+     * network.
+     */
+    std::unordered_map<RRNodeId, std::string> node_name_;
+
     /**
      * @brief rr_node idx that connects to all the nodes that are clock network entry points
      *
@@ -790,6 +810,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge,
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
         const vtr::array_view_id<RRNodeId, const short> node_layer,
+        const std::unordered_map<RRNodeId, std::string>& node_name,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
@@ -799,6 +820,7 @@ class t_rr_graph_view {
         , node_first_edge_(node_first_edge)
         , node_fan_in_(node_fan_in)
         , node_layer_(node_layer)
+        , node_name_(node_name)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch)
@@ -861,6 +883,16 @@ class t_rr_graph_view {
         return node_layer_[id];
     }
 
+    /* Retrieve the name assigned to the node id. If no name is assigned, empty string is returned */
+    std::string node_name(RRNodeId id) const{
+        auto it = node_name_.find(id);
+        if (it != node_name_.end()) {
+            return it->second;  // Return the value if key is found
+        }
+        return "";  // Return an empty string if key is not found
+    }
+
+
     // This prefetechs hot RR node data required for optimization.
     //
     // Note: This is optional, but may lower time spent on memory stalls in
@@ -907,6 +939,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge_;
     vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
     vtr::array_view_id<RRNodeId, const short> node_layer_;
+    const std::unordered_map<RRNodeId, std::string>& node_name_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;

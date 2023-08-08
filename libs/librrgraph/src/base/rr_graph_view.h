@@ -93,6 +93,11 @@ class RRGraphView {
         return node_storage_.node_type(node);
     }
 
+    /** @brief Get the name assigned to a node id. */
+    std::string node_name(RRNodeId node) const {
+        return node_storage_.node_name(node);
+    }
+
     /** @brief Get the type string of a routing resource node. This function is inlined for runtime optimization. */
     inline const char* node_type_string(RRNodeId node) const {
         return node_storage_.node_type_string(node);

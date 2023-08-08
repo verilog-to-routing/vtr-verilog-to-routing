@@ -450,6 +450,7 @@ public:
 	virtual inline void set_node_clk_res_type(enum_node_clk_res_type clk_res_type, typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline unsigned int get_node_id(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline enum_node_type get_node_type(typename ContextTypes::NodeReadContext &ctx) = 0;
+	virtual inline std::string get_node_name(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
 	virtual inline void finish_node_loc(typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeLocReadContext get_node_loc(typename ContextTypes::NodeReadContext &ctx) = 0;
@@ -474,7 +475,7 @@ public:
 	 * </xs:complexType>
 	*/
 	virtual inline void preallocate_rr_nodes_node(typename ContextTypes::RrNodesWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::NodeWriteContext add_rr_nodes_node(typename ContextTypes::RrNodesWriteContext &ctx, unsigned int capacity, unsigned int id, enum_node_type type) = 0;
+	virtual inline typename ContextTypes::NodeWriteContext add_rr_nodes_node(typename ContextTypes::RrNodesWriteContext &ctx, unsigned int capacity, unsigned int id, enum_node_type type, std::string name="") = 0;
 	virtual inline void finish_rr_nodes_node(typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline size_t num_rr_nodes_node(typename ContextTypes::RrNodesReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeReadContext get_rr_nodes_node(int n, typename ContextTypes::RrNodesReadContext &ctx) = 0;

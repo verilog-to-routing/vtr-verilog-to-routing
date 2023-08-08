@@ -114,6 +114,11 @@ class RRGraphBuilder {
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
     }
+
+    /** @brief Set the node name with a given valid id */
+    inline void set_node_name(RRNodeId id, std::string name) {
+        node_storage_.set_node_name(id, name);
+    }
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *

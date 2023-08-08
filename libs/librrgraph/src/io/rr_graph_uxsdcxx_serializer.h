@@ -849,7 +849,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void preallocate_rr_nodes_node(void*& /*ctx*/, size_t size) final {
         rr_graph_builder_->reserve_nodes(size);
     }
-    inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type) final {
+    inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type, std::string name="") final {
         // make_room_in_vector will not allocate if preallocate_rr_nodes_node
         // was invoked, but on formats that lack size on read,
         // make_room_in_vector will use an allocation pattern that is
@@ -859,6 +859,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto node = (*rr_nodes_)[id];
         RRNodeId node_id = node.id();
 
+        if (name != ""){
+            rr_graph_builder_->set_node_name(node_id, name);
+        }
         rr_graph_builder_->set_node_type(node_id, from_uxsd_node_type(type));
         rr_graph_builder_->set_node_capacity(node_id, capacity);
 
@@ -910,6 +913,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline uxsd::enum_node_type get_node_type(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
         return to_uxsd_node_type(rr_graph.node_type(node.id()));
+    }
+
+    inline std::string get_node_name(const t_rr_node& node) final {
+        const auto& rr_graph = (*rr_graph_);
+        return rr_graph.node_name(node.id());
     }
 
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {

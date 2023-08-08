@@ -100,7 +100,7 @@ template <class T, typename Context>
 inline void load_metadata(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
 inline void load_node(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
-inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, const std::function<void(const char*)> * report_error);
+inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, std::string& name, const std::function<void(const char*)> * report_error);
 template <class T, typename Context>
 inline void load_rr_nodes(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
@@ -294,8 +294,8 @@ enum class gtok_t_metadata {META};
 constexpr const char *gtok_lookup_t_metadata[] = {"meta"};
 enum class gtok_t_node {LOC, TIMING, SEGMENT, METADATA};
 constexpr const char *gtok_lookup_t_node[] = {"loc", "timing", "segment", "metadata"};
-enum class atok_t_node {CAPACITY, DIRECTION, ID, TYPE, CLK_RES_TYPE};
-constexpr const char *atok_lookup_t_node[] = {"capacity", "direction", "id", "type", "clk_res_type"};
+enum class atok_t_node {CAPACITY, DIRECTION, ID, TYPE, NAME, CLK_RES_TYPE};
+constexpr const char *atok_lookup_t_node[] = {"capacity", "direction", "id", "type", "name", "clk_res_type"};
 
 enum class gtok_t_rr_nodes {NODE};
 constexpr const char *gtok_lookup_t_rr_nodes[] = {"node"};
@@ -1344,6 +1344,9 @@ inline atok_t_node lex_attr_t_node(const char *in, const std::function<void(cons
 		case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
 			return atok_t_node::TYPE;
 		break;
+		case onechar('n', 0, 32) | onechar('a', 8, 32) | onechar('m', 16, 32) | onechar('e', 24, 32):
+			return atok_t_node::NAME;
+		break;
 		default: break;
 		}
 		break;
@@ -2155,6 +2158,15 @@ inline unsigned int load_unsigned_int(const char *in, const std::function<void(c
 	return out;
 }
 
+inline std::string load_string(const char* in, const std::function<void(const char*)> * report_error) {
+    std::string out(in);
+    // return error if the string is empty
+    if (out.empty()) {
+        noreturn_report(report_error, "Empty string is not allowed.");
+    }
+    return out;
+}
+
 inline float load_float(const char *in, const std::function<void(const char *)> * report_error){
 	float out;
 	out = std::strtof(in, NULL);
@@ -2460,8 +2472,8 @@ inline void load_node_segment_required_attributes(const pugi::xml_node &root, in
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_segment, report_error);
 }
 
-inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, const std::function<void(const char *)> * report_error){
-	std::bitset<5> astate = 0;
+inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, std::string& name, const std::function<void(const char *)> * report_error){
+	std::bitset<6> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_node in = lex_attr_t_node(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
@@ -2479,13 +2491,20 @@ inline void load_node_required_attributes(const pugi::xml_node &root, unsigned i
 		case atok_t_node::TYPE:
 			*type = lex_enum_node_type(attr.value(), true, report_error);
 			break;
+		case atok_t_node::NAME:
+			// While variable name is not a required variable, if it is specified it needs to be 
+			// stored before clk_res_type
+			// When clk_res_type is set to virtual_sink then the name is used as the key
+			// to store the node id of the virtual sink in an unordered map
+			name = load_string(attr.value(), report_error);
+			break;
 		case atok_t_node::CLK_RES_TYPE:
 			/* Attribute clk_res_type set after element init */
 			break;
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<5> test_astate = astate | std::bitset<5>(0b10010);
+	std::bitset<6> test_astate = astate | std::bitset<6>(0b110010);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node, report_error);
 }
 
@@ -3612,8 +3631,9 @@ inline void load_rr_nodes(const pugi::xml_node &root, T &out, Context &context, 
 				memset(&node_id, 0, sizeof(node_id));
 				enum_node_type node_type;
 				memset(&node_type, 0, sizeof(node_type));
-				load_node_required_attributes(node, &node_capacity, &node_id, &node_type, report_error);
-				auto child_context = out.add_rr_nodes_node(context, node_capacity, node_id, node_type);
+				std::string name;
+				load_node_required_attributes(node, &node_capacity, &node_id, &node_type, name, report_error);
+				auto child_context = out.add_rr_nodes_node(context, node_capacity, node_id, node_type, name);
 				load_node(node, out, child_context, report_error, offset_debug);
 				out.finish_rr_nodes_node(child_context);
 			}
@@ -4110,6 +4130,8 @@ inline void write_rr_nodes(T &in, std::ostream &os, Context &context){
 				os << " direction=\"" << lookup_node_direction[(int)in.get_node_direction(child_context)] << "\"";
 			if((bool)in.get_node_clk_res_type(child_context))
 				os << " clk_res_type=\"" << lookup_node_clk_res_type[(int)in.get_node_clk_res_type(child_context)] << "\"";
+			if(in.get_node_name(child_context) != "")
+				os << " name=\"" << in.get_node_name(child_context) << "\"";
 			os << " id=\"" << in.get_node_id(child_context) << "\"";
 			os << " type=\"" << lookup_node_type[(int)in.get_node_type(child_context)] << "\"";
 			os << ">";

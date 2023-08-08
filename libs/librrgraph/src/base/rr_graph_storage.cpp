@@ -706,6 +706,10 @@ void t_rr_graph_storage::set_node_type(RRNodeId id, t_rr_type new_type) {
     node_storage_[id].type_ = new_type;
 }
 
+void t_rr_graph_storage::set_node_name(RRNodeId id, std::string new_name) {
+    node_name_.insert(std::make_pair(id, new_name));
+}
+
 void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
     auto& node = node_storage_[id];
     if (x1 < x2) {
@@ -789,6 +793,7 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_first_edge_),
         vtr::make_const_array_view_id(node_fan_in_),
         vtr::make_const_array_view_id(node_layer_),
+        node_name_,
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_),
