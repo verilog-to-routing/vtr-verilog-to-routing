@@ -79,7 +79,7 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
 
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_graph_node, float* cost);
 
-static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns* list_of_pack_pattern);
+static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns* list_of_pack_pattern, bool is_nontrivial_chain);
 
 static std::vector<t_pb_graph_pin*> find_end_of_path(t_pb_graph_pin* input_pin, int pattern_index);
 
@@ -947,8 +947,10 @@ static t_pack_molecule* try_create_molecule(t_pack_patterns* list_of_pack_patter
 
     // If a chain pattern extends beyond a single logic block, we must find
     // the furthest blk_id up the chain that is not mapped to a molecule yet.
+    // The first time this function is called, assume this is not a chain
+    // to avoid false length-1 chains.
     if (pack_pattern->is_chain) {
-        blk_id = find_new_root_atom_for_chain(blk_id, pack_pattern);
+        blk_id = find_new_root_atom_for_chain(blk_id, pack_pattern, false);
         if (!blk_id) return nullptr;
     }
 
@@ -1300,8 +1302,9 @@ static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_p
  * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
  * block_index: index of current atom
  * list_of_pack_pattern: ptr to current chain pattern
+ * is_nontrivial_chain: if atom has no driver, then it is either furthest up the chain (if this function was called from the atom it drives) or not in a real chain
  */
-static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns* list_of_pack_pattern) {
+static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns* list_of_pack_pattern, bool is_nontrivial_chain) {
     AtomBlockId new_root_blk_id;
     t_pb_graph_pin* root_ipin;
     t_pb_graph_node* root_pb_graph_node;
@@ -1326,8 +1329,14 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 
     // if there is no driver block for this net
     // then it is the furthest up the chain
+    // or it is not in a chain (if this function was not called from the atom this block drives).
     if (!driver_blk_id) {
-        return blk_id;
+
+        if (is_nontrivial_chain) {
+            return blk_id;
+        } else {
+            return AtomBlockId::INVALID();
+        }
     }
     // check if driver atom is already packed
     auto rng = atom_ctx.atom_molecules.equal_range(driver_blk_id);
@@ -1338,7 +1347,8 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
     }
 
     // didn't find furthest atom up the chain, keep searching further up the chain
-    new_root_blk_id = find_new_root_atom_for_chain(driver_blk_id, list_of_pack_pattern);
+    // if the function reaches this point then the current block has a driver, so this is a nontrivial chain
+    new_root_blk_id = find_new_root_atom_for_chain(driver_blk_id, list_of_pack_pattern, true);
 
     if (!new_root_blk_id) {
         return blk_id;
