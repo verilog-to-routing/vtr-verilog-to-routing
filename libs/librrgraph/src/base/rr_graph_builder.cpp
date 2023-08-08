@@ -76,10 +76,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     }
 }
 
-void RRGraphBuilder::init_edge_remap(bool val) {
-    node_storage_.init_edge_remap(val);
-}
-RRNodeId RRGraphBuilder::create_node(int x, int y, t_rr_type type, int ptc, e_side side) {
+RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side) {
     e_side node_side = SIDES[0];
     /* Only OPIN and IPIN nodes have sides, otherwise force to use a default side */
     if (OPIN == type || IPIN == type) {
@@ -88,6 +85,7 @@ RRNodeId RRGraphBuilder::create_node(int x, int y, t_rr_type type, int ptc, e_si
     node_storage_.emplace_back();
     node_ptc_nums_.emplace_back();
     RRNodeId new_node = RRNodeId(node_storage_.size() - 1);
+    node_storage_.set_node_layer(new_node, layer);
     node_storage_.set_node_type(new_node, type);
     node_storage_.set_node_coordinates(new_node, x, y, x, y);
     node_storage_.set_node_ptc_num(new_node, ptc);
@@ -96,9 +94,9 @@ RRNodeId RRGraphBuilder::create_node(int x, int y, t_rr_type type, int ptc, e_si
     }
     /* Special for CHANX, being consistent with the rule in find_node() */
     if (CHANX == type) {
-        node_lookup_.add_node(new_node, y, x, type, ptc, node_side);
+        node_lookup_.add_node(new_node, layer, y, x, type, ptc, node_side);
     } else {
-        node_lookup_.add_node(new_node, x, y, type, ptc, node_side);
+        node_lookup_.add_node(new_node, layer, x, y, type, ptc, node_side);
     }
 
 void RRGraphBuilder::clear_temp_storage() {
@@ -189,8 +187,8 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
     });
 }
 
-void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch) {
-    edges_to_build_.emplace_back(src, dest, size_t(edge_switch));
+void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped) {
+    edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped);
     is_edge_dirty_ = true; /* Adding a new edge revokes the flag */
     is_incoming_edge_dirty_ = true;
 }
@@ -273,10 +271,10 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
              */
             if (CHANX == node_storage_.node_type(node)) {
                 ptc = node_ptc_nums_[node][x - node_storage_.node_xlow(node)];
-                node_lookup_.add_node(node, y, x, CHANX, ptc); 
+                node_lookup_.add_node(node, node_storage_.node_layer(node), y, x, CHANX, ptc); 
             } else if (CHANY == node_storage_.node_type(node)) {
                 ptc = node_ptc_nums_[node][y - node_storage_.node_ylow(node)];
-                node_lookup_.add_node(node, x, y, CHANY, ptc); 
+                node_lookup_.add_node(node, node_storage_.node_layer(node), x, y, CHANY, ptc); 
             }
         }
     }
