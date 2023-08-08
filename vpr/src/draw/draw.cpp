@@ -528,6 +528,7 @@ void alloc_draw_structs(const t_arch* arch) {
     draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
 
     draw_state->draw_layer_display.resize(device_ctx.grid.get_num_layers());
+    //By default show the lowest layer only. This is the only die layer for 2D FPGAs
     draw_state->draw_layer_display[0].visible = true;
 
     draw_state->arch_info = arch;
@@ -994,25 +995,22 @@ static void highlight_blocks(double x, double y) {
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
-    //TODO: Change when graphics supports 3D FPGAs
-    //VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
 
-    //iterate over grid z (layers)
+    //iterate over grid z (layers) first, so we draw from bottom to top die. This makes partial transparency of layers draw properly.
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         // iterate over grid x
         for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
             if (draw_coords->tile_x[i] > x) {
-                break; // we've gone to far in the x direction
+                break; // we've gone too far in the x direction
             }
             // iterate over grid y
             for (int j = 0; j < (int)device_ctx.grid.height(); ++j) {
                 if (draw_coords->tile_y[j] > y) {
-                    break; // we've gone to far in the y direction
+                    break; // we've gone too far in the y direction
                 }
                 // iterate over sub_blocks
                 const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 for (int k = 0; k < type->capacity; ++k) {
-                    // TODO: Change when graphics supports 3D
                     clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
                     if (clb_index != EMPTY_BLOCK_ID) {
                         clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
@@ -1074,6 +1072,7 @@ static void highlight_blocks(double x, double y) {
         application.refresh_drawing();
     }
 }
+
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     GObject* proceed_button = app->get_object("ProceedButton");
@@ -1377,17 +1376,13 @@ void clear_colored_locations() {
     draw_state->colored_locations.clear();
 }
 
-// This routine takes in a (x,y) location.
-// If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
-// otherwise, the function returns false (the location isn't among the highlighted locations)
 bool highlight_loc_with_specific_color(int x, int y, int layer, ezgl::color& loc_color) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    //define a (x,y) location variable
+    //define a (x,y,layer) location variable
     t_pl_loc curr_loc;
     curr_loc.x = x;
     curr_loc.y = y;
-    //TODO: Graphic currently doesn't support 3D FPGAs
     curr_loc.layer = layer;
 
     //search for the current location in the vector of colored locations

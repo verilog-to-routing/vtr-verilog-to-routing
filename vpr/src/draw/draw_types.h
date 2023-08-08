@@ -143,8 +143,17 @@ typedef struct {
     bool node_highlighted;
 } t_draw_rr_node;
 
+/**
+ * @brief Structure used to store visibility and transparency state information for a specific layer (die) in the FPGA.
+ *        This structure is also used to store the state information of the cross-layer connections option in the UI.
+ */
 typedef struct {
+    ///@brief Whether the current layer should be visible.
     bool visible = false;
+
+    ///@brief Transparency value ( 0 - transparent, 255 - Opaque)
+    ///@note The UI has the opposite definition to make it more intuitive for the user,
+    /// where increasing the value increases trasnparency. (255 - transparent, 0 - Opaque)
     int alpha = 255;
 } t_draw_layer_display;
 
@@ -277,10 +286,10 @@ struct t_draw_state {
 
     std::vector<Breakpoint> list_of_breakpoints;
 
-    //draw state for drawing multiple layers
+    ///@brief Stores visibility and transparency drawing controls for each layer [0 ... grid.num_layers -1]
     std::vector<t_draw_layer_display> draw_layer_display;
 
-    // cross layer connection
+    ///@brief Visibility and transparency for elements that cross die layers
     t_draw_layer_display cross_layer_display;
 
     ///@brief base of save graphics file name (i.e before extension)

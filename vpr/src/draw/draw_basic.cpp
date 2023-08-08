@@ -108,8 +108,6 @@ void drawplace(ezgl::renderer* g) {
     ClusterBlockId bnum;
     int num_sub_tiles;
 
-    //TODO: Change when graphics supports 3D FPGAs
-    //VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int total_num_layers = device_ctx.grid.get_num_layers();
 
     g->set_line_width(0);
@@ -138,7 +136,6 @@ void drawplace(ezgl::renderer* g) {
 
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Look at the tile at start of large block */
-                        //TODO: Change when graphics supports 3D
                         bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Fill background for the clb. Do not fill if "show_blk_internal"
                          * is toggled.
@@ -1062,7 +1059,9 @@ void draw_crit_path(ezgl::renderer* g) {
     for (tatum::TimingPathElem elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
         float arr_time = elem.tag().time();
+
         if (prev_node) {
+
             //We draw each 'edge' in a different color, this allows users to identify the stages and
             //any routing which corresponds to the edge
             //
@@ -1071,24 +1070,71 @@ void draw_crit_path(ezgl::renderer* g) {
                                                           % kelly_max_contrast_colors.size()];
 
             float delay = arr_time - prev_arr_time;
+
+            int src_block_layer = get_timing_path_node_layer_num(node);
+            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
+
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES
                 || draw_state->show_crit_path
                        == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
-                g->set_color(color);
-                g->set_line_dash(ezgl::line_dash::none);
-                g->set_line_width(4);
-                draw_flyline_timing_edge(tnode_draw_coord(prev_node),
-                                         tnode_draw_coord(node), delay, g);
+
+                // FLylines for critical path are drawn based on the layer visibility of the source and sink
+                if(is_flyline_valid_to_draw(src_block_layer,sink_block_layer)) {
+                    g->set_color(color);
+                    g->set_line_dash(ezgl::line_dash::none);
+                    g->set_line_width(4);
+                    draw_flyline_timing_edge(tnode_draw_coord(prev_node),
+                                             tnode_draw_coord(node), delay, g);
+                    g->set_line_width(0);
+                }
             } else {
                 VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
 
+                // Draws critical path shown by both flylines and routed net connections.
+
                 //Draw the routed version of the timing edge
-                draw_routed_timing_edge(prev_node, node, delay, color, g);
+                draw_routed_timing_edge_connection(prev_node, node, color, g);
+
+                // FLylines for critical path are drawn based on the layer visibility of the source and sink
+                if(is_flyline_valid_to_draw(src_block_layer,sink_block_layer)){
+                        g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+                        g->set_line_width(3);
+                        g->set_color(color);
+
+                        draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
+                                                 (ezgl::point2d)tnode_draw_coord(node), (float)delay,
+                                                 (ezgl::renderer*)g);
+                        g->set_line_dash(ezgl::line_dash::none);
+                        g->set_line_width(0);
+                }
             }
         }
         prev_node = node;
         prev_arr_time = arr_time;
     }
+}
+
+int get_timing_path_node_layer_num(tatum::NodeId node){
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
+    AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
+    ClusterBlockId clb_block = atom_ctx.lookup.atom_clb(atom_block);
+    return place_ctx.block_locs[clb_block].loc.layer;
+}
+
+bool is_flyline_valid_to_draw(int src_layer, int sink_layer){
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    if(!draw_state->draw_layer_display[src_layer].visible || !draw_state->draw_layer_display[sink_layer].visible){
+        return false; /* Don't Draw if either nodes are not on a currently visible layer in the UI*/
+    }
+    if(src_layer != sink_layer && !draw_state->cross_layer_display.visible){
+        return false; /* Don't Draw if cross layer option is off and nodes are on different layers*/
+    }
+
+    return true;
 }
 
 //Draws critical path shown as flylines.
@@ -1162,25 +1208,6 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
     }
 }
 
-//Draws critical path shown by both flylines and routed net connections.
-void draw_routed_timing_edge(tatum::NodeId start_tnode,
-                             tatum::NodeId end_tnode,
-                             float incr_delay,
-                             ezgl::color color,
-                             ezgl::renderer* g) {
-    draw_routed_timing_edge_connection(start_tnode, end_tnode, color, g);
-
-    g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
-    g->set_line_width(3);
-    g->set_color(color);
-
-    draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(start_tnode),
-                             (ezgl::point2d)tnode_draw_coord(end_tnode), (float)incr_delay,
-                             (ezgl::renderer*)g);
-
-    g->set_line_width(0);
-    g->set_line_dash(ezgl::line_dash::none);
-}
 
 //Collect all the drawing locations associated with the timing edge between start and end
 void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
@@ -1248,6 +1275,7 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
                 draw_state->draw_rr_node[inode].color = color;
             }
 
+            //draw_partial_route() takes care of layer visibility and cross-layer settings
             draw_partial_route((std::vector<int>)routed_rr_nodes,
                                (ezgl::renderer*)g);
         } else {

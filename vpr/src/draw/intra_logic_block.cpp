@@ -154,8 +154,6 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    //TODO: Change when graphics supports 3D FPGAs
-    // VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
     int total_layer_num = device_ctx.grid.get_num_layers();
 
     for (int layer_num = 0; layer_num < total_layer_num; layer_num++) {
@@ -177,12 +175,10 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                     int num_sub_tiles = type->capacity;
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Don't draw if block is empty. */
-                        // TODO: Change when graphics supports 3D
                         if (place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == INVALID_BLOCK_ID)
                             continue;
 
                         /* Get block ID */
-                        // TODO: Change when graphics supports 3D
                         ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Safety check, that physical blocks exists in the CLB */
                         if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
@@ -617,7 +613,7 @@ void draw_logical_connections(ezgl::renderer* g) {
             }
 
             //color selection
-            //transparency factor is the greater of the 2 options that the user selects from the UI
+            //transparency factor is the most transparent of the 2 options that the user selects from the UI
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
                 g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor,DRIVES_IT_COLOR.alpha * NET_ALPHA));
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {

@@ -116,9 +116,18 @@ void set_draw_loc_color(t_pl_loc, ezgl::color);
 // clear the colored_locations vector
 void clear_colored_locations();
 
-// This routine takes in a (x,y) location.
-// If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
-// otherwise, the function returns false (the location isn't among the highlighted locations)
+
+/**
+ * @brief the input loc is marked in colored_locations vector, the function will return true and the corresponding color is sent back in loc_color
+ * otherwise, the function returns false (the location isn't among the highlighted locations)
+ *  @param x
+ *  @param y
+ *  @param layer
+ *  @param loc_color
+ *
+ *  @return   Returns true or false depending on whether the block at the specified (x,y,layer) location needs to be highlighted by a specific color.
+ *            The corresponding color is returned by reference.
+ */
 bool highlight_loc_with_specific_color(int x, int y, int layer, ezgl::color& loc_color);
 
 /* Because the list of possible block type colours is finite, we wrap around possible colours if there are more
