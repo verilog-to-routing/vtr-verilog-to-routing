@@ -26,6 +26,7 @@
 #include "atom_netlist_utils.h"
 #include "rr_graph.h"
 #include "vtr_assert.h"
+#include "vtr_digest.h"
 #include "vtr_util.h"
 #include "tatum/echo_writer.hpp"
 #include "vtr_log.h"
@@ -43,18 +44,22 @@
 #include "route_export.h"
 #include "echo_files.h"
 #include "route_common.h"
+#include "route_tree.h"
 #include "read_route.h"
 #include "binary_heap.h"
 
+#include "old_traceback.h"
+
 /*************Functions local to this module*************/
-static void process_route(std::ifstream& fp, const char* filename, int& lineno);
-static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
-static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno);
-static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
-static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
+static void process_route(const Netlist<>& net_list, std::ifstream& fp, const char* filename, int& lineno, bool is_flat);
+static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
+static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat);
+static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat);
+static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
 static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
 static std::string format_name(std::string name);
 static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node);
+void print_route(const Netlist<>& net_list, FILE* fp, bool is_flat);
 
 /*************Global Functions****************************/
 
@@ -64,7 +69,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node);
  * Perform a series of verification tests to ensure the netlist,
  * placement, and routing files match
  */
-bool read_route(const char* route_file, const t_router_opts& router_opts, bool verify_file_digests) {
+bool read_route(const char* route_file, const t_router_opts& router_opts, bool verify_file_digests, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
     bool flat_router = router_opts.flat_routing;
@@ -119,7 +124,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     }
 
     /* Read in every net */
-    process_route(fp, route_file, lineno);
+    process_route(router_net_list, fp, route_file, lineno, is_flat);
 
     fp.close();
 
@@ -152,7 +157,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 }
 
 ///@brief Walks through every net and add the routing appropriately
-static void process_route(std::ifstream& fp, const char* filename, int& lineno) {
+static void process_route(const Netlist<>& net_list, std::ifstream& fp, const char* filename, int& lineno, bool is_flat) {
     std::string input;
     std::vector<std::string> tokens;
     while (std::getline(fp, input)) {
@@ -165,7 +170,7 @@ static void process_route(std::ifstream& fp, const char* filename, int& lineno) 
             continue; //Skip commented lines
         } else if (tokens[0] == "Net") {
             ClusterNetId inet(atoi(tokens[1].c_str()));
-            process_nets(fp, inet, tokens[2], tokens, filename, lineno);
+            process_nets(net_list, fp, inet, tokens[2], tokens, filename, lineno, is_flat);
         }
     }
 
@@ -173,13 +178,11 @@ static void process_route(std::ifstream& fp, const char* filename, int& lineno) 
 }
 
 ///@brief Check if the net is global or not, and process appropriately
-static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno) {
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-
+static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat) {
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
         && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
-        if (!cluster_ctx.clb_nlist.net_is_ignored(inet)) {
+        if (!net_list.net_is_ignored(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                       "Net %lu should be a global net", size_t(inet));
         }
@@ -187,47 +190,46 @@ static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name,
         name.erase(name.end() - 1);
         name = format_name(name);
 
-        if (0 != cluster_ctx.clb_nlist.net_name(inet).compare(name)) {
+        if (0 != net_list.net_name(inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                      "Net name %s for net number %lu specified in the routing file does not match given %s",
-                      name.c_str(), size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
+                      "Net name %s for net number %lu specified in the routing file does not match given %s. Running without flat routing; if this file was created with flat routing, re-run vpr with the --flat_routing option",
+                      name.c_str(), size_t(inet), net_list.net_name(inet).c_str());
         }
 
-        process_global_blocks(fp, inet, filename, lineno);
+        process_global_blocks(net_list, fp, inet, filename, lineno, is_flat);
     } else {
         /* Not a global net */
-        if (cluster_ctx.clb_nlist.net_is_ignored(inet)) {
-            VTR_LOG_WARN("Net %lu (%s) is marked as global in the netlist, but is non-global in the .route file\n", size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
+        if (net_list.net_is_ignored(inet)) {
+            VTR_LOG_WARN("Net %lu (%s) is marked as global in the netlist, but is non-global in the .route file\n", size_t(inet), net_list.net_name(inet).c_str());
         }
 
         name = format_name(name);
 
-        if (0 != cluster_ctx.clb_nlist.net_name(inet).compare(name)) {
+        if (0 != net_list.net_name(inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                      "Net name %s for net number %lu specified in the routing file does not match given %s",
-                      name.c_str(), size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
+                      "Net name %s for net number %lu specified in the routing file does not match given %s. Running without flat routing; if this file was created with flat routing, re-run vpr with the --flat_routing option",
+                      name.c_str(), size_t(inet), net_list.net_name(inet).c_str());
         }
 
-        process_nodes(fp, inet, filename, lineno);
+        process_nodes(net_list, fp, inet, filename, lineno);
     }
     input_tokens.clear();
     return;
 }
 
-static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
+static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
     /* Not a global net. Goes through every node and add it into trace.head*/
-
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_trace* tptr = route_ctx.trace[(const ParentNetId&)inet].head;
+    t_trace* head_ptr = nullptr;
+    t_trace* tptr = nullptr;
 
     /*remember the position of the last line in order to go back*/
     std::streampos oldpos = fp.tellg();
-    int inode, x, y, x2, y2, ptc, switch_id, net_pin_index, offset;
+    int inode, layer_num, x, y, layer_num2, x2, y2, ptc, switch_id, net_pin_index, offset;
     std::string prev_type;
     int node_count = 0;
     std::string input;
@@ -249,13 +251,13 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             /*End of the nodes list,
              *  return by moving the position of next char of input stream to be before net*/
             fp.seekg(oldpos);
-            return;
+            break;
         } else if (input == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
-            if (cluster_ctx.clb_nlist.net_sinks(inet).size() != 0) {
+            if (net_list.net_sinks(inet).size() != 0) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "Net %d should be used in local cluster only, reserved one CLB pin");
             }
-            return;
+            break;
         } else if (tokens[0] == "Node:") {
             /*An actual line, go through each node and add it to the route tree*/
             inode = atoi(tokens[1].c_str());
@@ -272,11 +274,11 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                           "Node %d has a type that does not match the RR graph", inode);
             }
 
-            format_coordinates(x, y, tokens[3], inet, filename, lineno);
+            format_coordinates(layer_num, x, y, tokens[3], inet, filename, lineno);
             auto rr_node = RRNodeId(inode);
 
             if (tokens[4] == "to") {
-                format_coordinates(x2, y2, tokens[5], inet, filename, lineno);
+                format_coordinates(layer_num2, x2, y2, tokens[5], inet, filename, lineno);
                 if (rr_graph.node_xlow(rr_node) != x || rr_graph.node_xhigh(rr_node) != x2 || rr_graph.node_yhigh(rr_node) != y2 || rr_graph.node_ylow(rr_node) != y) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "The coordinates of node %d does not match the rr graph", inode);
@@ -306,7 +308,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
             /* Verify types and ptc*/
             if (tokens[2] == "SOURCE" || tokens[2] == "SINK" || tokens[2] == "OPIN" || tokens[2] == "IPIN") {
-                const auto& type = device_ctx.grid.get_physical_type(x, y);
+                const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 if (tokens[4 + offset] == "Pad:" && !is_io_type(type)) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "Node %d is of the wrong type", inode);
@@ -321,25 +323,34 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             ptc = atoi(tokens[5 + offset].c_str());
             if (rr_graph.node_ptc_num(RRNodeId(inode)) != ptc) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                          "The ptc num of node %d does not match the rr graph", inode);
+                          "The ptc num of node %d does not match the rr graph, Running without flat routing; if this file was created with flat routing, re-run vpr with the --flat_routing option", inode);
             }
 
             /*Process switches and pb pin info if it is ipin or opin type*/
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
-                auto type = device_ctx.grid.get_physical_type(x, y);
+                auto type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 if (!is_io_type(type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
+                    int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
+                    int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
+                    auto physical_tile = device_ctx.grid.get_physical_type({x, y, layer_num});
+                    const t_sub_tile* sub_tile;
+                    int sub_tile_rel_cap;
+                    std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
+                    int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
-                    int height_offset = device_ctx.grid.get_height_offset(x, y);
+                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x - width_offset, y - height_offset, sub_tile_offset, layer_num});
+                    VTR_ASSERT(iblock);
 
-                    int capacity, relative_pin;
-                    std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
+                    const t_pb_graph_pin* pb_pin;
 
-                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[capacity];
-                    t_pb_graph_pin* pb_pin;
+                    if (is_pin_on_tile(physical_tile, pin_num)) {
+                        pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+                    } else {
+                        pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_num);
+                    }
 
-                    pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                     t_pb_type* pb_type = pb_pin->parent_node->pb_type;
 
                     std::string pb_name, port_name;
@@ -372,17 +383,17 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                               "%d (sink) node does not have net pin index. If you are using an old .route file without this information, please re-generate the routing.", inode);
                 }
             } else {
-                net_pin_index = OPEN; //net pin index is invalid for non-SINKs
+                net_pin_index = OPEN; // net pin index is invalid for non-SINKs
             }
 
-            /* Allocate and load correct values to trace.head*/
+            /* Allocate and load correct values to trace.head */
             if (node_count == 0) {
-                route_ctx.trace[(const ParentNetId&)inet].head = alloc_trace_data();
-                route_ctx.trace[(const ParentNetId&)inet].head->index = inode;
-                route_ctx.trace[(const ParentNetId&)inet].head->net_pin_index = net_pin_index;
-                route_ctx.trace[(const ParentNetId&)inet].head->iswitch = switch_id;
-                route_ctx.trace[(const ParentNetId&)inet].head->next = nullptr;
-                tptr = route_ctx.trace[(const ParentNetId&)inet].head;
+                head_ptr = alloc_trace_data();
+                head_ptr->index = inode;
+                head_ptr->net_pin_index = net_pin_index;
+                head_ptr->iswitch = switch_id;
+                head_ptr->next = nullptr;
+                tptr = head_ptr;
                 node_count++;
             } else {
                 tptr->next = alloc_trace_data();
@@ -394,23 +405,24 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                 node_count++;
             }
         }
-        /*stores last line so can easily go back to read*/
+        /* stores last line so can easily go back to read */
         oldpos = fp.tellg();
     }
+
+    /* Convert to route_tree after reading */
+    VTR_ASSERT(validate_traceback(head_ptr));
+    route_ctx.route_trees[inet] = TracebackCompat::traceback_to_route_tree(head_ptr);
+    free_traceback(head_ptr);
 }
 
 /**
  * @brief This function goes through all the blocks in a global net and verify
  *        it with the clustered netlist and the placement
  */
-static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-
+static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat) {
     std::string block, bnum_str;
-    int x, y;
+    int layer_num, x, y;
     std::vector<std::string> tokens;
-    int pin_counter = 0;
 
     std::streampos oldpos = fp.tellg();
     /*Walk through every block line*/
@@ -428,50 +440,65 @@ static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const ch
             fp.seekg(oldpos);
             return;
         } else {
-            format_coordinates(x, y, tokens[4], inet, filename, lineno);
+            format_coordinates(layer_num, x, y, tokens[4], inet, filename, lineno);
 
             /*remove ()*/
             bnum_str = format_name(tokens[2]);
             /*remove #*/
             bnum_str.erase(bnum_str.begin());
-            ClusterBlockId bnum(atoi(bnum_str.c_str()));
+            ParentBlockId bnum(atoi(bnum_str.c_str()));
 
             /*Check for name, coordinate, and pins*/
-            if (0 != cluster_ctx.clb_nlist.block_name(bnum).compare(tokens[1])) {
+            if (0 != net_list.block_name(bnum).compare(tokens[1])) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "Block %s for block number %lu specified in the routing file does not match given %s",
-                          tokens[1].c_str(), size_t(bnum), cluster_ctx.clb_nlist.block_name(bnum).c_str());
-            }
-            if (place_ctx.block_locs[bnum].loc.x != x || place_ctx.block_locs[bnum].loc.y != y) {
-                vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                          "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
-                          x, y, place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y);
+                          tokens[1].c_str(), size_t(bnum), net_list.block_name(bnum).c_str());
             }
 
-            int pin_index = net_pin_to_tile_pin_index(inet, pin_counter);
-            if (physical_tile_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
+            auto block_loc = get_block_loc(bnum, is_flat);
+
+            if (block_loc.loc.x != x || block_loc.loc.y != y) {
+                vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
+                          "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
+                          x, y, block_loc.loc.x, block_loc.loc.y);
+            }
+
+            auto pin_class = get_class_range_for_block(bnum, is_flat);
+            if (pin_class.low > atoi(tokens[7].c_str()) || pin_class.high < atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The pin class %d of %lu net does not match given ",
-                          atoi(tokens[7].c_str()), size_t(inet), physical_tile_type(bnum)->pin_class[pin_index]);
+                          atoi(tokens[7].c_str()), size_t(inet));
             }
-            pin_counter++;
         }
         oldpos = fp.tellg();
     }
 }
 
 ///@brief Parse coordinates in the form of (x,y) into correct x and y values
-static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno) {
+static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno) {
     coord = format_name(coord);
+
     std::stringstream coord_stream(coord);
-    if (!(coord_stream >> x)) {
-        vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                  "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
+    std::vector<int> coords;
+    int tmp_coord;
+    while (coord_stream >> tmp_coord) {
+        coords.push_back(tmp_coord);
+        coord_stream.ignore(1, ',');
     }
-    coord_stream.ignore(1, ' ');
-    if (!(coord_stream >> y)) {
+    if (coords.size() != 2 && coords.size() != 3) {
         vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                  "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
+                  "Net %lu has coordinates that is not in the form (layer_num,x,y)", size_t(net));
+    }
+
+    if (coords.size() == 2) {
+        layer_num = 0;
+        x = coords[0];
+        y = coords[1];
+    } else {
+        VTR_ASSERT(coords.size() == 3);
+        layer_num = coords[0];
+        x = coords[1];
+        y = coords[2];
     }
 }
 
@@ -537,4 +564,160 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
     }
 
     return false;
+}
+
+void print_route(const Netlist<>& net_list,
+                 FILE* fp,
+                 bool is_flat) {
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    if (route_ctx.route_trees.empty())
+        return; //Only if routing exists
+
+    for (auto net_id : net_list.nets()) {
+        if (!net_list.net_is_ignored(net_id)) {
+            fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), net_list.net_name(net_id).c_str());
+            if (net_list.net_sinks(net_id).size() == false) {
+                fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
+            } else {
+                if (!route_ctx.route_trees[net_id])
+                    continue;
+
+                t_trace* head = TracebackCompat::traceback_from_route_tree(route_ctx.route_trees[net_id].value());
+                t_trace* tptr = head;
+
+                while (tptr != nullptr) {
+                    RRNodeId inode = RRNodeId(tptr->index);
+                    t_rr_type rr_type = rr_graph.node_type(inode);
+                    int ilow = rr_graph.node_xlow(inode);
+                    int jlow = rr_graph.node_ylow(inode);
+                    int layer_num = rr_graph.node_layer(inode);
+
+                    fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode),
+                            rr_graph.node_type_string(inode), layer_num, ilow, jlow);
+
+                    if ((ilow != rr_graph.node_xhigh(inode))
+                        || (jlow != rr_graph.node_yhigh(inode)))
+                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(inode),
+                                rr_graph.node_yhigh(inode));
+
+                    switch (rr_type) {
+                        case IPIN:
+                        case OPIN:
+                            if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
+                                fprintf(fp, " Pad: ");
+                            } else { /* IO Pad. */
+                                fprintf(fp, " Pin: ");
+                            }
+                            break;
+
+                        case CHANX:
+                        case CHANY:
+                            fprintf(fp, " Track: ");
+                            break;
+
+                        case SOURCE:
+                        case SINK:
+                            if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
+                                fprintf(fp, " Pad: ");
+                            } else { /* IO Pad. */
+                                fprintf(fp, " Class: ");
+                            }
+                            break;
+
+                        default:
+                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                            "in print_route: Unexpected traceback element type: %d (%s).\n",
+                                            rr_type, rr_graph.node_type_string(inode));
+                            break;
+                    }
+
+                    fprintf(fp, "%d  ", rr_graph.node_ptc_num(inode));
+
+                    auto physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
+                    if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
+                        int pin_num = rr_graph.node_pin_num(inode);
+                        int xoffset = device_ctx.grid.get_width_offset({ilow, jlow, layer_num});
+                        int yoffset = device_ctx.grid.get_height_offset({ilow, jlow, layer_num});
+                        const t_sub_tile* sub_tile;
+                        int sub_tile_rel_cap;
+                        std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
+                        int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
+
+                        ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({ilow - xoffset, jlow - yoffset,
+                                                                                         sub_tile_offset, layer_num});
+                        VTR_ASSERT(iblock);
+                        const t_pb_graph_pin* pb_pin;
+                        if (is_pin_on_tile(physical_tile, pin_num)) {
+                            pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+                        } else {
+                            pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_num);
+                        }
+                        const t_pb_type* pb_type = pb_pin->parent_node->pb_type;
+                        fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
+                    }
+
+                    /* Uncomment line below if you're debugging and want to see the switch types *
+                     * used in the routing.                                                      */
+                    fprintf(fp, "Switch: %d", int(tptr->iswitch));
+
+                    //Save net pin index for sinks
+                    if (rr_type == SINK) {
+                        fprintf(fp, " Net_pin_index: %d", tptr->net_pin_index);
+                    }
+
+                    fprintf(fp, "\n");
+
+                    tptr = tptr->next;
+                }
+
+                free_traceback(head);
+            }
+        } else { /* Global net.  Never routed. */
+            fprintf(fp, "\n\nNet %zu (%s): global net connecting:\n\n", size_t(net_id),
+                    net_list.net_name(net_id).c_str());
+
+            for (auto pin_id : net_list.net_pins(net_id)) {
+                ParentBlockId block_id = net_list.pin_block(pin_id);
+                int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
+                t_block_loc blk_loc;
+                blk_loc = get_block_loc(block_id, is_flat);
+                fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
+                        net_list.block_name(block_id).c_str(),
+                        size_t(block_id),
+                        blk_loc.loc.x,
+                        blk_loc.loc.y,
+                        iclass);
+            }
+        }
+    }
+}
+
+/* Prints out the routing to file route_file.  */
+void print_route(const Netlist<>& net_list,
+                 const char* placement_file,
+                 const char* route_file,
+                 bool is_flat) {
+    FILE* fp;
+
+    fp = fopen(route_file, "w");
+
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    fprintf(fp, "Placement_File: %s Placement_ID: %s\n", placement_file, place_ctx.placement_id.c_str());
+
+    fprintf(fp, "Array size: %zu x %zu logic blocks.\n", device_ctx.grid.width(), device_ctx.grid.height());
+    fprintf(fp, "\nRouting:");
+
+    print_route(net_list, fp, is_flat);
+
+    fclose(fp);
+
+    //Save the digest of the route file
+    route_ctx.routing_id = vtr::secure_digest_file(route_file);
 }

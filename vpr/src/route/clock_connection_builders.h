@@ -47,7 +47,7 @@ class RoutingToClockConnection : public ClockConnection {
      */
     void set_clock_name_to_connect_to(std::string clock_name);
     void set_clock_switch_point_name(std::string clock_switch_point_name);
-    void set_switch_location(int x, int y);
+    void set_switch_location(int x, int y, int layer = 0);
     void set_switch(int arch_switch_index);
     void set_fc_val(float fc_val);
 
@@ -57,7 +57,7 @@ class RoutingToClockConnection : public ClockConnection {
     /* Connects the inter-block routing to the clock source at the specified coordinates */
     void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
     size_t estimate_additional_nodes() override;
-    RRNodeId create_virtual_clock_network_sink_node(int x, int y);
+    RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y);
 };
 
 class ClockToClockConneciton : public ClockConnection {

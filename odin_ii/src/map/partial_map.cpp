@@ -167,12 +167,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             break;
 
         case ADD:
-            if (hard_adders && node->bit_width >= min_threshold_adder) {
-                // Check if the size of this adder is greater than the hard vs soft logic threshold
-                instantiate_hard_adder(node, traverse_number, netlist);
-            } else {
-                instantiate_add_w_carry(node, traverse_number, netlist);
-            }
+            mixer->partial_map_node(node, traverse_number, netlist);
             break;
         case MINUS:
             if (hard_adders) {
@@ -782,7 +777,7 @@ void instantiate_add_w_carry(nnode_t* node, short mark, netlist_t* netlist) {
 
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_sub_w_carry )
- * 	This subtraction is intended for sof subtraction with output formats that can't handle
+ * 	This subtraction is intended for soft subtraction with output formats that can't handle
  * 	multi output logic functions.  We split the add and the carry over two logic functions.
  *-------------------------------------------------------------------------------------------*/
 void instantiate_sub_w_carry(nnode_t* node, short mark, netlist_t* netlist) {

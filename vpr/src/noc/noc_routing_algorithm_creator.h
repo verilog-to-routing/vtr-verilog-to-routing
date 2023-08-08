@@ -8,7 +8,7 @@
  * 
  * Overview
  * ========
- * There are a number of different available NoC routing algorithms. This class * is a factory object for the NocRouting abstract class. This class constructs 
+ * There are a number of different available NoC routing algorithms. This class is a factory object for the NocRouting abstract class. This class constructs 
  * the appropriate routing algorithm based on the user specification in the
  * command line. The user identifies a 
  * specific routing algorithm in the command line by providing a string

@@ -47,18 +47,17 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         {X_AXIS, std::vector<int>(max_segment_length + 1, 0)},
         {Y_AXIS, std::vector<int>(max_segment_length + 1, 0)}};
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        size_t inode = (size_t)rr_id;
-        auto node_type = rr_graph.node_type(rr_id);
+    for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
+        auto node_type = rr_graph.node_type(inode);
         if (node_type == CHANX || node_type == CHANY) {
-            cost_index = rr_graph.node_cost_index(rr_id);
+            cost_index = rr_graph.node_cost_index(inode);
             size_t seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
             int length = -1;
             if (!segment_inf[seg_type].longline)
                 length = segment_inf[seg_type].length;
             else
                 length = LONGLINE;
-            const short& inode_capacity = rr_graph.node_capacity(rr_id);
+            const short& inode_capacity = rr_graph.node_capacity(inode);
             int occ = route_ctx.rr_node_route_inf[inode].occ();
             auto ax = (node_type == CHANX) ? X_AXIS : Y_AXIS;
             directed_occ_by_length[ax][length] += occ;

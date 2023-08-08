@@ -7,6 +7,7 @@
 #include <chrono>
 #include <vtr_ndmatrix.h>
 
+#include "NetPinTimingInvalidator.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
@@ -447,6 +448,13 @@ void try_place(const Netlist<>& net_list,
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
+
+    /*
+     * Currently, the functions that require is_flat as their parameter and are called during placement should
+     * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
+     * if is_flat is false, even if is_flat is set to true from the command line.
+     */
+    VTR_ASSERT(!is_flat);
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -601,11 +609,15 @@ void try_place(const Netlist<>& net_list,
         placer_criticalities = std::make_unique<PlacerCriticalities>(
             cluster_ctx.clb_nlist, netlist_pin_lookup);
 
-        pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>(
-            net_list, netlist_pin_lookup,
-            atom_ctx.nlist, atom_ctx.lookup,
+        pin_timing_invalidator = make_net_pin_timing_invalidator(
+            placer_opts.timing_update_type,
+            net_list,
+            netlist_pin_lookup,
+            atom_ctx.nlist,
+            atom_ctx.lookup,
             *timing_info->timing_graph(),
             is_flat);
+
         //First time compute timing and costs, compute from scratch
         PlaceCritParams crit_params;
         crit_params.crit_exponent = first_crit_exponent;
@@ -761,8 +773,12 @@ void try_place(const Netlist<>& net_list,
     /* Set the temperature low to ensure that initial placement quality will be preserved */
     first_t = EPSILON;
 
-    t_annealing_state state(annealing_sched, first_t, first_rlim,
-                            first_move_lim, first_crit_exponent);
+    t_annealing_state state(annealing_sched,
+                            first_t,
+                            first_rlim,
+                            first_move_lim,
+                            first_crit_exponent,
+                            device_ctx.grid.get_num_layers());
 
     /* Update the starting temperature for placement annealing to a more appropriate value */
     state.t = starting_t(&state, &costs, annealing_sched,
@@ -942,7 +958,7 @@ void try_place(const Netlist<>& net_list,
     if (placer_opts.place_checkpointing)
         restore_best_placement(placement_checkpoint, timing_info, costs,
                                placer_criticalities, placer_setup_slacks, place_delay_model,
-                               pin_timing_invalidator, crit_params);
+                               pin_timing_invalidator, crit_params, noc_opts);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
@@ -2962,53 +2978,66 @@ static int check_block_placement_consistency() {
         cluster_ctx.clb_nlist.blocks().size(), 0);
 
     /* Step through device grid and placement. Check it against blocks */
-    for (size_t i = 0; i < device_ctx.grid.width(); i++)
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
-            if (place_ctx.grid_blocks[i][j].usage
-                > type->capacity) {
-                VTR_LOG_ERROR(
-                    "%d blocks were placed at grid location (%zu,%zu), but location capacity is %d.\n",
-                    place_ctx.grid_blocks[i][j].usage, i, j,
-                    type->capacity);
-                error++;
-            }
-            int usage_check = 0;
-            for (int k = 0; k < type->capacity; k++) {
-                auto bnum = place_ctx.grid_blocks[i][j].blocks[k];
-                if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
-                    continue;
-
-                auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-                auto physical_tile = type;
-
-                if (physical_tile_type(bnum) != physical_tile) {
+    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                const t_physical_tile_loc tile_loc(i, j, layer_num);
+                const auto& type = device_ctx.grid.get_physical_type(tile_loc);
+                if (place_ctx.grid_blocks.get_usage(tile_loc) > type->capacity) {
                     VTR_LOG_ERROR(
-                        "Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
-                        size_t(bnum), logical_block->name, i, j,
-                        physical_tile->name);
+                        "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, layer_num,
+                        type->capacity);
                     error++;
                 }
+                int usage_check = 0;
+                for (int k = 0; k < type->capacity; k++) {
+                    auto bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
+                        continue;
 
-                auto& loc = place_ctx.block_locs[bnum].loc;
-                if (loc.x != int(i) || loc.y != int(j)
-                    || !is_sub_tile_compatible(physical_tile, logical_block,
-                                               loc.sub_tile)) {
+                    auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
+                    auto physical_tile = type;
+
+                    if (physical_tile_type(bnum) != physical_tile) {
+                        VTR_LOG_ERROR(
+                            "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
+                            size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
+                        error++;
+                    }
+
+                    auto& loc = place_ctx.block_locs[bnum].loc;
+                    if (loc.x != i || loc.y != j || loc.layer != layer_num
+                        || !is_sub_tile_compatible(physical_tile, logical_block,
+                                                   loc.sub_tile)) {
+                        VTR_LOG_ERROR(
+                            "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
+                            size_t(bnum),
+                            loc.x,
+                            loc.y,
+                            loc.sub_tile,
+                            tile_loc.x,
+                            tile_loc.y,
+                            tile_loc.layer_num,
+                            layer_num);
+                        error++;
+                    }
+                    ++usage_check;
+                    bdone[bnum]++;
+                }
+                if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
                     VTR_LOG_ERROR(
-                        "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
-                        size_t(bnum), loc.x, loc.y, loc.sub_tile, i, j, k);
+                        "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc),
+                        tile_loc.x,
+                        tile_loc.y,
+                        tile_loc.layer_num,
+                        usage_check);
                     error++;
                 }
-                ++usage_check;
-                bdone[bnum]++;
-            }
-            if (usage_check != place_ctx.grid_blocks[i][j].usage) {
-                VTR_LOG_ERROR(
-                    "%d block(s) were placed at location (%zu,%zu), but location contains %d block(s).\n",
-                    place_ctx.grid_blocks[i][j].usage, i, j, usage_check);
-                error++;
             }
         }
+    }
 
     /* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
@@ -3048,7 +3077,7 @@ int check_macro_placement_consistency() {
             }
 
             // Then check the place_ctx.grid data structure
-            if (place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile]
+            if (place_ctx.grid_blocks.block_at_location(member_pos)
                 != member_iblk) {
                 VTR_LOG_ERROR(
                     "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
@@ -3167,7 +3196,7 @@ static void print_resources_utilization() {
         auto block_loc = place_ctx.block_locs[blk_id];
         auto loc = block_loc.loc;
 
-        auto physical_tile = device_ctx.grid.get_physical_type(loc.x, loc.y);
+        auto physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
         num_type_instances[logical_block]++;
@@ -3215,6 +3244,15 @@ static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat) {
     float moves, accepted, rejected, aborted;
 
+    VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
+
+    VTR_LOG(
+        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
+    VTR_LOG(
+        "    Block Type         Move Type       (%%) of Total      Accepted(%%)     Rejected(%%)    Aborted(%%)\n");
+    VTR_LOG(
+        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
+
     float total_moves = 0;
     for (size_t iaction = 0; iaction < move_type_stat.blk_type_moves.size(); iaction++) {
         total_moves += move_type_stat.blk_type_moves[iaction];
@@ -3224,15 +3262,18 @@ static void print_placement_move_types_stats(
     auto& cluster_ctx = g_vpr_ctx.clustering();
     std::string move_name;
     int agent_type = 0;
+    int count = 0;
     int num_of_avail_moves = move_type_stat.blk_type_moves.size() / get_num_agent_types();
 
-    VTR_LOG("\n\nPercentage of different move types and block types:\n");
     //Print placement information for each block type
     for (auto itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
         if (itype.index == 0 || cluster_ctx.clb_nlist.blocks_per_type(itype).size() == 0) {
             continue;
         }
+
+        count = 0;
+
         for (int imove = 0; imove < num_of_avail_moves; imove++) {
             move_name = move_type_to_string(e_move_type(imove));
             moves = move_type_stat.blk_type_moves[agent_type * num_of_avail_moves + imove];
@@ -3240,16 +3281,23 @@ static void print_placement_move_types_stats(
                 accepted = move_type_stat.accepted_moves[agent_type * num_of_avail_moves + imove];
                 rejected = move_type_stat.rejected_moves[agent_type * num_of_avail_moves + imove];
                 aborted = moves - (accepted + rejected);
+                if (count == 0) {
+                    VTR_LOG("%-18.20s", itype.name);
+                } else {
+                    VTR_LOG("                  ");
+                }
                 VTR_LOG(
-                    "\t%.20s move with type %.20s: %2.6f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",
-                    move_name.c_str(), itype.name, 100 * moves / total_moves,
+                    " %-22.20s %-16.2f %-15.2f %-14.2f %-13.2f\n",
+                    move_name.c_str(), 100 * moves / total_moves,
                     100 * accepted / moves, 100 * rejected / moves,
                     100 * aborted / moves);
             }
+            count++;
         }
         agent_type++;
         VTR_LOG("\n");
     }
+    VTR_LOG("\n");
 }
 
 static void calculate_reward_and_process_outcome(

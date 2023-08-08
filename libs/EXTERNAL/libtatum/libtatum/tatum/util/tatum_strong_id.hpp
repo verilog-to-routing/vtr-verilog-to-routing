@@ -176,22 +176,24 @@ class StrongId {
         //Default to the sentinel value
         constexpr StrongId() : id_(sentinel) {}
 
-        //Only allow explict constructions from a raw Id (no automatic conversions)
-        explicit StrongId(T id) noexcept : id_(id) {}
+        //Only allow explicit constructions from a raw Id (no automatic conversions)
+        explicit constexpr StrongId(T id) noexcept : id_(id) {}
 
         //Allow some explicit conversion to useful types
 
         //Allow explicit conversion to bool (e.g. if(id))
-        explicit operator bool() const { return *this != INVALID(); }
+        explicit operator bool() const { return id_ != sentinel; }
+
+        /// @brief Another name for the bool cast 
+        constexpr bool is_valid() const { return id_ != sentinel; }
 
         //Allow explicit conversion to size_t (e.g. my_vector[size_t(strong_id)])
         explicit operator std::size_t() const { return static_cast<std::size_t>(id_); }
 
-
-        //To enable hasing Ids
+        //To enable hashing Ids
         friend std::hash<StrongId<tag,T,sentinel>>;
 
-        //To enable comparisions between Ids
+        //To enable comparisons between Ids
         // Note that since these are templated functions we provide an empty set of template parameters
         // after the function name (i.e. <>)
         friend bool operator== <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);

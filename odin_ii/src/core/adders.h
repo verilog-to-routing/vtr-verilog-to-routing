@@ -52,6 +52,7 @@ void init_add_distribution();
 void report_add_distribution();
 void declare_hard_adder(nnode_t* node);
 void instantiate_hard_adder(nnode_t* node, short mark, netlist_t* netlist);
+void split_instantiate_hard_adder(nnode_t* node, uintptr_t mark, netlist_t* netlist);
 void find_hard_adders();
 void add_the_blackbox_for_adds(FILE* out);
 void define_add_function(nnode_t* node, FILE* out);
@@ -69,7 +70,7 @@ void remove_fanout_pins(nnode_t* node);
 void reallocate_pins(nnode_t* node, nnode_t* next_node);
 void free_op_nodes(nnode_t* node);
 int match_pins(nnode_t* node, nnode_t* next_node);
-
+void instantiate_simple_soft_adder(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_add_w_carry_block(int* width, nnode_t* node, short mark, netlist_t* netlist, short subtraction);
 bool is_ast_adder(ast_node_t* node);
 

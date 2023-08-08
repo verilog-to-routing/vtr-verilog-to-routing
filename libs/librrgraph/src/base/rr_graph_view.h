@@ -162,6 +162,11 @@ class RRGraphView {
         return node_storage_.node_yhigh(node);
     }
 
+    /** @brief Get the layer num of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_layer(RRNodeId node) const {
+        return node_storage_.node_layer(node);
+    }
+
     /** @brief Get the first out coming edge of resource node. This function is inlined for runtime optimization. */
     inline RREdgeId node_first_edge(RRNodeId node) const {
         return node_storage_.first_edge(node);
