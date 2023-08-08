@@ -602,7 +602,7 @@ struct t_2D_tbb {
         , xmax(xmax_)
         , ymin(ymin_)
         , ymax(ymax_)
-        , layer_num (layer_num_){
+        , layer_num(layer_num_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
     }
