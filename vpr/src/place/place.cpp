@@ -146,7 +146,8 @@ static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); //[0...device_ctx.g
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
-static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
+static vtr::vector<ClusterNetId, std::vector<t_2D_tbb>> ts_bb_coord_new, ts_bb_edge_new;
+static vtr::vector<ClusterNetId, std::vector<int>> ts_layer_sink_pin_count;
 static std::vector<ClusterNetId> ts_nets_to_update;
 
 /* These file-scoped variables keep track of the number of swaps       *
@@ -324,9 +325,47 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks);
 
 static e_move_result assess_swap(double delta_c, double t);
 
-static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
+static void get_non_updateable_bb(ClusterNetId net_id,
+                                  std::vector<t_2D_tbb>& bb_coord_new,
+                                  std::vector<int>& num_sink_layer);
 
-static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
+static void update_bb(ClusterNetId net_id,
+                      std::vector<t_2D_tbb>& bb_edge_new,
+                      std::vector<t_2D_tbb>& bb_coord_new,
+                      std::vector<int>& bb_pin_sink_count_new,
+                      t_physical_tile_loc pin_old_loc,
+                      t_physical_tile_loc pin_new_loc);
+
+static void update_bb_pin_sink_count(ClusterNetId net_id,
+                                     const t_physical_tile_loc& pin_old_loc,
+                                     const t_physical_tile_loc& pin_new_loc,
+                                     const std::vector<int>& curr_layer_pin_sink_count,
+                                     std::vector<int>& bb_pin_sink_count_new);
+
+static void update_bb_edges(ClusterNetId net_id,
+                            const t_physical_tile_loc& pin_old_loc,
+                            const t_physical_tile_loc& pin_new_loc,
+                            const std::vector<t_2D_tbb>& curr_bb_edge,
+                            const std::vector<t_2D_tbb>& curr_bb_coord,
+                            std::vector<t_2D_tbb>& bb_edge_new,
+                            std::vector<t_2D_tbb>& bb_coord_new,
+                            std::vector<int>& bb_pin_sink_count_new);
+
+static void remove_block_from_bb_edge(ClusterNetId net_id,
+                                      std::vector<t_2D_tbb>& bb_edge_new,
+                                      std::vector<t_2D_tbb>& bb_coord_new,
+                                      std::vector<int>& bb_layer_pin_sink_count,
+                                      const int& old_num_block_on_edge,
+                                      const int& old_edge_coord,
+                                      int& new_num_block_on_edge,
+                                      int& new_edge_coord);
+
+static void add_block_to_bb(const t_2D_tbb& bb_edge_old,
+                            const t_2D_tbb& bb_coord_old,
+                            const t_physical_tile_loc& old_pin_loc,
+                            const t_physical_tile_loc& new_pin_loc,
+                            t_2D_tbb& bb_edge_new,
+                            t_2D_tbb& bb_coord_new);
 
 static int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
@@ -354,11 +393,16 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
 
 static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
-static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
+static double get_net_cost(ClusterNetId net_id,
+                           const std::vector<t_2D_tbb>& bb_ptr,
+                           const std::vector<int>& layer_pin_sink_count);
 
-static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_edges);
+static void get_bb_from_scratch(ClusterNetId net_id,
+                                std::vector<t_2D_tbb>& num_on_edges,
+                                std::vector<t_2D_tbb>& coords,
+                                std::vector<int>& layer_pin_sink_count);
 
-static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr);
+static double get_net_wirelength_estimate(ClusterNetId net_id, const std::vector<t_2D_tbb>& bbptr);
 
 static void free_try_swap_arrays();
 
@@ -1372,6 +1416,7 @@ static void update_move_nets(int num_nets_affected) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
         place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
+        place_move_ctx.num_sink_pin_layer[net_id] = ts_layer_sink_pin_count[net_id];
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
             place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
 
@@ -1794,7 +1839,8 @@ static int find_affected_nets_and_update_costs(
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
         proposed_net_cost[net_id] = get_net_cost(net_id,
-                                                 &ts_bb_coord_new[net_id]);
+                                                 ts_bb_coord_new[net_id],
+                                                 ts_layer_sink_pin_count[net_id]);
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
@@ -1832,7 +1878,9 @@ static void update_net_bb(const ClusterNetId net,
         //For small nets brute-force bounding box update is faster
 
         if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
-            get_non_updateable_bb(net, &ts_bb_coord_new[net]);
+            get_non_updateable_bb(net,
+                                  ts_bb_coord_new[net],
+                                  ts_layer_sink_pin_count[net]);
         }
     } else {
         //For large nets, update bounding box incrementally
@@ -1843,13 +1891,20 @@ static void update_net_bb(const ClusterNetId net,
         int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
 
         //Incremental bounding box update
-        update_bb(net, &ts_bb_coord_new[net], &ts_bb_edge_new[net],
-                  blocks_affected.moved_blocks[iblk].old_loc.x + pin_width_offset,
-                  blocks_affected.moved_blocks[iblk].old_loc.y
-                      + pin_height_offset,
-                  blocks_affected.moved_blocks[iblk].new_loc.x + pin_width_offset,
-                  blocks_affected.moved_blocks[iblk].new_loc.y
-                      + pin_height_offset);
+        t_physical_tile_loc pin_old_loc(
+            blocks_affected.moved_blocks[iblk].old_loc.x + pin_width_offset,
+            blocks_affected.moved_blocks[iblk].old_loc.y + pin_height_offset,
+            blocks_affected.moved_blocks[iblk].old_loc.layer);
+        t_physical_tile_loc pin_new_loc(
+            blocks_affected.moved_blocks[iblk].new_loc.x + pin_width_offset,
+            blocks_affected.moved_blocks[iblk].new_loc.y + pin_height_offset,
+            blocks_affected.moved_blocks[iblk].new_loc.layer);
+        update_bb(net,
+                  ts_bb_edge_new[net],
+                  ts_bb_coord_new[net],
+                  ts_layer_sink_pin_count[net],
+                  pin_old_loc,
+                  pin_new_loc);
     }
 }
 
@@ -2210,19 +2265,23 @@ static double comp_bb_cost(e_cost_methods method) {
              * so they can use a fast bounding box calculator.                    */
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET
                 && method == NORMAL) {
-                get_bb_from_scratch(net_id, &place_move_ctx.bb_coords[net_id],
-                                    &place_move_ctx.bb_num_on_edges[net_id]);
+                get_bb_from_scratch(net_id,
+                                    place_move_ctx.bb_num_on_edges[net_id],
+                                    place_move_ctx.bb_coords[net_id],
+                                    place_move_ctx.num_sink_pin_layer[net_id]);
             } else {
                 get_non_updateable_bb(net_id,
-                                      &place_move_ctx.bb_coords[net_id]);
+                                      place_move_ctx.bb_coords[net_id],
+                                      place_move_ctx.num_sink_pin_layer[net_id]);
             }
 
             net_cost[net_id] = get_net_cost(net_id,
-                                            &place_move_ctx.bb_coords[net_id]);
+                                            place_move_ctx.bb_coords[net_id],
+                                            place_move_ctx.num_sink_pin_layer[net_id]);
             cost += net_cost[net_id];
             if (method == CHECK)
                 expected_wirelength += get_net_wirelength_estimate(net_id,
-                                                                   &place_move_ctx.bb_coords[net_id]);
+                                                                   place_move_ctx.bb_coords[net_id]);
         }
     }
 
@@ -2252,6 +2311,8 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
+
+    const int num_layers = device_ctx.grid.get_num_layers();
 
     init_placement_context();
 
@@ -2296,8 +2357,9 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     net_cost.resize(num_nets, -1.);
     proposed_net_cost.resize(num_nets, -1.);
-    place_move_ctx.bb_coords.resize(num_nets, t_bb());
-    place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
+    place_move_ctx.bb_coords.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+
+    place_move_ctx.bb_num_on_edges.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
 
     /* Used to store costs for moves not yet made and to indicate when a net's   *
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
@@ -2356,8 +2418,11 @@ static void alloc_and_load_try_swap_structs() {
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
-    ts_bb_coord_new.resize(num_nets, t_bb());
-    ts_bb_edge_new.resize(num_nets, t_bb());
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
+    ts_bb_coord_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+    ts_bb_edge_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+    ts_layer_sink_pin_count.resize(num_nets, std::vector<int>(num_layers, 0));
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -2367,6 +2432,7 @@ static void alloc_and_load_try_swap_structs() {
 static void free_try_swap_structs() {
     vtr::release_memory(ts_bb_coord_new);
     vtr::release_memory(ts_bb_edge_new);
+    vtr::release_memory(ts_layer_sink_pin_count);
     vtr::release_memory(ts_nets_to_update);
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -2377,13 +2443,26 @@ static void free_try_swap_structs() {
  * from only the block location information).  It updates both the       *
  * coordinate and number of pins on each edge information.  It           *
  * should only be called when the bounding box information is not valid. */
-static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_edges) {
-    int pnum, x, y, xmin, xmax, ymin, ymax;
-    int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
+static void get_bb_from_scratch(ClusterNetId net_id,
+                                std::vector<t_2D_tbb>& num_on_edges,
+                                std::vector<t_2D_tbb>& coords,
+                                std::vector<int>& layer_pin_sink_count) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const int num_layers = device_ctx.grid.get_num_layers();
+    int pnum, x, y, layer;
+    std::vector<int> xmin(num_layers);
+    std::vector<int> xmax(num_layers);
+    std::vector<int> ymin(num_layers);
+    std::vector<int> ymax(num_layers);
+    std::vector<int> xmin_edge;
+    std::vector<int> xmax_edge;
+    std::vector<int> ymin_edge;
+    std::vector<int> ymax_edge;
+
+    std::vector<int> num_sink_pin_layer(num_layers, 0);
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -2397,18 +2476,23 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_
     x = max(min<int>(x, grid.width() - 2), 1);
     y = max(min<int>(y, grid.height() - 2), 1);
 
-    xmin = x;
-    ymin = y;
-    xmax = x;
-    ymax = y;
-    xmin_edge = 1;
-    ymin_edge = 1;
-    xmax_edge = 1;
-    ymax_edge = 1;
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        xmin[layer_num] = x;
+        ymin[layer_num] = y;
+        xmax[layer_num] = x;
+        ymax[layer_num] = y;
+        xmin_edge[layer_num] = 1;
+        ymin_edge[layer_num] = 1;
+        xmax_edge[layer_num] = 1;
+        ymax_edge[layer_num] = 1;
+    }
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         pnum = tile_pin_index(pin_id);
+        layer = place_ctx.block_locs[bnum].loc.layer;
+        VTR_ASSERT(layer >= 0 && layer < num_layers);
+        num_sink_pin_layer[layer]++;
         x = place_ctx.block_locs[bnum].loc.x
             + physical_tile_type(bnum)->pin_width_offset[pnum];
         y = place_ctx.block_locs[bnum].loc.y
@@ -2424,44 +2508,47 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_
         x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
         y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
 
-        if (x == xmin) {
-            xmin_edge++;
+        if (x == xmin[layer]) {
+            xmin_edge[layer]++;
         }
-        if (x == xmax) { /* Recall that xmin could equal xmax -- don't use else */
-            xmax_edge++;
-        } else if (x < xmin) {
-            xmin = x;
-            xmin_edge = 1;
-        } else if (x > xmax) {
-            xmax = x;
-            xmax_edge = 1;
+        if (x == xmax[layer]) { /* Recall that xmin could equal xmax -- don't use else */
+            xmax_edge[layer]++;
+        } else if (x < xmin[layer]) {
+            xmin[layer] = x;
+            xmin_edge[layer] = 1;
+        } else if (x > xmax[layer]) {
+            xmax[layer] = x;
+            xmax_edge[layer] = 1;
         }
 
-        if (y == ymin) {
-            ymin_edge++;
+        if (y == ymin[layer]) {
+            ymin_edge[layer]++;
         }
-        if (y == ymax) {
-            ymax_edge++;
-        } else if (y < ymin) {
-            ymin = y;
-            ymin_edge = 1;
-        } else if (y > ymax) {
-            ymax = y;
-            ymax_edge = 1;
+        if (y == ymax[layer]) {
+            ymax_edge[layer]++;
+        } else if (y < ymin[layer]) {
+            ymin[layer] = y;
+            ymin_edge[layer] = 1;
+        } else if (y > ymax[layer]) {
+            ymax[layer] = y;
+            ymax_edge[layer] = 1;
         }
     }
 
     /* Copy the coordinates and number on edges information into the proper   *
      * structures.                                                            */
-    coords->xmin = xmin;
-    coords->xmax = xmax;
-    coords->ymin = ymin;
-    coords->ymax = ymax;
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        coords[layer].xmin = xmin[layer];
+        coords[layer].xmax = xmax[layer];
+        coords[layer].ymin = ymin[layer];
+        coords[layer].ymax = ymax[layer];
 
-    num_on_edges->xmin = xmin_edge;
-    num_on_edges->xmax = xmax_edge;
-    num_on_edges->ymin = ymin_edge;
-    num_on_edges->ymax = ymax_edge;
+        num_on_edges[layer].xmin = xmin_edge[layer];
+        num_on_edges[layer].xmax = xmax_edge[layer];
+        num_on_edges[layer].ymin = ymin_edge[layer];
+        num_on_edges[layer].ymax = ymax_edge[layer];
+    }
+    g_placer_ctx.mutable_move().num_sink_pin_layer[net_id] = num_sink_pin_layer;
 }
 
 static double wirelength_crossing_count(size_t fanout) {
@@ -2475,52 +2562,62 @@ static double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
+static double get_net_wirelength_estimate(ClusterNetId net_id, const std::vector<t_2D_tbb>& bbptr) {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
      * its coordinate bounding box.                                         */
 
-    double ncost, crossing;
+    double ncost = 0.;
+    double crossing = 0.;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& place_move_ctx = g_placer_ctx.move();
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    crossing = wirelength_crossing_count(
-        cluster_ctx.clb_nlist.net_pins(net_id).size());
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        crossing = wirelength_crossing_count(
+            place_move_ctx.num_sink_pin_layer[net_id][layer_num]);
 
-    /* Could insert a check for xmin == xmax.  In that case, assume  *
+        /* Could insert a check for xmin == xmax.  In that case, assume  *
      * connection will be made with no bends and hence no x-cost.    *
      * Same thing for y-cost.                                        */
 
-    /* Cost = wire length along channel * cross_count / average      *
+        /* Cost = wire length along channel * cross_count / average      *
      * channel capacity.   Do this for x, then y direction and add.  */
 
-    ncost = (bbptr->xmax - bbptr->xmin + 1) * crossing;
+        ncost += (bbptr[layer_num].xmax - bbptr[layer_num].xmin + 1) * crossing;
 
-    ncost += (bbptr->ymax - bbptr->ymin + 1) * crossing;
+        ncost += (bbptr[layer_num].ymax - bbptr[layer_num].ymin + 1) * crossing;
+    }
 
     return (ncost);
 }
 
-static double get_net_cost(ClusterNetId net_id, t_bb* bbptr) {
+static double get_net_cost(ClusterNetId /* net_id */,
+                           const std::vector<t_2D_tbb>& bbptr,
+                           const std::vector<int>& layer_pin_sink_count) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
 
-    double ncost, crossing;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    double ncost = 0.;
+    double crossing = 0.;
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    crossing = wirelength_crossing_count(
-        cluster_ctx.clb_nlist.net_pins(net_id).size());
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num]);
 
-    /* Could insert a check for xmin == xmax.  In that case, assume  *
-     * connection will be made with no bends and hence no x-cost.    *
-     * Same thing for y-cost.                                        */
+        /* Could insert a check for xmin == xmax.  In that case, assume  *
+        * connection will be made with no bends and hence no x-cost.    *
+        * Same thing for y-cost.                                        */
 
-    /* Cost = wire length along channel * cross_count / average      *
-     * channel capacity.   Do this for x, then y direction and add.  */
+        /* Cost = wire length along channel * cross_count / average      *
+        * channel capacity.   Do this for x, then y direction and add.  */
 
-    ncost = (bbptr->xmax - bbptr->xmin + 1) * crossing
-            * chanx_place_cost_fac[bbptr->ymax][bbptr->ymin - 1];
+        ncost += (bbptr[layer_num].xmax - bbptr[layer_num].xmin + 1) * crossing
+                * chanx_place_cost_fac[bbptr[layer_num].ymax][bbptr[layer_num].ymin - 1];
 
-    ncost += (bbptr->ymax - bbptr->ymin + 1) * crossing
-             * chany_place_cost_fac[bbptr->xmax][bbptr->xmin - 1];
+        ncost += (bbptr[layer_num].ymax - bbptr[layer_num].ymin + 1) * crossing
+                 * chany_place_cost_fac[bbptr[layer_num].xmax][bbptr[layer_num].xmin - 1];
+    }
 
     return (ncost);
 }
@@ -2532,47 +2629,60 @@ static double get_net_cost(ClusterNetId net_id, t_bb* bbptr) {
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
+static void get_non_updateable_bb(ClusterNetId net_id,
+                                  std::vector<t_2D_tbb>& bb_coord_new,
+                                  std::vector<int>& num_sink_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
-    int xmax, ymax, xmin, ymin, x, y;
+    auto& device_ctx = g_vpr_ctx.device();
+    int num_layers = device_ctx.grid.get_num_layers();
+    num_sink_layer = std::vector<int>(num_layers, 0);
+    std::vector<int> xmax(num_layers);
+    std::vector<int> ymax(num_layers);
+    std::vector<int> xmin(num_layers);
+    std::vector<int> ymin(num_layers);
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
+
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     pnum = net_pin_to_tile_pin_index(net_id, 0);
 
-    x = place_ctx.block_locs[bnum].loc.x
-        + physical_tile_type(bnum)->pin_width_offset[pnum];
-    y = place_ctx.block_locs[bnum].loc.y
-        + physical_tile_type(bnum)->pin_height_offset[pnum];
+    int src_x = place_ctx.block_locs[bnum].loc.x
+                + physical_tile_type(bnum)->pin_width_offset[pnum];
+    int src_y = place_ctx.block_locs[bnum].loc.y
+                + physical_tile_type(bnum)->pin_height_offset[pnum];
 
-    xmin = x;
-    ymin = y;
-    xmax = x;
-    ymax = y;
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        xmin[layer_num] = src_x;
+        ymin[layer_num] = src_y;
+        xmax[layer_num] = src_x;
+        ymax[layer_num] = src_y;
+    }
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         pnum = tile_pin_index(pin_id);
-        x = place_ctx.block_locs[bnum].loc.x
+        int x = place_ctx.block_locs[bnum].loc.x
             + physical_tile_type(bnum)->pin_width_offset[pnum];
-        y = place_ctx.block_locs[bnum].loc.y
+        int y = place_ctx.block_locs[bnum].loc.y
             + physical_tile_type(bnum)->pin_height_offset[pnum];
 
-        if (x < xmin) {
-            xmin = x;
-        } else if (x > xmax) {
-            xmax = x;
+        int layer_num = place_ctx.block_locs[bnum].loc.layer;
+        VTR_ASSERT(layer_num >= 0 && layer_num < num_layers);
+        num_sink_layer[layer_num]++;
+        if (x < xmin[layer_num]) {
+            xmin[layer_num] = x;
+        } else if (x > xmax[layer_num]) {
+            xmax[layer_num] = x;
         }
 
-        if (y < ymin) {
-            ymin = y;
-        } else if (y > ymax) {
-            ymax = y;
+        if (y < ymin[layer_num]) {
+            ymin[layer_num] = y;
+        } else if (y > ymax[layer_num]) {
+            ymax[layer_num] = y;
         }
     }
 
@@ -2583,14 +2693,20 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
      * channel immediately to the left of the bounding box, I want to    *
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
-
-    bb_coord_new->xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    bb_coord_new->ymin = max(min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    bb_coord_new->xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    bb_coord_new->ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+        bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+        bb_coord_new[layer_num].xmax = max(min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+        bb_coord_new[layer_num].ymax = max(min<int>(ymax[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    }
 }
 
-static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew) {
+static void update_bb(ClusterNetId net_id,
+                      std::vector<t_2D_tbb>& bb_edge_new,
+                      std::vector<t_2D_tbb>& bb_coord_new,
+                      std::vector<int>& bb_pin_sink_count_new,
+                      t_physical_tile_loc pin_old_loc,
+                      t_physical_tile_loc pin_new_loc) {
     /* Updates the bounding box of a net by storing its coordinates in    *
      * the bb_coord_new data structure and the number of blocks on each   *
      * edge in the bb_edge_new data structure.  This routine should only  *
@@ -2604,15 +2720,18 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
      * The x and y coordinates are the pin's x and y coordinates.         */
     /* IO blocks are considered to be one cell in for simplicity.         */
     //TODO: account for multiple physical pin instances per logical pin
-    const t_bb *curr_bb_edge, *curr_bb_coord;
+    const std::vector<t_2D_tbb> *curr_bb_edge, *curr_bb_coord;
+    const std::vector<int> *curr_layer_pin_sink_count;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
 
-    xnew = max(min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    ynew = max(min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    xold = max(min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    yold = max(min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    int new_layer = pin_new_loc.layer_num;
+
+    pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
     /* Check if the net had been updated before. */
     if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
@@ -2620,165 +2739,241 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
         return;
     } else if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
-        curr_bb_coord = &place_move_ctx.bb_coords[net_id];
         curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
+        curr_bb_coord = &place_move_ctx.bb_coords[net_id];
+        curr_layer_pin_sink_count = &place_move_ctx.num_sink_pin_layer[net_id];
         bb_updated_before[net_id] = UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */
-        curr_bb_coord = bb_coord_new;
-        curr_bb_edge = bb_edge_new;
+        curr_bb_edge = &bb_edge_new;
+        curr_bb_coord = &bb_coord_new;
+        curr_layer_pin_sink_count = &bb_pin_sink_count_new;
     }
 
     /* Check if I can update the bounding box incrementally. */
 
-    if (xnew < xold) { /* Move to left. */
+    update_bb_pin_sink_count(net_id,
+                             pin_old_loc,
+                             pin_new_loc,
+                             *curr_layer_pin_sink_count,
+                             bb_pin_sink_count_new);
 
-        /* Update the xmax fields for coordinates and number of edges first. */
+    update_bb_edges(net_id,
+                    pin_old_loc,
+                    pin_new_loc,
+                    *curr_bb_edge,
+                    *curr_bb_coord,
+                    bb_edge_new,
+                    bb_coord_new,
+                    bb_pin_sink_count_new);
 
-        if (xold == curr_bb_coord->xmax) { /* Old position at xmax. */
-            if (curr_bb_edge->xmax == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
-                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
-                return;
-            } else {
-                bb_edge_new->xmax = curr_bb_edge->xmax - 1;
-                bb_coord_new->xmax = curr_bb_coord->xmax;
-            }
-        } else { /* Move to left, old postion was not at xmax. */
-            bb_coord_new->xmax = curr_bb_coord->xmax;
-            bb_edge_new->xmax = curr_bb_edge->xmax;
-        }
-
-        /* Now do the xmin fields for coordinates and number of edges. */
-
-        if (xnew < curr_bb_coord->xmin) { /* Moved past xmin */
-            bb_coord_new->xmin = xnew;
-            bb_edge_new->xmin = 1;
-        } else if (xnew == curr_bb_coord->xmin) { /* Moved to xmin */
-            bb_coord_new->xmin = xnew;
-            bb_edge_new->xmin = curr_bb_edge->xmin + 1;
-        } else { /* Xmin unchanged. */
-            bb_coord_new->xmin = curr_bb_coord->xmin;
-            bb_edge_new->xmin = curr_bb_edge->xmin;
-        }
-        /* End of move to left case. */
-
-    } else if (xnew > xold) { /* Move to right. */
-
-        /* Update the xmin fields for coordinates and number of edges first. */
-
-        if (xold == curr_bb_coord->xmin) { /* Old position at xmin. */
-            if (curr_bb_edge->xmin == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
-                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
-                return;
-            } else {
-                bb_edge_new->xmin = curr_bb_edge->xmin - 1;
-                bb_coord_new->xmin = curr_bb_coord->xmin;
-            }
-        } else { /* Move to right, old position was not at xmin. */
-            bb_coord_new->xmin = curr_bb_coord->xmin;
-            bb_edge_new->xmin = curr_bb_edge->xmin;
-        }
-
-        /* Now do the xmax fields for coordinates and number of edges. */
-
-        if (xnew > curr_bb_coord->xmax) { /* Moved past xmax. */
-            bb_coord_new->xmax = xnew;
-            bb_edge_new->xmax = 1;
-        } else if (xnew == curr_bb_coord->xmax) { /* Moved to xmax */
-            bb_coord_new->xmax = xnew;
-            bb_edge_new->xmax = curr_bb_edge->xmax + 1;
-        } else { /* Xmax unchanged. */
-            bb_coord_new->xmax = curr_bb_coord->xmax;
-            bb_edge_new->xmax = curr_bb_edge->xmax;
-        }
-        /* End of move to right case. */
-
-    } else { /* xnew == xold -- no x motion. */
-        bb_coord_new->xmin = curr_bb_coord->xmin;
-        bb_coord_new->xmax = curr_bb_coord->xmax;
-        bb_edge_new->xmin = curr_bb_edge->xmin;
-        bb_edge_new->xmax = curr_bb_edge->xmax;
+    if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+        return;
     }
 
-    /* Now account for the y-direction motion. */
-
-    if (ynew < yold) { /* Move down. */
-
-        /* Update the ymax fields for coordinates and number of edges first. */
-
-        if (yold == curr_bb_coord->ymax) { /* Old position at ymax. */
-            if (curr_bb_edge->ymax == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
-                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
-                return;
-            } else {
-                bb_edge_new->ymax = curr_bb_edge->ymax - 1;
-                bb_coord_new->ymax = curr_bb_coord->ymax;
-            }
-        } else { /* Move down, old postion was not at ymax. */
-            bb_coord_new->ymax = curr_bb_coord->ymax;
-            bb_edge_new->ymax = curr_bb_edge->ymax;
-        }
-
-        /* Now do the ymin fields for coordinates and number of edges. */
-
-        if (ynew < curr_bb_coord->ymin) { /* Moved past ymin */
-            bb_coord_new->ymin = ynew;
-            bb_edge_new->ymin = 1;
-        } else if (ynew == curr_bb_coord->ymin) { /* Moved to ymin */
-            bb_coord_new->ymin = ynew;
-            bb_edge_new->ymin = curr_bb_edge->ymin + 1;
-        } else { /* ymin unchanged. */
-            bb_coord_new->ymin = curr_bb_coord->ymin;
-            bb_edge_new->ymin = curr_bb_edge->ymin;
-        }
-        /* End of move down case. */
-
-    } else if (ynew > yold) { /* Moved up. */
-
-        /* Update the ymin fields for coordinates and number of edges first. */
-
-        if (yold == curr_bb_coord->ymin) { /* Old position at ymin. */
-            if (curr_bb_edge->ymin == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
-                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
-                return;
-            } else {
-                bb_edge_new->ymin = curr_bb_edge->ymin - 1;
-                bb_coord_new->ymin = curr_bb_coord->ymin;
-            }
-        } else { /* Moved up, old position was not at ymin. */
-            bb_coord_new->ymin = curr_bb_coord->ymin;
-            bb_edge_new->ymin = curr_bb_edge->ymin;
-        }
-
-        /* Now do the ymax fields for coordinates and number of edges. */
-
-        if (ynew > curr_bb_coord->ymax) { /* Moved past ymax. */
-            bb_coord_new->ymax = ynew;
-            bb_edge_new->ymax = 1;
-        } else if (ynew == curr_bb_coord->ymax) { /* Moved to ymax */
-            bb_coord_new->ymax = ynew;
-            bb_edge_new->ymax = curr_bb_edge->ymax + 1;
-        } else { /* ymax unchanged. */
-            bb_coord_new->ymax = curr_bb_coord->ymax;
-            bb_edge_new->ymax = curr_bb_edge->ymax;
-        }
-        /* End of move up case. */
-
-    } else { /* ynew == yold -- no y motion. */
-        bb_coord_new->ymin = curr_bb_coord->ymin;
-        bb_coord_new->ymax = curr_bb_coord->ymax;
-        bb_edge_new->ymin = curr_bb_edge->ymin;
-        bb_edge_new->ymax = curr_bb_edge->ymax;
-    }
+    add_block_to_bb((*curr_bb_edge)[new_layer],
+                    (*curr_bb_coord)[new_layer],
+                    pin_old_loc,
+                    pin_new_loc,
+                    bb_edge_new[new_layer],
+                    bb_coord_new[new_layer]);
 
     if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
         bb_updated_before[net_id] = UPDATED_ONCE;
     }
 }
+
+static void update_bb_pin_sink_count(ClusterNetId net_id,
+                                     const t_physical_tile_loc& pin_old_loc,
+                                     const t_physical_tile_loc& pin_new_loc,
+                                     const std::vector<int>& curr_layer_pin_sink_count,
+                                     std::vector<int>& bb_pin_sink_count_new) {
+    VTR_ASSERT(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0);
+    bb_pin_sink_count_new[pin_old_loc.layer_num] = curr_layer_pin_sink_count[pin_old_loc.layer_num] - 1;
+    bb_pin_sink_count_new[pin_new_loc.layer_num] = curr_layer_pin_sink_count[pin_new_loc.layer_num] + 1;
+
+}
+
+static void update_bb_edges(ClusterNetId net_id,
+                            const t_physical_tile_loc& pin_old_loc,
+                            const t_physical_tile_loc& pin_new_loc,
+                            const std::vector<t_2D_tbb>& curr_bb_edge,
+                            const std::vector<t_2D_tbb>& curr_bb_coord,
+                            std::vector<t_2D_tbb>& bb_edge_new,
+                            std::vector<t_2D_tbb>& bb_coord_new,
+                            std::vector<int>& bb_pin_sink_count_new) {
+    int old_layer = pin_old_loc.layer_num;
+
+    if (pin_old_loc.x == curr_bb_coord[pin_old_loc.layer_num].xmax) {
+        if (pin_old_loc.layer_num != pin_new_loc.layer_num ||
+            pin_new_loc.x < pin_old_loc.x) {
+            remove_block_from_bb_edge(net_id,
+                                      bb_edge_new,
+                                      bb_coord_new,
+                                      bb_pin_sink_count_new,
+                                      curr_bb_edge[old_layer].xmax,
+                                      curr_bb_coord[old_layer].xmax,
+                                      bb_edge_new[old_layer].xmax,
+                                      bb_coord_new[old_layer].xmax);
+            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+                return;
+            }
+        }
+    }
+
+    if (pin_old_loc.x == curr_bb_coord[pin_old_loc.layer_num].xmin) {
+        if (pin_old_loc.layer_num != pin_new_loc.layer_num ||
+            pin_new_loc.x > pin_old_loc.x) {
+            remove_block_from_bb_edge(net_id,
+                                      bb_edge_new,
+                                      bb_coord_new,
+                                      bb_pin_sink_count_new,
+                                      curr_bb_edge[old_layer].xmin,
+                                      curr_bb_coord[old_layer].xmin,
+                                      bb_edge_new[old_layer].xmin,
+                                      bb_coord_new[old_layer].xmin);
+            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+                return;
+            }
+        }
+    }
+
+    if (pin_old_loc.y == curr_bb_coord[pin_old_loc.layer_num].ymax) {
+        if (pin_old_loc.layer_num != pin_new_loc.layer_num ||
+            pin_new_loc.y < pin_old_loc.y) {
+            remove_block_from_bb_edge(net_id,
+                                      bb_edge_new,
+                                      bb_coord_new,
+                                      bb_pin_sink_count_new,
+                                      curr_bb_edge[old_layer].ymax,
+                                      curr_bb_coord[old_layer].ymax,
+                                      bb_edge_new[old_layer].ymax,
+                                      bb_coord_new[old_layer].ymax);
+            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+                return;
+            }
+        }
+    }
+
+    if (pin_old_loc.y == curr_bb_coord[pin_old_loc.layer_num].ymin) {
+        if (pin_old_loc.layer_num != pin_new_loc.layer_num ||
+            pin_new_loc.y > pin_old_loc.y) {
+            remove_block_from_bb_edge(net_id,
+                                      bb_edge_new,
+                                      bb_coord_new,
+                                      bb_pin_sink_count_new,
+                                      curr_bb_edge[old_layer].ymin,
+                                      curr_bb_coord[old_layer].ymin,
+                                      bb_edge_new[old_layer].ymin,
+                                      bb_coord_new[old_layer].ymin);
+            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+                return;
+            }
+        }
+    }
+
+}
+
+static void remove_block_from_bb_edge(ClusterNetId net_id,
+                                      std::vector<t_2D_tbb>& bb_edge_new,
+                                      std::vector<t_2D_tbb>& bb_coord_new,
+                                      std::vector<int>& bb_layer_pin_sink_count,
+                                      const int& old_num_block_on_edge,
+                                      const int& old_edge_coord,
+                                      int& new_num_block_on_edge,
+                                      int& new_edge_coord) {
+    if (old_num_block_on_edge == 1) {
+        get_bb_from_scratch(net_id,
+                            bb_edge_new,
+                            bb_coord_new,
+                            bb_layer_pin_sink_count);
+        bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+        return;
+    } else {
+        new_num_block_on_edge = old_num_block_on_edge - 1;
+        new_edge_coord = old_edge_coord;
+    }
+
+}
+
+static void add_block_to_bb(const t_2D_tbb& bb_edge_old,
+                            const t_2D_tbb& bb_coord_old,
+                            const t_physical_tile_loc& old_pin_loc,
+                            const t_physical_tile_loc& new_pin_loc,
+                            t_2D_tbb& bb_edge_new,
+                            t_2D_tbb& bb_coord_new) {
+    int xnew = new_pin_loc.x;
+    int xold = old_pin_loc.x;
+    int ynew = new_pin_loc.y;
+    int yold = old_pin_loc.y;
+
+    VTR_ASSERT(bb_edge_old.layer_num == bb_edge_new.layer_num);
+    VTR_ASSERT(bb_coord_old.layer_num == bb_coord_new.layer_num);
+    VTR_ASSERT(bb_edge_old.layer_num == bb_coord_old.layer_num);
+
+    if (xnew < xold) {
+        if (xnew < bb_coord_old.xmin) { /* Moved past xmin */
+            bb_coord_new.xmin = xnew;
+            bb_edge_new.xmin = 1;
+        } else if (xnew == bb_coord_old.xmin) { /* Moved to xmin */
+            bb_coord_new.xmin = xnew;
+            bb_edge_new.xmin = bb_edge_old.xmin + 1;
+        } else { /* Xmin unchanged. */
+            bb_coord_new.xmin = bb_coord_old.xmin;
+            bb_edge_new.xmin = bb_edge_old.xmin;
+        }
+    } else if (xnew > xold) {
+        if (xnew > bb_coord_old.xmax) { /* Moved past xmax. */
+            bb_coord_new.xmax = xnew;
+            bb_edge_new.xmax = 1;
+        } else if (xnew == bb_coord_old.xmax) { /* Moved to xmax */
+            bb_coord_new.xmax = xnew;
+            bb_edge_new.xmax = bb_edge_old.xmax + 1;
+        } else { /* Xmax unchanged. */
+            bb_coord_new.xmax = bb_coord_old.xmax;
+            bb_edge_new.xmax = bb_edge_old.xmax;
+        }
+    } else {
+        bb_coord_new.xmin = bb_coord_old.xmin;
+        bb_coord_new.xmax = bb_coord_old.xmax;
+        bb_edge_new.xmin = bb_edge_old.xmin;
+        bb_edge_new.xmax = bb_edge_old.xmax;
+    }
+
+    if (ynew < yold) {
+        if (ynew < bb_coord_old.ymin) { /* Moved past ymin */
+            bb_coord_new.ymin = ynew;
+            bb_edge_new.ymin = 1;
+        } else if (ynew == bb_coord_old.ymin) { /* Moved to ymin */
+            bb_coord_new.ymin = ynew;
+            bb_edge_new.ymin = bb_edge_old.ymin + 1;
+        } else { /* ymin unchanged. */
+            bb_coord_new.ymin = bb_coord_old.ymin;
+            bb_edge_new.ymin = bb_edge_old.ymin;
+        }
+        /* End of move down case. */
+    } else if (ynew > yold) {
+        if (ynew > bb_coord_old.ymax) { /* Moved past ymax. */
+            bb_coord_new.ymax = ynew;
+            bb_edge_new.ymax = 1;
+        } else if (ynew == bb_coord_old.ymax) { /* Moved to ymax */
+            bb_coord_new.ymax = ynew;
+            bb_edge_new.ymax = bb_edge_old.ymax + 1;
+        } else { /* ymax unchanged. */
+            bb_coord_new.ymax = bb_coord_old.ymax;
+            bb_edge_new.ymax = bb_edge_old.ymax;
+        }
+        /* End of move up case. */
+    } else {
+        /* ynew == yold -- no change. */
+        bb_coord_new.ymin = bb_coord_old.ymin;
+        bb_coord_new.ymax = bb_coord_old.ymax;
+        bb_edge_new.ymin = bb_edge_old.ymin;
+        bb_edge_new.ymax = bb_edge_old.ymax;
+    }
+}
+
+
 
 static void free_fast_cost_update() {
     chanx_place_cost_fac.clear();
