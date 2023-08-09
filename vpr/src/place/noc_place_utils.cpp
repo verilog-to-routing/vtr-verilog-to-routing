@@ -804,8 +804,8 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
         auto compressed_centroid_loc = get_compressed_loc_approx(compressed_noc_grid,
                                                                  {centroid_loc.x, centroid_loc.y, 0, centroid_loc.layer},
                                                                  num_layers);
-        int cx_centroid = compressed_centroid_loc[0].x;
-        int cy_centroid = compressed_centroid_loc[0].y;
+        int cx_centroid = compressed_centroid_loc[centroid_loc.layer].x;
+        int cy_centroid = compressed_centroid_loc[centroid_loc.layer].y;
 
         const int r_lim = 1;
         int r_lim_x = std::min<int>(compressed_noc_grid.compressed_to_grid_x.size(), r_lim);
@@ -831,11 +831,11 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
 
         bool legal = find_compatible_compressed_loc_in_range(cluster_from_type,
                                                              delta_cx,
-                                                             compressed_from_loc[0],
+                                                             compressed_from_loc[from.layer],
                                                              {min_cx, max_cx, min_cy, max_cy},
                                                              compressed_to_loc,
                                                              false,
-                                                             compressed_from_loc[0].layer_num,
+                                                             compressed_from_loc[from.layer].layer_num,
                                                              false);
 
         if (!legal) {
