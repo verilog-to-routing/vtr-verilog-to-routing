@@ -652,7 +652,8 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
                     &arch, vpr_setup.user_models,
                     vpr_setup.library_models, inter_cluster_delay,
-                    vpr_setup.PackerRRGraph);
+                    vpr_setup.PackerRRGraph,
+                    vpr_setup.NocOpts.noc);
 }
 
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
