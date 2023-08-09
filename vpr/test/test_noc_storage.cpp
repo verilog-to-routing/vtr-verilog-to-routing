@@ -165,7 +165,7 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
             // makes sure we do not create a link for a router who acts as a sink and source
             if (source_router_id != sink_router_id) {
                 // add link to the golden reference
-                golden_set.emplace_back(source, sink);
+                golden_set.emplace_back(NocLinkId(-1), source, sink, -1.0);
 
                 // add the link to the NoC
                 test_noc.add_link(source, sink);

@@ -4,7 +4,6 @@
 #include "noc_place_utils.h"
 #include "noc_routing.h"
 #include "xy_routing.h"
-#include "bfs_routing.h"
 #include "vtr_math.h"
 
 // test parameters
@@ -145,6 +144,8 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
+    // XY routing algorithm does not use the traffic flow ID
+    auto dummy_traffic_id = NocTrafficFlowId(-1);
 
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
@@ -154,7 +155,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, traffic_flow_route, noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, dummy_traffic_id, traffic_flow_route, noc_ctx.noc_model);
     }
 
     /* in the test function we will be routing all the traffic flows and then updating their link usages. So we will be generating a vector of all links
@@ -331,6 +332,8 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
+    // XY routing algorithm does not use the traffic flow ID
+    auto dummy_traffic_id = NocTrafficFlowId(-1);
 
     // route all the traffic flows locally
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
@@ -342,7 +345,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, traffic_flow_route, noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, dummy_traffic_id, traffic_flow_route, noc_ctx.noc_model);
 
         // store the number of links in the traffic flow
         golden_traffic_flow_route_sizes[traffic_flow_number] = traffic_flow_route.size();
@@ -580,6 +583,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
+    // XY routing algorithm does not use the traffic flow ID
+    auto dummy_traffic_id = NocTrafficFlowId(-1);
 
     // store the traffic flow routes found
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> golden_traffic_flow_routes;
@@ -601,7 +606,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id,(NocRouterId)sink_hard_routed_id, dummy_traffic_id,golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
     }
 
     // assume this works
@@ -713,7 +718,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
                 }
 
                 // re-route the traffic flow
-                routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+                routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                              router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                              dummy_traffic_id,
+                                              golden_traffic_flow_routes[traffic_flow],
+                                              noc_ctx.noc_model);
 
                 // go through the current traffic flow and increase the bandwidths of the links
                 for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
@@ -745,7 +754,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
                 }
 
                 // re-route the traffic flow
-                routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+                routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                              router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                              dummy_traffic_id,
+                                              golden_traffic_flow_routes[traffic_flow],
+                                              noc_ctx.noc_model);
 
                 // go through the current traffic flow and increase the bandwidths of the links
                 for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
@@ -850,7 +863,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         }
 
         // re-route the traffic flow
-        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                      router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                      dummy_traffic_id,
+                                      golden_traffic_flow_routes[traffic_flow],
+                                      noc_ctx.noc_model);
 
         // go through the current traffic flow and increase the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
@@ -878,7 +895,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         }
 
         // re-route the traffic flow
-        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                      router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                      dummy_traffic_id,
+                                      golden_traffic_flow_routes[traffic_flow],
+                                      noc_ctx.noc_model);
 
         // go through the current traffic flow and increase the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
@@ -968,7 +989,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         }
 
         // re-route the traffic flow
-        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                      router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                      dummy_traffic_id,
+                                      golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
 
         // go through the current traffic flow and increase the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
@@ -1309,6 +1333,8 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // now go and route all the traffic flows //
     // start by creating the routing algorithm
     noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
+    // XY routing algorithm does not use traffic flow ID
+    auto dummy_traffic_id = NocTrafficFlowId(-1);
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
@@ -1326,7 +1352,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
 
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, dummy_traffic_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
     }
 
     // assume this works
@@ -1425,7 +1451,11 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
             }
 
             // re-route the traffic flow
-            noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+            noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                                 router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                                 dummy_traffic_id,
+                                                 golden_traffic_flow_routes[traffic_flow],
+                                                 noc_ctx.noc_model);
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
             // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
@@ -1458,7 +1488,11 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
             }
 
             // re-route the traffic flow
-            noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+            noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                                 router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                                 dummy_traffic_id,
+                                                 golden_traffic_flow_routes[traffic_flow],
+                                                 noc_ctx.noc_model);
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
             // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
@@ -1643,6 +1677,8 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
 
     // create a local routing algorithm for the unit test
     NocRouting* routing_algorithm = new XYRouting();
+    // XY routing doesn't use traffic flow ID
+    auto dummy_traffic_flow_id = NocTrafficFlowId(-1);
 
     // store the traffic flow routes found
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> golden_traffic_flow_routes;
@@ -1657,7 +1693,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
 
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, dummy_traffic_flow_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
     }
 
     // variables below store the expected noc costs (latency and bandwidth)
