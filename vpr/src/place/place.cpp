@@ -2357,9 +2357,11 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     net_cost.resize(num_nets, -1.);
     proposed_net_cost.resize(num_nets, -1.);
+    place_move_ctx.bb_num_on_edges.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+
     place_move_ctx.bb_coords.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
 
-    place_move_ctx.bb_num_on_edges.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+    place_move_ctx.num_sink_pin_layer.resize(num_nets, std::vector<int>(num_layers, 0));
 
     /* Used to store costs for moves not yet made and to indicate when a net's   *
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
