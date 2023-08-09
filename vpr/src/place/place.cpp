@@ -2456,10 +2456,10 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     std::vector<int> xmax(num_layers);
     std::vector<int> ymin(num_layers);
     std::vector<int> ymax(num_layers);
-    std::vector<int> xmin_edge;
-    std::vector<int> xmax_edge;
-    std::vector<int> ymin_edge;
-    std::vector<int> ymax_edge;
+    std::vector<int> xmin_edge(num_layers);
+    std::vector<int> xmax_edge(num_layers);
+    std::vector<int> ymin_edge(num_layers);
+    std::vector<int> ymax_edge(num_layers);
 
     std::vector<int> num_sink_pin_layer(num_layers, 0);
 
