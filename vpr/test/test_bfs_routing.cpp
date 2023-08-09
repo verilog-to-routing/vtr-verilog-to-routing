@@ -65,11 +65,14 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         NocRouterId start_router_id = NocRouterId(10);
         NocRouterId sink_router_id = NocRouterId(10);
 
+        // BFS routing algorithm does not use the traffic flow ID
+        auto dummy_traffic_id = NocTrafficFlowId(-1);
+
         // store the route found by the algorithm
         std::vector<NocLinkId> found_path;
 
         // make sure that a legal route was found (no error should be thrown)
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, dummy_traffic_id, found_path, noc_model));
 
         // now make sure that the found route is empty, we shouldn't be moving anywhere as the start and end routers are the same
         REQUIRE(found_path.empty() == true);
@@ -79,6 +82,9 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         NocRouterId start_router_id = NocRouterId(12);
         // choosing the destination router as the bottom right corner of the mesh
         NocRouterId sink_router_id = NocRouterId(3);
+
+        // BFS routing algorithm does not use the traffic flow ID
+        auto dummy_traffic_id = NocTrafficFlowId(-1);
 
         // store the route to be found by the algorithm
         std::vector<NocLinkId> found_path;
@@ -104,7 +110,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
 
         // now run the routinjg algorithm
         // make sure that a legal route was found (no error should be thrown)
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, dummy_traffic_id, found_path, noc_model));
 
         // check that the found route has the exact same number of links as the expected path
         REQUIRE(golden_path.size() == found_path.size());
@@ -120,6 +126,9 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         // choosing the destination router as the bottom right corner of the mesh
         NocRouterId sink_router_id = NocRouterId(3);
 
+        // BFS routing algorithm does not use the traffic flow ID
+        auto dummy_traffic_id = NocTrafficFlowId(-1);
+
         // Remove any direct links to router 3
         noc_model.remove_link(NocRouterId(2), NocRouterId(3));
         noc_model.remove_link(NocRouterId(7), NocRouterId(3));
@@ -128,7 +137,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         std::vector<NocLinkId> found_path;
 
         // run the routing algorithm and we expect ir ro fail
-        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model), "No route could be found from starting router with id:'12' and the destination router with id:'3' using the breadth-first search routing algorithm.");
+        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, dummy_traffic_id, found_path, noc_model), "No route could be found from starting router with id:'12' and the destination router with id:'3' using the breadth-first search routing algorithm.");
     }
 }
 

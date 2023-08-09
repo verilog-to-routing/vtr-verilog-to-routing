@@ -233,7 +233,7 @@ bool try_pack(t_packer_opts* packer_opts,
             attraction_groups.create_att_groups_for_overfull_regions();
             attraction_groups.set_att_group_pulls(1);
 
-        } else if (floorplan_not_fitting && ((!noc_enabled && pack_iteration >= 2 && pack_iteration < 5) || (noc_enabled && pack_iteration >= 3 && pack_iteration < 6))) {
+        } else if (floorplan_not_fitting && ((!noc_enabled && pack_iteration >= 2 && pack_iteration < 5) || (noc_enabled && pack_iteration >= 3 && pack_iteration < 6)) ) {
             if ((!noc_enabled && pack_iteration == 2) || (noc_enabled && pack_iteration == 3)) {
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 attraction_groups.create_att_groups_for_overfull_regions();
