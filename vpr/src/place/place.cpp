@@ -2548,7 +2548,7 @@ static void get_bb_from_scratch(ClusterNetId net_id,
         num_on_edges[layer].ymin = ymin_edge[layer];
         num_on_edges[layer].ymax = ymax_edge[layer];
     }
-    g_placer_ctx.mutable_move().num_sink_pin_layer[net_id] = num_sink_pin_layer;
+    layer_pin_sink_count = num_sink_pin_layer;
 }
 
 static double wirelength_crossing_count(size_t fanout) {
@@ -2568,7 +2568,6 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const std::vector
 
     double ncost = 0.;
     double crossing = 0.;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& place_move_ctx = g_placer_ctx.move();
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
@@ -2599,7 +2598,6 @@ static double get_net_cost(ClusterNetId /* net_id */,
 
     double ncost = 0.;
     double crossing = 0.;
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
@@ -2782,7 +2780,7 @@ static void update_bb(ClusterNetId net_id,
     }
 }
 
-static void update_bb_pin_sink_count(ClusterNetId net_id,
+static void update_bb_pin_sink_count(ClusterNetId /* net_id */,
                                      const t_physical_tile_loc& pin_old_loc,
                                      const t_physical_tile_loc& pin_new_loc,
                                      const std::vector<int>& curr_layer_pin_sink_count,

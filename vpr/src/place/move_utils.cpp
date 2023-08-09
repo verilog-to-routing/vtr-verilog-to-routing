@@ -1264,7 +1264,7 @@ t_2D_tbb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec) {
                        -1);
 
     for (const auto& bb : tbb_vec) {
-        if (bb.xmin == OPEN){
+        if (bb.xmin == OPEN) {
             continue;
         }
         if (bb.xmin < merged_bb.xmin) {
@@ -1281,4 +1281,5 @@ t_2D_tbb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec) {
         }
     }
 
+    return merged_bb;
 }
