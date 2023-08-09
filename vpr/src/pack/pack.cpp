@@ -74,7 +74,7 @@ bool try_pack(t_packer_opts* packer_opts,
     helper_ctx.num_models += count_models(library_models);
 
     is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
-//    is_global = find_likely_global_ctrl_nets(is_clock);
+    //    is_global = find_likely_global_ctrl_nets(is_clock);
     is_global.insert(is_clock.begin(), is_clock.end());
 
     size_t num_p_inputs = 0;
@@ -190,14 +190,19 @@ bool try_pack(t_packer_opts* packer_opts,
 
         if (fits_on_device && !floorplan_regions_overfull) {
             break; //Done
-        } else if (noc_enabled && pack_iteration == 1 && !floorplan_not_fitting) {
+            /*
+             * If NoC is enabled and the first packing attempt has failed, we don't care whether a floorplan constraint couldn't be satisfied
+             * or the clustered netlist does not fit into the target FPGA device. Enabling high fanout connectivity clustering
+             * can help with both, so we enable it.
+             */
+        } else if (noc_enabled && pack_iteration == 1) {
             VTR_ASSERT(allow_high_fanout_connectivity_clustering == false);
             allow_high_fanout_connectivity_clustering = true;
             VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s allow_high_fanout_connectivity_clustering=%s\n",
                     (allow_unrelated_clustering ? "true" : "false"),
                     (balance_block_type_util ? "true" : "false"),
                     (allow_high_fanout_connectivity_clustering ? "true" : "false"));
-        } else if (((noc_enabled && pack_iteration == 2) || (!noc_enabled && pack_iteration == 1)) && !floorplan_not_fitting) {
+        } else if (!floorplan_not_fitting && ((noc_enabled && pack_iteration == 2) || (!noc_enabled && pack_iteration == 1))) {
             //1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
             //
             //Turn it on to increase packing density
@@ -223,12 +228,12 @@ bool try_pack(t_packer_opts* packer_opts,
              * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
              * until the last iteration, when we create attraction groups for every partition, if needed.
              */
-        } else if (((!noc_enabled && pack_iteration == 1) || (noc_enabled && pack_iteration == 2)) && floorplan_not_fitting) {
+        } else if (floorplan_not_fitting && ((!noc_enabled && pack_iteration == 1) || (noc_enabled && pack_iteration == 2))) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
             attraction_groups.create_att_groups_for_overfull_regions();
             attraction_groups.set_att_group_pulls(1);
 
-        } else if (((!noc_enabled && pack_iteration >= 2 && pack_iteration < 5) || (noc_enabled && pack_iteration >= 3 && pack_iteration < 6)) && floorplan_not_fitting) {
+        } else if (floorplan_not_fitting && ((!noc_enabled && pack_iteration >= 2 && pack_iteration < 5) || (noc_enabled && pack_iteration >= 3 && pack_iteration < 6))) {
             if ((!noc_enabled && pack_iteration == 2) || (noc_enabled && pack_iteration == 3)) {
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 attraction_groups.create_att_groups_for_overfull_regions();
