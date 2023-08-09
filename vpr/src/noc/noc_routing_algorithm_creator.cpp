@@ -15,6 +15,8 @@ std::unique_ptr<NocRouting> NocRoutingAlgorithmCreator::create_routing_algorithm
         noc_routing_algorithm = std::make_unique<NorthLastRouting>();
     } else if (routing_algorithm_name == "negative_first_routing") {
         noc_routing_algorithm = std::make_unique<NegativeFirstRouting>();
+    } else if (routing_algorithm_name == "odd_even_routing") {
+        noc_routing_algorithm = std::make_unique<OddEvenRouting>();
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "The provided NoC routing algorithm '%s' is not supported.", routing_algorithm_name.c_str());
     }

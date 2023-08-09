@@ -5,9 +5,12 @@
 #include "globals.h"
 #include "vpr_error.h"
 
-XYRouting::~XYRouting() {}
+XYRouting::~XYRouting() = default;
 
-const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(NocRouterId curr_router_id, NocRouterId dst_router_id, const NocStorage& noc_model) {
+const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(NocRouterId src_router_id,
+                                                                                NocRouterId curr_router_id,
+                                                                                NocRouterId dst_router_id,
+                                                                                const NocStorage& noc_model) {
     // get current and destination NoC routers
     const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
     const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
@@ -27,7 +30,12 @@ const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(
     }
 }
 
-TurnModelRouting::Direction XYRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions, NocRouterId src_router_id, NocRouterId dst_router_id, NocRouterId curr_router_id, NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model) {
+TurnModelRouting::Direction XYRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
+                                                             NocRouterId src_router_id,
+                                                             NocRouterId dst_router_id,
+                                                             NocRouterId curr_router_id,
+                                                             NocTrafficFlowId traffic_flow_id,
+                                                             const NocStorage& noc_model) {
     // get current and destination NoC routers
     const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
     const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);

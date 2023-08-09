@@ -26,6 +26,7 @@
 #include "west_first_routing.h"
 #include "north_last_routing.h"
 #include "negative_first_routing.h"
+#include "odd_even_routing.h"
 
 class NocRoutingAlgorithmCreator {
   public:
@@ -41,7 +42,7 @@ class NocRoutingAlgorithmCreator {
      * 
      * @param routing_algorithm_name A user provided string that identifies a 
      * NoC routing algorithm
-     * @return NocRouting* A reference to the created NoC routing algorithm
+     * @return std::unique_ptr<NocRouting> A reference to the created NoC routing algorithm
      */
     static std::unique_ptr<NocRouting> create_routing_algorithm(const std::string& routing_algorithm_name);
 };
