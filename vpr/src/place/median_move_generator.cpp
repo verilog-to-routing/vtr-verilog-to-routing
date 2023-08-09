@@ -232,6 +232,7 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector
             bb_coord_new[layer_num].ymin = OPEN;
             bb_coord_new[layer_num].xmax = OPEN;
             bb_coord_new[layer_num].ymax = OPEN;
+            continue;
         }
         bb_coord_new[layer_num].xmin = std::max(std::min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
         bb_coord_new[layer_num].ymin = std::max(std::min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
