@@ -1255,3 +1255,30 @@ int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc)
 
     return free_layer;
 }
+
+t_2D_tbb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec) {
+    t_2D_tbb merged_bb(std::numeric_limits<int>::min(),
+                       std::numeric_limits<int>::max(),
+                       std::numeric_limits<int>::min(),
+                       std::numeric_limits<int>::max(),
+                       -1);
+
+    for (const auto& bb : tbb_vec) {
+        if (bb.xmin == OPEN){
+            continue;
+        }
+        if (bb.xmin < merged_bb.xmin) {
+            merged_bb.xmin = bb.xmin;
+        }
+        if (bb.xmax > merged_bb.xmax) {
+            merged_bb.xmax = bb.xmax;
+        }
+        if (bb.ymin < merged_bb.ymin) {
+            merged_bb.ymin = bb.ymin;
+        }
+        if (bb.ymax > merged_bb.ymax) {
+            merged_bb.ymax = bb.ymax;
+        }
+    }
+
+}
