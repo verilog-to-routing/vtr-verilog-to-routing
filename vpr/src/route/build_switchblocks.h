@@ -34,8 +34,8 @@ class Switchblock_Lookup {
     }
 
     /* Constructor for initializing member variables with default layer number (0), used for single die FPGA */
-    Switchblock_Lookup(int set_x, int set_y, e_side set_from, e_side set_to){
-        this->set_coords(set_x,set_y,0,set_from,set_to);
+    Switchblock_Lookup(int set_x, int set_y, e_side set_from, e_side set_to) {
+        this->set_coords(set_x, set_y, 0, set_from, set_to);
     }
 
     /* Function for setting the segment coordinates */
@@ -60,15 +60,16 @@ class Switchblock_Lookup {
         return result;
     }
 };
-//TODO: SM: check if this require to include layer_coord
+
 struct t_hash_Switchblock_Lookup {
     size_t operator()(const Switchblock_Lookup& obj) const noexcept {
         //TODO: use vtr::hash_combine
         size_t result;
         result = ((((std::hash<int>()(obj.x_coord)
                      ^ std::hash<int>()(obj.y_coord) << 10)
-                    ^ std::hash<int>()((int)obj.from_side) << 20)
-                   ^ std::hash<int>()((int)obj.to_side) << 30));
+                    ^ std::hash<int>()(obj.layer_coord << 20)
+                    ^ std::hash<int>()((int)obj.from_side) << 30)
+                   ^ std::hash<int>()((int)obj.to_side) << 40));
         return result;
     }
 };
@@ -79,6 +80,8 @@ struct t_switchblock_edge {
     short from_wire;
     short to_wire;
     short switch_ind;
+    short from_wire_layer;
+    short to_wire_layer;
 };
 
 /* Switchblock connections are made as [x][y][from_side][to_side][from_wire_ind].

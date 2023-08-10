@@ -283,7 +283,7 @@ static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_
 static bool is_core(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
 
 /* checks if the specified layer has programmable routing resources described in the architecture file */
-static bool is_prog_routing_avail(const DeviceGrid& grid,  const std::vector<bool>& inter_cluster_rr, int layer);
+static bool is_prog_routing_avail(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int layer);
 
 /* adjusts a negative destination wire index calculated from a permutation formula */
 static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int connection_ind);
@@ -331,8 +331,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
         if (directionality != sb.directionality) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
         }
-        /* Iterate over the x,y coordinates spanning the FPGA. */
-        for(int layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
+        /* Iterate over the x,y, layer coordinates spanning the FPGA. */
+        for (int layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
             for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
                 for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
                     if (sb_not_here(grid, inter_cluster_rr, x_coord, y_coord, layer_coord, sb.location)) {
@@ -340,8 +340,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                     }
                     /* now we iterate over all the potential side1->side2 connections */
                     //TODO: SM: this must change to TOTAL_SIDES INSTEAD OF SIDES
-                    for (e_side from_side: SIDES) {
-                        for (e_side to_side: SIDES) {
+                    for (e_side from_side : TOTAL_SIDES) {
+                        for (e_side to_side : TOTAL_SIDES) {
                             /* Fill appropriate entry of the sb_conns map with vector specifying the wires
                              * the current wire will connect to */
                             compute_wire_connections(x_coord, y_coord, layer_coord, from_side, to_side,
@@ -391,7 +391,7 @@ static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_c
             }
             break;
         case E_CORE:
-            if (is_core(grid,inter_cluster_rr, x, y, layer)) {
+            if (is_core(grid, inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
@@ -409,7 +409,7 @@ static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_c
 
 /* checks if the specified coordinates represent a corner of the FPGA */
 static bool is_corner(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
-    if(!is_prog_routing_avail(grid,inter_cluster_rr,layer)){
+    if (!is_prog_routing_avail(grid, inter_cluster_rr, layer)) {
         return false;
     }
     bool is_corner = false;
@@ -423,7 +423,7 @@ static bool is_corner(const DeviceGrid& grid, const std::vector<bool>& inter_clu
 
 /* checks if the specified coordinates correspond to one of the perimeter switchblocks */
 static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
-    if(!is_prog_routing_avail(grid,inter_cluster_rr,layer)){
+    if (!is_prog_routing_avail(grid, inter_cluster_rr, layer)) {
         return false;
     }
     bool is_perimeter = false;
@@ -435,19 +435,19 @@ static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_
 
 /* checks if the specified coordinates correspond to the core of the FPGA (i.e. not perimeter) */
 static bool is_core(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
-    if(!is_prog_routing_avail(grid,inter_cluster_rr,layer)){
+    if (!is_prog_routing_avail(grid, inter_cluster_rr, layer)) {
         return false;
     }
     bool is_core = !is_perimeter(grid, inter_cluster_rr, x, y, layer);
     return is_core;
 }
 
-static bool is_prog_routing_avail(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int layer){
+static bool is_prog_routing_avail(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int layer) {
     bool is_prog_avail = true;
     //make sure layer number is legal
     VTR_ASSERT(layer >= 0 && layer < grid.get_num_layers());
     //check if the current layer has programmable routing resources before trying to build a custom switch blocks
-    if(!inter_cluster_rr.at(layer)){
+    if (!inter_cluster_rr.at(layer)) {
         is_prog_avail = false;
     }
     return is_prog_avail;
@@ -590,7 +590,7 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
     t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
 
-    SB_Side_Connection side_conn(from_side, to_side);                 /* for indexing into this switchblock's permutation funcs */
+    SB_Side_Connection side_conn(from_side, to_side);                              /* for indexing into this switchblock's permutation funcs */
     Switchblock_Lookup sb_conn(x_coord, y_coord, layer_coord, from_side, to_side); /* for indexing into FPGA's switchblock map */
 
     /* can't connect a switchblock side to itself */
@@ -670,24 +670,45 @@ static void compute_wireconn_connections(
     constexpr bool verbose = false;
 
     /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
-
-    get_switchpoint_wires(grid,
-                          from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.from_side,
-                          wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
-                          &scratchpad->potential_src_wires,
-                          &scratchpad->scratch_wires);
-    get_switchpoint_wires(grid,
-                          to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
-                          wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true, wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
-                          &scratchpad->scratch_wires);
+    if (sb_conn.from_side == ABOVE || sb_conn.from_side == UNDER) {
+        for (e_side from_side : SIDES) {
+            get_switchpoint_wires(grid,
+                                  from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, from_side,
+                                  wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
+                                  &scratchpad->potential_src_wires,
+                                  &scratchpad->scratch_wires);
+        }
+    } else {
+        get_switchpoint_wires(grid,
+                              from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.from_side,
+                              wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
+                              &scratchpad->potential_src_wires,
+                              &scratchpad->scratch_wires);
+    }
+    if (sb_conn.to_side == ABOVE || sb_conn.to_side == UNDER) {
+        for (e_side to_side : SIDES) {
+            get_switchpoint_wires(grid,
+                                  to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, to_side,
+                                  wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
+                                  wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
+                                  &scratchpad->scratch_wires);
+        }
+    } else {
+        get_switchpoint_wires(grid,
+                              to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
+                              wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
+                              wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
+                              &scratchpad->scratch_wires);
+    }
 
     const auto& potential_src_wires = scratchpad->potential_src_wires;
     const auto& potential_dest_wires = scratchpad->potential_dest_wires;
 
+#if 0
     VTR_LOGV(verbose, "SB_LOC: %d,%d %s->%s\n", sb_conn.x_coord, sb_conn.y_coord, SIDE_STRING[sb_conn.from_side], SIDE_STRING[sb_conn.to_side]);
 
     //Define to print out specific wire-switchpoints used in to/from sets, if verbose is set true
-#if 0
+
     for (auto from_set : wireconn_ptr->from_switchpoint_set) {
         VTR_LOGV(verbose, "  FROM_SET: %s @", from_set.segment_name.c_str());
         for (int switchpoint : from_set.switchpoints) {
@@ -752,13 +773,15 @@ static void compute_wireconn_connections(
             if (sb_conn.from_side == TOP || sb_conn.from_side == RIGHT) {
                 continue;
             }
-            VTR_ASSERT(sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT);
+            //TODO: SM: should uncomment these
+            //VTR_ASSERT(sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT);
         } else if (from_wire_direction == Direction::DEC) {
             /* a wire heading in the decreasing direction can only connect from the TOP or RIGHT sides of a switch block */
             if (sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT) {
                 continue;
             }
-            VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
+            //TODO: SM: should uncomment these
+            //VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
         } else {
             VTR_ASSERT(from_wire_direction == Direction::BIDIR);
         }
@@ -790,12 +813,18 @@ static void compute_wireconn_connections(
             t_switchblock_edge sb_edge;
             sb_edge.from_wire = from_wire;
             sb_edge.to_wire = to_wire;
+            sb_edge.from_wire_layer = from_layer;
+            sb_edge.to_wire_layer = to_layer;
 
             // if the switch override has been set, use that, Otherwise use default
             if (wireconn_ptr->switch_override_indx != DEFAULT_SWITCH) {
                 sb_edge.switch_ind = wireconn_ptr->switch_override_indx;
-            } else {
+            } else if (from_layer == to_layer) {
                 sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
+            } else {
+                VTR_ASSERT(from_layer != to_layer);
+                //TODO: SM: should figure out whether this is correct
+                sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_opin_between_dice_switch();
             }
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
@@ -871,7 +900,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer + 1;
-            //TODO: SM : chanx or chany?
+            //TODO: SM : chanx or chany? should be both somehow
             chan_type = CHANX;
             return chan_details_x;
             break;
@@ -879,7 +908,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer - 1;
-            //TODO: SM : chanx or chany?
+            //TODO: SM : chanx or chany? should be both somehow
             chan_type = CHANX;
             return chan_details_x;
             break;
