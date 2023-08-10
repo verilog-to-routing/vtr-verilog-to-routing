@@ -425,9 +425,8 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
         centroid.y = acc_y / acc_weight;
         if (find_layer) {
             auto max_element = std::max_element(layer_count.begin(), layer_count.end());
-            VTR_ASSERT(*max_element != 0);
-            auto index = std::distance(layer_count.begin(), max_element);
-            centroid.layer = static_cast<int>(index);
+            VTR_ASSERT((*max_element) != 0);
+            centroid.layer = (int)std::distance(layer_count.begin(), max_element);
         } else {
             centroid.layer = head_layer_num;
         }
