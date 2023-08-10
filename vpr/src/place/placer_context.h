@@ -91,7 +91,6 @@ struct PlacerRuntimeContext : public Context {
  */
 struct PlacerMoveContext : public Context {
   public:
-
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
     vtr::vector<ClusterNetId, std::vector<t_2D_tbb>> bb_num_on_edges;
 

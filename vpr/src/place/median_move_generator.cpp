@@ -32,7 +32,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     /* Calculate the median region */
     t_pl_loc to;
 
-    std::vector<t_2D_tbb> coords (num_layers, t_2D_tbb(OPEN, OPEN, OPEN, OPEN, OPEN));
+    std::vector<t_2D_tbb> coords(num_layers, t_2D_tbb(OPEN, OPEN, OPEN, OPEN, OPEN));
     t_2D_tbb limit_coords;
     ClusterBlockId bnum;
     int pnum, xnew, xold, ynew, yold;

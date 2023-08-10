@@ -343,13 +343,13 @@ static void update_bb_pin_sink_count(ClusterNetId net_id,
                                      std::vector<int>& bb_pin_sink_count_new);
 
 static void try_remove_block_from_bb_edge(ClusterNetId net_id,
-                            const t_physical_tile_loc& pin_old_loc,
-                            const t_physical_tile_loc& pin_new_loc,
-                            const std::vector<t_2D_tbb>& curr_bb_edge,
-                            const std::vector<t_2D_tbb>& curr_bb_coord,
-                            std::vector<t_2D_tbb>& bb_edge_new,
-                            std::vector<t_2D_tbb>& bb_coord_new,
-                            std::vector<int>& bb_pin_sink_count_new);
+                                          const t_physical_tile_loc& pin_old_loc,
+                                          const t_physical_tile_loc& pin_new_loc,
+                                          const std::vector<t_2D_tbb>& curr_bb_edge,
+                                          const std::vector<t_2D_tbb>& curr_bb_coord,
+                                          std::vector<t_2D_tbb>& bb_edge_new,
+                                          std::vector<t_2D_tbb>& bb_coord_new,
+                                          std::vector<int>& bb_pin_sink_count_new);
 
 static void remove_block_from_bb_edge(ClusterNetId net_id,
                                       std::vector<t_2D_tbb>& bb_edge_new,
@@ -1419,7 +1419,7 @@ static void update_move_nets(int num_nets_affected) {
 
         place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
         place_move_ctx.num_sink_pin_layer[net_id] = ts_layer_sink_pin_count[net_id];
-        VTR_ASSERT(ts_layer_sink_pin_count[net_id][0] == cluster_ctx.clb_nlist.net_pins(net_id).size()-1);
+        VTR_ASSERT(ts_layer_sink_pin_count[net_id][0] == cluster_ctx.clb_nlist.net_pins(net_id).size() - 1);
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
             place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
 
@@ -2600,7 +2600,7 @@ static double get_net_wirelength_estimate(ClusterNetId net_id,
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         VTR_ASSERT(layer_pin_sink_count[layer_num] != OPEN);
-        if (layer_pin_sink_count[layer_num] == 0){
+        if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
         crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num]);
@@ -2632,7 +2632,7 @@ static double get_net_cost(ClusterNetId /* net_id */,
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         VTR_ASSERT(layer_pin_sink_count[layer_num] != OPEN);
-        if (layer_pin_sink_count[layer_num] == 0){
+        if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
         crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num]);
@@ -2799,13 +2799,13 @@ static void update_bb(ClusterNetId net_id,
                              bb_pin_sink_count_new);
 
     try_remove_block_from_bb_edge(net_id,
-                    pin_old_loc,
-                    pin_new_loc,
-                    *curr_bb_edge,
-                    *curr_bb_coord,
-                    bb_edge_new,
-                    bb_coord_new,
-                    bb_pin_sink_count_new);
+                                  pin_old_loc,
+                                  pin_new_loc,
+                                  *curr_bb_edge,
+                                  *curr_bb_coord,
+                                  bb_edge_new,
+                                  bb_coord_new,
+                                  bb_pin_sink_count_new);
 
     if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
         return;
@@ -2837,13 +2837,13 @@ static void update_bb_pin_sink_count(ClusterNetId net_id,
 }
 
 static void try_remove_block_from_bb_edge(ClusterNetId net_id,
-                            const t_physical_tile_loc& pin_old_loc,
-                            const t_physical_tile_loc& pin_new_loc,
-                            const std::vector<t_2D_tbb>& curr_bb_edge,
-                            const std::vector<t_2D_tbb>& curr_bb_coord,
-                            std::vector<t_2D_tbb>& bb_edge_new,
-                            std::vector<t_2D_tbb>& bb_coord_new,
-                            std::vector<int>& bb_pin_sink_count_new) {
+                                          const t_physical_tile_loc& pin_old_loc,
+                                          const t_physical_tile_loc& pin_new_loc,
+                                          const std::vector<t_2D_tbb>& curr_bb_edge,
+                                          const std::vector<t_2D_tbb>& curr_bb_coord,
+                                          std::vector<t_2D_tbb>& bb_edge_new,
+                                          std::vector<t_2D_tbb>& bb_coord_new,
+                                          std::vector<int>& bb_pin_sink_count_new) {
     int old_layer = pin_old_loc.layer_num;
     int new_layer = pin_new_loc.layer_num;
 
