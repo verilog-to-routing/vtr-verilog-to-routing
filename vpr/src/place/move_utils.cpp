@@ -1262,7 +1262,7 @@ int get_random_layer(t_logical_block_type_ptr logical_block) {
 
     const auto& compatible_layers = place_ctx.compressed_block_grids[logical_block->index].get_layer_nums();
     VTR_ASSERT(!compatible_layers.empty());
-    int layer_num = compatible_layers[vtr::irand(compatible_layers.size()-1)];
+    int layer_num = compatible_layers[vtr::irand(compatible_layers.size() - 1)];
 
     return layer_num;
 }
