@@ -74,10 +74,10 @@ class Point {
     T y() const;
 
     ///@brief == operator
-    friend bool operator== <>(Point<T> lhs, Point<T> rhs);
+    friend bool operator==<>(Point<T> lhs, Point<T> rhs);
 
     ///@brief != operator
-    friend bool operator!= <>(Point<T> lhs, Point<T> rhs);
+    friend bool operator!=<>(Point<T> lhs, Point<T> rhs);
 
     ///@brief < operator
     friend bool operator< <>(Point<T> lhs, Point<T> rhs);
@@ -196,10 +196,10 @@ class Rect {
     bool empty() const;
 
     ///@brief == operator
-    friend bool operator== <>(const Rect<T>& lhs, const Rect<T>& rhs);
+    friend bool operator==<>(const Rect<T>& lhs, const Rect<T>& rhs);
 
     ///@brief != operator
-    friend bool operator!= <>(const Rect<T>& lhs, const Rect<T>& rhs);
+    friend bool operator!=<>(const Rect<T>& lhs, const Rect<T>& rhs);
 
   public: //Mutators
     ///@brief set xmin to a point
@@ -326,10 +326,10 @@ class RectUnion {
      *
      * Note: does not check whether the representations they are equivalent
      */
-    friend bool operator== <>(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
+    friend bool operator==<>(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
 
     ///@brief != operator
-    friend bool operator!= <>(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
+    friend bool operator!=<>(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
 
   private:
     // Note that a union of rectangles may have holes and may not be contiguous

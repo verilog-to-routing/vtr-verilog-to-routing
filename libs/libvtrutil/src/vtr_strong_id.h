@@ -212,9 +212,9 @@ class StrongId {
      * Note that since these are templated functions we provide an empty set of template parameters
      * after the function name (i.e. <>)
      */
-    friend constexpr bool operator== <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend constexpr bool operator==<>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
     ///@brief != operator
-    friend constexpr bool operator!= <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend constexpr bool operator!=<>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
     ///@brief < operator
     friend constexpr bool operator< <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
 

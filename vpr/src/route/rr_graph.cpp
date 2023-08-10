@@ -796,28 +796,50 @@ void create_rr_graph(const t_graph_type graph_type,
             }
         } else {
             free_rr_graph();
-            build_rr_graph(graph_type,
-                           block_types,
-                           grid,
-                           nodes_per_chan,
-                           det_routing_arch->switch_block_type,
-                           det_routing_arch->Fs,
-                           det_routing_arch->switchblocks,
-                           segment_inf,
-                           det_routing_arch->global_route_switch,
-                           det_routing_arch->wire_to_arch_ipin_switch,
-                           det_routing_arch->wire_to_arch_ipin_switch_between_dice,
-                           router_opts.custom_3d_sb_fanin_fanout,
-                           det_routing_arch->delayless_switch,
-                           det_routing_arch->R_minW_nmos,
-                           det_routing_arch->R_minW_pmos,
-                           router_opts.base_cost_type,
-                           router_opts.clock_modeling,
-                           directs,
-                           &det_routing_arch->wire_to_rr_ipin_switch,
-                           is_flat,
-                           Warnings,
-                           router_opts.route_verbosity);
+            if (GRAPH_UNIDIR_TILEABLE != graph_type) {
+                build_rr_graph(graph_type,
+                               block_types,
+                               grid,
+                               nodes_per_chan,
+                               det_routing_arch->switch_block_type,
+                               det_routing_arch->Fs,
+                               det_routing_arch->switchblocks,
+                               segment_inf,
+                               det_routing_arch->global_route_switch,
+                               det_routing_arch->wire_to_arch_ipin_switch,
+                               det_routing_arch->wire_to_arch_ipin_switch_between_dice,
+                               det_routing_arch->delayless_switch,
+                               det_routing_arch->R_minW_nmos,
+                               det_routing_arch->R_minW_pmos,
+                               router_opts.base_cost_type,
+                               router_opts.clock_modeling,
+                               directs, num_directs,
+                               &det_routing_arch->wire_to_rr_ipin_switch,
+                               is_flat,
+                               Warnings);
+            } else {
+                /* We do not support dedicated network for clocks in tileable rr_graph generation */
+                VTR_LOG_WARN("Tileable routing resource graph does not support clock modeling yet! Related options are ignored...\n");
+                build_tileable_unidir_rr_graph(block_types,
+                                               grid,
+                                               nodes_per_chan,
+                                               det_routing_arch->switch_block_type,
+                                               det_routing_arch->Fs,
+                                               det_routing_arch->switch_block_subtype,
+                                               det_routing_arch->subFs,
+                                               segment_inf,
+                                               det_routing_arch->delayless_switch,
+                                               det_routing_arch->wire_to_arch_ipin_switch,
+                                               det_routing_arch->R_minW_nmos,
+                                               det_routing_arch->R_minW_pmos,
+                                               router_opts.base_cost_type,
+                                               directs, num_directs,
+                                               &det_routing_arch->wire_to_rr_ipin_switch,
+                                               det_routing_arch->shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
+                                               router_opts.trim_obs_channels || det_routing_arch->through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
+                                               false,                                                              /* Do not allow passing tracks to be wired to the same routing channels */
+                                               Warnings);
+            }
         }
     }
 
