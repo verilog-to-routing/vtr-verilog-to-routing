@@ -31,7 +31,9 @@ size_t find_unidir_routing_channel_width(const size_t& chan_width) {
  * Get the class index of a grid pin 
  ***********************************************************************/
 int get_grid_pin_class_index(const DeviceGrid& grids,
-                             const size_t& layer, const size_t& x, const size_t& y,
+                             const size_t& layer,
+                             const size_t& x,
+                             const size_t& y,
                              const int pin_index) {
     /* check */
     t_physical_tile_loc tile_loc(x, y, layer);
@@ -65,7 +67,9 @@ e_side determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
 
 /* Deteremine the side of a pin of a grid */
 std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
-                                        const size_t& layer, const size_t& x, const size_t& y,
+                                        const size_t& layer,
+                                        const size_t& x,
+                                        const size_t& y,
                                         const size_t& pin_id) {
     std::vector<e_side> pin_sides;
 
@@ -88,7 +92,9 @@ std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
  * For others, we consider all the sides  
  ***********************************************************************/
 std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
-                                    const size_t& layer, const size_t& x, const size_t& y,
+                                    const size_t& layer,
+                                    const size_t& x,
+                                    const size_t& y,
                                     const e_pin_type& pin_type,
                                     const e_side& pin_side,
                                     const int& pin_width,
@@ -114,7 +120,9 @@ std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
  * For others, we consider all the sides  
  ***********************************************************************/
 size_t get_grid_num_pins(const DeviceGrid& grids,
-                         const size_t& layer, const size_t& x, const size_t& y,
+                         const size_t& layer,
+                         const size_t& x,
+                         const size_t& y,
                          const e_pin_type& pin_type,
                          const e_side& io_side) {
     size_t num_pins = 0;
@@ -145,7 +153,9 @@ size_t get_grid_num_pins(const DeviceGrid& grids,
  * For others, we consider all the sides  
  ***********************************************************************/
 size_t get_grid_num_classes(const DeviceGrid& grids,
-                            const size_t& layer, const size_t& x, const size_t& y,
+                            const size_t& layer,
+                            const size_t& x,
+                            const size_t& y,
                             const e_pin_type& pin_type) {
     size_t num_classes = 0;
 
