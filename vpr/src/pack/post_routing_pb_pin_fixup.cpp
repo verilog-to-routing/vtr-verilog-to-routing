@@ -52,16 +52,19 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
                                                          const DeviceContext& device_ctx,
                                                          ClusteringContext& clustering_ctx,
                                                          const vtr::vector<RRNodeId, ParentNetId>& rr_node_nets,
-                                                         const vtr::Point<size_t>& grid_coord,
+                                                         const t_pl_loc& grid_coord,
                                                          const ClusterBlockId& blk_id,
-                                                         const int& sub_tile_z,
                                                          size_t& num_mismatches,
                                                          const bool& verbose,
                                                          bool is_flat) {
+    const int sub_tile_z = grid_coord.sub_tile;
+    const int coord_x = grid_coord.x;
+    const int coord_y = grid_coord.y;
+    const int coord_layer = grid_coord.layer;
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
     /* Handle each pin */
     auto logical_block = clustering_ctx.clb_nlist.block_type(blk_id);
-    auto physical_tile = device_ctx.grid.get_physical_type(grid_coord.x(), grid_coord.y());
+    auto physical_tile = device_ctx.grid.get_physical_type({coord_x, coord_y, coord_layer});
 
     /* Narrow down side search for grids
      *   The wanted side depends on the location of the grid.
@@ -87,16 +90,16 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
      *   -------------------------------------------------------
      */
     std::vector<e_side> wanted_sides;
-    if (device_ctx.grid.height() - 1 == grid_coord.y()) { /* TOP side */
+    if ((int)device_ctx.grid.height() - 1 == coord_y) { /* TOP side */
         wanted_sides.push_back(BOTTOM);
     }
-    if (device_ctx.grid.width() - 1 == grid_coord.x()) { /* RIGHT side */
+    if ((int)device_ctx.grid.width() - 1 == coord_x) { /* RIGHT side */
         wanted_sides.push_back(LEFT);
     }
-    if (0 == grid_coord.y()) { /* BOTTOM side */
+    if (0 == coord_y) { /* BOTTOM side */
         wanted_sides.push_back(TOP);
     }
-    if (0 == grid_coord.x()) { /* LEFT side */
+    if (0 == coord_x) { /* LEFT side */
         wanted_sides.push_back(RIGHT);
     }
 
@@ -155,7 +158,7 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         short valid_routing_net_cnt = 0;
         for (const e_side& pin_side : pin_sides) {
             /* Find the net mapped to this pin in routing results */
-            RRNodeId rr_node = node_lookup.find_node(grid_coord.x(), grid_coord.y(), rr_node_type, physical_pin, pin_side);
+            RRNodeId rr_node = node_lookup.find_node(coord_layer, coord_x, coord_y, rr_node_type, physical_pin, pin_side);
 
             /* Bypass invalid nodes, after that we must have a valid rr_node id */
             if (!rr_node) {
@@ -238,13 +241,14 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         }
 
         VTR_LOGV(verbose,
-                 "Fixed up net '%s' mapping mismatch at clustered block '%s' pin 'grid[%ld][%ld].%s.%s[%d]' (was net '%s')\n",
+                 "Fixed up net '%s' mapping mismatch at clustered block '%s' pin 'grid[%ld][%ld].%s.%s[%d] - layer %d' (was net '%s')\n",
                  routing_net_name.c_str(),
                  clustering_ctx.clb_nlist.block_pb(blk_id)->name,
-                 grid_coord.x(), grid_coord.y(),
+                 coord_x, coord_y,
                  clustering_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node->pb_type->name,
                  get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->port->name,
                  get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->pin_number,
+                 coord_layer,
                  cluster_net_name.c_str());
 
         /* Update counter */
@@ -1079,8 +1083,6 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
             clb_blk_id = convert_to_cluster_block_id(blk_id);
         }
         VTR_ASSERT(clb_blk_id != ClusterBlockId::INVALID());
-        vtr::Point<size_t> grid_coord(placement_ctx.block_locs[clb_blk_id].loc.x,
-                                      placement_ctx.block_locs[clb_blk_id].loc.y);
 
         if (seen_block_ids.insert(clb_blk_id).second) {
             update_cluster_pin_with_post_routing_results(net_list,
@@ -1088,9 +1090,8 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
                                                          device_ctx,
                                                          clustering_ctx,
                                                          rr_node_nets,
-                                                         grid_coord,
+                                                         placement_ctx.block_locs[clb_blk_id].loc,
                                                          clb_blk_id,
-                                                         placement_ctx.block_locs[clb_blk_id].loc.sub_tile,
                                                          num_mismatches,
                                                          verbose,
                                                          is_flat);

@@ -23,7 +23,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     /* Calculate the Edge weighted median region */
@@ -99,6 +99,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_pl_loc w_median_point;
     w_median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     w_median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
+    // TODO: Currently, we don't move blocks between different types of layers
+    w_median_point.layer = from.layer;
     if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }

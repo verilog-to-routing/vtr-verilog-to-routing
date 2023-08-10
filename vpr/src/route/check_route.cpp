@@ -1,5 +1,6 @@
 #include <cstdio>
 
+#include "route_common.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
@@ -14,11 +15,10 @@
 #include "rr_graph.h"
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
-#include "route_tree_type.h"
-#include "route_tree_timing.h"
+#include "route_tree.h"
 
 /******************** Subroutines local to this module **********************/
-static void check_node_and_range(int inode,
+static void check_node_and_range(RRNodeId inode,
                                  enum e_route_type route_type,
                                  bool is_flat);
 static void check_source(const Netlist<>& net_list,
@@ -26,14 +26,15 @@ static void check_source(const Netlist<>& net_list,
                          ParentNetId net_id,
                          bool is_flat);
 static void check_sink(const Netlist<>& net_list,
-                       int inode,
+                       RRNodeId inode,
                        int net_pin_index,
                        ParentNetId net_id,
                        bool* pin_done);
-static void check_switch(t_trace* tptr, int num_switch);
-static bool check_adjacent(int from_node, int to_node, bool is_flat);
-static int chanx_chany_adjacent(int chanx_node, int chany_node);
-static void reset_flags(ParentNetId inet, bool* connected_to_route);
+
+static void check_switch(const RouteTreeNode& rt_node, size_t num_switch);
+static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat);
+static int chanx_chany_adjacent(RRNodeId chanx_node, RRNodeId chany_node);
+
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
                                          enum e_route_type route_type,
                                          bool is_flat);
@@ -64,16 +65,15 @@ void check_route(const Netlist<>& net_list,
         return;
     }
 
-    int max_pins, inode, net_pin_index, prev_node;
+    int max_pins;
     unsigned int ipin;
     bool valid, connects;
-    t_trace* tptr;
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
-    const int num_switches = rr_graph.num_rr_switches();
+    const size_t num_switches = rr_graph.num_rr_switches();
 
     VTR_LOG("\n");
     VTR_LOG("Checking to ensure routing is legal...\n");
@@ -95,9 +95,6 @@ void check_route(const Netlist<>& net_list,
                                      is_flat);
     }
 
-    auto connected_to_route = std::make_unique<bool[]>(rr_graph.num_nodes());
-    std::fill_n(connected_to_route.get(), rr_graph.num_nodes(), false);
-
     max_pins = 0;
     for (auto net_id : net_list.nets())
         max_pins = std::max(max_pins, (int)net_list.net_pins(net_id).size());
@@ -111,66 +108,44 @@ void check_route(const Netlist<>& net_list,
 
         std::fill_n(pin_done.get(), net_list.net_pins(net_id).size(), false);
 
-        /* Check the SOURCE of the net. */
-        tptr = route_ctx.trace[net_id].head;
-        if (tptr == nullptr) {
+        if (!route_ctx.route_trees[net_id]) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_route: net %d has no routing.\n", size_t(net_id));
         }
 
-        inode = tptr->index;
-        check_node_and_range(inode, route_type, is_flat);
-        check_switch(tptr, num_switches);
-        connected_to_route[inode] = true; /* Mark as in path. */
+        /* Check the SOURCE of the net. */
+        RRNodeId source_inode = route_ctx.route_trees[net_id].value().root().inode;
+        check_node_and_range(source_inode, route_type, is_flat);
+        check_source(net_list, source_inode, net_id, is_flat);
 
-        check_source(net_list, RRNodeId(inode), net_id, is_flat);
         pin_done[0] = true;
-
-        prev_node = inode;
-        int prev_switch = tptr->iswitch;
-        tptr = tptr->next;
 
         /* Check the rest of the net */
         size_t num_sinks = 0;
-        while (tptr != nullptr) {
-            inode = tptr->index;
-            net_pin_index = tptr->net_pin_index;
+        for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+            RRNodeId inode = rt_node.inode;
+            int net_pin_index = rt_node.net_pin_index;
             check_node_and_range(inode, route_type, is_flat);
-            check_switch(tptr, num_switches);
+            check_switch(rt_node, num_switches);
 
-            if (prev_switch == OPEN) { //Start of a new branch
-                if (connected_to_route[inode] == false) {
-                    VPR_ERROR(VPR_ERROR_ROUTE,
-                              "in check_route: node %d does not link into existing routing for net %d.\n", inode, size_t(net_id));
-                }
-            } else { //Continuing along existing branch
-                connects = check_adjacent(prev_node, inode, is_flat);
+            if (rt_node.parent()) {
+                connects = check_adjacent(rt_node.parent()->inode, rt_node.inode, is_flat);
                 if (!connects) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
                               "in check_route: found non-adjacent segments in traceback while checking net %d:\n"
                               "  %s\n"
                               "  %s\n",
                               size_t(net_id),
-                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, prev_node, is_flat).c_str(),
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, rt_node.parent()->inode, is_flat).c_str(),
                               describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
                 }
+            }
 
-                connected_to_route[inode] = true; /* Mark as in path. */
-
-                if (rr_graph.node_type(RRNodeId(inode)) == SINK) {
-                    check_sink(net_list,
-                               inode,
-                               net_pin_index,
-                               net_id,
-                               pin_done.get());
-                    num_sinks += 1;
-                }
-
-            } /* End of prev_node type != SINK */
-            prev_node = inode;
-            prev_switch = tptr->iswitch;
-            tptr = tptr->next;
-        } /* End while */
+            if (rr_graph.node_type(inode) == SINK) {
+                check_sink(net_list, inode, net_pin_index, net_id, pin_done.get());
+                num_sinks += 1;
+            }
+        }
 
         if (num_sinks != net_list.net_sinks(net_id).size()) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -186,12 +161,7 @@ void check_route(const Netlist<>& net_list,
             }
         }
 
-        check_net_for_stubs(net_list,
-                            net_id,
-                            is_flat);
-
-        reset_flags(net_id, connected_to_route.get());
-
+        check_net_for_stubs(net_list, net_id, is_flat);
     } /* End for each net */
 
     if (check_route_option == e_check_route_option::FULL) {
@@ -207,14 +177,14 @@ void check_route(const Netlist<>& net_list,
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
  * the appropriate pin as being reached.                                   */
 static void check_sink(const Netlist<>& net_list,
-                       int inode,
+                       RRNodeId inode,
                        int net_pin_index,
                        ParentNetId net_id,
                        bool* pin_done) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SINK);
+    VTR_ASSERT(rr_graph.node_type(inode) == SINK);
 
     if (net_pin_index == OPEN) { /* If there is no legal net pin index associated with this sink node */
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -265,61 +235,20 @@ static void check_source(const Netlist<>& net_list,
     }
 }
 
-static void check_switch(t_trace* tptr, int num_switch) {
-    /* Checks that the switch leading from this traceback element to the next *
-     * one is a legal switch type.                                            */
+static void check_switch(const RouteTreeNode& rt_node, size_t num_switch) {
+    /* Checks that the switch leading to this rt_node is a legal switch type. */
+    if (!rt_node.parent())
+        return;
 
-    int inode;
-    short switch_type;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    inode = tptr->index;
-    switch_type = tptr->iswitch;
-
-    if (rr_graph.node_type(RRNodeId(inode)) != SINK) {
-        if (switch_type >= num_switch) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "in check_switch: rr_node %d left via switch type %d.\n"
-                            "\tSwitch type is out of range.\n",
-                            inode, switch_type);
-        }
-    }
-
-    else { /* Is a SINK */
-
-        /* Without feedthroughs, there should be no switch.  If feedthroughs are    *
-         * allowed, change to treat a SINK like any other node (as above).          */
-
-        if (switch_type != OPEN) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "in check_switch: rr_node %d is a SINK, but attempts to use a switch of type %d.\n", inode, switch_type);
-        }
+    if (size_t(rt_node.parent_switch) >= num_switch) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in check_switch: rr_node %d left via switch type %d.\n"
+                        "\tSwitch type is out of range.\n",
+                        size_t(rt_node.inode), size_t(rt_node.parent_switch));
     }
 }
 
-static void reset_flags(ParentNetId inet, bool* connected_to_route) {
-    /* This routine resets the flags of all the channel segments contained *
-     * in the traceback of net inet to 0.  This allows us to check the     *
-     * next net for connectivity (and the default state of the flags       *
-     * should always be zero after they have been used).                   */
-
-    t_trace* tptr;
-    int inode;
-
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    tptr = route_ctx.trace[inet].head;
-
-    while (tptr != nullptr) {
-        inode = tptr->index;
-        connected_to_route[inode] = false; /* Not in routed path now. */
-        tptr = tptr->next;
-    }
-}
-
-static bool check_adjacent(int from_node, int to_node, bool is_flat) {
+static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     /* This routine checks if the rr_node to_node is reachable from from_node.   *
      * It returns true if is reachable and false if it is not.  Check_node has   *
      * already been used to verify that both nodes are valid rr_nodes, so only   *
@@ -328,7 +257,7 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
      * represent specially-crafted connections such as carry-chains or more advanced
      * blocks where adjacency is overridden by the architect */
 
-    int from_xlow, from_ylow, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
+    int from_layer, from_xlow, from_ylow, to_layer, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
     int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh;
     bool reached;
     t_rr_type from_type, to_type;
@@ -340,7 +269,7 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
     reached = false;
 
     for (t_edge_size iconn = 0; iconn < rr_graph.num_edges(RRNodeId(from_node)); iconn++) {
-        if (size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn)) == size_t(to_node)) {
+        if (size_t(rr_graph.edge_sink_node(from_node, iconn)) == size_t(to_node)) {
             reached = true;
             break;
         }
@@ -358,18 +287,22 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
     auto from_rr = RRNodeId(from_node);
     auto to_rr = RRNodeId(to_node);
     from_type = rr_graph.node_type(from_rr);
+    from_layer = rr_graph.node_layer(from_rr);
     from_xlow = rr_graph.node_xlow(from_rr);
     from_ylow = rr_graph.node_ylow(from_rr);
     from_xhigh = rr_graph.node_xhigh(from_rr);
     from_yhigh = rr_graph.node_yhigh(from_rr);
     from_ptc = rr_graph.node_ptc_num(from_rr);
     to_type = rr_graph.node_type(to_rr);
+    to_layer = rr_graph.node_layer(to_rr);
     to_xlow = rr_graph.node_xlow(to_rr);
     to_ylow = rr_graph.node_ylow(to_rr);
     to_xhigh = rr_graph.node_xhigh(to_rr);
     to_yhigh = rr_graph.node_yhigh(to_rr);
     to_ptc = rr_graph.node_ptc_num(to_rr);
 
+    // Layer numbers are should not be more than one layer apart for connected nodes
+    VTR_ASSERT(abs(from_layer - to_layer) <= 1);
     switch (from_type) {
         case SOURCE:
             VTR_ASSERT(to_type == OPIN);
@@ -379,8 +312,8 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
                 && from_ylow <= to_ylow
                 && from_xhigh >= to_xhigh
                 && from_yhigh >= to_yhigh) {
-                from_grid_type = device_ctx.grid.get_physical_type(from_xlow, from_ylow);
-                to_grid_type = device_ctx.grid.get_physical_type(to_xlow, to_ylow);
+                from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
+                to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                 VTR_ASSERT(from_grid_type == to_grid_type);
 
                 iclass = get_class_num_from_pin_physical_num(to_grid_type, to_ptc);
@@ -394,7 +327,7 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
             break;
 
         case OPIN:
-            from_grid_type = device_ctx.grid.get_physical_type(from_xlow, from_ylow);
+            from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
             if (to_type == CHANX || to_type == CHANY) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
@@ -408,7 +341,7 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
             break;
 
         case IPIN:
-            from_grid_type = device_ctx.grid.get_physical_type(from_xlow, from_ylow);
+            from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
             if (is_flat) {
                 VTR_ASSERT(to_type == OPIN || to_type == IPIN || to_type == SINK);
             } else {
@@ -421,21 +354,21 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
                     && from_ylow >= to_ylow
                     && from_xhigh <= to_xhigh
                     && from_yhigh <= to_yhigh) {
-                    from_grid_type = device_ctx.grid.get_physical_type(from_xlow, from_ylow);
-                    to_grid_type = device_ctx.grid.get_physical_type(to_xlow, to_ylow);
+                    from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
+                    to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                     VTR_ASSERT(from_grid_type == to_grid_type);
                     iclass = get_class_num_from_pin_physical_num(from_grid_type, from_ptc);
                     if (iclass == to_ptc)
                         num_adj++;
                 }
             } else {
-                from_grid_type = device_ctx.grid.get_physical_type(from_xlow, from_ylow);
-                to_grid_type = device_ctx.grid.get_physical_type(to_xlow, to_ylow);
+                from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
+                to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                 VTR_ASSERT(from_grid_type == to_grid_type);
-                int from_root_x = from_xlow - device_ctx.grid.get_width_offset(from_xlow, from_ylow);
-                int from_root_y = from_ylow - device_ctx.grid.get_height_offset(from_xlow, from_ylow);
-                int to_root_x = to_xlow - device_ctx.grid.get_width_offset(to_xlow, to_ylow);
-                int to_root_y = to_ylow - device_ctx.grid.get_height_offset(to_xlow, to_ylow);
+                int from_root_x = from_xlow - device_ctx.grid.get_width_offset({from_xlow, from_ylow, from_layer});
+                int from_root_y = from_ylow - device_ctx.grid.get_height_offset({from_xlow, from_ylow, from_layer});
+                int to_root_x = to_xlow - device_ctx.grid.get_width_offset({to_xlow, to_ylow, to_layer});
+                int to_root_y = to_ylow - device_ctx.grid.get_height_offset({to_xlow, to_ylow, to_layer});
 
                 if (from_root_x == to_root_x && from_root_y == to_root_y) {
                     num_adj++;
@@ -447,8 +380,8 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
             if (to_type == IPIN) {
                 num_adj += 1; //adjacent
             } else if (to_type == CHANX) {
-                from_xhigh = rr_graph.node_xhigh(from_rr);
-                to_xhigh = rr_graph.node_xhigh(to_rr);
+                from_xhigh = rr_graph.node_xhigh(from_node);
+                to_xhigh = rr_graph.node_xhigh(to_node);
                 if (from_ylow == to_ylow) {
                     /* UDSD Modification by WMF Begin */
                     /*For Fs > 3, can connect to overlapping wire segment */
@@ -480,8 +413,8 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
             if (to_type == IPIN) {
                 num_adj += 1; //adjacent
             } else if (to_type == CHANY) {
-                from_yhigh = rr_graph.node_yhigh(from_rr);
-                to_yhigh = rr_graph.node_yhigh(to_rr);
+                from_yhigh = rr_graph.node_yhigh(from_node);
+                to_yhigh = rr_graph.node_yhigh(to_node);
                 if (from_xlow == to_xlow) {
                     /* UDSD Modification by WMF Begin */
                     if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
@@ -522,14 +455,14 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
     return false; //Should not reach here once thrown
 }
 
-static int chanx_chany_adjacent(int chanx_node, int chany_node) {
+static int chanx_chany_adjacent(RRNodeId chanx_node, RRNodeId chany_node) {
     /* Returns 1 if the specified CHANX and CHANY nodes are adjacent, 0         *
      * otherwise.                                                               */
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    if (rr_graph.nodes_are_adjacent(RRNodeId(chanx_node), RRNodeId(chany_node))) {
+    if (rr_graph.nodes_are_adjacent(chanx_node, chany_node)) {
         return (1);
     } else {
         return (0);
@@ -542,39 +475,25 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
      * according to the resource usage of the current routing.  It does a
      * brute force recompute from scratch that is useful for sanity checking.
      */
-
-    int inode, iclass, ipin, num_local_opins;
-    t_trace* tptr;
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
     /* First set the occupancy of everything to zero. */
-    /*FIXME: the type cast should be eliminated by making rr_node_route_inf adapt RRNodeId */
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes())
-        route_ctx.rr_node_route_inf[(size_t)rr_id].set_occ(0);
+    for (RRNodeId inode : device_ctx.rr_graph.nodes())
+        route_ctx.rr_node_route_inf[inode].set_occ(0);
 
     /* Now go through each net and count the tracks and pins used everywhere */
 
     for (auto net_id : net_list.nets()) {
+        if (!route_ctx.route_trees[net_id])
+            continue;
+
         if (net_list.net_is_ignored(net_id)) /* Skip ignored nets. */
             continue;
 
-        tptr = route_ctx.trace[net_id].head;
-        if (tptr == nullptr)
-            continue;
-
-        for (;;) {
-            inode = tptr->index;
+        for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+            RRNodeId inode = rt_node.inode;
             route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
-
-            if (tptr->iswitch == OPEN) {
-                tptr = tptr->next; /* Skip next segment. */
-                if (tptr == nullptr)
-                    break;
-            }
-
-            tptr = tptr->next;
         }
     }
 
@@ -585,12 +504,12 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
          * locally).                                                                */
         for (auto blk_id : net_list.blocks()) {
             auto cluster_blk_id = convert_to_cluster_block_id(blk_id);
-            for (iclass = 0; iclass < (int)physical_tile_type(cluster_blk_id)->class_inf.size(); iclass++) {
-                num_local_opins = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass].size();
+            for (int iclass = 0; iclass < (int)physical_tile_type(cluster_blk_id)->class_inf.size(); iclass++) {
+                int num_local_opins = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass].size();
                 /* Will always be 0 for pads or SINK classes. */
-                for (ipin = 0; ipin < num_local_opins; ipin++) {
-                    inode = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass][ipin];
-                    VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_graph.num_nodes());
+                for (int ipin = 0; ipin < num_local_opins; ipin++) {
+                    RRNodeId inode = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass][ipin];
+                    VTR_ASSERT(inode && size_t(inode) < device_ctx.rr_graph.num_nodes());
                     route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
                 }
             }
@@ -604,7 +523,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
 
-    int iclass, num_local_opins, inode, ipin;
+    int iclass, num_local_opins, ipin;
     t_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -617,8 +536,8 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
             /* Always 0 for pads and for SINK classes */
 
             for (ipin = 0; ipin < num_local_opins; ipin++) {
-                inode = clb_opins_used_locally[blk_id][iclass][ipin];
-                check_node_and_range(inode, route_type, is_flat); /* Node makes sense? */
+                RRNodeId inode = clb_opins_used_locally[blk_id][iclass][ipin];
+                check_node_and_range(RRNodeId(inode), route_type, is_flat); /* Node makes sense? */
 
                 /* Now check that node is an OPIN of the right type. */
 
@@ -642,7 +561,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
     }
 }
 
-static void check_node_and_range(int inode,
+static void check_node_and_range(RRNodeId inode,
                                  enum e_route_type route_type,
                                  bool is_flat) {
     /* Checks that inode is within the legal range, then calls check_node to    *
@@ -650,16 +569,16 @@ static void check_node_and_range(int inode,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (inode < 0 || inode >= (int)device_ctx.rr_graph.num_nodes()) {
+    if (size_t(inode) >= device_ctx.rr_graph.num_nodes()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_graph.num_nodes() - 1);
+                        "in check_node_and_range: rr_node #%zu is out of legal range (0 to %d).\n", size_t(inode), device_ctx.rr_graph.num_nodes() - 1);
     }
     check_rr_node(device_ctx.rr_graph,
                   device_ctx.rr_indexed_data,
                   device_ctx.grid,
                   device_ctx.chan_width,
                   route_type,
-                  inode,
+                  size_t(inode),
                   is_flat);
 }
 
@@ -677,7 +596,7 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
     }
 }
 
-//Checks that the specified routing is legal with respect to non-configurable edges
+// Checks that the specified routing is legal with respect to non-configurable edges
 //
 //For routing to be legal if *any* non-configurable edge is used, so must *all*
 //other non-configurable edges in the same set
@@ -686,26 +605,20 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
                                          bool is_flat) {
     const auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-    t_trace* head = route_ctx.trace[net].head;
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    //Collect all the edges used by this net's routing
+    if (!route_ctx.route_trees[net]) // no routing
+        return true;
+
+    // Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;
-    std::set<int> routing_nodes;
-    for (t_trace* trace = head; trace != nullptr; trace = trace->next) {
-        int inode = trace->index;
-
-        routing_nodes.insert(inode);
-
-        if (trace->iswitch == OPEN) {
-            continue; //End of branch
-        } else if (trace->next) {
-            int inode_next = trace->next->index;
-
-            t_node_edge edge = {inode, inode_next};
-
-            routing_edges.insert(edge);
-        }
+    std::set<RRNodeId> routing_nodes;
+    for (auto& rt_node : route_ctx.route_trees[net].value().all_nodes()) {
+        routing_nodes.insert(rt_node.inode);
+        if (!rt_node.parent())
+            continue;
+        t_node_edge edge = {rt_node.parent()->inode, rt_node.inode};
+        routing_edges.insert(edge);
     }
 
     //We need to perform two types of checks:
@@ -722,7 +635,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     //within a set is used by the routing
     for (const auto& rr_nodes : non_configurable_rr_sets.node_sets) {
         //Compute the intersection of the routing and current non-configurable nodes set
-        std::vector<int> intersection;
+        std::vector<RRNodeId> intersection;
         std::set_intersection(routing_nodes.begin(), routing_nodes.end(),
                               rr_nodes.begin(), rr_nodes.end(),
                               std::back_inserter(intersection));
@@ -737,7 +650,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                 //Compute the difference to identify the missing nodes
                 //for detailed error reporting -- the nodes
                 //which are in rr_nodes but not in routing_nodes.
-                std::vector<int> difference;
+                std::vector<RRNodeId> difference;
                 std::set_difference(rr_nodes.begin(), rr_nodes.end(),
                                     routing_nodes.begin(), routing_nodes.end(),
                                     std::back_inserter(difference));
@@ -820,13 +733,13 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                     msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                         device_ctx.grid,
                                                                         device_ctx.rr_indexed_data,
-                                                                        missing_edge.from_node,
+                                                                        RRNodeId(missing_edge.from_node),
                                                                         is_flat)
                                                            .c_str());
                     msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                         device_ctx.grid,
                                                                         device_ctx.rr_indexed_data,
-                                                                        missing_edge.to_node,
+                                                                        RRNodeId(missing_edge.to_node),
                                                                         is_flat)
                                                            .c_str());
                 }
@@ -845,9 +758,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
 // are children of a configurable node have at least one sink.
 class StubFinder {
   public:
-    StubFinder(const Netlist<>& net_list, bool is_flat)
-        : net_list_(net_list)
-        , is_flat_(is_flat) {}
+    StubFinder() {}
 
     // Checks specified net for stubs, return true if at least one stub is
     // found.
@@ -859,14 +770,12 @@ class StubFinder {
     }
 
   private:
-    bool RecurseTree(t_rt_node* rt_root);
+    bool RecurseTree(const RouteTreeNode& rt_node);
 
     // Set of stub nodes
     // Note this is an ordered set so that node output is sorted by node
     // id.
     std::set<int> stub_nodes_;
-    const Netlist<>& net_list_;
-    bool is_flat_;
 };
 
 //Cheks for stubs in a net's routing.
@@ -878,7 +787,7 @@ class StubFinder {
 void check_net_for_stubs(const Netlist<>& net_list,
                          ParentNetId net,
                          bool is_flat) {
-    StubFinder stub_finder(net_list, is_flat);
+    StubFinder stub_finder;
 
     bool any_stubs = stub_finder.CheckNet(net);
     if (any_stubs) {
@@ -889,7 +798,8 @@ void check_net_for_stubs(const Netlist<>& net_list,
             msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                 device_ctx.grid,
                                                                 device_ctx.rr_indexed_data,
-                                                                inode, is_flat)
+                                                                RRNodeId(inode),
+                                                                is_flat)
                                                    .c_str());
         }
 
@@ -898,43 +808,44 @@ void check_net_for_stubs(const Netlist<>& net_list,
 }
 
 bool StubFinder::CheckNet(ParentNetId net) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
     stub_nodes_.clear();
 
-    t_rt_node* rt_root = traceback_to_route_tree(net, is_flat_);
-    RecurseTree(rt_root);
-    free_route_tree(rt_root);
+    if (!route_ctx.route_trees[net])
+        return false;
+
+    RecurseTree(route_ctx.route_trees[net].value().root());
 
     return !stub_nodes_.empty();
 }
 
 // Returns true if this node is a stub.
-bool StubFinder::RecurseTree(t_rt_node* rt_root) {
+bool StubFinder::RecurseTree(const RouteTreeNode& rt_node) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    if (rt_root->u.child_list == nullptr) {
+    if (rt_node.is_leaf()) {
         //If a leaf of the route tree is not a SINK, then it is a stub
-        if (rr_graph.node_type(RRNodeId(rt_root->inode)) != SINK) {
+        if (rr_graph.node_type(rt_node.inode) != SINK) {
             return true; //It is the current root of this stub
         } else {
             return false;
         }
-    } else {
-        bool is_stub = true;
-        for (t_linked_rt_edge* edge = rt_root->u.child_list; edge != nullptr; edge = edge->next) {
-            bool driver_switch_configurable = rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).configurable();
-
-            bool child_is_stub = RecurseTree(edge->child);
-            if (!child_is_stub) {
-                // Because the child was not a stub, this node is not a stub.
-                is_stub = false;
-            } else if (driver_switch_configurable) {
-                // This child was stub, and we drove it from a configurable
-                // edge, this is an error.
-                stub_nodes_.insert(edge->child->inode);
-            }
-        }
-
-        return is_stub;
     }
+
+    bool is_stub = true;
+    for (auto& child_node : rt_node.child_nodes()) {
+        bool driver_switch_configurable = rr_graph.rr_switch_inf(child_node.parent_switch).configurable();
+        bool child_is_stub = RecurseTree(child_node);
+        if (!child_is_stub) {
+            // Because the child was not a stub, this node is not a stub.
+            is_stub = false;
+        } else if (driver_switch_configurable) {
+            // This child was stub, and we drove it from a configurable
+            // edge, this is an error.
+            stub_nodes_.insert(size_t(child_node.inode));
+        }
+    }
+
+    return is_stub;
 }

@@ -41,7 +41,7 @@
  * 
  * Below we have an example of the path determined by this algorithm for a 
  * 3x3 mesh NoC:
- * 
+ * ```
  *   ---------                   ---------                    ---------
  *   /       /                   /       /                    /       /
  *   /   $   / ----------------- /       / ------------------ /       /
@@ -65,7 +65,7 @@
  *   /       / ----------------- /       / ------------------ /   *   /
  *   /       /                   /       /                    /       /
  *   ---------                   ---------                    ---------
- * 
+ * ```
  * In the example above, the router marked with the '*' character is the start
  * and the router marked with the '$' character is the destination. The path
  * determined by the XY-Routing algorithm is shown as "<++++".

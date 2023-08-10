@@ -123,7 +123,7 @@ class RRGraphBuilder {
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
      *  Return a valid node id if succeed. Otherwise, return an invalid id.
      */
-    RRNodeId create_node(int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
+    RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *
@@ -141,6 +141,10 @@ class RRGraphBuilder {
      * type will guide the function to add nodes with correct ptc number in all locations.
      */
     void add_node_to_all_locs(RRNodeId node, t_graph_type graph_type);
+
+    void init_edge_remap(bool val);
+
+    void clear_temp_storage();
 
     /** @brief Clear all the underlying data storage */
     void clear();
@@ -176,6 +180,11 @@ class RRGraphBuilder {
     /** @brief Set the node coordinate */
     inline void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
+    }
+
+    /** @brief Set the node layer (specifies which die the node is located at) */
+    inline void set_node_layer(RRNodeId id, short layer){
+        node_storage_.set_node_layer(id,layer);
     }
 
     /** @brief The ptc_num carries different meanings for different node types
@@ -223,7 +232,7 @@ class RRGraphBuilder {
 
     /** @brief Add a new edge to the cache of edges to be built 
      *  .. note:: This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */
-    void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch);
+    void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
 
     /** @brief Allocate and build actual edges in storage. 
      *  Once called, the cached edges will be uniquified and added to routing resource nodes, 
@@ -246,10 +255,14 @@ class RRGraphBuilder {
         node_storage_.reserve_edges(num_edges);
     }
 
-    /** @brief emplace_back_edge; It add one edge. This method is efficient if reserve_edges was called with
-     * the number of edges present in the graph. */
-    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
-        node_storage_.emplace_back_edge(src, dest, edge_switch);
+    /** @brief emplace_back_edge It adds one edge. This method is efficient if reserve_edges was called with
+     * the number of edges present in the graph.
+     * @param remapped If true, it means the switch id (edge_switch) corresponds to rr switch id. Thus, when the remapped function is called to
+     * remap the arch switch id to rr switch id, the edge switch id of this edge shouldn't be changed. For example, when the intra-cluster graph
+     * is built and the rr-graph related to global resources are read from a file, this parameter is true since the intra-cluster switches are
+     * also listed in rr-graph file. So, we use that list to use the rr switch id instead of passing arch switch id for intra-cluster edges.*/
+    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
+        node_storage_.emplace_back_edge(src, dest, edge_switch, remapped);
     }
     /** @brief Append 1 more RR node to the RR graph. */
     inline void emplace_back() {

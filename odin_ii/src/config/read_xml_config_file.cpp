@@ -247,6 +247,24 @@ void read_optimizations(pugi::xml_node a_node, config_t* config, const pugiutil:
                 mixer->_opts[MULTIPLY] = new MultsOpt(exact);
             }
         }
+
+        prop = get_attribute(child, "adders_ratio", loc_data, OPTIONAL).as_string(NULL);
+        if (prop != NULL) {
+            float ratio = atof(prop);
+            if (ratio >= 0.0 && ratio <= 1.0) {
+                delete mixer->_opts[ADD];
+                mixer->_opts[ADD] = new AddersOpt(ratio);
+            }
+        }
+
+        prop = get_attribute(child, "exact_adders", loc_data, OPTIONAL).as_string(NULL);
+        if (prop != NULL) {
+            int exact = atoi(prop);
+            if (exact >= 0) {
+                delete mixer->_opts[ADD];
+                mixer->_opts[ADD] = new AddersOpt(exact);
+            }
+        }
     }
 
     child = get_single_child(a_node, "memory", loc_data, OPTIONAL);

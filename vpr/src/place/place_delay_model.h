@@ -62,7 +62,7 @@ class PlaceDelayModel {
      *
      * Either compute or read methods must be invoked before invoking delay.
      */
-    virtual float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const = 0;
+    virtual float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const = 0;
 
     ///@brief Dumps the delay model to an echo file.
     virtual void dump_echo(std::string filename) const = 0;
@@ -87,7 +87,7 @@ class DeltaDelayModel : public PlaceDelayModel {
   public:
     DeltaDelayModel(bool is_flat)
         : is_flat_(is_flat) {}
-    DeltaDelayModel(vtr::Matrix<float> delta_delays, bool is_flat)
+    DeltaDelayModel(vtr::NdMatrix<float, 3> delta_delays, bool is_flat)
         : delays_(std::move(delta_delays))
         , is_flat_(is_flat) {}
 
@@ -96,17 +96,17 @@ class DeltaDelayModel : public PlaceDelayModel {
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
-    float delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/) const override;
+    float delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/, int layer_num) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
     void write(const std::string& file) const override;
-    const vtr::Matrix<float>& delays() const {
+    const vtr::NdMatrix<float, 3>& delays() const {
         return delays_;
     }
 
   private:
-    vtr::Matrix<float> delays_;
+    vtr::NdMatrix<float, 3> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
     bool is_flat_;
 };
 
@@ -119,7 +119,9 @@ class OverrideDelayModel : public PlaceDelayModel {
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
-    float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const override;
+    // returns delay from the specified (x,y) to the specified (x,y) with both endpoints on layer_num and the
+    // specified from and to pins
+    float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
