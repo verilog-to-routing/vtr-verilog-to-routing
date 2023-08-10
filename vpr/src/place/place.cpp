@@ -1419,7 +1419,6 @@ static void update_move_nets(int num_nets_affected) {
 
         place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
         place_move_ctx.num_sink_pin_layer[net_id] = ts_layer_sink_pin_count[net_id];
-        VTR_ASSERT(ts_layer_sink_pin_count[net_id][0] == cluster_ctx.clb_nlist.net_pins(net_id).size() - 1);
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
             place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
 
@@ -2587,7 +2586,7 @@ static double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-static double get_net_wirelength_estimate(ClusterNetId net_id,
+static double get_net_wirelength_estimate(ClusterNetId /* net_id */,
                                           const std::vector<t_2D_tbb>& bbptr,
                                           const std::vector<int>& layer_pin_sink_count) {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
@@ -2595,7 +2594,6 @@ static double get_net_wirelength_estimate(ClusterNetId net_id,
 
     double ncost = 0.;
     double crossing = 0.;
-    const auto& place_move_ctx = g_placer_ctx.move();
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
