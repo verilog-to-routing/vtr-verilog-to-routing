@@ -349,6 +349,8 @@ int get_num_agent_types();
 
 int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc);
 
+int get_random_layer(t_logical_block_type_ptr logical_block);
+
 t_2D_tbb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec);
 
 #endif

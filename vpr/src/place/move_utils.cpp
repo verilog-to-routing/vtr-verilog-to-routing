@@ -713,8 +713,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    const int to_layer_num = to.layer;
-    VTR_ASSERT(to.layer != OPEN);
+    const int to_layer_num = get_random_layer(type);
+    VTR_ASSERT(to_layer_num != OPEN);
 
     //Determine the coordinates in the compressed grid space of the current block
     std::vector<t_physical_tile_loc> compressed_locs = get_compressed_loc(compressed_block_grid,
@@ -1254,6 +1254,17 @@ int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc)
     }
 
     return free_layer;
+}
+
+int get_random_layer(t_logical_block_type_ptr logical_block) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    const auto& compatible_layers = place_ctx.compressed_block_grids[logical_block->index].get_layer_nums();
+    VTR_ASSERT(!compatible_layers.empty());
+    int layer_num = compatible_layers[vtr::irand(compatible_layers.size()-1)];
+
+    return layer_num;
 }
 
 t_2D_tbb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec) {
