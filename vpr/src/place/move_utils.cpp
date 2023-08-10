@@ -1257,10 +1257,7 @@ int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc)
 }
 
 int get_random_layer(t_logical_block_type_ptr logical_block) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& place_ctx = g_vpr_ctx.placement();
-
-    const auto& compatible_layers = place_ctx.compressed_block_grids[logical_block->index].get_layer_nums();
+    const auto& compatible_layers = g_vpr_ctx.placement().compressed_block_grids[logical_block->index].get_layer_nums();
     VTR_ASSERT(!compatible_layers.empty());
     int layer_num = compatible_layers[vtr::irand(compatible_layers.size() - 1)];
 
