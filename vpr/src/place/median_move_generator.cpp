@@ -130,10 +130,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    int new_layer = find_free_layer(cluster_from_type, to);
-    VTR_ASSERT(new_layer != OPEN);
-    to.layer = new_layer;
-
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
