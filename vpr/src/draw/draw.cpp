@@ -1376,14 +1376,8 @@ void clear_colored_locations() {
     draw_state->colored_locations.clear();
 }
 
-bool highlight_loc_with_specific_color(int x, int y, int layer, ezgl::color& loc_color) {
+bool highlight_loc_with_specific_color(t_pl_loc curr_loc, ezgl::color& loc_color) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    //define a (x,y,layer) location variable
-    t_pl_loc curr_loc;
-    curr_loc.x = x;
-    curr_loc.y = y;
-    curr_loc.layer = layer;
 
     //search for the current location in the vector of colored locations
     auto it = std::find_if(draw_state->colored_locations.begin(),
@@ -1450,4 +1444,29 @@ bool rgb_is_same(ezgl::color color1, ezgl::color color2) {
     color2.alpha = 255;
     return (color1 == color2);
 }
+t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer){
+
+    t_draw_layer_display element_visibility;
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    element_visibility.visible = true;
+    bool cross_layer_enabled = draw_state->cross_layer_display.visible;
+
+    //To only show primitive nets that are connected to currently active layers on the screen
+    if(!draw_state->draw_layer_display[sink_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)){
+        element_visibility.visible = false; /* Don't Draw */
+    }
+
+    if(src_layer != sink_layer){
+        //assign transparency from cross layer option if connection is between different layers
+        element_visibility.alpha = draw_state->cross_layer_display.alpha;
+    }
+    else{
+        //otherwise assign transparency of current layer
+        element_visibility.alpha = draw_state->draw_layer_display[src_layer].alpha;
+    }
+
+    return element_visibility;
+}
+
 #endif /* NO_GRAPHICS */

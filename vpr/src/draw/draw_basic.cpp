@@ -150,10 +150,14 @@ void drawplace(ezgl::renderer* g) {
                         //flag whether the current location is highlighted with a special color or not
                         bool current_loc_is_highlighted = false;
 
-                        if (placer_breakpoint_reached())
-                            current_loc_is_highlighted = highlight_loc_with_specific_color(int(i), int(j), int(layer_num),
+                        if (placer_breakpoint_reached()) {
+                            t_pl_loc curr_loc;
+                            curr_loc.x = i;
+                            curr_loc.y = j;
+                            curr_loc.layer = layer_num;
+                            current_loc_is_highlighted = highlight_loc_with_specific_color(curr_loc,
                                                                                            block_color);
-
+                        }
                         // No color specified at this location; use the block color.
                         if (current_loc_is_highlighted == false) {
                             if (bnum != EMPTY_BLOCK_ID) {
@@ -255,46 +259,25 @@ void drawnets(ezgl::renderer* g) {
             continue; /* Don't draw */
         }
 
-        layer_transparency = draw_state->draw_layer_display[driver_block_layer_num].alpha;
-
-        //Take the higher of the 2 transparency values that the user can select from the UI
-        // Compare the current layer transparency to the overall Net transparency set by the user.
-        if(layer_transparency  > (draw_state->net_color[net_id].alpha * NET_ALPHA)){
-            layer_transparency = draw_state->net_color[net_id].alpha * NET_ALPHA;
-        }
-
-        g->set_color(draw_state->net_color[net_id],
-                     layer_transparency);
-
-        ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1,
-                                                                         cluster_ctx.clb_nlist.block_type(b1))
-                                          .center();
+        ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1,cluster_ctx.clb_nlist.block_type(b1)).center();
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
 
             //the layer of the pin block (net sinks)
             sink_block_layer_num = place_ctx.block_locs[b2].loc.layer;
-            bool cross_layer_enabled = draw_state->cross_layer_display.visible;
 
-            //To only show nets that are connected to currently active layers on the screen
-            if (draw_state->draw_layer_display[sink_block_layer_num].visible == false || (!cross_layer_enabled && driver_block_layer_num != sink_block_layer_num)) {
-                continue; /* Don't draw */
+            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(driver_block_layer_num,sink_block_layer_num);
+
+            if(!element_visibility.visible){
+                continue; /* Don't Draw */
             }
-            else {
-                // Change opacity based on cross layer connection opacity
-                if (driver_block_layer_num != sink_block_layer_num) {
-                    transparency_factor = draw_state->cross_layer_display.alpha;
-                } else {
-                    transparency_factor = layer_transparency;
-                }
-            }
+            transparency_factor = element_visibility.alpha;
+
             //Take the higher of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
             g->set_color(draw_state->net_color[net_id],fmin(transparency_factor,draw_state->net_color[net_id].alpha * NET_ALPHA));
 
-            ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2,
-                                                                           cluster_ctx.clb_nlist.block_type(b2))
-                                            .center();
+            ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2,cluster_ctx.clb_nlist.block_type(b2)).center();
             g->draw_line(driver_center, sink_center);
             /* Uncomment to draw a chain instead of a star. */
             /* driver_center = sink_center;  */

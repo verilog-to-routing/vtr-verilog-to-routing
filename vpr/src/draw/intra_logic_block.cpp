@@ -593,24 +593,15 @@ void draw_logical_connections(ezgl::renderer* g) {
             AtomBlockId sink_blk_id = atom_ctx.nlist.pin_block(sink_pin_id);
             const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(sink_blk_id);
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
-
             int sink_layer_num = place_ctx.block_locs[sink_clb].loc.layer;
 
-            bool cross_layer_enabled = draw_state->cross_layer_display.visible;
+            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(src_layer_num,sink_layer_num);
 
-            //To only show primitive nets that are connected to currently active layers on the screen
-            if(!draw_state->draw_layer_display[sink_layer_num].visible || (!cross_layer_enabled && src_layer_num != sink_layer_num)){
+            if(!element_visibility.visible){
                 continue; /* Don't Draw */
             }
 
-            if(src_layer_num != sink_layer_num){
-                //assign transparency from cross layer option if connection is between different layers
-                transparency_factor = draw_state->cross_layer_display.alpha;
-            }
-            else{
-                //otherwise assign transparency of current layer
-                transparency_factor = draw_state->draw_layer_display[src_layer_num].alpha;
-            }
+            transparency_factor = element_visibility.alpha;
 
             //color selection
             //transparency factor is the most transparent of the 2 options that the user selects from the UI

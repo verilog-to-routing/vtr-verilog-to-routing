@@ -41,7 +41,8 @@
 #    include "ezgl/graphics.hpp"
 
 /* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
- * while empty ones are lighter colours and have a dashed border.  */
+ * while empty ones are lighter colours and have a dashed border. *
+ * Blocks are drawn in layer order (so that semi-transparent blocks/grids render well)*/
 void drawplace(ezgl::renderer* g);
 
 /* This routine draws the nets on the placement.  The nets have not *
@@ -82,8 +83,9 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw,
 int get_timing_path_node_layer_num(tatum::NodeId node);
 
 /**
- * @brief Draws if both the current_node and prev_node are on the same layer and it is visible,
+ * @brief Returns true if both the current_node and prev_node are on the same layer and it is visible,
  *        or they're on different layers that are both visible and cross-layer connections are visible.
+ *        Otherwise returns false.
  *
  *  @param current_node
  *  @param prev_node

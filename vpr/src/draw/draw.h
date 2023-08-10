@@ -116,19 +116,17 @@ void set_draw_loc_color(t_pl_loc, ezgl::color);
 // clear the colored_locations vector
 void clear_colored_locations();
 
-
 /**
  * @brief the input loc is marked in colored_locations vector, the function will return true and the corresponding color is sent back in loc_color
  * otherwise, the function returns false (the location isn't among the highlighted locations)
- *  @param x
- *  @param y
- *  @param layer
- *  @param loc_color
  *
- *  @return   Returns true or false depending on whether the block at the specified (x,y,layer) location needs to be highlighted by a specific color.
+ * @param curr_loc  The current location that is being checked for whether it must be highlighted or not
+ * @param loc_color The corresponding color that is to be used to highlight the block
+ *
+ * @return    Returns true or false depending on whether the block at the specified (x,y,layer) location needs to be highlighted by a specific color.
  *            The corresponding color is returned by reference.
  */
-bool highlight_loc_with_specific_color(int x, int y, int layer, ezgl::color& loc_color);
+bool highlight_loc_with_specific_color(t_pl_loc curr_loc, ezgl::color& loc_color);
 
 /* Because the list of possible block type colours is finite, we wrap around possible colours if there are more
  * block types than colour choices. This ensures we support any number of types, although the colours may repeat.*/
@@ -146,6 +144,18 @@ size_t get_max_fanout();
  * Sets both transparencies to opaque and then compares the colors.
  */
 bool rgb_is_same(ezgl::color color1, ezgl::color color2);
+
+/**
+ * @brief Takes in the layer number of the src and sink of an element(flyline, rr_node connections, etc...) and returns a t_draw_layer_display object holding the
+ *        information of the visibility of the element as well as the transparency based on the setting set by the user from the view menu in the UI.
+ *
+ * @param src_layer
+ * @param sink_layer
+ * @return  Returns whether the element should be drawn (true or false) and the transparency factor (0 - transparent ,255 - opaque) as a t_draw_layer_display object
+ */
+t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer);
+
+
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */
