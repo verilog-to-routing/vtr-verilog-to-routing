@@ -19,7 +19,7 @@ void DeviceGridAnnotation::init(const DeviceGrid& grid, const bool& shrink) {
             for (e_side side : SIDES) {
                 borderline_types_[ix][iy][side] = is_empty_zone(grid, vtr::Point<size_t>(ix, iy), side, shrink);
                 if (borderline_types_[ix][iy][side]) {
-                  VTR_LOG("[%lu][%lu][%s] is set as empty zone\n", ix, iy, SIDE_STRING[side]);
+                    VTR_LOG("[%lu][%lu][%s] is set as empty zone\n", ix, iy, SIDE_STRING[side]);
                 }
             }
         }
@@ -97,25 +97,25 @@ bool DeviceGridAnnotation::borderline(const vtr::Point<size_t>& coord, const e_s
     }
     vtr::Point<size_t> neighbor_coord(coord.x(), coord.y());
     if (side == LEFT) {
-      if (coord.x() == 0) {
-         return true;
-      }
-      neighbor_coord.set_x(coord.x() - 1);
+        if (coord.x() == 0) {
+            return true;
+        }
+        neighbor_coord.set_x(coord.x() - 1);
     } else if (side == RIGHT) {
-      if (coord.x() == borderline_types_.dim_size(0) - 1) {
-         return true;
-      }
-      neighbor_coord.set_x(coord.x() + 1);
+        if (coord.x() == borderline_types_.dim_size(0) - 1) {
+            return true;
+        }
+        neighbor_coord.set_x(coord.x() + 1);
     } else if (side == TOP) {
-      if (coord.y() == borderline_types_.dim_size(1) - 1) {
-         return true;
-      }
-      neighbor_coord.set_y(coord.y() + 1);
+        if (coord.y() == borderline_types_.dim_size(1) - 1) {
+            return true;
+        }
+        neighbor_coord.set_y(coord.y() + 1);
     } else if (side == BOTTOM) {
-      if (coord.y() == 0) {
-         return true;
-      }
-      neighbor_coord.set_y(coord.y() - 1);
+        if (coord.y() == 0) {
+            return true;
+        }
+        neighbor_coord.set_y(coord.y() - 1);
     }
 
     return borderline_types_[coord.x()][coord.y()][side] != borderline_types_[neighbor_coord.x()][neighbor_coord.y()][side];
