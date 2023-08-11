@@ -206,7 +206,7 @@ static size_t estimate_num_chanx_rr_nodes(const DeviceGrid& grids,
             if (true == is_chanx_right_to_multi_height_grid(grids, layer, chanx_coord, through_channel)) {
                 force_start = true;
             }
-            if (shrink_boundary && device_grid_annotation.borderline(chanx_coord, LEFT)) {
+            if (shrink_boundary && device_grid_annotation.is_chanx_start(chanx_coord)) {
                 force_start = true;
             }
 
@@ -217,7 +217,7 @@ static size_t estimate_num_chanx_rr_nodes(const DeviceGrid& grids,
             if (true == is_chanx_left_to_multi_height_grid(grids, layer, chanx_coord, through_channel)) {
                 force_end = true;
             }
-            if (shrink_boundary && device_grid_annotation.borderline(chanx_coord, RIGHT)) {
+            if (shrink_boundary && device_grid_annotation.is_chanx_end(chanx_coord)) {
                 force_end = true;
             }
 
@@ -272,7 +272,7 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
             if (true == is_chany_top_to_multi_width_grid(grids, layer, chany_coord, through_channel)) {
                 force_start = true;
             }
-            if (shrink_boundary && device_grid_annotation.borderline(chany_coord, BOTTOM)) {
+            if (shrink_boundary && device_grid_annotation.is_chany_start(chany_coord)) {
                 force_start = true;
             }
 
@@ -283,7 +283,7 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
             if (true == is_chany_bottom_to_multi_width_grid(grids, layer, chany_coord, through_channel)) {
                 force_end = true;
             }
-            if (shrink_boundary && device_grid_annotation.borderline(chany_coord, TOP)) {
+            if (shrink_boundary && device_grid_annotation.is_chany_end(chany_coord)) {
                 force_end = true;
             }
 
@@ -892,7 +892,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
             if (true == is_chanx_right_to_multi_height_grid(grids, layer, chanx_coord, through_channel)) {
                 force_start = true;
             }
-            if (shrink_boundary && device_grid_annotation.borderline(chanx_coord, LEFT)) {
+            if (shrink_boundary && device_grid_annotation.is_chanx_start(chanx_coord)) {
                 VTR_LOG("Force to start chanx[%lu][%lu]\n", ix, iy);
                 force_start = true;
             }
@@ -904,7 +904,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
             if (true == is_chanx_left_to_multi_height_grid(grids, layer, chanx_coord, through_channel)) {
                 force_end = true;
             }
-            if (shrink_boundary && device_grid_annotation.borderline(chanx_coord, RIGHT)) {
+            if (shrink_boundary && device_grid_annotation.is_chanx_end(chanx_coord)) {
                 VTR_LOG("Force to end chanx[%lu][%lu]\n", ix, iy);
                 force_end = true;
             }
@@ -1015,7 +1015,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
             if (true == is_chany_top_to_multi_width_grid(grids, layer, chany_coord, through_channel)) {
                 force_start = true;
             }
-            if (shrink_boundary && device_grid_annotation.borderline(chany_coord, BOTTOM)) {
+            if (shrink_boundary && device_grid_annotation.is_chany_start(chany_coord)) {
                 VTR_LOG("Force to start chany[%lu][%lu]\n", ix, iy);
                 force_start = true;
             }
@@ -1027,7 +1027,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
             if (true == is_chany_bottom_to_multi_width_grid(grids, layer, chany_coord, through_channel)) {
                 force_end = true;
             }
-            if (shrink_boundary && device_grid_annotation.borderline(chany_coord, TOP)) {
+            if (shrink_boundary && device_grid_annotation.is_chany_end(chany_coord)) {
                 VTR_LOG("Force to end chany[%lu][%lu]\n", ix, iy);
                 force_end = true;
             }
