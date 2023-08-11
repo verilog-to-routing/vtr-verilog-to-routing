@@ -2523,6 +2523,7 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     //expect_only_attributes(layout_tag, {}, loc_data);
 
     arch->tileable = get_attribute(layout_tag, "tileable", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->shrink_boundary = get_attribute(layout_tag, "shrink_boundary", loc_data, ReqOpt::OPTIONAL).as_bool(false);
     arch->through_channel = get_attribute(layout_tag, "through_channel", loc_data, ReqOpt::OPTIONAL).as_bool(false);
 
     //Count the number of <auto_layout> or <fixed_layout> tags
