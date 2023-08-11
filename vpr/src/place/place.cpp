@@ -2826,8 +2826,7 @@ static void update_bb_pin_sink_count(ClusterNetId /* net_id */,
                                      const std::vector<int>& curr_layer_pin_sink_count,
                                      std::vector<int>& bb_pin_sink_count_new) {
     VTR_ASSERT(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0);
-    bb_pin_sink_count_new[pin_old_loc.layer_num] = curr_layer_pin_sink_count[pin_old_loc.layer_num];
-    bb_pin_sink_count_new[pin_new_loc.layer_num] = curr_layer_pin_sink_count[pin_new_loc.layer_num];
+    bb_pin_sink_count_new = curr_layer_pin_sink_count;
 
     bb_pin_sink_count_new[pin_old_loc.layer_num] -= 1;
     bb_pin_sink_count_new[pin_new_loc.layer_num] += 1;
