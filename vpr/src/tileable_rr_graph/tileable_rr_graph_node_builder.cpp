@@ -338,11 +338,13 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
                                                                chan_width.x(),
                                                                segment_infs,
                                                                device_grid_annotation,
+                                                               shrink_boundary,
                                                                through_channel);
     num_rr_nodes_per_type[CHANY] = estimate_num_chany_rr_nodes(grids, layer,
                                                                chan_width.y(),
                                                                segment_infs,
                                                                device_grid_annotation,
+                                                               shrink_boundary,
                                                                through_channel);
 
     return num_rr_nodes_per_type;
@@ -876,6 +878,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
             }
             /* Bypass if the routing channel does not exist when a shrink boundary is considered */
             if (shrink_boundary && !device_grid_annotation.is_chanx_exist(chanx_coord)) {
+                VTR_LOG("Skip chanx[%lu][%lu] as it is in empty zone\n", ix, iy);
                 continue;
             }
 
@@ -890,6 +893,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 force_start = true;
             }
             if (shrink_boundary && device_grid_annotation.borderline(chanx_coord, LEFT)) {
+                VTR_LOG("Force to start chanx[%lu][%lu]\n", ix, iy);
                 force_start = true;
             }
 
@@ -901,6 +905,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 force_end = true;
             }
             if (shrink_boundary && device_grid_annotation.borderline(chanx_coord, RIGHT)) {
+                VTR_LOG("Force to end chanx[%lu][%lu]\n", ix, iy);
                 force_end = true;
             }
 
@@ -996,6 +1001,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
             }
             /* Bypass if the routing channel does not exist when a shrink boundary is considered */
             if (shrink_boundary && !device_grid_annotation.is_chany_exist(chany_coord)) {
+                VTR_LOG("Skip chany[%lu][%lu] as it is in empty zone\n", ix, iy);
                 continue;
             }
 
@@ -1010,6 +1016,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 force_start = true;
             }
             if (shrink_boundary && device_grid_annotation.borderline(chany_coord, BOTTOM)) {
+                VTR_LOG("Force to start chany[%lu][%lu]\n", ix, iy);
                 force_start = true;
             }
 
@@ -1021,6 +1028,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 force_end = true;
             }
             if (shrink_boundary && device_grid_annotation.borderline(chany_coord, TOP)) {
+                VTR_LOG("Force to end chany[%lu][%lu]\n", ix, iy);
                 force_end = true;
             }
 
