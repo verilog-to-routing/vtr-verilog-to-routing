@@ -15,17 +15,11 @@
  */
 class DeviceGridAnnotation {
   public: /* Constructor */
-    /** @brief Build the annotation. When shrink is enable, a boundary line is drawn when all the empty types are found between the line and the perimeter. For example
-   *      boundry line                     perimeter
-   *            v                           v
-   * clb        |    empty   empty   empty  | 
-   * Otherwise, the boundary line is just the perimeter.
-   */
-    DeviceGridAnnotation(const DeviceGrid& grid, const bool& shrink);
+    DeviceGridAnnotation(const DeviceGrid& grid);
 
   private: /* Private mutators */
     void alloc(const DeviceGrid& grid);
-    void init(const DeviceGrid& grid, const bool& shrink);
+    void init(const DeviceGrid& grid);
 
   public: /* Public accessors */
     /** @brief Check if at a given coordinate, a X-direction routing channel should exist or not */
@@ -38,8 +32,6 @@ class DeviceGridAnnotation {
     bool is_chany_end(const vtr::Point<size_t>& coord) const;
 
   private: /* Private validators */
-    /** @brief Check all the adjacent grid until perimeter. To be an empty zone with a given side, there should be all empty types from the given side to the perimeter */
-    bool is_empty_zone(const DeviceGrid& grid, const vtr::Point<size_t>& coord, const e_side& side, const bool& shrink) const;
     vtr::Point<size_t> get_neighbor_coord(const vtr::Point<size_t>& coord, const e_side& side) const;
 
   private: /* Internal data */

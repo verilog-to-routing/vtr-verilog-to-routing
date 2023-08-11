@@ -2,9 +2,9 @@
 #include "vtr_log.h"
 #include "vpr_utils.h"
 
-DeviceGridAnnotation::DeviceGridAnnotation(const DeviceGrid& grid, const bool& shrink) {
+DeviceGridAnnotation::DeviceGridAnnotation(const DeviceGrid& grid) {
     alloc(grid);
-    init(grid, shrink);
+    init(grid);
 }
 
 void DeviceGridAnnotation::alloc(const DeviceGrid& grid) {
@@ -13,62 +13,18 @@ void DeviceGridAnnotation::alloc(const DeviceGrid& grid) {
     chany_existence_.resize({grid.width(), grid.height()}, false);
 }
 
-void DeviceGridAnnotation::init(const DeviceGrid& grid, const bool& shrink) {
+void DeviceGridAnnotation::init(const DeviceGrid& grid) {
     /* If shrink is not considered, perimeters are the borderlines */
     for (size_t iy = 0; iy < grid.height() - 1; ++iy) {
         for (size_t ix = 1; ix < grid.width() - 1; ++ix) {
-            chanx_existence_[ix][iy] = !is_empty_type(grid.get_physical_type({ix, iy + 1, 0}));
+            chanx_existence_[ix][iy] = !is_empty_type(grid.get_physical_type({(int)ix, (int)iy + 1, 0}));
         }
     }
     for (size_t ix = 0; ix < grid.width() - 1; ++ix) {
         for (size_t iy = 1; iy < grid.height() - 1; ++iy) {
-            chany_existence_[ix][iy] = !is_empty_type(grid.get_physical_type({ix, iy, 0}));
+            chany_existence_[ix][iy] = !is_empty_type(grid.get_physical_type({(int)ix, (int)iy, 0}));
         }
     }
-}
-
-bool DeviceGridAnnotation::is_empty_zone(const DeviceGrid& grid, const vtr::Point<size_t>& coord, const e_side& side, const bool& shrink) const {
-    bool empty_zone = true;
-    /* With the given side, expand on the direction */
-    if (side == TOP) {
-        if (shrink) {
-            for (size_t iy = coord.y(); iy < grid.height(); ++iy) {
-                if (!is_empty_type(grid.get_physical_type({coord.x(), iy, 0}))) {
-                    empty_zone = false;
-                    break;
-                }
-            }
-        }
-    } else if (side == RIGHT) {
-        if (shrink) {
-            for (size_t ix = coord.x(); ix < grid.width(); ++ix) {
-                if (!is_empty_type(grid.get_physical_type({ix, coord.y(), 0}))) {
-                    empty_zone = false;
-                    break;
-                }
-            }
-        }
-    } else if (side == BOTTOM) {
-        if (shrink) {
-            for (size_t iy = coord.y(); iy >= 0; --iy) {
-                if (!is_empty_type(grid.get_physical_type({coord.x(), iy, 0}))) {
-                    empty_zone = false;
-                    break;
-                }
-            }
-        }
-    } else if (side == LEFT) {
-        if (shrink) {
-            for (size_t ix = coord.x(); ix >= 0; --ix) {
-                if (!is_empty_type(grid.get_physical_type({ix, coord.y(), 0}))) {
-                    empty_zone = false;
-                    break;
-                }
-            }
-        }
-    }
-
-    return empty_zone;
 }
 
 bool DeviceGridAnnotation::is_chanx_exist(const vtr::Point<size_t>& coord) const {
