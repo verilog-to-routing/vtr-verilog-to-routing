@@ -2457,7 +2457,6 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     num_on_edges.resize(num_layers, t_2D_tbb());
     coords.resize(num_layers, t_2D_tbb());
     layer_pin_sink_count.resize(num_layers, 0);
-    int pnum, x, y, layer;
     std::vector<int> xmin(num_layers, OPEN);
     std::vector<int> xmax(num_layers, OPEN);
     std::vector<int> ymin(num_layers, OPEN);
@@ -2474,21 +2473,21 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     auto& grid = device_ctx.grid;
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    pnum = net_pin_to_tile_pin_index(net_id, 0);
-    VTR_ASSERT(pnum >= 0);
-    x = place_ctx.block_locs[bnum].loc.x
-        + physical_tile_type(bnum)->pin_width_offset[pnum];
-    y = place_ctx.block_locs[bnum].loc.y
-        + physical_tile_type(bnum)->pin_height_offset[pnum];
+    int pnum_src = net_pin_to_tile_pin_index(net_id, 0);
+    VTR_ASSERT(pnum_src >= 0);
+    int x_src = place_ctx.block_locs[bnum].loc.x
+        + physical_tile_type(bnum)->pin_width_offset[pnum_src];
+    int y_src = place_ctx.block_locs[bnum].loc.y
+        + physical_tile_type(bnum)->pin_height_offset[pnum_src];
 
-    x = max(min<int>(x, grid.width() - 2), 1);
-    y = max(min<int>(y, grid.height() - 2), 1);
+    x_src = max(min<int>(x_src, grid.width() - 2), 1);
+    y_src = max(min<int>(y_src, grid.height() - 2), 1);
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        xmin[layer_num] = x;
-        ymin[layer_num] = y;
-        xmax[layer_num] = x;
-        ymax[layer_num] = y;
+        xmin[layer_num] = x_src;
+        ymin[layer_num] = y_src;
+        xmax[layer_num] = x_src;
+        ymax[layer_num] = y_src;
         xmin_edge[layer_num] = 1;
         ymin_edge[layer_num] = 1;
         xmax_edge[layer_num] = 1;
@@ -2497,13 +2496,13 @@ static void get_bb_from_scratch(ClusterNetId net_id,
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = tile_pin_index(pin_id);
-        layer = place_ctx.block_locs[bnum].loc.layer;
+        int pnum = tile_pin_index(pin_id);
+        int layer = place_ctx.block_locs[bnum].loc.layer;
         VTR_ASSERT(layer >= 0 && layer < num_layers);
         num_sink_pin_layer[layer]++;
-        x = place_ctx.block_locs[bnum].loc.x
+        int x = place_ctx.block_locs[bnum].loc.x
             + physical_tile_type(bnum)->pin_width_offset[pnum];
-        y = place_ctx.block_locs[bnum].loc.y
+        int y = place_ctx.block_locs[bnum].loc.y
             + physical_tile_type(bnum)->pin_height_offset[pnum];
 
         /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
@@ -2548,29 +2547,29 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         layer_pin_sink_count[layer_num] = num_sink_pin_layer[layer_num];
         if (num_sink_pin_layer[layer_num] == 0) {
-            coords[layer].xmin = OPEN;
-            coords[layer].xmax = OPEN;
-            coords[layer].ymin = OPEN;
-            coords[layer].ymax = OPEN;
-            coords[layer].layer_num = OPEN;
+            coords[layer_num].xmin = OPEN;
+            coords[layer_num].xmax = OPEN;
+            coords[layer_num].ymin = OPEN;
+            coords[layer_num].ymax = OPEN;
+            coords[layer_num].layer_num = OPEN;
 
-            num_on_edges[layer].xmin = OPEN;
-            num_on_edges[layer].xmax = OPEN;
-            num_on_edges[layer].ymin = OPEN;
-            num_on_edges[layer].ymax = OPEN;
-            num_on_edges[layer].layer_num = OPEN;
+            num_on_edges[layer_num].xmin = OPEN;
+            num_on_edges[layer_num].xmax = OPEN;
+            num_on_edges[layer_num].ymin = OPEN;
+            num_on_edges[layer_num].ymax = OPEN;
+            num_on_edges[layer_num].layer_num = OPEN;
         } else {
-            coords[layer].xmin = xmin[layer];
-            coords[layer].xmax = xmax[layer];
-            coords[layer].ymin = ymin[layer];
-            coords[layer].ymax = ymax[layer];
-            coords[layer].layer_num = layer_num;
+            coords[layer_num].xmin = xmin[layer_num];
+            coords[layer_num].xmax = xmax[layer_num];
+            coords[layer_num].ymin = ymin[layer_num];
+            coords[layer_num].ymax = ymax[layer_num];
+            coords[layer_num].layer_num = layer_num;
 
-            num_on_edges[layer].xmin = xmin_edge[layer];
-            num_on_edges[layer].xmax = xmax_edge[layer];
-            num_on_edges[layer].ymin = ymin_edge[layer];
-            num_on_edges[layer].ymax = ymax_edge[layer];
-            num_on_edges[layer].layer_num = layer_num;
+            num_on_edges[layer_num].xmin = xmin_edge[layer_num];
+            num_on_edges[layer_num].xmax = xmax_edge[layer_num];
+            num_on_edges[layer_num].ymin = ymin_edge[layer_num];
+            num_on_edges[layer_num].ymax = ymax_edge[layer_num];
+            num_on_edges[layer_num].layer_num = layer_num;
         }
     }
 }
