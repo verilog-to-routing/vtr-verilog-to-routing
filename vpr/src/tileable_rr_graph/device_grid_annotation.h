@@ -28,19 +28,23 @@ class DeviceGridAnnotation {
     void init(const DeviceGrid& grid, const bool& shrink);
 
   public: /* Public accessors */
-    /** @brief Check if a given coordinate is on the borderline w.r.t. a given side of the device grid. For example, border(vtr::Point<size_t>(5,4), TOP) will check if any empty types are above the y=4. If there are at least 1 non-empty type, this is not a border line. Otherwise, it is. */
-    bool borderline(const vtr::Point<size_t>& coord, const e_side& side) const;
     /** @brief Check if at a given coordinate, a X-direction routing channel should exist or not */
     bool is_chanx_exist(const vtr::Point<size_t>& coord) const;
+    bool is_chanx_start(const vtr::Point<size_t>& coord) const;
+    bool is_chanx_end(const vtr::Point<size_t>& coord) const;
     /** @brief Check if at a given coordinate, a Y-direction routing channel should exist or not */
     bool is_chany_exist(const vtr::Point<size_t>& coord) const;
+    bool is_chany_start(const vtr::Point<size_t>& coord) const;
+    bool is_chany_end(const vtr::Point<size_t>& coord) const;
 
   private: /* Private validators */
     /** @brief Check all the adjacent grid until perimeter. To be an empty zone with a given side, there should be all empty types from the given side to the perimeter */
     bool is_empty_zone(const DeviceGrid& grid, const vtr::Point<size_t>& coord, const e_side& side, const bool& shrink) const;
+    vtr::Point<size_t> get_neighbor_coord(const vtr::Point<size_t>& coord, const e_side& side) const;
 
   private: /* Internal data */
-    vtr::NdMatrix<std::array<bool, NUM_SIDES>, 2> borderline_types_;
+    vtr::NdMatrix<bool, 2> chanx_existence_;
+    vtr::NdMatrix<bool, 2> chany_existence_;
 };
 
 #endif
