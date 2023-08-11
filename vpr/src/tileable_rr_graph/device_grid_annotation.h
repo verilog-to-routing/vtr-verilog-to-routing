@@ -10,9 +10,6 @@
 #include "physical_types.h"
 #include "device_grid.h"
 
-/* Begin namespace openfpga */
-namespace openfpga {
-
 /** @brief This is the data structure to provide additional data for the device grid:
  * - Border of the device grid (check where the empty types cover the perimeters)
  */
@@ -40,12 +37,10 @@ class DeviceGridAnnotation {
 
   private: /* Private validators */
     /** @brief Check all the adjacent grid until perimeter. To be an empty zone with a given side, there should be all empty types from the given side to the perimeter */
-    bool is_empty_zone(const DeviceGrid& grid, const vtr::Point<size_t>& coord, const bool& shrink) const;
+    bool is_empty_zone(const DeviceGrid& grid, const vtr::Point<size_t>& coord, const e_side& side, const bool& shrink) const;
 
   private: /* Internal data */
     vtr::NdMatrix<std::array<bool, NUM_SIDES>, 2> borderline_types_;
 };
-
-} /* End namespace openfpga*/
 
 #endif
