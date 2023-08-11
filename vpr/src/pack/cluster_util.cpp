@@ -1783,7 +1783,7 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
         /* There are VCC and GND nets in the netlist. These nets have a high fanout,
          * but their sinks do not necessarily have a logical relation with each other.
          * Therefore, we exclude constant nets when evaluating high fanout connectivity. */
-        if (!is_global.count(net_id) && !atom_ctx.nlist.net_is_constant(net_id)) {
+        if (!is_global.count(net_id)) {
             /* If no low/medium fanout nets, we may need to consider
              * high fan-out nets for packing, so select one and store it */
             AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
