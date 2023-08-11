@@ -878,7 +878,6 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
             }
             /* Bypass if the routing channel does not exist when a shrink boundary is considered */
             if (shrink_boundary && !device_grid_annotation.is_chanx_exist(chanx_coord)) {
-                VTR_LOG("Skip chanx[%lu][%lu] as it is in empty zone\n", ix, iy);
                 continue;
             }
 
@@ -893,7 +892,6 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 force_start = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chanx_start(chanx_coord)) {
-                VTR_LOG("Force to start chanx[%lu][%lu]\n", ix, iy);
                 force_start = true;
             }
 
@@ -905,7 +903,6 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 force_end = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chanx_end(chanx_coord)) {
-                VTR_LOG("Force to end chanx[%lu][%lu]\n", ix, iy);
                 force_end = true;
             }
 
@@ -1001,7 +998,6 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
             }
             /* Bypass if the routing channel does not exist when a shrink boundary is considered */
             if (shrink_boundary && !device_grid_annotation.is_chany_exist(chany_coord)) {
-                VTR_LOG("Skip chany[%lu][%lu] as it is in empty zone\n", ix, iy);
                 continue;
             }
 
@@ -1016,7 +1012,6 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 force_start = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chany_start(chany_coord)) {
-                VTR_LOG("Force to start chany[%lu][%lu]\n", ix, iy);
                 force_start = true;
             }
 
@@ -1028,7 +1023,6 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 force_end = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chany_end(chany_coord)) {
-                VTR_LOG("Force to end chany[%lu][%lu]\n", ix, iy);
                 force_end = true;
             }
 
