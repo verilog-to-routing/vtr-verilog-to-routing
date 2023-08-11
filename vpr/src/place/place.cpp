@@ -2843,8 +2843,8 @@ static void try_remove_block_from_bb_edge(ClusterNetId net_id,
     int old_layer = pin_old_loc.layer_num;
     int new_layer = pin_new_loc.layer_num;
 
-    bb_edge_new[old_layer] = curr_bb_edge[old_layer];
-    bb_coord_new[old_layer] = curr_bb_coord[old_layer];
+    bb_edge_new = curr_bb_edge;
+    bb_coord_new = curr_bb_coord;
 
     if (pin_old_loc.x == curr_bb_coord[old_layer].xmax) {
         if (old_layer != new_layer || pin_new_loc.x < pin_old_loc.x) {
