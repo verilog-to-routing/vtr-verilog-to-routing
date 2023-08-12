@@ -334,13 +334,15 @@ static void update_bb(ClusterNetId net_id,
                       std::vector<t_2D_tbb>& bb_coord_new,
                       std::vector<int>& bb_pin_sink_count_new,
                       t_physical_tile_loc pin_old_loc,
-                      t_physical_tile_loc pin_new_loc);
+                      t_physical_tile_loc pin_new_loc,
+                      bool is_output_pin);
 
 static void update_bb_pin_sink_count(ClusterNetId net_id,
                                      const t_physical_tile_loc& pin_old_loc,
                                      const t_physical_tile_loc& pin_new_loc,
                                      const std::vector<int>& curr_layer_pin_sink_count,
-                                     std::vector<int>& bb_pin_sink_count_new);
+                                     std::vector<int>& bb_pin_sink_count_new,
+                                     bool is_output_pin);
 
 static void try_remove_block_from_bb_edge(ClusterNetId net_id,
                                           const t_physical_tile_loc& pin_old_loc,
@@ -1901,12 +1903,14 @@ static void update_net_bb(const ClusterNetId net,
             blocks_affected.moved_blocks[iblk].new_loc.x + pin_width_offset,
             blocks_affected.moved_blocks[iblk].new_loc.y + pin_height_offset,
             blocks_affected.moved_blocks[iblk].new_loc.layer);
+        auto pin_dir = get_pin_type_from_pin_physical_num(blk_type, iblk_pin);
         update_bb(net,
                   ts_bb_edge_new[net],
                   ts_bb_coord_new[net],
                   ts_layer_sink_pin_count[net],
                   pin_old_loc,
-                  pin_new_loc);
+                  pin_new_loc,
+                  pin_dir == e_pin_type::DRIVER);
     }
 }
 
@@ -2721,7 +2725,8 @@ static void update_bb(ClusterNetId net_id,
                       std::vector<t_2D_tbb>& bb_coord_new,
                       std::vector<int>& bb_pin_sink_count_new,
                       t_physical_tile_loc pin_old_loc,
-                      t_physical_tile_loc pin_new_loc) {
+                      t_physical_tile_loc pin_new_loc,
+                      bool is_output_pin) {
     /* Updates the bounding box of a net by storing its coordinates in    *
      * the bb_coord_new data structure and the number of blocks on each   *
      * edge in the bb_edge_new data structure.  This routine should only  *
@@ -2771,7 +2776,8 @@ static void update_bb(ClusterNetId net_id,
                              pin_old_loc,
                              pin_new_loc,
                              *curr_layer_pin_sink_count,
-                             bb_pin_sink_count_new);
+                             bb_pin_sink_count_new,
+                             is_output_pin);
 
     try_remove_block_from_bb_edge(net_id,
                                   pin_old_loc,
@@ -2802,12 +2808,15 @@ static void update_bb_pin_sink_count(ClusterNetId /* net_id */,
                                      const t_physical_tile_loc& pin_old_loc,
                                      const t_physical_tile_loc& pin_new_loc,
                                      const std::vector<int>& curr_layer_pin_sink_count,
-                                     std::vector<int>& bb_pin_sink_count_new) {
-    VTR_ASSERT(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0);
+                                     std::vector<int>& bb_pin_sink_count_new,
+                                     bool is_output_pin) {
+    VTR_ASSERT(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0 ||
+               is_output_pin == 1);
     bb_pin_sink_count_new = curr_layer_pin_sink_count;
-
-    bb_pin_sink_count_new[pin_old_loc.layer_num] -= 1;
-    bb_pin_sink_count_new[pin_new_loc.layer_num] += 1;
+    if (!is_output_pin) {
+        bb_pin_sink_count_new[pin_old_loc.layer_num] -= 1;
+        bb_pin_sink_count_new[pin_new_loc.layer_num] += 1;
+    }
 }
 
 static void try_remove_block_from_bb_edge(ClusterNetId net_id,
