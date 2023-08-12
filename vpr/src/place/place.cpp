@@ -2546,31 +2546,17 @@ static void get_bb_from_scratch(ClusterNetId net_id,
      * structures.                                                            */
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         layer_pin_sink_count[layer_num] = num_sink_pin_layer[layer_num];
-        if (num_sink_pin_layer[layer_num] == 0) {
-            coords[layer_num].xmin = OPEN;
-            coords[layer_num].xmax = OPEN;
-            coords[layer_num].ymin = OPEN;
-            coords[layer_num].ymax = OPEN;
-            coords[layer_num].layer_num = OPEN;
+        coords[layer_num].xmin = xmin[layer_num];
+        coords[layer_num].xmax = xmax[layer_num];
+        coords[layer_num].ymin = ymin[layer_num];
+        coords[layer_num].ymax = ymax[layer_num];
+        coords[layer_num].layer_num = layer_num;
 
-            num_on_edges[layer_num].xmin = OPEN;
-            num_on_edges[layer_num].xmax = OPEN;
-            num_on_edges[layer_num].ymin = OPEN;
-            num_on_edges[layer_num].ymax = OPEN;
-            num_on_edges[layer_num].layer_num = OPEN;
-        } else {
-            coords[layer_num].xmin = xmin[layer_num];
-            coords[layer_num].xmax = xmax[layer_num];
-            coords[layer_num].ymin = ymin[layer_num];
-            coords[layer_num].ymax = ymax[layer_num];
-            coords[layer_num].layer_num = layer_num;
-
-            num_on_edges[layer_num].xmin = xmin_edge[layer_num];
-            num_on_edges[layer_num].xmax = xmax_edge[layer_num];
-            num_on_edges[layer_num].ymin = ymin_edge[layer_num];
-            num_on_edges[layer_num].ymax = ymax_edge[layer_num];
-            num_on_edges[layer_num].layer_num = layer_num;
-        }
+        num_on_edges[layer_num].xmin = xmin_edge[layer_num];
+        num_on_edges[layer_num].xmax = xmax_edge[layer_num];
+        num_on_edges[layer_num].ymin = ymin_edge[layer_num];
+        num_on_edges[layer_num].ymax = ymax_edge[layer_num];
+        num_on_edges[layer_num].layer_num = layer_num;
     }
 }
 
@@ -2722,19 +2708,11 @@ static void get_non_updateable_bb(ClusterNetId net_id,
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        if (num_sink_layer[layer_num] == 0) {
-            bb_coord_new[layer_num].xmin = OPEN;
-            bb_coord_new[layer_num].ymin = OPEN;
-            bb_coord_new[layer_num].xmax = OPEN;
-            bb_coord_new[layer_num].ymax = OPEN;
-            bb_coord_new[layer_num].layer_num = OPEN;
-        } else {
-            bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-            bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-            bb_coord_new[layer_num].xmax = max(min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-            bb_coord_new[layer_num].ymax = max(min<int>(ymax[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-            bb_coord_new[layer_num].layer_num = layer_num;
-        }
+        bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+        bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+        bb_coord_new[layer_num].xmax = max(min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+        bb_coord_new[layer_num].ymax = max(min<int>(ymax[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+        bb_coord_new[layer_num].layer_num = layer_num;
     }
 }
 
