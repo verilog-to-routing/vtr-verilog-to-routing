@@ -141,7 +141,7 @@ LDLIBS += -lrt
 endif
 endif
 
-YOSYS_VER := 0.31
+YOSYS_VER := 0.32
 
 # Note: We arrange for .gitcommit to contain the (short) commit hash in
 # tarballs generated with git-archive(1) using .gitattributes. The git repo
@@ -157,7 +157,7 @@ endif
 OBJS = kernel/version_$(GIT_REV).o
 
 bumpversion:
-#	sed -i "/^YOSYS_VER := / s/+[0-9][0-9]*$$/+`git log --oneline f7a8284.. | wc -l`/;" Makefile
+#	sed -i "/^YOSYS_VER := / s/+[0-9][0-9]*$$/+`git log --oneline f3c6b41.. | wc -l`/;" Makefile
 
 # set 'ABCREV = default' to use abc/ as it is
 #
@@ -612,6 +612,7 @@ $(eval $(call add_include_file,kernel/log.h))
 $(eval $(call add_include_file,kernel/rtlil.h))
 $(eval $(call add_include_file,kernel/binding.h))
 $(eval $(call add_include_file,kernel/register.h))
+$(eval $(call add_include_file,kernel/cellaigs.h))
 $(eval $(call add_include_file,kernel/celltypes.h))
 $(eval $(call add_include_file,kernel/celledges.h))
 $(eval $(call add_include_file,kernel/consteval.h))
@@ -628,6 +629,8 @@ ifeq ($(ENABLE_ZLIB),1)
 $(eval $(call add_include_file,kernel/fstdata.h))
 endif
 $(eval $(call add_include_file,kernel/mem.h))
+$(eval $(call add_include_file,kernel/yw.h))
+$(eval $(call add_include_file,kernel/json.h))
 $(eval $(call add_include_file,libs/ezsat/ezsat.h))
 $(eval $(call add_include_file,libs/ezsat/ezminisat.h))
 ifeq ($(ENABLE_ZLIB),1)
