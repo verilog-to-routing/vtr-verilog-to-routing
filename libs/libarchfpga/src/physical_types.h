@@ -1963,6 +1963,7 @@ struct t_arch {
 
     /* Xifan Tang: options for tileable routing architectures */
     bool tileable;
+    bool shrink_boundary;
     bool through_channel;
 
     t_chan_width_dist Chans;

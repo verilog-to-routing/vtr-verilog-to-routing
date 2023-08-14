@@ -12,6 +12,7 @@
 
 /* Headers from vpr library */
 #include "device_grid.h"
+#include "device_grid_annotation.h"
 #include "rr_node_types.h"
 #include "rr_graph_view.h"
 #include "rr_graph_builder.h"
@@ -26,6 +27,8 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const size_t& layer,
                                    const vtr::Point<size_t>& chan_width,
                                    const std::vector<t_segment_inf>& segment_infs,
+                                   const DeviceGridAnnotation& device_grid_annotation,
+                                   const bool& shrink_boundary,
                                    const bool& through_channel);
 
 void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
@@ -39,6 +42,8 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     const std::vector<t_segment_inf>& segment_infs,
                                     const RRSwitchId& wire_to_ipin_switch,
                                     const RRSwitchId& delayless_switch,
+                                    const DeviceGridAnnotation& device_grid_annotation,
+                                    const bool& shrink_boundary,
                                     const bool& through_channel);
 
 #endif

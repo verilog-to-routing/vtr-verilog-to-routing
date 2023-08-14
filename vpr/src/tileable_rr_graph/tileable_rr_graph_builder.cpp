@@ -18,6 +18,7 @@
 #include "rr_graph.h"
 #include "check_rr_graph.h"
 #include "get_parallel_segs.h"
+#include "device_grid_annotation.h"
 
 #include "rr_graph_builder_utils.h"
 #include "tileable_chan_details_builder.h"
@@ -83,6 +84,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const t_direct_inf* directs,
                                     const int& num_directs,
                                     int* wire_to_rr_ipin_switch,
+                                    const bool& shrink_boundary,
                                     const bool& through_channel,
                                     const bool& wire_opposite_side,
                                     int* Warnings) {
@@ -100,6 +102,9 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     /* Get a mutable device ctx so that we have a mutable rr_graph */
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+
+    /* Annotate the device grid on the boundry */
+    DeviceGridAnnotation device_grid_annotation(device_ctx.grid);
 
     /* The number of segments are in general small, reserve segments may not bring
      * significant memory efficiency */
@@ -151,6 +156,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                   grids, 0,
                                   device_chan_width,
                                   segment_inf,
+                                  device_grid_annotation,
+                                  shrink_boundary,
                                   through_channel);
 
     /************************
@@ -166,6 +173,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    segment_inf,
                                    wire_to_ipin_rr_switch,
                                    delayless_rr_switch,
+                                   device_grid_annotation,
+                                   shrink_boundary,
                                    through_channel);
 
     /************************************************************************
