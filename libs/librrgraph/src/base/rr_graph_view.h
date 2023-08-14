@@ -306,7 +306,7 @@ class RRGraphView {
     }
 
     /** @brief Get the node id of the clock network virtual sink */
-    inline RRNodeId virtual_clock_network_root_idx(std::string clock_network_name) const {
+    inline RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
         return node_storage_.virtual_clock_network_root_idx(clock_network_name);
     }
 

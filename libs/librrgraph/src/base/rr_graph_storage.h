@@ -15,6 +15,7 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
+#include<iostream>
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -234,11 +235,11 @@ class t_rr_graph_storage {
     short node_layer(RRNodeId id) const{
         return node_layer_[id];
     }
-
     /* Retrieve the name assigned to the node id. If no name is assigned, empty string is returned */
     std::string node_name(RRNodeId id) const{
         auto it = node_name_.find(id);
         if (it != node_name_.end()) {
+            std::cout << it->second << std::endl;
             return it->second;  // Return the value if key is found
         }
         return "";  // Return an empty string if key is not found
@@ -253,7 +254,8 @@ class t_rr_graph_storage {
     }
 
     // Get the node id of the virtual sink for the clock network 
-    RRNodeId virtual_clock_network_root_idx(std::string clock_network_name) const {
+    RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
+        std::string clock_network_name_str(clock_network_name);
         auto it = virtual_clock_network_root_idx_.find(clock_network_name);
         if (it != virtual_clock_network_root_idx_.end()) {
             return it->second; // Get 
@@ -470,6 +472,8 @@ class t_rr_graph_storage {
         node_first_edge_.clear();
         node_fan_in_.clear();
         node_layer_.clear();
+        node_name_.clear();
+        virtual_clock_network_root_idx_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
@@ -901,8 +905,11 @@ class t_rr_graph_view {
 
     /* Retrieve the name assigned to the node id. If no name is assigned, empty string is returned */
     std::string node_name(RRNodeId id) const{
+        std::cout <<"in here befire seg" << std::endl;
         auto it = node_name_.find(id);
         if (it != node_name_.end()) {
+            std::cout <<it->second << std::endl;
+
             return it->second;  // Return the value if key is found
         }
         return "";  // Return an empty string if key is not found
@@ -918,8 +925,9 @@ class t_rr_graph_view {
     }
 
     // Returns the node id of the virtual sink for the given clock network name
-    RRNodeId virtual_clock_network_root_idx(std::string clock_network_name) const{
-        auto it = virtual_clock_network_root_idx_.find(clock_network_name);
+    RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const{
+        std::string clock_network_name_str(clock_network_name);
+        auto it = virtual_clock_network_root_idx_.find(clock_network_name_str);
         if (it != virtual_clock_network_root_idx_.end()) {
             return it->second; // Get 
         }

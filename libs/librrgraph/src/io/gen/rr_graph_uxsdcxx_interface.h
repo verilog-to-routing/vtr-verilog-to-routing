@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 8672cb3951993f7e0ea3433a02507672
+ * Cmdline: /home/kimia/uxsdcxx/uxsdcxx.py /home/kimia/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/kimia/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: c839d46b92f4a4b5a20e187a784916a1
  */
 
 #include <functional>
@@ -23,15 +23,14 @@ namespace uxsd {
 
 enum class enum_switch_type {UXSD_INVALID = 0, MUX, TRISTATE, PASS_GATE, SHORT, BUFFER};
 
+enum class enum_segment_res_type {UXSD_INVALID = 0, GENERAL, GCLK};
+
 enum class enum_pin_type {UXSD_INVALID = 0, OPEN, OUTPUT, INPUT};
 
 enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, IPIN};
 
 enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR};
 
-// For the current level of support, we only need to distinguish the virtual sink node for
-// the clock network in order to store the id of the node. However, more values can be added
-// to this enum in the future if more node types need to be detected.
 enum class enum_node_clk_res_type {UXSD_INVALID = 0, VIRTUAL_SINK};
 
 enum class enum_loc_side {UXSD_INVALID = 0, LEFT, RIGHT, TOP, BOTTOM, RIGHT_LEFT, RIGHT_BOTTOM, RIGHT_BOTTOM_LEFT, TOP_RIGHT, TOP_BOTTOM, TOP_LEFT, TOP_RIGHT_BOTTOM, TOP_RIGHT_LEFT, TOP_BOTTOM_LEFT, TOP_RIGHT_BOTTOM_LEFT, BOTTOM_LEFT};
@@ -247,14 +246,14 @@ public:
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
-	 *   <xs:attribute name="res_type" type="xs:string" use="optional" />
+	 *   <xs:attribute name="res_type" type="segment_res_type" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_segment_id(typename ContextTypes::SegmentReadContext &ctx) = 0;
 	virtual inline const char * get_segment_name(typename ContextTypes::SegmentReadContext &ctx) = 0;
 	virtual inline void set_segment_name(const char * name, typename ContextTypes::SegmentWriteContext &ctx) = 0;
-	virtual inline e_seg_res_type get_segment_res_type(typename ContextTypes::SegmentReadContext &ctx) = 0;
-	virtual inline void set_segment_res_type(const char * res_type, typename ContextTypes::SegmentWriteContext &ctx) = 0;
+	virtual inline enum_segment_res_type get_segment_res_type(typename ContextTypes::SegmentReadContext &ctx) = 0;
+	virtual inline void set_segment_res_type(enum_segment_res_type res_type, typename ContextTypes::SegmentWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::SegmentTimingWriteContext init_segment_timing(typename ContextTypes::SegmentWriteContext &ctx) = 0;
 	virtual inline void finish_segment_timing(typename ContextTypes::SegmentTimingWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::SegmentTimingReadContext get_segment_timing(typename ContextTypes::SegmentReadContext &ctx) = 0;
@@ -338,9 +337,9 @@ public:
 
 	/** Generated for complex type "grid_loc":
 	 * <xs:complexType name="grid_loc">
+	 *   <xs:attribute name="layer" type="xs:int" use="required" />
 	 *   <xs:attribute name="x" type="xs:int" use="required" />
 	 *   <xs:attribute name="y" type="xs:int" use="required" />
-	 *   <xs:attribute name="layer" type="xs:int" use=:"required" />
 	 *   <xs:attribute name="block_type_id" type="xs:int" use="required" />
 	 *   <xs:attribute name="width_offset" type="xs:int" use="required" />
 	 *   <xs:attribute name="height_offset" type="xs:int" use="required" />
@@ -348,10 +347,10 @@ public:
 	*/
 	virtual inline int get_grid_loc_block_type_id(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_height_offset(typename ContextTypes::GridLocReadContext &ctx) = 0;
+	virtual inline int get_grid_loc_layer(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_width_offset(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_x(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_y(typename ContextTypes::GridLocReadContext &ctx) = 0;
-	virtual inline int get_grid_loc_layer(typename ContextTypes::GridLocReadContext &ctx) =0;
 
 	/** Generated for complex type "grid_locs":
 	 * <xs:complexType name="grid_locs">
@@ -361,7 +360,7 @@ public:
 	 * </xs:complexType>
 	*/
 	virtual inline void preallocate_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int width_offset, int x, int y, int layer) = 0;
+	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int layer, int width_offset, int x, int y) = 0;
 	virtual inline void finish_grid_locs_grid_loc(typename ContextTypes::GridLocWriteContext &ctx) = 0;
 	virtual inline size_t num_grid_locs_grid_loc(typename ContextTypes::GridLocsReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::GridLocReadContext get_grid_locs_grid_loc(int n, typename ContextTypes::GridLocsReadContext &ctx) = 0;
@@ -439,18 +438,21 @@ public:
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
 	 *   <xs:attribute name="type" type="node_type" use="required" />
+	 *   <xs:attribute name="name" type="xs:string" />
 	 *   <xs:attribute name="direction" type="node_direction" />
+	 *   <xs:attribute name="clk_res_type" type="node_clk_res_type" />
 	 *   <xs:attribute name="capacity" type="xs:unsignedInt" use="required" />
 	 * </xs:complexType>
 	*/
 	virtual inline unsigned int get_node_capacity(typename ContextTypes::NodeReadContext &ctx) = 0;
-	virtual inline enum_node_direction get_node_direction(typename ContextTypes::NodeReadContext &ctx) = 0;
-	virtual inline void set_node_direction(enum_node_direction direction, typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline enum_node_clk_res_type get_node_clk_res_type(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline void set_node_clk_res_type(enum_node_clk_res_type clk_res_type, typename ContextTypes::NodeWriteContext &ctx) = 0;
+	virtual inline enum_node_direction get_node_direction(typename ContextTypes::NodeReadContext &ctx) = 0;
+	virtual inline void set_node_direction(enum_node_direction direction, typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline unsigned int get_node_id(typename ContextTypes::NodeReadContext &ctx) = 0;
+	virtual inline const char * get_node_name(typename ContextTypes::NodeReadContext &ctx) = 0;
+	virtual inline void set_node_name(const char * name, typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline enum_node_type get_node_type(typename ContextTypes::NodeReadContext &ctx) = 0;
-	virtual inline std::string get_node_name(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
 	virtual inline void finish_node_loc(typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeLocReadContext get_node_loc(typename ContextTypes::NodeReadContext &ctx) = 0;
@@ -475,7 +477,7 @@ public:
 	 * </xs:complexType>
 	*/
 	virtual inline void preallocate_rr_nodes_node(typename ContextTypes::RrNodesWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::NodeWriteContext add_rr_nodes_node(typename ContextTypes::RrNodesWriteContext &ctx, unsigned int capacity, unsigned int id, enum_node_type type, std::string name="") = 0;
+	virtual inline typename ContextTypes::NodeWriteContext add_rr_nodes_node(typename ContextTypes::RrNodesWriteContext &ctx, unsigned int capacity, unsigned int id, enum_node_type type) = 0;
 	virtual inline void finish_rr_nodes_node(typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline size_t num_rr_nodes_node(typename ContextTypes::RrNodesReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeReadContext get_rr_nodes_node(int n, typename ContextTypes::RrNodesReadContext &ctx) = 0;

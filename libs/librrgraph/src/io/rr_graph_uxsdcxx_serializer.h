@@ -849,7 +849,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void preallocate_rr_nodes_node(void*& /*ctx*/, size_t size) final {
         rr_graph_builder_->reserve_nodes(size);
     }
-    inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type, std::string name="") final {
+    inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type) final {
         // make_room_in_vector will not allocate if preallocate_rr_nodes_node
         // was invoked, but on formats that lack size on read,
         // make_room_in_vector will use an allocation pattern that is
@@ -859,9 +859,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto node = (*rr_nodes_)[id];
         RRNodeId node_id = node.id();
 
-        if (name != ""){
-            rr_graph_builder_->set_node_name(node_id, name);
-        }
         rr_graph_builder_->set_node_type(node_id, from_uxsd_node_type(type));
         rr_graph_builder_->set_node_capacity(node_id, capacity);
 
@@ -892,8 +889,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         return id;
     }
-    inline void finish_rr_nodes_node(int& /*inode*/) final {
+    inline void finish_rr_nodes_node(int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+
+        // At this point, all attributes for the node are loaded. Check whether the current node is included in the temporary list of 
+        // clock network virtual sinks. If it is, permanently add it to the unordered map in rr_graph_storage, using the attribute
+        // name as the key.
+        if (clock_net_virtual_sinks.find(inode) != clock_net_virtual_sinks.end()) {
+            rr_graph_builder_->set_virtual_clock_network_root_idx(node_id);
+        }
     }
+
     inline size_t num_rr_nodes_node(void*& /*ctx*/) final {
 
         return rr_nodes_->size();
@@ -915,9 +922,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return to_uxsd_node_type(rr_graph.node_type(node.id()));
     }
 
-    inline std::string get_node_name(const t_rr_node& node) final {
+    inline const char* get_node_name(const t_rr_node& node) final {
+        std::cout << "in get node name" << std::endl;
         const auto& rr_graph = (*rr_graph_);
-        return rr_graph.node_name(node.id());
+        return rr_graph.node_name(node.id()).c_str();
     }
 
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {
@@ -944,13 +952,25 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
 
-    // Currently this function only processes clk_res_type VIRTUAL_SINK to store the node id of the virtual sink
-    inline void set_node_clk_res_type(uxsd::enum_node_clk_res_type clk_res_type, int& inode) final {
+    inline void set_node_name(const char * name, int& inode) final {
+        if(name[0] == '\0')
+        {
+            report_error("Attribute name cannot be assigned an empty string");
+        }
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
-
-        if (clk_res_type == uxsd::enum_node_clk_res_type::VIRTUAL_SINK) {
-            rr_graph_builder_->set_virtual_clock_network_root_idx(node_id);
+        std::string name_str(name);
+        rr_graph_builder_->set_node_name(node_id, name_str);
+    }
+    // Currently, this function only processes cases where clk_res_type=VIRTUAL_SINK
+    // It temporarily stores the node ID of the virtual sink in a temporary set. Eventually, 
+    //the node ID will be stored in an unordered map within rr_graph_storage, using the attribute "name"
+    // as the key. Since, at this point in the code, the "name" attribute might not have been processed yet, 
+    //the final storage will occur in the finish_rr_nodes_node function.
+    inline void set_node_clk_res_type(uxsd::enum_node_clk_res_type clk_res_type, int& inode) final {
+        if(clk_res_type == uxsd::enum_node_clk_res_type::VIRTUAL_SINK)
+        {
+            clock_net_virtual_sinks.insert(inode);
         }
     }
     inline uxsd::enum_node_clk_res_type get_node_clk_res_type(const t_rr_node& node) final {
@@ -1305,15 +1325,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 segment->name.c_str(), name);
         }
     }
-    inline e_seg_res_type get_segment_res_type(const t_segment_inf*& segment) final {
-        return segment->res_type;
+    inline uxsd::enum_segment_res_type get_segment_res_type(const t_segment_inf*& segment) final {
+        return to_uxsd_segment_res_type(segment->res_type);
     }
-    inline void set_segment_res_type(const char* res_type, const t_segment_inf*& segment) final {
-        std::string res_type_str = res_type;
-        if (RES_TYPE_STRING[segment->res_type] != res_type_str) {
+    inline void set_segment_res_type(uxsd::enum_segment_res_type seg_res_type, const t_segment_inf*& segment) final {
+        if (segment->res_type != from_uxsd_segment_res_type(seg_res_type)) {
             report_error(
                 "Architecture file does not match RR graph's segment res_type: arch uses %s, RR graph uses %s",
-               RES_TYPE_STRING[segment->res_type], res_type);
+               RES_TYPE_STRING[segment->res_type], RES_TYPE_STRING[from_uxsd_segment_res_type(seg_res_type)]);
         }
     }
 
@@ -1577,7 +1596,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 grid_.grid_size(), size);
         }
     }
-    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y, int layer) final {
+    
+    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int layer, int width_offset, int x, int y) final {
         const auto& type = grid_.get_physical_type({x, y, layer});
         int grid_width_offset = grid_.get_width_offset({x, y, layer});
         int grid_height_offset = grid_.get_height_offset({x, y, layer});
@@ -1881,6 +1901,30 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
 
+    uxsd::enum_segment_res_type to_uxsd_segment_res_type(e_seg_res_type segment_res_type) {
+        switch (segment_res_type) {
+            case e_seg_res_type::GCLK:
+                return uxsd::enum_segment_res_type::GCLK;
+            case e_seg_res_type::GENERAL:
+                return uxsd::enum_segment_res_type::GENERAL;
+            default:
+                report_error(
+                    "Invalid segment_res_type %d", segment_res_type);
+        }
+    }
+
+    e_seg_res_type from_uxsd_segment_res_type(uxsd::enum_segment_res_type segment_res_type) {
+        switch (segment_res_type) {
+            case uxsd::enum_segment_res_type::GCLK:
+                return e_seg_res_type::GCLK;
+            case uxsd::enum_segment_res_type::GENERAL:
+                return e_seg_res_type::GENERAL;
+            default:
+                report_error(
+                    "Invalid node segment_res_type %d", segment_res_type);
+        }
+    }
+
     t_rr_type from_uxsd_node_type(uxsd::enum_node_type type) {
         switch (type) {
             case uxsd::enum_node_type::CHANX:
@@ -2024,6 +2068,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     // Temporary storage
     vtr::vector<RRIndexedDataId, short> seg_index_;
     std::string temp_string_;
+    std::unordered_set<int> clock_net_virtual_sinks; // Temporary set storing the ID of nodes that have clk_res_type=virtual_sink
 
     // Constant mapping which is frequently used
     std::array<uxsd::enum_loc_side, 16> side_map_;

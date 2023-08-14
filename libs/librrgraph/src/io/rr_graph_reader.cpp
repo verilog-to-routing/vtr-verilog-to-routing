@@ -99,6 +99,9 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
             std::ifstream file(read_rr_graph_name);
             void* context;
             uxsd::load_rr_graph_xml(reader, context, read_rr_graph_name, file);
+        	std::cerr << reader.get_node_name(reader.get_rr_nodes_node(1368, context)) << std::endl;
+
+            std::cout << rr_graph->node_name(RRNodeId(1368)) << std::endl;
         } catch (pugiutil::XmlError& e) {
             vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
         }

@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 8672cb3951993f7e0ea3433a02507672
+ * Cmdline: /home/kimia/uxsdcxx/uxsdcxx.py /home/kimia/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/kimia/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: c839d46b92f4a4b5a20e187a784916a1
  */
 
 #include <functional>
@@ -82,7 +82,7 @@ template <class T, typename Context>
 inline void load_block_types(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
 inline void load_grid_loc(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
-inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * width_offset, int * x, int * y, int* layer, const std::function<void(const char*)> * report_error);
+inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * layer, int * width_offset, int * x, int * y, const std::function<void(const char*)> * report_error);
 template <class T, typename Context>
 inline void load_grid_locs(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
@@ -100,7 +100,7 @@ template <class T, typename Context>
 inline void load_metadata(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
 inline void load_node(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
-inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, std::string& name, const std::function<void(const char*)> * report_error);
+inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, const std::function<void(const char*)> * report_error);
 template <class T, typename Context>
 inline void load_rr_nodes(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
@@ -175,12 +175,18 @@ inline void load_rr_graph_xml(T &out, Context &context, const char * filename, s
 			/* If errno is set up to this point, it messes with strtol errno checking. */
 			errno = 0;
 			load_rr_graph(node, out, context, &report_error, &offset_debug);
+			auto node_got = out.get_rr_nodes_node(1368, context);
+			std::cerr << out.get_node_name(node_got) << std::endl;
 		} else {
 			offset_debug = node.offset_debug();
 			report_error(("Invalid root-level element " + std::string(node.name())).c_str());
 		}
 	}
+	std::cerr << out.get_node_name(out.get_rr_nodes_node(1368, context)) << std::endl;
 	out.finish_load();
+	std::cerr << "dsafdkfadfa \n";
+	std::cerr << out.get_node_name(out.get_rr_nodes_node(1368, context)) << std::endl;
+	std::cerr << "gere sdkfj  \n";
 }
 
 /* Write function for the root element. */
@@ -269,8 +275,8 @@ constexpr const char *atok_lookup_t_block_type[] = {"height", "id", "name", "wid
 enum class gtok_t_block_types {BLOCK_TYPE};
 constexpr const char *gtok_lookup_t_block_types[] = {"block_type"};
 
-enum class atok_t_grid_loc {BLOCK_TYPE_ID, HEIGHT_OFFSET, WIDTH_OFFSET, X, Y, LAYER};
-constexpr const char *atok_lookup_t_grid_loc[] = {"block_type_id", "height_offset", "width_offset", "x", "y", "layer"};
+enum class atok_t_grid_loc {BLOCK_TYPE_ID, HEIGHT_OFFSET, LAYER, WIDTH_OFFSET, X, Y};
+constexpr const char *atok_lookup_t_grid_loc[] = {"block_type_id", "height_offset", "layer", "width_offset", "x", "y"};
 
 enum class gtok_t_grid_locs {GRID_LOC};
 constexpr const char *gtok_lookup_t_grid_locs[] = {"grid_loc"};
@@ -294,8 +300,8 @@ enum class gtok_t_metadata {META};
 constexpr const char *gtok_lookup_t_metadata[] = {"meta"};
 enum class gtok_t_node {LOC, TIMING, SEGMENT, METADATA};
 constexpr const char *gtok_lookup_t_node[] = {"loc", "timing", "segment", "metadata"};
-enum class atok_t_node {CAPACITY, DIRECTION, ID, TYPE, NAME, CLK_RES_TYPE};
-constexpr const char *atok_lookup_t_node[] = {"capacity", "direction", "id", "type", "name", "clk_res_type"};
+enum class atok_t_node {CAPACITY, CLK_RES_TYPE, DIRECTION, ID, NAME, TYPE};
+constexpr const char *atok_lookup_t_node[] = {"capacity", "clk_res_type", "direction", "id", "name", "type"};
 
 enum class gtok_t_rr_nodes {NODE};
 constexpr const char *gtok_lookup_t_rr_nodes[] = {"node"};
@@ -1023,21 +1029,19 @@ inline atok_t_grid_loc lex_attr_t_grid_loc(const char *in, const std::function<v
 		default: break;
 		}
 		break;
-
 	case 5:
 		switch(*((triehash_uu32*)&in[0])){
-			case onechar('l', 0, 32) | onechar('a', 8, 32) | onechar('y', 16, 32) | onechar('e', 24, 32):
-				switch(in[4]){
-					case onechar('r', 0, 8):
-						return atok_t_grid_loc::LAYER;
-					break;
-					default: break;
-				}
+		case onechar('l', 0, 32) | onechar('a', 8, 32) | onechar('y', 16, 32) | onechar('e', 24, 32):
+			switch(in[4]){
+			case onechar('r', 0, 8):
+				return atok_t_grid_loc::LAYER;
 			break;
-			default:break;
+			default: break;
+			}
+		break;
+		default: break;
 		}
 		break;
-
 	case 12:
 		switch(*((triehash_uu64*)&in[0])){
 		case onechar('w', 0, 64) | onechar('i', 8, 64) | onechar('d', 16, 64) | onechar('t', 24, 64) | onechar('h', 32, 64) | onechar('_', 40, 64) | onechar('o', 48, 64) | onechar('f', 56, 64):
@@ -1341,11 +1345,11 @@ inline atok_t_node lex_attr_t_node(const char *in, const std::function<void(cons
 		break;
 	case 4:
 		switch(*((triehash_uu32*)&in[0])){
-		case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
-			return atok_t_node::TYPE;
-		break;
 		case onechar('n', 0, 32) | onechar('a', 8, 32) | onechar('m', 16, 32) | onechar('e', 24, 32):
 			return atok_t_node::NAME;
+		break;
+		case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
+			return atok_t_node::TYPE;
 		break;
 		default: break;
 		}
@@ -1593,12 +1597,12 @@ template<std::size_t N>
 
 /* Lookup tables for enums. */
 constexpr const char *lookup_switch_type[] = {"UXSD_INVALID", "mux", "tristate", "pass_gate", "short", "buffer"};
+constexpr const char *lookup_segment_res_type[] = {"UXSD_INVALID", "GENERAL", "GCLK"};
 constexpr const char *lookup_pin_type[] = {"UXSD_INVALID", "OPEN", "OUTPUT", "INPUT"};
 constexpr const char *lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "SOURCE", "SINK", "OPIN", "IPIN"};
 constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR"};
 constexpr const char *lookup_node_clk_res_type[] = {"UXSD_INVALID", "VIRTUAL_SINK"};
 constexpr const char *lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM", "RIGHT_LEFT", "RIGHT_BOTTOM", "RIGHT_BOTTOM_LEFT", "TOP_RIGHT", "TOP_BOTTOM", "TOP_LEFT", "TOP_RIGHT_BOTTOM", "TOP_RIGHT_LEFT", "TOP_BOTTOM_LEFT", "TOP_RIGHT_BOTTOM_LEFT", "BOTTOM_LEFT"};
-constexpr const char *lookup_seg_res_type[] = {"GCLK", "GENERAL"};
 
 /* Lexers(string->token functions) for enums. */
 inline enum_switch_type lex_enum_switch_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
@@ -1679,6 +1683,47 @@ inline enum_switch_type lex_enum_switch_type(const char *in, bool throw_on_inval
 	if(throw_on_invalid)
 		noreturn_report(report_error, ("Found unrecognized enum value " + std::string(in) + " of enum_switch_type.").c_str());
 	return enum_switch_type::UXSD_INVALID;
+}
+
+inline enum_segment_res_type lex_enum_segment_res_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
+	unsigned int len = strlen(in);
+	switch(len){
+	case 4:
+		switch(*((triehash_uu32*)&in[0])){
+		case onechar('G', 0, 32) | onechar('C', 8, 32) | onechar('L', 16, 32) | onechar('K', 24, 32):
+			return enum_segment_res_type::GCLK;
+		break;
+		default: break;
+		}
+		break;
+	case 7:
+		switch(*((triehash_uu32*)&in[0])){
+		case onechar('G', 0, 32) | onechar('E', 8, 32) | onechar('N', 16, 32) | onechar('E', 24, 32):
+			switch(in[4]){
+			case onechar('R', 0, 8):
+				switch(in[5]){
+				case onechar('A', 0, 8):
+					switch(in[6]){
+					case onechar('L', 0, 8):
+						return enum_segment_res_type::GENERAL;
+					break;
+					default: break;
+					}
+				break;
+				default: break;
+				}
+			break;
+			default: break;
+			}
+		break;
+		default: break;
+		}
+		break;
+	default: break;
+	}
+	if(throw_on_invalid)
+		noreturn_report(report_error, ("Found unrecognized enum value " + std::string(in) + " of enum_segment_res_type.").c_str());
+	return enum_segment_res_type::UXSD_INVALID;
 }
 
 inline enum_pin_type lex_enum_pin_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
@@ -2158,15 +2203,6 @@ inline unsigned int load_unsigned_int(const char *in, const std::function<void(c
 	return out;
 }
 
-inline std::string load_string(const char* in, const std::function<void(const char*)> * report_error) {
-    std::string out(in);
-    // return error if the string is empty
-    if (out.empty()) {
-        noreturn_report(report_error, "Empty string is not allowed.");
-    }
-    return out;
-}
-
 inline float load_float(const char *in, const std::function<void(const char *)> * report_error){
 	float out;
 	out = std::strtof(in, NULL);
@@ -2301,7 +2337,7 @@ inline void load_segment_required_attributes(const pugi::xml_node &root, int * i
 			break;
 		case atok_t_segment::RES_TYPE:
 			/* Attribute res_type set after element init */
-			break;			
+			break;
 		default: break; /* Not possible. */
 		}
 	}
@@ -2369,18 +2405,21 @@ inline void load_block_type_required_attributes(const pugi::xml_node &root, int 
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_block_type, report_error);
 }
 
-inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * width_offset, int * x, int * y, int* layer, const std::function<void(const char *)> * report_error){
+inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * layer, int * width_offset, int * x, int * y, const std::function<void(const char *)> * report_error){
 	std::bitset<6> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_grid_loc in = lex_attr_t_grid_loc(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
 		else noreturn_report(report_error, ("Duplicate attribute " + std::string(attr.name()) + " in <grid_loc>.").c_str());
 		switch(in){
-        case atok_t_grid_loc::BLOCK_TYPE_ID:
+		case atok_t_grid_loc::BLOCK_TYPE_ID:
 			*block_type_id = load_int(attr.value(), report_error);
 			break;
 		case atok_t_grid_loc::HEIGHT_OFFSET:
 			*height_offset = load_int(attr.value(), report_error);
+			break;
+		case atok_t_grid_loc::LAYER:
+			*layer = load_int(attr.value(), report_error);
 			break;
 		case atok_t_grid_loc::WIDTH_OFFSET:
 			*width_offset = load_int(attr.value(), report_error);
@@ -2391,8 +2430,6 @@ inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * 
 		case atok_t_grid_loc::Y:
 			*y = load_int(attr.value(), report_error);
 			break;
-        case atok_t_grid_loc::LAYER:
-            *layer=load_int(attr.value(), report_error);
 		default: break; /* Not possible. */
 		}
 	}
@@ -2472,7 +2509,7 @@ inline void load_node_segment_required_attributes(const pugi::xml_node &root, in
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_segment, report_error);
 }
 
-inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, std::string& name, const std::function<void(const char *)> * report_error){
+inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, const std::function<void(const char *)> * report_error){
 	std::bitset<6> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_node in = lex_attr_t_node(attr.name(), report_error);
@@ -2482,29 +2519,25 @@ inline void load_node_required_attributes(const pugi::xml_node &root, unsigned i
 		case atok_t_node::CAPACITY:
 			*capacity = load_unsigned_int(attr.value(), report_error);
 			break;
+		case atok_t_node::CLK_RES_TYPE:
+			/* Attribute clk_res_type set after element init */
+			break;
 		case atok_t_node::DIRECTION:
 			/* Attribute direction set after element init */
 			break;
 		case atok_t_node::ID:
 			*id = load_unsigned_int(attr.value(), report_error);
 			break;
+		case atok_t_node::NAME:
+			/* Attribute name set after element init */
+			break;
 		case atok_t_node::TYPE:
 			*type = lex_enum_node_type(attr.value(), true, report_error);
-			break;
-		case atok_t_node::NAME:
-			// While variable name is not a required variable, if it is specified it needs to be 
-			// stored before clk_res_type
-			// When clk_res_type is set to virtual_sink then the name is used as the key
-			// to store the node id of the virtual sink in an unordered map
-			name = load_string(attr.value(), report_error);
-			break;
-		case atok_t_node::CLK_RES_TYPE:
-			/* Attribute clk_res_type set after element init */
 			break;
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<6> test_astate = astate | std::bitset<6>(0b110010);
+	std::bitset<6> test_astate = astate | std::bitset<6>(0b010110);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node, report_error);
 }
 
@@ -2892,10 +2925,8 @@ inline void load_segment(const pugi::xml_node &root, T &out, Context &context, c
 	// Update current file offset in case an error is encountered.
 	*offset_debug = root.offset_debug();
 
-	std::bitset<3> gstate_seg = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_segment in = lex_attr_t_segment(attr.name(), report_error);
-		if(gstate_seg[(int)in] == 0) gstate_seg[(int)in] = 1;
 		switch(in){
 		case atok_t_segment::ID:
 			/* Attribute id is already set */
@@ -2904,16 +2935,10 @@ inline void load_segment(const pugi::xml_node &root, T &out, Context &context, c
 			out.set_segment_name(attr.value(), context);
 			break;
 		case atok_t_segment::RES_TYPE:
-			out.set_segment_res_type(attr.value(), context);
+			out.set_segment_res_type(lex_enum_segment_res_type(attr.value(), true, report_error), context);
 			break;
 		default: break; /* Not possible. */
 		}
-	}
-	if(gstate_seg.test(2) == 0)
-	{
-		// If attribute res_type is not specified in the tag then set the res_type
-		// to the default value "GENERAL"
-		out.set_segment_res_type("GENERAL", context);
 	}
 
 	std::bitset<1> gstate = 0;
@@ -3300,16 +3325,16 @@ inline void load_grid_locs(const pugi::xml_node &root, T &out, Context &context,
 				memset(&grid_loc_block_type_id, 0, sizeof(grid_loc_block_type_id));
 				int grid_loc_height_offset;
 				memset(&grid_loc_height_offset, 0, sizeof(grid_loc_height_offset));
+				int grid_loc_layer;
+				memset(&grid_loc_layer, 0, sizeof(grid_loc_layer));
 				int grid_loc_width_offset;
 				memset(&grid_loc_width_offset, 0, sizeof(grid_loc_width_offset));
 				int grid_loc_x;
 				memset(&grid_loc_x, 0, sizeof(grid_loc_x));
 				int grid_loc_y;
 				memset(&grid_loc_y, 0, sizeof(grid_loc_y));
-                int grid_loc_layer;
-                memset(&grid_loc_layer,0,sizeof(grid_loc_layer));
-				load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y, &grid_loc_layer, report_error);
-				auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_width_offset, grid_loc_x, grid_loc_y, grid_loc_layer);
+				load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_layer, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y, report_error);
+				auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_layer, grid_loc_width_offset, grid_loc_x, grid_loc_y);
 				load_grid_loc(node, out, child_context, report_error, offset_debug);
 				out.finish_grid_locs_grid_loc(child_context);
 			}
@@ -3495,17 +3520,20 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 		case atok_t_node::CAPACITY:
 			/* Attribute capacity is already set */
 			break;
+		case atok_t_node::CLK_RES_TYPE:
+			out.set_node_clk_res_type(lex_enum_node_clk_res_type(attr.value(), true, report_error), context);
+			break;
 		case atok_t_node::DIRECTION:
 			out.set_node_direction(lex_enum_node_direction(attr.value(), true, report_error), context);
 			break;
 		case atok_t_node::ID:
 			/* Attribute id is already set */
 			break;
+		case atok_t_node::NAME:
+			out.set_node_name(attr.value(), context);
+			break;
 		case atok_t_node::TYPE:
 			/* Attribute type is already set */
-			break;
-		case atok_t_node::CLK_RES_TYPE:
-			out.set_node_clk_res_type(lex_enum_node_clk_res_type(attr.value(), true, report_error), context);
 			break;
 		default: break; /* Not possible. */
 		}
@@ -3631,9 +3659,8 @@ inline void load_rr_nodes(const pugi::xml_node &root, T &out, Context &context, 
 				memset(&node_id, 0, sizeof(node_id));
 				enum_node_type node_type;
 				memset(&node_type, 0, sizeof(node_type));
-				std::string name;
-				load_node_required_attributes(node, &node_capacity, &node_id, &node_type, name, report_error);
-				auto child_context = out.add_rr_nodes_node(context, node_capacity, node_id, node_type, name);
+				load_node_required_attributes(node, &node_capacity, &node_id, &node_type, report_error);
+				auto child_context = out.add_rr_nodes_node(context, node_capacity, node_id, node_type);
 				load_node(node, out, child_context, report_error, offset_debug);
 				out.finish_rr_nodes_node(child_context);
 			}
@@ -3815,9 +3842,13 @@ inline void load_rr_graph(const pugi::xml_node &root, T &out, Context &context, 
 			break;
 		case gtok_t_rr_graph::RR_NODES:
 			{
+				std::cerr << "hereeeeeee" << std::endl;
+				std::cout << "heredfkdsafjlkeeeeee" << std::endl;
 				auto child_context = out.init_rr_graph_rr_nodes(context);
 				load_rr_nodes(node, out, child_context, report_error, offset_debug);
-				out.finish_rr_graph_rr_nodes(child_context);
+				// out.finish_rr_graph_rr_nodes(child_context);
+				auto node_got = out.get_rr_nodes_node(1368, context);
+				std::cout << out.get_node_name(node_got) << std::endl;
 			}
 			break;
 		case gtok_t_rr_graph::RR_EDGES:
@@ -3952,10 +3983,8 @@ inline void write_segments(T &in, std::ostream &os, Context &context){
 			os << "<segment";
 			os << " id=\"" << in.get_segment_id(child_context) << "\"";
 			os << " name=\"" << in.get_segment_name(child_context) << "\"";
-			if(in.get_segment_res_type(child_context) != e_seg_res_type::GENERAL){
-				// Print out the res_type attribute if it doesn't have a default value of GENERAL
-				os << " res_type=\"" << lookup_seg_res_type[(int)in.get_segment_res_type(child_context)] << "\"";
-			}
+			if((bool)in.get_segment_res_type(child_context))
+				os << " res_type=\"" << lookup_segment_res_type[(int)in.get_segment_res_type(child_context)] << "\"";
 			os << ">";
 			write_segment(in, os, child_context);
 			os << "</segment>\n";
@@ -4036,11 +4065,10 @@ inline void write_grid_locs(T &in, std::ostream &os, Context &context){
 			os << "<grid_loc";
 			os << " block_type_id=\"" << in.get_grid_loc_block_type_id(child_context) << "\"";
 			os << " height_offset=\"" << in.get_grid_loc_height_offset(child_context) << "\"";
+			os << " layer=\"" << in.get_grid_loc_layer(child_context) << "\"";
 			os << " width_offset=\"" << in.get_grid_loc_width_offset(child_context) << "\"";
 			os << " x=\"" << in.get_grid_loc_x(child_context) << "\"";
 			os << " y=\"" << in.get_grid_loc_y(child_context) << "\"";
-			os << " layer=\"" << in.get_grid_loc_layer(child_context) << "\"";
-
 			os << "/>\n";
 		}
 	}
@@ -4126,13 +4154,13 @@ inline void write_rr_nodes(T &in, std::ostream &os, Context &context){
 			auto child_context = in.get_rr_nodes_node(i, context);
 			os << "<node";
 			os << " capacity=\"" << in.get_node_capacity(child_context) << "\"";
-			if((bool)in.get_node_direction(child_context))
-				os << " direction=\"" << lookup_node_direction[(int)in.get_node_direction(child_context)] << "\"";
 			if((bool)in.get_node_clk_res_type(child_context))
 				os << " clk_res_type=\"" << lookup_node_clk_res_type[(int)in.get_node_clk_res_type(child_context)] << "\"";
-			if(in.get_node_name(child_context) != "")
-				os << " name=\"" << in.get_node_name(child_context) << "\"";
+			if((bool)in.get_node_direction(child_context))
+				os << " direction=\"" << lookup_node_direction[(int)in.get_node_direction(child_context)] << "\"";
 			os << " id=\"" << in.get_node_id(child_context) << "\"";
+			if((bool)in.get_node_name(child_context))
+				os << " name=\"" << in.get_node_name(child_context) << "\"";
 			os << " type=\"" << lookup_node_type[(int)in.get_node_type(child_context)] << "\"";
 			os << ">";
 			write_node(in, os, child_context);
