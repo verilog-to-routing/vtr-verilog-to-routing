@@ -250,7 +250,7 @@ namespace AST
 
 		// simplify() creates a simpler AST by unrolling for-loops, expanding generate blocks, etc.
 		// it also sets the id2ast pointers so that identifier lookups are fast in genRTLIL()
-		bool simplify(bool const_fold, bool at_zero, bool in_lvalue, int stage, int width_hint, bool sign_hint, bool in_param);
+		bool simplify(bool const_fold, bool in_lvalue, int stage, int width_hint, bool sign_hint, bool in_param);
 		void replace_result_wire_name_in_function(const std::string &from, const std::string &to);
 		AstNode *readmem(bool is_readmemh, std::string mem_filename, AstNode *memory, int start_addr, int finish_addr, bool unconditional_init);
 		void expand_genblock(const std::string &prefix);
@@ -335,6 +335,13 @@ namespace AST
 
 		// Helper for looking up identifiers which are prefixed with the current module name
 		std::string try_pop_module_prefix() const;
+
+		// helper to clone the node with some of its subexpressions replaced with zero (this is used
+		// to evaluate widths of dynamic ranges)
+		AstNode *clone_at_zero();
+
+		// helper to print errors from simplify/genrtlil code
+		[[noreturn]] void input_error(const char *format, ...) const YS_ATTRIBUTE(format(printf, 2, 3));
 	};
 
 	// process an AST tree (ast must point to an AST_DESIGN node) and generate RTLIL code
