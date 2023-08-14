@@ -58,7 +58,7 @@
         name="yosys"
         internal_path="yosys"
         external_url="https://github.com/YosysHQ/yosys.git"
-        default_external_ref="yosys-0.31"/>
+        default_external_ref="yosys-0.32"/>
     <subtree
         name="parmys"
         internal_path="parmys"
