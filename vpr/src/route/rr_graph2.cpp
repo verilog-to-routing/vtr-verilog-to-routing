@@ -93,6 +93,23 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         RRNodeId from_rr_node,
                                         t_rr_edge_info_set& rr_edges_to_create);
 
+static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
+                                   const int tile_x,
+                                   const int tile_y,
+                                   const int layer,
+                                   const e_side from_side,
+                                   const int from_wire,
+                                   RRNodeId from_rr_node,
+                                   const e_side to_side,
+                                   const int to_x,
+                                   const int to_y,
+                                   const t_rr_type to_chan_type,
+                                   const int switch_override,
+                                   t_sb_connection_map* sb_conn_map,
+                                   t_rr_edge_info_set& rr_edges_to_create,
+                                   int& edge_count);
+
+
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int layer,
                                  const int from_track,
@@ -1713,7 +1730,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
     int to_chan, to_sb;
     std::vector<int> conn_tracks;
     bool from_is_sblock, is_behind, Fs_clipped;
-    enum e_side from_side_a, from_side_b, to_side;
+    enum e_side from_side_a, from_side_b, from_side_c, from_side_d, to_side;
     bool custom_switch_block;
 
     /* check whether a custom switch block will be used */
@@ -1752,7 +1769,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
     //If source and destination segments both lie along the same channel
     //we clip the loop bounds to the switch blocks of interest and proceed
     //normally
-    if (to_type == from_type) {
+    if (to_type == from_type) { //TODO: SM: remove the comment (CHANX == CHANX OR CHANY == CHANY)
         start = to_seg - 1;
         end = to_seg;
     }
@@ -2010,6 +2027,62 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     return num_conn;
 }
 
+static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
+                                   const int tile_x,
+                                   const int tile_y,
+                                   const int layer,
+                                   const e_side from_side,
+                                   const int from_wire,
+                                   RRNodeId from_rr_node,
+                                   const e_side to_side,
+                                   const int to_x,
+                                   const int to_y,
+                                   const t_rr_type to_chan_type,
+                                   const int switch_override,
+                                   t_sb_connection_map* sb_conn_map,
+                                   t_rr_edge_info_set& rr_edges_to_create,
+                                   int& edge_count){
+
+    /* get coordinate to index into the SB map */
+    Switchblock_Lookup sb_coord(tile_x, tile_y, layer, from_side, to_side);
+    if (sb_conn_map->count(sb_coord) > 0) {
+        /* get reference to the connections vector which lists all destination wires for a given source wire
+         * at a specific coordinate sb_coord */
+        std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
+
+        /* go through the connections... */
+        for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
+            if (conn_vector.at(iconn).from_wire != from_wire) continue;
+
+            int to_wire = conn_vector.at(iconn).to_wire;
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_chan_type, to_wire);
+
+            if (!to_node) {
+                continue;
+            }
+
+            /* Get the index of the switch connecting the two wires */
+            int src_switch = conn_vector[iconn].switch_ind;
+
+            //Apply any switch overrides
+            if (should_apply_switch_override(switch_override)) {
+                src_switch = switch_override;
+            }
+
+            rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch, false);
+            ++edge_count;
+
+            auto& device_ctx = g_vpr_ctx.device();
+
+            if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
+                //Add reverse edge since bi-directional
+                rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
+                ++edge_count;
+            }
+        }
+    }
+}
+
 /* Figures out the edges that should connect the given wire segment to the given
  * channel segment, adds these edges to 'edge_list' and returns the number of
  * edges added .
@@ -2047,8 +2120,9 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    /* get coordinate to index into the SB map */
-    Switchblock_Lookup sb_coord(tile_x, tile_y, from_side, to_side);
+//    get_switchblocks_edges(rr_graph_builder,tile_x,tile_y,layer,from_side,from_wire,from_rr_node,to_side,to_x,to_y,to_chan_type,switch_override,sb_conn_map,rr_edges_to_create,edge_count);
+
+    Switchblock_Lookup sb_coord(tile_x, tile_y, layer, from_side, to_side);
     if (sb_conn_map->count(sb_coord) > 0) {
         /* get reference to the connections vector which lists all destination wires for a given source wire
          * at a specific coordinate sb_coord */
@@ -2084,9 +2158,50 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                 ++edge_count;
             }
         }
-    } else {
-        /* specified sb_conn_map entry does not exist -- do nothing */
     }
+
+    //check sb_conn_map for connections between two layers
+    for(e_side to_another_die_side : {ABOVE,UNDER}){
+        Switchblock_Lookup sb_coord_layer(tile_x, tile_y, layer, from_side, to_another_die_side);
+        if (sb_conn_map->count(sb_coord_layer) > 0) {
+            /* get reference to the connections vector which lists all destination wires for a given source wire
+             * at a specific coordinate sb_coord */
+            std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord_layer];
+
+            /* go through the connections... */
+            for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
+                if (conn_vector.at(iconn).from_wire != from_wire) continue;
+
+                int to_wire = conn_vector.at(iconn).to_wire;
+                int to_layer = conn_vector.at(iconn).to_wire_layer;
+                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
+
+                if (!to_node) {
+                    continue;
+                }
+
+                /* Get the index of the switch connecting the two wires */
+                int src_switch = conn_vector[iconn].switch_ind;
+
+                //Apply any switch overrides
+                if (should_apply_switch_override(switch_override)) {
+                    src_switch = switch_override;
+                }
+
+                rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch, false);
+                ++edge_count;
+
+                auto& device_ctx = g_vpr_ctx.device();
+
+                if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
+                    //Add reverse edge since bi-directional
+                    rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
+                    ++edge_count;
+                }
+            }
+        }
+    }
+
     return edge_count;
 }
 
