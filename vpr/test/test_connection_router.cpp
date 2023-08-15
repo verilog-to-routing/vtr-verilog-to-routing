@@ -1,6 +1,7 @@
 #include <tuple>
 #include "catch2/catch_test_macros.hpp"
 
+#include "rr_graph_fwd.h"
 #include "vpr_api.h"
 #include "vpr_signal_handler.h"
 #include "globals.h"
@@ -14,8 +15,8 @@ static constexpr int kMaxHops = 10;
 namespace {
 
 // Route from source_node to sink_node, returning either the delay, or infinity if unroutable.
-static float do_one_route(int source_node,
-                          int sink_node,
+static float do_one_route(RRNodeId source_node,
+                          RRNodeId sink_node,
                           const t_det_routing_arch& det_routing_arch,
                           const t_router_opts& router_opts,
                           const std::vector<t_segment_inf>& segment_inf) {
@@ -67,18 +68,19 @@ static float do_one_route(int source_node,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
-    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
-                                                                                           sink_node,
-                                                                                           cost_params,
-                                                                                           bounding_box,
-                                                                                           router_stats,
-                                                                                           conn_params);
+    std::tie(found_path, std::ignore, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
+                                                                                                        sink_node,
+                                                                                                        cost_params,
+                                                                                                        bounding_box,
+                                                                                                        router_stats,
+                                                                                                        conn_params,
+                                                                                                        true);
 
     // Default delay is infinity, which indicates that a route was not found.
     float delay = std::numeric_limits<float>::infinity();
     if (found_path) {
         // Check that the route goes to the requested sink.
-        REQUIRE(cheapest.index == sink_node);
+        REQUIRE(RRNodeId(cheapest.index) == sink_node);
 
         // Get the delay
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
@@ -92,12 +94,12 @@ static float do_one_route(int source_node,
 }
 
 // Find a source and a sink by walking edges.
-std::tuple<size_t, size_t, int> find_source_and_sink() {
+std::tuple<RRNodeId, RRNodeId, int> find_source_and_sink() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
     // Current longest walk
-    std::tuple<size_t, size_t, int> longest = std::make_tuple(0, 0, 0);
+    std::tuple<RRNodeId, RRNodeId, int> longest = std::make_tuple(RRNodeId::INVALID(), RRNodeId::INVALID(), 0);
 
     // Start from each RR node
     for (size_t id = 0; id < rr_graph.num_nodes(); id++) {
@@ -112,7 +114,7 @@ std::tuple<size_t, size_t, int> find_source_and_sink() {
 
             // If this is the new longest walk, store it.
             if (hops > std::get<2>(longest)) {
-                longest = std::make_tuple(size_t(source), size_t(sink), hops);
+                longest = std::make_tuple(source, sink, hops);
             }
         }
     }
@@ -164,7 +166,8 @@ TEST_CASE("connection_router", "[vpr]") {
         router_opts.flat_routing);
 
     // Find a source and sink to route
-    int source_rr_node, sink_rr_node, hops;
+    RRNodeId source_rr_node, sink_rr_node;
+    int hops;
     std::tie(source_rr_node, sink_rr_node, hops) = find_source_and_sink();
 
     // Check that the route will be non-trivial

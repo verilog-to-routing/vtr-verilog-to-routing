@@ -62,7 +62,7 @@
 #include "read_activity.h"
 #include "net_delay.h"
 #include "AnalysisDelayCalculator.h"
-#include "timing_info.h"
+#include "concrete_timing_info.h"
 #include "netlist_writer.h"
 #include "RoutingDelayCalculator.h"
 #include "check_route.h"
@@ -96,7 +96,7 @@
 #include "iostream"
 
 #ifdef VPR_USE_TBB
-#    define TBB_PREVIEW_GLOBAL_CONTROL 1
+#    define TBB_PREVIEW_GLOBAL_CONTROL 1 /* Needed for compatibility with old TBB versions */
 #    include <tbb/task_arena.h>
 #    include <tbb/global_control.h>
 #endif
@@ -899,17 +899,13 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
                               NetPinsMatrix<float>& net_delay,
                               bool is_flat) {
-    if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
-        // Prime lookahead cache to avoid adding lookahead computation cost to
-        // the routing timer.
-        get_cached_router_lookahead(
-            vpr_setup.RoutingArch,
-            vpr_setup.RouterOpts.lookahead_type,
-            vpr_setup.RouterOpts.write_router_lookahead,
-            vpr_setup.RouterOpts.read_router_lookahead,
-            vpr_setup.Segments,
-            is_flat);
-    }
+    get_cached_router_lookahead(
+        vpr_setup.RoutingArch,
+        vpr_setup.RouterOpts.lookahead_type,
+        vpr_setup.RouterOpts.write_router_lookahead,
+        vpr_setup.RouterOpts.read_router_lookahead,
+        vpr_setup.Segments,
+        is_flat);
 
     vtr::ScopedStartFinishTimer timer("Routing");
 

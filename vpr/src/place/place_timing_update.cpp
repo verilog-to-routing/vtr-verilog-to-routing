@@ -149,7 +149,7 @@ void update_timing_classes(const PlaceCritParams& crit_params,
  * by iterating over the set of clustered netlist connections/pins
  * returned by PlacerCriticalities::pins_with_modified_criticality().
  *
- * Hence, this routine should always be called when PlacerCriticalites
+ * Hence, this routine should always be called when PlacerCriticalities
  * is enabled to be updated in update_timing_classes(). Otherwise, the
  * incremental method will no longer be correct.
  */

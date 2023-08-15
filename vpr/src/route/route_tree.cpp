@@ -58,7 +58,7 @@ void RouteTreeNode::print_x(int depth) const {
     }
 
     auto& route_ctx = g_vpr_ctx.routing();
-    if (route_ctx.rr_node_route_inf[size_t(inode)].occ() > rr_graph.node_capacity(inode)) {
+    if (route_ctx.rr_node_route_inf[inode].occ() > rr_graph.node_capacity(inode)) {
         VTR_LOG(" x");
     }
 
@@ -72,6 +72,7 @@ void RouteTreeNode::print_x(int depth) const {
 /* Construct a top-level route tree. */
 RouteTree::RouteTree(RRNodeId _inode) {
     _root = new RouteTreeNode(_inode, RRSwitchId::INVALID(), nullptr);
+    _net_id = ParentNetId::INVALID();
     _rr_node_to_rt_node[_inode] = _root;
 }
 
@@ -79,6 +80,7 @@ RouteTree::RouteTree(ParentNetId _inet) {
     auto& route_ctx = g_vpr_ctx.routing();
     RRNodeId inode = RRNodeId(route_ctx.net_rr_terminals[_inet][0]);
     _root = new RouteTreeNode(inode, RRSwitchId::INVALID(), nullptr);
+    _net_id = _inet;
     _rr_node_to_rt_node[inode] = _root;
 }
 
@@ -104,6 +106,7 @@ void RouteTree::copy_tree_x(RouteTreeNode* lhs, const RouteTreeNode& rhs) {
 /* Copy constructor */
 RouteTree::RouteTree(const RouteTree& rhs) {
     _root = copy_tree(rhs._root);
+    _net_id = rhs._net_id;
 }
 
 /* Move constructor:
@@ -111,6 +114,7 @@ RouteTree::RouteTree(const RouteTree& rhs) {
  * Refs should stay valid after this? */
 RouteTree::RouteTree(RouteTree&& rhs) {
     _root = rhs._root;
+    _net_id = rhs._net_id;
     rhs._root = nullptr;
     _rr_node_to_rt_node = std::move(rhs._rr_node_to_rt_node);
 }
@@ -122,6 +126,7 @@ RouteTree& RouteTree::operator=(const RouteTree& rhs) {
     free_list(_root);
     _rr_node_to_rt_node.clear();
     _root = copy_tree(rhs._root);
+    _net_id = rhs._net_id;
     return *this;
 }
 
@@ -134,6 +139,7 @@ RouteTree& RouteTree::operator=(RouteTree&& rhs) {
         return *this;
     free_list(_root);
     _root = rhs._root;
+    _net_id = rhs._net_id;
     rhs._root = nullptr;
     _rr_node_to_rt_node = std::move(rhs._rr_node_to_rt_node);
     return *this;
@@ -356,7 +362,7 @@ bool RouteTree::is_valid_x(const RouteTreeNode& rt_node) const {
     }
 
     if (rr_graph.node_type(inode) == SINK) { // sink, must not be congested and must not have fanouts
-        int occ = route_ctx.rr_node_route_inf[size_t(inode)].occ();
+        int occ = route_ctx.rr_node_route_inf[inode].occ();
         int capacity = rr_graph.node_capacity(inode);
         if (rt_node._next != nullptr && rt_node._next->_parent == &rt_node) {
             VTR_LOG("SINK %d has fanouts?\n", inode);
@@ -414,7 +420,7 @@ bool RouteTree::is_uncongested_x(const RouteTreeNode& rt_node) const {
     const auto& rr_graph = device_ctx.rr_graph;
 
     RRNodeId inode = rt_node.inode;
-    if (route_ctx.rr_node_route_inf[size_t(inode)].occ() > rr_graph.node_capacity(RRNodeId(inode))) {
+    if (route_ctx.rr_node_route_inf[inode].occ() > rr_graph.node_capacity(RRNodeId(inode))) {
         //This node is congested
         return false;
     }
@@ -504,8 +510,8 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
     while (!_rr_node_to_rt_node.count(new_inode)) {
         new_branch_inodes.push_back(new_inode);
         new_branch_iswitches.push_back(new_iswitch);
-        edge = route_ctx.rr_node_route_inf[size_t(new_inode)].prev_edge;
-        new_inode = RRNodeId(route_ctx.rr_node_route_inf[size_t(new_inode)].prev_node);
+        edge = route_ctx.rr_node_route_inf[new_inode].prev_edge;
+        new_inode = RRNodeId(route_ctx.rr_node_route_inf[new_inode].prev_node);
         new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
     }
     new_branch_iswitches.push_back(new_iswitch);
@@ -608,7 +614,9 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
 
     VTR_ASSERT_MSG(rr_graph.node_type(root().inode) == SOURCE, "Root of route tree must be SOURCE");
 
-    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[size_t(root().inode)].occ() <= rr_graph.node_capacity(root().inode),
+    VTR_ASSERT_MSG(_net_id, "RouteTree must be constructed using a ParentNetId");
+
+    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[root().inode].occ() <= rr_graph.node_capacity(root().inode),
                    "Route tree root/SOURCE should never be congested");
 
     auto pruned_node = prune_x(*_root, connections_inf, false, non_config_node_set_usage);
@@ -626,10 +634,10 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
-    bool congested = (route_ctx.rr_node_route_inf[size_t(rt_node.inode)].occ() > rr_graph.node_capacity(rt_node.inode));
+    bool congested = (route_ctx.rr_node_route_inf[rt_node.inode].occ() > rr_graph.node_capacity(rt_node.inode));
 
     int node_set = -1;
-    auto itr = device_ctx.rr_node_to_non_config_node_set.find(size_t(rt_node.inode));
+    auto itr = device_ctx.rr_node_to_non_config_node_set.find(rt_node.inode);
     if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
         node_set = itr->second;
     }
@@ -639,7 +647,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
         force_prune = true;
     }
 
-    if (connections_inf.should_force_reroute_connection(size_t(rt_node.inode))) {
+    if (connections_inf.should_force_reroute_connection(_net_id, rt_node.inode)) {
         //Forcibly re-route (e.g. to improve delay)
         force_prune = true;
     }
@@ -668,12 +676,12 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
             //Valid path to sink
 
             //Record sink as reachable
-            connections_inf.reached_rt_sink(rt_node.inode);
+            connections_inf.reached_rt_sink(_net_id, rt_node.inode);
 
             return rt_node; // Not pruned
         } else {
             //Record as not reached
-            connections_inf.toreach_rr_sink(rt_node.net_pin_index);
+            connections_inf.toreach_rr_sink(_net_id, rt_node.net_pin_index);
 
             return vtr::nullopt; // Pruned
         }
@@ -822,7 +830,7 @@ std::vector<int> RouteTree::get_non_config_node_set_usage(void) const {
     const auto& rr_to_nonconf = device_ctx.rr_node_to_non_config_node_set;
 
     for (auto& rt_node : all_nodes()) {
-        auto it = rr_to_nonconf.find(size_t(rt_node.inode));
+        auto it = rr_to_nonconf.find(rt_node.inode);
         if (it == rr_to_nonconf.end())
             continue;
 

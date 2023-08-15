@@ -573,14 +573,14 @@ void init_draw_coords(float width_val) {
     if (!draw_state->show_graphics && !draw_state->save_graphics
         && draw_state->graphics_commands.empty())
         return; //do not initialize only if --disp off and --save_graphics off
+
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
     if (rr_graph.num_nodes() != 0) {
         draw_state->draw_rr_node.resize(rr_graph.num_nodes());
-        /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
-        for (const RRNodeId& rr_id : rr_graph.nodes()) {
-            draw_state->draw_rr_node[(size_t)rr_id].color = DEFAULT_RR_NODE_COLOR;
-            draw_state->draw_rr_node[(size_t)rr_id].node_highlighted = false;
+        for (RRNodeId inode : rr_graph.nodes()) {
+            draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+            draw_state->draw_rr_node[inode].node_highlighted = false;
         }
     }
     draw_coords->tile_width = width_val;
@@ -795,9 +795,9 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-        int hit_node = draw_check_rr_node_hit(x, y);
+        RRNodeId hit_node = draw_check_rr_node_hit(x, y);
 
-        if (hit_node != OPEN) {
+        if (hit_node) {
             //Update message
 
             const auto& device_ctx = g_vpr_ctx.device();
@@ -842,20 +842,20 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 }
 
 //Returns the set of rr nodes which connect driver to sink
-std::vector<int> trace_routed_connection_rr_nodes(
-    const ClusterNetId net_id,
-    const int driver_pin,
-    const int sink_pin) {
+std::vector<RRNodeId> trace_routed_connection_rr_nodes(
+    ClusterNetId net_id,
+    int driver_pin,
+    int sink_pin) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
 
-    VTR_ASSERT(tree.root().inode == RRNodeId(route_ctx.net_rr_terminals[net_id][driver_pin]));
+    VTR_ASSERT(tree.root().inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
 
-    int sink_rr_node = route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][sink_pin];
+    RRNodeId sink_rr_node = route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][sink_pin];
 
-    std::vector<int> rr_nodes_on_path;
+    std::vector<RRNodeId> rr_nodes_on_path;
 
     //Collect the rr nodes
     trace_routed_connection_rr_nodes_recurr(tree.root(),
@@ -872,8 +872,8 @@ std::vector<int> trace_routed_connection_rr_nodes(
 //Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path
 //Returns true if rt_node is on the path
 bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
-                                             int sink_rr_node,
-                                             std::vector<int>& rr_nodes_on_path) {
+                                             RRNodeId sink_rr_node,
+                                             std::vector<RRNodeId>& rr_nodes_on_path) {
     //DFS from the current rt_node to the sink_rr_node, when the sink is found trace back the used rr nodes
 
     if (rt_node.inode == RRNodeId(sink_rr_node)) {
@@ -885,7 +885,7 @@ bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
         bool on_path_to_sink = trace_routed_connection_rr_nodes_recurr(
             child_rt_node, sink_rr_node, rr_nodes_on_path);
         if (on_path_to_sink) {
-            rr_nodes_on_path.push_back(size_t(rt_node.inode));
+            rr_nodes_on_path.push_back(rt_node.inode);
             return true;
         }
     }
@@ -894,12 +894,12 @@ bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
 }
 
 //Find the edge between two rr nodes
-t_edge_size find_edge(int prev_inode, int inode) {
+t_edge_size find_edge(RRNodeId prev_inode, RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     for (t_edge_size iedge = 0;
-         iedge < rr_graph.num_edges(RRNodeId(prev_inode)); ++iedge) {
-        if (size_t(rr_graph.edge_sink_node(RRNodeId(prev_inode), iedge)) == size_t(inode)) {
+         iedge < rr_graph.num_edges(prev_inode); ++iedge) {
+        if (rr_graph.edge_sink_node(prev_inode, iedge) == inode) {
             return iedge;
         }
     }
@@ -940,19 +940,19 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.routing();
 
-    std::vector<float> rr_costs(device_ctx.rr_graph.num_nodes());
+    vtr::vector<RRNodeId, float> rr_costs(device_ctx.rr_graph.num_nodes());
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
         float cost = get_router_expansion_cost(
-            routing_ctx.rr_node_route_inf[(size_t)rr_id],
+            routing_ctx.rr_node_route_inf[inode],
             draw_state->show_router_expansion_cost);
-        rr_costs[(size_t)rr_id] = cost;
+        rr_costs[inode] = cost;
     }
 
     bool all_nan = true;
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        if (std::isinf(rr_costs[(size_t)rr_id])) {
-            rr_costs[(size_t)rr_id] = NAN;
+    for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
+        if (std::isinf(rr_costs[inode])) {
+            rr_costs[inode] = NAN;
         } else {
             all_nan = false;
         }

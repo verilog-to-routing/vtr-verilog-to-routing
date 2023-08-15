@@ -9,7 +9,7 @@
 std::string describe_rr_node(const RRGraphView& rr_graph,
                              const DeviceGrid& grid,
                              const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                             int inode,
+                             RRNodeId inode,
                              bool is_flat);
 
 #endif

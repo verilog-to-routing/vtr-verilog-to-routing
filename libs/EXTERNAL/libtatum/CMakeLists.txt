@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project("tatum")
 
-# Parallel tatum gives non-deterministic results. Use serial by default until resolved
-set(TATUM_EXECUTION_ENGINE "serial" CACHE STRING "Specify the framework for (potential) parallel execution")
+set(TATUM_EXECUTION_ENGINE "auto" CACHE STRING "Specify the framework for (potential) parallel execution")
 set_property(CACHE TATUM_EXECUTION_ENGINE PROPERTY STRINGS auto serial tbb)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")

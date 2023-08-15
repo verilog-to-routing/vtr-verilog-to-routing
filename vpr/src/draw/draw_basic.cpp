@@ -300,10 +300,10 @@ void draw_congestion(ezgl::renderer* g) {
     //Record min/max congestion
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
-    std::vector<int> congested_rr_nodes = collect_congested_rr_nodes();
-    for (int inode : congested_rr_nodes) {
+    auto congested_rr_nodes = collect_congested_rr_nodes();
+    for (RRNodeId inode : congested_rr_nodes) {
         short occ = route_ctx.rr_node_route_inf[inode].occ();
-        short capacity = rr_graph.node_capacity(RRNodeId(inode));
+        short capacity = rr_graph.node_capacity(inode);
 
         float congestion_ratio = float(occ) / capacity;
 
@@ -323,12 +323,12 @@ void draw_congestion(ezgl::renderer* g) {
 
     //Sort the nodes in ascending order of value for drawing, this ensures high
     //valued nodes are not overdrawn by lower value ones (e.g-> when zoomed-out far)
-    auto cmp_ascending_acc_cost = [&](int lhs_node, int rhs_node) {
+    auto cmp_ascending_acc_cost = [&](RRNodeId lhs_node, RRNodeId rhs_node) {
         short lhs_occ = route_ctx.rr_node_route_inf[lhs_node].occ();
-        short lhs_capacity = rr_graph.node_capacity(RRNodeId(lhs_node));
+        short lhs_capacity = rr_graph.node_capacity(lhs_node);
 
         short rhs_occ = route_ctx.rr_node_route_inf[rhs_node].occ();
-        short rhs_capacity = rr_graph.node_capacity(RRNodeId(rhs_node));
+        short rhs_capacity = rr_graph.node_capacity(rhs_node);
 
         float lhs_cong_ratio = float(lhs_occ) / lhs_capacity;
         float rhs_cong_ratio = float(rhs_occ) / rhs_capacity;
@@ -340,7 +340,7 @@ void draw_congestion(ezgl::renderer* g) {
     if (draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS) {
         auto rr_node_nets = collect_rr_node_nets();
 
-        for (int inode : congested_rr_nodes) {
+        for (RRNodeId inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
                 ezgl::color color = kelly_max_contrast_colors[size_t(net) % kelly_max_contrast_colors.size()];
                 draw_state->net_color[net] = color;
@@ -350,7 +350,7 @@ void draw_congestion(ezgl::renderer* g) {
         drawroute(HIGHLIGHTED, g);
 
         //Reset colors
-        for (int inode : congested_rr_nodes) {
+        for (RRNodeId inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
                 draw_state->net_color[net] = DEFAULT_RR_NODE_COLOR;
             }
@@ -360,6 +360,7 @@ void draw_congestion(ezgl::renderer* g) {
     }
 
     //Draw each congested node
+    for (RRNodeId inode : congested_rr_nodes) {
     for (int inode : congested_rr_nodes) {
         auto rr_node = RRNodeId(inode);
         int layer_num = rr_graph.node_layer(rr_node);
@@ -367,7 +368,7 @@ void draw_congestion(ezgl::renderer* g) {
         if (!draw_state->draw_layer_display[layer_num].visible)
             continue;
         short occ = route_ctx.rr_node_route_inf[inode].occ();
-        short capacity = rr_graph.node_capacity(RRNodeId(inode));
+        short capacity = rr_graph.node_capacity(inode);
 
         float congestion_ratio = float(occ) / capacity;
 
@@ -377,7 +378,7 @@ void draw_congestion(ezgl::renderer* g) {
         ezgl::color color = to_ezgl_color(cmap->color(congestion_ratio));
         color.alpha = transparency_factor;
 
-        switch (rr_graph.node_type(RRNodeId(inode))) {
+        switch (rr_graph.node_type(inode)) {
             case CHANX: //fallthrough
             case CHANY:
                 draw_rr_chan(inode, color, g);
@@ -415,30 +416,30 @@ void draw_routing_costs(ezgl::renderer* g) {
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    std::vector<float> rr_node_costs(device_ctx.rr_graph.num_nodes(), 0.);
+    vtr::vector<RRNodeId, float> rr_node_costs(0.);
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs
                    == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            cost = get_single_rr_cong_cost((size_t)rr_id,
+            cost = get_single_rr_cong_cost(inode,
                                            get_draw_state_vars()->pres_fac);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
-            cost = get_single_rr_cong_base_cost((size_t)rr_id);
+            cost = get_single_rr_cong_base_cost(inode);
 
         } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS
                    || draw_state->show_routing_costs
                           == DRAW_LOG_ACC_ROUTING_COSTS) {
-            cost = get_single_rr_cong_acc_cost((size_t)rr_id);
+            cost = get_single_rr_cong_acc_cost(inode);
 
         } else {
             VTR_ASSERT(
                 draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
                 || draw_state->show_routing_costs
                        == DRAW_LOG_PRES_ROUTING_COSTS);
-            cost = get_single_rr_cong_pres_cost((size_t)rr_id,
+            cost = get_single_rr_cong_pres_cost(inode,
                                                 get_draw_state_vars()->pres_fac);
         }
 
@@ -448,17 +449,18 @@ void draw_routing_costs(ezgl::renderer* g) {
                    == DRAW_LOG_PRES_ROUTING_COSTS) {
             cost = std::log(cost);
         }
-        rr_node_costs[(size_t)rr_id] = cost;
+        rr_node_costs[inode] = cost;
         min_cost = std::min(min_cost, cost);
         max_cost = std::max(max_cost, cost);
     }
 
     //Hide min value, draw_rr_costs() ignores NaN's
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        if (rr_node_costs[(size_t)rr_id] == min_cost) {
-            rr_node_costs[(size_t)rr_id] = NAN;
+    for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
+        if (rr_node_costs[inode] == min_cost) {
+            rr_node_costs[inode] = NAN;
         }
     }
+
     char msg[vtr::bufsize];
     if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS) {
         sprintf(msg, "Total Congestion Cost Range [%g, %g]", min_cost,
@@ -594,9 +596,9 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
     if (!route_ctx.route_trees[net_id]) // No routing -> Skip. (Allows me to draw partially complete routes)
         return;
 
-    std::vector<int> rr_nodes_to_draw;
+    std::vector<RRNodeId> rr_nodes_to_draw;
     for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
-        int inode = size_t(rt_node.inode);
+        RRNodeId inode = rt_node.inode;
 
         if (draw_if_net_highlighted(convert_to_cluster_net_id(net_id))) {
             /* If a net has been highlighted, highlight the whole net in *
@@ -621,7 +623,7 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
 }
 
 //Draws the set of rr_nodes specified, using the colors set in draw_state
-void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer* g) {
+void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -650,12 +652,12 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
     }
 
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
-        int inode = rr_nodes_to_draw[i];
-        RRNodeId rr_node = RRNodeId(inode);
-        auto rr_type = rr_graph.node_type(rr_node);
+        RRNodeId inode = rr_nodes_to_draw[i];
+        auto rr_type = rr_graph.node_type(inode);
 
+        RRNodeId prev_node = rr_nodes_to_draw[i - 1];
         int prev_node = rr_nodes_to_draw[i - 1];
-        RRNodeId prev_rr_node = RRNodeId(prev_node);
+        RRNodeId prev_rr_node = prev_node;
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
         auto iedge = find_edge(prev_node, inode);
@@ -674,31 +676,27 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
             case IPIN: {
                 draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
                 if(is_edge_valid_to_draw(rr_node,prev_rr_node)) {
-                    if (rr_graph.node_type(prev_rr_node) == OPIN) {
-                        draw_pin_to_pin(prev_node, inode, g);
-                    } else {
-                        draw_pin_to_chan_edge(inode, prev_node, g);
-                    }
+                        if (rr_graph.node_type(prev_node) == OPIN) {
+                            draw_pin_to_pin(prev_node, inode, g);
+                        } else {
+                            draw_pin_to_chan_edge(inode, prev_node, g);
+                        }
                 }
                 break;
             }
             case CHANX: {
                 if (draw_state->draw_route_type == GLOBAL)
-                    chanx_track[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)]++;
+                    chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
-
                 if(is_edge_valid_to_draw(rr_node,prev_rr_node)) {
                     switch (prev_type) {
                             case CHANX: {
-                                draw_chanx_to_chanx_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                         switch_type, g);
+                                draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
                                 break;
                             }
                             case CHANY: {
-                                draw_chanx_to_chany_edge(inode, prev_node,
-
-                                                         FROM_Y_TO_X, switch_type, g);
+                                draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
                                 break;
                             }
                             case OPIN: {
@@ -717,7 +715,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
             }
             case CHANY: {
                 if (draw_state->draw_route_type == GLOBAL)
-                    chany_track[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)]++;
+                    chany_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
 
@@ -745,7 +743,8 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
                             }
                     }
                 }
-                    break;
+
+                break;
             }
             default: {
                 break;
@@ -1250,17 +1249,16 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
 
             t_draw_state* draw_state = get_draw_state_vars();
 
-            std::vector<int> routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
+            std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
 
             //Mark all the nodes highlighted
 
-            for (int inode : routed_rr_nodes) {
+            for (RRNodeId inode : routed_rr_nodes) {
                 draw_state->draw_rr_node[inode].color = color;
             }
 
             //draw_partial_route() takes care of layer visibility and cross-layer settings
-            draw_partial_route((std::vector<int>)routed_rr_nodes,
-                               (ezgl::renderer*)g);
+            draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
         } else {
             //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
             VTR_ASSERT(clb_src_block == clb_sink_block);
