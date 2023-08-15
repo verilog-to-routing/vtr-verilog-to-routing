@@ -94,7 +94,7 @@ class RRGraphView {
     }
 
     /** @brief Get the name assigned to a node id. */
-    std::string node_name(RRNodeId node) const {
+    std::optional<const std::string*> node_name(RRNodeId node) const {
         return node_storage_.node_name(node);
     }
 

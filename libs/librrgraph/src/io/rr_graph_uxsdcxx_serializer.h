@@ -923,9 +923,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline const char* get_node_name(const t_rr_node& node) final {
-        std::cout << "in get node name" << std::endl;
         const auto& rr_graph = (*rr_graph_);
-        return rr_graph.node_name(node.id()).c_str();
+        auto node_name = rr_graph.node_name(node.id());
+        if(node_name)
+            return node_name.value()->c_str();
+        return nullptr;
     }
 
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {

@@ -16,6 +16,7 @@
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
 #include<iostream>
+#include <optional>
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -236,13 +237,12 @@ class t_rr_graph_storage {
         return node_layer_[id];
     }
     /* Retrieve the name assigned to the node id. If no name is assigned, empty string is returned */
-    std::string node_name(RRNodeId id) const{
+    std::optional<const std::string*> node_name(RRNodeId id) const{
         auto it = node_name_.find(id);
         if (it != node_name_.end()) {
-            std::cout << it->second << std::endl;
-            return it->second;  // Return the value if key is found
+            return &it->second;  // Return the value if key is found
         }
-        return "";  // Return an empty string if key is not found
+        return std::nullopt;  // Return an empty string if key is not found
     }
 
     // This prefetechs hot RR node data required for optimization.
@@ -904,15 +904,12 @@ class t_rr_graph_view {
     }
 
     /* Retrieve the name assigned to the node id. If no name is assigned, empty string is returned */
-    std::string node_name(RRNodeId id) const{
-        std::cout <<"in here befire seg" << std::endl;
+    std::optional<const std::string*> node_name(RRNodeId id) const{
         auto it = node_name_.find(id);
         if (it != node_name_.end()) {
-            std::cout <<it->second << std::endl;
-
-            return it->second;  // Return the value if key is found
+            return &it->second;  // Return the value if key is found
         }
-        return "";  // Return an empty string if key is not found
+        return std::nullopt;  // Return an empty string if key is not found
     }
 
 

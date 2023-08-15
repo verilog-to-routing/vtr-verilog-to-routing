@@ -3842,13 +3842,9 @@ inline void load_rr_graph(const pugi::xml_node &root, T &out, Context &context, 
 			break;
 		case gtok_t_rr_graph::RR_NODES:
 			{
-				std::cerr << "hereeeeeee" << std::endl;
-				std::cout << "heredfkdsafjlkeeeeee" << std::endl;
 				auto child_context = out.init_rr_graph_rr_nodes(context);
 				load_rr_nodes(node, out, child_context, report_error, offset_debug);
-				// out.finish_rr_graph_rr_nodes(child_context);
-				auto node_got = out.get_rr_nodes_node(1368, context);
-				std::cout << out.get_node_name(node_got) << std::endl;
+				out.finish_rr_graph_rr_nodes(child_context);
 			}
 			break;
 		case gtok_t_rr_graph::RR_EDGES:

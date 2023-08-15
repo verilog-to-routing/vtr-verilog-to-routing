@@ -710,10 +710,6 @@ void t_rr_graph_storage::set_node_type(RRNodeId id, t_rr_type new_type) {
 
 void t_rr_graph_storage::set_node_name(RRNodeId id, std::string new_name) {
     node_name_.insert(std::make_pair(id, new_name));
-    auto it = node_name_.find(id);
-        if (it != node_name_.end()) {
-            std::cout << it->second << std::endl;  // Return the value if key is found
-        }
 }
 void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
     auto& node = node_storage_[id];
@@ -772,12 +768,16 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
 }
 
 void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
-    std::string clock_network_name_str = node_name(virtual_clock_network_root_idx);
-    if(clock_network_name_str == "")
+   auto clock_network_name_str = node_name(virtual_clock_network_root_idx);
+    if(clock_network_name_str)
+    {
+        virtual_clock_network_root_idx_.insert(std::make_pair(*(clock_network_name_str.value()), virtual_clock_network_root_idx));
+    }
+    else
     {
         throw vtr::VtrError(vtr::string_fmt("Attribute name is not specified for virtual sink node '%u'\n", size_t(virtual_clock_network_root_idx)), __FILE__, __LINE__);
     }
-    virtual_clock_network_root_idx_.insert(std::make_pair(clock_network_name_str, virtual_clock_network_root_idx));
+
 }
 
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
