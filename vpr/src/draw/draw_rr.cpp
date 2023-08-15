@@ -829,6 +829,11 @@ void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool l
 
         int transparency_factor = get_rr_node_transparency(rr_node);
 
+        // continue if rr_node layer is not visible
+        int layer_num = rr_graph.node_layer(rr_node);
+        if (!draw_state->draw_layer_display[layer_num].visible)
+            continue;
+
         ezgl::color color = to_ezgl_color(cmap->color(cost));
         color.alpha = transparency_factor;
 
