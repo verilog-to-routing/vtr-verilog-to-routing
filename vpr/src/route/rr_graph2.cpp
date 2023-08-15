@@ -109,7 +109,6 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    int& edge_count);
 
-
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int layer,
                                  const int from_track,
@@ -2041,8 +2040,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int switch_override,
                                    t_sb_connection_map* sb_conn_map,
                                    t_rr_edge_info_set& rr_edges_to_create,
-                                   int& edge_count){
-
+                                   int& edge_count) {
     /* get coordinate to index into the SB map */
     Switchblock_Lookup sb_coord(tile_x, tile_y, layer, from_side, to_side);
     if (sb_conn_map->count(sb_coord) > 0) {
@@ -2139,7 +2137,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                            edge_count);
 
     //check sb_conn_map for connections between two layers
-    for(e_side to_another_die_side : {ABOVE,UNDER}){
+    for (e_side to_another_die_side : {ABOVE, UNDER}) {
         get_switchblocks_edges(rr_graph_builder,
                                tile_x,
                                tile_y,
