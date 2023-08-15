@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: 8672cb3951993f7e0ea3433a02507672
+# Cmdline: /home/kimia/uxsdcxx/uxsdcap.py /home/kimia/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/kimia/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: c839d46b92f4a4b5a20e187a784916a1
 
-@0xe9a519eb0e454dd4;
+@0x82957f977c3d0e11;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -17,6 +17,12 @@ enum SwitchType {
 	passGate @3;
 	short @4;
 	buffer @5;
+}
+
+enum SegmentResType {
+	uxsdInvalid @0;
+	general @1;
+	gclk @2;
 }
 
 enum PinType {
@@ -41,6 +47,11 @@ enum NodeDirection {
 	incDir @1;
 	decDir @2;
 	biDir @3;
+}
+
+enum NodeClkResType {
+	uxsdInvalid @0;
+	virtualSink @1;
 }
 
 enum LocSide {
@@ -119,7 +130,8 @@ struct SegmentTiming {
 struct Segment {
 	id @0 :Int32;
 	name @1 :Text;
-	timing @2 :SegmentTiming;
+	resType @2 :SegmentResType;
+	timing @3 :SegmentTiming;
 }
 
 struct Segments {
@@ -151,10 +163,10 @@ struct BlockTypes {
 struct GridLoc {
 	blockTypeId @0 :Int32;
 	heightOffset @1 :Int32;
-	widthOffset @2 :Int32;
-	x @3 :Int32;
-	y @4 :Int32;
-	layer @5 : Int32;
+	layer @2 :Int32;
+	widthOffset @3 :Int32;
+	x @4 :Int32;
+	y @5 :Int32;
 }
 
 struct GridLocs {
@@ -191,13 +203,15 @@ struct Metadata {
 
 struct Node {
 	capacity @0 :UInt32;
-	direction @1 :NodeDirection;
-	id @2 :UInt32;
-	type @3 :NodeType;
-	loc @4 :NodeLoc;
-	timing @5 :NodeTiming;
-	segment @6 :NodeSegment;
-	metadata @7 :Metadata;
+	clkResType @1 :NodeClkResType;
+	direction @2 :NodeDirection;
+	id @3 :UInt32;
+	name @4 :Text;
+	type @5 :NodeType;
+	loc @6 :NodeLoc;
+	timing @7 :NodeTiming;
+	segment @8 :NodeSegment;
+	metadata @9 :Metadata;
 }
 
 struct RrNodes {
