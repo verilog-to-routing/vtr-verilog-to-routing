@@ -955,14 +955,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline void set_node_name(const char * name, int& inode) final {
-        if(name[0] == '\0')
+        if(name[0] != '\0')
         {
-            report_error("Attribute name cannot be assigned an empty string");
+            // Do not store the attribute name if the string is empty
+            auto node = (*rr_nodes_)[inode];
+            RRNodeId node_id = node.id();
+            std::string name_str(name);
+            rr_graph_builder_->set_node_name(node_id, name_str);
         }
-        auto node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
-        std::string name_str(name);
-        rr_graph_builder_->set_node_name(node_id, name_str);
+
     }
     // Currently, this function only processes cases where clk_res_type=VIRTUAL_SINK
     // It temporarily stores the node ID of the virtual sink in a temporary set. Eventually, 
