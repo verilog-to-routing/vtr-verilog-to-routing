@@ -395,7 +395,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                             g->set_color(color, transparency_factor);
                         } else if (rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)) {
                             ezgl::color color = draw_state->draw_rr_node[inode].color;
-                            g->set_color(color,transparency_factor);
+                            g->set_color(color, transparency_factor);
                         } else if (!edge_configurable) {
                             ezgl::color color = blk_DARKGREY;
                             g->set_color(color, transparency_factor);
@@ -780,7 +780,6 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-
     g->set_line_width(0);
 
     bool with_edges = (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES
@@ -923,7 +922,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
     *ycen = yc;
 }
 
-int get_rr_node_transparency(RRNodeId rr_node)  {
+int get_rr_node_transparency(RRNodeId rr_node) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;

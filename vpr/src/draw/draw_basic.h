@@ -73,7 +73,6 @@ void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,
                         ezgl::renderer* g);
 
-
 /**
  * @brief Returns the layer number of a timing path node
  * @param node

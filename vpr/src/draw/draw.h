@@ -155,7 +155,6 @@ bool rgb_is_same(ezgl::color color1, ezgl::color color2);
  */
 t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer);
 
-
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */

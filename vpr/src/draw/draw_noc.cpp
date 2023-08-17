@@ -199,12 +199,12 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
         router_grid_position_layer = router->get_router_layer_position();
 
         t_draw_layer_display marker_box_visibility = draw_state->draw_layer_display[router_grid_position_layer];
-        if(!marker_box_visibility.visible){
+        if (!marker_box_visibility.visible) {
             continue; /* Don't Draw marker box if not on visible layer*/
         }
 
         //set the color of the marker with the layer transparency
-        g->set_color(ezgl::BLACK,marker_box_visibility.alpha);
+        g->set_color(ezgl::BLACK, marker_box_visibility.alpha);
 
         router_grid_position_x = router->get_router_grid_position_x();
         router_grid_position_y = router->get_router_grid_position_y();
@@ -278,9 +278,9 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
         sink_router_layer_position = router_list[sink_router].get_router_layer_position();
 
         //Get visibility settings of the current NoC link based on the layer visibility settings set by the user
-        t_draw_layer_display noc_link_visibility = get_element_visibility_and_transparency(source_router_layer_position,sink_router_layer_position);
+        t_draw_layer_display noc_link_visibility = get_element_visibility_and_transparency(source_router_layer_position, sink_router_layer_position);
 
-        if(!noc_link_visibility.visible){
+        if (!noc_link_visibility.visible) {
             continue; /* Don't Draw link */
         }
 
@@ -302,7 +302,7 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
         shift_noc_link(link_coords, list_of_noc_link_shift_directions[link_id], link_type, noc_connection_marker_quarter_width, noc_connection_marker_quarter_height);
 
         // set the color to draw the current link
-        g->set_color(noc_link_colors[link_id],noc_link_visibility.alpha);
+        g->set_color(noc_link_colors[link_id], noc_link_visibility.alpha);
 
         //draw a line between the center of the two routers this link connects
         g->draw_line(link_coords.start, link_coords.end);

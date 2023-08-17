@@ -995,7 +995,6 @@ static void highlight_blocks(double x, double y) {
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
-
     //iterate over grid z (layers) first, so we draw from bottom to top die. This makes partial transparency of layers draw properly.
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         // iterate over grid x
@@ -1444,8 +1443,7 @@ bool rgb_is_same(ezgl::color color1, ezgl::color color2) {
     color2.alpha = 255;
     return (color1 == color2);
 }
-t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer){
-
+t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer) {
     t_draw_layer_display element_visibility;
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -1453,15 +1451,14 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
     bool cross_layer_enabled = draw_state->cross_layer_display.visible;
 
     //To only show primitive nets that are connected to currently active layers on the screen
-    if(!draw_state->draw_layer_display[sink_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)){
+    if (!draw_state->draw_layer_display[sink_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
         element_visibility.visible = false; /* Don't Draw */
     }
 
-    if(src_layer != sink_layer){
+    if (src_layer != sink_layer) {
         //assign transparency from cross layer option if connection is between different layers
         element_visibility.alpha = draw_state->cross_layer_display.alpha;
-    }
-    else{
+    } else {
         //otherwise assign transparency of current layer
         element_visibility.alpha = draw_state->draw_layer_display[src_layer].alpha;
     }

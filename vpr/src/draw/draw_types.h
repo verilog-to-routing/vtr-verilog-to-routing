@@ -147,7 +147,7 @@ typedef struct {
  * @brief Structure used to store visibility and transparency state information for a specific layer (die) in the FPGA.
  *        This structure is also used to store the state information of the cross-layer connections option in the UI.
  */
-struct t_draw_layer_display{
+struct t_draw_layer_display {
     ///@brief Whether the current layer should be visible.
     bool visible = false;
 

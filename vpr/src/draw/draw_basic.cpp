@@ -258,25 +258,25 @@ void drawnets(ezgl::renderer* g) {
             continue; /* Don't draw */
         }
 
-        ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1,cluster_ctx.clb_nlist.block_type(b1)).center();
+        ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
 
             //the layer of the pin block (net sinks)
             sink_block_layer_num = place_ctx.block_locs[b2].loc.layer;
 
-            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(driver_block_layer_num,sink_block_layer_num);
+            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(driver_block_layer_num, sink_block_layer_num);
 
-            if(!element_visibility.visible){
+            if (!element_visibility.visible) {
                 continue; /* Don't Draw */
             }
             transparency_factor = element_visibility.alpha;
 
             //Take the higher of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
-            g->set_color(draw_state->net_color[net_id],fmin(transparency_factor,draw_state->net_color[net_id].alpha * NET_ALPHA));
+            g->set_color(draw_state->net_color[net_id], fmin(transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA));
 
-            ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2,cluster_ctx.clb_nlist.block_type(b2)).center();
+            ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
             g->draw_line(driver_center, sink_center);
             /* Uncomment to draw a chain instead of a star. */
             /* driver_center = sink_center;  */
@@ -660,7 +660,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
 
         //Don't draw node if the layer of the node is not set to visible on screen
-        if(!draw_state->draw_layer_display[rr_graph.node_layer(inode)].visible){
+        if (!draw_state->draw_layer_display[rr_graph.node_layer(inode)].visible) {
             continue;
         }
 
@@ -671,12 +671,12 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             }
             case IPIN: {
                 draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
-                if(is_edge_valid_to_draw(inode,prev_rr_node)) {
-                        if (rr_graph.node_type(prev_node) == OPIN) {
-                            draw_pin_to_pin(prev_node, inode, g);
-                        } else {
-                            draw_pin_to_chan_edge(inode, prev_node, g);
-                        }
+                if (is_edge_valid_to_draw(inode, prev_rr_node)) {
+                    if (rr_graph.node_type(prev_node) == OPIN) {
+                        draw_pin_to_pin(prev_node, inode, g);
+                    } else {
+                        draw_pin_to_chan_edge(inode, prev_node, g);
+                    }
                 }
                 break;
             }
@@ -685,25 +685,25 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                     chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
-                if(is_edge_valid_to_draw(inode,prev_rr_node)) {
+                if (is_edge_valid_to_draw(inode, prev_rr_node)) {
                     switch (prev_type) {
-                            case CHANX: {
-                                draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
-                                break;
-                            }
-                            case CHANY: {
-                                draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
-                                break;
-                            }
-                            case OPIN: {
-                                draw_pin_to_chan_edge(prev_node, inode, g);
-                                break;
-                            }
-                            default: {
-                                VPR_ERROR(VPR_ERROR_OTHER,
-                                          "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                          prev_type, rr_type);
-                            }
+                        case CHANX: {
+                            draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
+                            break;
+                        }
+                        case CHANY: {
+                            draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
+                            break;
+                        }
+                        case OPIN: {
+                            draw_pin_to_chan_edge(prev_node, inode, g);
+                            break;
+                        }
+                        default: {
+                            VPR_ERROR(VPR_ERROR_OTHER,
+                                      "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                      prev_type, rr_type);
+                        }
                     }
                 }
 
@@ -717,26 +717,26 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
                 if (is_edge_valid_to_draw(inode, prev_rr_node)) {
                     switch (prev_type) {
-                            case CHANX: {
-                                draw_chanx_to_chany_edge(prev_node, inode,
-                                                         FROM_X_TO_Y, switch_type, g);
-                                break;
-                            }
-                            case CHANY: {
-                                draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                         switch_type, g);
-                                break;
-                            }
-                            case OPIN: {
-                                draw_pin_to_chan_edge(prev_node, inode, g);
+                        case CHANX: {
+                            draw_chanx_to_chany_edge(prev_node, inode,
+                                                     FROM_X_TO_Y, switch_type, g);
+                            break;
+                        }
+                        case CHANY: {
+                            draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
+                                                     switch_type, g);
+                            break;
+                        }
+                        case OPIN: {
+                            draw_pin_to_chan_edge(prev_node, inode, g);
 
-                                break;
-                            }
-                            default: {
-                                VPR_ERROR(VPR_ERROR_OTHER,
-                                          "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                          prev_type, rr_type);
-                            }
+                            break;
+                        }
+                        default: {
+                            VPR_ERROR(VPR_ERROR_OTHER,
+                                      "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                      prev_type, rr_type);
+                        }
                     }
                 }
 
@@ -753,22 +753,20 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
  * based on whether the cross-layer connections option is enabled and whether the layer on which the
  * nodes are located are enabled.
  */
-bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node){
+bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     int current_node_layer = rr_graph.node_layer(current_node);
     int prev_node_layer = rr_graph.node_layer(prev_node);
 
-    if(current_node_layer != prev_node_layer) {
+    if (current_node_layer != prev_node_layer) {
         if (draw_state->cross_layer_display.visible && draw_state->draw_layer_display[current_node_layer].visible && draw_state->draw_layer_display[prev_node_layer].visible) {
             return true; //if both layers are enabled and cross layer connections are enabled
-        }
-        else{
+        } else {
             return false; //if cross layer connections are disabled or if either the current or prev node's layers are disabled
         }
-    }
-    else{
+    } else {
         return true; //if both nodes are from the same layer
     }
 }
@@ -1039,7 +1037,6 @@ void draw_crit_path(ezgl::renderer* g) {
         float arr_time = elem.tag().time();
 
         if (prev_node) {
-
             //We draw each 'edge' in a different color, this allows users to identify the stages and
             //any routing which corresponds to the edge
             //
@@ -1055,9 +1052,8 @@ void draw_crit_path(ezgl::renderer* g) {
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES
                 || draw_state->show_crit_path
                        == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
-
                 // FLylines for critical path are drawn based on the layer visibility of the source and sink
-                if(is_flyline_valid_to_draw(src_block_layer,sink_block_layer)) {
+                if (is_flyline_valid_to_draw(src_block_layer, sink_block_layer)) {
                     g->set_color(color);
                     g->set_line_dash(ezgl::line_dash::none);
                     g->set_line_width(4);
@@ -1074,16 +1070,16 @@ void draw_crit_path(ezgl::renderer* g) {
                 draw_routed_timing_edge_connection(prev_node, node, color, g);
 
                 // FLylines for critical path are drawn based on the layer visibility of the source and sink
-                if(is_flyline_valid_to_draw(src_block_layer,sink_block_layer)){
-                        g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
-                        g->set_line_width(3);
-                        g->set_color(color);
+                if (is_flyline_valid_to_draw(src_block_layer, sink_block_layer)) {
+                    g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+                    g->set_line_width(3);
+                    g->set_color(color);
 
-                        draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
-                                                 (ezgl::point2d)tnode_draw_coord(node), (float)delay,
-                                                 (ezgl::renderer*)g);
-                        g->set_line_dash(ezgl::line_dash::none);
-                        g->set_line_width(0);
+                    draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
+                                             (ezgl::point2d)tnode_draw_coord(node), (float)delay,
+                                             (ezgl::renderer*)g);
+                    g->set_line_dash(ezgl::line_dash::none);
+                    g->set_line_width(0);
                 }
             }
         }
@@ -1092,7 +1088,7 @@ void draw_crit_path(ezgl::renderer* g) {
     }
 }
 
-int get_timing_path_node_layer_num(tatum::NodeId node){
+int get_timing_path_node_layer_num(tatum::NodeId node) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -1102,13 +1098,13 @@ int get_timing_path_node_layer_num(tatum::NodeId node){
     return place_ctx.block_locs[clb_block].loc.layer;
 }
 
-bool is_flyline_valid_to_draw(int src_layer, int sink_layer){
+bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if(!draw_state->draw_layer_display[src_layer].visible || !draw_state->draw_layer_display[sink_layer].visible){
+    if (!draw_state->draw_layer_display[src_layer].visible || !draw_state->draw_layer_display[sink_layer].visible) {
         return false; /* Don't Draw if either nodes are not on a currently visible layer in the UI*/
     }
-    if(src_layer != sink_layer && !draw_state->cross_layer_display.visible){
+    if (src_layer != sink_layer && !draw_state->cross_layer_display.visible) {
         return false; /* Don't Draw if cross layer option is off and nodes are on different layers*/
     }
 
@@ -1185,7 +1181,6 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         g->set_coordinate_system(ezgl::WORLD);
     }
 }
-
 
 //Collect all the drawing locations associated with the timing edge between start and end
 void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,

@@ -442,7 +442,7 @@ void set_net_max_fanout_cbk(GtkSpinButton* self, ezgl::application* app) {
  */
 void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->net_alpha = (255 - gtk_spin_button_get_value_as_int(self))/255.0;
+    draw_state->net_alpha = (255 - gtk_spin_button_get_value_as_int(self)) / 255.0;
     app->refresh_drawing();
 }
 

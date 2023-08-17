@@ -580,7 +580,7 @@ void draw_logical_connections(ezgl::renderer* g) {
 
         int src_layer_num = place_ctx.block_locs[src_clb].loc.layer;
         //To only show primitive nets that are connected to currently active layers on the screen
-        if(!draw_state->draw_layer_display[src_layer_num].visible){
+        if (!draw_state->draw_layer_display[src_layer_num].visible) {
             continue; /* Don't Draw */
         }
 
@@ -595,9 +595,9 @@ void draw_logical_connections(ezgl::renderer* g) {
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
             int sink_layer_num = place_ctx.block_locs[sink_clb].loc.layer;
 
-            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(src_layer_num,sink_layer_num);
+            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(src_layer_num, sink_layer_num);
 
-            if(!element_visibility.visible){
+            if (!element_visibility.visible) {
                 continue; /* Don't Draw */
             }
 
@@ -606,11 +606,11 @@ void draw_logical_connections(ezgl::renderer* g) {
             //color selection
             //transparency factor is the most transparent of the 2 options that the user selects from the UI
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor,DRIVES_IT_COLOR.alpha * NET_ALPHA));
+                g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor, DRIVES_IT_COLOR.alpha * NET_ALPHA));
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVEN_BY_IT_COLOR, fmin(transparency_factor,DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA));
+                g->set_color(DRIVEN_BY_IT_COLOR, fmin(transparency_factor, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA));
             } else if (draw_state->show_nets == DRAW_PRIMITIVE_NETS && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-                g->set_color(ezgl::BLACK, fmin(transparency_factor,ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
+                g->set_color(ezgl::BLACK, fmin(transparency_factor, ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
             } else {
                 continue; // not showing all, and not the specified block, so skip
             }
