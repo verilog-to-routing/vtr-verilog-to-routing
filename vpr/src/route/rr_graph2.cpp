@@ -2041,6 +2041,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    t_sb_connection_map* sb_conn_map,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    int& edge_count) {
+
     /* get coordinate to index into the SB map */
     Switchblock_Lookup sb_coord(tile_x, tile_y, layer, from_side, to_side);
     if (sb_conn_map->count(sb_coord) > 0) {

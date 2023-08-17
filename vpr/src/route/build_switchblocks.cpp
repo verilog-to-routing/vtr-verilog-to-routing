@@ -256,7 +256,7 @@ static void get_switchpoint_wires(
     std::vector<t_wire_switchpoint>* output_wires,
     std::vector<t_wire_switchpoint>* scratch_wires);
 
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type);
+static const std::vector<t_chan_details> index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, std::vector<t_rr_type>& chan_type);
 
 /* checks whether the specified coordinates are out of bounds */
 static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coord, e_rr_type chan_type, int layer_coord = 0);
@@ -587,7 +587,7 @@ static void get_switchpoint_wires(
 static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, t_switchblock_inf* sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
     int from_x, from_y, from_layer;         /* index into source channel */
     int to_x, to_y, to_layer;               /* index into destination channel */
-    t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
+    std::vector<t_rr_type> from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
 
     SB_Side_Connection side_conn(from_side, to_side);                              /* for indexing into this switchblock's permutation funcs */
@@ -604,41 +604,49 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
     }
 
     /* find the correct channel, and the coordinates to index into it for both the source and
-     * destination channels. also return the channel type (ie chanx/chany) into which we are
+     * destination channels. also return the channel type (ie chanx/chany/both) into which we are
      * indexing */
     /* details for source channel */
-    const t_chan_details& from_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, from_side, chan_details_x, chan_details_y,
+    const std::vector<t_chan_details> from_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, from_side, chan_details_x, chan_details_y,
                                                                       from_x, from_y, from_layer, from_chan_type);
 
     /* details for destination channel */
-    const t_chan_details& to_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, to_side, chan_details_x, chan_details_y,
+    const std::vector<t_chan_details> to_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, to_side, chan_details_x, chan_details_y,
                                                                     to_x, to_y, to_layer, to_chan_type);
 
-    /* make sure from_x/y and to_x/y aren't out of bounds */
-    if (coords_out_of_bounds(grid, to_x, to_y, to_chan_type, to_layer) || coords_out_of_bounds(grid, from_x, from_y, from_chan_type, from_layer)) {
-        return;
-    }
+    //check from/to_chan_details size matches the from/to_chan_type size
+    VTR_ASSERT(from_chan_details.size() == from_chan_type.size());
+    VTR_ASSERT(to_chan_details.size() == to_chan_type.size());
 
-    const t_wire_type_sizes* wire_type_sizes_from = wire_type_sizes_x;
-    const t_wire_type_sizes* wire_type_sizes_to = wire_type_sizes_x;
-    if (from_chan_type == CHANY) {
-        wire_type_sizes_from = wire_type_sizes_y;
-    }
-    if (to_chan_type == CHANY) {
-        wire_type_sizes_to = wire_type_sizes_y;
-    }
-    /* iterate over all the wire connections specified for this switch block */
-    for (int iconn = 0; iconn < (int)sb->wireconns.size(); iconn++) {
-        /* pointer to a connection specification between wire types/subsegment_nums */
-        t_wireconn_inf* wireconn_ptr = &sb->wireconns[iconn];
+    for(size_t from_chan_index = 0; from_chan_index < from_chan_details.size(); from_chan_index++){
+        for(size_t to_chan_index = 0; to_chan_index < to_chan_details.size(); to_chan_index++){
+            /* make sure from_x/y and to_x/y aren't out of bounds */
+            if (coords_out_of_bounds(grid, to_x, to_y, to_chan_type.at(to_chan_index), to_layer) || coords_out_of_bounds(grid, from_x, from_y, from_chan_type.at(from_chan_index), from_layer)) {
+                return;
+            }
 
-        /* compute the destination wire segments to which the source wire segment should connect based on the
-         * current wireconn */
-        compute_wireconn_connections(grid, directionality, from_chan_details, to_chan_details,
-                                     sb_conn, from_x, from_y, from_layer, to_x, to_y, to_layer, from_chan_type, to_chan_type, wire_type_sizes_from,
-                                     wire_type_sizes_to, sb, wireconn_ptr, sb_conns, rand_state, scratchpad);
-    }
+            const t_wire_type_sizes* wire_type_sizes_from = wire_type_sizes_x;
+            const t_wire_type_sizes* wire_type_sizes_to = wire_type_sizes_x;
+            if (from_chan_type.at(from_chan_index) == CHANY) {
+                wire_type_sizes_from = wire_type_sizes_y;
+            }
+            if (to_chan_type.at(to_chan_index) == CHANY) {
+                wire_type_sizes_to = wire_type_sizes_y;
+            }
 
+            /* iterate over all the wire connections specified for this switch block */
+            for (int iconn = 0; iconn < (int)sb->wireconns.size(); iconn++) {
+                /* pointer to a connection specification between wire types/subsegment_nums */
+                t_wireconn_inf* wireconn_ptr = &sb->wireconns[iconn];
+
+                /* compute the destination wire segments to which the source wire segment should connect based on the
+                 * current wireconn */
+                compute_wireconn_connections(grid, directionality, from_chan_details.at(from_chan_index), to_chan_details.at(to_chan_index),
+                                             sb_conn, from_x, from_y, from_layer, to_x, to_y, to_layer, from_chan_type.at(from_chan_index), to_chan_type.at(to_chan_index), wire_type_sizes_from,
+                                             wire_type_sizes_to, sb, wireconn_ptr, sb_conns, rand_state, scratchpad);
+            }
+        }
+    }
     return;
 }
 
@@ -773,15 +781,13 @@ static void compute_wireconn_connections(
             if (sb_conn.from_side == TOP || sb_conn.from_side == RIGHT) {
                 continue;
             }
-            //TODO: SM: should uncomment these
-            //VTR_ASSERT(sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT);
+            VTR_ASSERT(sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT || sb_conn.from_side == ABOVE || sb_conn.from_side == UNDER);
         } else if (from_wire_direction == Direction::DEC) {
             /* a wire heading in the decreasing direction can only connect from the TOP or RIGHT sides of a switch block */
             if (sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT) {
                 continue;
             }
-            //TODO: SM: should uncomment these
-            //VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
+            VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT || sb_conn.from_side == ABOVE || sb_conn.from_side == UNDER);
         } else {
             VTR_ASSERT(from_wire_direction == Direction::BIDIR);
         }
@@ -856,68 +862,78 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
     return scratchpad->formula_parser.parse_formula(num_conns_formula, vars);
 }
 
-/* Here we find the correct channel (x or y), and the coordinates to index into it based on the
- * specified tile coordinates and the switchblock side. Also returns the type of channel
- * that we are indexing into (ie, CHANX or CHANY */
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type) {
-    chan_type = CHANX;
+/* Here we find the correct channel (x or y or both), and the coordinates to index into it based on the
+ * specified tile coordinates (x,y,layer) and the switchblock side. Also returns the type of channel
+ * that we are indexing into (ie, CHANX or CHANY) */
+static const std::vector<t_chan_details> index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, std::vector<t_rr_type>& chan_type) {
+    std::vector<t_chan_details> chan_details;
     /* here we use the VPR convention that a tile 'owns' the channels directly to the right
      * and above it */
     switch (side) {
         case TOP:
-            /* this is y-channel belonging to tile above */
+            /* this is y-channel belonging to tile above in the same layer */
             chan_x = tile_x;
             chan_y = tile_y + 1;
             chan_layer = tile_layer;
-            chan_type = CHANY;
-            return chan_details_y;
+            chan_type.push_back(CHANY);
+            chan_details.push_back(chan_details_y);
+            return chan_details;
             break;
         case RIGHT:
-            /* this is x-channel belonging to tile to the right */
+            /* this is x-channel belonging to tile to the right in the same layer */
             chan_x = tile_x + 1;
             chan_y = tile_y;
             chan_layer = tile_layer;
-            chan_type = CHANX;
-            return chan_details_x;
+            chan_type.push_back(CHANX);
+            chan_details.push_back(chan_details_x);
+            return chan_details;
             break;
         case BOTTOM:
-            /* this is y-channel on the right of the tile */
+            /* this is y-channel on the right of the tile in the same layer */
             chan_x = tile_x;
             chan_y = tile_y;
-            chan_type = CHANY;
+            chan_type.push_back(CHANY);
             chan_layer = tile_layer;
-            return chan_details_y;
+            chan_details.push_back(chan_details_y);
+            return chan_details;
             break;
         case LEFT:
-            /* this is x-channel on top of the tile */
+            /* this is x-channel on top of the tile in the same layer*/
             chan_x = tile_x;
             chan_y = tile_y;
-            chan_type = CHANX;
+            chan_type.push_back(CHANX);
             chan_layer = tile_layer;
-            return chan_details_x;
+            chan_details.push_back(chan_details_x);
+            return chan_details;
             break;
         case ABOVE:
+            /* this is x-channel and y-channel on the same tile location in layer above the current layer */
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer + 1;
-            //TODO: SM : chanx or chany? should be both somehow
-            chan_type = CHANX;
-            return chan_details_x;
+            chan_type.push_back(CHANX);
+            chan_type.push_back(CHANY);
+            chan_details.push_back(chan_details_x);
+            chan_details.push_back(chan_details_y);
+            return chan_details;
             break;
         case UNDER:
+            /* this is x-channel and y-channel on the same tile location in layer under the current layer */
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer - 1;
-            //TODO: SM : chanx or chany? should be both somehow
-            chan_type = CHANX;
-            return chan_details_x;
+            chan_type.push_back(CHANX);
+            chan_type.push_back(CHANY);
+            chan_details.push_back(chan_details_x);
+            chan_details.push_back(chan_details_y);
+            return chan_details;
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: unknown side specified: %d\n", side);
             break;
     }
     VTR_ASSERT(false);
-    return chan_details_x; //Unreachable
+    return chan_details; //Unreachable, return empty vector
 }
 
 /* checks whether the specified coordinates are out of bounds */
