@@ -136,8 +136,8 @@ void check_route(const Netlist<>& net_list,
                               "  %s\n"
                               "  %s\n",
                               size_t(net_id),
-                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(rt_node.parent()->inode), is_flat).c_str(),
-                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(inode), is_flat).c_str());
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, rt_node.parent()->inode, is_flat).c_str(),
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
                 }
             }
 
@@ -479,9 +479,8 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
 
     /* First set the occupancy of everything to zero. */
-    /*FIXME: the type cast should be eliminated by making rr_node_route_inf adapt RRNodeId */
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes())
-        route_ctx.rr_node_route_inf[(size_t)rr_id].set_occ(0);
+    for (RRNodeId inode : device_ctx.rr_graph.nodes())
+        route_ctx.rr_node_route_inf[inode].set_occ(0);
 
     /* Now go through each net and count the tracks and pins used everywhere */
 
@@ -493,7 +492,7 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
             continue;
 
         for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
-            size_t inode = size_t(rt_node.inode);
+            RRNodeId inode = rt_node.inode;
             route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
         }
     }
@@ -509,8 +508,8 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
                 int num_local_opins = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass].size();
                 /* Will always be 0 for pads or SINK classes. */
                 for (int ipin = 0; ipin < num_local_opins; ipin++) {
-                    int inode = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass][ipin];
-                    VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_graph.num_nodes());
+                    RRNodeId inode = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass][ipin];
+                    VTR_ASSERT(inode && size_t(inode) < device_ctx.rr_graph.num_nodes());
                     route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
                 }
             }
@@ -524,7 +523,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
 
-    int iclass, num_local_opins, inode, ipin;
+    int iclass, num_local_opins, ipin;
     t_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -537,7 +536,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
             /* Always 0 for pads and for SINK classes */
 
             for (ipin = 0; ipin < num_local_opins; ipin++) {
-                inode = clb_opins_used_locally[blk_id][iclass][ipin];
+                RRNodeId inode = clb_opins_used_locally[blk_id][iclass][ipin];
                 check_node_and_range(RRNodeId(inode), route_type, is_flat); /* Node makes sense? */
 
                 /* Now check that node is an OPIN of the right type. */
@@ -613,16 +612,12 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
 
     // Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;
-    std::set<int> routing_nodes;
+    std::set<RRNodeId> routing_nodes;
     for (auto& rt_node : route_ctx.route_trees[net].value().all_nodes()) {
-        routing_nodes.insert(size_t(rt_node.inode));
+        routing_nodes.insert(rt_node.inode);
         if (!rt_node.parent())
             continue;
-        /* a lot of casts to silence the warnings
-         * to clean this up: fix the type in vpr_types.h to use RRNodeIDs instead */
-        int parent_inode = size_t(rt_node.parent()->inode);
-        int this_inode = size_t(rt_node.inode);
-        t_node_edge edge = {parent_inode, this_inode};
+        t_node_edge edge = {rt_node.parent()->inode, rt_node.inode};
         routing_edges.insert(edge);
     }
 
@@ -640,7 +635,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     //within a set is used by the routing
     for (const auto& rr_nodes : non_configurable_rr_sets.node_sets) {
         //Compute the intersection of the routing and current non-configurable nodes set
-        std::vector<int> intersection;
+        std::vector<RRNodeId> intersection;
         std::set_intersection(routing_nodes.begin(), routing_nodes.end(),
                               rr_nodes.begin(), rr_nodes.end(),
                               std::back_inserter(intersection));
@@ -655,7 +650,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                 //Compute the difference to identify the missing nodes
                 //for detailed error reporting -- the nodes
                 //which are in rr_nodes but not in routing_nodes.
-                std::vector<int> difference;
+                std::vector<RRNodeId> difference;
                 std::set_difference(rr_nodes.begin(), rr_nodes.end(),
                                     routing_nodes.begin(), routing_nodes.end(),
                                     std::back_inserter(difference));
@@ -738,13 +733,13 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                     msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                         device_ctx.grid,
                                                                         device_ctx.rr_indexed_data,
-                                                                        missing_edge.from_node,
+                                                                        RRNodeId(missing_edge.from_node),
                                                                         is_flat)
                                                            .c_str());
                     msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                         device_ctx.grid,
                                                                         device_ctx.rr_indexed_data,
-                                                                        missing_edge.to_node,
+                                                                        RRNodeId(missing_edge.to_node),
                                                                         is_flat)
                                                            .c_str());
                 }
@@ -803,7 +798,8 @@ void check_net_for_stubs(const Netlist<>& net_list,
             msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                 device_ctx.grid,
                                                                 device_ctx.rr_indexed_data,
-                                                                inode, is_flat)
+                                                                RRNodeId(inode),
+                                                                is_flat)
                                                    .c_str());
         }
 

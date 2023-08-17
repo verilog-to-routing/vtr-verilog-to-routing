@@ -1,5 +1,8 @@
 #ifndef RR_GRAPH_OBJ_FWD_H
 #define RR_GRAPH_OBJ_FWD_H
+
+#include <cstdint>
+
 #include "vtr_strong_id.h"
 
 /***************************************************************
@@ -20,11 +23,11 @@ struct rr_switch_id_tag;
 struct rr_segment_id_tag;
 struct rc_index_tag;
 
-typedef vtr::StrongId<rr_node_id_tag, unsigned int> RRNodeId;
-typedef vtr::StrongId<rr_edge_id_tag, unsigned int> RREdgeId;
-typedef vtr::StrongId<rr_indexed_data_id_tag, unsigned int> RRIndexedDataId;
-typedef vtr::StrongId<rr_switch_id_tag, short> RRSwitchId;
-typedef vtr::StrongId<rr_segment_id_tag, short> RRSegmentId;
-typedef vtr::StrongId<rc_index_tag, short> NodeRCIndex;
+typedef vtr::StrongId<rr_node_id_tag, uint32_t> RRNodeId;
+typedef vtr::StrongId<rr_edge_id_tag, uint32_t> RREdgeId;
+typedef vtr::StrongId<rr_indexed_data_id_tag, uint32_t> RRIndexedDataId;
+typedef vtr::StrongId<rr_switch_id_tag, uint16_t> RRSwitchId;
+typedef vtr::StrongId<rr_segment_id_tag, uint16_t> RRSegmentId;
+typedef vtr::StrongId<rc_index_tag, uint16_t> NodeRCIndex;
 
 #endif

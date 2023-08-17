@@ -33,7 +33,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat) {
 
             int y = rr_graph.node_ylow(rr_node);
             for (int x = rr_graph.node_xlow(rr_node); x <= rr_graph.node_xhigh(rr_node); ++x) {
-                usage[x][y] += route_ctx.rr_node_route_inf[size_t(rr_node)].occ();
+                usage[x][y] += route_ctx.rr_node_route_inf[rr_node].occ();
             }
         } else {
             VTR_ASSERT(rr_type == CHANY);
@@ -42,7 +42,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat) {
 
             int x = rr_graph.node_xlow(rr_node);
             for (int y = rr_graph.node_ylow(rr_node); y <= rr_graph.node_yhigh(rr_node); ++y) {
-                usage[x][y] += route_ctx.rr_node_route_inf[size_t(rr_node)].occ();
+                usage[x][y] += route_ctx.rr_node_route_inf[rr_node].occ();
             }
         }
     }

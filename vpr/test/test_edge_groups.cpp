@@ -58,7 +58,7 @@ TEST_CASE("edge_groups_create_sets", "[vpr]") {
         // Add edges to the EdgeGroups object
         EdgeGroups groups;
         for (auto edge : random_edges) {
-            groups.add_non_config_edge(edge.first, edge.second);
+            groups.add_non_config_edge(RRNodeId(edge.first), RRNodeId(edge.second));
         }
 
         // The algorithm to test
@@ -67,9 +67,9 @@ TEST_CASE("edge_groups_create_sets", "[vpr]") {
 
         // Check for the expected sets
         for (auto set : connected_sets) {
-            std::set<int> random_set;
+            std::set<RRNodeId> random_set;
             for (auto elem : set) {
-                random_set.insert(random_nodes[elem]);
+                random_set.insert(RRNodeId(random_nodes[elem]));
             }
             REQUIRE(sets.node_sets.find(random_set) != sets.node_sets.end());
         }

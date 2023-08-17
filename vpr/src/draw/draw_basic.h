@@ -70,8 +70,7 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g);
 void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 
 //Draws the set of rr_nodes specified, using the colors set in draw_state
-//draw_partial_route() takes care of layer visibility and cross-layer settings
-void draw_partial_route(const std::vector<int>& rr_nodes_to_draw,
+void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,
                         ezgl::renderer* g);
 
 

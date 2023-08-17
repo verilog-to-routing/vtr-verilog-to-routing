@@ -93,31 +93,13 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
 
     pins_with_modified_slacks_.clear();
 
-#if defined(VPR_USE_TBB)
-    tbb::combinable<std::vector<AtomPinId>> modified_pins; //Per-thread vectors
-
-    tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-        AtomPinId modified_pin = this->update_pin_slack(node, analyzer);
-
-        if (modified_pin) {
-            modified_pins.local().push_back(modified_pin); //Insert into per-thread vector
-        }
-    });
-
-    //Merge per-thread modified pins vectors
-    modified_pins.combine_each([&](const std::vector<AtomPinId>& pins) {
-        pins_with_modified_slacks_.insert(pins_with_modified_slacks_.end(),
-                                          pins.begin(), pins.end());
-    });
-
-#else
+    /** We could do this in parallel, but the overhead of combining the results is not worth it */
     for (tatum::NodeId node : nodes) {
         AtomPinId modified_pin = update_pin_slack(node, analyzer);
         if (modified_pin) {
             pins_with_modified_slacks_.push_back(modified_pin);
         }
     }
-#endif
 
     ++incr_slack_updates_;
     incr_slack_update_time_sec_ += timer.elapsed_sec();
@@ -356,31 +338,13 @@ template<typename NodeRange>
 void SetupSlackCrit::update_pin_criticalities_from_nodes(const NodeRange& nodes, const tatum::SetupTimingAnalyzer& analyzer) {
     pins_with_modified_criticalities_.clear();
 
-#if defined(VPR_USE_TBB)
-    tbb::combinable<std::vector<AtomPinId>> modified_pins; //Per-thread vectors
-
-    tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-        AtomPinId modified_pin = update_pin_criticality(node, analyzer);
-
-        if (modified_pin) {
-            modified_pins.local().push_back(modified_pin); //Insert into per-thread vector
-        }
-    });
-
-    //Merge per-thread modified pins vectors
-    modified_pins.combine_each([&](const std::vector<AtomPinId>& pins) {
-        pins_with_modified_criticalities_.insert(pins_with_modified_criticalities_.end(),
-                                                 pins.begin(), pins.end());
-    });
-
-#else
+    /** We could do this in parallel, but the overhead of combining the results is not worth it */
     for (tatum::NodeId node : nodes) {
         AtomPinId modified_pin = update_pin_criticality(node, analyzer);
         if (modified_pin) {
             pins_with_modified_criticalities_.push_back(modified_pin);
         }
     }
-#endif
 }
 
 AtomPinId SetupSlackCrit::update_pin_criticality(const tatum::NodeId node,
