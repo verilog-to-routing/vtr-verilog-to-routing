@@ -232,7 +232,6 @@ void drawnets(ezgl::renderer* g) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    float layer_transparency;
     float transparency_factor;
     float NET_ALPHA = draw_state->net_alpha;
 
@@ -361,10 +360,8 @@ void draw_congestion(ezgl::renderer* g) {
 
     //Draw each congested node
     for (RRNodeId inode : congested_rr_nodes) {
-    for (int inode : congested_rr_nodes) {
-        auto rr_node = RRNodeId(inode);
-        int layer_num = rr_graph.node_layer(rr_node);
-        int transparency_factor = get_rr_node_transparency(rr_node);
+        int layer_num = rr_graph.node_layer(inode);
+        int transparency_factor = get_rr_node_transparency(inode);
         if (!draw_state->draw_layer_display[layer_num].visible)
             continue;
         short occ = route_ctx.rr_node_route_inf[inode].occ();
@@ -656,7 +653,6 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         auto rr_type = rr_graph.node_type(inode);
 
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
-        int prev_node = rr_nodes_to_draw[i - 1];
         RRNodeId prev_rr_node = prev_node;
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
@@ -664,7 +660,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
 
         //Don't draw node if the layer of the node is not set to visible on screen
-        if(!draw_state->draw_layer_display[rr_graph.node_layer(rr_node)].visible){
+        if(!draw_state->draw_layer_display[rr_graph.node_layer(inode)].visible){
             continue;
         }
 
@@ -675,7 +671,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             }
             case IPIN: {
                 draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
-                if(is_edge_valid_to_draw(rr_node,prev_rr_node)) {
+                if(is_edge_valid_to_draw(inode,prev_rr_node)) {
                         if (rr_graph.node_type(prev_node) == OPIN) {
                             draw_pin_to_pin(prev_node, inode, g);
                         } else {
@@ -689,7 +685,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                     chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
-                if(is_edge_valid_to_draw(rr_node,prev_rr_node)) {
+                if(is_edge_valid_to_draw(inode,prev_rr_node)) {
                     switch (prev_type) {
                             case CHANX: {
                                 draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
@@ -719,7 +715,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
 
-                if (is_edge_valid_to_draw(rr_node, prev_rr_node)) {
+                if (is_edge_valid_to_draw(inode, prev_rr_node)) {
                     switch (prev_type) {
                             case CHANX: {
                                 draw_chanx_to_chany_edge(prev_node, inode,

@@ -80,7 +80,7 @@ void draw_rr(ezgl::renderer* g) {
 
     g->set_line_dash(ezgl::line_dash::none);
 
-    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {        size_t inode = (size_t)rr_id;
+    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
         int layer_num = rr_graph.node_layer(inode);
         int transparency_factor = get_rr_node_transparency(inode);
         if (!draw_state->draw_rr_node[inode].node_highlighted) {
@@ -106,9 +106,10 @@ void draw_rr(ezgl::renderer* g) {
                     break;
             }
         }
+
         draw_state->draw_rr_node[inode].color.alpha = transparency_factor;
 
-        if (draw_state->draw_layer_display[layer_num].visible) {
+        if (!draw_state->draw_layer_display[layer_num].visible)
             continue; // skip drawing if layer is not visible
 
         /* Now call drawing routines to draw the node. */
