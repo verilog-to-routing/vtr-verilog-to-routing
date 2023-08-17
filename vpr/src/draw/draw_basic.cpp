@@ -232,8 +232,7 @@ void drawnets(ezgl::renderer* g) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    float layer_transparency;
-    float transparency_factor;
+     float transparency_factor;
     float NET_ALPHA = draw_state->net_alpha;
 
     g->set_line_dash(ezgl::line_dash::none);
