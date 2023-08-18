@@ -3541,10 +3541,22 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             InstPort inst_port(token);
 
                             //A pin specification should contain only the block name, and not any instance count information
+                            //A pin specification may contain instance count, but should be in the range of capacity
+                            int inst_lsb = 0;
+                            int inst_msb = SubTile->capacity.total() - 1;
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
-                                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                               "Pin location specification '%s' should not contain an instance range (should only be the block name)",
-                                               token.c_str());
+                                /* Extract range numbers */
+                                inst_lsb = inst_port.instance_low_index();
+                                inst_msb = inst_port.instance_high_index();
+                                if (inst_lsb > inst_msb) {
+                                    std::swap(inst_lsb, inst_msb);
+                                }
+                                /* Check if we have a valid range */
+                                if (inst_lsb < 0 || inst_msb > SubTile->capacity.total() - 1) {
+                                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                                   "Pin location specification '%s' contain an out-of-range instance. Expect [%d:%d]",
+                                                   token.c_str(), 0, SubTile->capacity.total() - 1);
+                                }
                             }
 
                             //Check that the block name matches
