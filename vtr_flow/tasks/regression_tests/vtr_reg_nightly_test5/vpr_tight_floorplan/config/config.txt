@@ -3,7 +3,7 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/titan_other_blif
+circuits_dir=benchmarks/titan_blif/other_benchmarks/stratixiv
 
 # Path to directory of architectures to use
 archs_dir=arch/titan
