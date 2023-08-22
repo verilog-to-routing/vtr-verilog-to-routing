@@ -29,7 +29,6 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const vtr::Point<size_t>& chan_width,
                                    const std::vector<t_segment_inf>& segment_inf_x,
                                    const std::vector<t_segment_inf>& segment_inf_y,
-                                   const t_unified_to_parallel_seg_index& segment_index_map,
                                    const DeviceGridAnnotation& device_grid_annotation,
                                    const bool& shrink_boundary,
                                    const bool& through_channel);

@@ -160,7 +160,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                   rr_node_driver_switches,
                                   grids, 0,
                                   device_chan_width,
-                                  segment_inf_x, segment_inf_y, segment_index_map,
+                                  segment_inf_x, segment_inf_y,
                                   device_grid_annotation,
                                   shrink_boundary,
                                   through_channel);

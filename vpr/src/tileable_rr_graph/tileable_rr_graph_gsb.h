@@ -38,8 +38,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const e_switch_block_type& sb_subtype,
                                                const int& subFs,
                                                const bool& wire_opposite_side,
-                                               const std::vector<t_segment_inf>& segment_inf_x,
-                                               const std::vector<t_segment_inf>& segment_inf_y);
+                                               const std::vector<t_segment_inf>& segment_inf);
 
 RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const RRGraphView& rr_graph,
@@ -60,9 +59,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
 t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
                                             const RRGSB& rr_gsb,
                                             const DeviceGrid& grids,
-                                            const std::vector<t_segment_inf>& segment_inf_x,
-                                            const std::vector<t_segment_inf>& segment_inf_y,
-                                            const t_unified_to_parallel_seg_index& segment_index_map,
+                                            const std::vector<t_segment_inf>& segment_inf,
                                             const std::vector<vtr::Matrix<int>>& Fc_in);
 
 t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,

@@ -574,3 +574,18 @@ void print_rr_graph_mux_stats(const RRGraph& rr_graph) {
             find_rr_graph_average_fan_in(rr_graph, cb_node_types));
     VTR_LOG("------------------------------------------------\n");
 }
+
+int find_parallel_seg_index(const int abs_index,
+                            const t_unified_to_parallel_seg_index& index_map,
+                            const e_parallel_axis parallel_axis) {
+    int index = -1;
+    auto itr_pair = index_map.equal_range(abs_index);
+
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
+        if (itr->second.second == parallel_axis) {
+            index = itr->second.first;
+        }
+    }
+
+    return index;
+}
