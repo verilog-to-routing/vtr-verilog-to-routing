@@ -14,7 +14,8 @@
  */
 class KArmedBanditAgent {
   public:
-    virtual ~KArmedBanditAgent() {}
+    KArmedBanditAgent(size_t num_moves, size_t num_types, bool propose_blk_type);
+    virtual ~KArmedBanditAgent() = default;
 
     /**
      * @brief Choose a move type to perform and a block type that move should be performed with based on Q-table
@@ -44,7 +45,7 @@ class KArmedBanditAgent {
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of move types that agent can choose from to perform
     size_t num_available_types_;            //Number of block types that agent can choose to perform the move with
-    bool propose_blk_type = false;          //Check if agent should propose both move and block type or only move type
+    bool propose_blk_type_ = false;          //Check if agent should propose both move and block type or only move type
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
     size_t last_action_ = 0;                //type of the last action (move type) proposed
@@ -67,7 +68,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
     EpsilonGreedyAgent(size_t num_moves, float epsilon);
     EpsilonGreedyAgent(size_t num_moves, size_t num_types, float epsilon);
-    ~EpsilonGreedyAgent();
+    ~EpsilonGreedyAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
 
@@ -94,6 +95,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
      */
     void set_step(float gamma, int move_lim);
 
+  private:
     /**
      * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
      */
@@ -113,9 +115,9 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
  */
 class SoftmaxAgent : public KArmedBanditAgent {
   public:
-    SoftmaxAgent(size_t num_moves);
+    explicit SoftmaxAgent(size_t num_moves);
     SoftmaxAgent(size_t num_moves, size_t num_types);
-    ~SoftmaxAgent();
+    ~SoftmaxAgent() override;
 
     //void process_outcome(double reward, std::string reward_fun) override; //Updates the agent based on the reward of the last proposed action
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -142,6 +144,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
      */
     void set_step(float gamma, int move_lim);
 
+  private:
     /**
      * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
      */
@@ -152,6 +155,8 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> action_prob_;      //The probability of choosing each action
     std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
     std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
+
+    std::chrono::duration<double, std::nano> elapsed_time_;
 };
 
 /**
@@ -167,14 +172,15 @@ class SimpleRLMoveGenerator : public MoveGenerator {
     std::unique_ptr<KArmedBanditAgent> karmed_bandit_agent;  // a pointer to the specific agent used (e.g. Softmax)
 
   public:
-    // constructors using a pointer to the agent used
-    SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
-    SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
+    // constructor using a pointer to the agent used
+    template <class T,
+             class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
+    explicit SimpleRLMoveGenerator(std::unique_ptr<T> &agent);
 
     // Updates affected_blocks with the proposed move, while respecting the current rlim
-    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) override;
 
     // Recieves feedback about the outcome of the previously proposed move
-    void process_outcome(double reward, e_reward_function reward_fun);
+    void process_outcome(double reward, e_reward_function reward_fun) override;
 };
 #endif
