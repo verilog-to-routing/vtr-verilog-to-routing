@@ -3,7 +3,7 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/noc/Large_Designs/MLP_1/verilog
+circuits_dir=benchmarks/noc/Large_Designs/MLP/MLP_1/verilog
 
 # Path to directory of architectures to use
 archs_dir=arch/noc/mesh_noc_topology
@@ -12,7 +12,7 @@ archs_dir=arch/noc/mesh_noc_topology
 includes_dir=benchmarks/noc/Large_Designs/MLP/shared_verilog
 
 # Path to directory of NoC Traffic Patterns to use
-noc_traffics_dir=benchmarks/noc/Large_Designs/MLP_1
+noc_traffics_dir=benchmarks/noc/Large_Designs/MLP/MLP_1
 
 # Add circuits to list to sweep
 circuit_list_add=mlp1_complete_engine.v
