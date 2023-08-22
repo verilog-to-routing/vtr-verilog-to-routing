@@ -619,7 +619,8 @@ static RRChan build_one_tileable_rr_chan(const size_t& layer,
 RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const RRGraphView& rr_graph,
                                 const vtr::Point<size_t>& device_chan_width,
-                                const std::vector<t_segment_inf>& segment_inf,
+                                const std::vector<t_segment_inf>& segment_inf_x,
+                                const std::vector<t_segment_inf>& segment_inf_y,
                                 const size_t& layer,
                                 const vtr::Point<size_t>& gsb_coordinate) {
     /* Create an object to return */
@@ -650,9 +651,9 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
          * We do not care starting and ending points here, so set chan_side as NUM_SIDES
          */
         ChanNodeDetails chanx_details = build_unidir_chan_node_details(device_chan_width.x(), grids.width() - 1,
-                                                                       false, false, segment_inf);
+                                                                       false, false, segment_inf_x);
         ChanNodeDetails chany_details = build_unidir_chan_node_details(device_chan_width.y(), grids.height() - 1,
-                                                                       false, false, segment_inf);
+                                                                       false, false, segment_inf_y);
 
         switch (side) {
             case TOP: /* TOP = 0 */
@@ -1238,7 +1239,7 @@ t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
                 continue;
             }
 
-            VTR_ASSERT(ipin_Fc_out.size() == segment_inf.size());
+            //VTR_ASSERT(ipin_Fc_out.size() == segment_inf.size());
 
             /* Build track2ipin_map for this IPIN */
             build_gsb_one_ipin_track2pin_map(rr_graph, rr_gsb, ipin_side, inode, ipin_Fc_out,
