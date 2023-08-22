@@ -108,6 +108,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const size_t& layer,
                           const vtr::Point<size_t>& device_chan_width,
                           const std::vector<t_segment_inf>& segment_inf,
+                          const std::vector<t_segment_inf>& segment_inf_x,
+                          const std::vector<t_segment_inf>& segment_inf_y,
                           const std::vector<vtr::Matrix<int>>& Fc_in,
                           const std::vector<vtr::Matrix<int>>& Fc_out,
                           const e_switch_block_type& sb_type,
@@ -130,7 +132,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
             vtr::Point<size_t> gsb_coord(ix, iy);
             /* Create a GSB object */
             const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
-                                                            device_chan_width, segment_inf,
+                                                            device_chan_width, segment_inf_x, segment_inf_y,
                                                             layer, gsb_coord);
 
             /* adapt the track_to_ipin_lookup for the GSB nodes */
