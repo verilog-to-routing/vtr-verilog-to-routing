@@ -153,7 +153,7 @@ struct t_draw_layer_display {
 
     ///@brief Transparency value ( 0 - transparent, 255 - Opaque)
     ///@note The UI has the opposite definition to make it more intuitive for the user,
-    /// where increasing the value increases trasnparency. (255 - transparent, 0 - Opaque)
+    /// where increasing the value increases transparency. (255 - transparent, 0 - Opaque)
     int alpha = 255;
 };
 

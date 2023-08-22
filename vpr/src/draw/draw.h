@@ -117,7 +117,7 @@ void set_draw_loc_color(t_pl_loc, ezgl::color);
 void clear_colored_locations();
 
 /**
- * @brief the input loc is marked in colored_locations vector, the function will return true and the corresponding color is sent back in loc_color
+ * @brief If the input loc is marked in colored_locations vector, the function will return true and the corresponding color is sent back in loc_color
  * otherwise, the function returns false (the location isn't among the highlighted locations)
  *
  * @param curr_loc  The current location that is being checked for whether it must be highlighted or not
@@ -140,7 +140,7 @@ void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 size_t get_max_fanout();
 
 /**
- * @brief Takes in two colors and compares rgb values
+ * @brief Takes in two colors and compares rgb values, ignoring transparency/alpha
  * Sets both transparencies to opaque and then compares the colors.
  */
 bool rgb_is_same(ezgl::color color1, ezgl::color color2);
