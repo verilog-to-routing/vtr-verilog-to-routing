@@ -178,6 +178,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     // load external attraction data
     load_external_attraction_data(packer_opts.external_attraction_file);
 
+    // clear up to data clustering decision (This should be a clean start for clustering)
+    helper_ctx.incomplete_cluster_to_atoms_lookup.clear();
+
     /* determine bound on cluster size and primitive input size */
     helper_ctx.max_cluster_size = 0;
     max_pb_depth = 0;
@@ -309,6 +312,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,
                                                      cl_helper_ctx.external_atom_attraction_data,
+                                                     packer_opts.external_attraction_default_weight,
+                                                     packer_opts.external_attraction_default_value,
                                                      allow_unrelated_clustering,
                                                      packer_opts.prioritize_transitive_connectivity,
                                                      packer_opts.transitive_fanout_threshold,
@@ -356,6 +361,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  detailed_routing_stage,
                                  attraction_groups,
                                  cl_helper_ctx.external_atom_attraction_data,
+                                 packer_opts.external_attraction_default_weight,
+                                 packer_opts.external_attraction_default_value,
                                  clb_inter_blk_nets,
                                  allow_unrelated_clustering,
                                  high_fanout_threshold,
@@ -391,6 +398,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     //check_floorplan_regions(floorplan_regions_overfull);
     floorplan_regions_overfull = floorplan_constraints_regions_overfull();
+
+    // clear up to data clustering decision (No one should use incomplete_cluster_to_atoms_lookup after this point)
+    helper_ctx.incomplete_cluster_to_atoms_lookup.clear();
 
     return num_used_type_instances;
 }

@@ -904,6 +904,8 @@ struct t_packer_opts {
     bool connection_driven;
     int pack_verbosity;
     std::string external_attraction_file;
+    float external_attraction_default_weight;
+    float external_attraction_default_value;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;

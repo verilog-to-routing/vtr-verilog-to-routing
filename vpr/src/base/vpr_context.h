@@ -341,8 +341,16 @@ struct ClusteringHelperContext : public Context {
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
 
-    // 2D vector to store the external attraction data from one atom to another, default set to DBL_MIN
-    std::vector<std::vector<double>> external_atom_attraction_data;
+    // 2D vector to store the external attraction data from one atom to another, default set to slight repulsion in SetupPackerOpts()
+    // external_atom_attraction_data[src][dst]:
+    //     The attraction of putting dst atom to src atom
+    std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>> external_atom_attraction_data;
+
+    // A vector of ordered_sets of AtomBlockIds that are inside each clustered block during the time of clustering
+    // This is used when we are clustering, hence the lookup map is not complete during the clustering algorithm.
+    // Each cluster contains all the atoms that are determined to be packed into the same cluster (there might be other atoms to be packed later)
+    // The data structure will be cleaned after the clustering stage to keep memory impact minimal
+    vtr::vector<const ClusterBlockId, std::set<AtomBlockId>> incomplete_cluster_to_atoms_lookup;
 
     ~ClusteringHelperContext() {
         delete[] primitives_list;
