@@ -3307,16 +3307,20 @@ static void calculate_reward_and_process_outcome(
     float timing_bb_factor,
     MoveGenerator& move_generator) {
     std::string reward_fun_string = placer_opts.place_reward_fun;
-    e_reward_function reward_fun = string_to_reward(reward_fun_string);
+    static std::optional<e_reward_function> reward_fun;
+    if (!reward_fun.has_value()) {
+        reward_fun = string_to_reward(reward_fun_string);
+    }
+
 
     if (reward_fun == BASIC) {
-        move_generator.process_outcome(-1 * delta_c, reward_fun);
+        move_generator.process_outcome(-1 * delta_c, reward_fun.value());
     } else if (reward_fun == NON_PENALIZING_BASIC
                || reward_fun == RUNTIME_AWARE) {
         if (delta_c < 0) {
-            move_generator.process_outcome(-1 * delta_c, reward_fun);
+            move_generator.process_outcome(-1 * delta_c, reward_fun.value());
         } else {
-            move_generator.process_outcome(0, reward_fun);
+            move_generator.process_outcome(0, reward_fun.value());
         }
     } else if (reward_fun == WL_BIASED_RUNTIME_AWARE) {
         if (delta_c < 0) {
@@ -3326,9 +3330,9 @@ static void calculate_reward_and_process_outcome(
                                     * move_outcome_stats.delta_timing_cost_norm
                               + timing_bb_factor
                                     * move_outcome_stats.delta_bb_cost_norm);
-            move_generator.process_outcome(reward, reward_fun);
+            move_generator.process_outcome(reward, reward_fun.value());
         } else {
-            move_generator.process_outcome(0, reward_fun);
+            move_generator.process_outcome(0, reward_fun.value());
         }
     }
 }

@@ -45,9 +45,10 @@ class KArmedBanditAgent {
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of move types that agent can choose from to perform
     size_t num_available_types_;            //Number of block types that agent can choose to perform the move with
-    bool propose_blk_type_ = false;          //Check if agent should propose both move and block type or only move type
+    bool propose_blk_type_ = false;         //Check if agent should propose both move and block type or only move type
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
+    float last_delta_q_;                    //Last calculated delta Q
     size_t last_action_ = 0;                //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
@@ -180,7 +181,22 @@ class SimpleRLMoveGenerator : public MoveGenerator {
     // Updates affected_blocks with the proposed move, while respecting the current rlim
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) override;
 
-    // Recieves feedback about the outcome of the previously proposed move
+    // Receives feedback about the outcome of the previously proposed move
     void process_outcome(double reward, e_reward_function reward_fun) override;
 };
+
+template<class T, class>
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent) {
+    avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
+
+    avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
+    avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
+    avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
+    avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
+    avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
+
+    karmed_bandit_agent = std::move(agent);
+}
 #endif

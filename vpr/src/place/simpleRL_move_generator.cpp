@@ -14,22 +14,6 @@ static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, fl
  *  RL move generator implementation   *
  *                                     *
  *                                     */
-
-template<class T, class>
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent) {
-    avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
-
-    avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
-    avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
-    avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
-    avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
-    avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
-    avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
-    avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
-
-    karmed_bandit_agent = std::move(agent);
-}
-
 e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     auto propose_action_out = karmed_bandit_agent->propose_action();
     move_type = propose_action_out.move_type;
@@ -69,10 +53,11 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     }
 
     //Based on the outcome how much should our estimate of q change?
-    float delta_q = step * (reward - q_[last_action_]);
+    last_delta_q_ = step * (reward - q_[last_action_]);
 
     //Update the estimated value of the last action
-    q_[last_action_] += delta_q;
+    q_[last_action_] += last_delta_q_;
+
 
     //write agent internal q-table and actions into a file for debugging purposes
     //agent_info_file_ variable is a NULL pointer by default
