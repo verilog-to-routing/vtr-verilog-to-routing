@@ -306,7 +306,6 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
                                                  const vtr::Point<size_t>& chan_width,
                                                  const std::vector<t_segment_inf>& segment_inf_x,
                                                  const std::vector<t_segment_inf>& segment_inf_y,
-                                                 const t_unified_to_parallel_seg_index& segment_index_map,
                                                  const DeviceGridAnnotation& device_grid_annotation,
                                                  const bool& shrink_boundary,
                                                  const bool& through_channel) {
@@ -366,7 +365,6 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const vtr::Point<size_t>& chan_width,
                                    const std::vector<t_segment_inf>& segment_inf_x,
                                    const std::vector<t_segment_inf>& segment_inf_y,
-                                   const t_unified_to_parallel_seg_index& segment_index_map,
                                    const DeviceGridAnnotation& device_grid_annotation,
                                    const bool& shrink_boundary,
                                    const bool& through_channel) {
@@ -377,7 +375,6 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                                                       chan_width,
                                                                       segment_inf_x,
                                                                       segment_inf_y,
-                                                                      segment_index_map,
                                                                       device_grid_annotation,
                                                                       shrink_boundary,
                                                                       through_channel);
@@ -781,7 +778,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             /* assign switch id */
             size_t seg_id = chan_details.get_track_segment_id(itrack);
             e_parallel_axis wanted_axis = chan_type == CHANX ? X_AXIS : Y_AXIS;
-            size_t parallel_seg_id = get_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
+            size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
             rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
 
             /* Update chan_details with node_id */
