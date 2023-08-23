@@ -101,7 +101,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     /**
      * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
      */
-    void init_q_scores();
+    void init_q_scores_();
 
   private:
     float epsilon_ = 0.1;                         //How often to perform a non-greedy exploration action
@@ -152,7 +152,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
     /**
      * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
      */
-    void init_q_scores();
+    void init_q_scores_();
 
   private:
     std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
@@ -162,8 +162,6 @@ class SoftmaxAgent : public KArmedBanditAgent {
     // incremental softmax computation member variables
     std::vector<float> exp_q_incr_;
     float sum_exp_q_incr_;
-
-    std::chrono::duration<double, std::nano> elapsed_time_;
 };
 
 /**

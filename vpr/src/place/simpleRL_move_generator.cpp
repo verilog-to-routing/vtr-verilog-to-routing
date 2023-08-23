@@ -97,14 +97,14 @@ EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_moves, size_t num_types, float
     : KArmedBanditAgent(num_moves, num_types, num_types > 1)
 {
     set_epsilon(epsilon);
-    init_q_scores();
+    init_q_scores_();
 }
 
 EpsilonGreedyAgent::~EpsilonGreedyAgent() {
     if (agent_info_file_) vtr::fclose(agent_info_file_);
 }
 
-void EpsilonGreedyAgent::init_q_scores() {
+void EpsilonGreedyAgent::init_q_scores_() {
     q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
     num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
     cumm_epsilon_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 1.0 / (num_available_moves_ * num_available_types_));
@@ -211,21 +211,16 @@ SoftmaxAgent::SoftmaxAgent(size_t num_moves)
 }
 
 SoftmaxAgent::SoftmaxAgent(size_t num_moves, size_t num_types)
-    : KArmedBanditAgent(num_moves, num_types, num_types > 1) {
-    init_q_scores();
+    : KArmedBanditAgent(num_moves, num_types, num_types > 1)
+    , sum_exp_q_incr_(0.0f) {
+    init_q_scores_();
 }
 
 SoftmaxAgent::~SoftmaxAgent() {
     if (agent_info_file_) vtr::fclose(agent_info_file_);
-
-    std::cout << "Softmax time: " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time_).count() << std::endl;
-
-    vtr::printf_info("Softmax took %.2f miliseconds\n",
-                     std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time_).count());
 }
 
-void SoftmaxAgent::init_q_scores() {
-
+void SoftmaxAgent::init_q_scores_() {
     /*
      * The agent calculates each block type ratio as: (# blocks of each type / total blocks).
      * If the agent is supposed to propose both block type and move type,
@@ -241,14 +236,11 @@ void SoftmaxAgent::init_q_scores() {
     action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
     cumm_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_);
 
-    sum_exp_q_incr_ = 0.0f;
     if (propose_blk_type_) {
         exp_q_incr_.resize(num_available_moves_ * num_available_types_);
         for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
             size_t blk_ratio_index = i / num_available_moves_;
             exp_q_incr_[i] = scaled_clipped_exp(0.0f) * block_type_ratio_[blk_ratio_index];
-            std::cout << "init: " << exp_q_incr_[i] << std::endl;
-
             sum_exp_q_incr_ += exp_q_incr_[i];
         }
     } else{
@@ -264,19 +256,10 @@ void SoftmaxAgent::init_q_scores() {
     }
 
     set_action_prob();
-    elapsed_time_ = std::chrono::duration<double, std::nano>::zero();
 }
 
 t_propose_action SoftmaxAgent::propose_action() {
-    auto start_time = std::chrono::high_resolution_clock::now();
     set_action_prob();
-    // Get the current time after executing the function
-    auto end_time = std::chrono::high_resolution_clock::now();
-
-    // Calculate the duration in milliseconds
-    std::chrono::duration<double, std::nano> duration = end_time - start_time;
-
-    elapsed_time_ += duration;
 
     size_t move_type;
     t_logical_block_type blk_type;
@@ -323,14 +306,27 @@ t_propose_action SoftmaxAgent::propose_action() {
             }
         }
 
-        VTR_ASSERT(selected_action != INVALID_ACTION);
-        if (action_type_q_pos != selected_action) {
+        // handle cases where p is slightly larger that accum
+        if (selected_action == INVALID_ACTION && p > accum && p <= 1.01f * accum) {
+            selected_action = num_available_moves_ * num_available_types_ - 1 ; // select the last action
+        }
+
+        if (selected_action == INVALID_ACTION) {
             std::cout << action_type_q_pos << "  " << selected_action << " " << p/sum_exp_q_incr_ << std::endl;
             for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
                 std::cout << cumm_action_prob_[i] << "  " << exp_q_incr_[i] << std::endl;
             }
             std::cout << std::endl;
         }
+
+        VTR_ASSERT(selected_action != INVALID_ACTION);
+//        if (action_type_q_pos != selected_action) {
+//            std::cout << action_type_q_pos << "  " << selected_action << " " << p/sum_exp_q_incr_ << std::endl;
+//            for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
+//                std::cout << cumm_action_prob_[i] << "  " << exp_q_incr_[i] << std::endl;
+//            }
+//            std::cout << std::endl;
+//        }
     }
 
     return propose_action;
