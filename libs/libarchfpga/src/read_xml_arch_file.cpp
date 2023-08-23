@@ -3549,7 +3549,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             //A pin specification should contain only the block name, and not any instance count information
                             //A pin specification may contain instance count, but should be in the range of capacity
                             int inst_lsb = 0;
-                            int inst_msb = PhysicalTileType->capacity - 1;
+                            int inst_msb = SubTile->capacity.total() - 1;
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
                                 /* Extract range numbers */
                                 inst_lsb = inst_port.instance_low_index();
@@ -3558,10 +3558,10 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                     std::swap(inst_lsb, inst_msb);
                                 }
                                 /* Check if we have a valid range */
-                                if (inst_lsb < 0 || inst_msb > PhysicalTileType->capacity - 1) {
+                                if (inst_lsb < 0 || inst_msb > SubTile->capacity.total() - 1) {
                                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                    "Pin location specification '%s' contain an out-of-range instance. Expect [%d:%d]",
-                                                   token.c_str(), 0, PhysicalTileType->capacity - 1);
+                                                   token.c_str(), 0, SubTile->capacity.total() - 1);
                                 }
                             }
 
@@ -3599,7 +3599,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             VTR_ASSERT(pin_low_idx >= 0);
                             VTR_ASSERT(pin_high_idx >= 0);
 
-                            for (int iinst = inst_lsb; iinst <= inst_msb; ++iinst) {
+                            for (int iinst = inst_lsb + SubTile->capacity.low; iinst <= inst_msb + SubTile->capacity.low; ++iinst) {
                                 for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
                                     //Record that the pin has it's location specified
                                     port_pins_with_specified_locations[iinst][inst_port.port_name()].insert(ipin);
@@ -3612,7 +3612,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         }
 
         //Check for any pins missing location specs
-        for (int iinst = 0; iinst < PhysicalTileType->capacity; ++iinst) {
+        for (int iinst = SubTile->capacity.low; iinst < SubTile->capacity.high; ++iinst) {
             for (const auto& port : SubTile->ports) {
                 for (int ipin = 0; ipin < port.num_pins; ++ipin) {
                     if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {

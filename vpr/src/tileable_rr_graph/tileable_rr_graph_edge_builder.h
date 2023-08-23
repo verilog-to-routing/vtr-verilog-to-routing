@@ -13,6 +13,7 @@
 #include "physical_types.h"
 #include "device_grid.h"
 #include "rr_graph_obj.h"
+#include "rr_graph_type.h"
 #include "rr_graph_view.h"
 #include "rr_graph.h"
 
@@ -27,6 +28,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const size_t& layer,
                           const vtr::Point<size_t>& device_chan_width,
                           const std::vector<t_segment_inf>& segment_inf,
+                          const std::vector<t_segment_inf>& segment_inf_x,
+                          const std::vector<t_segment_inf>& segment_inf_y,
                           const std::vector<vtr::Matrix<int>>& Fc_in,
                           const std::vector<vtr::Matrix<int>>& Fc_out,
                           const e_switch_block_type& sb_type,

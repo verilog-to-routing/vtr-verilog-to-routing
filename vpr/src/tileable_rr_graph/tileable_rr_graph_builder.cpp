@@ -148,6 +148,11 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     /* A temp data about the track ids for each CHANX and CHANY rr_node */
     std::map<RRNodeId, std::vector<size_t>> rr_node_track_ids;
 
+    /* Get the routing segments on X-axis and Y-axis separately */
+    t_unified_to_parallel_seg_index segment_index_map;
+    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS, true);
+    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS, true);
+
     /************************
      * Allocate the rr_nodes
      ************************/
@@ -155,7 +160,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                   rr_node_driver_switches,
                                   grids, 0,
                                   device_chan_width,
-                                  segment_inf,
+                                  segment_inf_x, segment_inf_y,
                                   device_grid_annotation,
                                   shrink_boundary,
                                   through_channel);
@@ -170,7 +175,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    device_ctx.rr_rc_data,
                                    grids, 0,
                                    device_chan_width,
-                                   segment_inf,
+                                   segment_inf_x, segment_inf_y,
+                                   segment_index_map,
                                    wire_to_ipin_rr_switch,
                                    delayless_rr_switch,
                                    device_grid_annotation,
@@ -245,7 +251,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          rr_node_driver_switches,
                          grids, 0,
                          device_chan_width,
-                         segment_inf,
+                         segment_inf, segment_inf_x, segment_inf_y,
                          Fc_in, Fc_out,
                          sb_type, Fs, sb_subtype, subFs,
                          wire_opposite_side);
@@ -289,9 +295,6 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
      *  a. cost_index
      *  b. RC tree
      ***********************************************************************/
-    t_unified_to_parallel_seg_index segment_index_map;
-    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
-    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
     rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y,
                        *wire_to_rr_ipin_switch, base_cost_type);
 

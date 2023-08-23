@@ -6,6 +6,7 @@
  *******************************************************************/
 #include "device_grid.h"
 #include "rr_graph_obj.h"
+#include "rr_graph_type.h"
 #include "vtr_geometry.h"
 
 /********************************************************************
@@ -109,5 +110,10 @@ short find_rr_graph_average_fan_in(const RRGraph& rr_graph,
                                    const std::vector<t_rr_type>& node_types);
 
 void print_rr_graph_mux_stats(const RRGraph& rr_graph);
+
+/* A copy of the function from rr_graph2.cpp; This is keep tilable rr_graph builder self-contained */
+int find_parallel_seg_index(const int abs_index,
+                            const t_unified_to_parallel_seg_index& index_map,
+                            const e_parallel_axis parallel_axis);
 
 #endif

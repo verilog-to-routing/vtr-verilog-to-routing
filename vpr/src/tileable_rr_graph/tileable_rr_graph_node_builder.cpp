@@ -304,7 +304,8 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
 static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
                                                  const size_t& layer,
                                                  const vtr::Point<size_t>& chan_width,
-                                                 const std::vector<t_segment_inf>& segment_infs,
+                                                 const std::vector<t_segment_inf>& segment_inf_x,
+                                                 const std::vector<t_segment_inf>& segment_inf_y,
                                                  const DeviceGridAnnotation& device_grid_annotation,
                                                  const bool& shrink_boundary,
                                                  const bool& through_channel) {
@@ -336,13 +337,13 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
      */
     num_rr_nodes_per_type[CHANX] = estimate_num_chanx_rr_nodes(grids, layer,
                                                                chan_width.x(),
-                                                               segment_infs,
+                                                               segment_inf_x,
                                                                device_grid_annotation,
                                                                shrink_boundary,
                                                                through_channel);
     num_rr_nodes_per_type[CHANY] = estimate_num_chany_rr_nodes(grids, layer,
                                                                chan_width.y(),
-                                                               segment_infs,
+                                                               segment_inf_y,
                                                                device_grid_annotation,
                                                                shrink_boundary,
                                                                through_channel);
@@ -362,7 +363,8 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const DeviceGrid& grids,
                                    const size_t& layer,
                                    const vtr::Point<size_t>& chan_width,
-                                   const std::vector<t_segment_inf>& segment_infs,
+                                   const std::vector<t_segment_inf>& segment_inf_x,
+                                   const std::vector<t_segment_inf>& segment_inf_y,
                                    const DeviceGridAnnotation& device_grid_annotation,
                                    const bool& shrink_boundary,
                                    const bool& through_channel) {
@@ -371,7 +373,8 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
     std::vector<size_t> num_rr_nodes_per_type = estimate_num_rr_nodes(grids,
                                                                       layer,
                                                                       chan_width,
-                                                                      segment_infs,
+                                                                      segment_inf_x,
+                                                                      segment_inf_y,
                                                                       device_grid_annotation,
                                                                       shrink_boundary,
                                                                       through_channel);
@@ -748,6 +751,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                               const t_rr_type& chan_type,
                                               ChanNodeDetails& chan_details,
                                               const std::vector<t_segment_inf>& segment_infs,
+                                              const t_unified_to_parallel_seg_index& seg_index_map,
                                               const int& cost_index_offset) {
     /* Check each node_id(potential ptc_num) in the channel :
      * If this is a starting point, we set a new rr_node with xlow/ylow, ptc_num
@@ -773,13 +777,15 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
 
             /* assign switch id */
             size_t seg_id = chan_details.get_track_segment_id(itrack);
-            rr_node_driver_switches[node] = RRSwitchId(segment_infs[seg_id].arch_opin_switch);
+            e_parallel_axis wanted_axis = chan_type == CHANX ? X_AXIS : Y_AXIS;
+            size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
+            rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
 
             /* Update chan_details with node_id */
             chan_details.set_track_node_id(itrack, size_t(node));
 
             /* cost index depends on the segment index */
-            rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_id));
+            rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + parallel_seg_id));
             /* Finish here, go to next */
         }
 
@@ -860,6 +866,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                            const size_t& layer,
                                            const size_t& chan_width,
                                            const std::vector<t_segment_inf>& segment_infs,
+                                           const t_unified_to_parallel_seg_index& segment_index_map,
                                            const DeviceGridAnnotation& device_grid_annotation,
                                            const bool& shrink_boundary,
                                            const bool& through_channel) {
@@ -960,6 +967,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                               layer, chanx_coord, CHANX,
                                               chanx_details,
                                               segment_infs,
+                                              segment_index_map,
                                               CHANX_COST_INDEX_START);
             /* Get a copy of node_ids */
             track_node_ids = chanx_details.get_track_node_ids();
@@ -980,6 +988,8 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                            const size_t& layer,
                                            const size_t& chan_width,
                                            const std::vector<t_segment_inf>& segment_infs,
+                                           const size_t& num_segment_x,
+                                           const t_unified_to_parallel_seg_index& seg_index_map,
                                            const DeviceGridAnnotation& device_grid_annotation,
                                            const bool& shrink_boundary,
                                            const bool& through_channel) {
@@ -1083,7 +1093,8 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                               layer, chany_coord, CHANY,
                                               chany_details,
                                               segment_infs,
-                                              CHANX_COST_INDEX_START + segment_infs.size());
+                                              seg_index_map,
+                                              CHANX_COST_INDEX_START + num_segment_x);
             /* Get a copy of node_ids */
             track_node_ids = chany_details.get_track_node_ids();
         }
@@ -1125,7 +1136,9 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     const DeviceGrid& grids,
                                     const size_t& layer,
                                     const vtr::Point<size_t>& chan_width,
-                                    const std::vector<t_segment_inf>& segment_infs,
+                                    const std::vector<t_segment_inf>& segment_inf_x,
+                                    const std::vector<t_segment_inf>& segment_inf_y,
+                                    const t_unified_to_parallel_seg_index& segment_index_map,
                                     const RRSwitchId& wire_to_ipin_switch,
                                     const RRSwitchId& delayless_switch,
                                     const DeviceGridAnnotation& device_grid_annotation,
@@ -1159,7 +1172,8 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                    rr_node_track_ids,
                                    grids, layer,
                                    chan_width.x(),
-                                   segment_infs,
+                                   segment_inf_x,
+                                   segment_index_map,
                                    device_grid_annotation,
                                    shrink_boundary,
                                    through_channel);
@@ -1170,7 +1184,9 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                    rr_node_track_ids,
                                    grids, layer,
                                    chan_width.y(),
-                                   segment_infs,
+                                   segment_inf_y,
+                                   segment_inf_x.size(),
+                                   segment_index_map,
                                    device_grid_annotation,
                                    shrink_boundary,
                                    through_channel);

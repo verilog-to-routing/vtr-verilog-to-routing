@@ -43,7 +43,8 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
 RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const RRGraphView& rr_graph,
                                 const vtr::Point<size_t>& device_chan_width,
-                                const std::vector<t_segment_inf>& segment_inf,
+                                const std::vector<t_segment_inf>& segment_inf_x,
+                                const std::vector<t_segment_inf>& segment_inf_y,
                                 const size_t& layer,
                                 const vtr::Point<size_t>& gsb_coordinate);
 
