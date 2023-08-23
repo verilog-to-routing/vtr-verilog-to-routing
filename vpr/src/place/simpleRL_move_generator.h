@@ -49,7 +49,8 @@ class KArmedBanditAgent {
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
     float last_delta_q_;                    //Last calculated delta Q
-    size_t last_action_ = 0;                //type of the last action (move type) proposed
+    static constexpr size_t INVALID_ACTION = std::numeric_limits<size_t>::max();
+    size_t last_action_ = INVALID_ACTION;   //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
@@ -136,6 +137,8 @@ class SoftmaxAgent : public KArmedBanditAgent {
      */
     void set_action_prob();
 
+    void update_action_prob();
+
     /**
      * @brief Set step size for q-table updates
      *
@@ -156,6 +159,9 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> action_prob_;      //The probability of choosing each action
     std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
     std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
+    // incremental softmax computation member variables
+    std::vector<float> exp_q_incr_;
+    float sum_exp_q_incr_;
 
     std::chrono::duration<double, std::nano> elapsed_time_;
 };

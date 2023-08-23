@@ -45,9 +45,9 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     //Determine step size
     float step = 0.;
     if (exp_alpha_ < 0.) {
-        step = 1. / num_action_chosen_[last_action_]; //Incremental average
+        step = 1.0f / (float)num_action_chosen_[last_action_]; //Incremental average
     } else if (exp_alpha_ <= 1) {
-        step = exp_alpha_; //Exponentially wieghted average
+        step = exp_alpha_; //Exponentially weighted average
     } else {
         VTR_ASSERT_MSG(false, "Invalid step size");
     }
@@ -225,19 +225,6 @@ SoftmaxAgent::~SoftmaxAgent() {
 }
 
 void SoftmaxAgent::init_q_scores() {
-    q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
-    exp_q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
-    num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
-    action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
-    block_type_ratio_ = std::vector<float>(num_available_types_, 0.);
-    cumm_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_);
-
-    //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
-    //write agent internal q-table and actions into file for debugging purposes
-    if (agent_info_file_) {
-        //we haven't performed any moves yet, hence last_aciton and reward are 0
-        write_agent_info(0, 0);
-    }
 
     /*
      * The agent calculates each block type ratio as: (# blocks of each type / total blocks).
@@ -247,6 +234,35 @@ void SoftmaxAgent::init_q_scores() {
     if (propose_blk_type_) {
         set_block_ratio();
     }
+
+    q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
+    exp_q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
+    num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
+    action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
+    cumm_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_);
+
+    sum_exp_q_incr_ = 0.0f;
+    if (propose_blk_type_) {
+        exp_q_incr_.resize(num_available_moves_ * num_available_types_);
+        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
+            size_t blk_ratio_index = i / num_available_moves_;
+            exp_q_incr_[i] = scaled_clipped_exp(0.0f) * block_type_ratio_[blk_ratio_index];
+            std::cout << "init: " << exp_q_incr_[i] << std::endl;
+
+            sum_exp_q_incr_ += exp_q_incr_[i];
+        }
+    } else{
+        exp_q_incr_ = std::vector<float>(num_available_moves_ * num_available_types_, scaled_clipped_exp(0.0f));
+        sum_exp_q_incr_ = exp_q_incr_[0] * (float)exp_q_incr_.size();
+    }
+
+    //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+    //write agent internal q-table and actions into file for debugging purposes
+    if (agent_info_file_) {
+        //we haven't performed any moves yet, hence last_aciton and reward are 0
+        write_agent_info(0, 0);
+    }
+
     set_action_prob();
     elapsed_time_ = std::chrono::duration<double, std::nano>::zero();
 }
@@ -293,12 +309,38 @@ t_propose_action SoftmaxAgent::propose_action() {
     propose_action.move_type = (e_move_type)move_type;
     propose_action.blk_type = blk_type;
 
+    {
+        update_action_prob();
+        p *= sum_exp_q_incr_;
+        float accum = 0.0f;
+        size_t selected_action = INVALID_ACTION;
+        for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
+            float pre_accum = accum;
+            accum += exp_q_incr_[i];
+            if (pre_accum <= p && p <= accum) {
+                selected_action = i;
+                break;
+            }
+        }
+
+        VTR_ASSERT(selected_action != INVALID_ACTION);
+        if (action_type_q_pos != selected_action) {
+            std::cout << action_type_q_pos << "  " << selected_action << " " << p/sum_exp_q_incr_ << std::endl;
+            for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
+                std::cout << cumm_action_prob_[i] << "  " << exp_q_incr_[i] << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    }
+
     return propose_action;
 }
 
 void SoftmaxAgent::set_block_ratio() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     int num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
+
+    block_type_ratio_.resize(num_available_types_);
 
     /* Calculate ratio of each block as : (# blocks of each type / total blocks).
      * Each block type can have "num_available_moves_" different moves. Hence,
@@ -324,7 +366,7 @@ void SoftmaxAgent::set_action_prob() {
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
         if (propose_blk_type_) {
             //calculate block type index based on its location on q_table
-            int blk_ratio_index = (int)i / num_available_moves_;
+            size_t blk_ratio_index = i / num_available_moves_;
             action_prob_[i] = (exp_q_[i] / sum_q) * block_type_ratio_[blk_ratio_index];
         } else {
             action_prob_[i] = (exp_q_[i] / sum_q);
@@ -348,6 +390,34 @@ void SoftmaxAgent::set_action_prob() {
         accum += action_prob_[i];
         cumm_action_prob_[i] = accum;
     }
+}
+
+void SoftmaxAgent::update_action_prob() {
+    // if no action has been taken, there is nothing to update
+    if (last_action_ == INVALID_ACTION) {
+        return;
+    }
+
+    // get the updated Q-value
+    float new_q = q_[last_action_];
+
+    float new_exp_q;
+    // compute new exponentiated Q-value
+    if (propose_blk_type_) {
+        size_t blk_ratio_index = last_action_ / num_available_moves_;
+        new_exp_q = scaled_clipped_exp(new_q) * block_type_ratio_[blk_ratio_index];
+    } else {
+        new_exp_q = scaled_clipped_exp(new_q);
+    }
+
+    // get the old eponentiated Q-value
+    float prev_exp_q = exp_q_incr_[last_action_];
+    // store the new exponentiated Q-value
+    exp_q_incr_[last_action_] = new_exp_q;
+    // compute how much exponentiated Q-value for the last action has changed
+    float exp_q_diff = new_exp_q - prev_exp_q;
+    // apply this difference to sum of exponentiated Q-values
+    sum_exp_q_incr_ += exp_q_diff;
 }
 
 void SoftmaxAgent::set_step(float gamma, int move_lim) {
