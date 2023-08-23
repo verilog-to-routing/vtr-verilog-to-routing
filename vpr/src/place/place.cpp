@@ -6,6 +6,7 @@
 #include <numeric>
 #include <chrono>
 #include <vtr_ndmatrix.h>
+#include <optional>
 
 #include "NetPinTimingInvalidator.h"
 #include "vtr_assert.h"

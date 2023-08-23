@@ -135,7 +135,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
      * If agent only proposes move type, the action probabilities would be equal for all move types at the beginning.
      * If agent proposes both move and block type, the action_prob for each action would be based on its block type count in the netlist.
      */
-    void set_action_prob();
+//    void set_action_prob();
 
     void update_action_prob();
 
@@ -155,13 +155,13 @@ class SoftmaxAgent : public KArmedBanditAgent {
     void init_q_scores_();
 
   private:
-    std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
-    std::vector<float> action_prob_;      //The probability of choosing each action
-    std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
+//    std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
+//    std::vector<float> action_prob_;      //The probability of choosing each action
+//    std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
     std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
     // incremental softmax computation member variables
-    std::vector<float> exp_q_incr_;
-    float sum_exp_q_incr_;
+    std::vector<float> exp_q_incr_;       //Holds e^(beta*q) values
+    float sum_exp_q_incr_;                //Sum of e^(beta*q) values
 };
 
 /**
