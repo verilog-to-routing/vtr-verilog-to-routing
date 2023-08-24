@@ -61,7 +61,7 @@ class PathManager {
     // This is needed for RCV as the non minimum distance pathfinding can lead to illegal loops
     // By keeping a set of the current route tree for a net, as well as checking the current path we can prevent this
     bool node_exists_in_tree(t_heap_path* path_data,
-                             RRNodeId& to_node);
+                             RRNodeId to_node);
 
     // Insert a node into the current route tree set indicating that it's currently in routing
     // Use this whenever updating the route tree

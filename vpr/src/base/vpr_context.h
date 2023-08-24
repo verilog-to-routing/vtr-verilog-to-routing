@@ -195,10 +195,10 @@ struct DeviceContext : public Context {
     std::vector<t_rr_rc_data> rr_rc_data;
 
     ///@brief Sets of non-configurably connected nodes
-    std::vector<std::vector<int>> rr_non_config_node_sets;
+    std::vector<std::vector<RRNodeId>> rr_non_config_node_sets;
 
-    ///@brief Reverse look-up from RR node to non-configurably connected node set (index into rr_nonconf_node_sets)
-    std::unordered_map<int, int> rr_node_to_non_config_node_set;
+    ///@brief Reverse look-up from RR node to non-configurably connected node set (index into rr_non_config_node_sets)
+    std::unordered_map<RRNodeId, int> rr_node_to_non_config_node_set;
 
     /* A writeable view of routing resource graph to be the ONLY database
      * for routing resource graph builder functions.
@@ -428,13 +428,13 @@ struct RoutingContext : public Context {
 
     vtr::vector<ParentNetId, std::unordered_set<int>> trace_nodes;
 
-    vtr::vector<ParentNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+    vtr::vector<ParentNetId, std::vector<RRNodeId>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
     vtr::vector<ParentNetId, uint8_t> is_clock_net; /* [0..num_nets-1] */
 
-    vtr::vector<ParentBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+    vtr::vector<ParentBlockId, std::vector<RRNodeId>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
-    std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+    vtr::vector<RRNodeId, t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
     vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
 
@@ -449,7 +449,7 @@ struct RoutingContext : public Context {
      * bit value 1: node is part of a non-configurable set
      * Initialized once when RoutingContext is initialized, static throughout invocation of router
      */
-    vtr::dynamic_bitset<> non_configurable_bitset; /*[0...device_ctx.num_rr_nodes] */
+    vtr::dynamic_bitset<RRNodeId> non_configurable_bitset; /*[0...device_ctx.num_rr_nodes] */
 
     ///@brief Information about current routing status of each net
     t_net_routing_status net_status;
