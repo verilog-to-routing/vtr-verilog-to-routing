@@ -18,7 +18,7 @@ bool f_placer_breakpoint_reached = false;
 //Records counts of reasons for aborted moves
 static std::map<std::string, size_t> f_move_abort_reasons;
 
-void log_move_abort(std::string reason) {
+void log_move_abort(const std::string& reason) {
     ++f_move_abort_reasons[reason];
 }
 
@@ -583,7 +583,7 @@ ClusterBlockId pick_from_block() {
 
 //Pick a random block with a specific blk_type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
+ClusterBlockId pick_from_block(const t_logical_block_type& blk_type) {
     /* Some blocks may be fixed, and should never be moved from their *
      * initial positions. If we randomly selected such a block try    *
      * another random block.                                          *
@@ -597,7 +597,7 @@ ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
     auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
 
     //no blocks with this type is available
-    if (blocks_per_type.size() == 0) {
+    if (blocks_per_type.empty()) {
         return ClusterBlockId::INVALID();
     }
 
@@ -635,7 +635,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     pin_from = -1;
 
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
+    if (place_move_ctx.highly_crit_pins.empty()) {
         return ClusterBlockId::INVALID();
     }
 
@@ -657,7 +657,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 
 //Pick a random highly critical block with a specified block type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type blk_type) {
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, const t_logical_block_type& blk_type) {
     auto& place_move_ctx = g_placer_ctx.move();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -667,7 +667,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     pin_from = -1;
 
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
+    if (place_move_ctx.highly_crit_pins.empty()) {
         return ClusterBlockId::INVALID();
     }
 

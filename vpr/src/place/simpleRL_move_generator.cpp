@@ -265,7 +265,6 @@ t_propose_action SoftmaxAgent::propose_action() {
     size_t move_type;
     t_logical_block_type blk_type;
 
-    float p = vtr::frand() * sum_exp_q_incr_;
 //    auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
 //    auto action_type_q_pos = itr - cumm_action_prob_.begin();
 //    move_type = (action_type_q_pos) % num_available_moves_;
@@ -295,7 +294,7 @@ t_propose_action SoftmaxAgent::propose_action() {
 
 
     update_action_prob();
-//        p *= sum_exp_q_incr_;
+    float p = vtr::frand() * sum_exp_q_incr_;
     float accum = 0.0f;
     size_t selected_action = INVALID_ACTION;
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
@@ -313,7 +312,7 @@ t_propose_action SoftmaxAgent::propose_action() {
     }
 
     if (selected_action == INVALID_ACTION) {
-        std::cout << 0 << "  " << selected_action << " " << p/sum_exp_q_incr_ << std::endl;
+        std::cout << p << "  " << sum_exp_q_incr_ << " " << accum << std::endl;
         for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
             std::cout << 0.0f << "  " << exp_q_incr_[i] << std::endl;
         }
@@ -353,7 +352,7 @@ t_propose_action SoftmaxAgent::propose_action() {
 
 void SoftmaxAgent::set_block_ratio() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    int num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
+    size_t num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
 
     block_type_ratio_.resize(num_available_types_);
 
