@@ -200,9 +200,10 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
             /* Since this is a unidirectional routing architecture,
              * Add a pair of tracks, 1 INC track and 1 DEC track
              */
-            chan_node_details.add_track(cur_track, Direction::INC, iseg, seg_len, seg_start, seg_end);
+            int seg_index = segment_inf[iseg].seg_index;
+            chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len, seg_start, seg_end);
             cur_track++;
-            chan_node_details.add_track(cur_track, Direction::DEC, iseg, seg_len, seg_start, seg_end);
+            chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len, seg_start, seg_end);
             cur_track++;
         }
     }
