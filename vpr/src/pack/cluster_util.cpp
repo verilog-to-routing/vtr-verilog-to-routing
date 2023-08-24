@@ -1507,7 +1507,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_molecule_link* unclustered_list_head,
                       const int& unclustered_list_head_size,
                       std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
-                      std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+                      std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                      bool noc_enabled) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
@@ -1601,7 +1602,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                          high_fanout_threshold,
                          *timing_info,
                          attraction_groups,
-                         net_output_feeds_driving_block_input);
+                         net_output_feeds_driving_block_input,
+                         noc_enabled);
     cluster_stats.num_unrelated_clustering_attempts = 0;
 
     if (packer_opts.timing_driven) {
@@ -1763,7 +1765,8 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
                                   const SetupTimingInfo& timing_info,
                                   const std::unordered_set<AtomNetId>& is_global,
                                   const int high_fanout_net_threshold,
-                                  std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
+                                  std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
+                                  bool noc_enabled) {
     /* Updates the marked data structures, and if gain_flag is GAIN,  *
      * the gain when an atom block is added to a cluster.  The        *
      * sharinggain is the number of inputs that a atom block shares with   *
@@ -1783,7 +1786,7 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
         /* There are VCC and GND nets in the netlist. These nets have a high fanout,
          * but their sinks do not necessarily have a logical relation with each other.
          * Therefore, we exclude constant nets when evaluating high fanout connectivity. */
-        if (!is_global.count(net_id)) {
+        if (!is_global.count(net_id) && (!noc_enabled || !atom_ctx.nlist.net_is_constant(net_id))) {
             /* If no low/medium fanout nets, we may need to consider
              * high fan-out nets for packing, so select one and store it */
             AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
@@ -1919,7 +1922,8 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const int high_fanout_net_threshold,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
-                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
+                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
+                          bool noc_enabled) {
     /* Routine that is called each time a new molecule is added to the cluster.
      * Makes calls to update cluster stats such as the gain map for atoms, used pins, and clock structures,
      * in order to reflect the new content of the cluster.
@@ -1976,7 +1980,8 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                                              timing_info,
                                              is_global,
                                              high_fanout_net_threshold,
-                                             net_output_feeds_driving_block_input);
+                                             net_output_feeds_driving_block_input,
+                                             noc_enabled);
             } else {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                                              timing_driven,
@@ -1984,7 +1989,8 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                                              timing_info,
                                              is_global,
                                              high_fanout_net_threshold,
-                                             net_output_feeds_driving_block_input);
+                                             net_output_feeds_driving_block_input,
+                                             noc_enabled);
             }
         }
 
@@ -1997,7 +2003,8 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                                          timing_info,
                                          is_global,
                                          high_fanout_net_threshold,
-                                         net_output_feeds_driving_block_input);
+                                         net_output_feeds_driving_block_input,
+                                         noc_enabled);
         }
 
         /* Finally Clocks */
@@ -2009,14 +2016,16 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                                              timing_info,
                                              is_global,
                                              high_fanout_net_threshold,
-                                             net_output_feeds_driving_block_input);
+                                             net_output_feeds_driving_block_input,
+                                             noc_enabled);
             } else {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
                                              timing_driven, connection_driven, INPUT,
                                              timing_info,
                                              is_global,
                                              high_fanout_net_threshold,
-                                             net_output_feeds_driving_block_input);
+                                             net_output_feeds_driving_block_input,
+                                             noc_enabled);
             }
         }
 

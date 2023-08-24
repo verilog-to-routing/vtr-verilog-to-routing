@@ -24,7 +24,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                                                          AttractionInfo& attraction_groups,
                                                          bool& floorplan_regions_overfull,
-                                                         t_clustering_data& clustering_data);
+                                                         t_clustering_data& clustering_data,
+                                                         bool noc_enabled);
 
 int get_cluster_of_block(int blkidx);
 

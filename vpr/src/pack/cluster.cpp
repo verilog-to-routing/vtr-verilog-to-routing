@@ -97,7 +97,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                                                          AttractionInfo& attraction_groups,
                                                          bool& floorplan_regions_overfull,
-                                                         t_clustering_data& clustering_data) {
+                                                         t_clustering_data& clustering_data,
+                                                         bool noc_enabled) {
     /* Does the actual work of clustering multiple netlist blocks *
      * into clusters.                                                  */
 
@@ -290,7 +291,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  high_fanout_threshold,
                                  *timing_info,
                                  attraction_groups,
-                                 net_output_feeds_driving_block_input);
+                                 net_output_feeds_driving_block_input,
+                                 noc_enabled);
             helper_ctx.total_clb_num++;
 
             if (packer_opts.timing_driven) {
@@ -363,7 +365,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  clustering_data.unclustered_list_head,
                                  unclustered_list_head_size,
                                  net_output_feeds_driving_block_input,
-                                 primitive_candidate_block_types);
+                                 primitive_candidate_block_types,
+                                 noc_enabled);
             }
 
             is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);

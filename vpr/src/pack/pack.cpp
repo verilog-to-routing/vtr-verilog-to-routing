@@ -177,7 +177,8 @@ bool try_pack(t_packer_opts* packer_opts,
             lb_type_rr_graphs,
             attraction_groups,
             floorplan_regions_overfull,
-            clustering_data);
+            clustering_data,
+            noc_enabled);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);

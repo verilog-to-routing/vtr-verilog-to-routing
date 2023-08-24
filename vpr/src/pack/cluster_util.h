@@ -242,7 +242,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_molecule_link* unclustered_list_head,
                       const int& unclustered_list_head_size,
                       std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
-                      std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+                      std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                      bool noc_enabled);
 
 t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& packer_opts,
                                                         const int& num_clb,
@@ -305,7 +306,8 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
                                   const SetupTimingInfo& timing_info,
                                   const std::unordered_set<AtomNetId>& is_global,
                                   const int high_fanout_net_threshold,
-                                  std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input);
+                                  std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
+                                  bool noc_enabled);
 
 void update_total_gain(float alpha, float beta, bool timing_driven, bool connection_driven, t_pb* pb, AttractionInfo& attraction_groups);
 
@@ -321,7 +323,8 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const int high_fanout_net_threshold,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
-                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input);
+                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
+                          bool noc_enabled);
 
 void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        t_pb_graph_node** primitives_list,
