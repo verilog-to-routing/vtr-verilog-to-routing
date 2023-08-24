@@ -44,8 +44,8 @@ enum class e_create_move {
  *        random block type to be chosen to be swapped.
  */
 struct t_propose_action {
-    e_move_type move_type = e_move_type::INVALID_MOVE;        ///<move type that propose_action chooses to perform
-    int logical_blk_type_index = -1;                          ///<propose_action can choose block type or leave it empty to allow any block type to be chosen
+    e_move_type move_type = e_move_type::INVALID_MOVE; ///<move type that propose_action chooses to perform
+    int logical_blk_type_index = -1;                   ///<propose_action can choose block type or leave it empty to allow any block type to be chosen
 };
 
 /**

@@ -3313,7 +3313,6 @@ static void calculate_reward_and_process_outcome(
         reward_fun = string_to_reward(reward_fun_string);
     }
 
-
     if (reward_fun == BASIC) {
         move_generator.process_outcome(-1 * delta_c, reward_fun.value());
     } else if (reward_fun == NON_PENALIZING_BASIC

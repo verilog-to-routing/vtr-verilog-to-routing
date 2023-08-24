@@ -50,7 +50,7 @@ class KArmedBanditAgent {
     std::vector<float> q_;                  //Estimated value of each arm (Q)
     float last_delta_q_;                    //Last calculated delta Q
     static constexpr size_t INVALID_ACTION = std::numeric_limits<size_t>::max();
-    size_t last_action_ = INVALID_ACTION;   //type of the last action (move type) proposed
+    size_t last_action_ = INVALID_ACTION; //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
@@ -126,18 +126,6 @@ class SoftmaxAgent : public KArmedBanditAgent {
 
   public:
     /**
-     * @brief Calculate the fraction of total netlist blocks for each agent block type and will be used by the "set_action_prob" function.
-     */
-    void set_block_ratio();
-
-    /**
-     * @brief Set action probability for all available actions.
-     * If agent only proposes move type, the action probabilities would be equal for all move types at the beginning.
-     * If agent proposes both move and block type, the action_prob for each action would be based on its block type count in the netlist.
-     */
-//    void set_action_prob();
-
-    /**
      * @brief Set step size for q-table updates
      *
      *   @param gamma Controls how quickly the agent's memory decays, can be specified by the command-line option "--place_agent_gamma"
@@ -153,6 +141,11 @@ class SoftmaxAgent : public KArmedBanditAgent {
     void init_q_scores_();
 
     /**
+     * @brief Calculate the fraction of total netlist blocks for each agent block type and will be used by the "set_action_prob" function.
+     */
+    void set_block_ratio_();
+
+    /**
      * @brief Updates e^(beta*Q) value for the last action and incrementally
      * updates the sum of e^(beta*Q) values. After every 16384 function calls,
      * the sum is calculated from scratch to prevent round-off error from accumulating.
@@ -160,15 +153,11 @@ class SoftmaxAgent : public KArmedBanditAgent {
     void update_action_prob_();
 
   private:
-//    std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
-//    std::vector<float> action_prob_;      //The probability of choosing each action
-//    std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
     std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
     // incremental softmax computation member variables
-    std::vector<float> exp_q_incr_;       //Holds e^(beta*q) values
-    float sum_exp_q_incr_;                //Sum of e^(beta*q) values
-    size_t num_update_calls_;             //Records how many times update_action_prob_() has been called
-
+    std::vector<float> exp_q_incr_; //Holds e^(beta*q) values
+    float sum_exp_q_incr_;          //Sum of e^(beta*q) values
+    size_t num_update_calls_;       //Records how many times update_action_prob_() has been called
 };
 
 /**
@@ -185,9 +174,9 @@ class SimpleRLMoveGenerator : public MoveGenerator {
 
   public:
     // constructor using a pointer to the agent used
-    template <class T,
+    template<class T,
              class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
-    explicit SimpleRLMoveGenerator(std::unique_ptr<T> &agent);
+    explicit SimpleRLMoveGenerator(std::unique_ptr<T>& agent);
 
     // Updates affected_blocks with the proposed move, while respecting the current rlim
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) override;

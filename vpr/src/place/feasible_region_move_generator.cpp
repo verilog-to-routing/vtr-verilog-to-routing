@@ -97,7 +97,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
-    t_range_limiters range_limiters {rlim,
+    t_range_limiters range_limiters{rlim,
                                     place_move_ctx.first_rlim,
                                     placer_opts.place_dm_rlim};
 
