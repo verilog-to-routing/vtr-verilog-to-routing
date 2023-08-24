@@ -594,7 +594,7 @@ ClusterBlockId pick_from_block(const t_logical_block_type& blk_type) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     t_logical_block_type blk_type_temp;
     blk_type_temp.index = convert_agent_to_phys_blk_type(blk_type.index);
-    auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
+    const auto& blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
 
     //no blocks with this type is available
     if (blocks_per_type.empty()) {

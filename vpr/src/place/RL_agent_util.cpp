@@ -126,8 +126,8 @@ void determine_agent_block_types() {
     for (auto itype : device_ctx.logical_block_types) {
         if (itype.index == 0) //ignore empty type
             continue;
-        auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
-        if (blk_per_type.size() != 0) {
+        const auto& blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
+        if (!blk_per_type.empty()) {
             place_ctx.phys_blk_type_to_agent_blk_type_map.insert(std::pair<int, int>(agent_type_index, itype.index));
             place_ctx.agent_blk_type_to_phys_blk_type_map.insert(std::pair<int, int>(itype.index, agent_type_index));
             agent_type_index++;
