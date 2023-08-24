@@ -520,11 +520,11 @@ int get_num_agent_types() {
     return place_ctx.phys_blk_type_to_agent_blk_type_map.size();
 }
 
-ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {
+ClusterBlockId propose_block_to_move(int& logical_blk_type_index, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
+    if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
             b_from = pick_from_highly_critical_block(*net_from, *pin_from);
         } else {
@@ -533,13 +533,13 @@ ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly
 
         //if a movable block found, set the block type
         if (b_from) {
-            blk_type.index = convert_phys_to_agent_blk_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
+            logical_blk_type_index = convert_phys_to_agent_blk_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, blk_type);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index);
         } else {
-            b_from = pick_from_block(blk_type);
+            b_from = pick_from_block(logical_blk_type_index);
         }
     }
 
@@ -583,7 +583,7 @@ ClusterBlockId pick_from_block() {
 
 //Pick a random block with a specific blk_type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_block(const t_logical_block_type& blk_type) {
+ClusterBlockId pick_from_block(const int logical_blk_type_index) {
     /* Some blocks may be fixed, and should never be moved from their *
      * initial positions. If we randomly selected such a block try    *
      * another random block.                                          *
@@ -593,7 +593,7 @@ ClusterBlockId pick_from_block(const t_logical_block_type& blk_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     t_logical_block_type blk_type_temp;
-    blk_type_temp.index = convert_agent_to_phys_blk_type(blk_type.index);
+    blk_type_temp.index = convert_agent_to_phys_blk_type(logical_blk_type_index);
     const auto& blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
 
     //no blocks with this type is available
@@ -657,7 +657,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 
 //Pick a random highly critical block with a specified block type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, const t_logical_block_type& blk_type) {
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, const int logical_blk_type_index) {
     auto& place_move_ctx = g_placer_ctx.move();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -678,7 +678,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     //Check if picked block type matches with the blk_type specified, and it is not fixed
     //blk_type from propose move doesn't account for the EMPTY type
     auto b_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    if (convert_phys_to_agent_blk_type(b_from_type->index) == blk_type.index) {
+    if (convert_phys_to_agent_blk_type(b_from_type->index) == logical_blk_type_index) {
         if (place_ctx.block_locs[b_from].is_fixed) {
             return ClusterBlockId::INVALID(); //Block is fixed, cannot move
         }

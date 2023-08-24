@@ -1444,8 +1444,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     crit_params.crit_exponent = state->crit_exponent;
     crit_params.crit_limit = placer_opts.place_crit_limit;
 
-    e_move_type move_type = e_move_type::UNIFORM; //move type number
-    t_logical_block_type move_blk_type;           //blk type that is chosen to be moved by the agent
+    // move type and block type chosen by the agent
+    t_propose_action proposed_action{e_move_type::UNIFORM, -1};
 
     num_ts_called++;
 
@@ -1478,19 +1478,19 @@ static e_move_result try_swap(const t_annealing_state* state,
     //When manual move toggle button is active, the manual move window asks the user for input.
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
-        create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, move_type, rlim, placer_opts, criticalities);
+        create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
         create_move_outcome = propose_router_swap(blocks_affected, rlim);
-        move_type = e_move_type::UNIFORM;
+        proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected, move_type, move_blk_type, rlim, placer_opts, criticalities);
+        create_move_outcome = move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
     }
 
-    if (move_blk_type.index != -1) { //if the agent proposed the block type, then collect the block type stat
-        ++move_type_stat.blk_type_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
+    if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+        ++move_type_stat.blk_type_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
@@ -1624,8 +1624,8 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
-            if (move_blk_type.index != -1) { //if the agent proposed the block type, then collect the block type stat
-                ++move_type_stat.accepted_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
+            if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+                ++move_type_stat.accepted_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
             }
             if (noc_opts.noc) {
                 commit_noc_costs();
@@ -1677,8 +1677,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                 revert_td_cost(blocks_affected);
             }
 
-            if (move_blk_type.index != -1) { //if the agent proposed the block type, then collect the block type stat
-                ++move_type_stat.rejected_moves[(move_blk_type.index * (placer_opts.place_static_move_prob.size())) + (int)move_type];
+            if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+                ++move_type_stat.rejected_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
             }
             /* Revert the traffic flow routes within the NoC*/
             if (noc_opts.noc) {

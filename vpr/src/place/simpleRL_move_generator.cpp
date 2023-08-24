@@ -14,11 +14,9 @@ static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, fl
  *  RL move generator implementation   *
  *                                     *
  *                                     */
-e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
-    auto propose_action_out = karmed_bandit_agent->propose_action();
-    move_type = propose_action_out.move_type;
-    blk_type = propose_action_out.blk_type; // can be empty to allow agent to only choose move type (pick a block randomly)
-    return avail_moves[(int)move_type]->propose_move(blocks_affected, move_type, blk_type, rlim, placer_opts, criticalities);
+e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+    proposed_action = karmed_bandit_agent->propose_action();
+    return avail_moves[(int)proposed_action.move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
 }
 
 void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function reward_fun) {
@@ -145,7 +143,7 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
 
 t_propose_action EpsilonGreedyAgent::propose_action() {
     size_t move_type;
-    t_logical_block_type blk_type;
+    int logical_blk_type_index = -1;
 
     if (vtr::frand() < epsilon_) {
         /* Explore
@@ -153,9 +151,11 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
         float p = vtr::frand();
         auto itr = std::lower_bound(cumm_epsilon_action_prob_.begin(), cumm_epsilon_action_prob_.end(), p);
         auto action_type_q_pos = itr - cumm_epsilon_action_prob_.begin();
+        //Mark the q_table location that agent used to update its value after processing the move outcome
+        last_action_ = action_type_q_pos;
         move_type = (action_type_q_pos) % num_available_moves_;
         if (propose_blk_type_) { //calculate block type index only if agent is supposed to propose both move and block type
-            blk_type.index = action_type_q_pos / num_available_moves_;
+            logical_blk_type_index = action_type_q_pos / num_available_moves_;
         }
 
     } else {
@@ -164,23 +164,22 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
         auto itr = std::max_element(q_.begin(), q_.end());
         VTR_ASSERT(itr != q_.end());
         auto action_type_q_pos = itr - q_.begin();
+        //Mark the q_table location that agent used to update its value after processing the move outcome
+        last_action_ = action_type_q_pos;
         move_type = action_type_q_pos % num_available_moves_;
         if (propose_blk_type_) { //calculate block type index only if agent is supposed to propose both move and block type
-            blk_type.index = action_type_q_pos / num_available_moves_;
+            logical_blk_type_index = action_type_q_pos / num_available_moves_;
         }
     }
 
     //Check the move type to be a valid move
     VTR_ASSERT(move_type < num_available_moves_);
     //Check the block type index to be valid type if the agent is supposed to propose block type
-    VTR_ASSERT((size_t)blk_type.index < num_available_types_ || !propose_blk_type_);
-
-    //Mark the q_table location that agent used to update its value after processing the move outcome
-    last_action_ = (!propose_blk_type_) ? move_type : move_type + (blk_type.index * num_available_moves_);
+    VTR_ASSERT((size_t)logical_blk_type_index < num_available_types_ || !propose_blk_type_);
 
     t_propose_action propose_action;
     propose_action.move_type = (e_move_type)move_type;
-    propose_action.blk_type = blk_type;
+    propose_action.logical_blk_type_index = logical_blk_type_index;
 
     return propose_action;
 }
@@ -264,7 +263,7 @@ t_propose_action SoftmaxAgent::propose_action() {
 //    set_action_prob();
 
     size_t move_type;
-    t_logical_block_type blk_type;
+    int logical_blk_type_index = -1;
 
 //    auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
 //    auto action_type_q_pos = itr - cumm_action_prob_.begin();
@@ -324,7 +323,7 @@ t_propose_action SoftmaxAgent::propose_action() {
 
     move_type = (selected_action) % num_available_moves_;
     if (propose_blk_type_) { //calculate block type index only if agent is supposed to propose both move and block type
-        blk_type.index = selected_action / num_available_moves_;
+        logical_blk_type_index = selected_action / num_available_moves_;
     }
 
     //Mark the q_table location that agent used to update its value after processing the move outcome
@@ -334,7 +333,7 @@ t_propose_action SoftmaxAgent::propose_action() {
     //Check the move type to be a valid move
     VTR_ASSERT(move_type < num_available_moves_);
     //Check the block type index to be valid type if the agent is supposed to propose block type
-    VTR_ASSERT((size_t)blk_type.index < num_available_types_ || !propose_blk_type_);
+    VTR_ASSERT((size_t)logical_blk_type_index < num_available_types_ || !propose_blk_type_);
 
 //        if (action_type_q_pos != selected_action) {
 //            std::cout << action_type_q_pos << "  " << selected_action << " " << p/sum_exp_q_incr_ << std::endl;
@@ -346,7 +345,7 @@ t_propose_action SoftmaxAgent::propose_action() {
 
     t_propose_action propose_action;
     propose_action.move_type = (e_move_type)move_type;
-    propose_action.blk_type = blk_type;
+    propose_action.logical_blk_type_index = logical_blk_type_index;
 
     return propose_action;
 }

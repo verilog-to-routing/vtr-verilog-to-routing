@@ -28,7 +28,8 @@ enum class e_move_type {
     CRIT_UNIFORM,
     FEASIBLE_REGION,
     NUMBER_OF_AUTO_MOVES,
-    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES
+    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
+    INVALID_MOVE
 };
 
 enum class e_create_move {
@@ -43,8 +44,8 @@ enum class e_create_move {
  *        random block type to be chosen to be swapped.
  */
 struct t_propose_action {
-    e_move_type move_type;         ///<move type that propose_action chooses to perform
-    t_logical_block_type blk_type; ///<propose_action can choose block type or leave it empty to allow any block type to be chosen
+    e_move_type move_type = e_move_type::INVALID_MOVE;        ///<move type that propose_action chooses to perform
+    int logical_blk_type_index = -1;                          ///<propose_action can choose block type or leave it empty to allow any block type to be chosen
 };
 
 /**
@@ -112,14 +113,14 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 /**
  * @brief Propose block for the RL agent based on required block type.
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: the agent type of the moving block.
  *  @param highly_crit_block: block should be chosen from highly critical blocks.
  *  @param net_from: if block is chosen from highly critical blocks, should store the critical net id.
  *  @param pin_from: if block is chosen from highly critical blocks, should save its critical pin id.
  *
  * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
  */
-ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+ClusterBlockId propose_block_to_move(int& logical_blk_type_index, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
 
 /**
  * @brief Select a random block to be swapped with another block
@@ -131,11 +132,11 @@ ClusterBlockId pick_from_block();
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: the agent type of the moving block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(const t_logical_block_type& blk_type);
+ClusterBlockId pick_from_block(int logical_blk_type_index);
 
 /**
  * @brief Select a random highly critical block to be swapped with another block
@@ -147,11 +148,11 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: the agent type of the moving block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, const t_logical_block_type& blk_type);
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, int logical_blk_type_index);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,

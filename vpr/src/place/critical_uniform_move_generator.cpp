@@ -3,11 +3,11 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 
-e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
+e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(blk_type, true, &net_from, &pin_from);
+    ClusterBlockId b_from = propose_block_to_move(proposed_action.logical_blk_type_index, true, &net_from, &pin_from);
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
