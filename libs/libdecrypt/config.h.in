@@ -1,9 +1,0 @@
- 
-#ifndef CONFIG_H
-#define CONFIG_H
-
-#define PRIVATE_KEY "@PRIVATE_KEY@"
-#define PASSPHRASE "@PASS_PHRASE@"
-// Add more configuration variables as needed
-
-#endif // CONFIG_H
