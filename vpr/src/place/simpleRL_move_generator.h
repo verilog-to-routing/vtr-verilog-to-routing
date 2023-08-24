@@ -137,8 +137,6 @@ class SoftmaxAgent : public KArmedBanditAgent {
      */
 //    void set_action_prob();
 
-    void update_action_prob();
-
     /**
      * @brief Set step size for q-table updates
      *
@@ -154,6 +152,13 @@ class SoftmaxAgent : public KArmedBanditAgent {
      */
     void init_q_scores_();
 
+    /**
+     * @brief Updates e^(beta*Q) value for the last action and incrementally
+     * updates the sum of e^(beta*Q) values. After every 16384 function calls,
+     * the sum is calculated from scratch to prevent round-off error from accumulating.
+     */
+    void update_action_prob_();
+
   private:
 //    std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
 //    std::vector<float> action_prob_;      //The probability of choosing each action
@@ -162,6 +167,8 @@ class SoftmaxAgent : public KArmedBanditAgent {
     // incremental softmax computation member variables
     std::vector<float> exp_q_incr_;       //Holds e^(beta*q) values
     float sum_exp_q_incr_;                //Sum of e^(beta*q) values
+    size_t num_update_calls_;             //Records how many times update_action_prob_() has been called
+
 };
 
 /**

@@ -213,7 +213,8 @@ SoftmaxAgent::SoftmaxAgent(size_t num_moves)
 
 SoftmaxAgent::SoftmaxAgent(size_t num_moves, size_t num_types)
     : KArmedBanditAgent(num_moves, num_types, num_types > 1)
-    , sum_exp_q_incr_(0.0f) {
+    , sum_exp_q_incr_(0.0f)
+    , num_update_calls_(0) {
     init_q_scores_();
 }
 
@@ -293,7 +294,7 @@ t_propose_action SoftmaxAgent::propose_action() {
 //    propose_action.blk_type = blk_type;
 
 
-    update_action_prob();
+    update_action_prob_();
     float p = vtr::frand() * sum_exp_q_incr_;
     float accum = 0.0f;
     size_t selected_action = INVALID_ACTION;
@@ -354,6 +355,7 @@ void SoftmaxAgent::set_block_ratio() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     size_t num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
 
+    // allocate enough space for available block types in the netlist
     block_type_ratio_.resize(num_available_types_);
 
     /* Calculate ratio of each block as : (# blocks of each type / total blocks).
@@ -364,8 +366,8 @@ void SoftmaxAgent::set_block_ratio() {
         t_logical_block_type blk_type;
         blk_type.index = convert_agent_to_phys_blk_type(itype);
         auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-        block_type_ratio_[itype] = (float)num_blocks / num_total_blocks;
-        block_type_ratio_[itype] /= num_available_moves_;
+        // perform division in double and cast the result to float to reduce round-off error
+        block_type_ratio_[itype] = (float)((double)num_blocks / (double)(num_total_blocks*num_available_moves_));
     }
 }
 
@@ -406,7 +408,7 @@ void SoftmaxAgent::set_block_ratio() {
 //    }
 //}
 
-void SoftmaxAgent::update_action_prob() {
+void SoftmaxAgent::update_action_prob_() {
     // if no action has been taken, there is nothing to update
     if (last_action_ == INVALID_ACTION) {
         return;
@@ -428,10 +430,17 @@ void SoftmaxAgent::update_action_prob() {
     float prev_exp_q = exp_q_incr_[last_action_];
     // store the new exponentiated Q-value
     exp_q_incr_[last_action_] = new_exp_q;
-    // compute how much exponentiated Q-value for the last action has changed
-    float exp_q_diff = new_exp_q - prev_exp_q;
-    // apply this difference to sum of exponentiated Q-values
-    sum_exp_q_incr_ += exp_q_diff;
+
+    num_update_calls_++;
+    if (num_update_calls_ % 16384 == 0) {
+        // compute the sum from scratch to prevent round-off error from growing too large
+        sum_exp_q_incr_ = std::accumulate(exp_q_incr_.begin(), exp_q_incr_.end(), 0.0f);
+    } else {
+        // compute how much exponentiated Q-value for the last action has changed
+        float exp_q_diff = new_exp_q - prev_exp_q;
+        // apply this difference to sum of exponentiated Q-values
+        sum_exp_q_incr_ += exp_q_diff;
+    }
 }
 
 void SoftmaxAgent::set_step(float gamma, int move_lim) {
