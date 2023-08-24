@@ -1512,8 +1512,8 @@ enum e_parallel_axis {
 /* GCLK: Describes a segment type that is part of the clock network                   *
  * GENERAL: Describes a segment type that is part of the general routing resources    */
 enum e_seg_res_type {
-    GCLK=0,
-    GENERAL=1,
+    GCLK = 0,
+    GENERAL = 1,
     NUM_RES_TYPES
 };
 constexpr std::array<const char*, NUM_RES_TYPES> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types

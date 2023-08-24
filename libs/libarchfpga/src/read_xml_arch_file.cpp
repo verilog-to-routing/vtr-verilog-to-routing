@@ -3729,12 +3729,11 @@ static void ProcessSegments(pugi::xml_node Parent,
             auto it = std::find(RES_TYPE_STRING.begin(), RES_TYPE_STRING.end(), tmp);
             if (it != RES_TYPE_STRING.end()) {
                 Segs[i].res_type = static_cast<e_seg_res_type>(std::distance(RES_TYPE_STRING.begin(), it));
-            }
-            else{
+            } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported segment res_type: %s\n", tmp);
             }
         }
-        
+
         /* Get Power info */
         /*
          * (*Segs)[i].Cmetal_per_m = get_attribute(Node, "Cmetal_per_m", false,
