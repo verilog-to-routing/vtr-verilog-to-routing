@@ -1837,6 +1837,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return uxsd::enum_node_direction::DEC_DIR;
             case Direction::BIDIR:
                 return uxsd::enum_node_direction::BI_DIR;
+            case Direction::NONE:
+                return uxsd::enum_node_direction::NONE;
             default:
                 report_error(
                     "Invalid direction %d", direction);

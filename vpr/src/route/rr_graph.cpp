@@ -1068,6 +1068,14 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
     /* END CHAN_DETAILS */
 
+    /* START A SEG DETAIL WITH LENGTH 0 */
+    //define a channel segment with length 0 to support 3d custom switchblocks
+
+    t_chan_seg_details seg_detail_layer;
+    seg_detail_layer.set_length(0);
+
+    /* END A SEG DETAILS WITH LENGTH 0 */
+
     /* START FC */
     /* Determine the actual value of Fc */
     std::vector<vtr::Matrix<int>> Fc_in;  /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..num_segments-1] */
@@ -3189,6 +3197,28 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_track_num(node, track);
         rr_graph_builder.set_node_direction(node, seg_details[track].direction());
     }
+
+    //do everything else for newly added node
+    int track = tracks_per_chan;
+    RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, CHANX, track);
+    if(node){
+        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track-1].index()));
+        rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
+//        int length = 0;
+//        float R = length * seg_details[track-1].Rmetal();
+//        float C = length * seg_details[track-1].Cmetal();
+        float R = 0;
+        float C = 0;
+        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+
+        rr_graph_builder.set_node_type(node, CHANX);
+        rr_graph_builder.set_node_track_num(node, track);
+        rr_graph_builder.set_node_direction(node, Direction::NONE);
+    }
+
+
 }
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {

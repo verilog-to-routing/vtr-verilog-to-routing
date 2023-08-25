@@ -1103,8 +1103,18 @@ static void load_chan_rr_indices(const int max_chan_width,
                 int y = (type == CHANX ? chan : seg);
                 const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
+                /*
+                 * Calculate how many nodes we need to reserve:
+                 * In case of multi-die FPGAs, we add an extra node (can be either CHANX OR CHANY, used CHANX) to
+                 * support inter-die communication from switch blocks (Meaning connection between two tracks in different layers)
+                 * The extra node have the following attribute:
+                 *  1) type = CHANX
+                 *  2) length = 0 (xhigh = OPEN, yhigh = OPEN)
+                 *  3) ptc = max_chanx_width
+                 */
+                int num_reserved_nodes = (grid.get_num_layers() > 1 && type == CHANX) ? max_chan_width +1 : max_chan_width;
                 /* Reserve nodes in lookup to save memory */
-                rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, max_chan_width);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, num_reserved_nodes);
 
                 for (int track = 0; track < max_chan_width; ++track) {
                     /* TODO: May let the length() == 0 case go through, to model muxes */
@@ -1132,10 +1142,22 @@ static void load_chan_rr_indices(const int max_chan_width,
                     /* Assign inode of start of wire to current position */
                     rr_graph_builder.node_lookup().add_node(inode, layer, chan, seg, type, track);
                 }
+
+                if(type == CHANX) {
+                    //add the extra node for multi-dice support
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, y, x, CHANX, max_chan_width);
+                    if (!inode) {
+                        inode = RRNodeId(*index);
+                        ++(*index);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, y, x, CHANX, max_chan_width);
+                    }
+                }
             }
         }
     }
 }
+
+
 
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
  * TODO: these building functions should only talk to a RRGraphBuilder object
@@ -1381,6 +1403,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                          CHANX, chan_details_x, rr_graph_builder, index);
     load_chan_rr_indices(nodes_per_chan->y_max, grid, grid.height(), grid.width(),
                          CHANY, chan_details_y, rr_graph_builder, index);
+
 }
 
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
