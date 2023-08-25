@@ -40,4 +40,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params =-starting_stage odin --pack --place
+script_params =-starting_stage odin --pack --place --allow_unrelated_clustering on --pack_high_fanout_threshold memory:100000
