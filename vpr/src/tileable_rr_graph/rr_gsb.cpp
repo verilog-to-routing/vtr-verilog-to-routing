@@ -409,7 +409,7 @@ bool RRGSB::is_sb_exist(const RRGraphView& rr_graph) const {
                 if (OUT_PORT != get_chan_node_direction(side_manager.get_side(), itrack)) {
                     continue;
                 }
-                num_sides_contain_routing_wires += get_chan_node_in_edges(rr_graph, side_manager.get_side(), itrack).size();
+                num_incoming_edges += get_chan_node_in_edges(rr_graph, side_manager.get_side(), itrack).size();
             }
         }
         return num_incoming_edges ? true : false;
