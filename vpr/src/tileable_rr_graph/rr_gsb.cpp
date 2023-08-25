@@ -383,19 +383,41 @@ bool RRGSB::is_cb_exist(const t_rr_type& cb_type) const {
 }
 
 /* check if the SB exist in this GSB */
-bool RRGSB::is_sb_exist() const {
-    /* if all the channel width is zero and number of OPINs are zero, there is no SB */
+bool RRGSB::is_sb_exist(const RRGraphView& rr_graph) const {
+    /* Count the number of sides that there are routing wires or opin nodes */
+    size_t num_sides_contain_routing_wires = 0;
+    size_t num_sides_contain_opin_nodes = 0;
     for (size_t side = 0; side < get_num_sides(); ++side) {
         SideManager side_manager(side);
         if (0 != get_chan_width(side_manager.get_side())) {
-            return true;
+            num_sides_contain_routing_wires++;
         }
         if (0 != get_num_opin_nodes(side_manager.get_side())) {
+            num_sides_contain_opin_nodes++;
+        }
+    }
+    /* When there are zero nodes, the sb does not exist */
+    if (num_sides_contain_routing_wires == 0 && num_sides_contain_opin_nodes == 0) {
+        return false;
+    }
+    /* If there is only 1 side of nodes and there are 0 opin nodes, and there are no incoming edges, this is also an empty switch block */
+    if (num_sides_contain_routing_wires == 1 && num_sides_contain_opin_nodes == 0) {
+        size_t num_incoming_edges = 0;
+        for (size_t side = 0; side < get_num_sides(); ++side) {
+            SideManager side_manager(side);
+            for (size_t itrack = 0; itrack < get_chan_width(side_manager.get_side()); ++itrack) {
+                if (OUT_PORT != get_chan_node_direction(side_manager.get_side(), itrack)) {
+                    continue;
+                }
+                num_sides_contain_routing_wires += get_chan_node_in_edges(rr_graph, side_manager.get_side(), itrack).size();
+            }
+        }
+        if (num_incoming_edges) {
             return true;
         }
     }
 
-    return false;
+    return true;
 }
 
 /************************************************************************

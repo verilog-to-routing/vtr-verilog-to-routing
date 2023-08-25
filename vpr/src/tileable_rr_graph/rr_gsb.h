@@ -128,8 +128,8 @@ class RRGSB {
     /* check if the connect block exists in the GSB */
     bool is_cb_exist(const t_rr_type& cb_type) const;
 
-    /* check if the switch block exists in the GSB */
-    bool is_sb_exist() const;
+    /* check if the switch block exists in the GSB, this function checks if a switch block physically exists (no routing wires, no OPIN nodes, and no interconnecting wires) */
+    bool is_sb_exist(const RRGraphView& rr_graph) const;
 
     /* Check if the node imply a short connection inside the SB, which happens to long wires across a FPGA fabric */
     bool is_sb_node_passing_wire(const RRGraphView& rr_graph, const e_side& node_side, const size_t& track_id) const;
