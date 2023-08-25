@@ -33,9 +33,9 @@ temp/
 #
 titan_release*.tar.gz
 vtr_flow/arch/titan/*.xml
-# vtr_flow/benchmarks/titan_blif/other_benchmarks
-# vtr_flow/benchmarks/titan_blif/titan23
-# vtr_flow/benchmarks/titan_blif/titan_new
+vtr_flow/benchmarks/titan_blif/other_benchmarks
+vtr_flow/benchmarks/titan_blif/titan23
+vtr_flow/benchmarks/titan_blif/titan_new
 
 
 #
