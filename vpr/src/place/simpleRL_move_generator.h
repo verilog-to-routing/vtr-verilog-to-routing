@@ -42,13 +42,13 @@ class KArmedBanditAgent {
     void write_agent_info(int last_action, double reward);
 
   protected:
-    float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
+    double exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of move types that agent can choose from to perform
     size_t num_available_types_;            //Number of block types that agent can choose to perform the move with
     bool propose_blk_type_ = false;         //Check if agent should propose both move and block type or only move type
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
-    std::vector<float> q_;                  //Estimated value of each arm (Q)
-    float last_delta_q_;                    //Last calculated delta Q
+    std::vector<double> q_;                  //Estimated value of each arm (Q)
+    double last_delta_q_;                    //Last calculated delta Q
     static constexpr size_t INVALID_ACTION = std::numeric_limits<size_t>::max();
     size_t last_action_ = INVALID_ACTION; //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
@@ -68,8 +68,8 @@ class KArmedBanditAgent {
  */
 class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
-    EpsilonGreedyAgent(size_t num_moves, float epsilon);
-    EpsilonGreedyAgent(size_t num_moves, size_t num_types, float epsilon);
+    EpsilonGreedyAgent(size_t num_moves, double epsilon);
+    EpsilonGreedyAgent(size_t num_moves, size_t num_types, double epsilon);
     ~EpsilonGreedyAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -81,7 +81,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
      *   @param epsilon Epsilon value for the agent, can be specified by the command-line option "--place_agent_epsilon"
      *   Epsilon default value is 0.3.
      */
-    void set_epsilon(float epsilon);
+    void set_epsilon(double epsilon);
 
     /**
      * @brief Set equal action probability to all available actions.
@@ -95,7 +95,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
      *   Gamma default value is 0.05.
      *   @param move_lim Number of moves per temperature
      */
-    void set_step(float gamma, int move_lim);
+    void set_step(double gamma, int move_lim);
 
   private:
     /**
@@ -104,8 +104,8 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     void init_q_scores_();
 
   private:
-    float epsilon_ = 0.1;                         //How often to perform a non-greedy exploration action
-    std::vector<float> cumm_epsilon_action_prob_; //The accumulative probability of choosing each action
+    double epsilon_ = 0.1;                         //How often to perform a non-greedy exploration action
+    std::vector<double> cumm_epsilon_action_prob_; //The accumulative probability of choosing each action
 };
 
 /**
@@ -132,7 +132,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
      *   Gamma default value is 0.05.
      *   @param move_lim Number of moves per temperature
      */
-    void set_step(float gamma, int move_lim);
+    void set_step(double gamma, int move_lim);
 
   private:
     /**
@@ -153,10 +153,10 @@ class SoftmaxAgent : public KArmedBanditAgent {
     void update_action_prob_();
 
   private:
-    std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
+    std::vector<double> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
     // incremental softmax computation member variables
-    std::vector<float> exp_q_incr_; //Holds e^(beta*q) values
-    float sum_exp_q_incr_;          //Sum of e^(beta*q) values
+    std::vector<double> exp_q_incr_; //Holds e^(beta*q) values
+    double sum_exp_q_incr_;          //Sum of e^(beta*q) values
     size_t num_update_calls_;       //Records how many times update_action_prob_() has been called
 };
 
