@@ -585,8 +585,8 @@ static void get_switchpoint_wires(
 /* Compute the wire(s) that the wire at (x, y, layer, from_side, to_side) should connect to.
  * sb_conns is updated with the result */
 static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, t_switchblock_inf* sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
-    int from_x, from_y, from_layer;         /* index into source channel */
-    int to_x, to_y, to_layer;               /* index into destination channel */
+    int from_x, from_y, from_layer;                      /* index into source channel */
+    int to_x, to_y, to_layer;                            /* index into destination channel */
     std::vector<t_rr_type> from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
 
@@ -608,18 +608,18 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
      * indexing */
     /* details for source channel */
     const std::vector<t_chan_details> from_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, from_side, chan_details_x, chan_details_y,
-                                                                      from_x, from_y, from_layer, from_chan_type);
+                                                                                  from_x, from_y, from_layer, from_chan_type);
 
     /* details for destination channel */
     const std::vector<t_chan_details> to_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, to_side, chan_details_x, chan_details_y,
-                                                                    to_x, to_y, to_layer, to_chan_type);
+                                                                                to_x, to_y, to_layer, to_chan_type);
 
     //check from/to_chan_details size matches the from/to_chan_type size
     VTR_ASSERT(from_chan_details.size() == from_chan_type.size());
     VTR_ASSERT(to_chan_details.size() == to_chan_type.size());
 
-    for(size_t from_chan_index = 0; from_chan_index < from_chan_details.size(); from_chan_index++){
-        for(size_t to_chan_index = 0; to_chan_index < to_chan_details.size(); to_chan_index++){
+    for (size_t from_chan_index = 0; from_chan_index < from_chan_details.size(); from_chan_index++) {
+        for (size_t to_chan_index = 0; to_chan_index < to_chan_details.size(); to_chan_index++) {
             /* make sure from_x/y and to_x/y aren't out of bounds */
             if (coords_out_of_bounds(grid, to_x, to_y, to_chan_type.at(to_chan_index), to_layer) || coords_out_of_bounds(grid, from_x, from_y, from_chan_type.at(from_chan_index), from_layer)) {
                 return;

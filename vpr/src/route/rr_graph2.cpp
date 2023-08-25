@@ -1112,7 +1112,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                  *  2) length = 0 (xhigh = OPEN, yhigh = OPEN)
                  *  3) ptc = max_chanx_width
                  */
-                int num_reserved_nodes = (grid.get_num_layers() > 1 && type == CHANX) ? max_chan_width +1 : max_chan_width;
+                int num_reserved_nodes = (grid.get_num_layers() > 1 && type == CHANX) ? max_chan_width + 1 : max_chan_width;
                 /* Reserve nodes in lookup to save memory */
                 rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, num_reserved_nodes);
 
@@ -1143,7 +1143,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                     rr_graph_builder.node_lookup().add_node(inode, layer, chan, seg, type, track);
                 }
 
-                if(type == CHANX) {
+                if (type == CHANX) {
                     //add the extra node for multi-dice support
                     RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, y, x, CHANX, max_chan_width);
                     if (!inode) {
@@ -1156,8 +1156,6 @@ static void load_chan_rr_indices(const int max_chan_width,
         }
     }
 }
-
-
 
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
  * TODO: these building functions should only talk to a RRGraphBuilder object
@@ -1403,7 +1401,6 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                          CHANX, chan_details_x, rr_graph_builder, index);
     load_chan_rr_indices(nodes_per_chan->y_max, grid, grid.height(), grid.width(),
                          CHANY, chan_details_y, rr_graph_builder, index);
-
 }
 
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
@@ -2064,7 +2061,6 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    t_sb_connection_map* sb_conn_map,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    int& edge_count) {
-
     /* get coordinate to index into the SB map */
     Switchblock_Lookup sb_coord(tile_x, tile_y, layer, from_side, to_side);
     if (sb_conn_map->count(sb_coord) > 0) {

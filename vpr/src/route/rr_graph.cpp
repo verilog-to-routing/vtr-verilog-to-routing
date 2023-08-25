@@ -3201,14 +3201,14 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     //do everything else for newly added node
     int track = tracks_per_chan;
     RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, CHANX, track);
-    if(node){
+    if (node) {
         rr_graph_builder.set_node_layer(node, layer);
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
-        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track-1].index()));
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track - 1].index()));
         rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
-//        int length = 0;
-//        float R = length * seg_details[track-1].Rmetal();
-//        float C = length * seg_details[track-1].Cmetal();
+                                                     //        int length = 0;
+                                                     //        float R = length * seg_details[track-1].Rmetal();
+                                                     //        float C = length * seg_details[track-1].Cmetal();
         float R = 0;
         float C = 0;
         rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
@@ -3217,8 +3217,6 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_track_num(node, track);
         rr_graph_builder.set_node_direction(node, Direction::NONE);
     }
-
-
 }
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
