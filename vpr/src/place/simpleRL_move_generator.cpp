@@ -7,7 +7,7 @@
 #include "vtr_time.h"
 /* File-scope routines */
 //a scaled and clipped exponential function
-static double scaled_clipped_exp(double x) { return std::exp(std::min(1000 * x, double(3.0))); }
+static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, float(3.0))); }
 
 /*                                     *
  *                                     *
@@ -41,9 +41,9 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
         reward /= time_elapsed_[last_action_ % num_available_moves_];
 
     //Determine step size
-    double step = 0.;
+    float step = 0.;
     if (exp_alpha_ < 0.) {
-        step = 1.0f / (double)num_action_chosen_[last_action_]; //Incremental average
+        step = 1.0f / (float)num_action_chosen_[last_action_]; //Incremental average
     } else if (exp_alpha_ <= 1) {
         step = exp_alpha_; //Exponentially weighted average
     } else {
@@ -85,11 +85,11 @@ void KArmedBanditAgent::write_agent_info(int last_action, double reward) {
  *  E-greedy agent implementation   *
  *                                  *
  *                                  */
-EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_moves, double epsilon)
+EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_moves, float epsilon)
     : EpsilonGreedyAgent(num_moves, 1, epsilon) {
 }
 
-EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_moves, size_t num_types, double epsilon)
+EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_moves, size_t num_types, float epsilon)
     : KArmedBanditAgent(num_moves, num_types, num_types > 1) {
     set_epsilon(epsilon);
     init_q_scores_();
@@ -100,9 +100,9 @@ EpsilonGreedyAgent::~EpsilonGreedyAgent() {
 }
 
 void EpsilonGreedyAgent::init_q_scores_() {
-    q_ = std::vector<double>(num_available_moves_ * num_available_types_, 0.);
+    q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
     num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
-    cumm_epsilon_action_prob_ = std::vector<double>(num_available_moves_ * num_available_types_, 1.0 / (num_available_moves_ * num_available_types_));
+    cumm_epsilon_action_prob_ = std::vector<float>(num_available_moves_ * num_available_types_, 1.0 / (num_available_moves_ * num_available_types_));
 
     //agent_info_file_ = vtr::fopen("agent_info.txt", "w");
     //write agent internal q-table and actions into file for debugging purposes
@@ -114,7 +114,7 @@ void EpsilonGreedyAgent::init_q_scores_() {
     set_epsilon_action_prob();
 }
 
-void EpsilonGreedyAgent::set_step(double gamma, int move_lim) {
+void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
     VTR_LOG("Setting egreedy step: %g\n", exp_alpha_);
     if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
@@ -132,7 +132,7 @@ void EpsilonGreedyAgent::set_step(double gamma, int move_lim) {
         //
         //     alpha = 1 - e^(log(gamma) / K)
         //
-        double alpha = 1 - std::exp(std::log(gamma) / move_lim);
+        float alpha = 1 - std::exp(std::log((double)gamma) / move_lim);
         exp_alpha_ = alpha;
     }
 }
@@ -144,7 +144,7 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
     if (vtr::frand() < epsilon_) {
         /* Explore
          * With probability epsilon, choose randomly amongst all move types */
-        double p = vtr::frand();
+        float p = vtr::frand();
         auto itr = std::lower_bound(cumm_epsilon_action_prob_.begin(), cumm_epsilon_action_prob_.end(), p);
         auto action_type_q_pos = itr - cumm_epsilon_action_prob_.begin();
         //Mark the q_table location that agent used to update its value after processing the move outcome
@@ -180,16 +180,16 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
     return propose_action;
 }
 
-void EpsilonGreedyAgent::set_epsilon(double epsilon) {
+void EpsilonGreedyAgent::set_epsilon(float epsilon) {
     VTR_LOG("Setting egreedy epsilon: %g\n", epsilon);
     epsilon_ = epsilon;
 }
 
 void EpsilonGreedyAgent::set_epsilon_action_prob() {
     //initialize to equal probabilities
-    std::vector<double> epsilon_prob(num_available_moves_ * num_available_types_, 1.0 / (num_available_moves_ * num_available_types_));
+    std::vector<float> epsilon_prob(num_available_moves_ * num_available_types_, 1.0 / (num_available_moves_ * num_available_types_));
 
-    double accum = 0;
+    float accum = 0;
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
         accum += epsilon_prob[i];
         cumm_epsilon_action_prob_[i] = accum;
@@ -226,7 +226,7 @@ void SoftmaxAgent::init_q_scores_() {
         set_block_ratio_();
     }
 
-    q_ = std::vector<double>(num_available_moves_ * num_available_types_, 0.);
+    q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
     num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
 
     if (propose_blk_type_) {
@@ -237,8 +237,8 @@ void SoftmaxAgent::init_q_scores_() {
             sum_exp_q_incr_ += exp_q_incr_[i];
         }
     } else {
-        exp_q_incr_ = std::vector<double>(num_available_moves_ * num_available_types_, scaled_clipped_exp(0.0));
-        sum_exp_q_incr_ = exp_q_incr_[0] * (double)exp_q_incr_.size();
+        exp_q_incr_ = std::vector<float>(num_available_moves_ * num_available_types_, scaled_clipped_exp(0.0));
+        sum_exp_q_incr_ = exp_q_incr_[0] * (float)exp_q_incr_.size();
     }
 
     //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
@@ -254,11 +254,11 @@ t_propose_action SoftmaxAgent::propose_action() {
     int logical_blk_type_index = -1;
 
     update_action_prob_();
-    double p = vtr::frand() * sum_exp_q_incr_;
-    double accum = 0.0;
+    float p = vtr::frand() * sum_exp_q_incr_;
+    float accum = 0.0;
     size_t selected_action = INVALID_ACTION;
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
-        double pre_accum = accum;
+        float pre_accum = accum;
         accum += exp_q_incr_[i];
         if (pre_accum <= p && p <= accum) {
             selected_action = i;
@@ -324,8 +324,8 @@ void SoftmaxAgent::set_block_ratio_() {
         t_logical_block_type blk_type;
         blk_type.index = convert_agent_to_phys_blk_type(itype);
         auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-        // perform division in double and cast the result to double to reduce round-off error
-        block_type_ratio_[itype] = (double)((double)num_blocks / (double)(num_total_blocks * num_available_moves_));
+        // perform division in double and cast the result to float to reduce round-off error
+        block_type_ratio_[itype] = (float)((double)num_blocks / (double)(num_total_blocks * num_available_moves_));
     }
 }
 
@@ -336,9 +336,9 @@ void SoftmaxAgent::update_action_prob_() {
     }
 
     // get the updated Q-value
-    double new_q = q_[last_action_];
+    float new_q = q_[last_action_];
 
-    double new_exp_q;
+    float new_exp_q;
     // compute new exponentiated Q-value
     if (propose_blk_type_) {
         size_t blk_ratio_index = last_action_ / num_available_moves_;
@@ -348,23 +348,23 @@ void SoftmaxAgent::update_action_prob_() {
     }
 
     // get the old eponentiated Q-value
-    double prev_exp_q = exp_q_incr_[last_action_];
+    float prev_exp_q = exp_q_incr_[last_action_];
     // store the new exponentiated Q-value
     exp_q_incr_[last_action_] = new_exp_q;
 
     num_update_calls_++;
     if (num_update_calls_ % 16384 == 0) {
         // compute the sum from scratch to prevent round-off error from growing too large
-        sum_exp_q_incr_ = std::accumulate(exp_q_incr_.begin(), exp_q_incr_.end(), 0.0);
+        sum_exp_q_incr_ = std::accumulate(exp_q_incr_.begin(), exp_q_incr_.end(), 0.0f);
     } else {
         // compute how much exponentiated Q-value for the last action has changed
-        double exp_q_diff = new_exp_q - prev_exp_q;
+        float exp_q_diff = new_exp_q - prev_exp_q;
         // apply this difference to sum of exponentiated Q-values
         sum_exp_q_incr_ += exp_q_diff;
     }
 }
 
-void SoftmaxAgent::set_step(double gamma, int move_lim) {
+void SoftmaxAgent::set_step(float gamma, int move_lim) {
     if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
     } else {
@@ -381,7 +381,7 @@ void SoftmaxAgent::set_step(double gamma, int move_lim) {
         //
         //     alpha = 1 - e^(log(gamma) / K)
         //
-        double alpha = 1 - std::exp(std::log(gamma) / move_lim);
+        float alpha = 1 - std::exp(std::log((double)gamma) / move_lim);
         exp_alpha_ = alpha;
     }
 }
