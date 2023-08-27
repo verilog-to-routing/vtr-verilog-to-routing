@@ -156,7 +156,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
     // incremental softmax computation member variables
     std::vector<float> exp_q_incr_; //Holds e^(beta*q) values
-    float sum_exp_q_incr_;          //Sum of e^(beta*q) values
+    double sum_exp_q_incr_;          //Sum of e^(beta*q) values
     size_t num_update_calls_;       //Records how many times update_action_prob_() has been called
 };
 
