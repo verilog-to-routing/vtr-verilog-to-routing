@@ -317,10 +317,10 @@ void XmlReadArch(const char* ArchFile,
     pugi::xml_node Next;
     ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
-    if (vtr::check_file_name_extension(ArchFile, ".xml") == false) {
+    if ((vtr::check_file_name_extension(ArchFile, ".xml") == false) && (vtr::check_file_name_extension(ArchFile, ".xml") == false)) {
         VTR_LOG_WARN(
             "Architecture file '%s' may be in incorrect format. "
-            "Expecting .xml format for architecture files.\n",
+            "Expecting .xml or .xmle format for architecture files.\n",
             ArchFile);
     }
 
