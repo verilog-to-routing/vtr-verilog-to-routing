@@ -80,6 +80,27 @@ void KArmedBanditAgent::write_agent_info(int last_action, double reward) {
     fflush(agent_info_file_);
 }
 
+void KArmedBanditAgent::set_step(float gamma, int move_lim) {
+    if (gamma < 0) {
+        exp_alpha_ = -1; //Use sample average
+    } else {
+        //
+        // For an exponentially weighted average the fraction of total weight applied
+        // to moves which occured > K moves ago is:
+        //
+        //      gamma = (1 - alpha)^K
+        //
+        // If we treat K as the number of moves per temperature (move_lim) then gamma
+        // is the fraction of weight applied to moves which occured > move_lim moves ago,
+        // and given a target gamma we can explicitly calcualte the alpha step-size
+        // required by the agent:
+        //
+        //     alpha = 1 - e^(log(gamma) / K)
+        //
+        float alpha = 1 - std::exp(std::log((double)gamma) / move_lim);
+        exp_alpha_ = alpha;
+    }
+}
 /*                                  *
  *                                  *
  *  E-greedy agent implementation   *
@@ -112,29 +133,6 @@ void EpsilonGreedyAgent::init_q_scores_() {
     }
 
     set_epsilon_action_prob();
-}
-
-void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
-    VTR_LOG("Setting egreedy step: %g\n", exp_alpha_);
-    if (gamma < 0) {
-        exp_alpha_ = -1; //Use sample average
-    } else {
-        //
-        // For an exponentially weighted average the fraction of total weight applied
-        // to moves which occurred > K moves ago is:
-        //
-        //      gamma = (1 - alpha)^K
-        //
-        // If we treat K as the number of moves per temperature (move_lim) then gamma
-        // is the fraction of weight applied to moves which occurred > move_lim moves ago,
-        // and given a target gamma we can explicitly calculate the alpha step-size
-        // required by the agent:
-        //
-        //     alpha = 1 - e^(log(gamma) / K)
-        //
-        float alpha = 1 - std::exp(std::log((double)gamma) / move_lim);
-        exp_alpha_ = alpha;
-    }
 }
 
 t_propose_action EpsilonGreedyAgent::propose_action() {
@@ -361,27 +359,5 @@ void SoftmaxAgent::update_action_prob_() {
         float exp_q_diff = new_exp_q - prev_exp_q;
         // apply this difference to sum of exponentiated Q-values
         sum_exp_q_incr_ += exp_q_diff;
-    }
-}
-
-void SoftmaxAgent::set_step(float gamma, int move_lim) {
-    if (gamma < 0) {
-        exp_alpha_ = -1; //Use sample average
-    } else {
-        //
-        // For an exponentially weighted average the fraction of total weight applied
-        // to moves which occured > K moves ago is:
-        //
-        //      gamma = (1 - alpha)^K
-        //
-        // If we treat K as the number of moves per temperature (move_lim) then gamma
-        // is the fraction of weight applied to moves which occured > move_lim moves ago,
-        // and given a target gamma we can explicitly calcualte the alpha step-size
-        // required by the agent:
-        //
-        //     alpha = 1 - e^(log(gamma) / K)
-        //
-        float alpha = 1 - std::exp(std::log((double)gamma) / move_lim);
-        exp_alpha_ = alpha;
     }
 }

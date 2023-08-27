@@ -41,6 +41,15 @@ class KArmedBanditAgent {
      */
     void write_agent_info(int last_action, double reward);
 
+    /**
+     * @brief Set step size for q-table updates
+     *
+     *   @param gamma Controls how quickly the agent's memory decays, can be specified by the command-line option "--place_agent_gamma"
+     *   Gamma default value is 0.05.
+     *   @param move_lim Number of moves per temperature
+     */
+    void set_step(float gamma, int move_lim);
+
   protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of move types that agent can choose from to perform
@@ -88,15 +97,6 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
      */
     void set_epsilon_action_prob();
 
-    /**
-     * @brief Set step size for q-table updates
-     *
-     *   @param gamma Controls how quickly the agent's memory decays, can be specified by the command-line option "--place_agent_gamma"
-     *   Gamma default value is 0.05.
-     *   @param move_lim Number of moves per temperature
-     */
-    void set_step(float gamma, int move_lim);
-
   private:
     /**
      * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
@@ -123,16 +123,6 @@ class SoftmaxAgent : public KArmedBanditAgent {
 
     //void process_outcome(double reward, std::string reward_fun) override; //Updates the agent based on the reward of the last proposed action
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
-
-  public:
-    /**
-     * @brief Set step size for q-table updates
-     *
-     *   @param gamma Controls how quickly the agent's memory decays, can be specified by the command-line option "--place_agent_gamma"
-     *   Gamma default value is 0.05.
-     *   @param move_lim Number of moves per temperature
-     */
-    void set_step(float gamma, int move_lim);
 
   private:
     /**
