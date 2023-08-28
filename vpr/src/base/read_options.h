@@ -143,7 +143,7 @@ struct t_options {
     argparse::ArgValue<int> floorplan_num_horizontal_partitions;
     argparse::ArgValue<int> floorplan_num_vertical_partitions;
 
-    argparse::ArgValue<bool> placer_debug_block;
+    argparse::ArgValue<int> placer_debug_block;
     argparse::ArgValue<int> placer_debug_net;
 
     /*NoC Options*/
