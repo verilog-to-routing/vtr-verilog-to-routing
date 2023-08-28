@@ -57,9 +57,7 @@ class KArmedBanditAgent {
     bool propose_blk_type_ = false;         //Check if agent should propose both move and block type or only move type
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
-    float last_delta_q_;                    //Last calculated delta Q
-    static constexpr size_t INVALID_ACTION = std::numeric_limits<size_t>::max();
-    size_t last_action_ = INVALID_ACTION; //type of the last action (move type) proposed
+    size_t last_action_; //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
@@ -136,18 +134,19 @@ class SoftmaxAgent : public KArmedBanditAgent {
     void set_block_ratio_();
 
     /**
-     * @brief Updates e^(beta*Q) value for the last action and incrementally
-     * updates the sum of e^(beta*Q) values. After every 16384 function calls,
-     * the sum is calculated from scratch to prevent round-off error from accumulating.
+     * @brief Set action probability for all available actions.
+     * If agent only proposes move type, the action probabilities would be equal for all move types at the beginning.
+     * If agent proposes both move and block type, the action_prob for each action would be based on its block type count in the netlist.
      */
-    void update_action_prob_();
+    void set_action_prob_();
 
   private:
+    std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
+    std::vector<float> action_prob_;      //The probability of choosing each action
+    std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
     std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
-    // incremental softmax computation member variables
-    std::vector<float> exp_q_incr_; //Holds e^(beta*q) values
-    float sum_exp_q_incr_;          //Sum of e^(beta*q) values
-    size_t num_update_calls_;       //Records how many times update_action_prob_() has been called
+
+    std::chrono::duration<double, std::nano> elapsed_time_;
 };
 
 /**

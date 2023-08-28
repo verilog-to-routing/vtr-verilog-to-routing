@@ -31,8 +31,7 @@ void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function rew
 KArmedBanditAgent::KArmedBanditAgent(size_t num_moves, size_t num_types, bool propose_blk_type)
     : num_available_moves_(num_moves)
     , num_available_types_(num_types)
-    , propose_blk_type_(propose_blk_type)
-    , last_delta_q_(0.0) {
+    , propose_blk_type_(propose_blk_type) {
 }
 
 void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_fun) {
@@ -43,7 +42,7 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     //Determine step size
     float step = 0.;
     if (exp_alpha_ < 0.) {
-        step = 1. / num_action_chosen_[last_action_]; //Incremental average
+        step = 1.0f / (float)num_action_chosen_[last_action_]; //Incremental average
     } else if (exp_alpha_ <= 1) {
         step = exp_alpha_; //Exponentially weighted average
     } else {
@@ -51,10 +50,10 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     }
 
     //Based on the outcome how much should our estimate of q change?
-    last_delta_q_ = step * (reward - q_[last_action_]);
+    float delta_q = step * (reward - q_[last_action_]);
 
     //Update the estimated value of the last action
-    q_[last_action_] += last_delta_q_;
+    q_[last_action_] += delta_q;
 
     //write agent internal q-table and actions into a file for debugging purposes
     //agent_info_file_ variable is a NULL pointer by default
@@ -205,14 +204,14 @@ SoftmaxAgent::SoftmaxAgent(size_t num_moves)
 
 SoftmaxAgent::SoftmaxAgent(size_t num_moves, size_t num_types)
     : KArmedBanditAgent(num_moves, num_types, num_types > 1) {
-    init_q_scores();
+    init_q_scores_();
 }
 
 SoftmaxAgent::~SoftmaxAgent() {
     if (agent_info_file_) vtr::fclose(agent_info_file_);
 }
 
-void SoftmaxAgent::init_q_scores() {
+void SoftmaxAgent::init_q_scores_() {
     q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
     exp_q_ = std::vector<float>(num_available_moves_ * num_available_types_, 0.);
     num_action_chosen_ = std::vector<size_t>(num_available_moves_ * num_available_types_, 0);
@@ -235,47 +234,37 @@ void SoftmaxAgent::init_q_scores() {
     if (propose_blk_type_) {
         set_block_ratio_();
     }
-    set_action_prob();
-    elapsed_time_ = std::chrono::duration<double, std::nano>::zero();
+    set_action_prob_();
 }
 
 t_propose_action SoftmaxAgent::propose_action() {
-    auto start_time = std::chrono::high_resolution_clock::now();
-    set_action_prob();
-    // Get the current time after executing the function
-    auto end_time = std::chrono::high_resolution_clock::now();
-
-    // Calculate the duration in milliseconds
-    std::chrono::duration<double, std::nano> duration = end_time - start_time;
-
-    elapsed_time_ += duration;
+    set_action_prob_();
 
     size_t move_type;
-    t_logical_block_type blk_type;
+    int logical_blk_type_index = -1;
 
     float p = vtr::frand();
     auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
     auto action_type_q_pos = itr - cumm_action_prob_.begin();
-    move_type = (action_type_q_pos) % num_available_moves_;
+    last_action_ = action_type_q_pos;
+    move_type = action_type_q_pos % num_available_moves_;
     if (propose_blk_type_) { //calculate block type index only if agent is supposed to propose both move and block type
-        logical_blk_type_index = selected_action / num_available_moves_;
+        logical_blk_type_index = action_type_q_pos / num_available_moves_;
     }
 
     //To take care that the last element in cumm_action_prob_ might be less than 1 by a small value
     if ((size_t)action_type_q_pos == num_available_moves_ * num_available_types_) {
         move_type = num_available_moves_ - 1;
+        last_action_ = num_available_moves_ * num_available_types_ - 1;
         if (propose_blk_type_) { //calculate block type index only if agent is supposed to propose both move and block type
-            blk_type.index = num_available_types_ - 1;
+            logical_blk_type_index = num_available_types_ - 1;
         }
     }
 
     //Check the move type to be a valid move
     VTR_ASSERT(move_type < num_available_moves_);
     //Check the block type index to be valid type if the agent is supposed to propose block type
-    VTR_ASSERT((size_t)blk_type.index < num_available_types_ || !propose_blk_type_);
-
-    //Mark the q_table location that agent used to update its value after processing the move outcome
-    last_action_ = (!propose_blk_type_) ? move_type : move_type + (blk_type.index * num_available_moves_);
+    VTR_ASSERT((size_t)logical_blk_type_index < num_available_types_ || !propose_blk_type_);
 
     t_propose_action propose_action;
     propose_action.move_type = (e_move_type)move_type;
@@ -304,7 +293,7 @@ void SoftmaxAgent::set_block_ratio_() {
     }
 }
 
-void SoftmaxAgent::set_action_prob() {
+void SoftmaxAgent::set_action_prob_() {
     //calculate the scaled and clipped exponential function for the estimated q value for each action
     std::transform(q_.begin(), q_.end(), exp_q_.begin(), scaled_clipped_exp);
 
@@ -338,27 +327,5 @@ void SoftmaxAgent::set_action_prob() {
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
         accum += action_prob_[i];
         cumm_action_prob_[i] = accum;
-    }
-}
-
-void SoftmaxAgent::set_step(float gamma, int move_lim) {
-    if (gamma < 0) {
-        exp_alpha_ = -1; //Use sample average
-    } else {
-        //
-        // For an exponentially weighted average the fraction of total weight applied
-        // to moves which occured > K moves ago is:
-        //
-        //      gamma = (1 - alpha)^K
-        //
-        // If we treat K as the number of moves per temperature (move_lim) then gamma
-        // is the fraction of weight applied to moves which occured > move_lim moves ago,
-        // and given a target gamma we can explicitly calcualte the alpha step-size
-        // required by the agent:
-        //
-        //     alpha = 1 - e^(log(gamma) / K)
-        //
-        float alpha = 1 - std::exp(std::log(gamma) / move_lim);
-        exp_alpha_ = alpha;
     }
 }
