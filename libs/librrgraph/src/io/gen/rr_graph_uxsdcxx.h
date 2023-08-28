@@ -87,7 +87,7 @@ template <class T, typename Context>
 inline void load_grid_locs(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
 inline void load_node_loc(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
-inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * layer, int * ptc, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char*)> * report_error);
+inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * layer, int * ptc, int * twist, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char*)> * report_error);
 template <class T, typename Context>
 inline void load_node_timing(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 inline void load_node_timing_required_attributes(const pugi::xml_node &root, float * C, float * R, const std::function<void(const char*)> * report_error);
@@ -275,8 +275,8 @@ constexpr const char *atok_lookup_t_grid_loc[] = {"block_type_id", "height_offse
 enum class gtok_t_grid_locs {GRID_LOC};
 constexpr const char *gtok_lookup_t_grid_locs[] = {"grid_loc"};
 
-enum class atok_t_node_loc {LAYER, PTC, SIDE, XHIGH, XLOW, YHIGH, YLOW};
-constexpr const char *atok_lookup_t_node_loc[] = {"layer", "ptc", "side", "xhigh", "xlow", "yhigh", "ylow"};
+enum class atok_t_node_loc {LAYER, PTC, TWIST, SIDE, XHIGH, XLOW, YHIGH, YLOW};
+constexpr const char *atok_lookup_t_node_loc[] = {"layer", "ptc", "twist", "side", "xhigh", "xlow", "yhigh", "ylow"};
 
 
 enum class atok_t_node_timing {C, R};
@@ -1134,6 +1134,14 @@ inline atok_t_node_loc lex_attr_t_node_loc(const char *in, const std::function<v
 			switch(in[4]){
 			case onechar('r', 0, 8):
 				return atok_t_node_loc::LAYER;
+			break;
+			default: break;
+			}
+		break;
+		case onechar('t', 0, 32) | onechar('w', 8, 32) | onechar('i', 16, 32) | onechar('s', 24, 32):
+			switch(in[4]){
+				case onechar('t',0,8):
+					return atok_t_node_loc::TWIST;
 			break;
 			default: break;
 			}
@@ -2338,8 +2346,8 @@ inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * 
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_grid_loc, report_error);
 }
 
-inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * layer, int * ptc, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char *)> * report_error){
-	std::bitset<7> astate = 0;
+inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * layer, int * ptc, int* twist, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char *)> * report_error){
+	std::bitset<8> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_node_loc in = lex_attr_t_node_loc(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
@@ -2350,6 +2358,9 @@ inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * 
 			break;
 		case atok_t_node_loc::PTC:
 			*ptc = load_int(attr.value(), report_error);
+			break;
+		case atok_t_node_loc::TWIST:
+			*twist = load_int(attr.value(),report_error);
 			break;
 		case atok_t_node_loc::SIDE:
 			/* Attribute side set after element init */
@@ -2369,7 +2380,7 @@ inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * 
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<7> test_astate = astate | std::bitset<7>(0b0000100);
+	std::bitset<8> test_astate = astate | std::bitset<8>(0b00001000);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_loc, report_error);
 }
 
@@ -3256,6 +3267,9 @@ inline void load_node_loc(const pugi::xml_node &root, T &out, Context &context, 
 		case atok_t_node_loc::PTC:
 			/* Attribute ptc is already set */
 			break;
+		case atok_t_node_loc::TWIST:
+			/* Attribute ptc is already set */
+			break;
 		case atok_t_node_loc::SIDE:
 			out.set_node_loc_side(lex_enum_loc_side(attr.value(), true, report_error), context);
 			break;
@@ -3438,6 +3452,8 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 				memset(&node_loc_layer, 0, sizeof(node_loc_layer));
 				int node_loc_ptc;
 				memset(&node_loc_ptc, 0, sizeof(node_loc_ptc));
+				int node_loc_ptc_twist;
+				memset(&node_loc_ptc_twist,0,sizeof(node_loc_ptc_twist));
 				int node_loc_xhigh;
 				memset(&node_loc_xhigh, 0, sizeof(node_loc_xhigh));
 				int node_loc_xlow;
@@ -3446,8 +3462,8 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 				memset(&node_loc_yhigh, 0, sizeof(node_loc_yhigh));
 				int node_loc_ylow;
 				memset(&node_loc_ylow, 0, sizeof(node_loc_ylow));
-				load_node_loc_required_attributes(node, &node_loc_layer, &node_loc_ptc, &node_loc_xhigh, &node_loc_xlow, &node_loc_yhigh, &node_loc_ylow, report_error);
-				auto child_context = out.init_node_loc(context, node_loc_layer, node_loc_ptc, node_loc_xhigh, node_loc_xlow, node_loc_yhigh, node_loc_ylow);
+				load_node_loc_required_attributes(node, &node_loc_layer, &node_loc_ptc, &node_loc_ptc_twist, &node_loc_xhigh, &node_loc_xlow, &node_loc_yhigh, &node_loc_ylow, report_error);
+				auto child_context = out.init_node_loc(context, node_loc_layer, node_loc_ptc, node_loc_ptc_twist, node_loc_xhigh, node_loc_xlow, node_loc_yhigh, node_loc_ylow);
 				load_node_loc(node, out, child_context, report_error, offset_debug);
 				out.finish_node_loc(child_context);
 			}
@@ -3989,6 +4005,7 @@ inline void write_node(T &in, std::ostream &os, Context &context){
 		os << "<loc";
 		os << " layer=\"" << in.get_node_loc_layer(child_context) << "\"";
 		os << " ptc=\"" << in.get_node_loc_ptc(child_context) << "\"";
+		os << " twist=\"" << in.get_node_loc_ptc_twist(child_context) << "\"";
 		if((bool)in.get_node_loc_side(child_context))
 			os << " side=\"" << lookup_loc_side[(int)in.get_node_loc_side(child_context)] << "\"";
 		os << " xhigh=\"" << in.get_node_loc_xhigh(child_context) << "\"";
