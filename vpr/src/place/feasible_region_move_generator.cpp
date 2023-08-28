@@ -9,7 +9,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(blk_type, true, &net_from, &pin_from);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, blk_type, true, &net_from, &pin_from);
 
     if (!b_from) { //No movable block found
         return e_create_move::ABORT;

@@ -15,6 +15,8 @@
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
 
+bool f_placer_debug = false;
+
 //Records counts of reasons for aborted moves
 static std::map<std::string, size_t> f_move_abort_reasons;
 
@@ -515,12 +517,33 @@ int convert_phys_to_agent_blk_type(int phys_blk_type_index) {
     return -1;
 }
 
+void enable_placer_debug(const t_placer_opts& placer_opts, int blk_id_num, int net_id_num) {
+    bool active_blk_debug = (placer_opts.placer_debug_block >= -1);
+    bool active_net_debug = (placer_opts.placer_debug_net >= -1);
+
+    bool match_blk = (placer_opts.placer_debug_block == blk_id_num || placer_opts.placer_debug_block == -1);
+    bool match_net = (placer_opts.placer_debug_net == net_id_num || placer_opts.placer_debug_net == -1);
+
+    f_placer_debug = active_blk_debug || active_net_debug;
+
+    if (active_blk_debug) f_placer_debug &= match_blk;
+    if (active_net_debug) f_placer_debug &= match_net;
+
+#ifndef VTR_ENABLE_DEBUG_LOGGING
+    VTR_LOGV_WARN(f_placer_debug, "Limited placer debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined\n");
+#endif
+}
+
 int get_num_agent_types() {
     auto& place_ctx = g_vpr_ctx.placement();
     return place_ctx.phys_blk_type_to_agent_blk_type_map.size();
 }
 
-ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {
+ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
+                                     t_logical_block_type& blk_type,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -542,6 +565,8 @@ ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly
             b_from = pick_from_block(blk_type);
         }
     }
+
+    enable_placer_debug(placer_opts, size_t(b_from), OPEN);
 
     return b_from;
 }

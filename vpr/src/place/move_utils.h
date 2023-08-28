@@ -9,6 +9,8 @@
 /* To turn off incremental bounding box updates, set this to a huge value */
 #define SMALL_NET 4
 
+extern bool f_placer_debug;
+
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */
@@ -119,7 +121,11 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
  *
  * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
  */
-ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
+                                     t_logical_block_type& blk_type,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from);
 
 /**
  * @brief Select a random block to be swapped with another block
@@ -347,5 +353,7 @@ int convert_phys_to_agent_blk_type(int phys_blk_type_index);
  * @brief return number of available block types in the RLplace agent.
  */
 int get_num_agent_types();
+
+void enable_placer_debug(const t_placer_opts& placer_opts, int blk_id_num, int net_id_num);
 
 #endif
