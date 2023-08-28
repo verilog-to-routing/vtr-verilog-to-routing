@@ -3991,6 +3991,7 @@ inline void write_node(T &in, std::ostream &os, Context &context){
 		os << "<loc";
 		os << " layer=\"" << in.get_node_loc_layer(child_context) << "\"";
 		os << " ptc=\"" << in.get_node_loc_ptc(child_context) << "\"";
+		os << "meta=\"" << "more ptcs" <<"\"";
 		if((bool)in.get_node_loc_side(child_context))
 			os << " side=\"" << lookup_loc_side[(int)in.get_node_loc_side(child_context)] << "\"";
 		os << " xhigh=\"" << in.get_node_loc_xhigh(child_context) << "\"";

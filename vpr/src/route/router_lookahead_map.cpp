@@ -1413,12 +1413,14 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
                                    const t_det_routing_arch& det_routing_arch,
                                    const int delayless_switch) {
     RRGraphBuilder rr_graph_builder;
+    int ptc_twist = 0;
     int layer = 0;
     int x = 1;
     int y = 1;
     build_tile_rr_graph(rr_graph_builder,
                         det_routing_arch,
                         physical_tile,
+                        ptc_twist,
                         layer,
                         x,
                         y,
