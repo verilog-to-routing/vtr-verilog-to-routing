@@ -193,6 +193,10 @@ class RRGraphBuilder {
         node_storage_.set_node_layer(id, layer);
     }
 
+    inline void set_node_ptc_twist(RRNodeId id, int twist){
+        node_storage_.set_node_ptc_twist(id, twist);
+    }
+
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
     inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
         node_storage_.set_node_pin_num(id, new_pin_num);
