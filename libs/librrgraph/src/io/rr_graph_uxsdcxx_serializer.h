@@ -686,11 +686,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
 
-    inline int init_node_loc(int& inode, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
+    inline int init_node_loc(int& inode, int layer, int ptc, int ptc_twist, int xhigh, int xlow, int yhigh, int ylow) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
+        rr_graph_builder_->set_node_ptc_twist(node_id, ptc_twist);
         rr_graph_builder_->set_node_layer(node_id, layer);
         rr_graph_builder_->set_node_ptc_num(node_id, ptc);
         return inode;
@@ -705,6 +706,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline int get_node_loc_layer(const t_rr_node& node) final {
         return rr_graph_->node_layer(node.id());
+    }
+    inline int get_node_loc_ptc_twist(const t_rr_node& node) final{
+        return rr_graph_->node_ptc_twist(node.id());
     }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
         return rr_graph_->node_xhigh(node.id());
