@@ -204,7 +204,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from);
 
-std::string move_type_to_string(e_move_type);
+const std::string& move_type_to_string(e_move_type);
 
 /* find to loaction helper functions */
 /**
@@ -323,30 +323,5 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
                                                       int layer_num);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
-
-/**
- * @brief find the physical block type index associated to the agent block type
- *
- * Agent block types are defined as physical block types used by the netlist.
- * More information on agent block type can be found on the placement context in "vpr_context.h"
- *
- * @return physical block type index associated with the agent_blk_type_index
- */
-int convert_agent_to_phys_blk_type(int agent_blk_type_index);
-
-/**
- * @brief find the agent block type index associated to the physical block type
- *
- * Agent block types are defined as physical block types used by the netlist.
- * More information on agent block type can be found on the placement context in "vpr_context.h"
- *
- * @return agent block type index associated with the phys_blk_type_index
- */
-int convert_phys_to_agent_blk_type(int phys_blk_type_index);
-
-/**
- * @brief return number of available block types in the RLplace agent.
- */
-int get_num_agent_types();
 
 #endif

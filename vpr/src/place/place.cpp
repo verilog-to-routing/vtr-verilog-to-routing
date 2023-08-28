@@ -762,9 +762,9 @@ void try_place(const Netlist<>& net_list,
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
-    move_type_stat.blk_type_moves.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
-    move_type_stat.accepted_moves.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
-    move_type_stat.rejected_moves.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()), 0);
+    move_type_stat.blk_type_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
+    move_type_stat.accepted_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
+    move_type_stat.rejected_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
@@ -3255,32 +3255,30 @@ static void print_placement_move_types_stats(
         "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
 
     float total_moves = 0;
-    for (size_t iaction = 0; iaction < move_type_stat.blk_type_moves.size(); iaction++) {
-        total_moves += move_type_stat.blk_type_moves[iaction];
+    for (int blk_type_move : move_type_stat.blk_type_moves) {
+        total_moves += blk_type_move;
     }
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    std::string move_name;
-    int agent_type = 0;
     int count = 0;
-    int num_of_avail_moves = move_type_stat.blk_type_moves.size() / get_num_agent_types();
+    int num_of_avail_moves = move_type_stat.blk_type_moves.size() / device_ctx.logical_block_types.size();
 
     //Print placement information for each block type
-    for (auto itype : device_ctx.logical_block_types) {
+    for (const auto& itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
-        if (itype.index == 0 || cluster_ctx.clb_nlist.blocks_per_type(itype).size() == 0) {
+        if (itype.index == 0 || cluster_ctx.clb_nlist.blocks_per_type(itype).empty()) {
             continue;
         }
 
         count = 0;
 
         for (int imove = 0; imove < num_of_avail_moves; imove++) {
-            move_name = move_type_to_string(e_move_type(imove));
-            moves = move_type_stat.blk_type_moves[agent_type * num_of_avail_moves + imove];
+            const auto& move_name = move_type_to_string(e_move_type(imove));
+            moves = move_type_stat.blk_type_moves[itype.index * num_of_avail_moves + imove];
             if (moves != 0) {
-                accepted = move_type_stat.accepted_moves[agent_type * num_of_avail_moves + imove];
-                rejected = move_type_stat.rejected_moves[agent_type * num_of_avail_moves + imove];
+                accepted = move_type_stat.accepted_moves[itype.index * num_of_avail_moves + imove];
+                rejected = move_type_stat.rejected_moves[itype.index * num_of_avail_moves + imove];
                 aborted = moves - (accepted + rejected);
                 if (count == 0) {
                     VTR_LOG("%-18.20s", itype.name);
@@ -3295,7 +3293,6 @@ static void print_placement_move_types_stats(
             }
             count++;
         }
-        agent_type++;
         VTR_LOG("\n");
     }
     VTR_LOG("\n");

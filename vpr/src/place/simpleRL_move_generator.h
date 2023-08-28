@@ -14,7 +14,7 @@
  */
 class KArmedBanditAgent {
   public:
-    KArmedBanditAgent(size_t num_moves, size_t num_types, bool propose_blk_type);
+    KArmedBanditAgent(size_t num_moves, bool propose_blk_type);
     virtual ~KArmedBanditAgent() = default;
 
     /**
@@ -51,19 +51,29 @@ class KArmedBanditAgent {
     void set_step(float gamma, int move_lim);
 
   protected:
+    inline e_move_type action_to_move_type_(size_t action_idx);
+    inline int action_to_blk_type_(size_t action_idx);
+    inline int agent_to_phy_blk_type(int idx);
+
+  protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of move types that agent can choose from to perform
     size_t num_available_types_;            //Number of block types that agent can choose to perform the move with
+    size_t num_available_actions_;
     bool propose_blk_type_ = false;         //Check if agent should propose both move and block type or only move type
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
-    size_t last_action_; //type of the last action (move type) proposed
+    size_t last_action_;                    //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
     std::vector<double> time_elapsed_{1.0, 3.6, 5.4, 2.5, 2.1, 0.8, 2.2};
 
     FILE* agent_info_file_ = nullptr;
+
+  private:
+    static std::vector<int> get_available_logical_blk_types_();
+    std::vector<int> action_logical_blk_type_;
 };
 
 /**
@@ -75,8 +85,7 @@ class KArmedBanditAgent {
  */
 class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
-    EpsilonGreedyAgent(size_t num_moves, float epsilon);
-    EpsilonGreedyAgent(size_t num_moves, size_t num_types, float epsilon);
+    EpsilonGreedyAgent(size_t num_moves, bool propose_blk_type, float epsilon);
     ~EpsilonGreedyAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -115,8 +124,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
  */
 class SoftmaxAgent : public KArmedBanditAgent {
   public:
-    explicit SoftmaxAgent(size_t num_moves);
-    SoftmaxAgent(size_t num_moves, size_t num_types);
+    SoftmaxAgent(size_t num_moves, bool propose_blk_type);
     ~SoftmaxAgent() override;
 
     //void process_outcome(double reward, std::string reward_fun) override; //Updates the agent based on the reward of the last proposed action
@@ -145,8 +153,6 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> action_prob_;      //The probability of choosing each action
     std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
     std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
-
-    std::chrono::duration<double, std::nano> elapsed_time_;
 };
 
 /**
