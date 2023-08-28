@@ -1450,8 +1450,8 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
     element_visibility.visible = true;
     bool cross_layer_enabled = draw_state->cross_layer_display.visible;
 
-    //To only show primitive nets that are connected to currently active layers on the screen
-    if (!draw_state->draw_layer_display[sink_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
+    //To only show elements (net flylines,noc links,etc...) that are connected to currently active layers on the screen
+    if (!draw_state->draw_layer_display[sink_layer].visible || !draw_state->draw_layer_display[src_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
         element_visibility.visible = false; /* Don't Draw */
     }
 
