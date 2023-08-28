@@ -12,6 +12,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts, blk_type, false, NULL, NULL);
+    VTR_LOGV_DEBUG(f_placer_debug, "Weighted Median Move Choose Block %d\n", size_t(b_from));
 
     if (!b_from) { //No movable block found
         return e_create_move::ABORT;

@@ -8,6 +8,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
     int pin_from;
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts, blk_type, true, &net_from, &pin_from);
+    VTR_LOGV_DEBUG(f_placer_debug, "Critical Uniform Move Choose Block %d\n", size_t(b_from));
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
