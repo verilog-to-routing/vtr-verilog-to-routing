@@ -351,9 +351,9 @@ void SoftmaxAgent::update_action_prob_() {
     exp_q_incr_[last_action_] = new_exp_q;
 
     num_update_calls_++;
-    if (num_update_calls_ % 16384 == 0) {
+    if (num_update_calls_ % 4096 == 0) {
         // compute the sum from scratch to prevent round-off error from growing too large
-        sum_exp_q_incr_ = std::accumulate(exp_q_incr_.begin(), exp_q_incr_.end(), 0.0f);
+        sum_exp_q_incr_ = std::accumulate(exp_q_incr_.begin(), exp_q_incr_.end(), 0.0);
     } else {
         // compute how much exponentiated Q-value for the last action has changed
         float exp_q_diff = new_exp_q - prev_exp_q;
