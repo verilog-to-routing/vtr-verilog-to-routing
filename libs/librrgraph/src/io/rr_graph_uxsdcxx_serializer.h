@@ -686,12 +686,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
 
-    inline int init_node_loc(int& inode, int layer, int ptc, int ptc_twist, int xhigh, int xlow, int yhigh, int ylow) final {
+    inline int init_node_loc(int& inode, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
-        rr_graph_builder_->set_node_ptc_twist(node_id, ptc_twist);
         rr_graph_builder_->set_node_layer(node_id, layer);
         rr_graph_builder_->set_node_ptc_num(node_id, ptc);
         return inode;
@@ -744,6 +743,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         }
     }
+
+    inline void set_node_loc_ptc_twist(int twist, int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+        rr_graph_builder_->set_node_ptc_twist(node_id,twist);
+    }
+
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
         if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {

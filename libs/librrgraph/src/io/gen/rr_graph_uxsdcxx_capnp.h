@@ -705,6 +705,7 @@ inline void load_node_loc_capnp_type(const ucap::NodeLoc::Reader &root, T &out, 
 	(void)stack;
 
 	out.set_node_loc_side(conv_enum_loc_side(root.getSide(), report_error), context);
+	out.set_node_loc_ptc_twist(root.getTwist(), context);
 }
 
 template<class T, typename Context>
@@ -775,8 +776,7 @@ inline void load_node_capnp_type(const ucap::Node::Reader &root, T &out, Context
 	stack->push_back(std::make_pair("getLoc", 0));
 	if (root.hasLoc()) {
 		auto child_el = root.getLoc();
-		//TODO: SM: should fix this zero
-		auto child_context = out.init_node_loc(context, child_el.getLayer(), child_el.getPtc(), 0, child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
+		auto child_context = out.init_node_loc(context, child_el.getLayer(), child_el.getPtc(), child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
 		load_node_loc_capnp_type(child_el, out, child_context, report_error, stack);
 		out.finish_node_loc(child_context);
 	}
@@ -1159,6 +1159,8 @@ inline void write_node_capnp_type(T &in, ucap::Node::Builder &root, Context &con
 		node_loc.setPtc(in.get_node_loc_ptc(child_context));
 		if((bool)in.get_node_loc_side(child_context))
 			node_loc.setSide(conv_to_enum_loc_side(in.get_node_loc_side(child_context)));
+		if((bool)in.get_node_loc_ptc_twist(child_context))
+			node_loc.setTwist(in.get_node_loc_ptc_twist(child_context));
 		node_loc.setXhigh(in.get_node_loc_xhigh(child_context));
 		node_loc.setXlow(in.get_node_loc_xlow(child_context));
 		node_loc.setYhigh(in.get_node_loc_yhigh(child_context));
