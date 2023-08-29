@@ -985,6 +985,7 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
 
 static void highlight_blocks(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
 
     char msg[vtr::bufsize];
     ClusterBlockId clb_index = EMPTY_BLOCK_ID;
@@ -995,8 +996,11 @@ static void highlight_blocks(double x, double y) {
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
-    //iterate over grid z (layers) first, so we draw from bottom to top die. This makes partial transparency of layers draw properly.
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    //iterate over grid z (layers) first. Start search of the block at the top layer to prioritize highlighting of blocks at higher levels during overlapping of layers.
+    for (int layer_num = device_ctx.grid.get_num_layers()-1; layer_num >= 0 ; layer_num--) {
+        if(!draw_state->draw_layer_display[layer_num].visible){
+            continue; /* Don't check for blocks on non-visible layers*/
+        }
         // iterate over grid x
         for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
             if (draw_coords->tile_x[i] > x) {
@@ -1032,7 +1036,12 @@ static void highlight_blocks(double x, double y) {
 
         if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
             //Nothing found
-            return;
+            if(layer_num == 0){
+                return ; /* Nothing was found on any layer*/
+            }
+            else{
+                continue; /* Nothing found on current layer*/
+            }
         }
 
         VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
@@ -1059,7 +1068,6 @@ static void highlight_blocks(double x, double y) {
         }
 
         //If manual moves is activated, then user can select block from the grid.
-        t_draw_state* draw_state = get_draw_state_vars();
         if (draw_state->manual_moves_state.manual_move_enabled) {
             draw_state->manual_moves_state.user_highlighted_block = true;
             if (!draw_state->manual_moves_state.manual_move_window_is_open) {
@@ -1069,6 +1077,7 @@ static void highlight_blocks(double x, double y) {
 
         application.update_message(msg);
         application.refresh_drawing();
+        return;
     }
 }
 
