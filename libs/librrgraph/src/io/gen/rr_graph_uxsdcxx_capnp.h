@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/amin/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 8672cb3951993f7e0ea3433a02507672
+ * Cmdline: uxsdcxx/uxsdcap.py /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: cf10a1fa99fdfc7a455393a2a3cd1426
  */
 
 #include <functional>
@@ -687,7 +687,7 @@ inline void load_grid_locs_capnp_type(const ucap::GridLocs::Reader &root, T &out
 		auto data = root.getGridLocs();
 		out.preallocate_grid_locs_grid_loc(context, data.size());
 		for(const auto & el : data) {
-			auto child_context = out.add_grid_locs_grid_loc(context, el.getBlockTypeId(), el.getHeightOffset(), el.getWidthOffset(), el.getX(), el.getY(), el.getLayer());
+			auto child_context = out.add_grid_locs_grid_loc(context, el.getBlockTypeId(), el.getHeightOffset(), el.getLayer(), el.getWidthOffset(), el.getX(), el.getY());
 			load_grid_loc_capnp_type(el, out, child_context, report_error, stack);
 			out.finish_grid_locs_grid_loc(child_context);
 			stack->back().second += 1;
@@ -1117,6 +1117,7 @@ inline void write_grid_locs_capnp_type(T &in, ucap::GridLocs::Builder &root, Con
 		auto child_context = in.get_grid_locs_grid_loc(i, context);
 		grid_locs_grid_loc.setBlockTypeId(in.get_grid_loc_block_type_id(child_context));
 		grid_locs_grid_loc.setHeightOffset(in.get_grid_loc_height_offset(child_context));
+		grid_locs_grid_loc.setLayer(in.get_grid_loc_layer(child_context));
 		grid_locs_grid_loc.setWidthOffset(in.get_grid_loc_width_offset(child_context));
 		grid_locs_grid_loc.setX(in.get_grid_loc_x(child_context));
 		grid_locs_grid_loc.setY(in.get_grid_loc_y(child_context));
