@@ -3271,11 +3271,7 @@ inline void load_node_loc(const pugi::xml_node &root, T &out, Context &context, 
 			out.set_node_loc_side(lex_enum_loc_side(attr.value(), true, report_error), context);
 			break;
 		case atok_t_node_loc::TWIST:
-<<<<<<< HEAD
 			out.set_node_loc_twist(load_int(attr.value(), report_error), context);
-=======
-			out.set_node_loc_ptc_twist(load_int(attr.value(), report_error), context);
->>>>>>> 75bf2999f32acf1f1a67de1ad0cfaf4f0a2b955d
 			break;
 		case atok_t_node_loc::XHIGH:
 			/* Attribute xhigh is already set */
