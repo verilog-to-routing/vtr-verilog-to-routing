@@ -2392,7 +2392,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                       i + x_offset,
                                                       j + y_offset);
                 rr_graph_builder.set_node_layer(node_id, layer);
-                rr_graph_builder.set_node_ptc_twist(node_id,ptc_twist);
+                rr_graph_builder.set_node_ptc_twist(node_id, ptc_twist);
                 rr_graph_builder.add_node_side(node_id, pin_side);
             }
         }
@@ -3205,7 +3205,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         rr_graph_builder.set_node_layer(node, layer);
-        rr_graph_builder.set_node_ptc_twist(node,ptc_twist);
+        rr_graph_builder.set_node_ptc_twist(node, ptc_twist);
 
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();

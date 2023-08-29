@@ -2,19 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-<<<<<<< HEAD
 # Cmdline: uxsdcxx/uxsdcap.py /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 # Input file: /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: cf10a1fa99fdfc7a455393a2a3cd1426
+# md5sum of input file: 9fa1b4c9c4b23d4c6d321612d2f76bad
 
-@0xe180df9b6ce517f5;
-=======
-# Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: 084871df6befd76d1e37093400695678
-
-@0xd4eaa6dbe132a433;
->>>>>>> make the twist variable optional in rr graph
+@0x91e066ff37fad849;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 

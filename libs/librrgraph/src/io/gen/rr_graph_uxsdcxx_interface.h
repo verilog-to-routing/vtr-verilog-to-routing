@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: cf10a1fa99fdfc7a455393a2a3cd1426
+ * md5sum of input file: 9fa1b4c9c4b23d4c6d321612d2f76bad
  */
 
 #include <functional>
@@ -361,21 +361,21 @@ public:
 	/** Generated for complex type "node_loc":
 	 * <xs:complexType name="node_loc">
 	 *   <xs:attribute name="layer" type="xs:int" use="required" />
-	 *   <xs:attribute name="twist" type="xs:int" />
 	 *   <xs:attribute name="xlow" type="xs:int" use="required" />
 	 *   <xs:attribute name="ylow" type="xs:int" use="required" />
 	 *   <xs:attribute name="xhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="yhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="side" type="loc_side" />
 	 *   <xs:attribute name="ptc" type="xs:int" use="required" />
+	 *   <xs:attribute name="twist" type="xs:int" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_node_loc_layer(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline int get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_side(enum_loc_side side, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
-	virtual inline int get_node_loc_ptc_twist(typename ContextTypes::NodeLocReadContext &ctx) = 0;
-	virtual inline void set_node_loc_ptc_twist(int twist, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
+	virtual inline int get_node_loc_twist(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline void set_node_loc_twist(int twist, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline int get_node_loc_xhigh(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline int get_node_loc_xlow(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline int get_node_loc_yhigh(typename ContextTypes::NodeLocReadContext &ctx) = 0;
