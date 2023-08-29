@@ -14,7 +14,7 @@
  */
 class KArmedBanditAgent {
   public:
-    KArmedBanditAgent(size_t num_moves, bool propose_blk_type);
+    KArmedBanditAgent(size_t num_moves, e_agent_space agent_space);
     virtual ~KArmedBanditAgent() = default;
 
     /**
@@ -85,7 +85,7 @@ class KArmedBanditAgent {
  */
 class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
-    EpsilonGreedyAgent(size_t num_moves, bool propose_blk_type, float epsilon);
+    EpsilonGreedyAgent(size_t num_moves, e_agent_space agent_space, float epsilon);
     ~EpsilonGreedyAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -124,7 +124,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
  */
 class SoftmaxAgent : public KArmedBanditAgent {
   public:
-    SoftmaxAgent(size_t num_moves, bool propose_blk_type);
+    SoftmaxAgent(size_t num_moves, e_agent_space agent_space);
     ~SoftmaxAgent() override;
 
     //void process_outcome(double reward, std::string reward_fun) override; //Updates the agent based on the reward of the last proposed action

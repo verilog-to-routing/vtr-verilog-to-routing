@@ -28,9 +28,9 @@ void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function rew
  *  K-Armed bandit agent implementation   *
  *                                        *
  *                                        */
-KArmedBanditAgent::KArmedBanditAgent(size_t num_moves, bool propose_blk_type)
+KArmedBanditAgent::KArmedBanditAgent(size_t num_moves, e_agent_space agent_space)
     : num_available_moves_(num_moves)
-    , propose_blk_type_(propose_blk_type) {
+    , propose_blk_type_(agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
 
     std::vector<int> available_logical_block_types = get_available_logical_blk_types_();
     num_available_types_ = available_logical_block_types.size();
@@ -158,8 +158,8 @@ int KArmedBanditAgent::agent_to_phy_blk_type(const int idx) {
  *  E-greedy agent implementation   *
  *                                  *
  *                                  */
-EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_moves, bool propose_blk_type, float epsilon)
-    : KArmedBanditAgent(num_moves, propose_blk_type) {
+EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_moves, e_agent_space agent_space, float epsilon)
+    : KArmedBanditAgent(num_moves, agent_space) {
     set_epsilon(epsilon);
     init_q_scores_();
 }
@@ -235,8 +235,8 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
  *  Softmax agent implementation    *
  *                                  *
  *                                  */
-SoftmaxAgent::SoftmaxAgent(size_t num_moves, bool propose_blk_type)
-    : KArmedBanditAgent(num_moves, propose_blk_type) {
+SoftmaxAgent::SoftmaxAgent(size_t num_moves, e_agent_space agent_space)
+    : KArmedBanditAgent(num_moves, agent_space) {
     init_q_scores_();
 }
 
