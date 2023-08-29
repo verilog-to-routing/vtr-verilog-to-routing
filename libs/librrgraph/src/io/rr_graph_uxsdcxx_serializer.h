@@ -706,7 +706,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_node_loc_layer(const t_rr_node& node) final {
         return rr_graph_->node_layer(node.id());
     }
-    inline int get_node_loc_ptc_twist(const t_rr_node& node) final{
+    inline int get_node_loc_twist(const t_rr_node& node) final{
         return rr_graph_->node_ptc_twist(node.id());
     }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
@@ -744,7 +744,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
 
-    inline void set_node_loc_ptc_twist(int twist, int& inode) final {
+    inline void set_node_loc_twist(int twist, int& inode) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
         rr_graph_builder_->set_node_ptc_twist(node_id,twist);
