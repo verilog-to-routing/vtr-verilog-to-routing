@@ -3237,7 +3237,7 @@ inline void load_grid_locs(const pugi::xml_node &root, T &out, Context &context,
 				int grid_loc_y;
 				memset(&grid_loc_y, 0, sizeof(grid_loc_y));
 				load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_layer, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y, report_error);
-				auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_layer, grid_loc_width_offset, grid_loc_x, grid_loc_y);
+				auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_width_offset, grid_loc_x, grid_loc_y, grid_loc_layer);
 				load_grid_loc(node, out, child_context, report_error, offset_debug);
 				out.finish_grid_locs_grid_loc(child_context);
 			}
