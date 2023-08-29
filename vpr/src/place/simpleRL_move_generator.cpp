@@ -31,7 +31,6 @@ void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function rew
 KArmedBanditAgent::KArmedBanditAgent(size_t num_moves, e_agent_space agent_space)
     : num_available_moves_(num_moves)
     , propose_blk_type_(agent_space == e_agent_space::MOVE_BLOCK_TYPE) {
-
     std::vector<int> available_logical_block_types = get_available_logical_blk_types_();
     num_available_types_ = available_logical_block_types.size();
 
@@ -39,7 +38,7 @@ KArmedBanditAgent::KArmedBanditAgent(size_t num_moves, e_agent_space agent_space
 
     action_logical_blk_type_.clear();
 
-    for(auto logical_blk_type_idx : available_logical_block_types) {
+    for (auto logical_blk_type_idx : available_logical_block_types) {
         action_logical_blk_type_.push_back(logical_blk_type_idx);
     }
 }
@@ -208,8 +207,6 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
 
     //Check the move type to be a valid move
     VTR_ASSERT((size_t)proposed_action.move_type < num_available_moves_);
-    //Check the block type index to be valid type if the agent is supposed to propose block type
-//    VTR_ASSERT((size_t)proposed_action.logical_blk_type_index < num_available_types_ || !propose_blk_type_);
 
     return proposed_action;
 }
@@ -277,15 +274,13 @@ t_propose_action SoftmaxAgent::propose_action() {
     auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
     auto action_type_q_pos = itr - cumm_action_prob_.begin();
     //To take care that the last element in cumm_action_prob_ might be less than 1 by a small value
-    last_action_ = std::min((size_t)action_type_q_pos, num_available_actions_-1);
+    last_action_ = std::min((size_t)action_type_q_pos, num_available_actions_ - 1);
 
-    t_propose_action proposed_action {action_to_move_type_(last_action_),
+    t_propose_action proposed_action{action_to_move_type_(last_action_),
                                      action_to_blk_type_(last_action_)};
 
     //Check the move type to be a valid move
     VTR_ASSERT((size_t)proposed_action.move_type < num_available_moves_);
-    //Check the block type index to be valid type if the agent is supposed to propose block type
-//    VTR_ASSERT((size_t)proposed_action.logical_blk_type_index < num_available_types_ || !propose_blk_type_);
 
     return proposed_action;
 }

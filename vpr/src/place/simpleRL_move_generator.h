@@ -94,7 +94,6 @@ class KArmedBanditAgent {
 
     FILE* agent_info_file_ = nullptr;
 
-
   private:
     /**
      * @brief Iterates over all logical block types and check whether they exist in the
