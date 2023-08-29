@@ -51,15 +51,38 @@ class KArmedBanditAgent {
     void set_step(float gamma, int move_lim);
 
   protected:
+    /**
+     * @brief Converts an action index to a move type.
+     *
+     *   @param action_idx Specifies which action is selected by the agent.
+     *
+     * @return The move type associated with the selected action.
+     */
     inline e_move_type action_to_move_type_(size_t action_idx);
+
+    /**
+     * @brief Converts an action index to a logical block type index.
+     *
+     *   @param action_idx Specifies which action is selected by the agent.
+     *
+     * @return The logical block type index associated with the selected action.
+     */
     inline int action_to_blk_type_(size_t action_idx);
+
+    /**
+     * @brief Converts an agent block type index to a logical block type index.
+     *
+     *   @param idx Specifies the index by which this calls refers to a logical block type index.
+     *
+     * @return The referred logical block type index.
+     */
     inline int agent_to_phy_blk_type(int idx);
 
   protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of move types that agent can choose from to perform
-    size_t num_available_types_;            //Number of block types that agent can choose to perform the move with
-    size_t num_available_actions_;
+    size_t num_available_types_;            //Number of block types that exist in the netlest. Agent may not choose the block type.
+    size_t num_available_actions_;          //Total number of available actions
     bool propose_blk_type_ = false;         //Check if agent should propose both move and block type or only move type
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
@@ -71,8 +94,17 @@ class KArmedBanditAgent {
 
     FILE* agent_info_file_ = nullptr;
 
+
   private:
+    /**
+     * @brief Iterates over all logical block types and check whether they exist in the
+     * netlist. Then, returns the logical block type indices found in the netlist.
+     *
+     * @return A vector containing all logical block type indices that exist in the netlist.
+     */
     static std::vector<int> get_available_logical_blk_types_();
+
+  private:
     std::vector<int> action_logical_blk_type_;
 };
 
