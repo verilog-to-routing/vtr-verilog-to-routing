@@ -3271,7 +3271,11 @@ inline void load_node_loc(const pugi::xml_node &root, T &out, Context &context, 
 			out.set_node_loc_side(lex_enum_loc_side(attr.value(), true, report_error), context);
 			break;
 		case atok_t_node_loc::TWIST:
+<<<<<<< HEAD
 			out.set_node_loc_twist(load_int(attr.value(), report_error), context);
+=======
+			out.set_node_loc_ptc_twist(load_int(attr.value(), report_error), context);
+>>>>>>> 75bf2999f32acf1f1a67de1ad0cfaf4f0a2b955d
 			break;
 		case atok_t_node_loc::XHIGH:
 			/* Attribute xhigh is already set */
@@ -4003,10 +4007,16 @@ inline void write_node(T &in, std::ostream &os, Context &context){
 		os << "<loc";
 		os << " layer=\"" << in.get_node_loc_layer(child_context) << "\"";
 		os << " ptc=\"" << in.get_node_loc_ptc(child_context) << "\"";
+		os << "meta=\"" << "more ptcs" <<"\"";
 		if((bool)in.get_node_loc_side(child_context))
 			os << " side=\"" << lookup_loc_side[(int)in.get_node_loc_side(child_context)] << "\"";
+<<<<<<< HEAD
 		if((bool)in.get_node_loc_twist(child_context))
 			os << " twist=\"" << in.get_node_loc_twist(child_context) << "\"";
+=======
+		if((bool)in.get_node_loc_ptc_twist(child_context))
+			os << " twist=\"" << in.get_node_loc_ptc_twist(child_context) << "\"";
+>>>>>>> 75bf2999f32acf1f1a67de1ad0cfaf4f0a2b955d
 		os << " xhigh=\"" << in.get_node_loc_xhigh(child_context) << "\"";
 		os << " xlow=\"" << in.get_node_loc_xlow(child_context) << "\"";
 		os << " yhigh=\"" << in.get_node_loc_yhigh(child_context) << "\"";

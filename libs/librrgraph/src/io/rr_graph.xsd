@@ -260,6 +260,7 @@
 
   <xs:complexType name="node_loc">
     <xs:attribute name="layer" type="xs:int" use="required"/>
+    <xs:attribute name="twist" type="xs:int"/>
     <xs:attribute name="xlow" type="xs:int" use="required"/>
     <xs:attribute name="ylow" type="xs:int" use="required"/>
     <xs:attribute name="xhigh" type="xs:int" use="required"/>
