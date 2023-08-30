@@ -997,8 +997,8 @@ static void highlight_blocks(double x, double y) {
     ezgl::rectangle clb_bbox;
 
     //iterate over grid z (layers) first. Start search of the block at the top layer to prioritize highlighting of blocks at higher levels during overlapping of layers.
-    for (int layer_num = device_ctx.grid.get_num_layers()-1; layer_num >= 0 ; layer_num--) {
-        if(!draw_state->draw_layer_display[layer_num].visible){
+    for (int layer_num = device_ctx.grid.get_num_layers() - 1; layer_num >= 0; layer_num--) {
+        if (!draw_state->draw_layer_display[layer_num].visible) {
             continue; /* Don't check for blocks on non-visible layers*/
         }
         // iterate over grid x
@@ -1036,10 +1036,9 @@ static void highlight_blocks(double x, double y) {
 
         if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
             //Nothing found
-            if(layer_num == 0){
-                return ; /* Nothing was found on any layer*/
-            }
-            else{
+            if (layer_num == 0) {
+                return; /* Nothing was found on any layer*/
+            } else {
                 continue; /* Nothing found on current layer*/
             }
         }
