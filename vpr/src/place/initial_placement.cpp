@@ -493,7 +493,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro, PartitionRegion& 
     //try to find a near location that meet these requirements
     bool neighbor_legal_loc = false;
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false);
+        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, true);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
@@ -540,7 +540,7 @@ static int get_y_loc_based_on_macro_direction(t_grid_empty_locs_block_type first
     /*
      * if the macro member offset is positive, it means that macro head should be placed at the first location of first_macro_loc.
      * otherwise, macro head should be placed at the last available location to ensure macro_can_be_placed can check macro location correctly.
-     *
+     * 
      */
     if (pl_macro.members.size() > 1) {
         if (pl_macro.members.at(1).offset.y < 0) {
@@ -683,7 +683,7 @@ static bool try_random_placement(const t_pl_macro& pl_macro, const PartitionRegi
                                                     to_compressed_loc,
                                                     false,
                                                     reg_coord.layer_num,
-                                                    false);
+                                                    true);
     if (!legal) {
         //No valid position found
         return false;
