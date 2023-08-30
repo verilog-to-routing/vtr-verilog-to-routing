@@ -1164,31 +1164,6 @@ static bool assess_noc_swap(double delta_cost, double prob) {
     }
 }
 
-static int findFirstInteger(const std::string& str) {
-    std::string numberString;
-    bool foundNumber = false;
-
-    for (char c : str) {
-        if (isdigit(c)) {
-            numberString += c;
-            foundNumber = true;
-        } else if (foundNumber) {
-            // We encountered a non-digit character after finding a number,
-            // so we stop searching.
-            break;
-        }
-    }
-
-    if (!numberString.empty()) {
-        // Convert the string to an integer using stoi() function
-        return std::stoi(numberString);
-    } else {
-        // If no integer is found, return a default value or handle the case
-        // according to your requirements.
-        return -1;
-    }
-}
-
 static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& noc_ctx = g_vpr_ctx.noc();

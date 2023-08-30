@@ -279,7 +279,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
     std::mt19937 rand_num_gen(device());
 
     // random number generation to determine routers of the link to remove
-    std::uniform_int_distribution<std::mt19937::result_type> src_router(0, NUM_OF_ROUTERS-1);
+    std::uniform_int_distribution<std::mt19937::result_type> src_router(0, NUM_OF_ROUTERS - 1);
     std::uniform_int_distribution<std::mt19937::result_type> sink_router(1, NOC_CONNECTIVITY - 1);
 
     // create the NoC
