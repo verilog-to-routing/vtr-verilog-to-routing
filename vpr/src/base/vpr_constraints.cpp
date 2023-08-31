@@ -1,88 +1,55 @@
 #include "vpr_constraints.h"
-#include "partition.h"
 
-void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id) {
-    auto got = constrained_atoms.find(blk_id);
 
-    /**
-     * Each atom can only be in one partition. If the atom is not found in constrained_atoms, it
-     * will be added with its partition id.
-     * If the atom is already in constrained_atoms, the partition id will be updated.
-     */
-    if (got == constrained_atoms.end()) {
-        constrained_atoms.insert({blk_id, part_id});
-    } else {
-        got->second = part_id;
-    }
+
+void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id){
+    placement_constraints_.add_constrained_atom(blk_id, part_id);
 }
 
-PartitionId VprConstraints::get_atom_partition(AtomBlockId blk_id) {
-    PartitionId part_id;
 
-    auto got = constrained_atoms.find(blk_id);
-
-    if (got == constrained_atoms.end()) {
-        return part_id = PartitionId::INVALID(); ///< atom is not in a partition, i.e. unconstrained
-    } else {
-        return got->second;
-    }
+void VprConstraints::add_partition(Partition part){
+    placement_constraints_.add_partition(part);
 }
 
-void VprConstraints::add_partition(Partition part) {
-    partitions.push_back(part);
+
+Partition VprConstraints::get_partition(PartitionId part_id){
+    return placement_constraints_.get_partition(part_id);
 }
 
-Partition VprConstraints::get_partition(PartitionId part_id) {
-    return partitions[part_id];
+std::vector<AtomBlockId> VprConstraints::get_part_atoms(PartitionId part_id){
+    return placement_constraints_.get_part_atoms(part_id);
 }
 
-std::vector<AtomBlockId> VprConstraints::get_part_atoms(PartitionId part_id) {
-    std::vector<AtomBlockId> part_atoms;
-
-    for (auto& it : constrained_atoms) {
-        if (it.second == part_id) {
-            part_atoms.push_back(it.first);
-        }
-    }
-
-    return part_atoms;
+int VprConstraints::get_num_partitions(){
+    return placement_constraints_.get_num_partitions();
 }
 
-int VprConstraints::get_num_partitions() {
-    return partitions.size();
+
+void VprConstraints::add_route_constraint(std::string net_name, RoutingScheme route_scheme){
+    route_constraints_.add_route_constraint(net_name, route_scheme);
 }
 
-PartitionRegion VprConstraints::get_partition_pr(PartitionId part_id) {
-    PartitionRegion pr;
-    pr = partitions[part_id].get_part_region();
-    return pr;
+const std::pair<std::string, RoutingScheme> VprConstraints::get_route_constraint_by_idx(std::size_t idx) const{
+    return route_constraints_.get_route_constraint_by_idx(idx);
 }
 
-void print_constraints(FILE* fp, VprConstraints constraints) {
-    Partition temp_part;
-    std::vector<AtomBlockId> atoms;
 
-    int num_parts = constraints.get_num_partitions();
+e_clock_modeling VprConstraints::get_route_model_by_net_name(std::string net_name) const{
+    return route_constraints_.get_route_model_by_net_name(net_name);
+}
 
-    fprintf(fp, "\n Number of partitions is %d \n", num_parts);
+const std::string VprConstraints::get_routing_network_name_by_net_name(std::string net_name) const{
+    return route_constraints_.get_routing_network_name_by_net_name(net_name);
+}
 
-    for (int i = 0; i < num_parts; i++) {
-        PartitionId part_id(i);
+int VprConstraints::get_num_route_constraints() const{
+    return route_constraints_.get_num_route_constraints();
+}
 
-        temp_part = constraints.get_partition(part_id);
+const UserPlaceConstraints VprConstraints::place_constraints() const{
+    return placement_constraints_;
+}
 
-        fprintf(fp, "\npartition_id: %zu\n", size_t(part_id));
-        print_partition(fp, temp_part);
-
-        atoms = constraints.get_part_atoms(part_id);
-
-        int atoms_size = atoms.size();
-
-        fprintf(fp, "\tAtom vector size is %d\n", atoms_size);
-        fprintf(fp, "\tIds of atoms in partition: \n");
-        for (unsigned int j = 0; j < atoms.size(); j++) {
-            AtomBlockId atom_id = atoms[j];
-            fprintf(fp, "\t#%zu\n", size_t(atom_id));
-        }
-    }
+const UserRouteConstraints VprConstraints::route_constraints() const{
+    return route_constraints_;
 }

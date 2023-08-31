@@ -1,39 +1,30 @@
 #ifndef VPR_CONSTRAINTS_H
 #define VPR_CONSTRAINTS_H
 
-#include "vtr_vector.h"
-#include "vpr_utils.h"
-#include "partition.h"
-#include "partition_region.h"
+#include "user_place_constraints.h"
+#include "user_route_constraints.h"
+
 
 /**
- * @file
- * @brief This file defines the VprConstraints class used to store and read out data related to user-specified
- * 		  block and region constraints for the packing and placement stages.
+ * @brief This file defines the VprConstraints class, which encapsulates user-specified placement and routing constraints
+ *      
  *
  * Overview
  * ========
- * This class contains functions that read in and store information from a constraints XML file.
- * The XML file provides a partition list, with the names of the partitions, and each atom in the partition.
- * It also specifies which regions the partitions should be placed in. Atoms cannot be placed in more than one partition.
- * If an atom is assigned to more than one partition, the last partition is was assigned to will be the partition it is placed in.
+ * The VprConstraints class is used to load and manage user-specified constraints from an XML file.
+ * It includes instances of the UserRouteConstraints and UserPlaceConstraints classes, which hold routing and placement
+ * constraints, respectively.
  *
  * Related Classes
  * ===============
- * The following definitions are useful to understanding this class:
+ * 
+ * UserRouteConstraints: Stores routing constraints for global nets, specifying routing method and routing network name.
+ * See vpr/src/base/user_route_constraints.h for more detail.
  *
- * Partition: a grouping of atoms that are constrained to a portion of an FPGA
- * See vpr/src/base/partition.h for more detail
- *
- * Region: the x and y bounds of a rectangular region, optionally including a subtile value,
- * that atoms in a partition are constrained to
- * See vpr/src/base/region.h for more detail
- *
- * PartitionRegion: the union of regions that a partition can be placed in
- * See vpr/src/base/partition_region.h for more detail
- *
- *
+ * UserPlaceConstraints: Stores block and region constraints for packing and placement stages.
+ * See vpr/src/base/user_place_constraints.h for more detail.
  */
+
 
 class VprConstraints {
   public:
@@ -44,15 +35,6 @@ class VprConstraints {
      *   @param part_id     The partition the atom is being constrained to
      */
     void add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id);
-
-    /**
-     * @brief Return id of the partition the atom belongs to
-     *
-     * If an atom is not in a partition (unconstrained), PartitionId::INVALID() is returned.
-     *
-     *   @param blk_id      The atom for which the partition id is needed
-     */
-    PartitionId get_atom_partition(AtomBlockId blk_id);
 
     /**
      * @brief Store a partition
@@ -81,25 +63,58 @@ class VprConstraints {
     int get_num_partitions();
 
     /**
-     * @brief Returns the PartitionRegion belonging to the specified Partition
+     * @brief Add a global route constraint for a specific net with its corresponding routing scheme.
      *
-     *   @param part_id The id of the partition whose PartitionRegion is needed
+     *    @param net_name The name of the net to which the route constraint applies.
+     *    @param route_scheme The routing scheme specifying how the net should be routed.
      */
-    PartitionRegion get_partition_pr(PartitionId part_id);
+    void add_route_constraint(std::string net_name, RoutingScheme route_scheme);
+
+    /**
+     * @brief Get a global route constraint by its index. 
+     *
+     *    @param index The index of the key-value entry in the unordered map.
+     *    @return A pair containing the net name and its corresponding routing scheme.
+     */
+    const std::pair<std::string, RoutingScheme> get_route_constraint_by_idx(std::size_t idx) const;
+
+    /**
+     * @brief Get the routing method for a specific net by its name.
+     *
+     *    @param net_name The name of the net for which to retrieve the routing method.
+     *    @return The routing method associated with the specified net.
+     */
+    e_clock_modeling get_route_model_by_net_name(std::string net_name) const;
+
+    /**
+     * @brief Get the name of the routing network for a specific net by its name.
+     *
+     *    @param net_name The name of the net for which to retrieve the name of the routing network.
+     *    @return The name of the routing network associated with the specified net.
+     */
+    const std::string get_routing_network_name_by_net_name(std::string net_name) const;
+
+    /**
+     * @brief Get the total number of user-specified global route constraints.
+     */
+    int get_num_route_constraints() const;
+
+    /**
+     * @brief Get the UserPlaceConstraints instance.
+     */
+    const UserPlaceConstraints place_constraints() const;
+
+    /**
+     * @brief Get the UserRouteConstraints instance.
+     */
+    const UserRouteConstraints route_constraints() const;
+
 
   private:
-    /**
-     * Store all constrained atoms
-     */
-    std::unordered_map<AtomBlockId, PartitionId> constrained_atoms;
+   
+    UserRouteConstraints route_constraints_;
+    UserPlaceConstraints placement_constraints_;
 
-    /**
-     * Store all partitions
-     */
-    vtr::vector<PartitionId, Partition> partitions;
 };
-
-///@brief used to print floorplanning constraints data from a VprConstraints object
-void print_constraints(FILE* fp, VprConstraints constraints);
 
 #endif /* VPR_CONSTRAINTS_H */
