@@ -108,7 +108,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     int ptc = max_ptc + 1;
 
     rr_graph_builder.set_node_type(node_index, SINK);
-    rr_graph_builder.set_node_name(node_index, "clock_network");
+    rr_graph_builder.set_node_name(node_index, default_clock_network_name);
     rr_graph_builder.set_node_class_num(node_index, ptc);
     rr_graph_builder.set_node_coordinates(node_index, x, y, x, y);
     rr_graph_builder.set_node_layer(node_index, layer);

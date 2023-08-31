@@ -15,6 +15,8 @@
 class t_rr_graph_storage;
 class ClockRRGraphBuilder;
 
+extern std::string default_clock_network_name;
+
 enum class ClockType {
     SPINE,
     RIB,
