@@ -639,6 +639,9 @@ class VprContext : public Context {
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
 
+    const Levelized& logic_levels() const {return logic_levels_;}
+    Levelized& mutable_logic_levels() {return logic_levels_;}
+
   private:
     DeviceContext device_;
 
@@ -656,6 +659,13 @@ class VprContext : public Context {
     NocContext noc_;
 
     PackingMultithreadingContext packing_multithreading_;
+
+    /**
+     * @brief The Levelized class represents a graph that has been levelized, allowing efficient traversal and analysis.
+     * It provides methods to perform graph levelization, check if the graph has been levelized, and access information about
+     * nodes in each logic level and the total number of logic levels.
+     */
+    Levelized logic_levels_;
 };
 
 #endif

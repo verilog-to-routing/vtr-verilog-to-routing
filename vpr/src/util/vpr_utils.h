@@ -317,4 +317,23 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
 class VprConstraints;
 void apply_route_constraints(VprConstraints& constraint);
 
+
+// Class definition for a levelized graph
+/**
+ * @brief The Levelized class represents a graph that has been levelized, allowing efficient traversal and analysis.
+ * It provides methods to perform graph levelization, check if the graph has been levelized, and access information about
+ * nodes in each logic level and the total number of logic levels.
+ */
+class Levelized{
+    public:
+        void levelize(); // Function to perform graph levelization
+        bool is_levelized() const; // Check if the graph has been levelized
+        vtr::vector_map<int , std::vector<AtomBlockId>>* level_nodes(); // Get a pointer to the map of nodes in each level
+        int num_logic_levels() const; // Get the number of logic levels in the levelized graph
+    private:
+        vtr::vector_map<int , std::vector<AtomBlockId>> level_nodes_; //Nodes in each level
+        bool is_levelized_; // Flag to indicate whether graph has been levelized
+        int num_logic_levels_; // Number of logic levels in the levelized graph
+};
+
 #endif
