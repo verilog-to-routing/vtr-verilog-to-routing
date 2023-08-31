@@ -1838,6 +1838,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     
     pack_grp.add_argument<int>(args.number_of_molecules_in_partition, "--number_of_molecules_in_partition")
         .help("Average number of molecules in each cluster. It should be used when --use_partitioning_in_pack is on.")
+        .default_value("64")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");
 
