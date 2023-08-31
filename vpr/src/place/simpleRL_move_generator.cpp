@@ -43,6 +43,23 @@ KArmedBanditAgent::KArmedBanditAgent(size_t num_moves, e_agent_space agent_space
     }
 }
 
+/*
+ * If the agent selects both move type and block type, the would lool like this:
+ *
+ *    +---------------+---------------+---------------+---------------+
+ *    | (blk0, move0) | (blk0, move1) | ............. | (blk0, moveN) |
+ *    +---------------+---------------+---------------+---------------+
+ *    | (blk1, move0) | (blk1, move1) | ............. | (blk1, moveN) |
+ *    +---------------+---------------+---------------+---------------+
+ *    |      ..       |       ..      | ............. |       ..      |
+ *    +---------------+---------------+---------------+---------------+
+ *    | (blkK, move0) | (blkK, move1) | ............. | (blkK, moveN) |
+ *    +---------------+---------------+---------------+---------------+
+ *
+ *    This meant that (action_idx % num_available_moves_) specifies the move type,
+ *    while (action_idx / num_available_moves_) determines the block type.
+ *
+ */
 e_move_type KArmedBanditAgent::action_to_move_type_(const size_t action_idx) {
     e_move_type move_type = e_move_type::INVALID_MOVE;
 
@@ -54,9 +71,9 @@ e_move_type KArmedBanditAgent::action_to_move_type_(const size_t action_idx) {
 }
 
 int KArmedBanditAgent::action_to_blk_type_(const size_t action_idx) {
-    if (propose_blk_type_ && action_idx < num_available_actions_) {
-        return action_logical_blk_type_[action_idx / num_available_moves_];
-    } else {
+    if (propose_blk_type_) {
+        return action_logical_blk_type_.at(action_idx / num_available_moves_);
+    } else { // the agent doesn't select the move type
         return -1;
     }
 }

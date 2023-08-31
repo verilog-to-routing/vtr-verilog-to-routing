@@ -31,10 +31,15 @@ t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) c
 }
 
 const std::vector<ClusterBlockId>& ClusteredNetlist::blocks_per_type(const t_logical_block_type& blk_type) const {
+    // empty vector is declared static to avoid re-allocation every time the function is called
     static std::vector<ClusterBlockId> empty_vector;
     if (blocks_per_type_.count(blk_type.index) == 0) {
         return empty_vector;
     }
+
+    // the vector is returned as const reference to avoid unnecessary copies,
+    // especially that returned vectors may be very large as they contain
+    // all clustered blocks with a specific block type
     return blocks_per_type_.at(blk_type.index);
 }
 

@@ -71,6 +71,11 @@ class KArmedBanditAgent {
 
     /**
      * @brief Converts an agent block type index to a logical block type index.
+     * Q-table only contains entries for block types that exist in the netlist.
+     * Agent block type index ranges from 0 to num_types_in_netlist-1. The agent
+     * chooses an agent block type and a move type. This function is used to
+     * convert the agent block type index (only usable within this class) to
+     * a logical block type index (usable by different move generators).
      *
      *   @param idx Specifies the index by which this calls refers to a logical block type index.
      *
@@ -200,6 +205,13 @@ class SimpleRLMoveGenerator : public MoveGenerator {
 
   public:
     // constructor using a pointer to the agent used
+    // the constructor
+    /**
+     * @brief Constructs an RL move generator using the passed agent
+     *
+     *   @param agent std::unique_ptr to the agent. Only EpsilonGreedyAgent and SoftmaxAgent types are accepted
+     *   by the constructor. If other types are passed, a compile error would be thrown.
+     */
     template<class T,
              class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
     explicit SimpleRLMoveGenerator(std::unique_ptr<T>& agent);

@@ -45,7 +45,7 @@ enum class e_create_move {
  */
 struct t_propose_action {
     e_move_type move_type = e_move_type::INVALID_MOVE; ///<move type that propose_action chooses to perform
-    int logical_blk_type_index = -1;                   ///<propose_action can choose block type or leave it empty to allow any block type to be chosen
+    int logical_blk_type_index = -1;                   ///<propose_action can choose block type or set it to -1 to allow any block type to be chosen
 };
 
 /**
@@ -113,7 +113,7 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 /**
  * @brief Propose block for the RL agent based on required block type.
  *
- *  @param logical_blk_type_index: the agent type of the moving block.
+ *  @param logical_blk_type_index: Index of the block type being perturbed, which is used to select the proper agent data
  *  @param highly_crit_block: block should be chosen from highly critical blocks.
  *  @param net_from: if block is chosen from highly critical blocks, should store the critical net id.
  *  @param pin_from: if block is chosen from highly critical blocks, should save its critical pin id.

@@ -54,10 +54,10 @@ class MoveGenerator {
      *  @param proposed_action: Contains the move type and block type. If the block type is specified,
      *  the proposed move swaps instances of the given block type. Otherwise, the selected block type
      *  by the move generator is written to proposed_action.logical_blk_type_index.
+     *  If proposed_action.logical_blk_type_index is -1, this function will choose the block from the netlist (regardless of type).
      *  @param rlim: maximum distance a block can move in x or y direction, in the compressed grid space
      *  @param placer_opts: all the placer options
      *  @param criticalities: the placer criticalities, useful for timing directed moves
-     *  If proposed_action.logical_blk_type_index is -1, this function will choose the block from the netlist (regardless of type).
      */
     virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
 
