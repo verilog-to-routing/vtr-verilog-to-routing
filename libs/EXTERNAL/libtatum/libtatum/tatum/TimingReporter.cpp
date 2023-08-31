@@ -86,32 +86,32 @@ TimingReporter::TimingReporter(const TimingGraphNameResolver& name_resolver,
 
 void TimingReporter::report_timing_setup(std::string filename, 
                                          const SetupTimingAnalyzer& setup_analyzer,
-                                         size_t npaths) const {
+                                         size_t npaths, const int num_logic_levels) const {
     std::ofstream os(filename);
-    report_timing_setup(os, setup_analyzer, npaths);
+    report_timing_setup(os, setup_analyzer, npaths, num_logic_levels);
 }
 
 void TimingReporter::report_timing_setup(std::ostream& os, 
                                          const SetupTimingAnalyzer& setup_analyzer,
-                                         size_t npaths) const {
+                                         size_t npaths, const int num_logic_levels) const {
     auto paths = path_collector_.collect_worst_setup_timing_paths(timing_graph_, setup_analyzer, npaths);
 
-    report_timing(os, paths);
+    report_timing(os, paths, num_logic_levels);
 }
 
 void TimingReporter::report_timing_hold(std::string filename, 
                                          const HoldTimingAnalyzer& hold_analyzer,
-                                         size_t npaths) const {
+                                         size_t npaths, const int num_logic_levels) const {
     std::ofstream os(filename);
-    report_timing_hold(os, hold_analyzer, npaths);
+    report_timing_hold(os, hold_analyzer, npaths, num_logic_levels);
 }
 
 void TimingReporter::report_timing_hold(std::ostream& os, 
                                          const HoldTimingAnalyzer& hold_analyzer,
-                                         size_t npaths) const {
+                                         size_t npaths, const int num_logic_levels) const {
     auto paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths);
 
-    report_timing(os, paths);
+    report_timing(os, paths, num_logic_levels);
 }
 
 void TimingReporter::report_skew_setup(std::string filename, 
@@ -195,12 +195,16 @@ void TimingReporter::report_unconstrained_hold(std::ostream& os,
  */
 
 void TimingReporter::report_timing(std::ostream& os,
-                                   const std::vector<TimingPath>& paths) const {
+                                   const std::vector<TimingPath>& paths, const int num_logic_levels) const {
     tatum::OsFormatGuard flag_guard(os);
 
     os << "#Timing report of worst " << paths.size() << " path(s)\n";
     os << "# Unit scale: " << std::setprecision(0) << std::scientific << unit_scale_ << " seconds\n";
     os << "# Output precision: " << precision_ << "\n";
+    os << "\n";
+
+    os << "# Logical Levels: " << num_logic_levels << "\n";
+    os << "# Timing Graph Levels: " << timing_graph_.levels().size() << "\n";
     os << "\n";
 
     size_t i = 0;

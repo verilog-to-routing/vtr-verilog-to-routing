@@ -371,6 +371,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         return true;
     }
 
+    g_vpr_ctx.mutable_logic_levels().levelize();
+
     { //Pack
         bool pack_success = vpr_pack_flow(vpr_setup, arch);
 
