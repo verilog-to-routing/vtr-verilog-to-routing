@@ -161,7 +161,7 @@ void KArmedBanditAgent::set_step(float gamma, int move_lim) {
         //
         //     alpha = 1 - e^(log(gamma) / K)
         //
-        float alpha = 1 - std::exp(std::log((double)gamma) / move_lim);
+        float alpha = 1 - std::exp(std::log(gamma) / move_lim);
         exp_alpha_ = alpha;
     }
 }
