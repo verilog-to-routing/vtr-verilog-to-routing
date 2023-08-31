@@ -207,7 +207,7 @@ struct EquationSystem {
         // LeastSquaresConjugateGradient<SparseMatrix<T>> solver;
         ConjugateGradient<SparseMatrix<T>, Lower | Upper, IdentityPreconditioner> solver;
         solver.setTolerance(tolerance);
-        VectorXd x_res = solver.compute(mat).solve(vec_rhs);//solveWithGuess(vec_rhs, vec_x_guess);
+        VectorXd x_res = solver.compute(mat).solveWithGuess(vec_rhs, vec_x_guess);
         for (int i_row = 0; i_row < int(x.size()); i_row++)
             x.at(i_row) = x_res[i_row];
     }
@@ -247,13 +247,13 @@ AnalyticPlacer::AnalyticPlacer() {
                         // current location and its anchor is formed with strength (alph * iter)
                         // @see build_equations()
 
-    ap_cfg.beta = 0.9; // utilization factor, <= 1, used to determine if a cut-spreading region is
+    ap_cfg.beta = 1.0; // utilization factor, <= 1, used to determine if a cut-spreading region is
                      // overutilized with the formula: bool overutilized = (num_blks / num_tiles) > beta
                      // for beta < 1, a region must have more tiles than logical blks to not be overutilized
 
     ap_cfg.solverTolerance = 1e-5; // solver parameter, refers to residual error from solver, defined as |Ax-b|/|b|
 
-    ap_cfg.buildSolveIter = 6; // number of build-solve iteration when calculating placement, used in
+    ap_cfg.buildSolveIter = 5; // number of build-solve iteration when calculating placement, used in
                                // build_solve_direction()
                                // for each build-solve iteration, the solution from previous build-solve iteration
                                // is used as a guess for the iterative solver. therefore more buildSolveIter should
@@ -266,8 +266,8 @@ AnalyticPlacer::AnalyticPlacer() {
 
     // following two timing parameters are used to add timing weights in matrix equation, currently not used
     // see comment in add_pin_to_pin_connection() for usage
-    ap_cfg.criticalityExponent = 2;
-    ap_cfg.timingWeight = 1;
+    ap_cfg.criticalityExponent = 1;
+    ap_cfg.timingWeight = 10;
 }
 
 /*
