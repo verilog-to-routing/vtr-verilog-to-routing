@@ -13,6 +13,7 @@
 #include "arch_util.h"
 #include "physical_types_util.h"
 #include "rr_graph_utils.h"
+#include "vpr_constraints.h"
 
 class DeviceGrid;
 
@@ -311,4 +312,5 @@ t_arch_switch_inf create_internal_arch_sw(float delay);
 
 void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
 
+void apply_route_constraints(const UserRouteConstraints& constraint);
 #endif

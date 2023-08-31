@@ -21,6 +21,7 @@
 #include "pack_types.h"
 #include "device_grid.h"
 #include "timing_fail_error.h"
+#include "user_route_constraints.h"
 #include "re_cluster_util.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
@@ -2504,6 +2505,25 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
             // any atom block
             if (child_pb->parent_pb != nullptr) {
                 pb_list.push_back(child_pb);
+            }
+        }
+    }
+}
+
+
+// Go through all the nets. If the net's route model is set to ideal in user-defined
+// routing constraints, mark the net as 'ignored' .
+// This flag ensures that the router will ignore routing for this net.
+void apply_route_constraints(const UserRouteConstraints& route_constraints) {
+    ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
+    for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
+        std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
+        if (route_constraints.has_routing_constraint(net_name)) {
+            mutable_cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
+            if (route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::IDEAL_CLOCK) {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, true);
+            } else {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, false);
             }
         }
     }
