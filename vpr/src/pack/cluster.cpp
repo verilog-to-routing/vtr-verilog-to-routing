@@ -41,6 +41,8 @@
 #include <algorithm>
 #include <fstream>
 
+#include <thread>
+
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
@@ -73,6 +75,8 @@
 
 #include "re_cluster_util.h"
 #include "constraints_report.h"
+
+#include "config.h"
 
 /*
  * When attraction groups are created, the purpose is to pack more densely by adding more molecules
@@ -234,147 +238,716 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      * Clustering
      *****************************************************************/
 
-    while (istart != nullptr) {
-        is_cluster_legal = false;
-        savedseedindex = seedindex;
-        for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_INVALID; detailed_routing_stage++) {
-            ClusterBlockId clb_index(helper_ctx.total_clb_num);
+    // Used to check if the "for loop" will find a legal solution ("failed_for_loop" == true)
+    // (T.Besson)
+    //
+    bool failed_for_loop = false;
+    int max_nb_molecule;
+    int nb_packed_molecules = 0;
 
-            VTR_LOGV(verbosity > 2, "Complex block %d:\n", helper_ctx.total_clb_num);
+    if(packer_opts.use_partitioning_in_pack){
 
-            /*Used to store cluster's PartitionRegion as primitives are added to it.
-             * Since some of the primitives might fail legality, this structure temporarily
-             * stores PartitionRegion information while the cluster is packed*/
-            PartitionRegion temp_cluster_pr;
+        AtomNetlist myNetlist = g_vpr_ctx.atom().nlist;
 
-            start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
-                              clb_index, istart,
-                              num_used_type_instances,
-                              packer_opts.target_device_utilization,
-                              num_models, helper_ctx.max_cluster_size,
-                              arch, packer_opts.device_layout,
-                              lb_type_rr_graphs, &router_data,
-                              detailed_routing_stage, &cluster_ctx.clb_nlist,
-                              primitive_candidate_block_types,
-                              verbosity,
-                              packer_opts.enable_pin_feasibility_filter,
-                              balance_block_type_utilization,
-                              packer_opts.feasible_block_array_size,
-                              temp_cluster_pr);
+        std::vector<t_pack_molecule*> molecules;
+        int numberOfMolecules = 0;
+        for (auto cur_molecule = molecule_head; cur_molecule != nullptr; cur_molecule = cur_molecule->next) {
+            molecules.push_back(cur_molecule);
+            numberOfMolecules++;
+        }
 
-            //initial molecule in cluster has been processed
-            cluster_stats.num_molecules_processed++;
-            cluster_stats.mols_since_last_print++;
-            print_pack_status(helper_ctx.total_clb_num,
-                              cluster_stats.num_molecules,
-                              cluster_stats.num_molecules_processed,
-                              cluster_stats.mols_since_last_print,
-                              device_ctx.grid.width(),
-                              device_ctx.grid.height(),
-                              attraction_groups);
+        int numberOfNets = 0;
+        int numberOfAtoms = 0;
+        for (auto netId : myNetlist.nets()) {
+            numberOfNets++;
+        }
 
-            VTR_LOGV(verbosity > 2,
-                     "Complex block %d: '%s' (%s) ", helper_ctx.total_clb_num,
-                     cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                     cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            VTR_LOGV(verbosity > 2, ".");
-            //Progress dot for seed-block
-            fflush(stdout);
+        for (auto blockId : myNetlist.blocks()) {
+            numberOfAtoms++;
+        }
 
-            t_ext_pin_util target_ext_pin_util = ext_pin_util_targets.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            int high_fanout_threshold = high_fanout_thresholds.get_threshold(cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            update_cluster_stats(istart, clb_index,
-                                 is_clock, //Set of clock nets
-                                 is_clock, //Set of global nets (currently all clocks)
-                                 packer_opts.global_clocks,
-                                 packer_opts.alpha, packer_opts.beta,
-                                 packer_opts.timing_driven, packer_opts.connection_driven,
-                                 high_fanout_threshold,
-                                 *timing_info,
-                                 attraction_groups,
-                                 net_output_feeds_driving_block_input);
-            helper_ctx.total_clb_num++;
+        int* atomBlockIdToMoleculeId = new int[numberOfAtoms];
 
-            if (packer_opts.timing_driven) {
-                cluster_stats.blocks_since_last_analysis++;
-                /*it doesn't make sense to do a timing analysis here since there*
-                 *is only one atom block clustered it would not change anything      */
+        for (int i = 0; i < numberOfAtoms; i++) {
+            atomBlockIdToMoleculeId[i] = -1;
+        }
+
+        {
+            int i = 0;
+            for (auto molecule : molecules) {
+                for (auto abid : molecule->atom_block_ids) {
+                    int bid = size_t(abid);
+                    if (bid < 0 || bid >= numberOfAtoms) continue;
+                    atomBlockIdToMoleculeId[bid] = i;
+                }
+                i++;
             }
-            cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
-            cluster_stats.num_unrelated_clustering_attempts = 0;
-            next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
-                                                     attraction_groups,
-                                                     allow_unrelated_clustering,
-                                                     packer_opts.prioritize_transitive_connectivity,
-                                                     packer_opts.transitive_fanout_threshold,
-                                                     packer_opts.feasible_block_array_size,
-                                                     &cluster_stats.num_unrelated_clustering_attempts,
-                                                     cur_cluster_placement_stats_ptr,
-                                                     clb_inter_blk_nets,
-                                                     clb_index,
-                                                     verbosity,
-                                                     clustering_data.unclustered_list_head,
-                                                     unclustered_list_head_size,
-                                                     primitive_candidate_block_types);
-            prev_molecule = istart;
+        }
 
-            /*
-             * When attraction groups are created, the purpose is to pack more densely by adding more molecules
-             * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
-             * not on), the cluster keeps being packed until the get_molecule routines return either a repeated
-             * molecule or a nullptr. When attraction groups are on, we want to keep exploring molecules for the
-             * cluster until a nullptr is returned. So, the number of repeated molecules allowed is increased to a
-             * large value.
-             */
-            int max_num_repeated_molecules = 0;
-            if (attraction_groups.num_attraction_groups() > 0) {
-                max_num_repeated_molecules = ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES;
+
+
+
+        std::ofstream hmetisFile;
+        hmetisFile.open("hmetis.txt", std::ofstream::out);
+        //hmetisFile << numberOfNets << " " << numberOfAtoms  << std::endl;
+
+        //std::vector<std::vector<int>> netLines;
+        std::vector<std::string> uniqueLines;
+        std::vector<int> lineCounts;
+
+        //int nextIndexForMolecule = numberOfMolecules + 1;
+
+        //bool addNewNodeAndUseWeightsInHmetis = false;
+
+        for (auto netId : myNetlist.nets()) {
+            //VTR_LOG("NET ID: %d\n", size_t(netId));
+            std::vector<int> newLine;
+            AtomBlockId driverBlockId = myNetlist.net_driver_block(netId);
+            int moleculeId = atomBlockIdToMoleculeId[size_t(driverBlockId)];
+            newLine.push_back(moleculeId + 1);
+            double maxCriticality = 0;
+            for (auto pin_id : myNetlist.net_pins(netId)) {
+
+                double pinCriticality = timing_info->setup_pin_criticality(pin_id);
+                if(pinCriticality > maxCriticality){
+                    maxCriticality = pinCriticality;
+                }
+                
+                //VTR_LOG("pin criticality: %f\n", pinCriticality);
+
+
+                auto port_id = myNetlist.pin_port(pin_id);
+                auto blk_id = myNetlist.port_block(port_id);
+                if (blk_id == driverBlockId) continue;
+                //VTR_LOG("%d ", size_t(blk_id));
+                //hmetisFile << size_t(blk_id)+1 << " ";
+                moleculeId = atomBlockIdToMoleculeId[size_t(blk_id)];
+                if (std::find(newLine.begin(), newLine.end(), moleculeId + 1) == newLine.end()) {
+                    newLine.push_back(moleculeId + 1);
+                }
+            }
+            int lineWeight = 1;
+            
+            if (newLine.size() > 1) {
+
+                std::sort(newLine.begin(), newLine.end());
+                std::string s = std::accumulate(newLine.begin() + 1, newLine.end(), std::to_string(newLine[0]),
+                                                [](const std::string& a, int b) {
+                                                    return a + " " + std::to_string(b);
+                                                });
+                auto pointer = std::find(uniqueLines.begin(), uniqueLines.end(), s);
+                if (pointer == uniqueLines.end()) {
+                    //netLines.push_back(newLine);
+                    lineCounts.push_back(lineWeight);
+                    uniqueLines.push_back(s);
+                } else {
+                    lineCounts[pointer - uniqueLines.begin()]+= lineWeight;
+                }
+                
+            }
+        }
+
+        hmetisFile << uniqueLines.size() << " " << numberOfMolecules << " " << 11 << std::endl;
+        {
+            int i = 0;
+            for (auto line : uniqueLines) {
+                hmetisFile << lineCounts[i] << " " << line << std::endl;
+                i++;
+            }
+            for (auto molecule : molecules) {
+                hmetisFile << molecule->atom_block_ids.size() << std::endl;
+            }
+        }
+        
+        hmetisFile.close();
+
+        int numberOfClusters = ceil(numberOfMolecules *1.0 / packer_opts.number_of_molecules_in_partition);
+        if (numberOfClusters <= 1) numberOfClusters = 2;
+
+        char* commandToExecute = new char[1000];
+        unsigned num_cpus = std::thread::hardware_concurrency();
+        int num_threads = (int)(num_cpus / 2) > 1? (int)(num_cpus / 2) : 1;
+        // sprintf(commandToExecute, "%s hmetis.txt %d 3 10 4 1 3 0 0 ", packer_opts.hmetis_path.c_str(), numberOfClusters);
+        sprintf(commandToExecute, 
+                "%s -h hmetis.txt --preset-type=quality -t %d -k %d -e 3 -o soed --enable-progress-bar=true --show-detailed-timings=true --verbose=true --write-partition-file=true", 
+                packer_opts.partitioner_path.c_str(), num_threads, numberOfClusters);
+        VTR_LOG("MtKaHPar COMMAND: %s\n", commandToExecute);
+
+        int code = system(commandToExecute);
+        VTR_ASSERT_MSG(code == 0, "Running MtKaHyPar failed with code 0");
+
+        delete commandToExecute;
+
+        char* newFilename = new char[100];
+        // sprintf(newFilename, "hmetis.txt.part.%d", numberOfClusters);
+        sprintf(newFilename, "hmetis.txt.part%d.epsilon3..seed0.KaHyPar", numberOfClusters);
+
+        int* atomBlockIdToCluster = new int[numberOfAtoms];
+
+        std::ifstream hmetisOutFile;
+        hmetisOutFile.open(newFilename);
+
+        int* clusterOfMolecule = new int[numberOfMolecules];
+
+        for (int i = 0; i < numberOfMolecules; i++) {
+            int clusterId;
+            hmetisOutFile >> clusterId;
+
+            clusterOfMolecule[i] = clusterId;
+
+            for (AtomBlockId abid : molecules[i]->atom_block_ids) {
+                if (size_t(abid) >= numberOfAtoms) continue;
+                atomBlockIdToCluster[size_t(abid)] = clusterId;
+            }
+
+        }
+        hmetisOutFile.close();
+
+        std::vector<int>* clusterMoleculeOrder = new std::vector<int>[numberOfClusters];
+
+        for (int i = 0; i < numberOfClusters; i++) {
+            clusterMoleculeOrder[i] = std::vector<int>();
+        }
+
+        for (auto atom : seed_atoms) {
+            int id = size_t(atom);
+            int clusterId = atomBlockIdToCluster[id];
+            if (clusterId < 0 || clusterId >= numberOfClusters) {
+                VTR_LOG("BAD CLUSTER ID: %d, atomBlockId: %d\n", clusterId, id);
+                clusterId = 1;
+            }
+            VTR_ASSERT(clusterId >= 0 && clusterId < numberOfClusters);
+            int moleculeId = atomBlockIdToMoleculeId[id];
+            VTR_ASSERT(moleculeId >= 0 && moleculeId < numberOfMolecules);
+            clusterMoleculeOrder[clusterId].push_back(moleculeId);
+        }
+
+
+        for (int partId = 0; partId < numberOfClusters; partId++) {
+            int currentIndexOfBestMolecule = 0;
+
+            for (int moldId = 0; moldId < numberOfMolecules; moldId++) {
+                if (clusterOfMolecule[moldId] == partId) {
+                    molecules[moldId]->valid = true;
+                    //istart = molecules[moldId];
+                } else {
+                    molecules[moldId]->valid = false;
+                }
+            }
+
+            if (currentIndexOfBestMolecule >= clusterMoleculeOrder[partId].size()) {
+                istart = nullptr;
             } else {
-                max_num_repeated_molecules = 1;
-            }
-            int num_repeated_molecules = 0;
-
-            while (next_molecule != nullptr && num_repeated_molecules < max_num_repeated_molecules) {
-                prev_molecule = next_molecule;
-
-                try_fill_cluster(packer_opts,
-                                 cur_cluster_placement_stats_ptr,
-                                 prev_molecule,
-                                 next_molecule,
-                                 num_repeated_molecules,
-                                 helper_ctx.primitives_list,
-                                 cluster_stats,
-                                 helper_ctx.total_clb_num,
-                                 num_models,
-                                 helper_ctx.max_cluster_size,
-                                 clb_index,
-                                 detailed_routing_stage,
-                                 attraction_groups,
-                                 clb_inter_blk_nets,
-                                 allow_unrelated_clustering,
-                                 high_fanout_threshold,
-                                 is_clock,
-                                 timing_info,
-                                 router_data,
-                                 target_ext_pin_util,
-                                 temp_cluster_pr,
-                                 block_pack_status,
-                                 clustering_data.unclustered_list_head,
-                                 unclustered_list_head_size,
-                                 net_output_feeds_driving_block_input,
-                                 primitive_candidate_block_types);
+                istart = molecules[clusterMoleculeOrder[partId][currentIndexOfBestMolecule]];
+                currentIndexOfBestMolecule++;
+                while (!istart->valid && currentIndexOfBestMolecule < clusterMoleculeOrder[partId].size()) {
+                    istart = molecules[clusterMoleculeOrder[partId][currentIndexOfBestMolecule]];
+                    currentIndexOfBestMolecule++;
+                }
+                if (!istart->valid) {
+                    istart = nullptr;
+                }
             }
 
-            is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);
+            while (istart != nullptr) {
 
-            if (is_cluster_legal) {
-                istart = save_cluster_routing_and_pick_new_seed(packer_opts, helper_ctx.total_clb_num, seed_atoms, num_blocks_hill_added, clustering_data.intra_lb_routing, seedindex, cluster_stats, router_data);
-                store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets);
+                is_cluster_legal = false;
+                savedseedindex = seedindex;
+
+                // If in the previous "for (detailed_routing_stage ..." call we failed all the 
+                // time (e.g 'failed_for_loop' is false) then when we re-enter it but we reduce the 
+                // calls to "try_fill_cluster" by half in order to expect a feasible solution. 
+                // 
+                // This case can happen with unit test case "mult_seq" where we stuck on a mode4/mode5 
+                // conflict because of the calls to "try_fill_cluster" that always fail. In this case the 
+                // only feasible solution is to stick to the original "start_new_cluster" solution and
+                // avoid any call to "try_fill_cluster". To do this, "nb_max_molecule" needs to reduce 
+                // to 0 to avoid calling "try_fill_cluster". That's why we decrease "max_nb_molecule" in
+                // the iteration process to get down to 0. We decrease it by half each time but it could
+                // have been another scheme to decrease it. This one looks to give good QoR results.
+                // (T.Besson, Rapid Silicon)
+                //
+                if (failed_for_loop) {
+                max_nb_molecule = max_nb_molecule / 1.4; // decrease by 1.4 looks to be a good strategy. 
+                                                        // The packer is hyper sensitive to this number.
+                                                        // A change by 0.1 currently may generate big
+                                                        // difference on some designs like "axil_crossbar".
+                                                        // More investigation to understand why ? (T.Besson)
+                } else {
+                max_nb_molecule = 512; // important starting number. The packer is again sensitive
+                                        // to that number. This number needs to be high to guarantee some
+                                        // stable behavior. (T.Besson).
+                }
+
+                // Expect that we will not find a legal solution in the below "for loop"
+                // (T.Besson)
+                //
+                failed_for_loop = true;
+
+                for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; 
+                    !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_INVALID; 
+                    detailed_routing_stage++) {
+
+                    ClusterBlockId clb_index(helper_ctx.total_clb_num);
+
+                    VTR_LOGV(verbosity > 2, "Complex block %d:\n", helper_ctx.total_clb_num);
+
+                    /*Used to store cluster's PartitionRegion as primitives are added to it.
+                    * Since some of the primitives might fail legality, this structure temporarily
+                    * stores PartitionRegion information while the cluster is packed*/
+                    PartitionRegion temp_cluster_pr;
+
+                    start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
+                                    clb_index, istart,
+                                    num_used_type_instances,
+                                    packer_opts.target_device_utilization,
+                                    num_models, helper_ctx.max_cluster_size,
+                                    arch, packer_opts.device_layout,
+                                    lb_type_rr_graphs, &router_data,
+                                    detailed_routing_stage, &cluster_ctx.clb_nlist,
+                                    primitive_candidate_block_types,
+                                    verbosity,
+                                    packer_opts.enable_pin_feasibility_filter,
+                                    balance_block_type_utilization,
+                                    packer_opts.feasible_block_array_size,
+                                    temp_cluster_pr);
+
+                    //initial molecule in cluster has been processed
+                    cluster_stats.num_molecules_processed++;
+                    cluster_stats.mols_since_last_print++;
+                    print_pack_status(helper_ctx.total_clb_num,
+                                    cluster_stats.num_molecules,
+                                    cluster_stats.num_molecules_processed,
+                                    cluster_stats.mols_since_last_print,
+                                    device_ctx.grid.width(),
+                                    device_ctx.grid.height(),
+                                    attraction_groups);
+
+                    VTR_LOGV(verbosity > 2,
+                            "Complex block %d: '%s' (%s) ", helper_ctx.total_clb_num,
+                            cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
+                            cluster_ctx.clb_nlist.block_type(clb_index)->name);
+                    VTR_LOGV(verbosity > 2, ".");
+                    //Progress dot for seed-block
+                    fflush(stdout);
+
+                    t_ext_pin_util target_ext_pin_util = ext_pin_util_targets.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
+                    int high_fanout_threshold = high_fanout_thresholds.get_threshold(cluster_ctx.clb_nlist.block_type(clb_index)->name);
+                    update_cluster_stats(istart, clb_index,
+                                        is_clock, //Set of clock nets
+                                        is_clock, //Set of global nets (currently all clocks)
+                                        packer_opts.global_clocks,
+                                        packer_opts.alpha, packer_opts.beta,
+                                        packer_opts.timing_driven, packer_opts.connection_driven,
+                                        high_fanout_threshold,
+                                        *timing_info,
+                                        attraction_groups,
+                                        net_output_feeds_driving_block_input);
+                    helper_ctx.total_clb_num++;
+
+                    if (packer_opts.timing_driven) {
+                        cluster_stats.blocks_since_last_analysis++;
+                        /*it doesn't make sense to do a timing analysis here since there*
+                        *is only one atom block clustered it would not change anything      */
+                    }
+                    cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
+                    cluster_stats.num_unrelated_clustering_attempts = 0;
+                    next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
+                                                            attraction_groups,
+                                                            allow_unrelated_clustering,
+                                                            packer_opts.prioritize_transitive_connectivity,
+                                                            packer_opts.transitive_fanout_threshold,
+                                                            packer_opts.feasible_block_array_size,
+                                                            &cluster_stats.num_unrelated_clustering_attempts,
+                                                            cur_cluster_placement_stats_ptr,
+                                                            clb_inter_blk_nets,
+                                                            clb_index,
+                                                            verbosity,
+                                                            clustering_data.unclustered_list_head,
+                                                            unclustered_list_head_size,
+                                                            primitive_candidate_block_types);
+                    prev_molecule = istart;
+
+                    /*
+                    * When attraction groups are created, the purpose is to pack more densely by adding more molecules
+                    * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
+                    * not on), the cluster keeps being packed until the get_molecule routines return either a repeated
+                    * molecule or a nullptr. When attraction groups are on, we want to keep exploring molecules for the
+                    * cluster until a nullptr is returned. So, the number of repeated molecules allowed is increased to a
+                    * large value.
+                    */
+                    int max_num_repeated_molecules = 0;
+                    if (attraction_groups.num_attraction_groups() > 0) {
+                        max_num_repeated_molecules = ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES;
+                    } else {
+                        max_num_repeated_molecules = 1;
+                    }
+                    int num_repeated_molecules = 0;
+
+                    int i = 0;
+
+                    while (next_molecule != nullptr && num_repeated_molecules < max_num_repeated_molecules) {
+                        prev_molecule = next_molecule;
+
+                        if (i == max_nb_molecule) {
+                        break;
+                        }
+
+                        try_fill_cluster(packer_opts,
+                                        cur_cluster_placement_stats_ptr,
+                                        prev_molecule,
+                                        next_molecule,
+                                        num_repeated_molecules,
+                                        helper_ctx.primitives_list,
+                                        cluster_stats,
+                                        helper_ctx.total_clb_num,
+                                        num_models,
+                                        helper_ctx.max_cluster_size,
+                                        clb_index,
+                                        detailed_routing_stage,
+                                        attraction_groups,
+                                        clb_inter_blk_nets,
+                                        allow_unrelated_clustering,
+                                        high_fanout_threshold,
+                                        is_clock,
+                                        timing_info,
+                                        router_data,
+                                        target_ext_pin_util,
+                                        temp_cluster_pr,
+                                        block_pack_status,
+                                        clustering_data.unclustered_list_head,
+                                        unclustered_list_head_size,
+                                        net_output_feeds_driving_block_input,
+                                        primitive_candidate_block_types);
+
+                        i++;
+
+                    }
+
+                    max_nb_molecule = i;
+
+                    is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);
+
+                    if (is_cluster_legal) {
+
+                        // Calls the extra check for "clb" only (may need to revisit this check) (T.Besson)
+                        //
+                        if (!strcmp(cluster_ctx.clb_nlist.block_type(clb_index)->name, "clb")) {
+
+                        // Temporary fix : make sure that the solution has no mode confict. This check is 
+                        // performed by initiating a first xml kind of output work. There may be a tricky 
+                        // conflict with some lb routing so we need to store temporary the lb nets in the 
+                        // cluster data structure to make the check inside "check_if_xml_mode_conflict".
+                        // (T.Besson, Rapid Silicon)
+                        //
+                        (clustering_data.intra_lb_routing).push_back(router_data->saved_lb_nets);
+
+                        // Call the check as if we would output the final packing ... and see if there is any 
+                        // mode conflict. (T.Besson)
+                        // 'is_cluster_legal' turns to false if there is a mode conflict.
+                        //
+                        is_cluster_legal = check_if_xml_mode_conflict(packer_opts, arch, 
+                                                                        clustering_data.intra_lb_routing);
+
+                        // Remove the previous pushed "intra_lb_routing_solution" to clean up 
+                        // the place. (T.Besson)
+                        //
+                        (clustering_data.intra_lb_routing).pop_back();
+
+                        if (!is_cluster_legal &&
+                            (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM)) {  
+
+                            VTR_LOGV(verbosity > 0, "Info: rejected cluster packing solution with modes conflict [%d]\n", 
+                                    max_nb_molecule);
+                        }
+                        }
+
+                        if (is_cluster_legal) {
+
+                            istart = save_cluster_routing_and_pick_new_seed(packer_opts, helper_ctx.total_clb_num, 
+                                                        seed_atoms, num_blocks_hill_added, clustering_data.intra_lb_routing, 
+                                                        seedindex, cluster_stats, router_data);
+
+                            store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, 
+                                                        le_count, clb_inter_blk_nets);
+
+                            nb_packed_molecules += max_nb_molecule;
+
+                            VTR_LOGV(verbosity > 0, "Successfully packed Logic Block [%d]\n", max_nb_molecule);
+
+                            failed_for_loop = false; // tell the outer loop that we succeeded within this loop
+
+                        } else {
+                        free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, 
+                                                    num_used_type_instances, helper_ctx.total_clb_num, seedindex);
+                        }
+
+
+                    } else {
+                        free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, 
+                                                    num_used_type_instances, helper_ctx.total_clb_num, seedindex);
+                    }
+                    
+                    for (int index = 0; index < clusterMoleculeOrder[partId].size(); index++) {
+                        istart = molecules[clusterMoleculeOrder[partId][index]];
+                        if (istart->valid) {
+                            break;
+                        }
+                    }
+                    if (!istart->valid) {
+                        istart = nullptr;
+                    }
+
+                    free_router_data(router_data);
+                    router_data = nullptr;
+                }
+
+            }
+        } // for(int partId=0;partId < numberOfClusters;partId++){    
+    }else{
+        while (istart != nullptr) {
+
+            is_cluster_legal = false;
+            savedseedindex = seedindex;
+
+            // If in the previous "for (detailed_routing_stage ..." call we failed all the 
+            // time (e.g 'failed_for_loop' is false) then when we re-enter it but we reduce the 
+            // calls to "try_fill_cluster" by half in order to expect a feasible solution. 
+            // 
+            // This case can happen with unit test case "mult_seq" where we stuck on a mode4/mode5 
+            // conflict because of the calls to "try_fill_cluster" that always fail. In this case the 
+            // only feasible solution is to stick to the original "start_new_cluster" solution and
+            // avoid any call to "try_fill_cluster". To do this, "nb_max_molecule" needs to reduce 
+            // to 0 to avoid calling "try_fill_cluster". That's why we decrease "max_nb_molecule" in
+            // the iteration process to get down to 0. We decrease it by half each time but it could
+            // have been another scheme to decrease it. This one looks to give good QoR results.
+            // (T.Besson, Rapid Silicon)
+            //
+            if (failed_for_loop) {
+            max_nb_molecule = max_nb_molecule / 1.4; // decrease by 1.4 looks to be a good strategy. 
+                                                    // The packer is hyper sensitive to this number.
+                                                    // A change by 0.1 currently may generate big
+                                                    // difference on some designs like "axil_crossbar".
+                                                    // More investigation to understand why ? (T.Besson)
             } else {
-                free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, num_used_type_instances, helper_ctx.total_clb_num, seedindex);
+            max_nb_molecule = 512; // important starting number. The packer is again sensitive
+                                    // to that number. This number needs to be high to guarantee some
+                                    // stable behavior. (T.Besson).
             }
-            free_router_data(router_data);
-            router_data = nullptr;
+
+            // Expect that we will not find a legal solution in the below "for loop"
+            // (T.Besson)
+            //
+            failed_for_loop = true;
+
+            for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; 
+                !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_INVALID; 
+                detailed_routing_stage++) {
+
+                ClusterBlockId clb_index(helper_ctx.total_clb_num);
+
+                VTR_LOGV(verbosity > 2, "Complex block %d:\n", helper_ctx.total_clb_num);
+
+                /*Used to store cluster's PartitionRegion as primitives are added to it.
+                * Since some of the primitives might fail legality, this structure temporarily
+                * stores PartitionRegion information while the cluster is packed*/
+                PartitionRegion temp_cluster_pr;
+
+                start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
+                                clb_index, istart,
+                                num_used_type_instances,
+                                packer_opts.target_device_utilization,
+                                num_models, helper_ctx.max_cluster_size,
+                                arch, packer_opts.device_layout,
+                                lb_type_rr_graphs, &router_data,
+                                detailed_routing_stage, &cluster_ctx.clb_nlist,
+                                primitive_candidate_block_types,
+                                verbosity,
+                                packer_opts.enable_pin_feasibility_filter,
+                                balance_block_type_utilization,
+                                packer_opts.feasible_block_array_size,
+                                temp_cluster_pr);
+
+                //initial molecule in cluster has been processed
+                cluster_stats.num_molecules_processed++;
+                cluster_stats.mols_since_last_print++;
+                print_pack_status(helper_ctx.total_clb_num,
+                                cluster_stats.num_molecules,
+                                cluster_stats.num_molecules_processed,
+                                cluster_stats.mols_since_last_print,
+                                device_ctx.grid.width(),
+                                device_ctx.grid.height(),
+                                attraction_groups);
+
+                VTR_LOGV(verbosity > 2,
+                        "Complex block %d: '%s' (%s) ", helper_ctx.total_clb_num,
+                        cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
+                        cluster_ctx.clb_nlist.block_type(clb_index)->name);
+                VTR_LOGV(verbosity > 2, ".");
+                //Progress dot for seed-block
+                fflush(stdout);
+
+                t_ext_pin_util target_ext_pin_util = ext_pin_util_targets.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
+                int high_fanout_threshold = high_fanout_thresholds.get_threshold(cluster_ctx.clb_nlist.block_type(clb_index)->name);
+                update_cluster_stats(istart, clb_index,
+                                    is_clock, //Set of clock nets
+                                    is_clock, //Set of global nets (currently all clocks)
+                                    packer_opts.global_clocks,
+                                    packer_opts.alpha, packer_opts.beta,
+                                    packer_opts.timing_driven, packer_opts.connection_driven,
+                                    high_fanout_threshold,
+                                    *timing_info,
+                                    attraction_groups,
+                                    net_output_feeds_driving_block_input);
+                helper_ctx.total_clb_num++;
+
+                if (packer_opts.timing_driven) {
+                    cluster_stats.blocks_since_last_analysis++;
+                    /*it doesn't make sense to do a timing analysis here since there*
+                    *is only one atom block clustered it would not change anything      */
+                }
+                cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
+                cluster_stats.num_unrelated_clustering_attempts = 0;
+                next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
+                                                        attraction_groups,
+                                                        allow_unrelated_clustering,
+                                                        packer_opts.prioritize_transitive_connectivity,
+                                                        packer_opts.transitive_fanout_threshold,
+                                                        packer_opts.feasible_block_array_size,
+                                                        &cluster_stats.num_unrelated_clustering_attempts,
+                                                        cur_cluster_placement_stats_ptr,
+                                                        clb_inter_blk_nets,
+                                                        clb_index,
+                                                        verbosity,
+                                                        clustering_data.unclustered_list_head,
+                                                        unclustered_list_head_size,
+                                                        primitive_candidate_block_types);
+                prev_molecule = istart;
+
+                /*
+                * When attraction groups are created, the purpose is to pack more densely by adding more molecules
+                * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
+                * not on), the cluster keeps being packed until the get_molecule routines return either a repeated
+                * molecule or a nullptr. When attraction groups are on, we want to keep exploring molecules for the
+                * cluster until a nullptr is returned. So, the number of repeated molecules allowed is increased to a
+                * large value.
+                */
+                int max_num_repeated_molecules = 0;
+                if (attraction_groups.num_attraction_groups() > 0) {
+                    max_num_repeated_molecules = ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES;
+                } else {
+                    max_num_repeated_molecules = 1;
+                }
+                int num_repeated_molecules = 0;
+
+                int i = 0;
+
+                while (next_molecule != nullptr && num_repeated_molecules < max_num_repeated_molecules) {
+                    prev_molecule = next_molecule;
+
+                    if (i == max_nb_molecule) {
+                    break;
+                    }
+
+                    try_fill_cluster(packer_opts,
+                                    cur_cluster_placement_stats_ptr,
+                                    prev_molecule,
+                                    next_molecule,
+                                    num_repeated_molecules,
+                                    helper_ctx.primitives_list,
+                                    cluster_stats,
+                                    helper_ctx.total_clb_num,
+                                    num_models,
+                                    helper_ctx.max_cluster_size,
+                                    clb_index,
+                                    detailed_routing_stage,
+                                    attraction_groups,
+                                    clb_inter_blk_nets,
+                                    allow_unrelated_clustering,
+                                    high_fanout_threshold,
+                                    is_clock,
+                                    timing_info,
+                                    router_data,
+                                    target_ext_pin_util,
+                                    temp_cluster_pr,
+                                    block_pack_status,
+                                    clustering_data.unclustered_list_head,
+                                    unclustered_list_head_size,
+                                    net_output_feeds_driving_block_input,
+                                    primitive_candidate_block_types);
+
+                    i++;
+
+                }
+
+                max_nb_molecule = i;
+
+                is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);
+
+                if (is_cluster_legal) {
+
+                    // Calls the extra check for "clb" only (may need to revisit this check) (T.Besson)
+                    //
+                    if (!strcmp(cluster_ctx.clb_nlist.block_type(clb_index)->name, "clb")) {
+
+                    // Temporary fix : make sure that the solution has no mode confict. This check is 
+                    // performed by initiating a first xml kind of output work. There may be a tricky 
+                    // conflict with some lb routing so we need to store temporary the lb nets in the 
+                    // cluster data structure to make the check inside "check_if_xml_mode_conflict".
+                    // (T.Besson, Rapid Silicon)
+                    //
+                    (clustering_data.intra_lb_routing).push_back(router_data->saved_lb_nets);
+
+                    // Call the check as if we would output the final packing ... and see if there is any 
+                    // mode conflict. (T.Besson)
+                    // 'is_cluster_legal' turns to false if there is a mode conflict.
+                    //
+                    is_cluster_legal = check_if_xml_mode_conflict(packer_opts, arch, 
+                                                                    clustering_data.intra_lb_routing);
+
+                    // Remove the previous pushed "intra_lb_routing_solution" to clean up 
+                    // the place. (T.Besson)
+                    //
+                    (clustering_data.intra_lb_routing).pop_back();
+
+                    if (!is_cluster_legal &&
+                        (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM)) {  
+
+                        VTR_LOGV(verbosity > 0, "Info: rejected cluster packing solution with modes conflict [%d]\n", 
+                                max_nb_molecule);
+                    }
+                    }
+
+                    if (is_cluster_legal) {
+
+                    istart = save_cluster_routing_and_pick_new_seed(packer_opts, helper_ctx.total_clb_num, 
+                                                seed_atoms, num_blocks_hill_added, clustering_data.intra_lb_routing, 
+                                                seedindex, cluster_stats, router_data);
+
+                    store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, 
+                                                le_count, clb_inter_blk_nets);
+
+                    nb_packed_molecules += max_nb_molecule;
+
+                    VTR_LOGV(verbosity > 0, "Successfully packed Logic Block [%d]\n", max_nb_molecule);
+
+                    failed_for_loop = false; // tell the outer loop that we succeeded within this loop
+
+                    } else {
+                    free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, 
+                                                num_used_type_instances, helper_ctx.total_clb_num, seedindex);
+                    }
+
+
+                } else {
+                    free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, 
+                                                num_used_type_instances, helper_ctx.total_clb_num, seedindex);
+                }
+
+                free_router_data(router_data);
+                router_data = nullptr;
+            }
+
         }
     }
 
