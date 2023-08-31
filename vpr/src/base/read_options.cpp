@@ -1979,6 +1979,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
+    
+    // Cascade Placer
+    place_grp.add_argument(args.enable_cascade_placer, "--enable_cascade_placer")
+        .help(
+            "Enables the cascade placer. "
+            "Once analytic placement is done, the result is passed through the annealing (SA) placer")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
