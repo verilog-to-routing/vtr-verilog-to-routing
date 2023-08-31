@@ -1182,7 +1182,7 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string po
 
 const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index) {
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
-        if (pb_gnode->num_input_pins[iport] < index) continue;
+        if (pb_gnode->num_input_pins[iport] <= index) continue;
 
         const t_pb_graph_pin* gpin = &pb_gnode->input_pins[iport][index];
 
@@ -1191,7 +1191,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::st
         }
     }
     for (int iport = 0; iport < pb_gnode->num_output_ports; iport++) {
-        if (pb_gnode->num_output_pins[iport] < index) continue;
+        if (pb_gnode->num_output_pins[iport] <= index) continue;
 
         const t_pb_graph_pin* gpin = &pb_gnode->output_pins[iport][index];
 
@@ -1200,7 +1200,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::st
         }
     }
     for (int iport = 0; iport < pb_gnode->num_clock_ports; iport++) {
-        if (pb_gnode->num_clock_pins[iport] < index) continue;
+        if (pb_gnode->num_clock_pins[iport] <= index) continue;
 
         const t_pb_graph_pin* gpin = &pb_gnode->clock_pins[iport][index];
 
