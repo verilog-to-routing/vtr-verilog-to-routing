@@ -464,6 +464,11 @@ struct RoutingContext : public Context {
     vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
                RouterLookahead>
         cached_router_lookahead_;
+
+    /**
+     * @brief User specified routing constraints
+     */
+    UserRouteConstraints constraints;
 };
 
 /**
@@ -481,7 +486,7 @@ struct FloorplanningContext : public Context {
      *
      * The constraints are input into vpr and do not change.
      */
-    VprConstraints constraints;
+    UserPlaceConstraints constraints;
 
     /**
      * @brief Constraints for each cluster
