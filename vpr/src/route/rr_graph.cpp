@@ -3084,6 +3084,12 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         custom_switch_block = true;
     }
 
+    /*
+     *In case of multi-die FPGAs with custom switchblocks, we map each connection to a new CHANX node with length 0;
+     *To find track num of newly added nodes, we need to keep index of used nodes for each switch blocks.
+     */
+    int* inter_die_track_offset = 0;
+
     /* Loads up all the routing resource nodes in the current channel segment */
     for (int track = 0; track < tracks_per_chan; ++track) {
         if (seg_details[track].length() == 0)
@@ -3131,7 +3137,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             }
             if (to_seg_details->length() > 0) {
                 get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, chan_coord,
-                                    opposite_chan_type, seg_dimension, max_opposite_chan_width, grid,
+                                    opposite_chan_type, inter_die_track_offset, seg_dimension, max_opposite_chan_width, grid,
                                     Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                     from_seg_details, to_seg_details, opposite_chan_details,
                                     directionality,
@@ -3151,7 +3157,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             }
             if (to_seg_details->length() > 0) {
                 get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, chan_coord + 1,
-                                    opposite_chan_type, seg_dimension, max_opposite_chan_width, grid,
+                                    opposite_chan_type, inter_die_track_offset, seg_dimension, max_opposite_chan_width, grid,
                                     Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                     from_seg_details, to_seg_details, opposite_chan_details,
                                     directionality, switch_block_conn, sb_conn_map);
@@ -3183,7 +3189,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                 }
                 if (to_seg_details->length() > 0) {
                     get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, target_seg,
-                                        chan_type, seg_dimension, max_chan_width, grid,
+                                        chan_type, inter_die_track_offset, seg_dimension, max_chan_width, grid,
                                         Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                         from_seg_details, to_seg_details, from_chan_details,
                                         directionality,
