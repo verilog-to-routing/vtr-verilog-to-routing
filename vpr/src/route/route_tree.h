@@ -30,9 +30,9 @@
  *      if (found_path)
  *           std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, ...);
  *
- * Congested paths in a tree can be pruned using RouteTree::prune(). Note that updates to a tree require an update to the global occupancy state via
- * pathfinder_update_cost_from_route_tree(). In addition, RouteTree::prune() depends on this global data to find congestions, so the flow to
- * prune a tree looks like this:
+ * Congested paths in a tree can be pruned using RouteTree::prune(). This is done between iterations to keep only the legally routed section.
+ * Note that updates to a tree require an update to the global occupancy state via pathfinder_update_cost_from_route_tree().
+ * RouteTree::prune() depends on this global data to find congestions, so the flow to prune a tree is somewhat convoluted:
  *
  *      RouteTree tree2 = tree;
  *      // Prune the copy (using congestion data before subtraction)
@@ -333,9 +333,11 @@ class RouteTree {
     RouteTree& operator=(const RouteTree&);
     RouteTree& operator=(RouteTree&&);
 
-    /** Return a RouteTree initialized to inode. */
+    /** Return a RouteTree initialized to inode.
+     * Note that prune() won't work on a RouteTree initialized this way (see _net_id comments) */
     RouteTree(RRNodeId inode);
-    /** Return a RouteTree initialized to the source of nets[inet]. */
+    /** Return a RouteTree initialized to the source of nets[inet].
+     * Use this constructor where possible (needed for prune() to work) */
     RouteTree(ParentNetId inet);
 
     ~RouteTree() {
@@ -356,7 +358,8 @@ class RouteTree {
      * Note that update_from_heap already does this, but prune() doesn't */
     void reload_timing(vtr::optional<RouteTreeNode&> from_node = vtr::nullopt);
 
-    /** Get the RouteTreeNode corresponding to the RRNodeId. Returns nullopt if not found. */
+    /** Get the RouteTreeNode corresponding to the RRNodeId. Returns nullopt if not found.
+     * SINK nodes may be added to the tree multiple times. In that case, this will return the last one added. */
     vtr::optional<const RouteTreeNode&> find_by_rr_id(RRNodeId rr_node) const;
 
     /** Check the consistency of this route tree. Looks for:
@@ -508,6 +511,13 @@ class RouteTree {
     /** Root node.
      * This is also the internal node list via the ptrs in RouteTreeNode. */
     RouteTreeNode* _root;
+
+    /** Net ID.
+     * A RouteTree does not have to be connected to a net, but if it isn't
+     * constructed using a ParentNetId prune() won't work. This is due to
+     * a data dependency through "Connection_based_routing_resources". Should
+     * be refactored when possible. */
+    ParentNetId _net_id;
 
     /** Lookup from RRNodeIds to RouteTreeNodes in the tree.
      * In some cases the same SINK node is put into the tree multiple times in a

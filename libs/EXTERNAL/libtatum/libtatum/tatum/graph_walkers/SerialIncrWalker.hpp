@@ -1,5 +1,10 @@
 #pragma once
 #include <algorithm>
+
+#ifdef TATUM_USE_TBB
+#include <tbb/concurrent_vector.h>
+#endif
+
 #include "tatum/graph_walkers/TimingGraphWalker.hpp"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/delay_calc/DelayCalculator.hpp"
@@ -431,9 +436,16 @@ class SerialIncrWalker : public TimingGraphWalker {
         t_incr_traversal_update incr_arr_update_;
         t_incr_traversal_update incr_req_update_;
 
-        //Set of invalidated edges, and bitset for membership
+        /** Set of invalidated edges, and bitset for membership.
+         * Use thread safe alternatives when TBB is on, since invalidate_edge_impl
+         * may be called concurrently */
+#ifdef TATUM_USE_TBB
+        tbb::concurrent_vector<EdgeId> invalidated_edges_;
+        tatum::util::linear_map<EdgeId, size_t> edge_invalidated_;
+#else
         std::vector<EdgeId> invalidated_edges_;
-        tatum::util::linear_map<EdgeId,bool> edge_invalidated_;
+        tatum::util::linear_map<EdgeId, bool> edge_invalidated_;
+#endif
 
         //Nodes which have been modified during timing update, and bitset for membership
         std::vector<NodeId> nodes_modified_; 

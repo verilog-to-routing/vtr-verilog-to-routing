@@ -1,6 +1,7 @@
 #include "bucket.h"
 
 #include <cmath>
+#include "rr_graph_fwd.h"
 #include "vtr_log.h"
 #include "vpr_error.h"
 
@@ -274,13 +275,13 @@ void Bucket::push_back(t_heap* hptr) {
     }
 
     if (!min_push_cost_.empty()) {
-        if (hptr->cost > min_push_cost_[hptr->index]) {
+        if (hptr->cost > min_push_cost_[size_t(hptr->index)]) {
             BucketItem* item = reinterpret_cast<BucketItem*>(hptr);
             items_.free_item(item);
             return;
         }
 
-        min_push_cost_[hptr->index] = hptr->cost;
+        min_push_cost_[size_t(hptr->index)] = hptr->cost;
     }
 
     // Check to see if the range of costs observed by the heap has changed.
@@ -442,10 +443,6 @@ t_heap* Bucket::get_heap_head() {
     return &item->item;
 }
 
-void Bucket::invalidate_heap_entries(int /*sink_node*/, int /*ipin_node*/) {
-    throw std::runtime_error("invalidate_heap_entries not implemented for Bucket");
-}
-
 void Bucket::print() {
     for (size_t i = heap_head_; i < heap_tail_; ++i) {
         if (heap_[heap_head_] != nullptr) {
@@ -471,9 +468,11 @@ void Bucket::prune_heap() {
 
     for (size_t bucket = heap_head_; bucket <= heap_tail_; ++bucket) {
         for (BucketItem* item = heap_[bucket]; item != nullptr; item = item->next_bucket) {
-            VTR_ASSERT(static_cast<size_t>(item->item.index) < max_index_);
-            if (best_heap_item[item->item.index] == nullptr || best_heap_item[item->item.index]->item.cost > item->item.cost) {
-                best_heap_item[item->item.index] = item;
+            auto idx = size_t(item->item.index);
+            VTR_ASSERT(idx < max_index_);
+            if (best_heap_item[idx] == nullptr
+                || best_heap_item[idx]->item.cost > item->item.cost) {
+                best_heap_item[idx] = item;
             }
         }
     }
@@ -484,8 +483,9 @@ void Bucket::prune_heap() {
         BucketItem* item = heap_[bucket];
         while (item != nullptr) {
             BucketItem* next_item = item->next_bucket;
+            auto idx = size_t(item->item.index);
 
-            if (best_heap_item[item->item.index] != item) {
+            if (best_heap_item[idx] != item) {
                 // This item isn't the cheapest, return it to the free list.
                 items_.free_item(item);
             } else {

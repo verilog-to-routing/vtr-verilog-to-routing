@@ -144,6 +144,20 @@ typedef struct {
 } t_draw_rr_node;
 
 /**
+ * @brief Structure used to store visibility and transparency state information for a specific layer (die) in the FPGA.
+ *        This structure is also used to store the state information of the cross-layer connections option in the UI.
+ */
+struct t_draw_layer_display {
+    ///@brief Whether the current layer should be visible.
+    bool visible = false;
+
+    ///@brief Transparency value ( 0 - transparent, 255 - Opaque)
+    ///@note The UI has the opposite definition to make it more intuitive for the user,
+    /// where increasing the value increases transparency. (255 - transparent, 0 - Opaque)
+    int alpha = 255;
+};
+
+/**
  * @brief Structure used to store variables related to highlighting/drawing
  * 
  * Stores a lot of different variables to reflect current draw state. Most callback functions/UI elements
@@ -233,7 +247,7 @@ struct t_draw_state {
      * ROUTING is on screen.
      * [0..device_ctx.rr_nodes.size()-1]
      */
-    std::vector<t_draw_rr_node> draw_rr_node;
+    vtr::vector<RRNodeId, t_draw_rr_node> draw_rr_node;
 
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
 
@@ -271,6 +285,12 @@ struct t_draw_state {
     bool justEnabled = false;
 
     std::vector<Breakpoint> list_of_breakpoints;
+
+    ///@brief Stores visibility and transparency drawing controls for each layer [0 ... grid.num_layers -1]
+    std::vector<t_draw_layer_display> draw_layer_display;
+
+    ///@brief Visibility and transparency for elements that cross die layers
+    t_draw_layer_display cross_layer_display;
 
     ///@brief base of save graphics file name (i.e before extension)
     std::string save_graphics_file_base = "vpr";

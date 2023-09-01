@@ -14,8 +14,6 @@
  * cost:    The cost used to sort heap.
  *          For the timing-driven router this is the backward_path_cost +
  *          expected cost to the target.
- *          For the breadth-first router it is the node cost to reach this
- *          point.
  *
  * backward_path_cost:  Used only by the timing-driven router.  The "known"
  *                      cost of the path up to and including this node.
@@ -41,15 +39,19 @@ struct t_heap {
     float backward_path_cost = 0.;
     float R_upstream = 0.;
 
-    int index = OPEN;
+    RRNodeId index = RRNodeId::INVALID();
 
     // Structure to handle extra RCV structures
     // Managed by PathManager class
     t_heap_path* path_data;
 
+    /** Previous node and edge IDs. These are not StrongIds for performance & brevity
+     * reasons: StrongIds can't be trivially placed into an anonymous union (see below) */
     struct t_prev {
-        int node;
-        unsigned int edge;
+        uint32_t node;
+        uint32_t edge;
+        static_assert(sizeof(uint32_t) == sizeof(RRNodeId));
+        static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
     };
 
     t_heap* next_heap_item() const {
@@ -60,20 +62,24 @@ struct t_heap {
         u.next = next;
     }
 
-    int prev_node() const {
-        return u.prev.node;
+    /** Get prev_node.
+     * Be careful: will return 0 (a valid id!) if uninitialized. */
+    constexpr RRNodeId prev_node() const {
+        return RRNodeId(u.prev.node);
     }
 
-    void set_prev_node(int prev_node) {
-        u.prev.node = prev_node;
+    inline void set_prev_node(RRNodeId node) {
+        u.prev.node = size_t(node);
     }
 
-    RREdgeId prev_edge() const {
+    /** Get prev_edge.
+     * Be careful: will return 0 (a valid id!) if uninitialized. */
+    constexpr RREdgeId prev_edge() const {
         return RREdgeId(u.prev.edge);
     }
 
-    void set_prev_edge(RREdgeId edge) {
-        u.prev.edge = (size_t)edge;
+    inline void set_prev_edge(RREdgeId edge) {
+        u.prev.edge = size_t(edge);
     }
 
   private:
@@ -178,15 +184,6 @@ class HeapInterface {
 
     // Empty all items from the heap.
     virtual void empty_heap() = 0;
-
-    // marks all the heap entries consisting of sink_node, where it was
-    // reached via ipin_node, as invalid (open).  used only by the
-    // breadth_first router and even then only in rare circumstances.
-    //
-    // This function enables forcing the breadth-first router to route to a
-    // sink more than once, using multiple ipins, which is useful in some
-    // architectures.
-    virtual void invalidate_heap_entries(int sink_node, int ipin_node) = 0;
 
     // Free all storage used by the heap.
     //

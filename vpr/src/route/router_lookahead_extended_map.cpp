@@ -137,11 +137,11 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
 
     VTR_ASSERT_SAFE_MSG(false,
                         vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                        rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
+                                        rr_node_arch_name(from_node, is_flat_).c_str(),
                                         describe_rr_node(device_ctx.rr_graph,
                                                          device_ctx.grid,
                                                          device_ctx.rr_indexed_data,
-                                                         size_t(from_node),
+                                                         from_node,
                                                          is_flat_)
                                             .c_str())
                             .c_str());
@@ -439,7 +439,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     util::RoutingCosts all_base_costs;
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
-#if defined(VPR_USE_TBB) // Run parallely
+#if defined(VPR_USE_TBB) // Run in parallel
     std::mutex all_costs_mutex;
     tbb::parallel_for_each(sample_regions, [&](const SampleRegion& region) {
 #else // Run serially
