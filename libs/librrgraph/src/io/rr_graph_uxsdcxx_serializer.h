@@ -747,7 +747,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_node_loc_twist(int twist, int& inode) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
-        rr_graph_builder_->set_node_ptc_twist(node_id,twist);
+        rr_graph_builder_->set_node_ptc_twist_incr(node_id,twist);
     }
 
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {

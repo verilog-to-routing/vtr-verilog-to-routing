@@ -237,10 +237,14 @@ class t_rr_graph_storage {
 
     /* Find the twist number that RR node uses to change ptc number across the same track.
      * By default this number is zero, meaning that ptc number across the same track should be the same.
-     * This number is only meaningful for CHANX/CHANY nodes, the other nodes.
+     * This number is only meaningful for CHANX/CHANY nodes, not the other nodes.
      * */
     short node_ptc_twist(RRNodeId id) const{
-        return node_ptc_twist_[id];
+        //check whether node_ptc_twist_incr has been allocated
+        if(node_ptc_twist_incr_.empty()){
+            return 0;
+        }
+        return node_ptc_twist_incr_[id];
     }
 
     // This prefetechs hot RR node data required for optimization.
@@ -411,7 +415,7 @@ class t_rr_graph_storage {
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
         node_layer_.resize(node_storage_.size());
-        node_ptc_twist_.resize(node_storage_.size());
+        node_ptc_twist_incr_.resize(node_storage_.size());
     }
 
     // Reserve storage for RR nodes.
@@ -421,7 +425,6 @@ class t_rr_graph_storage {
         node_storage_.reserve(size);
         node_ptc_.reserve(size);
         node_layer_.reserve(size);
-        node_ptc_twist_.reserve(size);
     }
 
     // Resize node storage to accomidate size RR nodes.
@@ -431,7 +434,11 @@ class t_rr_graph_storage {
         node_storage_.resize(size);
         node_ptc_.resize(size);
         node_layer_.resize(size);
-        node_ptc_twist_.resize(size);
+    }
+
+    //We only allocate the ptc twist increment array while building tileable rr-graphs
+    void resize_ptc_twist_incr(size_t size){
+        node_ptc_twist_incr_.resize(size);
     }
 
     // Number of RR nodes that can be accessed.
@@ -453,7 +460,7 @@ class t_rr_graph_storage {
         node_first_edge_.clear();
         node_fan_in_.clear();
         node_layer_.clear();
-        node_ptc_twist_.clear();
+        node_ptc_twist_incr_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
@@ -485,7 +492,7 @@ class t_rr_graph_storage {
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
         node_layer_.shrink_to_fit();
-        node_ptc_twist_.shrink_to_fit();
+        node_ptc_twist_incr_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
@@ -499,7 +506,7 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
         node_layer_.emplace_back();
-        node_ptc_twist_.emplace_back();
+        node_ptc_twist_incr_.emplace_back();
     }
 
     // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
@@ -519,7 +526,7 @@ class t_rr_graph_storage {
     void set_node_type(RRNodeId id, t_rr_type new_type);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
     void set_node_layer(RRNodeId id, short layer);
-    void set_node_ptc_twist(RRNodeId id, short twist);
+    void set_node_ptc_twist_incr(RRNodeId id, short twist);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
     void set_node_rc_index(RRNodeId, NodeRCIndex new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
@@ -729,7 +736,7 @@ class t_rr_graph_storage {
     //For example, an L4 wire would change tracks 4 times with metal shorts [e.g. 0, 2, 4, 6] and track 6 would drive a switch -- together this implements an L4 wire with only one layout tile.
     //Twist increment number is only meaningful for CHANX and CHANY nodes; it is 0 for other node types.
     //We also don't bother allocating this storage if the FPGA is not specified to be tileable; instead in that case the twist for all nodes will always be returned as 0.
-    vtr::vector<RRNodeId, short> node_ptc_twist_;
+    vtr::vector<RRNodeId, short> node_ptc_twist_incr_;
 
     // Edge storage.
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
@@ -797,7 +804,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge,
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
         const vtr::array_view_id<RRNodeId, const short> node_layer,
-        const vtr::array_view_id<RRNodeId, const short> node_ptc_twist,
+        const vtr::array_view_id<RRNodeId, const short> node_ptc_twist_incr,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch)
@@ -806,7 +813,7 @@ class t_rr_graph_view {
         , node_first_edge_(node_first_edge)
         , node_fan_in_(node_fan_in)
         , node_layer_(node_layer)
-        , node_ptc_twist_(node_ptc_twist)
+        , node_ptc_twist_incr_(node_ptc_twist_incr)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch) {}
@@ -869,8 +876,12 @@ class t_rr_graph_view {
     }
 
     /* Retrieve twist number (if available) that RRNodeId used for its ptc number */
-    short node_ptc_twist(RRNodeId id) const{
-        return node_ptc_twist_[id];
+    short node_ptc_twist_incr(RRNodeId id) const{
+        //check if ptc twist increment allocated
+        if(node_ptc_twist_incr_.empty()){
+            return 0; //if it is not allocated we just assume that is zero
+        }
+        return node_ptc_twist_incr_[id];
     }
 
     // This prefetechs hot RR node data required for optimization.
@@ -914,7 +925,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge_;
     vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
     vtr::array_view_id<RRNodeId, const short> node_layer_;
-    vtr::array_view_id<RRNodeId, const short> node_ptc_twist_;
+    vtr::array_view_id<RRNodeId, const short> node_ptc_twist_incr_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;

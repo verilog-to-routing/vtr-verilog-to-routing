@@ -622,8 +622,8 @@ void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
     node_layer_[id] = layer;
 }
 
-void t_rr_graph_storage::set_node_ptc_twist(RRNodeId id, short twist){
-    node_ptc_twist_[id] = twist;
+void t_rr_graph_storage::set_node_ptc_twist_incr(RRNodeId id, short twist_incr){
+    node_ptc_twist_incr_[id] = twist_incr;
 }
 
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
@@ -789,7 +789,7 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_first_edge_),
         vtr::make_const_array_view_id(node_fan_in_),
         vtr::make_const_array_view_id(node_layer_),
-        vtr::make_const_array_view_id(node_ptc_twist_),
+        vtr::make_const_array_view_id(node_ptc_twist_incr_),
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_));

@@ -226,7 +226,6 @@ static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains_flat(
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  const std::vector<int>& class_num_vec,
-                                 const int ptc_twist,
                                  const int layer,
                                  const int root_x,
                                  const int root_y,
@@ -234,7 +233,6 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                               const std::vector<int>& pin_num_vec,
-                              const int ptc_twist,
                               const int layer,
                               const int i,
                               const int j,
@@ -277,7 +275,6 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                          t_physical_tile_type_ptr physical_tile,
-                                         int twsit,
                                          int layer,
                                          int root_x,
                                          int root_y,
@@ -465,7 +462,6 @@ static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
 static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chain);
 
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
-                          const int ptc_twist,
                           const int layer,
                           const int i,
                           const int j,
@@ -1371,6 +1367,28 @@ static void build_rr_graph(const t_graph_type graph_type,
         }
     }
 
+    /*Update rr_nodes ptc_twist_incr number if we are creating tileable graph*/
+    if(graph_type == GRAPH_UNIDIR_TILEABLE){
+        device_ctx.rr_graph_builder.resize_ptc_twist_incr(num_rr_nodes);
+        for(int rr_node_id = 0; rr_node_id < num_rr_nodes; rr_node_id++){
+            auto node_type = rr_graph.node_type(RRNodeId(rr_node_id));
+            auto node_dir = rr_graph.node_direction(RRNodeId(rr_node_id));
+            if ( node_type != CHANX && node_type != CHANY ) { //SRC/SINK/IPIN/OPIN
+                device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id),0);
+            }
+            else{
+                //The current ptc twist increment number in UNDIR TILEABLE RRGraph is 2 and -2
+                //The assumption should be synced up with openFPGA branch
+                if(node_dir == Direction::INC){
+                    device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), 2);
+                }
+                else{
+                    device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), -2);
+                }
+            }
+        }
+    }
+
     update_chan_width(&nodes_per_chan);
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
@@ -1500,7 +1518,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          const t_det_routing_arch& det_routing_arch,
                          t_physical_tile_type_ptr physical_tile,
-                         int ptc_twist,
                          int layer,
                          int x,
                          int y,
@@ -1519,7 +1536,6 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     alloc_and_load_tile_rr_graph(rr_graph_builder,
                                  sw_map,
                                  physical_tile,
-                                 ptc_twist,
                                  layer,
                                  x,
                                  y,
@@ -2008,9 +2024,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* If Fc gets clipped, this will be flagged to true */
     *Fc_clipped = false;
 
-    /* ptc_twist number for any other node types except for CHANX/CHANY nodes should be zero*/
-    int ptc_twist = 0;
-
     int num_edges = 0;
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
@@ -2024,7 +2037,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                     pin_num_vec = get_tile_root_pins(physical_tile);
                     add_classes_rr_graph(rr_graph_builder,
                                          class_num_vec,
-                                         ptc_twist,
                                          layer,
                                          i,
                                          j,
@@ -2032,7 +2044,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
                     add_pins_rr_graph(rr_graph_builder,
                                       pin_num_vec,
-                                      ptc_twist,
                                       layer,
                                       i,
                                       j,
@@ -2111,8 +2122,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             for (size_t j = 0; j < grid.height() - 1; ++j) {
                 if (i > 0) {
                     int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.x_list[j]);
-                    /* In case of having different ptc number in CHANX/CHANY nodes, we should twist the "ptc_twist" number to the change factor*/
-                    build_rr_chan(rr_graph_builder, ptc_twist, layer, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map, switch_block_conn,
+                    build_rr_chan(rr_graph_builder, layer, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map, switch_block_conn,
                                   CHANX_COST_INDEX_START,
                                   chan_width, grid, tracks_per_chan,
                                   sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
@@ -2130,8 +2140,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 }
                 if (j > 0) {
                     int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.y_list[i]);
-                    /* In case of having different ptc number in CHANX/CHANY nodes, we should twist the "ptc_twist" number to the change factor*/
-                    build_rr_chan(rr_graph_builder, ptc_twist, layer, i, j, CHANY, track_to_pin_lookup_y, sb_conn_map, switch_block_conn,
+                    build_rr_chan(rr_graph_builder, layer, i, j, CHANY, track_to_pin_lookup_y, sb_conn_map, switch_block_conn,
                                   CHANX_COST_INDEX_START + num_seg_types_x,
                                   chan_width, grid, tracks_per_chan,
                                   sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
@@ -2229,9 +2238,6 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
     t_rr_edge_info_set rr_edges_to_create;
     int num_edges = 0;
 
-    /* ptc_twist number for any other node types except for CHANX/CHANY nodes should be zero*/
-    int ptc_twist = 0;
-
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int i = 0; i < (int)grid.width(); ++i) {
             for (int j = 0; j < (int)grid.height(); ++j) {
@@ -2248,7 +2254,6 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                                                                              physical_tile);
                     add_classes_rr_graph(rr_graph_builder,
                                          class_num_vec,
-                                         ptc_twist,
                                          layer,
                                          i,
                                          j,
@@ -2256,7 +2261,6 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
 
                     add_pins_rr_graph(rr_graph_builder,
                                       pin_num_vec,
-                                      ptc_twist,
                                       layer,
                                       i,
                                       j,
@@ -2304,7 +2308,6 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  const std::vector<int>& class_num_vec,
-                                 const int ptc_twist,
                                  const int layer,
                                  const int root_x,
                                  const int root_y,
@@ -2331,7 +2334,6 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_coordinates(class_inode, (short)root_x, (short)root_y, (short)(root_x + physical_type->width - 1), (short)(root_y + physical_type->height - 1));
         VTR_ASSERT(layer <= std::numeric_limits<short>::max());
         rr_graph_builder.set_node_layer(class_inode, layer);
-        rr_graph_builder.set_node_layer(class_inode, ptc_twist);
         float R = 0.;
         float C = 0.;
         rr_graph_builder.set_node_rc_index(class_inode, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
@@ -2341,7 +2343,6 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                               const std::vector<int>& pin_num_vec,
-                              const int ptc_twist,
                               const int layer,
                               const int i,
                               const int j,
@@ -2392,7 +2393,6 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                       i + x_offset,
                                                       j + y_offset);
                 rr_graph_builder.set_node_layer(node_id, layer);
-                rr_graph_builder.set_node_ptc_twist(node_id, ptc_twist);
                 rr_graph_builder.add_node_side(node_id, pin_side);
             }
         }
@@ -2490,7 +2490,6 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                          t_physical_tile_type_ptr physical_tile,
-                                         int ptc_twist,
                                          int layer,
                                          int root_x,
                                          int root_y,
@@ -2505,7 +2504,6 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
     add_classes_rr_graph(rr_graph_builder,
                          class_num_vec,
-                         ptc_twist,
                          layer,
                          root_x,
                          root_y,
@@ -2513,7 +2511,6 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
     add_pins_rr_graph(rr_graph_builder,
                       pin_num_vec,
-                      ptc_twist,
                       layer,
                       root_x,
                       root_y,
@@ -3029,7 +3026,6 @@ static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chai
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
  * node properties such as cost, occupancy and capacity */
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
-                          const int ptc_twist,
                           const int layer,
                           const int x_coord,
                           const int y_coord,
@@ -3205,7 +3201,6 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         rr_graph_builder.set_node_layer(node, layer);
-        rr_graph_builder.set_node_ptc_twist(node, ptc_twist);
 
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
