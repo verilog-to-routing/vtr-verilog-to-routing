@@ -1251,6 +1251,11 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
     /* END SB LOOKUP */
 
+    /* Add extra nodes to switch blocks for multi-layer FPGAs with custom switch blocks that define track-to_track connections */
+    if(grid.get_num_layers() > 1 &&  sb_type == CUSTOM){
+        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, &nodes_per_chan, grid, sb_conn_map, &num_rr_nodes);
+    }
+
     /* START IPIN MAP */
     /* Create ipin map lookups */
 
@@ -3204,11 +3209,11 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     if (node) {
         rr_graph_builder.set_node_layer(node, layer);
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
-        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track - 1].index()));
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(CHANX_COST_INDEX_START + seg_details[track - 1].index()));
         rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
-                                                     //        int length = 0;
-                                                     //        float R = length * seg_details[track-1].Rmetal();
-                                                     //        float C = length * seg_details[track-1].Cmetal();
+         //        int length = 0;
+         //        float R = length * seg_details[track-1].Rmetal();
+         //        float C = length * seg_details[track-1].Cmetal();
         float R = 0;
         float C = 0;
         rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));

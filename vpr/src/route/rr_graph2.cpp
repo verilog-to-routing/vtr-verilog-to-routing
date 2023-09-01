@@ -1103,18 +1103,8 @@ static void load_chan_rr_indices(const int max_chan_width,
                 int y = (type == CHANX ? chan : seg);
                 const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
-                /*
-                 * Calculate how many nodes we need to reserve:
-                 * In case of multi-die FPGAs, we add an extra node (can be either CHANX OR CHANY, used CHANX) to
-                 * support inter-die communication from switch blocks (Meaning connection between two tracks in different layers)
-                 * The extra node have the following attribute:
-                 *  1) type = CHANX
-                 *  2) length = 0 (xhigh = OPEN, yhigh = OPEN)
-                 *  3) ptc = max_chanx_width
-                 */
-                int num_reserved_nodes = (grid.get_num_layers() > 1 && type == CHANX) ? max_chan_width + 1 : max_chan_width;
                 /* Reserve nodes in lookup to save memory */
-                rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, num_reserved_nodes);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, max_chan_width);
 
                 for (int track = 0; track < max_chan_width; ++track) {
                     /* TODO: May let the length() == 0 case go through, to model muxes */
@@ -1142,14 +1132,60 @@ static void load_chan_rr_indices(const int max_chan_width,
                     /* Assign inode of start of wire to current position */
                     rr_graph_builder.node_lookup().add_node(inode, layer, chan, seg, type, track);
                 }
+            }
+        }
+    }
+}
 
-                if (type == CHANX) {
-                    //add the extra node for multi-dice support
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, y, x, CHANX, max_chan_width);
-                    if (!inode) {
+void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                              const t_chan_width* nodes_per_chan,
+                                              const DeviceGrid& grid,
+                                              const t_sb_connection_map* sb_conn_map,
+                                              int* index){
+    /*
+     * Calculate how many nodes we need to reserve:
+     * In case of multi-die FPGAs, we add extra nodes (can be either CHANX OR CHANY, used CHANX) to
+     * support inter-die communication from switch blocks (Meaning connection between two tracks in different layers)
+     * The extra nodes have the following attribute:
+     *  1) type = CHANX
+     *  2) length = 0 (xhigh = OPEN, yhigh = OPEN)
+     *  3) ptc = [max_chanx_width:max_chanx_width+number_of_connection]
+     */
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    for(int layer = 0; layer < grid.get_num_layers(); layer++){
+        /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
+        if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
+            continue;
+        }
+        for (int y = 0; y < grid.height() - 1; ++y) {
+            for (int x = 1; x < grid.width() - 1; ++x) {
+                //count how many track-to-track connection go from current layer to other layers
+                int conn_count = 0;
+                for(auto from_side : TOTAL_SIDES){
+                    for(auto to_side : TOTAL_SIDES){
+                        if(int(from_side) < NUM_SIDES && int(to_side) < NUM_SIDES){ //this connection can not cross any layer
+                            continue;
+                        }
+                        if(from_side == to_side){ //no connection
+                            continue;
+                        }
+
+                        Switchblock_Lookup sb_coord(x, y, layer, from_side, to_side);
+                        if(sb_conn_map->count(sb_coord) > 0){
+                            conn_count += sb_conn_map->size();
+                        }
+                    }
+                }
+                //reserve extra nodes for inter-die track-to-track connection
+                rr_graph_builder.node_lookup().reserve_nodes(layer,x,y,CHANX,conn_count);
+                for(int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++){
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer,y,x,CHANX,nodes_per_chan->max + rr_node_offset);
+                    if(!inode){
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, y, x, CHANX, max_chan_width);
+                        rr_graph_builder.node_lookup().add_node(inode,layer,y,x,CHANX,nodes_per_chan->max + rr_node_offset);
                     }
                 }
             }
