@@ -1184,8 +1184,8 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
-        for (int y = 0; y < grid.height() - 1; ++y) {
-            for (int x = 1; x < grid.width() - 1; ++x) {
+        for (size_t y = 0; y < grid.height() - 1; ++y) {
+            for (size_t x = 1; x < grid.width() - 1; ++x) {
                 //count how many track-to-track connection go from current layer to other layers
                 int conn_count = get_number_track_to_track_conn_from_layer(layer, x, y, sb_conn_map);
 
@@ -2185,7 +2185,9 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
             }
         }
         //incrementing the track index to avoid using same extra for the next iteration
-        ++(*to_track_index);
+        if(has_inter_die_conn) {
+            ++(*to_track_index);
+        }
     }
 }
 

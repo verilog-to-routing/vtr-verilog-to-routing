@@ -63,14 +63,12 @@ class Switchblock_Lookup {
 
 struct t_hash_Switchblock_Lookup {
     size_t operator()(const Switchblock_Lookup& obj) const noexcept {
-        //TODO: use vtr::hash_combine
-        size_t result;
-        result = ((((std::hash<int>()(obj.x_coord)
-                     ^ std::hash<int>()(obj.y_coord) << 10)
-                    ^ std::hash<int>()(obj.layer_coord << 20)
-                    ^ std::hash<int>()((int)obj.from_side) << 30)
-                   ^ std::hash<int>()((int)obj.to_side) << 40));
-        return result;
+        std::size_t hash = std::hash<int>{}(obj.x_coord);
+        vtr::hash_combine(hash, obj.y_coord);
+        vtr::hash_combine(hash, obj.layer_coord);
+        vtr::hash_combine(hash, obj.from_side);
+        vtr::hash_combine(hash, obj.to_side);
+        return hash;
     }
 };
 
