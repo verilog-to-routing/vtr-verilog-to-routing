@@ -93,7 +93,7 @@ bool manual_move_is_selected();
  * Window prompts the user for input: block id/name used as the from block in the move generator, x position, y position, and subtile position.
  * @param block_id: The block id is passed in if the user decides to highlight the block in the UI. If the user decides to manually input the block ID in the manual move window, the string will be empty and the block ID will later be assigned to ManualMovesState struct.
  */
-void draw_manual_moves_window(std::string block_id);
+void draw_manual_moves_window(const std::string& block_id);
 
 /**
  * @brief Evaluates if the user input is valid and allowed.
@@ -139,7 +139,7 @@ void close_manual_moves_window();
  *
  * @return True if the string only contains numbers, false otherwise.
  */
-bool string_is_a_number(std::string block_id);
+bool string_is_a_number(const std::string& block_id);
 
 /**
  * @brief Updates the ManualMovesState variable members.
