@@ -623,6 +623,7 @@ void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
 }
 
 void t_rr_graph_storage::set_node_ptc_twist_incr(RRNodeId id, short twist_incr){
+    VTR_ASSERT(!node_ptc_twist_incr_.empty());
     node_ptc_twist_incr_[id] = twist_incr;
 }
 
