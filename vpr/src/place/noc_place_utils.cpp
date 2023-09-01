@@ -1,8 +1,6 @@
 
 #include "noc_place_utils.h"
 
-#include <stack>
-
 /********************** Variables local to noc_place_utils.c pp***************************/
 /* Proposed and actual cost of a noc traffic flow used for each move assessment */
 static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, proposed_traffic_flow_costs;
@@ -916,69 +914,18 @@ void write_noc_placement_file(std::string file_name) {
 }
 
 bool noc_routing_has_cycle() {
-    // used to access NoC routers and links
-    auto& noc_model = g_vpr_ctx.noc().noc_model;
+    // used to access traffic flow routes
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    // get all traffic flow routes
+    const auto& traffic_flow_routes = noc_ctx.noc_traffic_flows_storage.get_all_traffic_flow_routes();
 
-    // get the total number of NoC routers
-    const int num_noc_routers = noc_model.get_number_of_noc_routers();
+    // get the total number of NoC links
+    const size_t num_noc_links = noc_ctx.noc_model.get_number_of_noc_links();
 
-    // indicates whether a node (NoC router) is visited in DFS traversal
-    vtr::vector<NocRouterId, bool> visited(num_noc_routers, false);
-    // indicates whether a node (NoC router) is currently in stack
-    vtr::vector<NocRouterId, bool> on_stack(num_noc_routers, false);
-    // the stack used to perform graph traversal (DFS). Contains to-be-visited nodes
-    std::stack<NocRouterId> stack;
+    ChannelDependencyGraph channel_dependency_graph(num_noc_links, traffic_flow_routes);
+    bool has_cycles = channel_dependency_graph.has_cycles();
 
-    // get all NoC router IDs
-    const auto& noc_router_ids = noc_model.get_noc_routers().keys();
-
-    // iterate over all nodes (NoC routers)
-    for (auto& noc_router_id : noc_router_ids) {
-
-        // the node (NoC router) has already been visited
-        if (visited[noc_router_id]) {
-            continue;
-        }
-
-        // An un-visited node is found. Add to the stack
-        stack.push(noc_router_id);
-
-        // continue the traversal until the stack is empty
-        while (!stack.empty()) {
-            auto current_node_id = stack.top();
-
-            if (!visited[current_node_id]) {
-                on_stack[current_node_id] = true;
-                visited[current_node_id] = true;
-            } else { // the neighboring nodes have already been processed
-                // remove it from the stack
-                stack.pop();
-                on_stack[current_node_id] = false;
-            }
-
-            // get the outgoing links of the current router
-            const auto& outgoing_link_ids = noc_model.get_noc_router_connections(current_node_id);
-
-            // iterate over all outgoing neighbors
-            for (auto& outgoing_link_id : outgoing_link_ids) {
-                const auto& outgoing_link = noc_model.get_single_noc_link(outgoing_link_id);
-                double link_bw_usage = outgoing_link.get_bandwidth_usage();
-
-                // only used links represent an edge in the graph
-                if (link_bw_usage > 0.0) {
-                    auto sink_router_id = outgoing_link.get_sink_router();
-                    if (!visited[sink_router_id]) {
-                        stack.push(sink_router_id);
-                    } else if (on_stack[sink_router_id]) { // the current node is pointing to one of its ancestors
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-
-    // if no node in the graph points to at least one of its ancestors, the graph does not have any cycles
-    return false;
+    return has_cycles;
 }
 
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links, std::vector<NocLinkId>& curr_links) {

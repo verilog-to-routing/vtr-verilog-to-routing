@@ -291,7 +291,7 @@ static void check_initial_placement_legality(const t_noc_opts& noc_opts) {
         bool has_cycle = noc_routing_has_cycle();
         if (has_cycle) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "At least one cycle was found in NoC routing configuration. This may cause a deadlock"
+                            "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock"
                             "when packets wait on each other in a cycle.\n");
         }
     }

@@ -220,6 +220,15 @@ class NocTrafficFlows {
     std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
     /**
+     * @brief Gets all routed paths for all traffic flows. This cannot be
+     * modified externally.
+     *
+     * @return vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& A reference
+     * to the provided container that includes all traffic flow routes.
+     */
+    const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& get_all_traffic_flow_routes() const;
+
+    /**
      * @return a vector ([0..num_logical_router-1]) where each entry gives the clusterBlockId
      * of a logical NoC router. Used for fast lookups in the placer.
      */
