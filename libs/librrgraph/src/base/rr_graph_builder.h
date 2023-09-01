@@ -193,6 +193,7 @@ class RRGraphBuilder {
         node_storage_.set_node_layer(id, layer);
     }
 
+    /** @brief set the ptc twist increment number for TILEABLE rr graphs (for more information see rr_graph_storage.h twist increment comment) */
     inline void set_node_ptc_twist_incr(RRNodeId id, int twist){
         node_storage_.set_node_ptc_twist_incr(id, twist);
     }
