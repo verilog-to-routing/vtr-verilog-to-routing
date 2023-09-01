@@ -75,7 +75,6 @@ int get_number_track_to_track_conn_from_layer(const int layer,
                                               const int y,
                                               const t_sb_connection_map* sb_conn_map);
 
-
 int find_average_rr_node_index(int device_width,
                                int device_height,
                                t_rr_type rr_type,

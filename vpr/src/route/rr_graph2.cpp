@@ -1140,19 +1140,19 @@ static void load_chan_rr_indices(const int max_chan_width,
 int get_number_track_to_track_conn_from_layer(const int layer,
                                               const int x,
                                               const int y,
-                                              const t_sb_connection_map* sb_conn_map){
+                                              const t_sb_connection_map* sb_conn_map) {
     int conn_count = 0;
-    for(auto from_side : TOTAL_SIDES){
-        for(auto to_side : TOTAL_SIDES){
-            if(int(from_side) < NUM_SIDES && int(to_side) < NUM_SIDES){ //this connection can not cross any layer
+    for (auto from_side : TOTAL_SIDES) {
+        for (auto to_side : TOTAL_SIDES) {
+            if (int(from_side) < NUM_SIDES && int(to_side) < NUM_SIDES) { //this connection can not cross any layer
                 continue;
             }
-            if(from_side == to_side){ //no connection
+            if (from_side == to_side) { //no connection
                 continue;
             }
 
             Switchblock_Lookup sb_coord(x, y, layer, from_side, to_side);
-            if(sb_conn_map->count(sb_coord) > 0){
+            if (sb_conn_map->count(sb_coord) > 0) {
                 conn_count += sb_conn_map->size();
             }
         }
@@ -1161,12 +1161,11 @@ int get_number_track_to_track_conn_from_layer(const int layer,
     return conn_count;
 }
 
-
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const t_chan_width* nodes_per_chan,
                                               const DeviceGrid& grid,
                                               const t_sb_connection_map* sb_conn_map,
-                                              int* index){
+                                              int* index) {
     /*
      * In case of multi-die FPGAs, we add extra nodes (can be either CHANX OR CHANY, used CHANX) to
      * support inter-die communication coming from switch blocks (connection between two tracks in different layers)
@@ -1178,7 +1177,7 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    for(int layer = 0; layer < grid.get_num_layers(); layer++){
+    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
@@ -1189,13 +1188,13 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                 int conn_count = get_number_track_to_track_conn_from_layer(layer, x, y, sb_conn_map);
 
                 //reserve extra nodes for inter-die track-to-track connection
-                rr_graph_builder.node_lookup().reserve_nodes(layer,x,y,CHANX,conn_count);
-                for(int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++){
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer,y,x,CHANX,nodes_per_chan->max + rr_node_offset);
-                    if(!inode){
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, CHANX, conn_count);
+                for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, y, x, CHANX, nodes_per_chan->max + rr_node_offset);
+                    if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode,layer,y,x,CHANX,nodes_per_chan->max + rr_node_offset);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, y, x, CHANX, nodes_per_chan->max + rr_node_offset);
                     }
                 }
             }
