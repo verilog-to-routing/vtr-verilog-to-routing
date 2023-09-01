@@ -724,9 +724,11 @@ class t_rr_graph_storage {
     // in a separate vector.
     vtr::vector<RRNodeId, short> node_layer_;
 
-    //Twist number is defined for CHANX/CHANY nodes, it is useful when different parts of same wire (with length > 1) have different ptc numbers.
-    //For instance, a track with length 4 would have four different ptc numbers [0,2,4,6], the ptc number would be 0 and twist number would be 2.
-    //This twist number is cold data since it is generally not used during the inner loop of either the placer or router.
+    //Twist Increment number is defined for CHANX/CHANY nodes; it is useful for layout of tileable FPGAs used by openFPGA.
+    //It gives us a new track index in each tile a longer wire crosses, which enables us to make long wires with a repeated single-tile pattern that "twists" the wires as they cross the tile.
+    //For example, an L4 wire would change tracks 4 times with metal shorts [e.g. 0, 2, 4, 6] and track 6 would drive a switch -- together this implements an L4 wire with only one layout tile.
+    //Twist increment number is only meaningful for CHANX and CHANY nodes; it is 0 for other node types.
+    //We also don't bother allocating this storage if the FPGA is not specified to be tileable; instead in that case the twist for all nodes will always be returned as 0.
     vtr::vector<RRNodeId, short> node_ptc_twist_;
 
     // Edge storage.
