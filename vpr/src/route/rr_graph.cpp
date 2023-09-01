@@ -1368,21 +1368,19 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     /*Update rr_nodes ptc_twist_incr number if we are creating tileable graph*/
-    if(graph_type == GRAPH_UNIDIR_TILEABLE){
+    if (graph_type == GRAPH_UNIDIR_TILEABLE) {
         device_ctx.rr_graph_builder.resize_ptc_twist_incr(num_rr_nodes);
-        for(int rr_node_id = 0; rr_node_id < num_rr_nodes; rr_node_id++){
+        for (int rr_node_id = 0; rr_node_id < num_rr_nodes; rr_node_id++) {
             auto node_type = rr_graph.node_type(RRNodeId(rr_node_id));
             auto node_dir = rr_graph.node_direction(RRNodeId(rr_node_id));
-            if ( node_type != CHANX && node_type != CHANY ) { //SRC/SINK/IPIN/OPIN
-                device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id),0);
-            }
-            else{
+            if (node_type != CHANX && node_type != CHANY) { //SRC/SINK/IPIN/OPIN
+                device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), 0);
+            } else {
                 //The current ptc twist increment number in UNDIR TILEABLE RRGraph is 2 and -2
                 //The assumption should be synced up with openFPGA branch
-                if(node_dir == Direction::INC){
+                if (node_dir == Direction::INC) {
                     device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), 2);
-                }
-                else{
+                } else {
                     device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), -2);
                 }
             }
