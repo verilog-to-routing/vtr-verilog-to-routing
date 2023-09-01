@@ -22,7 +22,6 @@
 #    include "ezgl/point.hpp"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
-
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -104,7 +103,7 @@ void block_button_setup(ezgl::application* app) {
     }
 }
 
-/*
+/**
  * @brief configures and connects signals/functions for routing buttons
  * 
  * Connects signals/sets default values for toggleRRButton, ToggleCongestion,
@@ -141,6 +140,67 @@ void routing_button_setup(ezgl::application* app) {
     GtkComboBoxText* toggle_router_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRoutingUtil"));
     g_signal_connect(toggle_router_util, "changed", G_CALLBACK(toggle_router_util_cbk), app);
     show_widget("RoutingMenuButton", app);
+}
+
+void view_button_setup(ezgl::application* app) {
+    int num_layers;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    num_layers = device_ctx.grid.get_num_layers();
+
+    // Hide the button if we only have one layer
+    if (num_layers == 1) {
+        hide_widget("3DMenuButton", app);
+    } else {
+        GtkBox* box = GTK_BOX(app->get_object("LayerBox"));
+        GtkBox* trans_box = GTK_BOX(app->get_object("TransparencyBox"));
+
+        // Create checkboxes and spin buttons for each layer
+        for (int i = 0; i < num_layers; i++) {
+            std::string label = "Layer " + std::to_string(i);
+            std::string trans_label = "Transparency " + std::to_string(i);
+
+            GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
+            // Add margins to checkboxes to match the transparency spin button height
+            gtk_widget_set_margin_top(checkbox, 7);
+            gtk_widget_set_margin_bottom(checkbox, 7);
+
+            gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
+
+            GtkWidget* spin_button = gtk_spin_button_new_with_range(0, 255, 1);
+            gtk_widget_set_name(spin_button, g_strdup(trans_label.c_str()));
+            gtk_box_pack_start(GTK_BOX(trans_box), spin_button, FALSE, FALSE, 0);
+
+            if (i == 0) {
+                // Set the initial state of the first checkbox to checked to represent the default view.
+                gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox), TRUE);
+            }
+
+            g_signal_connect(checkbox, "toggled", G_CALLBACK(select_layer_cbk), app);
+            g_signal_connect(spin_button, "value-changed", G_CALLBACK(transparency_cbk), app);
+        }
+
+        // Set up the final row for cross-layer connections
+        std::string label = "Cross Layer Connections";
+        std::string trans_label = "CrossLayerConnectionsTransparency";
+
+        GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
+        gtk_widget_set_margin_top(checkbox, 7);
+        gtk_widget_set_margin_bottom(checkbox, 7);
+        gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
+
+        GtkWidget* spin_button = gtk_spin_button_new_with_range(0, 255, 1);
+        gtk_widget_set_name(spin_button, g_strdup(trans_label.c_str()));
+        gtk_box_pack_start(GTK_BOX(trans_box), spin_button, FALSE, FALSE, 0);
+
+        // Connect cross layer to callback function:
+        g_signal_connect(checkbox, "toggled", G_CALLBACK(cross_layer_checkbox_cbk), app);
+        g_signal_connect(spin_button, "value-changed", G_CALLBACK(cross_layer_transparency_cbk), app);
+
+        // Make all widgets in the boxes appear
+        gtk_widget_show_all(GTK_WIDGET(box));
+        gtk_widget_show_all(GTK_WIDGET(trans_box));
+    }
 }
 
 /*

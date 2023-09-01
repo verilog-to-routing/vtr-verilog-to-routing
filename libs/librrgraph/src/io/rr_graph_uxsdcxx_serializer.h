@@ -1554,12 +1554,19 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 grid_.grid_size(), size);
         }
     }
+<<<<<<< HEAD
     inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) final {
         curr_tmp_block_type_id = block_type_id;
         curr_tmp_height_offset = height_offset;
         curr_tmp_width_offset = width_offset;
         curr_tmp_x = x;
         curr_tmp_y = y;
+=======
+    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int layer, int width_offset, int x, int y) final {
+        const auto& type = grid_.get_physical_type({x, y, layer});
+        int grid_width_offset = grid_.get_width_offset({x, y, layer});
+        int grid_height_offset = grid_.get_height_offset({x, y, layer});
+>>>>>>> ef5f993959c6b6896f6821b14b361d581ebf46fe
 
         return nullptr;
     }
