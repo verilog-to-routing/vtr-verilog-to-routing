@@ -69,6 +69,13 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
                       int ptc,
                       e_side side = NUM_SIDES);
 
+//Return how many connection inside switch blocks located at (layer,x,y) are going to a different layer
+int get_number_track_to_track_conn_from_layer(const int layer,
+                                              const int x,
+                                              const int y,
+                                              const t_sb_connection_map* sb_conn_map);
+
+
 int find_average_rr_node_index(int device_width,
                                int device_height,
                                t_rr_type rr_type,

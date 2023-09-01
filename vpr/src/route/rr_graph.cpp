@@ -463,8 +463,8 @@ static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chai
 
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int layer,
-                          const int i,
-                          const int j,
+                          const int x_coord,
+                          const int y_coord,
                           const t_rr_type chan_type,
                           const t_track_to_pin_lookup& track_to_pin_lookup,
                           t_sb_connection_map* sb_conn_map,
@@ -481,6 +481,16 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int wire_to_ipin_switch,
                           const int wire_to_pin_between_dice_switch,
                           const enum e_directionality directionality);
+
+static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
+                                              const int layer,
+                                              const int x_coord,
+                                              const int y_coord,
+                                              const t_sb_connection_map* sb_conn_map,
+                                              const int const_index_offset,
+                                              const t_chan_width& nodes_per_chan,
+                                              const t_chan_details& chan_details_x,
+                                              const DeviceGrid& grid);
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 
@@ -1252,7 +1262,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* END SB LOOKUP */
 
     /* Add extra nodes to switch blocks for multi-layer FPGAs with custom switch blocks that define track-to_track connections */
-    if(grid.get_num_layers() > 1 &&  sb_type == CUSTOM){
+    if(grid.get_num_layers() > 1 && sb_type == CUSTOM){
         alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, &nodes_per_chan, grid, sb_conn_map, &num_rr_nodes);
     }
 
@@ -2148,6 +2158,14 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
                     rr_edges_to_create.clear();
                 }
+
+                //In multi-die FPGAs with track-to-track connection between layers, we need to load newly added CHANX nodes
+                if(grid.get_num_layers() > 1 && sb_conn_map != nullptr){
+                    //custom switch block defined in the architecture
+                    VTR_ASSERT(sblock_pattern.empty() && switch_block_conn.empty());
+                    build_inter_die_custom_sb_rr_chan(rr_graph_builder, layer, i, j, sb_conn_map, CHANX_COST_INDEX_START, chan_width, chan_details_x, grid);
+                }
+
             }
         }
     }
@@ -3202,25 +3220,42 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_track_num(node, track);
         rr_graph_builder.set_node_direction(node, seg_details[track].direction());
     }
+}
 
-    //do everything else for newly added node
-    int track = tracks_per_chan;
-    RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, CHANX, track);
-    if (node) {
-        rr_graph_builder.set_node_layer(node, layer);
-        rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
-        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(CHANX_COST_INDEX_START + seg_details[track - 1].index()));
-        rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
-         //        int length = 0;
-         //        float R = length * seg_details[track-1].Rmetal();
-         //        float C = length * seg_details[track-1].Cmetal();
-        float R = 0;
-        float C = 0;
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
+                                              const int layer,
+                                              const int x_coord,
+                                              const int y_coord,
+                                              const t_sb_connection_map* sb_conn_map,
+                                              const int const_index_offset,
+                                              const t_chan_width& nodes_per_chan,
+                                              const t_chan_details& chan_details_x,
+                                              const DeviceGrid& grid){
 
-        rr_graph_builder.set_node_type(node, CHANX);
-        rr_graph_builder.set_node_track_num(node, track);
-        rr_graph_builder.set_node_direction(node, Direction::NONE);
+    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    const t_chan_seg_details* seg_details = chan_details_x[x_coord][y_coord].data();
+
+    /* Loads up all the extra routing resource nodes required to support multi-die custom switch blocks */
+    int start_track = nodes_per_chan.max;
+    int conn_count = get_number_track_to_track_conn_from_layer(layer,x_coord,y_coord,sb_conn_map);
+
+    for(int offset = 0; offset < conn_count; offset++) {
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, CHANX, start_track + offset);
+        if (node) {
+            rr_graph_builder.set_node_layer(node, layer);
+            rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
+            rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(
+                    const_index_offset + seg_details[start_track - 1].index()));
+            rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
+            float R = 0;
+            float C = 0;
+            rr_graph_builder.set_node_rc_index(node, NodeRCIndex(
+                    find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+
+            rr_graph_builder.set_node_type(node, CHANX);
+            rr_graph_builder.set_node_track_num(node, start_track + offset);
+            rr_graph_builder.set_node_direction(node, Direction::NONE);
+        }
     }
 }
 

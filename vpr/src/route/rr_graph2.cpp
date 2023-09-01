@@ -1137,18 +1137,42 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
+int get_number_track_to_track_conn_from_layer(const int layer,
+                                              const int x,
+                                              const int y,
+                                              const t_sb_connection_map* sb_conn_map){
+    int conn_count = 0;
+    for(auto from_side : TOTAL_SIDES){
+        for(auto to_side : TOTAL_SIDES){
+            if(int(from_side) < NUM_SIDES && int(to_side) < NUM_SIDES){ //this connection can not cross any layer
+                continue;
+            }
+            if(from_side == to_side){ //no connection
+                continue;
+            }
+
+            Switchblock_Lookup sb_coord(x, y, layer, from_side, to_side);
+            if(sb_conn_map->count(sb_coord) > 0){
+                conn_count += sb_conn_map->size();
+            }
+        }
+    }
+
+    return conn_count;
+}
+
+
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const t_chan_width* nodes_per_chan,
                                               const DeviceGrid& grid,
                                               const t_sb_connection_map* sb_conn_map,
                                               int* index){
     /*
-     * Calculate how many nodes we need to reserve:
      * In case of multi-die FPGAs, we add extra nodes (can be either CHANX OR CHANY, used CHANX) to
-     * support inter-die communication from switch blocks (Meaning connection between two tracks in different layers)
+     * support inter-die communication coming from switch blocks (connection between two tracks in different layers)
      * The extra nodes have the following attribute:
      *  1) type = CHANX
-     *  2) length = 0 (xhigh = OPEN, yhigh = OPEN)
+     *  2) length = 0 (xhigh = xlow, yhigh = ylow)
      *  3) ptc = [max_chanx_width:max_chanx_width+number_of_connection]
      */
 
@@ -1162,22 +1186,8 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
         for (int y = 0; y < grid.height() - 1; ++y) {
             for (int x = 1; x < grid.width() - 1; ++x) {
                 //count how many track-to-track connection go from current layer to other layers
-                int conn_count = 0;
-                for(auto from_side : TOTAL_SIDES){
-                    for(auto to_side : TOTAL_SIDES){
-                        if(int(from_side) < NUM_SIDES && int(to_side) < NUM_SIDES){ //this connection can not cross any layer
-                            continue;
-                        }
-                        if(from_side == to_side){ //no connection
-                            continue;
-                        }
+                int conn_count = get_number_track_to_track_conn_from_layer(layer, x, y, sb_conn_map);
 
-                        Switchblock_Lookup sb_coord(x, y, layer, from_side, to_side);
-                        if(sb_conn_map->count(sb_coord) > 0){
-                            conn_count += sb_conn_map->size();
-                        }
-                    }
-                }
                 //reserve extra nodes for inter-die track-to-track connection
                 rr_graph_builder.node_lookup().reserve_nodes(layer,x,y,CHANX,conn_count);
                 for(int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++){
