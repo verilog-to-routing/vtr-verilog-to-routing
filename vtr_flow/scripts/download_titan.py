@@ -28,9 +28,7 @@ class ExtractionError(Exception):
     pass
 
 
-TITAN_URL_MIRRORS = {
-    "eecg": "http://www.eecg.utoronto.ca/~vaughn/titan/"
-}
+TITAN_URL_MIRRORS = {"eecg": "http://www.eecg.utoronto.ca/~vaughn/titan/"}
 
 
 def parse_args():
@@ -68,7 +66,6 @@ def parse_args():
         help="Select the device family for which to download the netlists and sdc files. Default: all",
     )
 
-
     return parser.parse_args()
 
 
@@ -82,11 +79,7 @@ def main():
         tar_gz_url = urllib.parse.urljoin(TITAN_URL_MIRRORS["eecg"], tar_gz_filename)
 
         if not args.force and os.path.isfile(tar_gz_filename):
-            print(
-                "Found existing {} (skipping download and extraction)".format(
-                    tar_gz_filename
-                )
-            )
+            print("Found existing {} (skipping download and extraction)".format(tar_gz_filename))
         else:
             print("Downloading {}".format(tar_gz_url))
             download_url(tar_gz_filename, tar_gz_url)
@@ -110,6 +103,7 @@ def download_url(filename, url):
     """
     urllib.request.urlretrieve(url, filename, reporthook=download_progress_callback)
 
+
 def download_progress_callback(block_num, block_size, expected_size):
     """
     Callback for urllib.urlretrieve which prints a dot for every percent of a file downloaded
@@ -122,6 +116,7 @@ def download_progress_callback(block_num, block_size, expected_size):
         sys.stdout.flush()
     if block_num * block_size >= expected_size:
         print("")
+
 
 def extract_to_vtr_flow_dir(args, tar_gz_filename):
     """
@@ -138,7 +133,6 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
     benchmarks_dir = os.path.join(args.vtr_flow_dir, "benchmarks")
     titan_benchmarks_extract_dir = os.path.join(benchmarks_dir, "titan_blif")
     titan_arch_extract_dir = os.path.join(arch_dir, "titan")
-
 
     if not args.force:
         # Check that all expected directories exist
@@ -178,7 +172,7 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                             # if it is a 2.0.0 titan release or later use device family in the benchmark directory
                             device_families = get_device_families(args)
                             for family in device_families:
-                                if file_type_prefix == "*.sdc": 
+                                if file_type_prefix == "*.sdc":
                                     dest_file_name = determine_sdc_name(dirpath)
                                 else:
                                     dest_file_name = filename
@@ -186,14 +180,23 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                                 if dest_file_name == "":
                                     continue
 
-                                if fnmatch.fnmatch(src_file_path, f"*/titan_release*/benchmarks/{benchmark_subdir}/*/{family}/{file_type_prefix}"):
+                                if fnmatch.fnmatch(
+                                    src_file_path,
+                                    f"*/titan_release*/benchmarks/{benchmark_subdir}/*/{family}/{file_type_prefix}",
+                                ):
                                     dst_file_path = os.path.join(
-                                        titan_benchmarks_extract_dir, benchmark_subdir, family, dest_file_name
+                                        titan_benchmarks_extract_dir,
+                                        benchmark_subdir,
+                                        family,
+                                        dest_file_name,
                                     )
 
-                        elif fnmatch.fnmatch(src_file_path, f"*/titan_release*/benchmarks/{benchmark_subdir}/*/{file_type_prefix}"):
+                        elif fnmatch.fnmatch(
+                            src_file_path,
+                            f"*/titan_release*/benchmarks/{benchmark_subdir}/*/{file_type_prefix}",
+                        ):
                             # if it is a titan release earlier than device family in not used the benchmark directory as there is only support for SIV family
-                            if file_type_prefix == "*.sdc": 
+                            if file_type_prefix == "*.sdc":
                                 dest_file_name = determine_sdc_name(dirpath)
                             else:
                                 dest_file_name = filename
@@ -214,20 +217,21 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
 
     print("Done")
 
-
     # Create the subdirectories under titan_blif
+
+
 def create_titan_blif_subdirs(titan_benchmarks_extract_dir, args):
     for benchmark_subdir in ["titan_new", "titan23", "other_benchmarks"]:
-        titan_benchmark_subdir =  os.path.join(titan_benchmarks_extract_dir, benchmark_subdir)
+        titan_benchmark_subdir = os.path.join(titan_benchmarks_extract_dir, benchmark_subdir)
         if os.path.exists(titan_benchmark_subdir):
             shutil.rmtree(titan_benchmark_subdir)
         os.makedirs(titan_benchmark_subdir)
         if compare_versions(args.titan_version, "2") >= 1:
             for family in get_device_families(args):
-                titan_benchmark_family_subdir =  os.path.join(titan_benchmark_subdir, family)
+                titan_benchmark_family_subdir = os.path.join(titan_benchmark_subdir, family)
                 if not os.path.exists(titan_benchmark_family_subdir):
                     os.makedirs(titan_benchmark_family_subdir)
-    
+
 
 def determine_sdc_name(dirpath):
     """
@@ -248,6 +252,7 @@ def determine_sdc_name(dirpath):
 
     return blif_name + ".sdc"
 
+
 def extract_callback(members, args):
     for tarinfo in members:
         for benchmark_subdir in ["titan_new", "titan23", "other_benchmarks"]:
@@ -256,18 +261,28 @@ def extract_callback(members, args):
                 # if it is a 2.0.0 titan release or later use device family in the benchmark directory
                 device_families = get_device_families(args)
                 for family in device_families:
-                    if fnmatch.fnmatch(tarinfo.name, f"titan_release*/benchmarks/{benchmark_subdir}/*/{family}/*/*.blif"):
+                    if fnmatch.fnmatch(
+                        tarinfo.name,
+                        f"titan_release*/benchmarks/{benchmark_subdir}/*/{family}/*/*.blif",
+                    ):
                         print(tarinfo.name)
                         yield tarinfo
-                    elif fnmatch.fnmatch(tarinfo.name, f"titan_release*/benchmarks/{benchmark_subdir}/*/{family}/sdc/vpr.sdc"):
+                    elif fnmatch.fnmatch(
+                        tarinfo.name,
+                        f"titan_release*/benchmarks/{benchmark_subdir}/*/{family}/sdc/vpr.sdc",
+                    ):
                         print(tarinfo.name)
                         yield tarinfo
             else:
                 # if it is a titan release earlier than device family in not used the benchmark directory as there is only support for SIV family
-                if fnmatch.fnmatch(tarinfo.name, f"titan_release*/benchmarks/{benchmark_subdir}/*/*.blif"):
+                if fnmatch.fnmatch(
+                    tarinfo.name, f"titan_release*/benchmarks/{benchmark_subdir}/*/*.blif"
+                ):
                     print(tarinfo.name)
                     yield tarinfo
-                elif fnmatch.fnmatch(tarinfo.name, f"titan_release*/benchmarks/{benchmark_subdir}/*/sdc/vpr.sdc"):
+                elif fnmatch.fnmatch(
+                    tarinfo.name, f"titan_release*/benchmarks/{benchmark_subdir}/*/sdc/vpr.sdc"
+                ):
                     print(tarinfo.name)
                     yield tarinfo
 
@@ -275,12 +290,13 @@ def extract_callback(members, args):
             print(tarinfo.name)
             yield tarinfo
 
+
 def compare_versions(version1, version2):
     """
     Compares two release versions to see which once is more recent
     """
-    v1_components = list(map(int, version1.split('.')))
-    v2_components = list(map(int, version2.split('.')))
+    v1_components = list(map(int, version1.split(".")))
+    v2_components = list(map(int, version2.split(".")))
 
     for v1, v2 in zip(v1_components, v2_components):
         if v1 < v2:
@@ -296,11 +312,13 @@ def compare_versions(version1, version2):
 
     return 0  # Both versions are equal
 
+
 def get_device_families(args):
     if args.device_family == "all":
         return ["stratixiv", "stratix10"]
     else:
         return [args.device_family]
- 
+
+
 if __name__ == "__main__":
     main()
