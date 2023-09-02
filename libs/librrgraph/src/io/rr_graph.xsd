@@ -208,7 +208,7 @@
   </xs:simpleType>
 
   <xs:complexType name="grid_loc">
-    <xs:attribute name="layer" type="xs:int" use="required"/>
+    <xs:attribute name="layer" type="xs:int" default="0"/>
     <xs:attribute name="x" type="xs:int" use="required"/>
     <xs:attribute name="y" type="xs:int" use="required"/>
     <xs:attribute name="block_type_id" type="xs:int" use="required"/>
@@ -259,7 +259,7 @@
   </xs:simpleType>
 
   <xs:complexType name="node_loc">
-    <xs:attribute name="layer" type="xs:int" use="required"/>
+    <xs:attribute name="layer" type="xs:int" default="0"/>
     <xs:attribute name="xlow" type="xs:int" use="required"/>
     <xs:attribute name="ylow" type="xs:int" use="required"/>
     <xs:attribute name="xhigh" type="xs:int" use="required"/>

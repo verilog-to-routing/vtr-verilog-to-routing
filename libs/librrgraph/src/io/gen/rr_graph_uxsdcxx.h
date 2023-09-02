@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: cf10a1fa99fdfc7a455393a2a3cd1426
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/amin/Desktop/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/amin/Desktop/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 38649d034e0edccbcb511ddb8915cdff
  */
 
 #include <functional>
@@ -82,12 +82,12 @@ template <class T, typename Context>
 inline void load_block_types(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
 inline void load_grid_loc(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
-inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * layer, int * width_offset, int * x, int * y, const std::function<void(const char*)> * report_error);
+inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * width_offset, int * x, int * y, const std::function<void(const char*)> * report_error);
 template <class T, typename Context>
 inline void load_grid_locs(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 template <class T, typename Context>
 inline void load_node_loc(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
-inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * layer, int * ptc, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char*)> * report_error);
+inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * ptc, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char*)> * report_error);
 template <class T, typename Context>
 inline void load_node_timing(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug);
 inline void load_node_timing_required_attributes(const pugi::xml_node &root, float * C, float * R, const std::function<void(const char*)> * report_error);
@@ -2306,7 +2306,7 @@ inline void load_block_type_required_attributes(const pugi::xml_node &root, int 
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_block_type, report_error);
 }
 
-inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * layer, int * width_offset, int * x, int * y, const std::function<void(const char *)> * report_error){
+inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * block_type_id, int * height_offset, int * width_offset, int * x, int * y, const std::function<void(const char *)> * report_error){
 	std::bitset<6> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_grid_loc in = lex_attr_t_grid_loc(attr.name(), report_error);
@@ -2320,7 +2320,7 @@ inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * 
 			*height_offset = load_int(attr.value(), report_error);
 			break;
 		case atok_t_grid_loc::LAYER:
-			*layer = load_int(attr.value(), report_error);
+			/* Attribute layer set after element init */
 			break;
 		case atok_t_grid_loc::WIDTH_OFFSET:
 			*width_offset = load_int(attr.value(), report_error);
@@ -2334,11 +2334,11 @@ inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * 
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<6> test_astate = astate | std::bitset<6>(0b000000);
+	std::bitset<6> test_astate = astate | std::bitset<6>(0b000100);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_grid_loc, report_error);
 }
 
-inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * layer, int * ptc, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char *)> * report_error){
+inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * ptc, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char *)> * report_error){
 	std::bitset<7> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_node_loc in = lex_attr_t_node_loc(attr.name(), report_error);
@@ -2346,7 +2346,7 @@ inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * 
 		else noreturn_report(report_error, ("Duplicate attribute " + std::string(attr.name()) + " in <node_loc>.").c_str());
 		switch(in){
 		case atok_t_node_loc::LAYER:
-			*layer = load_int(attr.value(), report_error);
+			/* Attribute layer set after element init */
 			break;
 		case atok_t_node_loc::PTC:
 			*ptc = load_int(attr.value(), report_error);
@@ -2369,7 +2369,7 @@ inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * 
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<7> test_astate = astate | std::bitset<7>(0b0000100);
+	std::bitset<7> test_astate = astate | std::bitset<7>(0b0000101);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_loc, report_error);
 }
 
@@ -3157,6 +3157,30 @@ inline void load_grid_loc(const pugi::xml_node &root, T &out, Context &context, 
 	// Update current file offset in case an error is encountered.
 	*offset_debug = root.offset_debug();
 
+	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
+		atok_t_grid_loc in = lex_attr_t_grid_loc(attr.name(), report_error);
+		switch(in){
+		case atok_t_grid_loc::BLOCK_TYPE_ID:
+			/* Attribute block_type_id is already set */
+			break;
+		case atok_t_grid_loc::HEIGHT_OFFSET:
+			/* Attribute height_offset is already set */
+			break;
+		case atok_t_grid_loc::LAYER:
+			out.set_grid_loc_layer(load_int(attr.value(), report_error), context);
+			break;
+		case atok_t_grid_loc::WIDTH_OFFSET:
+			/* Attribute width_offset is already set */
+			break;
+		case atok_t_grid_loc::X:
+			/* Attribute x is already set */
+			break;
+		case atok_t_grid_loc::Y:
+			/* Attribute y is already set */
+			break;
+		default: break; /* Not possible. */
+		}
+	}
 
 	if(root.first_child().type() == pugi::node_element)
 		noreturn_report(report_error, "Unexpected child element in <grid_loc>.");
@@ -3217,16 +3241,14 @@ inline void load_grid_locs(const pugi::xml_node &root, T &out, Context &context,
 				memset(&grid_loc_block_type_id, 0, sizeof(grid_loc_block_type_id));
 				int grid_loc_height_offset;
 				memset(&grid_loc_height_offset, 0, sizeof(grid_loc_height_offset));
-				int grid_loc_layer;
-				memset(&grid_loc_layer, 0, sizeof(grid_loc_layer));
 				int grid_loc_width_offset;
 				memset(&grid_loc_width_offset, 0, sizeof(grid_loc_width_offset));
 				int grid_loc_x;
 				memset(&grid_loc_x, 0, sizeof(grid_loc_x));
 				int grid_loc_y;
 				memset(&grid_loc_y, 0, sizeof(grid_loc_y));
-				load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_layer, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y, report_error);
-				auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_layer, grid_loc_width_offset, grid_loc_x, grid_loc_y);
+				load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y, report_error);
+				auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_width_offset, grid_loc_x, grid_loc_y);
 				load_grid_loc(node, out, child_context, report_error, offset_debug);
 				out.finish_grid_locs_grid_loc(child_context);
 			}
@@ -3251,7 +3273,7 @@ inline void load_node_loc(const pugi::xml_node &root, T &out, Context &context, 
 		atok_t_node_loc in = lex_attr_t_node_loc(attr.name(), report_error);
 		switch(in){
 		case atok_t_node_loc::LAYER:
-			/* Attribute layer is already set */
+			out.set_node_loc_layer(load_int(attr.value(), report_error), context);
 			break;
 		case atok_t_node_loc::PTC:
 			/* Attribute ptc is already set */
@@ -3434,8 +3456,6 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 		switch(in){
 		case gtok_t_node::LOC:
 			{
-				int node_loc_layer;
-				memset(&node_loc_layer, 0, sizeof(node_loc_layer));
 				int node_loc_ptc;
 				memset(&node_loc_ptc, 0, sizeof(node_loc_ptc));
 				int node_loc_xhigh;
@@ -3446,8 +3466,8 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 				memset(&node_loc_yhigh, 0, sizeof(node_loc_yhigh));
 				int node_loc_ylow;
 				memset(&node_loc_ylow, 0, sizeof(node_loc_ylow));
-				load_node_loc_required_attributes(node, &node_loc_layer, &node_loc_ptc, &node_loc_xhigh, &node_loc_xlow, &node_loc_yhigh, &node_loc_ylow, report_error);
-				auto child_context = out.init_node_loc(context, node_loc_layer, node_loc_ptc, node_loc_xhigh, node_loc_xlow, node_loc_yhigh, node_loc_ylow);
+				load_node_loc_required_attributes(node, &node_loc_ptc, &node_loc_xhigh, &node_loc_xlow, &node_loc_yhigh, &node_loc_ylow, report_error);
+				auto child_context = out.init_node_loc(context, node_loc_ptc, node_loc_xhigh, node_loc_xlow, node_loc_yhigh, node_loc_ylow);
 				load_node_loc(node, out, child_context, report_error, offset_debug);
 				out.finish_node_loc(child_context);
 			}
