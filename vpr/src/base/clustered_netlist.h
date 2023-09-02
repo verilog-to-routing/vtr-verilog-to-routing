@@ -135,7 +135,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     t_logical_block_type_ptr block_type(const ClusterBlockId id) const;
 
     ///@brief Returns the blocks with the specific block types in the netlist
-    std::vector<ClusterBlockId> blocks_per_type(const t_logical_block_type blk_type) const;
+    const std::vector<ClusterBlockId>& blocks_per_type(const t_logical_block_type& blk_type) const;
 
     ///@brief Returns the net of the block attached to the specific pin index
     ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
@@ -194,7 +194,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *   @param width    The width (number of bits) of the port
      *   @param type     The type of the port (INPUT, OUTPUT, or CLOCK)
      */
-    ClusterPortId create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type);
+    ClusterPortId create_port(const ClusterBlockId blk_id, const std::string& name, BitIndex width, PortType type);
     /**
      * @brief Create or return an existing pin in the netlist
      *
@@ -212,7 +212,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *
      *   @param name  The unique name of the net
      */
-    ClusterNetId create_net(const std::string name);
+    ClusterNetId create_net(const std::string& name);
 
     /**
      * @brief Given a name of a block and vector of possible cluster blocks
