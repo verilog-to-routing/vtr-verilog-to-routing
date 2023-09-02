@@ -31,6 +31,7 @@
 #include "vpr_constraints.h"
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
+#include "noc_virtual_block.h"
 #include "noc_routing.h"
 
 /**
@@ -526,6 +527,8 @@ struct NocContext : public Context {
      * This is created from a user supplied .flows file.
      */
     NocTrafficFlows noc_traffic_flows_storage;
+
+    NocVirtualBlockStorage noc_virtual_blocks;
 
     /**
      * @brief Contains the packet routing algorithm used by the NoC.

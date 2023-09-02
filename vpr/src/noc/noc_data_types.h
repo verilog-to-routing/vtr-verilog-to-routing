@@ -20,8 +20,9 @@ typedef vtr::StrongId<noc_link_id_tag, int> NocLinkId;
 
 // data type to index traffic flows within the noc
 struct noc_traffic_flow_id_tag;
+struct noc_virtual_middleman_block_id_tag;
 
-/** Datatype to index traffic flows within the application */
 typedef vtr::StrongId<noc_traffic_flow_id_tag, int> NocTrafficFlowId;
+typedef vtr::StrongId<noc_virtual_middleman_block_id_tag, int> NocVirtualMiddlemanBlockId;
 
 #endif
