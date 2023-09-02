@@ -1050,7 +1050,7 @@ enum e_agent_algorithm {
  * can be based on (block_type, move_type) pair.
  *
  */
-enum e_agent_space {
+enum class e_agent_space {
     MOVE_TYPE,
     MOVE_BLOCK_TYPE
 };

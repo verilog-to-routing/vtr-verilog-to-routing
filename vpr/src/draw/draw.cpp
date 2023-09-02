@@ -292,6 +292,7 @@ static void default_setup(ezgl::application* app) {
     net_button_setup(app);
     block_button_setup(app);
     search_setup(app);
+    view_button_setup(app);
 }
 
 // Initial Setup functions run default setup if they are a new window. Then, they will run
@@ -525,6 +526,10 @@ void alloc_draw_structs(const t_arch* arch) {
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
     draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
+
+    draw_state->draw_layer_display.resize(device_ctx.grid.get_num_layers());
+    //By default show the lowest layer only. This is the only die layer for 2D FPGAs
+    draw_state->draw_layer_display[0].visible = true;
 
     draw_state->arch_info = arch;
 
@@ -990,83 +995,83 @@ static void highlight_blocks(double x, double y) {
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
-    //TODO: Change when graphics supports 3D FPGAs
-    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
-    int layer_num = 0;
-    // iterate over grid x
-    for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
-        if (draw_coords->tile_x[i] > x) {
-            break; // we've gone to far in the x direction
-        }
-        // iterate over grid y
-        for (int j = 0; j < (int)device_ctx.grid.height(); ++j) {
-            if (draw_coords->tile_y[j] > y) {
-                break; // we've gone to far in the y direction
+    //iterate over grid z (layers) first, so we draw from bottom to top die. This makes partial transparency of layers draw properly.
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        // iterate over grid x
+        for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
+            if (draw_coords->tile_x[i] > x) {
+                break; // we've gone too far in the x direction
             }
-            // iterate over sub_blocks
-            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
-            for (int k = 0; k < type->capacity; ++k) {
-                // TODO: Change when graphics supports 3D
-                clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
-                if (clb_index != EMPTY_BLOCK_ID) {
-                    clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
-                                                                  cluster_ctx.clb_nlist.block_type(clb_index));
-                    if (clb_bbox.contains({x, y})) {
-                        break;
-                    } else {
-                        clb_index = EMPTY_BLOCK_ID;
+            // iterate over grid y
+            for (int j = 0; j < (int)device_ctx.grid.height(); ++j) {
+                if (draw_coords->tile_y[j] > y) {
+                    break; // we've gone too far in the y direction
+                }
+                // iterate over sub_blocks
+                const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                for (int k = 0; k < type->capacity; ++k) {
+                    clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    if (clb_index != EMPTY_BLOCK_ID) {
+                        clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
+                                                                      cluster_ctx.clb_nlist.block_type(clb_index));
+                        if (clb_bbox.contains({x, y})) {
+                            break;
+                        } else {
+                            clb_index = EMPTY_BLOCK_ID;
+                        }
                     }
+                }
+                if (clb_index != EMPTY_BLOCK_ID) {
+                    break; // we've found something
                 }
             }
             if (clb_index != EMPTY_BLOCK_ID) {
                 break; // we've found something
             }
         }
-        if (clb_index != EMPTY_BLOCK_ID) {
-            break; // we've found something
+
+        if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
+            //Nothing found
+            return;
         }
-    }
 
-    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
-        //Nothing found
-        return;
-    }
+        VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
 
-    VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
+        // note: this will clear the selected sub-block if show_blk_internal is 0,
+        // or if it doesn't find anything
+        ezgl::point2d point_in_clb = ezgl::point2d(x, y) - clb_bbox.bottom_left();
+        highlight_sub_block(point_in_clb, clb_index,
+                            cluster_ctx.clb_nlist.block_pb(clb_index));
 
-    // note: this will clear the selected sub-block if show_blk_internal is 0,
-    // or if it doesn't find anything
-    ezgl::point2d point_in_clb = ezgl::point2d(x, y) - clb_bbox.bottom_left();
-    highlight_sub_block(point_in_clb, clb_index,
-                        cluster_ctx.clb_nlist.block_pb(clb_index));
-
-    if (get_selected_sub_block_info().has_selection()) {
-        t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
-        sprintf(msg, "sub-block %s (a \"%s\") selected",
-                selected_subblock->name,
-                selected_subblock->pb_graph_node->pb_type->name);
-    } else {
-        /* Highlight block and fan-in/fan-outs. */
-        draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index),
-                                    clb_index);
-        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index),
-                cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                place_ctx.block_locs[clb_index].loc.x,
-                place_ctx.block_locs[clb_index].loc.y);
-    }
-
-    //If manual moves is activated, then user can select block from the grid.
-    t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->manual_moves_state.manual_move_enabled) {
-        draw_state->manual_moves_state.user_highlighted_block = true;
-        if (!draw_state->manual_moves_state.manual_move_window_is_open) {
-            draw_manual_moves_window(std::to_string(size_t(clb_index)));
+        if (get_selected_sub_block_info().has_selection()) {
+            t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
+            sprintf(msg, "sub-block %s (a \"%s\") selected",
+                    selected_subblock->name,
+                    selected_subblock->pb_graph_node->pb_type->name);
+        } else {
+            /* Highlight block and fan-in/fan-outs. */
+            draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index),
+                                        clb_index);
+            sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index),
+                    cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
+                    place_ctx.block_locs[clb_index].loc.x,
+                    place_ctx.block_locs[clb_index].loc.y);
         }
-    }
 
-    application.update_message(msg);
-    application.refresh_drawing();
+        //If manual moves is activated, then user can select block from the grid.
+        t_draw_state* draw_state = get_draw_state_vars();
+        if (draw_state->manual_moves_state.manual_move_enabled) {
+            draw_state->manual_moves_state.user_highlighted_block = true;
+            if (!draw_state->manual_moves_state.manual_move_window_is_open) {
+                draw_manual_moves_window(std::to_string(size_t(clb_index)));
+            }
+        }
+
+        application.update_message(msg);
+        application.refresh_drawing();
+    }
 }
+
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     GObject* proceed_button = app->get_object("ProceedButton");
@@ -1370,25 +1375,15 @@ void clear_colored_locations() {
     draw_state->colored_locations.clear();
 }
 
-// This routine takes in a (x,y) location.
-// If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
-// otherwise, the function returns false (the location isn't among the highlighted locations)
-bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color) {
+bool highlight_loc_with_specific_color(t_pl_loc curr_loc, ezgl::color& loc_color) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    //define a (x,y) location variable
-    t_pl_loc curr_loc;
-    curr_loc.x = x;
-    curr_loc.y = y;
-    //TODO: Graphic currently doesn't support 3D FPGAs
-    curr_loc.layer = 0;
 
     //search for the current location in the vector of colored locations
     auto it = std::find_if(draw_state->colored_locations.begin(),
                            draw_state->colored_locations.end(),
                            [&curr_loc](const std::pair<t_pl_loc, ezgl::color>& vec_element) {
                                return (vec_element.first.x == curr_loc.x
-                                       && vec_element.first.y == curr_loc.y);
+                                       && vec_element.first.y == curr_loc.y && vec_element.first.layer == curr_loc.layer);
                            });
 
     if (it != draw_state->colored_locations.end()) {
@@ -1441,6 +1436,34 @@ size_t get_max_fanout() {
 
     size_t max = std::max(max_fanout2, max_fanout);
     return max;
+}
+
+bool rgb_is_same(ezgl::color color1, ezgl::color color2) {
+    color1.alpha = 255;
+    color2.alpha = 255;
+    return (color1 == color2);
+}
+t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer) {
+    t_draw_layer_display element_visibility;
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    element_visibility.visible = true;
+    bool cross_layer_enabled = draw_state->cross_layer_display.visible;
+
+    //To only show primitive nets that are connected to currently active layers on the screen
+    if (!draw_state->draw_layer_display[sink_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
+        element_visibility.visible = false; /* Don't Draw */
+    }
+
+    if (src_layer != sink_layer) {
+        //assign transparency from cross layer option if connection is between different layers
+        element_visibility.alpha = draw_state->cross_layer_display.alpha;
+    } else {
+        //otherwise assign transparency of current layer
+        element_visibility.alpha = draw_state->draw_layer_display[src_layer].alpha;
+    }
+
+    return element_visibility;
 }
 
 #endif /* NO_GRAPHICS */
