@@ -52,6 +52,8 @@ def init_script_file(
     circuit_list,
     output_netlist,
     architecture_file_path,
+    include_dir='.',
+    top_module='-auto-top'
 ):
     """initializing the raw yosys script file"""
     # specify the input files type
@@ -68,6 +70,8 @@ def init_script_file(
             "TTT": str(vtr.paths.yosys_tcl_path),
             "ZZZ": output_netlist,
             "QQQ": architecture_file_path,
+            "SEARCHPATH": include_dir,
+            "TOPMODULE": top_module,
         },
     )
 
@@ -205,11 +209,30 @@ def run(
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
 
+    # parse search directory
+    if ('searchpath' in parmys_args):
+        if (parmys_args['searchpath'] is not None) and (parmys_args['searchpath'] != ''):
+            include_dir = parmys_args['searchpath']
+        del parmys_args['searchpath']
+    else:
+        include_dir = '.'
+
+    # parse top module
+    # NOTE: the default value is '-auto-top'
+    if ('topmodule' in parmys_args):
+        if (parmys_args['topmodule'] is not None) and (parmys_args['topmodule'] != ''):
+            top_module = '-top ' + parmys_args['topmodule']
+        del parmys_args['topmodule']
+    else:
+        top_module = '-auto-top'
+
     init_script_file(
         yosys_script_full_path,
         circuit_list,
         output_netlist.name,
         architecture_file_path,
+        include_dir,
+        top_module
     )
 
     odin_base_config = str(vtr.paths.odin_cfg_path)
