@@ -27,7 +27,7 @@ circuit_list_add=gsm_switch_stratix10_arch_timing.blif
 circuit_list_add=mes_noc_stratix10_arch_timing.blif
 circuit_list_add=dart_stratix10_arch_timing.blif
 circuit_list_add=denoise_stratix10_arch_timing.blif
-circuit_list_add=sparcT2_core_stratix10_arch_timing.blif
+#circuit_list_add=sparcT2_core_stratix10_arch_timing.blif
 circuit_list_add=cholesky_bdti_stratix10_arch_timing.blif
 circuit_list_add=minres_stratix10_arch_timing.blif
 circuit_list_add=stap_qrd_stratix10_arch_timing.blif
@@ -44,9 +44,9 @@ circuit_list_add=stereo_vision_stratix10_arch_timing.blif
 circuit_list_add=cholesky_mc_stratix10_arch_timing.blif
 
 #Large benchmarks
-circuit_list_add=directrf_stratix10_arch_timing.blif
-circuit_list_add=bitcoin_miner_stratix10_arch_timing.blif
-circuit_list_add=LU230_stratix10_arch_timing.blif
+#circuit_list_add=directrf_stratix10_arch_timing.blif
+#circuit_list_add=bitcoin_miner_stratix10_arch_timing.blif
+#circuit_list_add=LU230_stratix10_arch_timing.blif
 circuit_list_add=LU_Network_stratix10_arch_timing.blif
 
 # Add architectures to list to sweep
