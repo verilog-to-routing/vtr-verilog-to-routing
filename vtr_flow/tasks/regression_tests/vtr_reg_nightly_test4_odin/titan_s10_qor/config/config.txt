@@ -26,7 +26,7 @@ archs_dir=arch/titan
 circuit_list_add=gsm_switch_stratix10_arch_timing.blif
 circuit_list_add=mes_noc_stratix10_arch_timing.blif
 circuit_list_add=dart_stratix10_arch_timing.blif
-circuit_list_add=denoise_stratix10_arch_timing.blif
+#circuit_list_add=denoise_stratix10_arch_timing.blif
 #circuit_list_add=sparcT2_core_stratix10_arch_timing.blif
 circuit_list_add=cholesky_bdti_stratix10_arch_timing.blif
 circuit_list_add=minres_stratix10_arch_timing.blif
@@ -34,7 +34,7 @@ circuit_list_add=stap_qrd_stratix10_arch_timing.blif
 circuit_list_add=openCV_stratix10_arch_timing.blif
 circuit_list_add=bitonic_mesh_stratix10_arch_timing.blif
 circuit_list_add=segmentation_stratix10_arch_timing.blif
-circuit_list_add=SLAM_spheric_stratix10_arch_timing.blif
+#circuit_list_add=SLAM_spheric_stratix10_arch_timing.blif
 circuit_list_add=des90_stratix10_arch_timing.blif
 
 #Small benchmarks
