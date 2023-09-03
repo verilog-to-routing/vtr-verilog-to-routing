@@ -983,69 +983,29 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
     }
 }
 
+/**
+ * @brief Highlights the block that was clicked on, looking from the top layer downwards for 3D devices (chooses the block on the top visible layer for overlapping blocks)
+ *        It highlights the block green, as well as its fanin and fanout to blue and red respectively by updating the draw_state variables responsible for holding the
+ *        color of the block as well as its fanout and fanin.
+ * @param x
+ * @param y
+ */
 static void highlight_blocks(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
     char msg[vtr::bufsize];
-    ClusterBlockId clb_index = EMPTY_BLOCK_ID;
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    /// determine block ///
-    ezgl::rectangle clb_bbox;
-
-    //iterate over grid z (layers) first. Start search of the block at the top layer to prioritize highlighting of blocks at higher levels during overlapping of layers.
-    for (int layer_num = device_ctx.grid.get_num_layers()-1; layer_num >= 0 ; layer_num--) {
-        if(!draw_state->draw_layer_display[layer_num].visible){
-            continue; /* Don't check for blocks on non-visible layers*/
-        }
-        // iterate over grid x
-        for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
-            if (draw_coords->tile_x[i] > x) {
-                break; // we've gone too far in the x direction
-            }
-            // iterate over grid y
-            for (int j = 0; j < (int)device_ctx.grid.height(); ++j) {
-                if (draw_coords->tile_y[j] > y) {
-                    break; // we've gone too far in the y direction
-                }
-                // iterate over sub_blocks
-                const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
-                for (int k = 0; k < type->capacity; ++k) {
-                    clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
-                    if (clb_index != EMPTY_BLOCK_ID) {
-                        clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
-                                                                      cluster_ctx.clb_nlist.block_type(clb_index));
-                        if (clb_bbox.contains({x, y})) {
-                            break;
-                        } else {
-                            clb_index = EMPTY_BLOCK_ID;
-                        }
-                    }
-                }
-                if (clb_index != EMPTY_BLOCK_ID) {
-                    break; // we've found something
-                }
-            }
-            if (clb_index != EMPTY_BLOCK_ID) {
-                break; // we've found something
-            }
-        }
-
+    ClusterBlockId clb_index = get_cluster_block_id_from_xy_loc(x,y);
         if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
-            //Nothing found
-            if(layer_num == 0){
-                return ; /* Nothing was found on any layer*/
-            }
-            else{
-                continue; /* Nothing found on current layer*/
-            }
+            return ; /* Nothing was found on any layer*/
         }
+
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+        auto& place_ctx = g_vpr_ctx.placement();
 
         VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
 
+        ezgl::rectangle clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,cluster_ctx.clb_nlist.block_type(clb_index));
         // note: this will clear the selected sub-block if show_blk_internal is 0,
         // or if it doesn't find anything
         ezgl::point2d point_in_clb = ezgl::point2d(x, y) - clb_bbox.bottom_left();
@@ -1078,7 +1038,53 @@ static void highlight_blocks(double x, double y) {
         application.update_message(msg);
         application.refresh_drawing();
         return;
+}
+
+ClusterBlockId get_cluster_block_id_from_xy_loc(double x,double y){
+        t_draw_coords* draw_coords = get_draw_coords_vars();
+        t_draw_state* draw_state = get_draw_state_vars();
+    ClusterBlockId clb_index = EMPTY_BLOCK_ID;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    /// determine block ///
+    ezgl::rectangle clb_bbox;
+
+    //iterate over grid z (layers) first. Start search of the block at the top layer to prioritize highlighting of blocks at higher levels during overlapping of layers.
+    for (int layer_num = device_ctx.grid.get_num_layers()-1; layer_num >= 0 ; layer_num--) {
+                if (!draw_state->draw_layer_display[layer_num].visible) {
+                    continue; /* Don't check for blocks on non-visible layers*/
+                }
+                // iterate over grid x
+                for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
+                    if (draw_coords->tile_x[i] > x) {
+                    break; // we've gone too far in the x direction
+                    }
+                    // iterate over grid y
+                    for (int j = 0; j < (int)device_ctx.grid.height(); ++j) {
+                        if (draw_coords->tile_y[j] > y) {
+                            break; // we've gone too far in the y direction
+                        }
+                        // iterate over sub_blocks
+                        const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                        for (int k = 0; k < type->capacity; ++k) {
+                            clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                            if (clb_index != EMPTY_BLOCK_ID) {
+                                clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
+                                                                              cluster_ctx.clb_nlist.block_type(clb_index));
+                                if (clb_bbox.contains({x, y})) {
+                                    return clb_index; // we've found the clb
+                                } else {
+                                    clb_index = EMPTY_BLOCK_ID;
+                                }
+                            }
+                        }
+                    }
+                }
     }
+    // Searched all layers and found no clb at specified location, returning clb_index = EMPTY_BLOCK_ID.
+    return clb_index;
 }
 
 static void setup_default_ezgl_callbacks(ezgl::application* app) {

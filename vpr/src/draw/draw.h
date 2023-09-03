@@ -155,6 +155,17 @@ bool rgb_is_same(ezgl::color color1, ezgl::color color2);
  */
 t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer);
 
+/**
+ * @brief takes in the x and y coordinates of where the user clicked on the screen and returns the corresponding clusterBlockId that represents
+ *         the clb clicked upon by the user on a currently visible FPGA layer. Search for the clb begins from the top layer to ensure to
+ *         return the clusterBlockId of a clb on a higher layer during instances of overlap between clb blocks.
+ * @param x
+ * @param y
+ * @return returns the ClusterBlockId of the clb at the specified (x,y) location as seen by looking downwards from the top of a 3D FPGA.
+ *         Chooses the clb on the top visible layer if there are overlapping blocks. Returns EMPTY_BLOCK_ID (-1) otherwise,if clb is not found on any visible layer.
+ */
+ClusterBlockId get_cluster_block_id_from_xy_loc(double x,double y);
+
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */
