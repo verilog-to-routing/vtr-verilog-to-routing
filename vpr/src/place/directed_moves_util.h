@@ -14,7 +14,7 @@ enum e_reward_function {
     WL_BIASED_RUNTIME_AWARE ///@ same as RUNTIME_AWARE but more biased to WL cost (the factor of the bias is REWARD_BB_TIMING_RELATIVE_WEIGHT)
 };
 
-e_reward_function string_to_reward(std::string st);
+e_reward_function string_to_reward(const std::string& st);
 
 ///@brief Helper function that returns the x, y coordinates of a pin
 void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc);

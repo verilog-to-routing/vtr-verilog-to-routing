@@ -767,7 +767,7 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
             return false; //if cross layer connections are disabled or if either the current or prev node's layers are disabled
         }
     } else {
-        return true; //if both nodes are from the same layer
+        return draw_state->draw_layer_display[current_node_layer].visible; //if both nodes are from the same layer
     }
 }
 
