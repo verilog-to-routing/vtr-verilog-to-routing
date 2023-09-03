@@ -996,9 +996,9 @@ static void highlight_blocks(double x, double y) {
 
     char msg[vtr::bufsize];
     ClusterBlockId clb_index = get_cluster_block_id_from_xy_loc(x,y);
-        if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
-            return ; /* Nothing was found on any layer*/
-        }
+    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
+        return; /* Nothing was found on any layer*/
+    }
 
         auto& cluster_ctx = g_vpr_ctx.clustering();
         auto& place_ctx = g_vpr_ctx.placement();
