@@ -697,7 +697,7 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
 
     for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
         int layer_num = rr_graph.node_layer(inode);
-        if(!draw_state->draw_layer_display[layer_num].visible){
+        if (!draw_state->draw_layer_display[layer_num].visible) {
             continue; /* Don't check RR nodes on currently invisible layers*/
         }
         switch (rr_graph.node_type(inode)) {
