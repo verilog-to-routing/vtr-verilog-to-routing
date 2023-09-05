@@ -1240,7 +1240,6 @@ static int findFirstInteger(const std::string& str) {
 static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& noc_ctx = g_vpr_ctx.noc();
-    auto& mutable_noc_ctx = g_vpr_ctx.mutable_noc();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
@@ -1336,14 +1335,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
         }
     } // end for of random router placement
 
-    // Iterate over all logical NoC routers and set the block ref for their physical routers
-    for (auto router_blk_id : router_blk_ids) {
-        // get the current location of the logical NoC router
-        const auto& loc = place_ctx.block_locs[router_blk_id].loc;
-
-        // update the referenced logical NoC router
-        set_noc_router_block_ref(loc, router_blk_id);
-    }
+    initialize_noc_router_block_refs();
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();

@@ -15,6 +15,10 @@ const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers(void) con
     return router_storage;
 }
 
+vtr::vector<NocRouterId, NocRouter>& NocStorage::get_mutable_noc_routers(void) {
+    return router_storage;
+}
+
 int NocStorage::get_number_of_noc_routers(void) const {
     return router_storage.size();
 }

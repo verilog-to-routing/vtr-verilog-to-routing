@@ -173,6 +173,15 @@ class NocStorage {
     const vtr::vector<NocRouterId, NocRouter>& get_noc_routers(void) const;
 
     /**
+     * @brief Get all the routers in the NoC. The routers can be modified.
+     * This function should be used when information on every router
+     * needs to be modified.
+     *
+     * @return A vector of routers.
+     */
+    vtr::vector<NocRouterId, NocRouter>& get_mutable_noc_routers(void);
+
+    /**
      * @return An integer representing the total number of routers within the
      * NoC.
      */

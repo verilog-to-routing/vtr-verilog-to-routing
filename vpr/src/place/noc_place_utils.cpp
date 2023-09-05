@@ -1030,3 +1030,29 @@ void set_noc_router_block_ref(const t_pl_loc& phy_router_loc, ClusterBlockId ref
     // Invalidate the corresponding logical block ID
     noc_router.set_router_block_ref(ref_logical_block_id);
 }
+
+void initialize_noc_router_block_refs() {
+    auto& mutable_noc_ctx = g_vpr_ctx.mutable_noc();
+    auto& noc_ctx = g_vpr_ctx.noc();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    // get all physical NoC routers
+    auto& phy_noc_routers = mutable_noc_ctx.noc_model.get_mutable_noc_routers();
+
+    // Invalidate all logical block references
+    for (auto& phy_noc_router : phy_noc_routers) {
+        phy_noc_router.set_router_block_ref(ClusterBlockId::INVALID());
+    }
+
+    // Get all the router clusters
+    const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+
+    // Iterate over all logical NoC routers and set the block ref for their physical routers
+    for (auto router_blk_id : router_blk_ids) {
+        // get the current location of the logical NoC router
+        const auto& loc = place_ctx.block_locs[router_blk_id].loc;
+
+        // update the referenced logical NoC router
+        set_noc_router_block_ref(loc, router_blk_id);
+    }
+}
