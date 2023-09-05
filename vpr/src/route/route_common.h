@@ -89,7 +89,7 @@ inline float get_single_rr_cong_cost(RRNodeId inode, float pres_fac) {
 
 void mark_ends(const Netlist<>& net_list, ParentNetId net_id);
 
-void mark_remaining_ends(ParentNetId net_id, const std::vector<int>& remaining_sinks);
+void mark_remaining_ends(ParentNetId net_id);
 
 void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf);
 
