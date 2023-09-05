@@ -29,3 +29,5 @@ script_params_list_add = --timing_update_type auto
 script_params_list_add = --timing_update_type full
 script_params_list_add = --timing_update_type incremental
 script_params_list_add = --timing_update_type incremental --quench_recompute_divider 999999999 #Do post-move incremental STA during quench
+script_params_list_add = --timing_update_type incremental --router_algorithm parallel --num_workers 4  # rarely exercised code path
+script_params_list_add = --timing_update_type full --router_algorithm parallel --num_workers 4

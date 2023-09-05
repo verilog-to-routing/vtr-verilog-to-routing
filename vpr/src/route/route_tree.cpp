@@ -78,10 +78,15 @@ RouteTree::RouteTree(RRNodeId _inode) {
 
 RouteTree::RouteTree(ParentNetId _inet) {
     auto& route_ctx = g_vpr_ctx.routing();
+
     RRNodeId inode = RRNodeId(route_ctx.net_rr_terminals[_inet][0]);
     _root = new RouteTreeNode(inode, RRSwitchId::INVALID(), nullptr);
     _net_id = _inet;
     _rr_node_to_rt_node[inode] = _root;
+
+    _num_sinks = route_ctx.net_rr_terminals[_inet].size() - 1;
+    _isink_to_rt_node.resize(_num_sinks);     /* 0-indexed */
+    _is_isink_reached.resize(_num_sinks + 1); /* 1-indexed */
 }
 
 /** Make a copy of rhs and return it.
@@ -105,43 +110,66 @@ void RouteTree::copy_tree_x(RouteTreeNode* lhs, const RouteTreeNode& rhs) {
 
 /* Copy constructor */
 RouteTree::RouteTree(const RouteTree& rhs) {
-    _root = copy_tree(rhs._root);
+    _isink_to_rt_node.resize(rhs._isink_to_rt_node.size());
     _net_id = rhs._net_id;
+    _root = copy_tree(rhs._root);
+    _is_isink_reached = rhs._is_isink_reached;
+    _num_sinks = rhs._num_sinks;
 }
 
 /* Move constructor:
  * Take over rhs' linked list & set it to null so it doesn't get freed.
- * Refs should stay valid after this? */
+ * Refs should stay valid after this?
+ * I don't think there's a user crazy enough to move around route trees
+ * from multiple threads, but better safe than sorry */
 RouteTree::RouteTree(RouteTree&& rhs) {
+    std::unique_lock<std::mutex> rhs_write_lock(rhs._write_mutex);
     _root = rhs._root;
     _net_id = rhs._net_id;
     rhs._root = nullptr;
     _rr_node_to_rt_node = std::move(rhs._rr_node_to_rt_node);
+    _isink_to_rt_node = std::move(rhs._isink_to_rt_node);
+    _is_isink_reached = std::move(rhs._is_isink_reached);
+    _num_sinks = rhs._num_sinks;
 }
 
 /* Copy assignment: free list, clear lookup, reload list. */
 RouteTree& RouteTree::operator=(const RouteTree& rhs) {
     if (this == &rhs)
         return *this;
+    std::unique_lock<std::mutex> write_lock(_write_mutex);
     free_list(_root);
     _rr_node_to_rt_node.clear();
-    _root = copy_tree(rhs._root);
+    _isink_to_rt_node.clear();
+    _isink_to_rt_node.resize(rhs._isink_to_rt_node.size());
     _net_id = rhs._net_id;
+    _root = copy_tree(rhs._root);
+    _is_isink_reached = rhs._is_isink_reached;
+    _num_sinks = rhs._num_sinks;
     return *this;
 }
 
 /* Move assignment:
  * Free my list, take over rhs' linked list & set it to null so it doesn't get freed.
  * Also ~steal~ acquire ownership of node lookup from rhs.
- * Refs should stay valid after this? */
+ * Refs should stay valid after this?
+ * I don't think there's a user crazy enough to move around route trees
+ * from multiple threads, but better safe than sorry */
 RouteTree& RouteTree::operator=(RouteTree&& rhs) {
     if (this == &rhs)
         return *this;
+    /* See https://stackoverflow.com/a/29988626 */
+    std::unique_lock<std::mutex> write_lock(_write_mutex, std::defer_lock);
+    std::unique_lock<std::mutex> rhs_write_lock(rhs._write_mutex, std::defer_lock);
+    std::lock(write_lock, rhs_write_lock);
     free_list(_root);
     _root = rhs._root;
     _net_id = rhs._net_id;
     rhs._root = nullptr;
     _rr_node_to_rt_node = std::move(rhs._rr_node_to_rt_node);
+    _isink_to_rt_node = std::move(rhs._isink_to_rt_node);
+    _is_isink_reached = std::move(rhs._is_isink_reached);
+    _num_sinks = rhs._num_sinks;
     return *this;
 }
 
@@ -149,6 +177,11 @@ RouteTree& RouteTree::operator=(RouteTree&& rhs) {
  * Can take a RouteTreeNode& to do an incremental update.
  * Note that update_from_heap already calls this. */
 void RouteTree::reload_timing(vtr::optional<RouteTreeNode&> from_node) {
+    std::unique_lock<std::mutex> write_lock(_write_mutex);
+    reload_timing_unlocked(from_node);
+}
+
+void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -449,8 +482,8 @@ void RouteTree::print(void) const {
  * RouteTreeNode of the SINK it adds to the routing. */
 std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
 RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    /* Lock the route tree for writing. At least on Linux this shouldn't have an impact on single-threaded code */
+    std::unique_lock<std::mutex> write_lock(_write_mutex);
 
     //Create a new subtree from the target in hptr to existing routing
     vtr::optional<RouteTreeNode&> start_of_new_subtree_rt_node, sink_rt_node;
@@ -460,19 +493,14 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
         return {vtr::nullopt, *sink_rt_node};
 
     /* Reload timing values */
-    reload_timing(start_of_new_subtree_rt_node);
+    reload_timing_unlocked(start_of_new_subtree_rt_node);
 
     if (spatial_rt_lookup) {
         update_route_tree_spatial_lookup_recur(*start_of_new_subtree_rt_node, *spatial_rt_lookup);
     }
 
-    /* if the new branch is the only child of its parent and the parent is a SOURCE,
-     * it is the first time we are creating this tree, so include the parent in the new branch return
-     * so that it can be included in occupancy calculation.
-     * TODO: probably this should be cleaner */
-    RouteTreeNode* parent = start_of_new_subtree_rt_node->_parent;
-    if (start_of_new_subtree_rt_node->_next_sibling == parent->_subtree_end && rr_graph.node_type(parent->inode) == SOURCE)
-        return {*parent, *sink_rt_node};
+    if (_net_id.is_valid()) /* We don't have this lookup if the tree isn't associated with a net */
+        _is_isink_reached[target_net_pin_index] = true;
 
     return {*start_of_new_subtree_rt_node, *sink_rt_node};
 }
@@ -527,7 +555,6 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
      * Walk through new_branch_iswitches and corresponding new_branch_inodes. */
     for (int i = new_branch_inodes.size() - 1; i >= 0; i--) {
         RouteTreeNode* new_node = new RouteTreeNode(new_branch_inodes[i], new_branch_iswitches[i], last_node);
-        add_node(last_node, new_node);
 
         e_rr_type node_type = rr_graph.node_type(new_branch_inodes[i]);
         // If is_flat is enabled, IPINs should be added, since they are used for intra-cluster routing
@@ -539,6 +566,8 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
         } else {
             new_node->re_expand = true;
         }
+
+        add_node(last_node, new_node);
 
         last_node = new_node;
 
@@ -604,6 +633,8 @@ void RouteTree::add_non_configurable_nodes(RouteTreeNode* rt_node,
 
 /** Prune a route tree of illegal branches - when there is at least 1 congested node on the path to a sink
  * Returns nullopt if the entire tree has been pruned.
+ * Updates "is_isink_reached" lookup! After prune(), if a sink is marked as reached in the lookup, it is reached
+ * legally.
  *
  * Note: does not update R_upstream/C_downstream */
 vtr::optional<RouteTree&>
@@ -611,6 +642,8 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
+
+    std::unique_lock<std::mutex> write_lock(_write_mutex);
 
     VTR_ASSERT_MSG(rr_graph.node_type(root().inode) == SOURCE, "Root of route tree must be SOURCE");
 
@@ -675,14 +708,12 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
         if (!force_prune) {
             //Valid path to sink
 
-            //Record sink as reachable
-            connections_inf.reached_rt_sink(_net_id, rt_node.inode);
-
+            //Record sink as reached
+            _is_isink_reached[rt_node.net_pin_index] = true;
             return rt_node; // Not pruned
         } else {
             //Record as not reached
-            connections_inf.toreach_rr_sink(_net_id, rt_node.net_pin_index);
-
+            _is_isink_reached[rt_node.net_pin_index] = false;
             return vtr::nullopt; // Pruned
         }
     } else if (all_children_pruned) {
@@ -789,6 +820,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
  * This is used after routing a clock net.
  * TODO: is this function doing anything? Try running without it */
 void RouteTree::freeze(void) {
+    std::unique_lock<std::mutex> write_lock(_write_mutex);
     return freeze_x(*_root);
 }
 

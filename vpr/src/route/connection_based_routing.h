@@ -14,35 +14,10 @@
 // pruning the route tree of large fanouts. Instead of rerouting to each sink of a congested net,
 // reroute only the connections to the ones that did not have a legal connection the previous time
 class Connection_based_routing_resources {
-    /** Holds remaining target pin indices (if this net has a RouteTree from the previous
-     * iteration, its prune() call will update this) (should be moved into RouteTree) */
-    vtr::vector<ParentNetId, std::vector<int>> remaining_targets;
-
-    /** Holds RRNodeIds of legally reached sinks. Used to build the external rt_node_to_sink
-     * lookup. (should be moved into RouteTree)*/
-    vtr::vector<ParentNetId, std::vector<RRNodeId>> reached_rt_sinks;
-
   public:
     Connection_based_routing_resources(const Netlist<>& net_list,
                                        const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_terminals,
                                        bool is_flat);
-    // adding to the resources when they are reached during pruning
-    // mark rr sink node as something that still needs to be reached
-    void toreach_rr_sink(ParentNetId net_id, int rr_sink_node) {
-        remaining_targets[net_id].push_back(rr_sink_node);
-    }
-    // mark rt sink node as something that has been legally reached
-    void reached_rt_sink(ParentNetId net_id, RRNodeId rt_sink) {
-        reached_rt_sinks[net_id].push_back(rt_sink);
-    }
-
-    // get a handle on the resources
-    std::vector<int>& get_remaining_targets(ParentNetId net_id) {
-        return remaining_targets[net_id];
-    }
-    std::vector<RRNodeId>& get_reached_rt_sinks(ParentNetId net_id) {
-        return reached_rt_sinks[net_id];
-    }
 
     bool sanity_check_lookup() const;
 
@@ -86,11 +61,6 @@ class Connection_based_routing_resources {
 
     //Updates the connection delay lower bound (if less than current best found)
     void update_lower_bound_connection_delay(ParentNetId net, int ipin, float delay);
-
-    void prepare_routing_for_net(ParentNetId net_id) {
-        remaining_targets[net_id].clear();
-        reached_rt_sinks[net_id].clear();
-    }
 
     // get a handle on the resources
     float get_stable_critical_path_delay() const { return last_stable_critical_path_delay; }

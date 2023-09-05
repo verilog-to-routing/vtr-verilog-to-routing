@@ -1,16 +1,21 @@
 """
     Module to utilize many of the tools needed for VTR.
 """
-from pathlib import PurePath
-from pathlib import Path
+
 import sys
 import re
 import time
 import subprocess
 import argparse
 import csv
+
 from collections import OrderedDict
+from pathlib import PurePath
+from pathlib import Path
+from typing import List, Tuple
+
 from prettytable import PrettyTable
+
 import vtr.error
 from vtr.error import CommandError
 from vtr import paths
@@ -335,7 +340,7 @@ def relax_w(min_w, relax_factor, base=2):
     return relaxed_w
 
 
-def load_list_file(list_file):
+def load_list_file(list_file: str) -> List[str]:
     """
     Loads a file containing a single value-per-line,
     potentially with '#' comments
@@ -429,6 +434,39 @@ def format_elapsed_time(time_delta):
     return "%.2f seconds" % time_delta.total_seconds()
 
 
+# Files that can be read back by VPR with their conventional extensions
+# and the command line option to read them.
+REUSABLE_FILES = {
+    "net": ["net", "--net_file"],
+    "place": ["place", "--place_file"],
+    "route": ["route", "--route_file"],
+    "rr_graph": ["rr_graph.xml", "--read_rr_graph"],
+    "lookahead": ["lookahead.bin", "--read_router_lookahead"],
+}
+
+
+def argparse_use_previous(inp: str) -> List[Tuple[str, List]]:
+    """
+    Parse a -use_previous parameter. Throw if not valid.
+    Returns a list with (run dir name, [extension, cmdline option]) elements.
+    """
+    tokens = [w.strip() for w in inp.split(",")]
+    tokens = [w for w in tokens if len(w)]
+    out = []
+    for w in tokens:
+        r = re.fullmatch(r"(\w+):(\w+)", w)
+        if not r:
+            raise argparse.ArgumentTypeError("Invalid input to -use_previous: %s" % w)
+        if not REUSABLE_FILES.get(r.group(2)):
+            raise argparse.ArgumentTypeError(
+                "Unknown file type to use_previous: %s, available types: %s"
+                % (r.group(2), ",".join(REUSABLE_FILES.keys()))
+            )
+        out.append((r.group(1), REUSABLE_FILES[r.group(2)]))
+
+    return out
+
+
 def argparse_str2bool(str_val):
     """
     parses a string boolean to a boolean
@@ -479,6 +517,18 @@ def get_latest_run_dir(base_dir):
         return None
 
     return str(PurePath(base_dir) / run_dir_name(latest_run_number))
+
+
+def get_existing_run_dir(base_dir: str, run_dir: str) -> str:
+    """
+    Get an existing run directory (from a previous run). Throw if it doesn't exist
+    """
+    path = Path(base_dir) / run_dir
+    if not path.exists():
+        raise FileNotFoundError(
+            "Couldn't find previous run directory %s in %s" % (base_dir, run_dir)
+        )
+    return str(path)
 
 
 def get_next_run_number(base_dir):
