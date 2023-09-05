@@ -11,6 +11,8 @@ static std::vector<NocTrafficFlowId> affected_traffic_flows;
 static vtr::vector<NocLinkId, double> link_congestion_costs, proposed_link_congestion_costs;
 
 static std::unordered_set<NocLinkId> affected_noc_links;
+
+static bool at_least_one_router_affected = false;
 /*********************************************************** *****************************/
 
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links, std::vector<NocLinkId>& curr_links);
@@ -72,7 +74,7 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
 
     affected_traffic_flows.clear();
     affected_noc_links.clear();
-    bool at_least_one_router_affected = false;
+    at_least_one_router_affected = false;
 
     // go through the moved blocks and process them only if they are NoC routers
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
@@ -250,7 +252,12 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
     // This is useful for cases where two moved routers were part of the same traffic flow and prevents us from re-routing the same flow twice.
     std::unordered_set<NocTrafficFlowId> reverted_traffic_flows;
 
-    bool at_least_one_logical_router = false;
+
+    // if no NoC router was detected when find_affected_noc_routers_and_update_noc_costs()
+    // was called, return immediately as the same affected block are passed to this function
+    if (!at_least_one_router_affected) {
+        return ;
+    }
 
     // go through the moved blocks and process them only if they are NoC routers
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
@@ -258,7 +265,6 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
 
         // check if the current moved block is a noc router
         if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
-            at_least_one_logical_router = true;
             // current block is a router, so re-route all the traffic flows it is a part of //
 
             // get all the associated traffic flows for the logical router cluster block
@@ -284,19 +290,16 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
         }
     }
 
-    if (at_least_one_logical_router) {
-        for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-            ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
-            // check if the current moved block is a noc router
-            if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
-                // get the old location of the logical NoC router
-                const auto& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
+        // check if the current moved block is a noc router
+        if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
+            // get the old location of the logical NoC router
+            const auto& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
 
-                // update the referenced logical NoC router
-                set_noc_router_block_ref(old_loc, blk);
-
-            }
+            // update the referenced logical NoC router
+            set_noc_router_block_ref(old_loc, blk);
         }
     }
 
