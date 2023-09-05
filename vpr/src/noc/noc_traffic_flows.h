@@ -181,11 +181,11 @@ class NocTrafficFlows {
      * @param router_block_id A unique identifier that represents the
      * a router block in the clustered netlist. This router block will
      * be the source or sink router in the retrieved traffic flows.
-     * @return const std::vector<NocTrafficFlowId>* A vector of traffic 
+     * @return const std::vector<NocTrafficFlowId>& A vector of traffic
      * flows that have the input router block parameter as the source or sink
      * in the flow.
      */
-    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const;
+    const std::vector<NocTrafficFlowId>& get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const;
 
     /**
      * @brief Gets the number of unique router blocks in the

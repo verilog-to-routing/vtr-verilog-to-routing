@@ -703,11 +703,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         place_ctx.block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
         // get all the associated traffic flows of the moved cluster blocks
-        const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
-        const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+        const auto& assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
+        const auto& assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
         // now go through the traffic flows and update the link bandwidths and traffic flow routes locally
-        for (auto& traffic_flow : *assoc_traffic_flows_block_one) {
+        for (auto traffic_flow : assoc_traffic_flows_block_one) {
             if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
                 // get the current traffic flow
                 const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
@@ -743,7 +743,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         }
 
         // this is for the second swapped block
-        for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
+        for (auto& traffic_flow : assoc_traffic_flows_block_two) {
             if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
                 // get the current traffic flow
                 const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
@@ -849,11 +849,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     place_ctx.block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
     // get all the associated traffic flows of the moved cluster blocks
-    const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
-    const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+    const auto& assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
+    const auto& assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
     // now go through the traffic flows and update the link bandwidths and traffic flow routes locally
-    for (auto& traffic_flow : *assoc_traffic_flows_block_one) {
+    for (auto traffic_flow : assoc_traffic_flows_block_one) {
         // get the current traffic flow
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
 
@@ -885,7 +885,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     }
 
     // this is for the second swapped block
-    for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
+    for (auto traffic_flow : assoc_traffic_flows_block_two) {
         // get the current traffic flow
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
 
@@ -976,10 +976,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // get all the associated traffic flows of the moved cluster blocks
     // remember that the first cluster block doesn't have any traffic flows associated to it
-    assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+    const auto& assoc_traffic_flows_block_2 = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
     // this is for the second swapped block
-    for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
+    for (auto traffic_flow : assoc_traffic_flows_block_2) {
         // get the current traffic flow
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
 
@@ -1430,11 +1430,11 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     router_where_cluster_is_placed[swap_router_block_two] = router_first_swap_cluster_location;
 
     // get all the associated traffic flows of the moved cluster blocks
-    const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
-    const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+    const std::vector<NocTrafficFlowId>& assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
+    const std::vector<NocTrafficFlowId>& assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
     // now go through the traffic flows and update the link bandwidths and traffic flow routes locally
-    for (auto& traffic_flow : *assoc_traffic_flows_block_one) {
+    for (auto traffic_flow : assoc_traffic_flows_block_one) {
         if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
             // get the current traffic flow
             const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
@@ -1471,7 +1471,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     }
 
     // now go through the traffic flows associated with the second swapped block
-    for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
+    for (auto traffic_flow : assoc_traffic_flows_block_two) {
         if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
             // get the current traffic flow
             const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
