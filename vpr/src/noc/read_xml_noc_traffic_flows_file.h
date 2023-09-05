@@ -237,7 +237,7 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
  *              associated traffic flow. False means there are some router
  *              blocks that do not have a an associated traffic flow.
  */
-bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::string& noc_flows_file);
+bool check_that_all_router_blocks_have_an_associated_traffic_flow(const NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::string& noc_flows_file);
 
 /**
  * @brief Goes through the blocks within the clustered netlist and identifies

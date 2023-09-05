@@ -67,6 +67,7 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_tile_type, noc_flows_file);
 
     noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
+    noc_ctx.noc_virtual_blocks.finished_virtual_middleman_blocks_setup();
 
     // dump out the NocTrafficFlows class information if the user requested it
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_TRAFFIC_FLOWS)) {
@@ -78,7 +79,9 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
 
 void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles) {
     // contains all traffic flows
-    NocTrafficFlows* noc_traffic_flow_storage = &noc_ctx.noc_traffic_flows_storage;
+    NocTrafficFlows& noc_traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+    // contains all NoC virtual blocks
+    auto& noc_virtual_block_storage = noc_ctx.noc_virtual_blocks;
 
     // an accepted list of attributes for the single flow tag
     std::vector<std::string> expected_single_flow_attributes = {"src", "dst", "bandwidth", "latency_cons", "priority"};
@@ -113,7 +116,10 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     verify_traffic_flow_properties(traffic_flow_bandwidth, max_traffic_flow_latency, traffic_flow_priority, single_flow_tag, loc_data);
 
     // The current flow information is legal, so store it
-    noc_traffic_flow_storage->create_noc_traffic_flow(source_router_module_name, sink_router_module_name, source_router_id, sink_router_id, traffic_flow_bandwidth, max_traffic_flow_latency, traffic_flow_priority);
+    noc_traffic_flow_storage.create_noc_traffic_flow(source_router_module_name, sink_router_module_name, source_router_id, sink_router_id, traffic_flow_bandwidth, max_traffic_flow_latency, traffic_flow_priority);
+
+    // Add a virtual middleman block for this flow
+    noc_virtual_block_storage.add_middleman_block();
 
     return;
 }
@@ -257,7 +263,7 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
                                               physical_noc_router->get_router_layer_position()});
 }
 
-bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::string& noc_flows_file) {
+bool check_that_all_router_blocks_have_an_associated_traffic_flow(const NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::string& noc_flows_file) {
     bool result = true;
 
     // contains the number of all the noc router blocks in the design

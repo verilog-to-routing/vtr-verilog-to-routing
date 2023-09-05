@@ -32,7 +32,7 @@ const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associat
     return associated_traffic_flows_ref;
 }
 
-int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
+int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) const {
     return traffic_flows_associated_to_router_blocks.size();
 }
 

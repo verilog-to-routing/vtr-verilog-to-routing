@@ -195,7 +195,7 @@ class NocTrafficFlows {
      * @return int The total number of unique routers used in
      * the traffic flows provided by the user.
      */
-    int get_number_of_routers_used_in_traffic_flows(void);
+    int get_number_of_routers_used_in_traffic_flows(void) const;
 
     /**
      * @brief Gets the routed path of traffic flow. This cannot be
