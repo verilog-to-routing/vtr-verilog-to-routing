@@ -64,6 +64,7 @@ void restore_best_placement(t_placement_checkpoint& placement_checkpoint,
          */
         if (noc_opts.noc) {
             reinitialize_noc_routing(noc_opts, costs);
+            initialize_noc_router_block_refs();
         }
 
         VTR_LOG("\nCheckpoint restored\n");

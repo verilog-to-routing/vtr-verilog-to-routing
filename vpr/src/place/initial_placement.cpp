@@ -1403,6 +1403,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
 
     if (checkpoint.get_cost() < costs.cost) {
         checkpoint.restore_checkpoint(noc_opts, costs);
+        initialize_noc_router_block_refs();
     }
 }
 
