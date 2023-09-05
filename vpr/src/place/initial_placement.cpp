@@ -1341,14 +1341,8 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
         // get the current location of the logical NoC router
         const auto& loc = place_ctx.block_locs[router_blk_id].loc;
 
-        // get the physical NoC router ID
-        auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(loc);
-
-        // get the physical NoC router
-        auto& noc_router = mutable_noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
-
-        // Set the reference to logical NoC router
-        noc_router.set_router_block_ref(router_blk_id);
+        // update the referenced logical NoC router
+        set_noc_router_block_ref(loc, router_blk_id);
     }
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
@@ -1396,7 +1390,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
             double delta_cost = calculate_noc_cost(noc_delta_c, costs, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
-            bool move_accepted = true; //assess_noc_swap(delta_cost, prob);
+            bool move_accepted = assess_noc_swap(delta_cost, prob);
 
             if (move_accepted) {
                 costs.cost += delta_cost;

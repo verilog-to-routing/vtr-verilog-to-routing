@@ -88,14 +88,8 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
             // get the previous location of the logical NoC router
             const auto& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
 
-            // get the physical NoC router ID
-            auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(old_loc);
-
-            // get the physical NoC router
-            auto& noc_router = noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
-
-            // Invalidate the corresponding logical block ID
-            noc_router.set_router_block_ref(ClusterBlockId::INVALID());
+            // Invalidate the referenced logical NoC router
+            set_noc_router_block_ref(old_loc, ClusterBlockId::INVALID());
         }
     }
 
@@ -108,14 +102,8 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
                 // get the new location of the logical NoC router
                 const auto& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
 
-                // get the physical NoC router ID
-                auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(new_loc);
-
-                // get the physical NoC router
-                auto& noc_router = noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
-
-                // update the corresponding logical block ID
-                noc_router.set_router_block_ref(blk);
+                // update the referenced logical NoC router
+                set_noc_router_block_ref(new_loc, blk);
             }
         }
     }
@@ -291,14 +279,8 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
             // get the new location of the logical NoC router
             const auto& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
 
-            // get the physical NoC router ID
-            auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(new_loc);
-
-            // get the physical NoC router
-            auto& noc_router = noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
-
-            // update the corresponding logical block ID
-            noc_router.set_router_block_ref(ClusterBlockId::INVALID());
+            // Invalidate the referenced logical NoC router
+            set_noc_router_block_ref(new_loc, ClusterBlockId::INVALID());
         }
     }
 
@@ -311,14 +293,9 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
                 // get the old location of the logical NoC router
                 const auto& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
 
-                // get the physical NoC router ID
-                auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(old_loc);
+                // update the referenced logical NoC router
+                set_noc_router_block_ref(old_loc, blk);
 
-                // get the physical NoC router
-                auto& noc_router = noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
-
-                // update the corresponding logical block ID
-                noc_router.set_router_block_ref(blk);
             }
         }
     }
@@ -1040,4 +1017,16 @@ int check_noc_phy_router_references() {
     return num_errors;
 }
 
+void set_noc_router_block_ref(const t_pl_loc& phy_router_loc, ClusterBlockId ref_logical_block_id) {
+    auto& mutable_noc = g_vpr_ctx.mutable_noc();
+    auto& noc_model = mutable_noc.noc_model;
 
+    // get the physical NoC router ID
+    auto noc_router_id = noc_model.get_router_at_grid_location(phy_router_loc);
+
+    // get the physical NoC router
+    auto& noc_router = noc_model.get_single_mutable_noc_router(noc_router_id);
+
+    // Invalidate the corresponding logical block ID
+    noc_router.set_router_block_ref(ref_logical_block_id);
+}

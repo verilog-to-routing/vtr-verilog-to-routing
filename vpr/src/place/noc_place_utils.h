@@ -493,5 +493,7 @@ void write_noc_placement_file(std::string file_name);
  */
 bool noc_routing_has_cycle();
 
+void set_noc_router_block_ref(const t_pl_loc& phy_router_loc, ClusterBlockId ref_logical_block_id);
+
 int check_noc_phy_router_references();
 #endif
