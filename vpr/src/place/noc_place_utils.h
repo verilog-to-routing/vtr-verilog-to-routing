@@ -484,16 +484,14 @@ void write_noc_placement_file(std::string file_name);
 
 /**
  * @brief This function checks whether the routing configuration for NoC traffic flows
- * can cause a deadlock in NoC. Assume we create a graph where NoC routers are vertices,
- * and traffic flow routes represent edges. This graph is a sub-graph of the NoC topology
- * as it contain a subset of its edges. If such a graph contains a cycle, we can argue
- * that deadlock is possible.
+ * can cause a deadlock in NoC. It first create a channel dependency graph from
+ * the current traffic flow routes. Then, it performs a DFS over the mentioned graph
+ * and tries to find out whether the graph has any back edges, i.e. whether a node
+ * points to one of its ancestors during depth-first search traversal.
  *
- * This functions performs a DFS over the mentioned graph and tries to find out whether
- * the graph has any back edges, i.e. whether a node points to one of its ancestors
- * during depth-first search traversal.
- *
- * @return bool Indicates whether NoC traffic flow routes form a cycle.
+ * @return bool Indicates whether the channel dependency graph has cycles
  */
 bool noc_routing_has_cycle();
+
+int check_noc_phy_router_references();
 #endif

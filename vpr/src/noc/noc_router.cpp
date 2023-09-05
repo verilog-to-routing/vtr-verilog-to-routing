@@ -5,9 +5,8 @@ NocRouter::NocRouter(int id, int grid_position_x, int grid_position_y, int layer
     : router_user_id(id)
     , router_grid_position_x(grid_position_x)
     , router_grid_position_y(grid_position_y)
-    , router_layer_position(layer_position) {
-    // initialize variables
-    router_block_ref = ClusterBlockId(0);
+    , router_layer_position(layer_position)
+    , router_block_ref(ClusterBlockId::INVALID()){
 }
 
 // getters

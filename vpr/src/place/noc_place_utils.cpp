@@ -72,6 +72,7 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
 
     affected_traffic_flows.clear();
     affected_noc_links.clear();
+    bool at_least_one_router_affected = false;
 
     // go through the moved blocks and process them only if they are NoC routers
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
@@ -79,8 +80,43 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
 
         // check if the current moved block is a noc router
         if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
+            // memorize that there is at least one router among affected blocks
+            at_least_one_router_affected = true;
             // current block is a router, so re-route all the traffic flows it is a part of
             re_route_associated_traffic_flows(blk, noc_traffic_flows_storage, noc_ctx.noc_model, *noc_ctx.noc_flows_router, updated_traffic_flows);
+
+            // get the previous location of the logical NoC router
+            const auto& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
+
+            // get the physical NoC router ID
+            auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(old_loc);
+
+            // get the physical NoC router
+            auto& noc_router = noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
+
+            // Invalidate the corresponding logical block ID
+            noc_router.set_router_block_ref(ClusterBlockId::INVALID());
+        }
+    }
+
+    if (at_least_one_router_affected) {
+        for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+            ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+
+            // check if the current moved block is a noc router
+            if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
+                // get the new location of the logical NoC router
+                const auto& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
+
+                // get the physical NoC router ID
+                auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(new_loc);
+
+                // get the physical NoC router
+                auto& noc_router = noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
+
+                // update the corresponding logical block ID
+                noc_router.set_router_block_ref(blk);
+            }
         }
     }
 
@@ -226,12 +262,15 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
     // This is useful for cases where two moved routers were part of the same traffic flow and prevents us from re-routing the same flow twice.
     std::unordered_set<NocTrafficFlowId> reverted_traffic_flows;
 
+    bool at_least_one_logical_router = false;
+
     // go through the moved blocks and process them only if they are NoC routers
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
         // check if the current moved block is a noc router
         if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
+            at_least_one_logical_router = true;
             // current block is a router, so re-route all the traffic flows it is a part of //
 
             // get all the associated traffic flows for the logical router cluster block
@@ -247,6 +286,39 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
                     // make sure we do not revert this traffic flow again
                     reverted_traffic_flows.insert(traffic_flow_id);
                 }
+            }
+
+            // get the new location of the logical NoC router
+            const auto& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
+
+            // get the physical NoC router ID
+            auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(new_loc);
+
+            // get the physical NoC router
+            auto& noc_router = noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
+
+            // update the corresponding logical block ID
+            noc_router.set_router_block_ref(ClusterBlockId::INVALID());
+        }
+    }
+
+    if (at_least_one_logical_router) {
+        for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+            ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+
+            // check if the current moved block is a noc router
+            if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
+                // get the old location of the logical NoC router
+                const auto& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
+
+                // get the physical NoC router ID
+                auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(old_loc);
+
+                // get the physical NoC router
+                auto& noc_router = noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
+
+                // update the corresponding logical block ID
+                noc_router.set_router_block_ref(blk);
             }
         }
     }
@@ -916,7 +988,9 @@ bool noc_routing_has_cycle() {
     // get the total number of NoC links
     const size_t num_noc_links = noc_ctx.noc_model.get_number_of_noc_links();
 
+    // create a channel dependency graph from current traffic flow routes
     ChannelDependencyGraph channel_dependency_graph(num_noc_links, traffic_flow_routes);
+    // check whether the created channel dependency graph has any cycles
     bool has_cycles = channel_dependency_graph.has_cycles();
 
     return has_cycles;
@@ -942,3 +1016,28 @@ static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<No
 
     return unique_links;
 }
+
+int check_noc_phy_router_references() {
+    auto& noc_ctx = g_vpr_ctx.noc();
+    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& phy_noc_routers = noc_ctx.noc_model.get_noc_routers();
+
+    int num_errors = 0;
+
+    for (const auto& phy_noc_router : phy_noc_routers) {
+        auto phy_loc = phy_noc_router.get_router_physical_location();
+        auto logical_router_blk_id = phy_noc_router.get_router_block_ref();
+        if (logical_router_blk_id != ClusterBlockId::INVALID()) {
+            auto logical_loc = place_ctx.block_locs[logical_router_blk_id].loc;
+            if (logical_loc.x != phy_loc.x || logical_loc.y != phy_loc.y || logical_loc.layer != phy_loc.layer_num) {
+                VTR_LOG("Mismatch between physical router location and its logical reference location (%i, %i, %i) vs. (%i, %i, %i) \n",
+                        logical_loc.x, logical_loc.y, logical_loc.layer, phy_loc.x, phy_loc.y, phy_loc.layer_num);
+                num_errors++;
+            }
+        }
+    }
+
+    return num_errors;
+}
+
+

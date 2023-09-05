@@ -294,6 +294,12 @@ static void check_initial_placement_legality(const t_noc_opts& noc_opts) {
                             "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock"
                             "when packets wait on each other in a cycle.\n");
         }
+
+        int noc_router_ref_errs = check_noc_phy_router_references();
+        if (noc_router_ref_errs > 0) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                            "There is at least one mismatch between NoC physical router references and logical router locations.\n");
+        }
     }
 }
 
@@ -1234,6 +1240,7 @@ static int findFirstInteger(const std::string& str) {
 static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& noc_ctx = g_vpr_ctx.noc();
+    auto& mutable_noc_ctx = g_vpr_ctx.mutable_noc();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
@@ -1329,8 +1336,26 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
         }
     } // end for of random router placement
 
+    // Iterate over all logical NoC routers and set the block ref for their physical routers
+    for (auto router_blk_id : router_blk_ids) {
+        // get the current location of the logical NoC router
+        const auto& loc = place_ctx.block_locs[router_blk_id].loc;
+
+        // get the physical NoC router ID
+        auto noc_router_id = noc_ctx.noc_model.get_router_at_grid_location(loc);
+
+        // get the physical NoC router
+        auto& noc_router = mutable_noc_ctx.noc_model.get_single_mutable_noc_router(noc_router_id);
+
+        // Set the reference to logical NoC router
+        noc_router.set_router_block_ref(router_blk_id);
+    }
+
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();
+
+    check_noc_phy_router_references();
+    std::cout << "Post random placement check is done" << std::endl;
 
     // Only NoC related costs are considered
     t_placer_costs costs;
@@ -1371,7 +1396,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
             double delta_cost = calculate_noc_cost(noc_delta_c, costs, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
-            bool move_accepted = assess_noc_swap(delta_cost, prob);
+            bool move_accepted = true; //assess_noc_swap(delta_cost, prob);
 
             if (move_accepted) {
                 costs.cost += delta_cost;
