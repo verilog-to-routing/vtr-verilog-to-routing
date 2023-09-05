@@ -217,12 +217,11 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 #ifdef VPR_USE_TBB
     //Using Thread Building Blocks
     if (num_workers == 0) {
-        //Use default concurrency (i.e. maximum conccurency)
+        //Use default concurrency (i.e. maximum concurrency)
         num_workers = tbb::this_task_arena::max_concurrency();
     }
 
     VTR_LOG("Using up to %zu parallel worker(s)\n", num_workers);
-    tbb::global_control c(tbb::global_control::max_allowed_parallelism, num_workers);
 #else
     //No parallel execution support
     if (num_workers != 1) {
@@ -237,6 +236,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     vpr_setup->clock_modeling = options->clock_modeling;
     vpr_setup->two_stage_clock_routing = options->two_stage_clock_routing;
     vpr_setup->exit_before_pack = options->exit_before_pack;
+    vpr_setup->num_workers = num_workers;
 
     VTR_LOG("\n");
     VTR_LOG("Architecture file: %s\n", options->ArchFile.value().c_str());
@@ -365,6 +365,10 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         VTR_LOG_WARN("Exiting before packing as requested.\n");
         return true;
     }
+
+    /* Set this here, because tbb::global_control doesn't control anything once it's out of scope
+     * (contrary to the name). */
+    tbb::global_control c(tbb::global_control::max_allowed_parallelism, vpr_setup.num_workers);
 
     { //Pack
         bool pack_success = vpr_pack_flow(vpr_setup, arch);
