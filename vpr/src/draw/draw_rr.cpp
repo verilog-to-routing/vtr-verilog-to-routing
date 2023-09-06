@@ -682,7 +682,10 @@ void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node,
 
 /* This is a helper function for highlight_rr_nodes(). It determines whether
  * a routing resource has been clicked on by computing a bounding box for that
- *  and checking if the mouse click hit inside its bounding box.
+ *  and checking if the mouse click hit inside its bounding box. The function does not check 
+ * routing resources that are on currently invisible layers (layer view is toggled off) to ensure that 
+ * only resources on visible layers are set to be highlighted. There is no priority based on FPGA layer 
+ * for highlighting routing resources (Does not iterate through nodes by order of layer a node is located on).
  *
  *  It returns the hit RR node's ID (or OPEN if no hit)
  */
