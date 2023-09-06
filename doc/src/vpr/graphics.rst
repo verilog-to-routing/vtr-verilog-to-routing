@@ -179,6 +179,16 @@ Each block can contain a number of flip flops (ff), look up tables (lut), and ot
 
     Visualizing Block Internals
 
+View Menu
+-----------------------------
+.. figure:: ../Images/view_menu.png
+    :align: center 
+
+    Items under view menu
+
+The view menu is displayed when there is a multi-layered architectures (more than 1 layer). 
+The visibility and transparency of a layer can be changed, which will affect blocks, nets, routing, and critical path.
+Cross-layer connections refer to connections that are in different layers. 
 
 Button Description Table
 ------------------------
