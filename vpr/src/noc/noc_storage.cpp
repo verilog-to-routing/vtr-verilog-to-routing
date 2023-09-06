@@ -1,5 +1,6 @@
 
 #include "noc_storage.h"
+#include "globals.h"
 
 NocStorage::NocStorage() {
     clear_noc();
@@ -76,6 +77,19 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
     VTR_ASSERT(hard_router_block != grid_location_to_router_id.end());
 
     return hard_router_block->second;
+}
+
+NocRouterId NocStorage::get_router_with_logical_router(ClusterBlockId logical_router_blk_id) const {
+    // used to get the location of the logical router
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    // get the location of the logical router
+    const auto& loc = place_ctx.block_locs[logical_router_blk_id].loc;
+
+    // find the physical NoC router with the same location
+    NocRouterId noc_router_id = get_router_at_grid_location(loc);
+
+    return noc_router_id;
 }
 
 // setters for the NoC

@@ -1243,6 +1243,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    auto& mutable_noc_ctx = g_vpr_ctx.mutable_noc();
 
     // Get all the router clusters and figure out how many of them exist
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
@@ -1337,11 +1338,29 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
 
     initialize_noc_router_block_refs();
 
+
+    // map virtual blocks
+    for (auto traffic_flow_id : noc_ctx.noc_traffic_flows_storage.get_all_traffic_flow_id()) {
+        // get the traffic flow
+        const auto& traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
+
+        // get the source logical NoC router
+        auto logical_source_blk_id = traffic_flow.source_router_cluster_id;
+
+        // find the physical NoC router to which the logical router is mapped
+        auto phy_noc_router_id = noc_ctx.noc_model.get_router_with_logical_router(logical_source_blk_id);
+
+        // get the virtual block associated with this traffic flow
+        auto& virtual_block = mutable_noc_ctx.noc_virtual_blocks.get_mutable_middleman_block(traffic_flow_id);
+
+        // map the virtual block to the source router
+        virtual_block.set_mapped_noc_router_id(phy_noc_router_id);
+    }
+
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();
 
     check_noc_phy_router_references();
-    std::cout << "Post random placement check is done" << std::endl;
 
     // Only NoC related costs are considered
     t_placer_costs costs;

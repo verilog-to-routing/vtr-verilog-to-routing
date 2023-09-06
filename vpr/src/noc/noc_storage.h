@@ -294,6 +294,8 @@ class NocStorage {
      */
     NocRouterId get_router_at_grid_location(const t_pl_loc& hard_router_location) const;
 
+    NocRouterId get_router_with_logical_router(ClusterBlockId logical_router_blk_id) const;
+
     // setters for the NoC
 
     /**
