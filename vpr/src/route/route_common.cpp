@@ -520,14 +520,13 @@ void mark_ends(const Netlist<>& net_list, ParentNetId net_id) {
     }
 }
 
-void mark_remaining_ends(ParentNetId net_id, const std::vector<int>& remaining_sinks) {
-    // like mark_ends, but only performs it for the remaining sinks of a net
-    RRNodeId inode;
-
+/** like mark_ends, but only performs it for the remaining sinks of a net */
+void mark_remaining_ends(ParentNetId net_id) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+    const auto& tree = route_ctx.route_trees[net_id].value();
 
-    for (int sink_pin : remaining_sinks) {
-        inode = route_ctx.net_rr_terminals[net_id][sink_pin];
+    for (int sink_pin : tree.get_remaining_isinks()) {
+        RRNodeId inode = route_ctx.net_rr_terminals[net_id][sink_pin];
         ++route_ctx.rr_node_route_inf[inode].target_flag;
     }
 }
