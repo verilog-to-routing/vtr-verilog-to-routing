@@ -26,10 +26,11 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat, bool
             }
         }
     }
-    t_draw_state* draw_state = get_draw_state_vars();
+
     //Record number of used resources in each x/y channel
     for (RRNodeId rr_node : rr_nodes) {
         if (!is_print) {
+            t_draw_state* draw_state = get_draw_state_vars();
             int layer_num = rr_graph.node_layer(rr_node);
             if (!draw_state->draw_layer_display[layer_num].visible)
                 continue; // don't count usage if layer is not visible
