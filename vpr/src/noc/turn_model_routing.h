@@ -8,7 +8,12 @@ class TurnModelRouting : public NocRouting {
   public:
     ~TurnModelRouting() override;
 
-    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
+    void route_flow(NocRouterId src_router_id,
+                    NocRouterId sink_router_id,
+                    NocTrafficFlowId traffic_flow_id,
+                    std::vector<NocLinkId>& flow_route,
+                    const NocStorage& noc_model,
+                    const NocVirtualBlockStorage& noc_virtual_blocks) override;
 
   protected:
     /**

@@ -29,7 +29,8 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
                                   NocRouterId dst_router_id,
                                   NocTrafficFlowId traffic_flow_id,
                                   std::vector<NocLinkId>& flow_route,
-                                  const NocStorage& noc_model) {
+                                  const NocStorage& noc_model,
+                                  const NocVirtualBlockStorage& noc_virtual_blocks) {
     // ensure that the route container is empty
     flow_route.clear();
 

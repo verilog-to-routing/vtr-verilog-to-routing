@@ -171,7 +171,11 @@ void commit_noc_costs();
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
  */
-std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model, NocTrafficFlows& noc_traffic_flows_storage, NocRouting& noc_flows_router);
+std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
+                                           const NocStorage& noc_model,
+                                           const NocVirtualBlockStorage& noc_virtual_blocks,
+                                           NocTrafficFlows& noc_traffic_flows_storage,
+                                           NocRouting& noc_flows_router);
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -219,7 +223,12 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  * @param updated_traffic_flows Keeps track of traffic flows that have been
  * re-routed. Used to prevent re-routing the same traffic flow multiple times.
  */
-void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
+void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
+                                       NocTrafficFlows& noc_traffic_flows_storage,
+                                       NocStorage& noc_model,
+                                       NocRouting& noc_flows_router,
+                                       std::unordered_set<NocTrafficFlowId>& updated_traffic_flows,
+                                       const NocVirtualBlockStorage& noc_virtual_blocks);
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical
@@ -250,7 +259,11 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
  */
-void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router);
+void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
+                           NocTrafficFlows& noc_traffic_flows_storage,
+                           NocStorage& noc_model,
+                           NocRouting& noc_flows_router,
+                           const NocVirtualBlockStorage& noc_virtual_blocks);
 
 /**
  * @brief Recompute the NoC costs (aggregate bandwidth and latency) by

@@ -1245,6 +1245,8 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto& mutable_noc_ctx = g_vpr_ctx.mutable_noc();
 
+    // TODO: break down this function into smaller ones
+
     // Get all the router clusters and figure out how many of them exist
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
     const int num_router_clusters = router_blk_ids.size();

@@ -4,7 +4,12 @@
 
 BFSRouting::~BFSRouting() = default;
 
-void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) {
+void BFSRouting::route_flow(NocRouterId src_router_id,
+                            NocRouterId sink_router_id,
+                            NocTrafficFlowId traffic_flow_id,
+                            std::vector<NocLinkId>& flow_route,
+                            const NocStorage& noc_model,
+                            const NocVirtualBlockStorage& noc_virtual_blocks) {
     const NocRouter& src_router = noc_model.get_single_noc_router(src_router_id);
     const NocRouter& sink_router = noc_model.get_single_noc_router(sink_router_id);
 
