@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cerrno> //For errno
 #include <cstring>
+#include <filesystem>
 #include <memory>
 #include <sstream>
 
@@ -455,28 +456,15 @@ bool file_exists(const char* filename) {
     return false;
 }
 
-/* Date:July 17th, 2013
- * Author: Daniel Chen */
 /**
  * @brief Checks the file extension of an file to ensure correct file format. 
  *
- * Returns true if format is correct, and false otherwise.
- * @note This is probably a fragile check, but at least should 
- * prevent common problems such as swapping architecture file 
- * and blif file on the VPR command line.
+ * Returns true if the extension is correct, and false otherwise.
  */
-bool check_file_name_extension(const char* file_name,
-                               const char* file_extension) {
-    const char* str;
-    int len_extension;
-
-    len_extension = std::strlen(file_extension);
-    str = std::strstr(file_name, file_extension);
-    if (str == nullptr || (*(str + len_extension) != '\0')) {
-        return false;
-    }
-
-    return true;
+bool check_file_name_extension(std::string file_name,
+                               std::string file_extension) {
+    auto ext = std::filesystem::path(file_name).extension();
+    return ext == file_extension;
 }
 
 /**

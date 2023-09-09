@@ -5,11 +5,11 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 
-e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(blk_type, true, &net_from, &pin_from);
+    ClusterBlockId b_from = propose_block_to_move(proposed_action.logical_blk_type_index, true, &net_from, &pin_from);
 
     if (!b_from) { //No movable block found
         return e_create_move::ABORT;
@@ -46,7 +46,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             place_move_ctx.Y_coord.push_back(place_ctx.block_locs[bnum].loc.y);
         }
     }
-    if (place_move_ctx.X_coord.size() != 0) {
+    if (!place_move_ctx.X_coord.empty()) {
         max_x = *(std::max_element(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end()));
         min_x = *(std::min_element(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end()));
         max_y = *(std::max_element(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end()));
@@ -60,9 +60,6 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     //Get the most critical output of the node
     int xt, yt;
-    xt = 0;
-    yt = 0;
-
     ClusterBlockId b_output = cluster_ctx.clb_nlist.net_pin_block(net_from, pin_from);
     t_pl_loc output_loc = place_ctx.block_locs[b_output].loc;
     xt = output_loc.x;
@@ -100,10 +97,9 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
-    t_range_limiters range_limiters;
-    range_limiters.original_rlim = rlim;
-    range_limiters.dm_rlim = placer_opts.place_dm_rlim;
-    range_limiters.first_rlim = place_move_ctx.first_rlim;
+    t_range_limiters range_limiters{rlim,
+                                    place_move_ctx.first_rlim,
+                                    placer_opts.place_dm_rlim};
 
     // Try to find a legal location inside the feasible region
     if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to, b_from)) {

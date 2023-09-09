@@ -28,7 +28,8 @@ enum class e_move_type {
     CRIT_UNIFORM,
     FEASIBLE_REGION,
     NUMBER_OF_AUTO_MOVES,
-    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES
+    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
+    INVALID_MOVE
 };
 
 enum class e_create_move {
@@ -43,8 +44,8 @@ enum class e_create_move {
  *        random block type to be chosen to be swapped.
  */
 struct t_propose_action {
-    e_move_type move_type;         ///<move type that propose_action chooses to perform
-    t_logical_block_type blk_type; ///<propose_action can choose block type or leave it empty to allow any block type to be chosen
+    e_move_type move_type = e_move_type::INVALID_MOVE; ///<move type that propose_action chooses to perform
+    int logical_blk_type_index = -1;                   ///<propose_action can choose block type or set it to -1 to allow any block type to be chosen
 };
 
 /**
@@ -84,7 +85,7 @@ struct t_range_limiters {
 };
 
 //Records a reasons for an aborted move
-void log_move_abort(std::string reason);
+void log_move_abort(const std::string& reason);
 
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
@@ -112,14 +113,14 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 /**
  * @brief Propose block for the RL agent based on required block type.
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: Index of the block type being perturbed, which is used to select the proper agent data
  *  @param highly_crit_block: block should be chosen from highly critical blocks.
  *  @param net_from: if block is chosen from highly critical blocks, should store the critical net id.
  *  @param pin_from: if block is chosen from highly critical blocks, should save its critical pin id.
  *
  * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
  */
-ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+ClusterBlockId propose_block_to_move(int& logical_blk_type_index, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
 
 /**
  * @brief Select a random block to be swapped with another block
@@ -131,11 +132,11 @@ ClusterBlockId pick_from_block();
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: the agent type of the moving block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(t_logical_block_type blk_type);
+ClusterBlockId pick_from_block(int logical_blk_type_index);
 
 /**
  * @brief Select a random highly critical block to be swapped with another block
@@ -147,11 +148,11 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: the agent type of the moving block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type blk_type);
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, int logical_blk_type_index);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
@@ -203,7 +204,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from);
 
-std::string move_type_to_string(e_move_type);
+const std::string& move_type_to_string(e_move_type);
 
 /* find to loaction helper functions */
 /**
@@ -322,30 +323,5 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
                                                       int layer_num);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
-
-/**
- * @brief find the physical block type index associated to the agent block type
- *
- * Agent block types are defined as physical block types used by the netlist.
- * More information on agent block type can be found on the placement context in "vpr_context.h"
- *
- * @return physical block type index associated with the agent_blk_type_index
- */
-int convert_agent_to_phys_blk_type(int agent_blk_type_index);
-
-/**
- * @brief find the agent block type index associated to the physical block type
- *
- * Agent block types are defined as physical block types used by the netlist.
- * More information on agent block type can be found on the placement context in "vpr_context.h"
- *
- * @return agent block type index associated with the phys_blk_type_index
- */
-int convert_phys_to_agent_blk_type(int phys_blk_type_index);
-
-/**
- * @brief return number of available block types in the RLplace agent.
- */
-int get_num_agent_types();
 
 #endif
