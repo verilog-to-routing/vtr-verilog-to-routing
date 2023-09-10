@@ -65,34 +65,33 @@
  * wire has been clicked on by the user.
  * TODO: Fix this for global routing, currently for detailed only.
  */
-ezgl::rectangle draw_get_rr_chan_bbox(int inode) {
+ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
     double left = 0, right = 0, top = 0, bottom = 0;
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto rr_node = RRNodeId(inode);
 
-    switch (rr_graph.node_type(rr_node)) {
+    switch (rr_graph.node_type(inode)) {
         case CHANX:
-            left = draw_coords->tile_x[rr_graph.node_xlow(rr_node)];
-            right = draw_coords->tile_x[rr_graph.node_xhigh(rr_node)]
+            left = draw_coords->tile_x[rr_graph.node_xlow(inode)];
+            right = draw_coords->tile_x[rr_graph.node_xhigh(inode)]
                     + draw_coords->get_tile_width();
-            bottom = draw_coords->tile_y[rr_graph.node_ylow(rr_node)]
+            bottom = draw_coords->tile_y[rr_graph.node_ylow(inode)]
                      + draw_coords->get_tile_width()
-                     + (1. + rr_graph.node_track_num(rr_node));
-            top = draw_coords->tile_y[rr_graph.node_ylow(rr_node)]
+                     + (1. + rr_graph.node_track_num(inode));
+            top = draw_coords->tile_y[rr_graph.node_ylow(inode)]
                   + draw_coords->get_tile_width()
-                  + (1. + rr_graph.node_track_num(rr_node));
+                  + (1. + rr_graph.node_track_num(inode));
             break;
         case CHANY:
-            left = draw_coords->tile_x[rr_graph.node_xlow(rr_node)]
+            left = draw_coords->tile_x[rr_graph.node_xlow(inode)]
                    + draw_coords->get_tile_width()
-                   + (1. + rr_graph.node_track_num(rr_node));
-            right = draw_coords->tile_x[rr_graph.node_xlow(rr_node)]
+                   + (1. + rr_graph.node_track_num(inode));
+            right = draw_coords->tile_x[rr_graph.node_xlow(inode)]
                     + draw_coords->get_tile_width()
-                    + (1. + rr_graph.node_track_num(rr_node));
-            bottom = draw_coords->tile_y[rr_graph.node_ylow(rr_node)];
-            top = draw_coords->tile_y[rr_graph.node_yhigh(rr_node)]
+                    + (1. + rr_graph.node_track_num(inode));
+            bottom = draw_coords->tile_y[rr_graph.node_ylow(inode)];
+            top = draw_coords->tile_y[rr_graph.node_yhigh(inode)]
                   + draw_coords->get_tile_width();
             break;
         default:
@@ -166,34 +165,36 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 /* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
-void highlight_nets(char* message, int hit_node, bool is_flat) {
+void highlight_nets(char* message, RRNodeId hit_node, bool is_flat) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
+
+    /* Don't crash if there's no routing */
+    if (route_ctx.route_trees.empty())
+        return;
 
     t_draw_state* draw_state = get_draw_state_vars();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!route_ctx.route_trees.empty()) {
-            if (!route_ctx.route_trees[net_id])
-                continue;
-            ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        if (!route_ctx.route_trees[parent_id])
+            continue;
 
-            for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
-                int inode = size_t(rt_node.inode);
-                if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
-                    draw_state->net_color[net_id] = draw_state->draw_rr_node[inode].color;
-                    if (inode == hit_node) {
-                        std::string orig_msg(message);
-                        sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(),
-                                size_t(net_id),
-                                cluster_ctx.clb_nlist.net_name(net_id).c_str());
-                    }
-                } else if (draw_state->draw_rr_node[inode].color
-                           == ezgl::WHITE) {
-                    // If node is de-selected.
-                    draw_state->net_color[net_id] = ezgl::BLACK;
-                    break;
+        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+            RRNodeId inode = rt_node.inode;
+            if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+                draw_state->net_color[net_id] = draw_state->draw_rr_node[inode].color;
+                if (inode == hit_node) {
+                    std::string orig_msg(message);
+                    sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(),
+                            size_t(net_id),
+                            cluster_ctx.clb_nlist.net_name(net_id).c_str());
                 }
+            } else if (draw_state->draw_rr_node[inode].color
+                       == ezgl::WHITE) {
+                // If node is de-selected.
+                draw_state->net_color[net_id] = ezgl::BLACK;
+                break;
             }
         }
     }
@@ -205,15 +206,16 @@ void highlight_nets(char* message, int hit_node, bool is_flat) {
  * fan_in into the node in blue and fan_out from the node in red. If de-highlighted,
  * de-highlight its fan_in and fan_out.
  */
-void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
+void draw_highlight_fan_in_fan_out(const std::set<RRNodeId>& nodes) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+
     for (auto node : nodes) {
         /* Highlight the fanout nodes in red. */
-        for (t_edge_size iedge = 0, l = rr_graph.num_edges(RRNodeId(node));
+        for (t_edge_size iedge = 0, l = rr_graph.num_edges(node);
              iedge < l; iedge++) {
-            int fanout_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
+            RRNodeId fanout_node = rr_graph.edge_sink_node(node, iedge);
 
             if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA
                 && draw_state->draw_rr_node[fanout_node].color
@@ -229,22 +231,21 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
         }
 
         /* Highlight the nodes that can fanin to this node in blue. */
-        for (const RRNodeId& inode : rr_graph.nodes()) {
-            for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l;
-                 iedge++) {
-                int fanout_node = size_t(rr_graph.edge_sink_node(inode, iedge));
+        for (RRNodeId inode : rr_graph.nodes()) {
+            for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l; iedge++) {
+                RRNodeId fanout_node = rr_graph.edge_sink_node(inode, iedge);
                 if (fanout_node == node) {
                     if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA
-                        && draw_state->draw_rr_node[size_t(inode)].color
+                        && draw_state->draw_rr_node[inode].color
                                != ezgl::MAGENTA) {
                         // If node is highlighted, highlight its fanin
-                        draw_state->draw_rr_node[size_t(inode)].color = ezgl::BLUE;
-                        draw_state->draw_rr_node[size_t(inode)].node_highlighted = true;
+                        draw_state->draw_rr_node[inode].color = ezgl::BLUE;
+                        draw_state->draw_rr_node[inode].node_highlighted = true;
                     } else if (draw_state->draw_rr_node[node].color
                                == ezgl::WHITE) {
                         // If node is de-highlighted, de-highlight its fanin
-                        draw_state->draw_rr_node[size_t(inode)].color = DEFAULT_RR_NODE_COLOR;
-                        draw_state->draw_rr_node[size_t(inode)].node_highlighted = false;
+                        draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+                        draw_state->draw_rr_node[inode].node_highlighted = false;
                     }
                 }
             }
@@ -252,8 +253,8 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
     }
 }
 
-std::set<int> draw_expand_non_configurable_rr_nodes(int from_node) {
-    std::set<int> expanded_nodes;
+std::set<RRNodeId> draw_expand_non_configurable_rr_nodes(RRNodeId from_node) {
+    std::set<RRNodeId> expanded_nodes;
     draw_expand_non_configurable_rr_nodes_recurr(from_node, expanded_nodes);
     return expanded_nodes;
 }
@@ -275,10 +276,9 @@ void deselect_all() {
     for (auto net_id : cluster_ctx.clb_nlist.nets())
         draw_state->net_color[net_id] = ezgl::BLACK;
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        size_t i = (size_t)rr_id;
-        draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
-        draw_state->draw_rr_node[i].node_highlighted = false;
+    for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
+        draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+        draw_state->draw_rr_node[inode].node_highlighted = false;
     }
     get_selected_sub_block_info().clear();
 }

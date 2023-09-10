@@ -23,7 +23,7 @@
  * design.
  * 
  * This class will be primarily used during 
- * placement to identify which routers inside the NoC(NocStorage) need to be
+ * placement to identify which routers inside the NoC ( NocStorage ) need to be
  * routed to each other.This is important since the router modules can be moved
  * around to different tiles on the FPGA device.
  * 
@@ -31,6 +31,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 #include "clustered_netlist_fwd.h"
 #include "noc_data_types.h"
@@ -46,12 +47,14 @@
  * 
  */
 struct t_noc_traffic_flow {
-    /** stores the partial names of the router blocks communicating within this traffic flow. Names must uniquely identify router blocks in the netlist.*/
+    /** stores the partial name of the source router block communicating within this traffic flow. Names must uniquely identify router blocks in the netlist.*/
     std::string source_router_module_name;
+    /** stores the partial name of the sink router block communicating within this traffic flow. Names must uniquely identify router blocks in the netlist.*/
     std::string sink_router_module_name;
 
-    /** stores the block id of the two router blocks communicating within this traffic flow. This can be used to retrieve the block information from the clustered netlist*/
+    /** stores the block id of the source router block communicating within this traffic flow. This can be used to retrieve the block information from the clustered netlist*/
     ClusterBlockId source_router_cluster_id;
+    /** stores the block id of the destination router block communicating within this traffic flow. This can be used to retrieve the block information from the clustered netlist*/
     ClusterBlockId sink_router_cluster_id;
 
     /** The bandwidth of the information transferred between the two routers. Units in bytes per second. This parameters will be used to update the link usage in the noc model after routing the traffic flow.*/
@@ -65,8 +68,8 @@ struct t_noc_traffic_flow {
 
     /** Constructor initializes all variables*/
     t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency, int flow_priority)
-        : source_router_module_name(source_router_name)
-        , sink_router_module_name(sink_router_name)
+        : source_router_module_name(std::move(source_router_name))
+        , sink_router_module_name(std::move(sink_router_name))
         , source_router_cluster_id(source_router_id)
         , sink_router_cluster_id(sink_router_id)
         , traffic_flow_bandwidth(flow_bandwidth)
@@ -252,7 +255,7 @@ class NocTrafficFlows {
      * at the sink router.
      * @param traffic_flow_priority The importance of a given traffic flow.
      */
-    void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
+    void create_noc_traffic_flow(const std::string& source_router_module_name, const std::string& sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
 
     /**
      * @brief Copies the passed in router_cluster_id_in_netlist vector to the
@@ -302,7 +305,7 @@ class NocTrafficFlows {
      * @return true The block has traffic flows that it is a part of
      * @return false The block has no traffic flows it is a prt of
      */
-    bool check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id);
+    bool check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id) const;
 
     /**
      * @brief Writes out the NocTrafficFlows class information to a file.

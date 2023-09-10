@@ -60,6 +60,14 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     }
 }
 
+void RRGraphBuilder::init_edge_remap(bool val) {
+    node_storage_.init_edge_remap(val);
+}
+
+void RRGraphBuilder::clear_temp_storage() {
+    node_storage_.clear_temp_storage();
+}
+
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
     node_storage_.clear();

@@ -1074,6 +1074,95 @@ To aid in handling large graphs, rr_graph files can also be :ref:`saved in <file
 
 .. _end:
 
+
+Network-on-Chip (NoC) Traffic Flows Format (.flows)
+---------------------------------------------------
+
+In order to co-optimize for the NoC placement VPR needs expected performance metrics of the NoC.
+VPR defines the performance requirements of the NoC as traffic flows. A traffic flow is a one-way communication between two
+logical routers in a design. The traffic flows provide the communications bandwidth and Quality of
+Service (QoS) requirements. The traffic flows are application dependant and need to be supplied
+externally by a user. The traffic flows file is an XML based file format which designers
+can use to describe the traffic flows in a given application.
+
+.. note:: Use :option:`vpr --noc_traffic_flows` to specify an NoC traffic flows file to be loaded.
+
+Top Level Tags
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first tag in all NoC traffic flow files is the ``<traffic_flows>`` tag that contains detailed subtags for each catagory in the NoC traffic flows.
+
+The ``traffic_flows`` tag contains the following tags:
+
+* ``<single_flow>``
+        * ``<single_flow>``content``</single_flow>`` 
+
+Detailed Tag Information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Single Flow
+^^^^^^^^^^^
+
+A given traffic flow information is contained within the ``single_flow`` tag. There can be 0 or more single flow tags.
+0 would indicate that an application does not have any traffic flows.
+
+.. rrgraph:tag:: <channel src="logical_router_name" dst="logical_router_name" bandwidth="float" latency_cons="float" priority="int"/>
+
+    :opt_param latency_cons:
+        A floating point number which indicates the upper bound
+        on the latency for a traffic flow. This is in units of seconds and is an optional attribute.
+        If this attribute is not provided then the CAD tool will try to reduce the latency as much
+        as possible.
+
+    :opt_param priority:
+        An integer which represents the relative importance of the traffic flow
+        against all other traffic flows in an application. For example, a traffic flow with priority
+        10 would be weighted ten times more than a traffic flow with priority 1. This is an
+        optional attribute and by default all traffic flows have a priority of 1
+
+    :req_param src:
+        A string which represents a logical router name in an application.
+        This logical router is the source endpoint for the traffic flow being described by the cor-
+        responding single flow tag. The logical router name must match the name of the router
+        as found in the clustered netlist; since this name assigned by the CAD tool, instead of
+        having the designer go through the clustered netlist to retrieve the exact name we instead
+        allow designers to use regex patters in the logical router name. For example, instead of
+        ”noc_router_adapter_block:noc_router_layer1_mvm2:slave_tready_reg0” user could pro-
+        vide ”.*noc_router_layer1_mvm2.*”. This allows users to provide the instance name for a given logical router
+        module in the design. This is a required attribute.
+    
+    :req_param dst:
+        A string which represents a logical router name in an application.
+        This logical router is the deastination endpoint for the traffic flow being described by the cor-
+        responding single flow tag. The logical router name must match the name of the router
+        as found in the clustered netlist; since this name assigned by the CAD tool, instead of
+        having the designer go through the clustered netlist to retrieve the exact name we instead
+        allow designers to use regex patters in the logical router name. For example, instead of
+        ”noc_router_adapter_block:noc_router_layer1_mvm3:slave_tready_reg0” user could pro-
+        vide ”.*noc_router_layer1_mvm3.*”. This allows users to provide the instance name for a given logical router
+        module in the design. This is a required attribute.
+
+    :req_param bandwidth:
+        A floating point number which indicates the data size in the
+        traffic flow communication. This is in units of bits-per-second (bps) and is a required
+        attribute.
+
+NoC Traffic Flows File Example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An example of what a NoC traffic flows file looks like is shown below:
+
+.. code-block:: xml
+    :caption: Example of a NoC traffic flows file in XML format
+    :linenos:
+
+    <traffic_flows>
+        <single_flow src="m0" dst="m1" bandwidth="2.3e9" latency_cons="3e-9"/>
+        <single_flow src="m0" dst="m2" bandwidth="5e8"/>
+        <single_flow src="ddr" dst="m0" bandwidth="1.3e8" priority=3/>
+        <single_flow src="m3" dst="m2" bandwidth="4.8e9" latency_cons="5e-9" priority=2/>
+    </traffic_flows>
+
 Block types usage summary (.txt .xml or .json)
 -----------------------------------------
 

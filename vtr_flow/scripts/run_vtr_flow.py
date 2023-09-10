@@ -187,7 +187,7 @@ def vtr_command_argparser(prog=None):
     house_keeping.add_argument(
         "-temp_dir",
         default=None,
-        help="Directory to run the flow in (will be created if non-existant).",
+        help="Directory to run the flow in (will be created if non-existent).",
     )
 
     house_keeping.add_argument("-name", default=None, help="Name for this run to be output.")
@@ -338,6 +338,18 @@ def vtr_command_argparser(prog=None):
         dest="top_module",
         help="Specify the name of the module in the design that should be considered as top",
     )
+    odin.add_argument(
+        "-mults_ratio",
+        default=-1.0,
+        dest="mults_ratio",
+        help="Specify the percentage of multipliers optimizations",
+    )
+    odin.add_argument(
+        "-adders_ratio",
+        default=-1.0,
+        dest="adders_ratio",
+        help="Specify the percentage of adders optimizations",
+    )
     #
     # PARMYS arguments
     #
@@ -387,10 +399,16 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR to verify the routing resource graph.",
     )
     vpr.add_argument(
+        "-no_second_run",
+        default=False,
+        action="store_true",
+        help="Don't run VPR a second time to check if it can read intermediate files.",
+    )
+    vpr.add_argument(
         "-rr_graph_ext",
         default=".xml",
         type=str,
-        help="Determines the output rr_graph files' extention.",
+        help="Determines the output rr_graph files' extension.",
     )
     vpr.add_argument(
         "-check_route",
@@ -415,6 +433,22 @@ def vtr_command_argparser(prog=None):
         default=False,
         action="store_true",
         help="Do a second-run of the incremental analysis to compare the result files",
+    )
+    vpr.add_argument(
+        "-verify_inter_cluster_router_lookahead",
+        default=False,
+        action="store_true",
+        help="Tells VPR to verify the inter-cluster router lookahead.",
+    )
+    vpr.add_argument(
+        "-verify_intra_cluster_router_lookahead",
+        default=False,
+        action="store_true",
+        help="Tells VPR to verify the intra-cluster router lookahead. \
+        Intra-cluster router lookahead information \
+        is stored in a separate data structure than the \
+        inter-cluster router lookahead information, \
+        and they are written into separate files.",
     )
 
     return parser
@@ -547,6 +581,7 @@ def vtr_command_main(arg_list, prog=None):
             relax_w_factor=args.relax_w_factor,
             check_route=args.check_route,
             check_place=args.check_place,
+            no_second_run=args.no_second_run,
         )
         error_status = "OK"
     except vtr.VtrError as error:
@@ -555,7 +590,7 @@ def vtr_command_main(arg_list, prog=None):
         )
 
     except KeyboardInterrupt as error:
-        print("{} recieved keyboard interrupt".format(prog))
+        print("{} received keyboard interrupt".format(prog))
         exit_status = 4
         return_status = exit_status
 
@@ -676,6 +711,8 @@ def process_odin_args(args):
     odin_args["parser"] = args.parser
     odin_args["adder_type"] = args.adder_type
     odin_args["top_module"] = args.top_module
+    odin_args["mults_ratio"] = args.mults_ratio
+    odin_args["adders_ratio"] = args.adders_ratio
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True
@@ -712,6 +749,13 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     if args.verify_rr_graph:
         rr_graph_out_file = "rr_graph" + args.rr_graph_ext
         vpr_args["write_rr_graph"] = rr_graph_out_file
+    if args.verify_inter_cluster_router_lookahead:
+        vpr_args["write_router_lookahead"] = "inter_cluster_router_lookahead.capnp"
+    if args.verify_intra_cluster_router_lookahead:
+        assert (
+            "flat_routing" in vpr_args
+        ), "Flat router should be enabled if intra cluster router lookahead is to be verified"
+        vpr_args["write_intra_cluster_router_lookahead"] = "intra_cluster_router_lookahead.capnp"
 
     return vpr_args
 

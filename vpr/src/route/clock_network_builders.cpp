@@ -321,8 +321,8 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                                  clock_graph);
 
             // connect drive point to each half rib using a directed switch
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive.switch_idx);
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive.switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive.switch_idx, false);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive.switch_idx, false);
         }
     }
 }
@@ -662,8 +662,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                  clock_graph);
 
             // connect drive point to each half spine using a directed switch
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive.switch_idx);
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive.switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive.switch_idx, false);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive.switch_idx, false);
         }
     }
 }

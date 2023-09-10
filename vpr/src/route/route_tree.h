@@ -30,9 +30,9 @@
  *      if (found_path)
  *           std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, ...);
  *
- * Congested paths in a tree can be pruned using RouteTree::prune(). Note that updates to a tree require an update to the global occupancy state via
- * pathfinder_update_cost_from_route_tree(). In addition, RouteTree::prune() depends on this global data to find congestions, so the flow to
- * prune a tree looks like this:
+ * Congested paths in a tree can be pruned using RouteTree::prune(). This is done between iterations to keep only the legally routed section.
+ * Note that updates to a tree require an update to the global occupancy state via pathfinder_update_cost_from_route_tree().
+ * RouteTree::prune() depends on this global data to find congestions, so the flow to prune a tree is somewhat convoluted:
  *
  *      RouteTree tree2 = tree;
  *      // Prune the copy (using congestion data before subtraction)
@@ -83,6 +83,7 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <mutex>
 #include <unordered_map>
 
 #include "connection_based_routing_fwd.h"
@@ -90,6 +91,8 @@
 #include "vtr_assert.h"
 #include "spatial_route_tree_lookup.h"
 #include "vtr_optional.h"
+#include "vtr_range.h"
+#include "vtr_vec_id_set.h"
 
 /**
  * @brief A single route tree node
@@ -333,12 +336,15 @@ class RouteTree {
     RouteTree& operator=(const RouteTree&);
     RouteTree& operator=(RouteTree&&);
 
-    /** Return a RouteTree initialized to inode. */
+    /** Return a RouteTree initialized to inode.
+     * Note that prune() won't work on a RouteTree initialized this way (see _net_id comments) */
     RouteTree(RRNodeId inode);
-    /** Return a RouteTree initialized to the source of nets[inet]. */
+    /** Return a RouteTree initialized to the source of nets[inet].
+     * Use this constructor where possible (needed for prune() to work) */
     RouteTree(ParentNetId inet);
 
     ~RouteTree() {
+        std::unique_lock<std::mutex> write_lock(_write_mutex);
         free_list(_root);
     }
 
@@ -347,17 +353,33 @@ class RouteTree {
      * is the heap pointer of the SINK that was reached, and target_net_pin_index
      * is the net pin index corresponding to the SINK that was reached. This routine
      * returns a tuple: RouteTreeNode of the branch it adds to the route tree and
-     * RouteTreeNode of the SINK it adds to the routing. */
+     * RouteTreeNode of the SINK it adds to the routing.
+     * Locking operation: only one thread can update_from_heap() a RouteTree at a time. */
     std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
     update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat);
 
     /** Reload timing values (R_upstream, C_downstream, Tdel).
      * Can take a RouteTreeNode& to do an incremental update.
-     * Note that update_from_heap already does this, but prune() doesn't */
+     * Note that update_from_heap already does this, but prune() doesn't.
+     * Locking operation: only one thread can reload_timing() for a RouteTree at a time. */
     void reload_timing(vtr::optional<RouteTreeNode&> from_node = vtr::nullopt);
 
-    /** Get the RouteTreeNode corresponding to the RRNodeId. Returns nullopt if not found. */
+    /** Get the RouteTreeNode corresponding to the RRNodeId. Returns nullopt if not found.
+     * SINK nodes may be added to the tree multiple times. In that case, this will return the last one added.
+     * Use find_by_isink for a more accurate lookup. */
     vtr::optional<const RouteTreeNode&> find_by_rr_id(RRNodeId rr_node) const;
+
+    /** Get the sink RouteTreeNode associated with the isink. 
+     * Will probably segfault if the tree is not constructed with a ParentNetId. */
+    inline vtr::optional<const RouteTreeNode&> find_by_isink(int isink) const {
+        RouteTreeNode* x = _isink_to_rt_node[isink - 1];
+        return x ? vtr::optional<const RouteTreeNode&>(*x) : vtr::nullopt;
+    }
+
+    /** Get the number of sinks in associated net. */
+    constexpr size_t num_sinks(void) const {
+        return _num_sinks;
+    }
 
     /** Check the consistency of this route tree. Looks for:
      * - invalid parent-child links
@@ -375,12 +397,14 @@ class RouteTree {
 
     /** Prune overused nodes from the tree.
      * Also prune unused non-configurable nodes if non_config_node_set_usage is provided (see get_non_config_node_set_usage)
-     * Returns nullopt if the entire tree is pruned. */
+     * Returns nullopt if the entire tree is pruned.
+     * Locking operation: only one thread can prune() a RouteTree at a time. */
     vtr::optional<RouteTree&> prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_usage = nullptr);
 
     /** Remove all sinks and mark the remaining nodes as un-expandable.
      * This is used after routing a clock net.
-     * TODO: is this function doing anything? Try running without it */
+     * TODO: is this function doing anything? Try running without it
+     * Locking operation: only one thread can freeze() a RouteTree at a time. */
     void freeze(void);
 
     /** Count configurable edges to non-configurable node sets. (rr_nonconf_node_sets index -> int)
@@ -397,6 +421,71 @@ class RouteTree {
     /** Get a reference to the root RouteTreeNode. */
     constexpr const RouteTreeNode& root(void) const { return *_root; } /* this file is 90% const and 10% code */
 
+    /** Iterator implementation for remaining or reached isinks. Goes over [1..num_sinks]
+     * and only returns a value when the sink state is right */
+    template<bool sink_state>
+    class IsinkIterator {
+      public:
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = int;
+        using pointer = int*;
+        using reference = int&;
+
+        constexpr IsinkIterator(const std::vector<bool>& bitset, size_t x)
+            : _bitset(bitset)
+            , _x(x) {
+            if (_x < _bitset.size() && _bitset[_x] != sink_state) /* Iterate forward to a valid state */
+                ++(*this);
+        }
+        constexpr value_type operator*() const {
+            return _x;
+        }
+        inline IsinkIterator& operator++() {
+            _x++;
+            for (; _x < _bitset.size() && _bitset[_x] != sink_state; _x++)
+                ;
+            return *this;
+        }
+        inline IsinkIterator operator++(int) {
+            IsinkIterator tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+        constexpr bool operator==(const IsinkIterator& rhs) { return _x == rhs._x; }
+        constexpr bool operator!=(const IsinkIterator& rhs) { return _x != rhs._x; }
+
+      private:
+        /** Ref to the bitset */
+        const std::vector<bool>& _bitset;
+        /** Current position */
+        size_t _x;
+    };
+
+    typedef vtr::Range<IsinkIterator<true>> reached_isink_range;
+    typedef vtr::Range<IsinkIterator<false>> remaining_isink_range;
+
+    /** Get a lookup which contains the "isink reached state".
+     * It's a 1-indexed! bitset of "pin indices". True if the nth sink has been reached, false otherwise.
+     * If you call it before prune() and after routing, there's no guarantee on whether the reached sinks
+     * are reached legally. */
+    constexpr const std::vector<bool>& get_is_isink_reached(void) const { return _is_isink_reached; }
+
+    /** Get reached isinks: 1-indexed pin indices enumerating the sinks in this net.
+     * "Reached" means "reached legally" if you call this after prune() and not before any routing.
+     * Otherwise it doesn't guarantee legality.
+     * Builds and returns a value: use get_is_isink_reached directly if you want speed. */
+    constexpr reached_isink_range get_reached_isinks(void) const {
+        return vtr::make_range(IsinkIterator<true>(_is_isink_reached, 1), IsinkIterator<true>(_is_isink_reached, _num_sinks + 1));
+    }
+
+    /** Get remaining (not routed (legally?)) isinks:
+     * 1-indexed pin indices enumerating the sinks in this net.
+     * Caveats in get_reached_isinks() apply. */
+    constexpr remaining_isink_range get_remaining_isinks(void) const {
+        return vtr::make_range(IsinkIterator<false>(_is_isink_reached, 1), IsinkIterator<false>(_is_isink_reached, _num_sinks + 1));
+    }
+
   private:
     std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
     add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat);
@@ -406,6 +495,7 @@ class RouteTree {
                                     std::unordered_set<RRNodeId>& visited,
                                     bool is_flat);
 
+    void reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node = vtr::nullopt);
     void load_new_subtree_R_upstream(RouteTreeNode& from_node);
     float load_new_subtree_C_downstream(RouteTreeNode& from_node);
     RouteTreeNode& update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node);
@@ -439,7 +529,12 @@ class RouteTree {
             node->_next_sibling = parent->_next;
         }
         parent->_next = node;
+
+        /** Add node to RR to RT lookup */
         _rr_node_to_rt_node[node->inode] = node;
+        /** If node is a SINK (net_pin_index > 0), also add it to sink RT lookup */
+        if (node->net_pin_index > 0 && _net_id.is_valid())
+            _isink_to_rt_node[node->net_pin_index - 1] = node;
 
         /* Now it's a branch */
         parent->_is_leaf = false;
@@ -509,6 +604,13 @@ class RouteTree {
      * This is also the internal node list via the ptrs in RouteTreeNode. */
     RouteTreeNode* _root;
 
+    /** Net ID.
+     * A RouteTree does not have to be connected to a net, but if it isn't
+     * constructed using a ParentNetId prune() won't work. This is due to
+     * a data dependency through "Connection_based_routing_resources". Should
+     * be refactored when possible. */
+    ParentNetId _net_id;
+
     /** Lookup from RRNodeIds to RouteTreeNodes in the tree.
      * In some cases the same SINK node is put into the tree multiple times in a
      * single route. To model this, we are putting in separate rt_nodes in the route
@@ -516,4 +618,23 @@ class RouteTree {
      * therefore store the last rt_node created of all the SINK nodes with the same
      * index "inode". */
     std::unordered_map<RRNodeId, RouteTreeNode*> _rr_node_to_rt_node;
+
+    /** RRNodeId is not a unique lookup for sink RouteTreeNodes, but net_pin_index
+     * is. Store a 0-indexed lookup here for users who need to look up a sink from
+     * a net_pin_index, ipin, isink, etc. */
+    std::vector<RouteTreeNode*> _isink_to_rt_node;
+
+    /** Is Nth sink in this net reached?
+     * Bitset of [1..num_sinks]. (1-indexed!)
+     * We work with these indices, because they are used in a bunch of lookups in
+     * the router. Looking these back up from sink RR nodes would require looking
+     * up its RouteTreeNode and then the net_pin_index from that. */
+    std::vector<bool> _is_isink_reached;
+
+    /** Number of sinks in this tree's net. Useful for iteration. */
+    size_t _num_sinks;
+
+    /** Write mutex on this RouteTree. Acquired by the write operations automatically:
+     * the caller does not need to know about a lock. */
+    std::mutex _write_mutex;
 };

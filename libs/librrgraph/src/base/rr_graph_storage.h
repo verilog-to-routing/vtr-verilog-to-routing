@@ -442,7 +442,6 @@ class t_rr_graph_storage {
         node_first_edge_.clear();
         node_fan_in_.clear();
         node_layer_.clear();
-        seen_edge_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
@@ -450,6 +449,18 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
+    }
+
+    // Clear the data structures that are mainly used during RR graph construction.
+    // After RR Graph is build, we no longer need these data structures.
+    void clear_temp_storage() {
+        edge_remapped_.clear();
+    }
+
+    // Clear edge_remap data structure, and then initialize it with the given value
+    void init_edge_remap(bool val) {
+        edge_remapped_.clear();
+        edge_remapped_.resize(edge_switch_.size(), val);
     }
 
     // Shrink memory usage of the RR graph storage.
@@ -462,7 +473,6 @@ class t_rr_graph_storage {
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
         node_layer_.shrink_to_fit();
-        seen_edge_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
@@ -561,11 +571,18 @@ class t_rr_graph_storage {
     // Reserve at least num_edges in the edge backing arrays.
     void reserve_edges(size_t num_edges);
 
-    // Add one edge.  This method is efficient if reserve_edges was called with
-    // the number of edges present in the graph.  This method is still
-    // amortized O(1), like std::vector::emplace_back, but both runtime and
-    // peak memory usage will be higher if reallocation is required.
-    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch);
+    /***
+     * @brief Add one edge.  This method is efficient if reserve_edges was called with
+     * the number of edges present in the graph.  This method is still
+     * amortized O(1), like std::vector::emplace_back, but both runtime and
+     * peak memory usage will be higher if reallocation is required.
+     * @param remapped This is used later in remap_rr_node_switch_indices to check whether an
+     * edge needs its switch ID remapped from the arch_sw_idx to rr_sw_idx.
+     * The difference between these two ids is because some switch delays depend on the fan-in
+     * of the node. Also, the information about switches is fly-weighted and are accessible with IDs. Thus,
+     * the number of rr switch types can be higher than the number of arch switch types.
+     */
+    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped);
 
     // Adds a batch of edges.
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
@@ -696,9 +713,23 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+    /**
+     * The delay of certain switches specified in the architecture file depends on the number of inputs of the edge's sink node (pins or tracks).
+     * For example, in the case of a MUX switch, the delay increases as the number of inputs increases.
+     * During the construction of the RR Graph, switch IDs are assigned to the edges according to the order specified in the architecture file.
+     * These switch IDs are later used to retrieve information such as delay for each edge.
+     * This allows for effective fly-weighting of edge information.
+     *
+     * After building the RR Graph, we iterate over the nodes once more to store their fan-in.
+     * If a switch's characteristics depend on the fan-in of a node, a new switch ID is generated and assigned to the corresponding edge.
+     * This process is known as remapping.
+     * In this vector, we store information about which edges have undergone remapping.
+     * It is necessary to store this information, especially when flat-router is enabled.
+     * Remapping occurs when constructing global resources after placement and when adding intra-cluster resources after placement.
+     * Without storing this information, during subsequent remappings, it would be unclear whether the stored switch ID
+     * corresponds to the architecture ID or the RR Graph switch ID for an edge.
+    */
     vtr::vector<RREdgeId, bool> edge_remapped_;
-
-    vtr::vector<RREdgeId, bool> seen_edge_;
 
     /***************
      * State flags *

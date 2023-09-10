@@ -231,7 +231,11 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             break;
     }
 
-    fprintf(Echo, "\tInput Connect Block Switch Name: %s\n", arch->ipin_cblock_switch_name.c_str());
+    fprintf(Echo, "\tInput Connect Block Switch Name Within a Same Die: %s\n", arch->ipin_cblock_switch_name[0].c_str());
+    //if there is more than one layer available, print the connection block switch name that is used for connection between two dice
+    if (arch->grid_layouts.size() > 1) {
+        fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[1].c_str());
+    }
 
     fprintf(Echo, "*************************************************\n\n");
     //Switch list
@@ -280,8 +284,13 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
 
         if (seg.directionality == UNI_DIRECTIONAL) {
             //wire_switch == arch_opin_switch
-            fprintf(Echo, "\t\t\t\ttype unidir mux_name %s\n",
+            fprintf(Echo, "\t\t\t\ttype unidir mux_name for within die connections: %s\n",
                     arch->Switches[seg.arch_wire_switch].name.c_str());
+            //if there is more than one layer available, print the segment switch name that is used for connection between two dice
+            if (arch->grid_layouts.size() > 1) {
+                fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
+                        arch->Switches[seg.arch_opin_between_dice_switch].name.c_str());
+            }
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
                     arch->Switches[seg.arch_wire_switch].name.c_str(),

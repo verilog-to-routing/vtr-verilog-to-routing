@@ -1053,7 +1053,7 @@ enum e_agent_algorithm {
  * can be based on (block_type, move_type) pair.
  *
  */
-enum e_agent_space {
+enum class e_agent_space {
     MOVE_TYPE,
     MOVE_BLOCK_TYPE
 };
@@ -1244,8 +1244,8 @@ struct t_placer_opts {
  *                       channel width given.  If this variable is          *
  *                       == NO_FIXED_CHANNEL_WIDTH, do a binary search      *
  *                       on channel width.                                  *
- * router_algorithm:  BREADTH_FIRST or TIMING_DRIVEN.  Selects the desired  *
- *                    routing algorithm.                                    *
+ * router_algorithm:  TIMING_DRIVEN or PARALLEL.  Selects the desired       *
+ * routing algorithm.                                                       *
  * base_cost_type: Specifies how to compute the base cost of each type of   *
  *                 rr_node.  DELAY_NORMALIZED -> base_cost = "demand"       *
  *                 x average delay to route past 1 CLB.  DEMAND_ONLY ->     *
@@ -1270,7 +1270,7 @@ struct t_placer_opts {
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 
 enum e_router_algorithm {
-    BREADTH_FIRST,
+    PARALLEL,
     TIMING_DRIVEN,
 };
 
@@ -1453,8 +1453,14 @@ struct t_noc_opts {
  *             things that should have no delay).
  *   @param wire_to_arch_ipin_switch  keeps track of the type of architecture
  *             switch that connects wires to ipins
+ *   @param wire_to_arch_ipin_switch_between_dice keeps track of the type of
+ *             architecture switch that connects wires from another die to
+ *             ipins in different die
  *   @param wire_to_rr_ipin_switch  keeps track of the type of RR graph switch
  *             that connects wires to ipins in the RR graph
+ *   @param wire_to_rr_ipin_switch_between_dice keeps track of the type of
+ *             RR graph switch that connects wires from another die to
+ *             ipins in different die in the RR graph
  *   @param R_minW_nmos  Resistance (in Ohms) of a minimum width nmos transistor.
  *             Used only in the FPGA area model.
  *   @param R_minW_pmos  Resistance (in Ohms) of a minimum width pmos transistor.
@@ -1471,7 +1477,9 @@ struct t_det_routing_arch {
     short global_route_switch;
     short delayless_switch;
     int wire_to_arch_ipin_switch;
+    int wire_to_arch_ipin_switch_between_dice = -1;
     int wire_to_rr_ipin_switch;
+    int wire_to_rr_ipin_switch_between_dice = -1;
     float R_minW_nmos;
     float R_minW_pmos;
 
@@ -1498,6 +1506,11 @@ struct t_det_routing_arch {
  *                     (OPINs) *to* this segment. Note that this index is in
  *                     relation to the switches from the architecture file,
  *                     not the expanded list of switches that is is built
+ *                     at the end of build_rr_graph
+ *   @param arch_opin_between_dice_switch Index of the switch type that connects output
+ *                     pins (OPINs) *to* this segment from *another dice*.
+ *                     Note that this index is in relation to the switches from
+ *                     the architecture file, not the expanded list of switches that is built
  *                     at the end of build_rr_graph
  *   @param Cmetal     Capacitance of a routing track, per unit logic block length.
  *   @param Rmetal     Resistance of a routing track, per unit logic block length.
@@ -1528,6 +1541,7 @@ struct t_seg_details {
     std::unique_ptr<bool[]> cb;
     short arch_wire_switch = 0;
     short arch_opin_switch = 0;
+    short arch_opin_between_dice_switch = 0;
     float Rmetal = 0;
     float Cmetal = 0;
     bool twisted = 0;
@@ -1569,6 +1583,7 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
+    short arch_opin_between_dice_switch() const { return seg_detail_->arch_opin_between_dice_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 
@@ -1634,13 +1649,13 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  *                     the expected cost to the target if the timing_driven router
  *                     is being used.
  *   @param backward_path_cost  Total cost of the path up to and including this
- *                     node. Not used by breadth-first router.
+ *                     node.
  *   @param target_flag  Is this node a target (sink) for the current routing?
  *                     Number of times this node must be reached to fully route.
  *   @param occ        The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
-    int prev_node;
+    RRNodeId prev_node;
     RREdgeId prev_edge;
 
     float acc_cost;
@@ -1663,84 +1678,53 @@ struct t_rr_node_route_inf {
  * @brief Information about the current status of a particular
  *        net as pertains to routing
  */
-class t_net_routing_status {
+template<typename NetIdType>
+class t_routing_status {
   public:
     void clear() {
-        is_routed_.clear();
-        is_fixed_.clear();
+        is_routed_.assign(is_routed_.size(), 0);
+        is_fixed_.assign(is_routed_.size(), 0);
     }
-
     void resize(size_t number_nets) {
         is_routed_.resize(number_nets);
-        is_routed_.fill(false);
+        is_routed_.assign(is_routed_.size(), 0);
         is_fixed_.resize(number_nets);
-        is_fixed_.fill(false);
+        is_fixed_.assign(is_routed_.size(), 0);
     }
-    void set_is_routed(ParentNetId net, bool is_routed) {
-        is_routed_.set(index(net), is_routed);
+    void set_is_routed(NetIdType net, bool is_routed) {
+        is_routed_[index(net)] = is_routed;
     }
-    bool is_routed(ParentNetId net) const {
-        return is_routed_.get(index(net));
+    bool is_routed(NetIdType net) const {
+        return is_routed_[index(net)];
     }
-    void set_is_fixed(ParentNetId net, bool is_fixed) {
-        is_fixed_.set(index(net), is_fixed);
+    void set_is_fixed(NetIdType net, bool is_fixed) {
+        is_fixed_[index(net)] = is_fixed;
     }
-    bool is_fixed(ParentNetId net) const {
-        return is_fixed_.get(index(net));
+    bool is_fixed(NetIdType net) const {
+        return is_fixed_[index(net)];
     }
 
   private:
-    ParentNetId index(ParentNetId net) const {
-        VTR_ASSERT_SAFE(net != ParentNetId::INVALID());
+    NetIdType index(NetIdType net) const {
+        VTR_ASSERT_SAFE(net != NetIdType::INVALID());
         return net;
     }
-    vtr::dynamic_bitset<ParentNetId> is_routed_; ///<Whether the net has been legally routed
-    vtr::dynamic_bitset<ParentNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
+    /* vector<int> instead of bitset for thread safety */
+    vtr::vector<NetIdType, int> is_routed_; ///<Whether the net has been legally routed
+    vtr::vector<NetIdType, int> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
 };
 
-class t_atom_net_routing_status {
-  public:
-    void clear() {
-        is_routed_.clear();
-        is_fixed_.clear();
-    }
+typedef t_routing_status<ParentNetId> t_net_routing_status;
+typedef t_routing_status<AtomNetId> t_atom_net_routing_status;
 
-    void resize(size_t number_nets) {
-        is_routed_.resize(number_nets);
-        is_routed_.fill(false);
-        is_fixed_.resize(number_nets);
-        is_fixed_.fill(false);
-    }
-    void set_is_routed(AtomNetId net, bool is_routed) {
-        is_routed_.set(index(net), is_routed);
-    }
-    bool is_routed(AtomNetId net) const {
-        return is_routed_.get(index(net));
-    }
-    void set_is_fixed(AtomNetId net, bool is_fixed) {
-        is_fixed_.set(index(net), is_fixed);
-    }
-    bool is_fixed(AtomNetId net) const {
-        return is_fixed_.get(index(net));
-    }
-
-  private:
-    AtomNetId index(AtomNetId net) const {
-        VTR_ASSERT_SAFE(net != AtomNetId::INVALID());
-        return net;
-    }
-    vtr::dynamic_bitset<AtomNetId> is_routed_; ///<Whether the net has been legally routed
-    vtr::dynamic_bitset<AtomNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
-};
-
+/** Edge between two RRNodes */
 struct t_node_edge {
-    t_node_edge(int fnode, int tnode) {
-        from_node = fnode;
-        to_node = tnode;
-    }
+    t_node_edge(RRNodeId fnode, RRNodeId tnode)
+        : from_node(fnode)
+        , to_node(tnode) {}
 
-    int from_node;
-    int to_node;
+    RRNodeId from_node;
+    RRNodeId to_node;
 
     //For std::set
     friend bool operator<(const t_node_edge& lhs, const t_node_edge& rhs) {
@@ -1750,7 +1734,7 @@ struct t_node_edge {
 
 ///@brief Non-configurably connected nodes and edges in the RR graph
 struct t_non_configurable_rr_sets {
-    std::set<std::set<int>> node_sets;
+    std::set<std::set<RRNodeId>> node_sets;
     std::set<std::set<t_node_edge>> edge_sets;
 };
 
@@ -1809,6 +1793,7 @@ struct t_vpr_setup {
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network
     bool exit_before_pack;                     ///<Exits early before starting packing (useful for collecting statistics without running/loading any stages)
+    unsigned int num_workers;                  ///Maximum number of worker threads (determined from an env var or cmdline option)
 };
 
 class RouteStatus {
@@ -1830,7 +1815,7 @@ class RouteStatus {
     int chan_width_ = -1;
 };
 
-typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 

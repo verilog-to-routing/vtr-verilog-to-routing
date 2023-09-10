@@ -11,13 +11,13 @@ void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_remapped_.reserve(num_edges);
 }
 
-void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
+void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
     // Cannot mutate edges once edges have been read!
     VTR_ASSERT(!edges_read_);
     edge_src_node_.emplace_back(src);
     edge_dest_node_.emplace_back(dest);
     edge_switch_.emplace_back(edge_switch);
-    edge_remapped_.emplace_back(false);
+    edge_remapped_.emplace_back(remapped);
 }
 
 // Typical node to edge ratio.  This allows a preallocation guess for the edges
@@ -48,7 +48,8 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         emplace_back_edge(
             new_edge.from_node,
             new_edge.to_node,
-            new_edge.switch_type);
+            new_edge.switch_type,
+            new_edge.remapped);
     }
 }
 
@@ -398,17 +399,10 @@ void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
     edges_read_ = true;
     node_fan_in_.resize(node_storage_.size(), 0);
-    // This array is used to avoid initializing fan-in of the nodes which are already seen.
-    // This would reduce the run-time of flat rr graph generation since this function is called twice.
-    seen_edge_.resize(edge_dest_node_.size(), false);
     node_fan_in_.shrink_to_fit();
-    seen_edge_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
     for(const auto& edge_id : edge_dest_node_.keys()) {
-        if(!seen_edge_[edge_id]) {
-            node_fan_in_[edge_dest_node_[edge_id]] += 1;
-            seen_edge_[edge_id] = true;
-        }
+        node_fan_in_[edge_dest_node_[edge_id]] += 1;
     }
 }
 
@@ -829,7 +823,6 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         auto old_edge_dest_node = edge_dest_node_;
         auto old_edge_switch = edge_switch_;
         auto old_edge_remapped = edge_remapped_;
-        auto old_seen_edge = seen_edge_;
         RREdgeId cur_edge(0);
 
         // Reorder edges by source node
@@ -843,7 +836,6 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                 edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
                 edge_switch_[cur_edge] = old_edge_switch[e];
                 edge_remapped_[cur_edge] = old_edge_remapped[e];
-                seen_edge_[cur_edge] = old_seen_edge[e];
                 cur_edge = RREdgeId(size_t(cur_edge) + 1);
             }
         }

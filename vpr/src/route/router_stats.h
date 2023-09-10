@@ -1,5 +1,10 @@
 #pragma once
 
+#include "netlist_fwd.h"
+#include "rr_graph_fwd.h"
+#include "rr_node_types.h"
+#include "vtr_assert.h"
+
 // This struct instructs the router on how to route the given connection
 struct ConnectionParameters {
     ConnectionParameters(ParentNetId net_id,
@@ -23,6 +28,7 @@ struct ConnectionParameters {
 
     const std::unordered_map<RRNodeId, int>& connection_choking_spots_;
 };
+
 struct RouterStats {
     size_t connections_routed = 0;
     size_t nets_routed = 0;
@@ -32,19 +38,19 @@ struct RouterStats {
     size_t inter_cluster_node_pops = 0;
     size_t intra_cluster_node_pushes = 0;
     size_t intra_cluster_node_pops = 0;
-    size_t inter_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t inter_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
-    size_t intra_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t intra_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
+    size_t inter_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t inter_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t intra_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t intra_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES] = {0};
 
     // For debugging purposes
-    size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t rt_node_high_fanout_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t rt_node_entire_tree_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t rt_node_high_fanout_pushes[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t rt_node_entire_tree_pushes[t_rr_type::NUM_RR_TYPES] = {0};
 
-    size_t add_all_rt_from_high_fanout;
-    size_t add_high_fanout_rt;
-    size_t add_all_rt;
+    size_t add_all_rt_from_high_fanout = 0;
+    size_t add_high_fanout_rt = 0;
+    size_t add_all_rt = 0;
 };
 
 class WirelengthInfo {

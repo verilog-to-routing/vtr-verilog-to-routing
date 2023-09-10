@@ -1127,7 +1127,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     * ``delay_normalized_length_frequency`` like ``delay_normalized``, but scaled by routing resource length and scaled inversely by routing resource frequency.
 
-    **Default:** ``delay_normalized_length`` for the timing-driven router and ``demand_only`` for the breadth-first router
+    **Default:** ``delay_normalized_length``
 
 .. option:: --bend_cost <float>
 
@@ -1172,22 +1172,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
-.. option:: --router_algorithm {breadth_first | timing_driven}
+.. option:: --router_algorithm {parallel | timing_driven}
 
     Selects which router algorithm to use.
 
     .. warning::
 
-        The ``breadth_first`` router **should NOT be used to compare the run-time/quality** of alternate routing algorithms.
-
-        It is inferrior to the ``timing_driven`` router from a circuit speed (2x - 10x slower) and run-time perspective (takes 10-100x longer on the large benchmarks).
-        The ``breadth_first`` router is deprecated and may be removed in a future release.
-
-    The ``breadth_first`` router :cite:`betz_arch_cad` focuses solely on routing a design successfully, while the ``timing_driven`` router :cite:`betz_arch_cad,murray_air` focuses both on achieving a successful route and achieving good circuit speed.
-
-    The breadth-first router is capable of routing a design using slightly fewer tracks than the timing-driving router (typically 5% if the timing-driven router uses its default parameters.
-    This can be reduced to about 2% if the router parameters are set so the timing-driven router pays more attention to routability and less to area).
-    The designs produced by the timing-driven router are much faster, however, (2x - 10x) and it uses less CPU time to route.
+        The ``parallel`` router is experimental. (TODO: more explanation)
 
     **Default:** ``timing_driven``
 
@@ -1681,7 +1672,7 @@ Analysis Options
 
             It is possible that by opening a switch between (1,2) to (1,1), CHANY:2113 actually only extends from (1,3) to (1,2).
 
-            2. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
+            1. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
                There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
                The path can also be visualized by VPR graphics, as an illustration of this point:
 

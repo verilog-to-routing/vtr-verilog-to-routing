@@ -1,7 +1,7 @@
 #ifndef NOC_LINK_H
 #define NOC_LINK_H
 
-/*
+/**
  * @file
  * @brief This file defines the NocLink class.
  *
@@ -23,14 +23,14 @@
  * exceeds the links supported capability).
  * 
  * Example:
- * 
+ * ```
  *  ----------                       ----------
  *  /        /        link           /        /
  *  / router / --------------------->/ router /
  *  /   a    /                       /   b    /
  *  /        /                       /        /
  *  /--------/                       /--------/
- * 
+ * ```
  * In the example above the links source router would be router a and
  * the sink router would be router b. 
  * 
@@ -44,10 +44,10 @@
 class NocLink {
   private:
     // the two routers that are connected by this link
-    NocRouterId source_router; /*!< The router which has this link as an outgoing edge*/
+    NocRouterId source_router; /*!< The router which uses this link as an outgoing edge*/
     NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
 
-    double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bps*/
+    double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)*/
 
   public:
     NocLink(NocRouterId source_router, NocRouterId sink_router);
@@ -77,14 +77,14 @@ class NocLink {
     // setters
     /**
      * @brief Can be used to set the source router of the link to a different router. 
-     * @param source_router The identifier representing the router that should be the source of
+     * @param source An identifier representing the router that should be the source of
      * this link
      */
     void set_source_router(NocRouterId source);
 
     /**
      * @brief Can be used to set the sink router of the link to a different router. 
-     * @param sink_router The identifier representing the router that should be the sink of
+     * @param sink An identifier representing the router that should be the sink of
      * this link
      */
     void set_sink_router(NocRouterId sink);

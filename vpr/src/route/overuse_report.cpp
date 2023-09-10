@@ -52,11 +52,11 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
 
     //Print overuse info body
     int overuse_index = 0;
-    for (const RRNodeId& rr_id : rr_graph.nodes()) {
-        int overuse = route_ctx.rr_node_route_inf[(size_t)rr_id].occ() - rr_graph.node_capacity(rr_id);
+    for (RRNodeId inode : rr_graph.nodes()) {
+        int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(inode);
 
         if (overuse > 0) {
-            log_single_overused_node_status(overuse_index, rr_id);
+            log_single_overused_node_status(overuse_index, inode);
             ++overuse_index;
 
             //Reached the logging limit
@@ -103,7 +103,7 @@ void report_overused_nodes(const Netlist<>& net_list,
         /* Report basic rr node info */
         os << "Overused RR node #" << inode << '\n';
         os << "Node id = " << size_t(node_id) << '\n';
-        os << "Occupancy = " << route_ctx.rr_node_route_inf[size_t(node_id)].occ() << '\n';
+        os << "Occupancy = " << route_ctx.rr_node_route_inf[node_id].occ() << '\n';
         os << "Capacity = " << rr_graph.node_capacity(node_id) << "\n\n";
 
         /* Report selective info based on the rr node type */
@@ -179,7 +179,7 @@ void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
 
         for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
-            int overuse = route_ctx.rr_node_route_inf[size_t(inode)].occ() - rr_graph.node_capacity(inode);
+            int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(inode);
             if (overuse > 0) {
                 nodes_to_nets_lookup[inode].insert(net_id);
             }
@@ -394,7 +394,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     VTR_LOG(" %7d", size_t(node_id));
 
     //Occupancy
-    VTR_LOG(" %10d", route_ctx.rr_node_route_inf[size_t(node_id)].occ());
+    VTR_LOG(" %10d", route_ctx.rr_node_route_inf[node_id].occ());
 
     //Capacity
     VTR_LOG(" %9d", rr_graph.node_capacity(node_id));

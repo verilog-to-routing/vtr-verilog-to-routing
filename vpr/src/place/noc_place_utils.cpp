@@ -9,7 +9,7 @@ static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, p
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
-void initial_noc_placement(void) {
+void initial_noc_routing(void) {
     // need to get placement information about where the router cluster blocks are placed on the device
     const auto& place_ctx = g_vpr_ctx.placement();
 
@@ -35,6 +35,22 @@ void initial_noc_placement(void) {
     }
 
     return;
+}
+
+void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs) {
+    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+
+    // Zero out bandwidth usage for all links
+    for (auto& noc_link : noc_ctx.noc_model.get_mutable_noc_links()) {
+        noc_link.set_bandwidth_usage(0.0);
+    }
+
+    // Route traffic flows and update link bandwidth usage
+    initial_noc_routing();
+
+    // Initialize traffic_flow_costs
+    costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
+    costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
 }
 
 void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts) {

@@ -49,7 +49,23 @@ struct TrafficFlowPlaceCost {
  * routed. This is why this function should only be used once.
  * 
  */
-void initial_noc_placement(void);
+void initial_noc_routing(void);
+
+/**
+ * @brief Zeros out all link bandwidth usage an re-routes traffic flows.
+ * Initializes static variables in noc_place_utils.cpp that are used to
+ * keep track of NoC-related costs.
+ *
+ * This function should be called when a placement checkpoint is restored.
+ * If the router placement in the checkpoint is different from the last
+ * router placement before the checkpoint is restored, link bandwidth usage,
+ * traffic flow routes, and static variable in noc_place_utils.cpp are no
+ * longer valid and need to be re-initialized.
+ *
+ * @param noc_opts NoC-related options used to calculated NoC costs
+ * @param costs Used to get aggregate bandwidth and latency costs.
+ */
+void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs);
 
 /**
  * @brief Goes through all the cluster blocks that were moved

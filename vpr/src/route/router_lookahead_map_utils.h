@@ -64,6 +64,10 @@ class Cost_Entry {
     bool valid() const {
         return std::isfinite(delay) && std::isfinite(congestion);
     }
+
+    bool operator==(const Cost_Entry& other) const {
+        return delay == other.delay && congestion == other.congestion;
+    }
 };
 
 /**

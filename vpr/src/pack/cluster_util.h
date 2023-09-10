@@ -8,7 +8,7 @@
 #include "vpr_utils.h"
 #include "constraints_report.h"
 
-#include "timing_info.h"
+#include "concrete_timing_info.h"
 #include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingGraphResolver.h"
 #include "tatum/echo_writer.hpp"
