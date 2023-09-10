@@ -47,6 +47,11 @@ if(${VTR_ENABLE_CAPNPROTO})
     add_definitions("-DVTR_ENABLE_CAPNPROTO")
 endif()
 
+if(${VPR_DEBUG_PARTITION_TREE})
+    message(STATUS "VPR: Partition tree debug logs: enabled")
+    add_definitions("-DVPR_DEBUG_PARTITION_TREE")
+endif()
+
 #Create the library
 add_library(libvpr STATIC
              ${LIB_HEADERS}

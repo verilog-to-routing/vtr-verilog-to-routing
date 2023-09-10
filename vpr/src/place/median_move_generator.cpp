@@ -9,9 +9,9 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb* bb_coord_new, int xo
 
 static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
-e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
+e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(blk_type, false, NULL, NULL);
+    ClusterBlockId b_from = propose_block_to_move(proposed_action.logical_blk_type_index, false, nullptr, nullptr);
 
     if (!b_from) { //No movable block found
         return e_create_move::ABORT;
@@ -95,7 +95,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.Y_coord.push_back(coords.ymax);
     }
 
-    if ((place_move_ctx.X_coord.size() == 0) || (place_move_ctx.Y_coord.size() == 0))
+    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()))
         return e_create_move::ABORT;
 
     //calculate the median region
@@ -109,10 +109,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     limit_coords.ymax = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
 
     //arrange the different range limiters
-    t_range_limiters range_limiters;
-    range_limiters.original_rlim = rlim;
-    range_limiters.first_rlim = place_move_ctx.first_rlim;
-    range_limiters.dm_rlim = placer_opts.place_dm_rlim;
+    t_range_limiters range_limiters{rlim,
+                                    place_move_ctx.first_rlim,
+                                    placer_opts.place_dm_rlim};
 
     //find a location in a range around the center of median region
     t_pl_loc median_point;

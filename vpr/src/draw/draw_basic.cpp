@@ -852,8 +852,8 @@ void draw_routing_util(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = calculate_routing_usage(CHANX, draw_state->is_flat);
-    auto chany_usage = calculate_routing_usage(CHANY, draw_state->is_flat);
+    auto chanx_usage = calculate_routing_usage(CHANX, draw_state->is_flat, false);
+    auto chany_usage = calculate_routing_usage(CHANY, draw_state->is_flat, false);
 
     auto chanx_avail = calculate_routing_avail(CHANX);
     auto chany_avail = calculate_routing_avail(CHANY);
