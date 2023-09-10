@@ -1618,7 +1618,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                          high_fanout_threshold,
                          *timing_info,
                          attraction_groups,
-                         net_output_feeds_driving_block_input);
+                         net_output_feeds_driving_block_input,
+                         packer_opts.pack_verbosity);
     cluster_stats.num_unrelated_clustering_attempts = 0;
 
     if (packer_opts.timing_driven) {
@@ -1677,7 +1678,8 @@ void store_cluster_info_and_free(const t_packer_opts& packer_opts,
                                  const t_logical_block_type_ptr logic_block_type,
                                  const t_pb_type* le_pb_type,
                                  std::vector<int>& le_count,
-                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets) {
+                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                 const int verbosity) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -1690,6 +1692,18 @@ void store_cluster_info_and_free(const t_packer_opts& packer_opts,
             clb_inter_blk_nets[clb_index].push_back(mnet_id);
         }
     }
+
+    if (verbosity > 2) {
+        VTR_LOG("Final Cluster Result for clb #%ld: ", static_cast<size_t>(clb_index));
+        auto& blks_in_the_cluster = g_vpr_ctx.cl_helper().incomplete_cluster_to_atoms_lookup.at(clb_index);
+        for (const auto& blk_id : blks_in_the_cluster) {
+            VTR_LOG("%s  ", atom_ctx.nlist.block_name(blk_id).c_str());
+        }
+        VTR_LOG("\n");
+    }
+    
+
+
     auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
 
     // update the data structure holding the LE counts
@@ -1707,6 +1721,9 @@ void free_data_and_requeue_used_mols_if_illegal(const ClusterBlockId& clb_index,
                                                 int& num_clb,
                                                 int& seedindex) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& cl_helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    cl_helper_ctx.incomplete_cluster_to_atoms_lookup.erase(
+        cl_helper_ctx.incomplete_cluster_to_atoms_lookup.cbegin() + static_cast<size_t>(clb_index));
 
     num_used_type_instances[cluster_ctx.clb_nlist.block_type(clb_index)]--;
     revalid_molecules(cluster_ctx.clb_nlist.block_pb(clb_index));
@@ -1935,7 +1952,8 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const int high_fanout_net_threshold,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
-                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
+                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
+                          const int verbosity) {
     /* Routine that is called each time a new molecule is added to the cluster.
      * Makes calls to update cluster stats such as the gain map for atoms, used pins, and clock structures,
      * in order to reflect the new content of the cluster.
@@ -1960,11 +1978,16 @@ void update_cluster_stats(const t_pack_molecule* molecule,
         atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
 
         //Update clustring clb to atoms mapping
-        if (static_cast<size_t>(blk_id) >= cl_helper_ctx.incomplete_cluster_to_atoms_lookup.size()) {
+        if (static_cast<size_t>(clb_index) >= cl_helper_ctx.incomplete_cluster_to_atoms_lookup.size()) {
             cl_helper_ctx.incomplete_cluster_to_atoms_lookup.push_back(std::set<AtomBlockId>());
         }
         auto& blks_in_the_cluster = cl_helper_ctx.incomplete_cluster_to_atoms_lookup.at(clb_index);
         blks_in_the_cluster.insert(blk_id);
+
+        if (verbosity > 2)
+        {
+            VTR_LOG("Adding block %s to cluster %d\n", atom_ctx.nlist.block_name(blk_id).c_str(), clb_index);
+        }
 
         const t_pb* atom_pb = atom_ctx.lookup.atom_pb(blk_id);
         VTR_ASSERT(atom_pb);
@@ -3845,7 +3868,7 @@ void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBl
     }
 }
 
-void load_external_attraction_data(const std::string& attraction_file) {
+void load_external_attraction_data(const std::string& attraction_file, const int verbosity) {
     if (attraction_file.empty()) {
         return;
     }
@@ -3864,7 +3887,7 @@ void load_external_attraction_data(const std::string& attraction_file) {
     pugi::xml_document doc;
     pugiutil::loc_data loc_data;
 
-    VTR_LOG("\nLoad external attracion data\n");
+    VTR_LOGV(verbosity > 1, "\nLoadign external attracion data\n");
     // go through the file
     try {
         // load the file
@@ -3885,7 +3908,9 @@ void load_external_attraction_data(const std::string& attraction_file) {
 
                 double attraction_score = pugiutil::get_attribute(dst_node_tag, "score", loc_data, pugiutil::REQUIRED).as_double();
 
-                VTR_LOG("attraction: score: %f, %d:%s -> %d:%s\n", attraction_score, src_block_id, src_node_name.c_str(), dst_block_id, dst_node_name.c_str());
+                VTR_ASSERT(src_block_id);
+                VTR_ASSERT(dst_block_id);
+                VTR_LOGV(verbosity > 2, "attraction: score: %f, src: %d:%s, dst: %d:%s\n", attraction_score, src_block_id, src_node_name.c_str(), dst_block_id, dst_node_name.c_str());
                 attraction_data[src_block_id][dst_block_id] = attraction_score;
             }
         }
@@ -3894,18 +3919,18 @@ void load_external_attraction_data(const std::string& attraction_file) {
         vpr_throw(VPR_ERROR_OTHER, attraction_file_char, e.line(), e.what());
     }
 
-    VTR_LOG("\n=============================\n\n");
+    VTR_LOGV(verbosity > 2,"\n=============================\n\n");
 
     for (auto srckv : attraction_data)
     {
         for (auto dstkv : srckv.second)
         {
-            VTR_LOG("attraction: score: %f, %d -> %d\n", dstkv.second, srckv.first, dstkv.first);
+            VTR_LOGV(verbosity > 2,"attraction: score: %f, src: %d, dst: %d\n", dstkv.second, srckv.first, dstkv.first);
         }
     }
     
-    for (auto& block_id : atom_ctx.nlist.blocks()) {
-        std::string atom_name = atom_ctx.nlist.block_name(block_id);
-        VTR_LOG("atom id: %d, name: %s\n", block_id, atom_name.c_str());
-    }
+    // for (auto& block_id : atom_ctx.nlist.blocks()) {
+    //     std::string atom_name = atom_ctx.nlist.block_name(block_id);
+    //     VTR_LOG("atom id: %d, name: %s\n", block_id, atom_name.c_str());
+    // }
 }

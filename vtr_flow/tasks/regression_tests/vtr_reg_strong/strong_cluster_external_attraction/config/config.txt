@@ -1,0 +1,34 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=single_chain.v
+
+# Add architectures to list to sweep
+arch_list_add=EArch.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_worse_cluster.txt
+
+#Sweep option range
+script_params_common = --cluster_seed_type timing --pack_verbosity 3
+
+#additional_files_list_add =--external_attraction_file,sample_external_attraction_data.xml
+# script_params_list_add =--seed 1
+
+#additional_files_list_add =--external_attraction_file,sample_external_attraction_data_2.xml
+script_params_list_add =--seed 1 --external_attraction_file ../../../../config/sample_external_attraction_data_2.xml

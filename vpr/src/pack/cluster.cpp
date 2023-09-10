@@ -176,7 +176,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     istart = nullptr;
 
     // load external attraction data
-    load_external_attraction_data(packer_opts.external_attraction_file);
+    load_external_attraction_data(packer_opts.external_attraction_file, verbosity);
 
     // clear up to data clustering decision (This should be a clean start for clustering)
     helper_ctx.incomplete_cluster_to_atoms_lookup.clear();
@@ -299,7 +299,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  high_fanout_threshold,
                                  *timing_info,
                                  attraction_groups,
-                                 net_output_feeds_driving_block_input);
+                                 net_output_feeds_driving_block_input,
+                                 verbosity);
             helper_ctx.total_clb_num++;
 
             if (packer_opts.timing_driven) {
@@ -382,7 +383,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
             if (is_cluster_legal) {
                 istart = save_cluster_routing_and_pick_new_seed(packer_opts, helper_ctx.total_clb_num, seed_atoms, num_blocks_hill_added, clustering_data.intra_lb_routing, seedindex, cluster_stats, router_data);
-                store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets);
+                store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets, verbosity);
             } else {
                 free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, num_used_type_instances, helper_ctx.total_clb_num, seedindex);
             }

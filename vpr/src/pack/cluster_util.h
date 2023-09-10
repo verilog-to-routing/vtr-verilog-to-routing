@@ -262,7 +262,8 @@ void store_cluster_info_and_free(const t_packer_opts& packer_opts,
                                  const t_logical_block_type_ptr logic_block_type,
                                  const t_pb_type* le_pb_type,
                                  std::vector<int>& le_count,
-                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets);
+                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                 const int verbosity);
 
 void free_data_and_requeue_used_mols_if_illegal(const ClusterBlockId& clb_index,
                                                 const int& savedseedindex,
@@ -325,7 +326,8 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const int high_fanout_net_threshold,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
-                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input);
+                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
+                          const int verbosity);
 
 void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        t_pb_graph_node** primitives_list,
@@ -486,5 +488,5 @@ void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size);
 void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup);
 
 // Helper functions for load external attraction data
-void load_external_attraction_data(const std::string& attraction_file);
+void load_external_attraction_data(const std::string& attraction_file, const int verbosity);
 #endif
