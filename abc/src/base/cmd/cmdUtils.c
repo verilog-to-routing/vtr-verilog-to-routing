@@ -20,6 +20,7 @@
 
 #include "base/abc/abc.h"
 #include "base/main/mainInt.h"
+#include "misc/util/utilSignal.h"
 #include "cmdInt.h"
 #include <ctype.h>
 
@@ -459,7 +460,7 @@ FILE * CmdFileOpen( Abc_Frame_t * pAbc, char *sFileName, char *sMode, char **pFi
         else
         {
             // print the path/name of the resource file 'abc.rc' that is being loaded
-            if ( !silent && strlen(sRealName) >= 6 && strcmp( sRealName + strlen(sRealName) - 6, "abc.rc" ) == 0 )            
+            if ( !silent && strlen(sRealName) >= 6 && strcmp( sRealName + strlen(sRealName) - 6, "abc.rc" ) == 0 )
                 Abc_Print( 1, "Loading resource file \"%s\".\n", sRealName );
         }
     }
@@ -576,7 +577,7 @@ void CmdCommandPrint( Abc_Frame_t * pAbc, int fPrintAll, int fDetails )
     nCommands = i;
 
     // sort command by group and then by name, alphabetically
-    qsort( (void *)ppCommands, nCommands, sizeof(Abc_Command *), 
+    qsort( (void *)ppCommands, (size_t)nCommands, sizeof(Abc_Command *), 
             (int (*)(const void *, const void *)) CmdCommandPrintCompare );
     assert( CmdCommandPrintCompare( ppCommands, ppCommands + nCommands - 1 ) <= 0 );
 
@@ -734,7 +735,7 @@ void CmdPrintTable( st__table * tTable, int fAliases )
         ppNames[nNames++] = key;
 
     // sort array by name
-    qsort( (void *)ppNames, nNames, sizeof(char *), 
+    qsort( (void *)ppNames, (size_t)nNames, sizeof(char *), 
         (int (*)(const void *, const void *))CmdNamePrintCompare );
 
     // print in this order
@@ -748,6 +749,90 @@ void CmdPrintTable( st__table * tTable, int fAliases )
     }
     ABC_FREE( ppNames );
 }
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+                
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Gia_ManKissatCall( Abc_Frame_t * pAbc, char * pFileName, char * pArgs, int nConfs, int nTimeLimit, int fSat, int fUnsat, int fPrintCex, int fVerbose )
+{
+    char Command[1000], Buffer[100];
+    char * pNameWin = "kissat.exe";
+    char * pNameUnix = "kissat";
+    char * pKissatName = NULL;
+    //FILE * pFile = NULL;
+
+    // get the names from the resource file
+    if ( Cmd_FlagReadByName(pAbc, "kissatwin") )
+        pNameWin = Cmd_FlagReadByName(pAbc, "kissatwin");
+    if ( Cmd_FlagReadByName(pAbc, "kissatunix") )
+        pNameUnix = Cmd_FlagReadByName(pAbc, "kissatunix");
+/*
+    // check if the binary is available
+    if ( (pFile = fopen( pNameWin, "r" )) )
+        pKissatName = pNameWin;
+    else if ( (pFile = fopen( pNameUnix, "r" )) )
+        pKissatName = pNameUnix;
+    else if ( pFile == NULL )
+    {
+        fprintf( stdout, "Cannot find Kissat binary \"%s\" or \"%s\" in the current directory.\n", pNameWin, pNameUnix );
+        return;
+    }
+    fclose( pFile );
+*/
+
+#ifdef _WIN32
+    pKissatName = pNameWin;
+#else
+    pKissatName = pNameUnix;
+#endif
+
+    sprintf( Command, "%s",  pKissatName );
+    if ( pArgs )
+    {
+        strcat( Command, " " );
+        strcat( Command, pArgs );
+    }
+    if ( !pArgs || (strcmp(pArgs, "-h") && strcmp(pArgs, "--help")) )
+    {
+        if ( !fVerbose )
+            strcat( Command, " -q" );
+        if ( !fPrintCex )
+            strcat( Command, " -n" );
+        if ( fSat )
+            strcat( Command, " --sat" );
+        if ( fUnsat )
+            strcat( Command, " --unsat" );
+        if ( nConfs )
+        {
+            sprintf( Buffer, " --conflicts=%d", nConfs );
+            strcat( Command, Buffer );
+        }
+        if ( nTimeLimit )
+        {
+            sprintf( Buffer, " --time=%d", nTimeLimit );
+            strcat( Command, Buffer );
+        }
+        strcat( Command, " " );
+        strcat( Command, pFileName );
+    }
+    if ( fVerbose )
+        printf( "Running command:  %s\n", Command );
+    if ( Util_SignalSystem( Command ) == -1 )
+    {
+        fprintf( stdout, "The following command has returned a strange exit status:\n" );
+        fprintf( stdout, "\"%s\"\n", Command );
+    }
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

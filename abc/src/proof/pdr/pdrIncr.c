@@ -47,7 +47,7 @@ Vec_Ptr_t * IPdr_ManPushClausesK( Pdr_Man_t * p, int k )
 
     assert( Vec_VecSize(p->vClauses) == k + 1 );
     vArrayK = Vec_VecEntry( p->vClauses, k );
-    Vec_PtrSort( vArrayK, (int (*)(void))Pdr_SetCompare );
+    Vec_PtrSort( vArrayK, (int (*)(const void *, const void *))Pdr_SetCompare );
     vArrayK1 = Vec_PtrAlloc( 100 );
     Vec_PtrForEachEntry( Pdr_Set_t *, vArrayK, pCubeK, j )
     {
@@ -117,7 +117,7 @@ void IPdr_ManPrintClauses( Vec_Vec_t * vClauses, int kStart, int nRegs )
     int i, k, Counter = 0;
     Vec_VecForEachLevelStart( vClauses, vArrayK, k, kStart )
     {
-        Vec_PtrSort( vArrayK, (int (*)(void))Pdr_SetCompare );
+        Vec_PtrSort( vArrayK, (int (*)(const void *, const void *))Pdr_SetCompare );
         Vec_PtrForEachEntry( Pdr_Set_t *, vArrayK, pCube, i )
         {
             Abc_Print( 1, "Frame[%4d]Cube[%4d] = ", k, Counter++ );
@@ -843,7 +843,7 @@ int IPdr_ManSolve( Aig_Man_t * pAig, Pdr_Par_t * pPars )
         }
         if ( p->pPars->fDumpInv )
         {
-            char * pFileName = Extra_FileNameGenericAppend(p->pAig->pName, "_inv.pla");
+            char * pFileName = pPars->pInvFileName ? pPars->pInvFileName : Extra_FileNameGenericAppend(p->pAig->pName, "_inv.pla");
                 Abc_FrameSetInv( Pdr_ManDeriveInfinityClauses( p, RetValue!=1 ) );
                 Pdr_ManDumpClauses( p, pFileName, RetValue==1 );
         }

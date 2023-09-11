@@ -118,8 +118,8 @@ Vec_Ptr_t * Sim_ComputeFunSupp( Abc_Ntk_t * pNtk, int fVerbose )
 
     // set the support targets 
     Sim_ComputeSuppSetTargets( p );
-if ( fVerbose )
-    printf( "Number of support targets after simulation = %5d.\n", Vec_VecSizeSize(p->vSuppTargs) );
+    if ( fVerbose )
+        printf( "Number of support targets after simulation = %5d.\n", Vec_VecSizeSize(p->vSuppTargs) );
     if ( Vec_VecSizeSize(p->vSuppTargs) == 0 )
         goto exit;
 
@@ -131,9 +131,9 @@ if ( fVerbose )
         if ( Vec_VecSizeSize(p->vSuppTargs) == 0 )
             goto exit;
 
-if ( fVerbose )
-    printf( "Targets = %5d.   Solved = %5d.  Fifo = %5d.\n", 
-       Vec_VecSizeSize(p->vSuppTargs), nSolved, Vec_PtrSize(p->vFifo) );
+        if ( fVerbose )
+            printf( "Targets = %5d.   Solved = %5d.  Fifo = %5d.\n",
+                Vec_VecSizeSize(p->vSuppTargs), nSolved, Vec_PtrSize(p->vFifo) );
     }
 
     // try to solve the support targets

@@ -19,6 +19,7 @@
 ***********************************************************************/
 
 #include "base/abc/abc.h"
+#include "aig/gia/giaAig.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -741,7 +742,21 @@ Abc_Ntk_t * Abc_NtkShareXor( Abc_Ntk_t * pNtk, int nMultiSize, int fAnd, int fVe
     Abc_ShaManStop( p );
     return pNtkNew;
 }
-
+Gia_Man_t * Abc_NtkShareXorGia( Gia_Man_t * p, int nMultiSize, int fAnd, int fVerbose )
+{
+    extern Aig_Man_t * Abc_NtkToDar( Abc_Ntk_t * pNtk, int fExors, int fRegisters );
+    extern Abc_Ntk_t * Abc_NtkFromAigPhase( Aig_Man_t * pMan );
+    Aig_Man_t * pMan = Gia_ManToAig( p, 0 );
+    Abc_Ntk_t * pNtk = Abc_NtkFromAigPhase( pMan );
+    Abc_Ntk_t * pNtkNew = Abc_NtkShareXor( pNtk, nMultiSize, fAnd, fVerbose );
+    Aig_Man_t * pAig = Abc_NtkToDar( pNtkNew, 0, 0 );
+    Gia_Man_t * pNew = Gia_ManFromAig( pAig );
+    Abc_NtkDelete( pNtkNew );
+    Abc_NtkDelete( pNtk );
+    Aig_ManStop( pAig );
+    Aig_ManStop( pMan );
+    return pNew;
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

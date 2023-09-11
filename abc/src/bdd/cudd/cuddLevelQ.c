@@ -304,7 +304,7 @@ cuddLevelQueueEnqueue(
         queue->freelist = item->next;
     }
     /* Initialize. */
-    memset(item, 0, queue->itemsize);
+    memset(item, 0, (size_t)queue->itemsize);
     item->key = key;
     /* Update stats. */
     queue->size++;

@@ -1772,6 +1772,7 @@ nTimeSat += clkSatRun;
                 // check if other outputs failed under the same counter-example
                 Saig_ManForEachPo( pAig, pObj, k )
                 {
+                    Abc_Cex_t * pCexDup;
                     if ( k >= Saig_ManPoNum(pAig) )
                         break;
                     // skip solved outputs
@@ -1807,7 +1808,10 @@ nTimeSat += clkSatRun;
                         Gia_ManToBridgeResult( stdout, 0, pCexNew0, pCexNew0->iPo );
                     }
                     // remember solved output
-                    Vec_PtrWriteEntry( p->vCexes, k, Abc_CexDup(pCexNew, Saig_ManRegNum(pAig)) );
+                    //Vec_PtrWriteEntry( p->vCexes, k, Abc_CexDup(pCexNew, Saig_ManRegNum(pAig)) );
+                    pCexDup = Abc_CexDup(pCexNew, Saig_ManRegNum(pAig));
+                    pCexDup->iPo = k;
+                    Vec_PtrWriteEntry( p->vCexes, k, pCexDup );
                 }
                 Abc_CexFreeP( &pCexNew0 );
                 Abc_CexFree( pCexNew );

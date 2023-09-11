@@ -740,7 +740,7 @@ int CmdCommandSource( Abc_Frame_t * pAbc, int argc, char **argv )
   usage:
     fprintf( pAbc->Err, "usage: source [-psxh] <file_name>\n" );
     fprintf( pAbc->Err, "\t-p     supply prompt before reading each line [default = %s]\n", prompt? "yes": "no" );
-    fprintf( pAbc->Err, "\t-s     silently ignore nonexistant file [default = %s]\n", silent? "yes": "no" );
+    fprintf( pAbc->Err, "\t-s     silently ignore nonexistent file [default = %s]\n", silent? "yes": "no" );
     fprintf( pAbc->Err, "\t-x     echo each line as it is executed [default = %s]\n", echo? "yes": "no" );
     fprintf( pAbc->Err, "\t-h     print the command usage\n" );
     return 1;
@@ -1161,7 +1161,7 @@ int CmdCommandScanDir( Abc_Frame_t * pAbc, int argc, char **argv )
     struct _finddata_t c_file;
     char * pDirStr = NULL;
     char*  pDirCur = NULL;
-    long   hFile;
+    ABC_PTRINT_T hFile;
     char   c;
 
     Extra_UtilGetoptReset();
@@ -1354,7 +1354,7 @@ void CnfDupFileUnzip( char * pOldName )
 int CmdCommandRenameFiles( Abc_Frame_t * pAbc, int argc, char **argv )
 {
     struct _finddata_t c_file;
-    long   hFile;
+    ABC_PTRINT_T hFile;
     char pNewName[1000];
     char * pDirStr = NULL;
     char * pDirCur = NULL;
@@ -1515,7 +1515,7 @@ usage:
 int CmdCommandLs( Abc_Frame_t * pAbc, int argc, char **argv )
 {
     struct _finddata_t c_file;
-    long   hFile;
+    ABC_PTRINT_T hFile;
     int    fLong = 0;
     int    fOnlyBLIF = 0;
     char   Buffer[25];
@@ -1618,7 +1618,7 @@ usage:
 int CmdCommandScrGen( Abc_Frame_t * pAbc, int argc, char **argv )
 {
     struct _finddata_t c_file;
-    long   hFile;
+    ABC_PTRINT_T hFile;
     FILE * pFile = NULL;
     char * pFileStr = "test.s";
     char * pDirStr = NULL;
@@ -2445,7 +2445,7 @@ int CmdCommandStarter( Abc_Frame_t * pAbc, int argc, char ** argv )
 usage:
     Abc_Print( -2, "usage: starter [-N num] [-C cmd] [-vh] <file>\n" );
     Abc_Print( -2, "\t         runs command lines listed in <file> concurrently on <num> CPUs\n" );
-    Abc_Print( -2, "\t-N num : the number of concurrent jobs including the controler [default = %d]\n", nCores );
+    Abc_Print( -2, "\t-N num : the number of concurrent jobs including the controller [default = %d]\n", nCores );
     Abc_Print( -2, "\t-C cmd : (optional) ABC command line to execute on benchmarks in <file>\n" );
     Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
@@ -2557,7 +2557,7 @@ int CmdCommandAutoTuner( Abc_Frame_t * pAbc, int argc, char ** argv )
 usage:
     Abc_Print( -2, "usage: autotuner [-N num] [-C file] [-F file] [-vh]\n" );
     Abc_Print( -2, "\t         performs autotuning\n" );
-    Abc_Print( -2, "\t-N num : the number of concurrent jobs including the controler [default = %d]\n", nCores );
+    Abc_Print( -2, "\t-N num : the number of concurrent jobs including the controller [default = %d]\n", nCores );
     Abc_Print( -2, "\t-C cmd : configuration file with settings for autotuning\n" );
     Abc_Print( -2, "\t-F cmd : list of AIGER files to be used for autotuning\n" );
     Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );

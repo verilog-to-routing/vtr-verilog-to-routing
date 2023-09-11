@@ -280,10 +280,8 @@ void Cec2_AddClausesSuper( Gia_Man_t * p, Gia_Obj_t * pNode, Vec_Ptr_t * vSuper,
 ***********************************************************************/
 void Cec2_CollectSuper_rec( Gia_Man_t * p, Gia_Obj_t * pObj, Vec_Ptr_t * vSuper, int fFirst, int fUseMuxes )
 {
-    //printf( "v%d ", Gia_ObjValue(pObj) );
     // if the new node is complemented or a PI, another gate begins
     if ( Gia_IsComplement(pObj) || Gia_ObjIsCi(pObj) || 
-//         (!fFirst && Gia_ObjValue(pObj) > 1) || 
          (!fFirst && (p->pRefs ? Gia_ObjRefNum(p, pObj) : Gia_ObjValue(pObj)) > 1) || 
          (fUseMuxes && pObj->fMark0) )
     {
@@ -531,10 +529,7 @@ int Cec2_ManSimulate( Gia_Man_t * p, Vec_Int_t * vTriples, Cec2_Man_t * pMan )
             int iPat     = Abc_Lit2Var(Entry);
             int fPhase   = Abc_LitIsCompl(Entry);
             if ( (fPhase ^ Abc_InfoHasBit((unsigned *)pSim0, iPat)) == Abc_InfoHasBit((unsigned *)pSim1, iPat) )
-            {
-                //printf( "ERROR:  Pattern %d did not disprove pair %d and %d.\n", iPat, iRepr, iObj );
                 Count++;
-            }
         }
     }
     clk = Abc_Clock();
@@ -775,8 +770,6 @@ int Cec2_ManVerify_rec( Gia_Man_t * p, int iObj, satoko_t * pSat )
 }
 void Cec2_ManVerify( Gia_Man_t * p, int iObj0, int iObj1, int fPhase, satoko_t * pSat )
 {
-//    int val0 = satoko_var_polarity(pSat, Cec2_ObjSatId(p, Gia_ManObj(p, iObj0))) == SATOKO_LIT_TRUE;
-//    int val1 = satoko_var_polarity(pSat, Cec2_ObjSatId(p, Gia_ManObj(p, iObj1))) == SATOKO_LIT_TRUE;
     int Value0, Value1;
     Gia_ManIncrementTravId( p );
     Value0 = Cec2_ManVerify_rec( p, iObj0, pSat );
@@ -842,7 +835,6 @@ int Cec2_ManSolveTwo( Cec2_Man_t * p, int iObj0, int iObj1, int fPhase )
     Gia_ManIncrementTravId( p->pNew );
     Cec2_ManCollect_rec( p, iObj0 );
     Cec2_ManCollect_rec( p, iObj1 );
-//printf( "%d ", Vec_IntSize(p->vNodesNew) );
     // solve direct
     if ( p->pPars->fUseCones )  satoko_mark_cone( p->pSat, Vec_IntArray(p->vSatVars), Vec_IntSize(p->vSatVars) );
     satoko_assump_push( p->pSat, Abc_Var2Lit(iVar0, 1) );

@@ -31,7 +31,7 @@ ABC_NAMESPACE_IMPL_START
 typedef struct Kit_Mux_t_ Kit_Mux_t;
 struct Kit_Mux_t_
 {
-    unsigned      v  :  5;          // variable 
+    unsigned      v  :  6;          // variable
     unsigned      t  : 12;          // then edge
     unsigned      e  : 12;          // else edge
     unsigned      c  :  1;          // complemented attr of else edge

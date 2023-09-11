@@ -117,7 +117,7 @@ static Dec_Graph_t * Abc_ManResubDivs3( Abc_ManRes_t * p, int Required );
 static Vec_Ptr_t *   Abc_CutFactorLarge( Abc_Obj_t * pNode, int nLeavesMax );
 static int           Abc_CutVolumeCheck( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves );
 
-extern abctime s_ResubTime;
+//extern abctime s_ResubTime;
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -134,9 +134,9 @@ extern abctime s_ResubTime;
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkResubstitute( Abc_Ntk_t * pNtk, int nCutMax, int nStepsMax, int nLevelsOdc, int fUpdateLevel, int fVerbose, int fVeryVerbose )
+int Abc_NtkResubstitute( Abc_Ntk_t * pNtk, int nCutMax, int nStepsMax, int nMinSaved, int nLevelsOdc, int fUpdateLevel, int fVerbose, int fVeryVerbose )
 {
-    extern void           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
+    extern int           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
     ProgressBar * pProgress;
     Abc_ManRes_t * pManRes;
     Abc_ManCut_t * pManCut;
@@ -214,6 +214,11 @@ clk = Abc_Clock();
 pManRes->timeRes += Abc_Clock() - clk;
         if ( pFForm == NULL )
             continue;
+        if ( pManRes->nLastGain < nMinSaved )
+        {
+            Dec_GraphFree( pFForm );
+            continue;
+        }
         pManRes->nTotalGain += pManRes->nLastGain;
 /*
         if ( pManRes->nLeaves == 4 && pManRes->nMffc == 2 && pManRes->nLastGain == 1 )
@@ -266,7 +271,7 @@ pManRes->timeTotal = Abc_Clock() - clkStart;
         printf( "Abc_NtkRefactor: The network check has failed.\n" );
         return 0;
     }
-s_ResubTime = Abc_Clock() - clkStart;
+//s_ResubTime = Abc_Clock() - clkStart;
     return 1;
 }
 
@@ -650,14 +655,12 @@ Dec_Graph_t * Abc_ManResubQuit1( Abc_Obj_t * pRoot, Abc_Obj_t * pObj0, Abc_Obj_t
 {
     Dec_Graph_t * pGraph;
     Dec_Edge_t eRoot, eNode0, eNode1;
-    assert( pObj0 != pObj1 );
-    assert( !Abc_ObjIsComplement(pObj0) );
-    assert( !Abc_ObjIsComplement(pObj1) );
+    assert( Abc_ObjRegular(pObj0) != Abc_ObjRegular(pObj1) );
     pGraph = Dec_GraphCreate( 2 );
-    Dec_GraphNode( pGraph, 0 )->pFunc = pObj0;
-    Dec_GraphNode( pGraph, 1 )->pFunc = pObj1;
-    eNode0 = Dec_EdgeCreate( 0, pObj0->fPhase );
-    eNode1 = Dec_EdgeCreate( 1, pObj1->fPhase );
+    Dec_GraphNode( pGraph, 0 )->pFunc = Abc_ObjRegular(pObj0);
+    Dec_GraphNode( pGraph, 1 )->pFunc = Abc_ObjRegular(pObj1);
+    eNode0 = Dec_EdgeCreate( 0, Abc_ObjRegular(pObj0)->fPhase ^ Abc_ObjIsComplement(pObj0) );
+    eNode1 = Dec_EdgeCreate( 1, Abc_ObjRegular(pObj1)->fPhase ^ Abc_ObjIsComplement(pObj1) );
     if ( fOrGate ) 
         eRoot  = Dec_GraphAddNodeOr( pGraph, eNode0, eNode1 );
     else
@@ -683,17 +686,16 @@ Dec_Graph_t * Abc_ManResubQuit21( Abc_Obj_t * pRoot, Abc_Obj_t * pObj0, Abc_Obj_
 {
     Dec_Graph_t * pGraph;
     Dec_Edge_t eRoot, eNode0, eNode1, eNode2;
-    assert( pObj0 != pObj1 );
-    assert( !Abc_ObjIsComplement(pObj0) );
-    assert( !Abc_ObjIsComplement(pObj1) );
-    assert( !Abc_ObjIsComplement(pObj2) );
+    assert( Abc_ObjRegular(pObj0) != Abc_ObjRegular(pObj1) );
+    assert( Abc_ObjRegular(pObj0) != Abc_ObjRegular(pObj2) );
+    assert( Abc_ObjRegular(pObj1) != Abc_ObjRegular(pObj2) );
     pGraph = Dec_GraphCreate( 3 );
-    Dec_GraphNode( pGraph, 0 )->pFunc = pObj0;
-    Dec_GraphNode( pGraph, 1 )->pFunc = pObj1;
-    Dec_GraphNode( pGraph, 2 )->pFunc = pObj2;
-    eNode0 = Dec_EdgeCreate( 0, pObj0->fPhase );
-    eNode1 = Dec_EdgeCreate( 1, pObj1->fPhase );
-    eNode2 = Dec_EdgeCreate( 2, pObj2->fPhase );
+    Dec_GraphNode( pGraph, 0 )->pFunc = Abc_ObjRegular(pObj0);
+    Dec_GraphNode( pGraph, 1 )->pFunc = Abc_ObjRegular(pObj1);
+    Dec_GraphNode( pGraph, 2 )->pFunc = Abc_ObjRegular(pObj2);
+    eNode0 = Dec_EdgeCreate( 0, Abc_ObjRegular(pObj0)->fPhase ^ Abc_ObjIsComplement(pObj0) );
+    eNode1 = Dec_EdgeCreate( 1, Abc_ObjRegular(pObj1)->fPhase ^ Abc_ObjIsComplement(pObj1) );
+    eNode2 = Dec_EdgeCreate( 2, Abc_ObjRegular(pObj2)->fPhase ^ Abc_ObjIsComplement(pObj2) );
     if ( fOrGate ) 
     {
         eRoot  = Dec_GraphAddNodeOr( pGraph, eNode0, eNode1 );
@@ -725,15 +727,14 @@ Dec_Graph_t * Abc_ManResubQuit2( Abc_Obj_t * pRoot, Abc_Obj_t * pObj0, Abc_Obj_t
 {
     Dec_Graph_t * pGraph;
     Dec_Edge_t eRoot, ePrev, eNode0, eNode1, eNode2;
-    assert( pObj0 != pObj1 );
-    assert( pObj0 != pObj2 );
-    assert( pObj1 != pObj2 );
-    assert( !Abc_ObjIsComplement(pObj0) );
+    assert( Abc_ObjRegular(pObj0) != Abc_ObjRegular(pObj1) );
+    assert( Abc_ObjRegular(pObj0) != Abc_ObjRegular(pObj2) );
+    assert( Abc_ObjRegular(pObj1) != Abc_ObjRegular(pObj2) );
     pGraph = Dec_GraphCreate( 3 );
     Dec_GraphNode( pGraph, 0 )->pFunc = Abc_ObjRegular(pObj0);
     Dec_GraphNode( pGraph, 1 )->pFunc = Abc_ObjRegular(pObj1);
     Dec_GraphNode( pGraph, 2 )->pFunc = Abc_ObjRegular(pObj2);
-    eNode0 = Dec_EdgeCreate( 0, Abc_ObjRegular(pObj0)->fPhase );
+    eNode0 = Dec_EdgeCreate( 0, Abc_ObjRegular(pObj0)->fPhase ^ Abc_ObjIsComplement(pObj0) );
     if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
     {
         eNode1 = Dec_EdgeCreate( 1, Abc_ObjRegular(pObj1)->fPhase );
@@ -771,8 +772,8 @@ Dec_Graph_t * Abc_ManResubQuit3( Abc_Obj_t * pRoot, Abc_Obj_t * pObj0, Abc_Obj_t
 {
     Dec_Graph_t * pGraph;
     Dec_Edge_t eRoot, ePrev0, ePrev1, eNode0, eNode1, eNode2, eNode3;
-    assert( pObj0 != pObj1 );
-    assert( pObj2 != pObj3 );
+    assert( Abc_ObjRegular(pObj0) != Abc_ObjRegular(pObj1) );
+    assert( Abc_ObjRegular(pObj2) != Abc_ObjRegular(pObj3) );
     pGraph = Dec_GraphCreate( 4 );
     Dec_GraphNode( pGraph, 0 )->pFunc = Abc_ObjRegular(pObj0);
     Dec_GraphNode( pGraph, 1 )->pFunc = Abc_ObjRegular(pObj1);
@@ -840,6 +841,7 @@ Dec_Graph_t * Abc_ManResubQuit3( Abc_Obj_t * pRoot, Abc_Obj_t * pObj0, Abc_Obj_t
 ***********************************************************************/
 void Abc_ManResubDivsS( Abc_ManRes_t * p, int Required )
 {
+    int fMoreDivs = 1; // bug fix by Siang-Yun Lee
     Abc_Obj_t * pObj;
     unsigned * puData, * puDataR;
     int i, w;
@@ -863,6 +865,18 @@ void Abc_ManResubDivsS( Abc_ManRes_t * p, int Required )
             Vec_PtrPush( p->vDivs1UP, pObj );
             continue;
         }
+        if ( fMoreDivs )
+        {
+            for ( w = 0; w < p->nWords; w++ )
+    //            if ( ~puData[w] & ~puDataR[w] )
+                if ( ~puData[w] & ~puDataR[w] & p->pCareSet[w] ) // care set
+                    break;
+            if ( w == p->nWords )
+            {
+                Vec_PtrPush( p->vDivs1UP, Abc_ObjNot(pObj) );
+                continue;
+            }
+        }
         // check negative containment
         for ( w = 0; w < p->nWords; w++ )
 //            if ( ~puData[w] & puDataR[w] )
@@ -872,6 +886,18 @@ void Abc_ManResubDivsS( Abc_ManRes_t * p, int Required )
         {
             Vec_PtrPush( p->vDivs1UN, pObj );
             continue;
+        }
+        if ( fMoreDivs )
+        {
+            for ( w = 0; w < p->nWords; w++ )
+    //            if ( puData[w] & puDataR[w] )
+                if ( puData[w] & puDataR[w] & p->pCareSet[w] ) // care set
+                    break;
+            if ( w == p->nWords )
+            {
+                Vec_PtrPush( p->vDivs1UN, Abc_ObjNot(pObj) );
+                continue;
+            }
         }
         // add the node to binates
         Vec_PtrPush( p->vDivs1B, pObj );
@@ -1081,14 +1107,38 @@ Dec_Graph_t * Abc_ManResubDivs1( Abc_ManRes_t * p, int Required )
     // check positive unate divisors
     Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UP, pObj0, i )
     {
-        puData0 = (unsigned *)pObj0->pData;
+        puData0 = (unsigned *)Abc_ObjRegular(pObj0)->pData;
         Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UP, pObj1, k, i + 1 )
         {
-            puData1 = (unsigned *)pObj1->pData;
-            for ( w = 0; w < p->nWords; w++ )
-//                if ( (puData0[w] | puData1[w]) != puDataR[w] )
-                if ( ((puData0[w] | puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                    break;
+            puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
+            if ( Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) )
+            {
+                for ( w = 0; w < p->nWords; w++ )
+    //                if ( (puData0[w] | puData1[w]) != puDataR[w] )
+                    if ( ((~puData0[w] | ~puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                        break;
+            }
+            else if ( Abc_ObjIsComplement(pObj0) )
+            {
+                for ( w = 0; w < p->nWords; w++ )
+    //                if ( (puData0[w] | puData1[w]) != puDataR[w] )
+                    if ( ((~puData0[w] | puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                        break;
+            }
+            else if ( Abc_ObjIsComplement(pObj1) )
+            {
+                for ( w = 0; w < p->nWords; w++ )
+    //                if ( (puData0[w] | puData1[w]) != puDataR[w] )
+                    if ( ((puData0[w] | ~puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                        break;
+            }
+            else 
+            {
+                for ( w = 0; w < p->nWords; w++ )
+    //                if ( (puData0[w] | puData1[w]) != puDataR[w] )
+                    if ( ((puData0[w] | puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                        break;
+            }
             if ( w == p->nWords )
             {
                 p->nUsedNode1Or++;
@@ -1099,14 +1149,38 @@ Dec_Graph_t * Abc_ManResubDivs1( Abc_ManRes_t * p, int Required )
     // check negative unate divisors
     Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UN, pObj0, i )
     {
-        puData0 = (unsigned *)pObj0->pData;
+        puData0 = (unsigned *)Abc_ObjRegular(pObj0)->pData;
         Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UN, pObj1, k, i + 1 )
         {
-            puData1 = (unsigned *)pObj1->pData;
-            for ( w = 0; w < p->nWords; w++ )
-//                if ( (puData0[w] & puData1[w]) != puDataR[w] )
-                if ( ((puData0[w] & puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                    break;
+            puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
+            if ( Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) )
+            {
+                for ( w = 0; w < p->nWords; w++ )
+    //                if ( (puData0[w] & puData1[w]) != puDataR[w] )
+                    if ( ((~puData0[w] & ~puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                        break;
+            }
+            if ( Abc_ObjIsComplement(pObj0) )
+            {
+                for ( w = 0; w < p->nWords; w++ )
+    //                if ( (puData0[w] & puData1[w]) != puDataR[w] )
+                    if ( ((~puData0[w] & puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                        break;
+            }
+            if ( Abc_ObjIsComplement(pObj1) )
+            {
+                for ( w = 0; w < p->nWords; w++ )
+    //                if ( (puData0[w] & puData1[w]) != puDataR[w] )
+                    if ( ((puData0[w] & ~puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                        break;
+            }
+            else
+            {
+                for ( w = 0; w < p->nWords; w++ )
+    //                if ( (puData0[w] & puData1[w]) != puDataR[w] )
+                    if ( ((puData0[w] & puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                        break;
+            }
             if ( w == p->nWords )
             {
                 p->nUsedNode1And++;
@@ -1137,31 +1211,84 @@ Dec_Graph_t * Abc_ManResubDivs12( Abc_ManRes_t * p, int Required )
     // check positive unate divisors
     Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UP, pObj0, i )
     {
-        puData0 = (unsigned *)pObj0->pData;
+        puData0 = (unsigned *)Abc_ObjRegular(pObj0)->pData;
         Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UP, pObj1, k, i + 1 )
         {
-            puData1 = (unsigned *)pObj1->pData;
+            puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
             Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UP, pObj2, j, k + 1 )
             {
-                puData2 = (unsigned *)pObj2->pData;
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
-                    if ( ((puData0[w] | puData1[w] | puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
+                puData2 = (unsigned *)Abc_ObjRegular(pObj2)->pData;
+                if ( Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
+                        if ( ((~puData0[w] | ~puData1[w] | ~puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) && !Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
+                        if ( ((~puData0[w] | ~puData1[w] | puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj0) && !Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
+                        if ( ((~puData0[w] | puData1[w] | ~puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj0) && !Abc_ObjIsComplement(pObj1) && !Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
+                        if ( ((~puData0[w] | puData1[w] | puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( !Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
+                        if ( ((puData0[w] | ~puData1[w] | ~puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( !Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) && !Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
+                        if ( ((puData0[w] | ~puData1[w] | puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( !Abc_ObjIsComplement(pObj0) && !Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
+                        if ( ((puData0[w] | puData1[w] | ~puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( !Abc_ObjIsComplement(pObj0) && !Abc_ObjIsComplement(pObj1) && !Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
+                        if ( ((puData0[w] | puData1[w] | puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else assert( 0 );
                 if ( w == p->nWords )
                 {
-                    LevelMax = Abc_MaxInt( pObj0->Level, Abc_MaxInt(pObj1->Level, pObj2->Level) );
+                    LevelMax = Abc_MaxInt( Abc_ObjRegular(pObj0)->Level, Abc_MaxInt(Abc_ObjRegular(pObj1)->Level, Abc_ObjRegular(pObj2)->Level) );
                     assert( LevelMax <= Required - 1 );
 
                     pObjMax = NULL;
-                    if ( (int)pObj0->Level == LevelMax )
+                    if ( (int)Abc_ObjRegular(pObj0)->Level == LevelMax )
                         pObjMax = pObj0, pObjMin0 = pObj1, pObjMin1 = pObj2;
-                    if ( (int)pObj1->Level == LevelMax )
+                    if ( (int)Abc_ObjRegular(pObj1)->Level == LevelMax )
                     {
                         if ( pObjMax ) continue;
                         pObjMax = pObj1, pObjMin0 = pObj0, pObjMin1 = pObj2;
                     }
-                    if ( (int)pObj2->Level == LevelMax )
+                    if ( (int)Abc_ObjRegular(pObj2)->Level == LevelMax )
                     {
                         if ( pObjMax ) continue;
                         pObjMax = pObj2, pObjMin0 = pObj0, pObjMin1 = pObj1;
@@ -1178,31 +1305,84 @@ Dec_Graph_t * Abc_ManResubDivs12( Abc_ManRes_t * p, int Required )
     // check negative unate divisors
     Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UN, pObj0, i )
     {
-        puData0 = (unsigned *)pObj0->pData;
+        puData0 = (unsigned *)Abc_ObjRegular(pObj0)->pData;
         Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UN, pObj1, k, i + 1 )
         {
-            puData1 = (unsigned *)pObj1->pData;
+            puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
             Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UN, pObj2, j, k + 1 )
             {
-                puData2 = (unsigned *)pObj2->pData;
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
-                    if ( ((puData0[w] & puData1[w] & puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
+                puData2 = (unsigned *)Abc_ObjRegular(pObj2)->pData;
+                if ( Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
+                        if ( ((~puData0[w] & ~puData1[w] & ~puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) && !Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
+                        if ( ((~puData0[w] & ~puData1[w] & puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj0) && !Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
+                        if ( ((~puData0[w] & puData1[w] & ~puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj0) && !Abc_ObjIsComplement(pObj1) && !Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
+                        if ( ((~puData0[w] & puData1[w] & puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( !Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
+                        if ( ((puData0[w] & ~puData1[w] & ~puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( !Abc_ObjIsComplement(pObj0) && Abc_ObjIsComplement(pObj1) && !Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
+                        if ( ((puData0[w] & ~puData1[w] & puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( !Abc_ObjIsComplement(pObj0) && !Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
+                        if ( ((puData0[w] & puData1[w] & ~puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( !Abc_ObjIsComplement(pObj0) && !Abc_ObjIsComplement(pObj1) && !Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
+                        if ( ((puData0[w] & puData1[w] & puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else assert( 0 );
                 if ( w == p->nWords )
                 {
-                    LevelMax = Abc_MaxInt( pObj0->Level, Abc_MaxInt(pObj1->Level, pObj2->Level) );
+                    LevelMax = Abc_MaxInt( Abc_ObjRegular(pObj0)->Level, Abc_MaxInt(Abc_ObjRegular(pObj1)->Level, Abc_ObjRegular(pObj2)->Level) );
                     assert( LevelMax <= Required - 1 );
 
                     pObjMax = NULL;
-                    if ( (int)pObj0->Level == LevelMax )
+                    if ( (int)Abc_ObjRegular(pObj0)->Level == LevelMax )
                         pObjMax = pObj0, pObjMin0 = pObj1, pObjMin1 = pObj2;
-                    if ( (int)pObj1->Level == LevelMax )
+                    if ( (int)Abc_ObjRegular(pObj1)->Level == LevelMax )
                     {
                         if ( pObjMax ) continue;
                         pObjMax = pObj1, pObjMin0 = pObj0, pObjMin1 = pObj2;
                     }
-                    if ( (int)pObj2->Level == LevelMax )
+                    if ( (int)Abc_ObjRegular(pObj2)->Level == LevelMax )
                     {
                         if ( pObjMax ) continue;
                         pObjMax = pObj2, pObjMin0 = pObj0, pObjMin1 = pObj1;
@@ -1239,40 +1419,74 @@ Dec_Graph_t * Abc_ManResubDivs2( Abc_ManRes_t * p, int Required )
     // check positive unate divisors
     Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UP, pObj0, i )
     {
-        puData0 = (unsigned *)pObj0->pData;
+        puData0 = (unsigned *)Abc_ObjRegular(pObj0)->pData;
         Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs2UP0, pObj1, k )
         {
             pObj2 = (Abc_Obj_t *)Vec_PtrEntry( p->vDivs2UP1, k );
 
             puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
             puData2 = (unsigned *)Abc_ObjRegular(pObj2)->pData;
-            if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+            if ( Abc_ObjIsComplement(pObj0) )
             {
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] | (puData1[w] | puData2[w])) != puDataR[w] )
-                    if ( ((puData0[w] | (puData1[w] | puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
+                if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | (puData1[w] | puData2[w])) != puDataR[w] )
+                        if ( ((~puData0[w] | (puData1[w] | puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj1) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | (~puData1[w] & puData2[w])) != puDataR[w] )
+                        if ( ((~puData0[w] | (~puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | (puData1[w] & ~puData2[w])) != puDataR[w] )
+                        if ( ((~puData0[w] | (puData1[w] & ~puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else 
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | (puData1[w] & puData2[w])) != puDataR[w] )
+                        if ( ((~puData0[w] | (puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
             }
-            else if ( Abc_ObjIsComplement(pObj1) )
+            else
             {
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] | (~puData1[w] & puData2[w])) != puDataR[w] )
-                    if ( ((puData0[w] | (~puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
-            }
-            else if ( Abc_ObjIsComplement(pObj2) )
-            {
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] | (puData1[w] & ~puData2[w])) != puDataR[w] )
-                    if ( ((puData0[w] | (puData1[w] & ~puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
-            }
-            else 
-            {
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] | (puData1[w] & puData2[w])) != puDataR[w] )
-                    if ( ((puData0[w] | (puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
+                if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | (puData1[w] | puData2[w])) != puDataR[w] )
+                        if ( ((puData0[w] | (puData1[w] | puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj1) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | (~puData1[w] & puData2[w])) != puDataR[w] )
+                        if ( ((puData0[w] | (~puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | (puData1[w] & ~puData2[w])) != puDataR[w] )
+                        if ( ((puData0[w] | (puData1[w] & ~puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else 
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] | (puData1[w] & puData2[w])) != puDataR[w] )
+                        if ( ((puData0[w] | (puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
             }
             if ( w == p->nWords )
             {
@@ -1284,40 +1498,74 @@ Dec_Graph_t * Abc_ManResubDivs2( Abc_ManRes_t * p, int Required )
     // check negative unate divisors
     Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UN, pObj0, i )
     {
-        puData0 = (unsigned *)pObj0->pData;
+        puData0 = (unsigned *)Abc_ObjRegular(pObj0)->pData;
         Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs2UN0, pObj1, k )
         {
             pObj2 = (Abc_Obj_t *)Vec_PtrEntry( p->vDivs2UN1, k );
 
             puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
             puData2 = (unsigned *)Abc_ObjRegular(pObj2)->pData;
-            if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+            if ( Abc_ObjIsComplement(pObj0) )
             {
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] & (puData1[w] | puData2[w])) != puDataR[w] )
-                    if ( ((puData0[w] & (puData1[w] | puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
+                if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & (puData1[w] | puData2[w])) != puDataR[w] )
+                        if ( ((~puData0[w] & (puData1[w] | puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj1) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & (~puData1[w] & puData2[w])) != puDataR[w] )
+                        if ( ((~puData0[w] & (~puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & (puData1[w] & ~puData2[w])) != puDataR[w] )
+                        if ( ((~puData0[w] & (puData1[w] & ~puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else 
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & (puData1[w] & puData2[w])) != puDataR[w] )
+                        if ( ((~puData0[w] & (puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
             }
-            else if ( Abc_ObjIsComplement(pObj1) )
+            else
             {
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] & (~puData1[w] & puData2[w])) != puDataR[w] )
-                    if ( ((puData0[w] & (~puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
-            }
-            else if ( Abc_ObjIsComplement(pObj2) )
-            {
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] & (puData1[w] & ~puData2[w])) != puDataR[w] )
-                    if ( ((puData0[w] & (puData1[w] & ~puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
-            }
-            else 
-            {
-                for ( w = 0; w < p->nWords; w++ )
-//                    if ( (puData0[w] & (puData1[w] & puData2[w])) != puDataR[w] )
-                    if ( ((puData0[w] & (puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
-                        break;
+                if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & (puData1[w] | puData2[w])) != puDataR[w] )
+                        if ( ((puData0[w] & (puData1[w] | puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj1) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & (~puData1[w] & puData2[w])) != puDataR[w] )
+                        if ( ((puData0[w] & (~puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else if ( Abc_ObjIsComplement(pObj2) )
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & (puData1[w] & ~puData2[w])) != puDataR[w] )
+                        if ( ((puData0[w] & (puData1[w] & ~puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
+                else 
+                {
+                    for ( w = 0; w < p->nWords; w++ )
+    //                    if ( (puData0[w] & (puData1[w] & puData2[w])) != puDataR[w] )
+                        if ( ((puData0[w] & (puData1[w] & puData2[w])) ^ puDataR[w]) & p->pCareSet[w] ) // care set
+                            break;
+                }
             }
             if ( w == p->nWords )
             {
@@ -1472,6 +1720,7 @@ Dec_Graph_t * Abc_ManResubDivs3( Abc_ManRes_t * p, int Required )
             }
         }
     }
+
 /*
     // check negative unate divisors
     Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs2UN0, pObj0, i )
@@ -1493,85 +1742,85 @@ Dec_Graph_t * Abc_ManResubDivs3( Abc_ManRes_t * p, int Required )
             {
             case 0: // 0000
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] & puData1[w]) & (puData2[w] & puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] & puData1[w]) & (puData2[w] & puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 1: // 0001
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] & puData1[w]) & (puData2[w] & ~puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] & puData1[w]) & (puData2[w] & ~puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 2: // 0010
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] & puData1[w]) & (~puData2[w] & puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] & puData1[w]) & (~puData2[w] & puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 3: // 0011
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] & puData1[w]) & (puData2[w] | puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] & puData1[w]) & (puData2[w] | puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
 
             case 4: // 0100
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] & ~puData1[w]) & (puData2[w] & puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] & ~puData1[w]) & (puData2[w] & puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 5: // 0101
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] & ~puData1[w]) & (puData2[w] & ~puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] & ~puData1[w]) & (puData2[w] & ~puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 6: // 0110
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] & ~puData1[w]) & (~puData2[w] & puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] & ~puData1[w]) & (~puData2[w] & puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 7: // 0111
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] & ~puData1[w]) & (puData2[w] | puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] & ~puData1[w]) & (puData2[w] | puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
 
             case 8: // 1000
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((~puData0[w] & puData1[w]) & (puData2[w] & puData3[w])) != puDataR[w] )
+                    if ( (((~puData0[w] & puData1[w]) & (puData2[w] & puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 9: // 1001
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((~puData0[w] & puData1[w]) & (puData2[w] & ~puData3[w])) != puDataR[w] )
+                    if ( (((~puData0[w] & puData1[w]) & (puData2[w] & ~puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 10: // 1010
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((~puData0[w] & puData1[w]) & (~puData2[w] & puData3[w])) != puDataR[w] )
+                    if ( (((~puData0[w] & puData1[w]) & (~puData2[w] & puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 11: // 1011
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((~puData0[w] & puData1[w]) & (puData2[w] | puData3[w])) != puDataR[w] )
+                    if ( (((~puData0[w] & puData1[w]) & (puData2[w] | puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
 
             case 12: // 1100
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] | puData1[w]) & (puData2[w] & puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] | puData1[w]) & (puData2[w] & puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 13: // 1101
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] | puData1[w]) & (puData2[w] & ~puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] | puData1[w]) & (puData2[w] & ~puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 14: // 1110
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] | puData1[w]) & (~puData2[w] & puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] | puData1[w]) & (~puData2[w] & puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
             case 15: // 1111
                 for ( w = 0; w < p->nWords; w++ )
-                    if ( ((puData0[w] | puData1[w]) & (puData2[w] | puData3[w])) != puDataR[w] )
+                    if ( (((puData0[w] | puData1[w]) & (puData2[w] | puData3[w])) ^ puDataR[w]) & p->pCareSet[w] )
                         break;
                 break;
 

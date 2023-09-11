@@ -405,7 +405,7 @@ Vec_Ptr_t * Abc_NodeMffcInsideCollect( Abc_Obj_t * pNode )
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NodeMffcLabel_rec( Abc_Obj_t * pNode, int fTopmost )
+void Abc_NodeMffcLabel_rec( Abc_Obj_t * pNode, int fTopmost, Vec_Ptr_t * vNodes )
 {
     Abc_Obj_t * pFanin;
     int i;
@@ -418,9 +418,11 @@ void Abc_NodeMffcLabel_rec( Abc_Obj_t * pNode, int fTopmost )
     Abc_NodeSetTravIdCurrent(pNode);
     // recur on the children
     Abc_ObjForEachFanin( pNode, pFanin, i )
-        Abc_NodeMffcLabel_rec( pFanin, 0 );
+        Abc_NodeMffcLabel_rec( pFanin, 0, vNodes );
     // collect the internal node
 //    printf( "%d ", pNode->Id );
+    if ( vNodes )
+        Vec_PtrPush( vNodes, pNode );
 }
 
 /**Function*************************************************************
@@ -434,14 +436,14 @@ void Abc_NodeMffcLabel_rec( Abc_Obj_t * pNode, int fTopmost )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NodeMffcLabel( Abc_Obj_t * pNode )
+int Abc_NodeMffcLabel( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes )
 {
     int Count1, Count2;
     // dereference the node
     Count1 = Abc_NodeDeref_rec( pNode );
     // collect the nodes inside the MFFC
     Abc_NtkIncrementTravId( pNode->pNtk );
-    Abc_NodeMffcLabel_rec( pNode, 1 );
+    Abc_NodeMffcLabel_rec( pNode, 1, vNodes );
     // reference it back
     Count2 = Abc_NodeRef_rec( pNode );
     assert( Count1 == Count2 );

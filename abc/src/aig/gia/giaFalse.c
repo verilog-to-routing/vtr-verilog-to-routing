@@ -457,7 +457,7 @@ Gia_Man_t * Gia_ManCheckOne( Gia_Man_t * p, int iOut, int iObj, int nTimeOut, in
     if ( pNew )
     {
         Gia_Man_t * pTemp = Gia_ManDupDfsNode( p, Gia_ManObj(p, iObj) );
-        Gia_AigerWrite( pTemp, "false.aig", 0, 0 );
+        Gia_AigerWrite( pTemp, "false.aig", 0, 0, 0 );
         Abc_Print( 1, "Dumping cone with %d nodes into file \"%s\".\n", Gia_ManAndNum(pTemp), "false.aig" );
         Gia_ManStop( pTemp );
     }

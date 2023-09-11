@@ -113,7 +113,7 @@ static inline Vec_Flt_t * Vec_FltStart( int nSize )
     Vec_Flt_t * p;
     p = Vec_FltAlloc( nSize );
     p->nSize = nSize;
-    memset( p->pArray, 0, sizeof(float) * nSize );
+    memset( p->pArray, 0, sizeof(float) * (size_t)nSize );
     return p;
 }
 static inline Vec_Flt_t * Vec_FltStartFull( int nSize )
@@ -121,7 +121,7 @@ static inline Vec_Flt_t * Vec_FltStartFull( int nSize )
     Vec_Flt_t * p;
     p = Vec_FltAlloc( nSize );
     p->nSize = nSize;
-    memset( p->pArray, 0xFF, sizeof(float) * nSize );
+    memset( p->pArray, 0xFF, sizeof(float) * (size_t)nSize );
     return p;
 }
 
@@ -164,7 +164,7 @@ static inline Vec_Flt_t * Vec_FltAllocArrayCopy( float * pArray, int nSize )
     p->nSize  = nSize;
     p->nCap   = nSize;
     p->pArray = ABC_ALLOC( float, nSize );
-    memcpy( p->pArray, pArray, sizeof(float) * nSize );
+    memcpy( p->pArray, pArray, sizeof(float) * (size_t)nSize );
     return p;
 }
 
@@ -186,7 +186,7 @@ static inline Vec_Flt_t * Vec_FltDup( Vec_Flt_t * pVec )
     p->nSize  = pVec->nSize;
     p->nCap   = pVec->nCap;
     p->pArray = p->nCap? ABC_ALLOC( float, p->nCap ) : NULL;
-    memcpy( p->pArray, pVec->pArray, sizeof(float) * pVec->nSize );
+    memcpy( p->pArray, pVec->pArray, sizeof(float) * (size_t)pVec->nSize );
     return p;
 }
 
@@ -347,7 +347,7 @@ static inline int Vec_FltCap( Vec_Flt_t * p )
 ***********************************************************************/
 static inline double Vec_FltMemory( Vec_Flt_t * p )
 {
-    return !p ? 0.0 : 1.0 * sizeof(float) * p->nCap + sizeof(Vec_Flt_t);
+    return !p ? 0.0 : 1.0 * sizeof(float) * (size_t)p->nCap + sizeof(Vec_Flt_t);
 }
 
 /**Function*************************************************************
@@ -807,10 +807,10 @@ static int Vec_FltSortCompare2( float * pp1, float * pp2 )
 static inline void Vec_FltSort( Vec_Flt_t * p, int fReverse )
 {
     if ( fReverse ) 
-        qsort( (void *)p->pArray, p->nSize, sizeof(float), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(float), 
                 (int (*)(const void *, const void *)) Vec_FltSortCompare2 );
     else
-        qsort( (void *)p->pArray, p->nSize, sizeof(float), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(float), 
                 (int (*)(const void *, const void *)) Vec_FltSortCompare1 );
 }
 

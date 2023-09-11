@@ -157,8 +157,10 @@ Abc_Ntk_t * Io_ReadNetlist( char * pFileName, Io_FileType_t FileType, int fCheck
         fprintf( stdout, "Reading network from file has failed.\n" );
         return NULL;
     }
-    if ( fCheck && (Abc_NtkBlackboxNum(pNtk) || Abc_NtkWhiteboxNum(pNtk)) )
+
+    if ( fCheck && (Abc_NtkBlackboxNum(pNtk) || Abc_NtkWhiteboxNum(pNtk)) && pNtk->pDesign )
     {
+
         int i, fCycle = 0;
         Abc_Ntk_t * pModel;
 //        fprintf( stdout, "Warning: The network contains hierarchy.\n" );
@@ -390,7 +392,7 @@ void Io_Write( Abc_Ntk_t * pNtk, char * pFileName, Io_FileType_t FileType )
             pNtkTemp = Abc_NtkToNetlist( pNtk );
         else
         {
-            fprintf( stdout, "Latches are writen into the PLA file at PI/PO pairs.\n" );
+            fprintf( stdout, "Latches are written into the PLA file at PI/PO pairs.\n" );
             pNtkCopy = Abc_NtkDup( pNtk );
             Abc_NtkMakeComb( pNtkCopy, 0 );
             pNtkTemp = Abc_NtkToNetlist( pNtk );
@@ -860,6 +862,62 @@ FILE * Io_FileOpen( const char * FileName, const char * PathVar, const char * Mo
             return fopen( FileName, Mode );
         }
     }
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Tranform SF into PLA.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Io_TransformSF2PLA( char * pNameIn, char * pNameOut )
+{
+    int fStart = 0, Size = 1000000;
+    char * pBuffer, * pToken;
+    FILE * pFileIn  = fopen( pNameIn,  "rb" );
+    FILE * pFileOut = fopen( pNameOut, "wb" );
+    if ( pFileIn == NULL )
+    {
+        if ( pFileOut ) fclose( pFileOut );
+        printf( "Cannot open file \"%s\" for reading.\n", pNameIn );
+        return;
+    }
+    if ( pFileOut == NULL )
+    {
+        if ( pFileIn )  fclose( pFileIn );
+        printf( "Cannot open file \"%s\" for reading.\n", pNameOut );
+        return;
+    }
+    pBuffer = ABC_ALLOC( char, Size );
+    fprintf( pFileOut, ".type fd\n" );
+    while ( fgets(pBuffer, Size, pFileIn) )
+    {
+        if ( strstr(pBuffer, "END_SDF") )
+            break;
+        if ( strstr(pBuffer, "SDF") )
+        {
+            char * pRes = fgets(pBuffer, Size, pFileIn);
+            assert( pRes != NULL );
+            if ( (pToken = strtok( pBuffer, " \t\r\n" )) )
+                fprintf( pFileOut, ".i %d\n", atoi(pToken) );
+            if ( (pToken = strtok( NULL, " \t\r\n" )) )
+                fprintf( pFileOut, ".o %d\n", atoi(pToken) );
+            if ( (pToken = strtok( NULL, " \t\r\n" )) )
+                fprintf( pFileOut, ".p %d\n", atoi(pToken) );
+            fStart = 1;
+        }
+        else if ( fStart )
+            fprintf( pFileOut, "%s", pBuffer );
+    }
+    fprintf( pFileOut, ".e\n" );
+    fclose( pFileIn );
+    fclose( pFileOut );
+    ABC_FREE( pBuffer );
 }
 
 ////////////////////////////////////////////////////////////////////////

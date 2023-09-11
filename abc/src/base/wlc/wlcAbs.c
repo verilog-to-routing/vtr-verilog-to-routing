@@ -816,7 +816,7 @@ static Vec_Bit_t * Wlc_NtkMarkLimit( Wlc_Ntk_t * p, Wlc_Par_t * pPars )
     Vec_Ptr_t * vMults = Vec_PtrAlloc( 1000 );
     Vec_Ptr_t * vFlops = Vec_PtrAlloc( 1000 );
     Wlc_Obj_t * pObj; int i;
-    Int_Pair_t * pPair;
+    Int_Pair_t * pPair = NULL;
 
     if ( pPars->nLimit == ABC_INFINITY )
         return NULL;
@@ -867,10 +867,10 @@ static Vec_Bit_t * Wlc_NtkMarkLimit( Wlc_Ntk_t * p, Wlc_Par_t * pPars )
         }
     }
 
-    Vec_PtrSort( vAdds,  (int (*)(void))IntPairPtrCompare ) ;
-    Vec_PtrSort( vMults, (int (*)(void))IntPairPtrCompare ) ;
-    Vec_PtrSort( vMuxes, (int (*)(void))IntPairPtrCompare ) ;
-    Vec_PtrSort( vFlops, (int (*)(void))IntPairPtrCompare ) ;
+    Vec_PtrSort( vAdds,  (int (*)(const void *, const void *))IntPairPtrCompare ) ;
+    Vec_PtrSort( vMults, (int (*)(const void *, const void *))IntPairPtrCompare ) ;
+    Vec_PtrSort( vMuxes, (int (*)(const void *, const void *))IntPairPtrCompare ) ;
+    Vec_PtrSort( vFlops, (int (*)(const void *, const void *))IntPairPtrCompare ) ;
 
     Vec_PtrForEachEntry( Int_Pair_t *, vAdds, pPair, i )
     {

@@ -49,12 +49,16 @@ extern void Scl_Init( Abc_Frame_t * pAbc );
 extern void Scl_End( Abc_Frame_t * pAbc );
 extern void Wlc_Init( Abc_Frame_t * pAbc );
 extern void Wlc_End( Abc_Frame_t * pAbc );
+extern void Wln_Init( Abc_Frame_t * pAbc );
+extern void Wln_End( Abc_Frame_t * pAbc );
 extern void Bac_Init( Abc_Frame_t * pAbc );
 extern void Bac_End( Abc_Frame_t * pAbc );
 extern void Cba_Init( Abc_Frame_t * pAbc );
 extern void Cba_End( Abc_Frame_t * pAbc );
 extern void Pla_Init( Abc_Frame_t * pAbc );
 extern void Pla_End( Abc_Frame_t * pAbc );
+extern void Sim_Init( Abc_Frame_t * pAbc );
+extern void Sim_End( Abc_Frame_t * pAbc );
 extern void Test_Init( Abc_Frame_t * pAbc );
 extern void Test_End( Abc_Frame_t * pAbc );
 extern void Abc2_Init( Abc_Frame_t * pAbc );
@@ -63,6 +67,8 @@ extern void Abc85_Init( Abc_Frame_t * pAbc );
 extern void Abc85_End( Abc_Frame_t * pAbc );
 extern void Glucose_Init( Abc_Frame_t *pAbc );
 extern void Glucose_End( Abc_Frame_t * pAbc );
+extern void Glucose2_Init( Abc_Frame_t *pAbc );
+extern void Glucose2_End( Abc_Frame_t * pAbc );
 
 static Abc_FrameInitializer_t* s_InitializerStart = NULL;
 static Abc_FrameInitializer_t* s_InitializerEnd = NULL;
@@ -112,11 +118,13 @@ void Abc_FrameInit( Abc_Frame_t * pAbc )
     Load_Init( pAbc );
     Scl_Init( pAbc );
     Wlc_Init( pAbc );
+    Wln_Init( pAbc );
     Bac_Init( pAbc );
     Cba_Init( pAbc );
     Pla_Init( pAbc );
     Test_Init( pAbc );
     Glucose_Init( pAbc );
+    Glucose2_Init( pAbc );
     for( p = s_InitializerStart ; p ; p = p->next )
         if(p->init)
             p->init(pAbc);
@@ -151,6 +159,7 @@ void Abc_FrameEnd( Abc_Frame_t * pAbc )
     Load_End( pAbc );
     Scl_End( pAbc );
     Wlc_End( pAbc );
+    Wln_End( pAbc );
     Bac_End( pAbc );
     Cba_End( pAbc );
     Pla_End( pAbc );

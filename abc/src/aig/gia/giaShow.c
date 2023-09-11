@@ -1125,7 +1125,7 @@ void Gia_ShowProcess( Gia_Man_t * p, char * pFileName, Vec_Int_t * vBold, Vec_In
 }
 void Gia_ManShow( Gia_Man_t * pMan, Vec_Int_t * vBold, int fAdders, int fFadds, int fPath )
 {
-    extern void Abc_ShowFile( char * FileNameDot );
+    extern void Abc_ShowFile( char * FileNameDot, int fKeepDot );
     char FileNameDot[200];
     FILE * pFile;
     Vec_Int_t * vXors = NULL, * vAdds = fAdders ? Ree_ManComputeCuts( pMan, &vXors, 0 ) : NULL;
@@ -1145,7 +1145,7 @@ void Gia_ManShow( Gia_Man_t * pMan, Vec_Int_t * vBold, int fAdders, int fFadds, 
     else
         Gia_WriteDotAigSimple( pMan, FileNameDot, vBold );
     // visualize the file 
-    Abc_ShowFile( FileNameDot );
+    Abc_ShowFile( FileNameDot, 0 );
 
     Vec_IntFreeP( &vAdds );
     Vec_IntFreeP( &vXors );

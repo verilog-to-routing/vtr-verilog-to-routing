@@ -96,7 +96,7 @@ Gia_Man_t * Gia_ManDropContained( Gia_Man_t * p )
             Vec_IntWriteEntry( vLits, i, ConstLit ); // const1 SAT var is always true
         else 
         {
-            assert( status = l_True );
+            assert( status == l_True );
             Vec_IntPush( vKeep, i );
         }
     }
