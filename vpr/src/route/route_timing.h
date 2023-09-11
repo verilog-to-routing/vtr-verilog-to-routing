@@ -65,20 +65,14 @@ struct RoutingMetrics {
 /* Data while timing driven route is active */
 class timing_driven_route_structs {
   public:
-    std::vector<float> pin_criticality;                               /* [1..max_pins_per_net-1] */
-    std::vector<int> sink_order;                                      /* [1..max_pins_per_net-1] */
-    std::vector<vtr::optional<const RouteTreeNode&>> rt_node_of_sink; /* [1..max_pins_per_net-1] */
+    std::vector<float> pin_criticality; /* [1..max_pins_per_net-1] */
 
     timing_driven_route_structs(const Netlist<>& net_list) {
         int max_sinks = std::max(get_max_pins_per_net(net_list) - 1, 0);
         pin_criticality.resize(max_sinks + 1);
-        sink_order.resize(max_sinks + 1);
-        rt_node_of_sink.resize(max_sinks + 1);
 
         /* Set element 0 to invalid values */
         pin_criticality[0] = std::numeric_limits<float>::quiet_NaN();
-        sink_order[0] = -1;
-        rt_node_of_sink[0] = vtr::nullopt;
     }
 };
 
@@ -234,7 +228,6 @@ NetResultFlags timing_driven_route_net(ConnectionRouter& router,
                                        CBRR& connections_inf,
                                        RouterStats& router_stats,
                                        std::vector<float>& pin_criticality,
-                                       std::vector<vtr::optional<const RouteTreeNode&>>& rt_node_of_sink,
                                        float* net_delay,
                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                        std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -255,7 +248,6 @@ NetResultFlags try_timing_driven_route_net(ConnectionRouter& router,
                                            CBRR& connections_inf,
                                            RouterStats& router_stats,
                                            std::vector<float>& pin_criticality,
-                                           std::vector<vtr::optional<const RouteTreeNode&>>& rt_node_of_sink,
                                            NetPinsMatrix<float>& net_delay,
                                            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                            std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -265,6 +257,26 @@ NetResultFlags try_timing_driven_route_net(ConnectionRouter& router,
                                            const RoutingPredictor& routing_predictor,
                                            const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                                            bool is_flat);
+
+/** Update net_delay value for a single sink in a RouteTree. */
+inline void update_net_delay_from_isink(float* net_delay,
+                                        const RouteTree& tree,
+                                        int isink,
+                                        const Netlist<>& net_list,
+                                        ParentNetId inet,
+                                        TimingInfo* timing_info,
+                                        NetPinTimingInvalidator* pin_timing_invalidator) {
+    float new_delay = tree.find_by_isink(isink)->Tdel;
+
+    if (pin_timing_invalidator && new_delay != net_delay[isink]) {
+        //Delay changed, invalidate for incremental timing update
+        VTR_ASSERT_SAFE(timing_info);
+        ParentPinId pin = net_list.net_pin(inet, isink);
+        pin_timing_invalidator->invalidate_connection(pin, timing_info);
+    }
+
+    net_delay[isink] = new_delay;
+}
 
 void update_router_stats(RouterStats& router_stats, RouterStats& router_iteration_stats);
 

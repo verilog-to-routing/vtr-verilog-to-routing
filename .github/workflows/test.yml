@@ -60,6 +60,7 @@ jobs:
     - name: Execute test script
       run: stdbuf -i0 -o0 -e0 ./.github/scripts/run-vtr.sh
       env:
+        VPR_NUM_WORKERS: 4
         VTR_TEST: ${{ matrix.test }}
         VTR_TEST_OPTIONS: ${{ matrix.options }}
         VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
