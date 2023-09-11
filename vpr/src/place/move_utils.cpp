@@ -579,7 +579,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     }
 
-    int block_num_pins = blk_type.pb_type->num_pins ? blk_type.pb_type->num_pins : 0;
+    int block_num_pins = blk_type.pb_type ? blk_type.pb_type->num_pins : 0;
     std::vector<size_t> block_nets(block_num_pins, -2);
     for (int ipin = 0; ipin < block_num_pins; ipin++) {
         block_nets[ipin] = (size_t) cluster_ctx.clb_nlist.block_net(b_from, ipin);
