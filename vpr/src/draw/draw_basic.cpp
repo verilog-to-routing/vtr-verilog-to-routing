@@ -653,25 +653,31 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         auto rr_type = rr_graph.node_type(inode);
 
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
-        RRNodeId prev_rr_node = prev_node;
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
         auto iedge = find_edge(prev_node, inode);
         auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
 
+        int current_node_layer = rr_graph.node_layer(inode);
+        int prev_node_layer = rr_graph.node_layer(prev_node);
+        t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
+
         //Don't draw node if the layer of the node is not set to visible on screen
-        if (!draw_state->draw_layer_display[rr_graph.node_layer(inode)].visible) {
+        if (!draw_state->draw_layer_display[current_node_layer].visible) {
             continue;
         }
 
+        ezgl::color color = draw_state->draw_rr_node[inode].color;
+
         switch (rr_type) {
             case OPIN: {
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_rr_pin(inode, color, g);
                 break;
             }
             case IPIN: {
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
-                if (is_edge_valid_to_draw(inode, prev_rr_node)) {
+                draw_rr_pin(inode, color, g);
+                if (edge_visibility.visible) {
+                    g->set_color(color, edge_visibility.alpha);
                     if (rr_graph.node_type(prev_node) == OPIN) {
                         draw_pin_to_pin(prev_node, inode, g);
                     } else {
@@ -684,8 +690,9 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 if (draw_state->draw_route_type == GLOBAL)
                     chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
-                draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
-                if (is_edge_valid_to_draw(inode, prev_rr_node)) {
+                draw_rr_chan(inode, color, g);
+                if (edge_visibility.visible) {
+                    g->set_color(color, edge_visibility.alpha);
                     switch (prev_type) {
                         case CHANX: {
                             draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
@@ -713,9 +720,10 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 if (draw_state->draw_route_type == GLOBAL)
                     chany_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
-                draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_rr_chan(inode, color, g);
 
-                if (is_edge_valid_to_draw(inode, prev_rr_node)) {
+                if (edge_visibility.visible) {
+                    g->set_color(color, edge_visibility.alpha);
                     switch (prev_type) {
                         case CHANX: {
                             draw_chanx_to_chany_edge(prev_node, inode,
@@ -1049,12 +1057,14 @@ void draw_crit_path(ezgl::renderer* g) {
             int src_block_layer = get_timing_path_node_layer_num(node);
             int sink_block_layer = get_timing_path_node_layer_num(prev_node);
 
+            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES
                 || draw_state->show_crit_path
                        == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
                 // FLylines for critical path are drawn based on the layer visibility of the source and sink
-                if (is_flyline_valid_to_draw(src_block_layer, sink_block_layer)) {
-                    g->set_color(color);
+                if (flyline_visibility.visible) {
+                    g->set_color(color, flyline_visibility.alpha);
                     g->set_line_dash(ezgl::line_dash::none);
                     g->set_line_width(4);
                     draw_flyline_timing_edge(tnode_draw_coord(prev_node),
@@ -1070,10 +1080,10 @@ void draw_crit_path(ezgl::renderer* g) {
                 draw_routed_timing_edge_connection(prev_node, node, color, g);
 
                 // FLylines for critical path are drawn based on the layer visibility of the source and sink
-                if (is_flyline_valid_to_draw(src_block_layer, sink_block_layer)) {
+                if (flyline_visibility.visible) {
                     g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
                     g->set_line_width(3);
-                    g->set_color(color);
+                    g->set_color(color, flyline_visibility.alpha);
 
                     draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
                                              (ezgl::point2d)tnode_draw_coord(node), (float)delay,
