@@ -536,7 +536,7 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
         match_net = true;
     } else {
         for (size_t net_id_num : net_id_nums) {
-            if ((int)net_id_num != OPEN && placer_opts.placer_debug_net == (int) net_id_num) {
+            if ((int)net_id_num != OPEN && placer_opts.placer_debug_net == (int)net_id_num) {
                 match_net = true;
                 break;
             }
