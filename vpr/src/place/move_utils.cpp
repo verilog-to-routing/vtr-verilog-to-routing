@@ -523,6 +523,12 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
     bool active_blk_debug = (placer_opts.placer_debug_block >= -1);
     bool active_net_debug = (placer_opts.placer_debug_net >= -1);
 
+    f_placer_debug = active_blk_debug || active_net_debug;
+
+    if (!f_placer_debug) {
+        return;
+    }
+
     bool match_blk = (placer_opts.placer_debug_block == blk_id_num || placer_opts.placer_debug_block == -1);
 
     bool match_net = false;
@@ -530,14 +536,12 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
         match_net = true;
     } else {
         for (size_t net_id_num : net_id_nums) {
-            if (placer_opts.placer_debug_net == (int) net_id_num) {
+            if ((int)net_id_num != OPEN && placer_opts.placer_debug_net == (int) net_id_num) {
                 match_net = true;
                 break;
             }
         }
     }
-
-    f_placer_debug = active_blk_debug || active_net_debug;
 
     if (active_blk_debug) f_placer_debug &= match_blk;
     if (active_net_debug) f_placer_debug &= match_net;
@@ -580,12 +584,15 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     }
 
-    int block_num_pins = (blk_type.index >= 0) ? logical_blocks[blk_type.index].pb_type->num_pins : 0;
-    std::vector<size_t> block_nets(block_num_pins, -2);
-    for (int ipin = 0; ipin < block_num_pins; ipin++) {
-        block_nets[ipin] = (size_t) cluster_ctx.clb_nlist.block_net(b_from, ipin);
+    if (b_from) {
+        const auto& cluster_blk_pb_type = logical_blocks[blk_type.index].pb_type;
+        int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
+        std::vector<size_t> block_nets(block_num_pins, OPEN);
+        for (int ipin = 0; ipin < block_num_pins; ipin++) {
+            block_nets[ipin] = (size_t)cluster_ctx.clb_nlist.block_net(b_from, ipin);
+        }
+        enable_placer_debug(placer_opts, size_t(b_from), block_nets);
     }
-    enable_placer_debug(placer_opts, size_t(b_from), block_nets);
 
     return b_from;
 }
