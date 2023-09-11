@@ -564,7 +564,6 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-
     if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
             b_from = pick_from_highly_critical_block(*net_from, *pin_from);
