@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/sara/Desktop/RLPLACE_LOCAL/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 9fa1b4c9c4b23d4c6d321612d2f76bad
+ * Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
  */
 
 #include <functional>
@@ -672,6 +672,7 @@ inline void load_grid_loc_capnp_type(const ucap::GridLoc::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
+	out.set_grid_loc_layer(root.getLayer(), context);
 }
 
 template<class T, typename Context>
@@ -687,7 +688,7 @@ inline void load_grid_locs_capnp_type(const ucap::GridLocs::Reader &root, T &out
 		auto data = root.getGridLocs();
 		out.preallocate_grid_locs_grid_loc(context, data.size());
 		for(const auto & el : data) {
-			auto child_context = out.add_grid_locs_grid_loc(context, el.getBlockTypeId(), el.getHeightOffset(), el.getLayer(), el.getWidthOffset(), el.getX(), el.getY());
+			auto child_context = out.add_grid_locs_grid_loc(context, el.getBlockTypeId(), el.getHeightOffset(), el.getWidthOffset(), el.getX(), el.getY());
 			load_grid_loc_capnp_type(el, out, child_context, report_error, stack);
 			out.finish_grid_locs_grid_loc(child_context);
 			stack->back().second += 1;
@@ -704,6 +705,7 @@ inline void load_node_loc_capnp_type(const ucap::NodeLoc::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
+	out.set_node_loc_layer(root.getLayer(), context);
 	out.set_node_loc_side(conv_enum_loc_side(root.getSide(), report_error), context);
 	out.set_node_loc_twist(root.getTwist(), context);
 }
@@ -776,7 +778,7 @@ inline void load_node_capnp_type(const ucap::Node::Reader &root, T &out, Context
 	stack->push_back(std::make_pair("getLoc", 0));
 	if (root.hasLoc()) {
 		auto child_el = root.getLoc();
-		auto child_context = out.init_node_loc(context, child_el.getLayer(), child_el.getPtc(), child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
+		auto child_context = out.init_node_loc(context, child_el.getPtc(), child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
 		load_node_loc_capnp_type(child_el, out, child_context, report_error, stack);
 		out.finish_node_loc(child_context);
 	}

@@ -179,6 +179,17 @@ Each block can contain a number of flip flops (ff), look up tables (lut), and ot
 
     Visualizing Block Internals
 
+View Menu
+-----------------------------
+.. figure:: ../Images/view_menu.png
+    :align: center 
+
+    Items under view menu
+
+The view menu is displayed when vpr is targeting a stacked multi-die architecture (more than 1 layer).
+Layers are drawn in ascending order for many drawing features (e.g. blocks); that is layer 0 is drawn first, and (if visible), layer 1 is drawn on top of it etc.
+The visibility and transparency of a layer can be changed, which will affect blocks, nets, routing, and critical path.
+Cross-layer connections refer to connections that are in different layers. 
 
 Button Description Table
 ------------------------
