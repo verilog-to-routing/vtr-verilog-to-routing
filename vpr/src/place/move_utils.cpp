@@ -563,7 +563,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int* pin_from) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& logical_blocks = g_vpr_ctx.device().logical_block_types;
+
 
     if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
@@ -585,7 +585,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
     }
 
     if (b_from) {
-        const auto& cluster_blk_pb_type = logical_blocks[blk_type.index].pb_type;
+        const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(b_from)->pb_type;
         int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
         std::vector<size_t> block_nets(block_num_pins, OPEN);
         for (int ipin = 0; ipin < block_num_pins; ipin++) {
