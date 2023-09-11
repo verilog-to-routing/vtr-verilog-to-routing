@@ -354,6 +354,8 @@ int convert_phys_to_agent_blk_type(int phys_blk_type_index);
  */
 int get_num_agent_types();
 
-void enable_placer_debug(const t_placer_opts& placer_opts, int blk_id_num, int net_id_num);
+void enable_placer_debug(const t_placer_opts& placer_opts,
+                         int blk_id_num,
+                         const std::vector<size_t>& net_id_nums);
 
 #endif

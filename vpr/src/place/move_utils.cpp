@@ -517,12 +517,25 @@ int convert_phys_to_agent_blk_type(int phys_blk_type_index) {
     return -1;
 }
 
-void enable_placer_debug(const t_placer_opts& placer_opts, int blk_id_num, int net_id_num) {
+void enable_placer_debug(const t_placer_opts& placer_opts,
+                         int blk_id_num,
+                         const std::vector<size_t>& net_id_nums) {
     bool active_blk_debug = (placer_opts.placer_debug_block >= -1);
     bool active_net_debug = (placer_opts.placer_debug_net >= -1);
 
     bool match_blk = (placer_opts.placer_debug_block == blk_id_num || placer_opts.placer_debug_block == -1);
-    bool match_net = (placer_opts.placer_debug_net == net_id_num || placer_opts.placer_debug_net == -1);
+
+    bool match_net = false;
+    if (placer_opts.placer_debug_net == -1) {
+        match_net = true;
+    } else {
+        for (size_t net_id_num : net_id_nums) {
+            if (placer_opts.placer_debug_net == (int) net_id_num) {
+                match_net = true;
+                break;
+            }
+        }
+    }
 
     f_placer_debug = active_blk_debug || active_net_debug;
 
@@ -566,7 +579,12 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     }
 
-    enable_placer_debug(placer_opts, size_t(b_from), OPEN);
+    int block_num_pins = blk_type.pb_type->num_pins ? blk_type.pb_type->num_pins : 0;
+    std::vector<size_t> block_nets(block_num_pins, -2);
+    for (int ipin = 0; ipin < block_num_pins; ipin++) {
+        block_nets[ipin] = (size_t) cluster_ctx.clb_nlist.block_net(b_from, ipin);
+    }
+    enable_placer_debug(placer_opts, size_t(b_from), block_nets);
 
     return b_from;
 }
