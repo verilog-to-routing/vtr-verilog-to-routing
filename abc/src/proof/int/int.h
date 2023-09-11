@@ -24,7 +24,7 @@
 
 /* 
     The interpolation algorithm implemented here was introduced in the paper:
-    K. L. McMillan. Interpolation and SAT-based model checking. CAV’03, pp. 1-13.
+    K. L. McMillan. Interpolation and SAT-based model checking. CAV 03, pp. 1-13.
 */
 
 ////////////////////////////////////////////////////////////////////////

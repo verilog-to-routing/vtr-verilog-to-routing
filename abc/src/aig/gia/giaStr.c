@@ -736,7 +736,7 @@ Str_Ntk_t * Str_ManNormalizeInt( Gia_Man_t * p, Vec_Wec_t * vGroups, Vec_Int_t *
     if ( p->vStore == NULL )
         p->vStore = Vec_IntAlloc( STR_SUPER );
     Gia_ManFillValue( p );
-    pNtk = Str_NtkCreate( Gia_ManObjNum(p), 1 + Gia_ManCoNum(p) + 2 * Gia_ManAndNum(p) + Gia_ManMuxNum(p) );
+    pNtk = Str_NtkCreate( Gia_ManObjNum(p) + 10000, 1 + Gia_ManCoNum(p) + 2 * Gia_ManAndNum(p) + Gia_ManMuxNum(p) + 10000 );
     Gia_ManConst0(p)->Value = 0;
     Gia_ManForEachObj1( p, pObj, i )
     {
@@ -749,7 +749,7 @@ Str_Ntk_t * Str_ManNormalizeInt( Gia_Man_t * p, Vec_Wec_t * vGroups, Vec_Int_t *
             pObj->Value = Str_ObjCreate( pNtk, STR_PO, 1, &iFanin );
         }
     }
-    assert( pNtk->nObjs <= Gia_ManObjNum(p) );
+    //assert( pNtk->nObjs <= Gia_ManObjNum(p) );
     return pNtk;
 }
 Str_Ntk_t * Str_ManNormalize( Gia_Man_t * p )
@@ -859,21 +859,23 @@ static inline void transpose64( word A[64] )
 static inline int  Str_ManNum( Gia_Man_t * p, int iObj )             { return Vec_IntEntry(&p->vCopies, iObj);     }
 static inline void Str_ManSetNum( Gia_Man_t * p, int iObj, int Num ) { Vec_IntWriteEntry(&p->vCopies, iObj, Num);  }
 
-int Str_ManVectorAffinity( Gia_Man_t * p, Vec_Int_t * vSuper, Vec_Int_t * vDelay, word Matrix[256], int nLimit )
+int Str_ManVectorAffinity( Gia_Man_t * p, Vec_Int_t * vSuper, Vec_Int_t * vDelay, word * Matrix, int nLimit )
 {
     int fVerbose = 0;
-    int Levels[256];
+    int * Levels = NULL;
     int nSize = Vec_IntSize(vSuper);
     int Prev = nSize, nLevels = 1;
     int i, k, iLit, iFanin, nSizeNew;
     word Mask; 
     assert( nSize > 2 );
+    assert( nSize <= nLimit );
     if ( nSize > 64 )
     {
         for ( i = 0; i < 64; i++ )
             Matrix[i] = 0;
         return 0;
     }
+    Levels = ABC_ALLOC( int, nLimit+256 );
     // mark current nodes
     Gia_ManIncrementTravId( p );
     Vec_IntForEachEntry( vSuper, iLit, i )
@@ -948,6 +950,7 @@ int Str_ManVectorAffinity( Gia_Man_t * p, Vec_Int_t * vSuper, Vec_Int_t * vDelay
     if ( nSizeNew == 0 )
     {
         Vec_IntShrink( vSuper, nSize );
+        ABC_FREE( Levels );
         return 0;
     }
 /*
@@ -979,6 +982,7 @@ int Str_ManVectorAffinity( Gia_Man_t * p, Vec_Int_t * vSuper, Vec_Int_t * vDelay
         }
         i = 0;
     }
+    ABC_FREE( Levels );
     Vec_IntShrink( vSuper, nSize );
     return nSizeNew;
 }
@@ -1088,15 +1092,14 @@ int Str_NtkBalanceTwo( Gia_Man_t * pNew, Str_Ntk_t * p, Str_Obj_t * pObj, int i,
 
 void Str_NtkBalanceMulti( Gia_Man_t * pNew, Str_Ntk_t * p, Str_Obj_t * pObj, Vec_Int_t * vDelay, int nLutSize )
 {
-    word pMatrix[256];
-    int Limit = 256;
+    word * pMatrix = ABC_ALLOC( word, pObj->nFanins+256 );
     Vec_Int_t * vSuper = pNew->vSuper;
     Vec_Int_t * vCosts = pNew->vStore;
     int * pSuper = Vec_IntArray(vSuper);
     int * pCost  = Vec_IntArray(vCosts);
     int k, iLit, MatrixSize = 0;
-    assert( Limit <= Vec_IntCap(vSuper) );
-    assert( Limit <= Vec_IntCap(vCosts) );
+    assert( (int)pObj->nFanins <= Vec_IntCap(vSuper) );
+    assert( (int)pObj->nFanins <= Vec_IntCap(vCosts) );
 
     // collect nodes
     Vec_IntClear( vSuper );
@@ -1111,11 +1114,13 @@ void Str_NtkBalanceMulti( Gia_Man_t * pNew, Str_Ntk_t * p, Str_Obj_t * pObj, Vec
     if ( Vec_IntSize(vSuper) == 1 )
     {
         pObj->iCopy = Vec_IntEntry(vSuper, 0);
+        ABC_FREE( pMatrix );
         return;
     }
     if ( Vec_IntSize(vSuper) == 2 )
     {
         pObj->iCopy = Str_NtkBalanceTwo( pNew, p, pObj, 0, 1, vDelay, pCost, pSuper, pMatrix, 2, nLutSize, -1 );
+        ABC_FREE( pMatrix );
         return;
     }
 
@@ -1127,7 +1132,7 @@ void Str_NtkBalanceMulti( Gia_Man_t * pNew, Str_Ntk_t * p, Str_Obj_t * pObj, Vec
 
     // compute affinity
     if ( Vec_IntSize(vSuper) < 64 )
-        MatrixSize = Str_ManVectorAffinity( pNew, vSuper, vCosts, pMatrix, Limit );
+        MatrixSize = Str_ManVectorAffinity( pNew, vSuper, vCosts, pMatrix, pObj->nFanins );
 
     // start the new product
     while ( Vec_IntSize(vSuper) > 2 )
@@ -1147,7 +1152,7 @@ void Str_NtkBalanceMulti( Gia_Man_t * pNew, Str_Ntk_t * p, Str_Obj_t * pObj, Vec
 
         // compute affinity
         if ( Vec_IntSize(vSuper) == 64 )
-            MatrixSize = Str_ManVectorAffinity( pNew, vSuper, vCosts, pMatrix, Limit );
+            MatrixSize = Str_ManVectorAffinity( pNew, vSuper, vCosts, pMatrix, pObj->nFanins );
         assert( Vec_IntSize(vSuper) <= 64 );
 //        Str_PrintState( pCost, pSuper, pMatrix, Vec_IntSize(vSuper) );
 
@@ -1236,6 +1241,7 @@ void Str_NtkBalanceMulti( Gia_Man_t * pNew, Str_Ntk_t * p, Str_Obj_t * pObj, Vec
         continue;
     }
     pObj->iCopy = Str_NtkBalanceTwo( pNew, p, pObj, 0, 1, vDelay, pCost, pSuper, pMatrix, 2, nLutSize, -1 );
+    ABC_FREE( pMatrix );
 
 /*
     // simple
@@ -1357,7 +1363,7 @@ Gia_Man_t * Str_NtkBalance( Gia_Man_t * pGia, Str_Ntk_t * p, int nLutSize, int f
     ABC_FREE( pNew->vCopies.pArray );
     Gia_ManHashStop( pNew );
     Gia_ManSetRegNum( pNew, Gia_ManRegNum(pGia) );
-    pNew = Gia_ManDupNoMuxes( pTemp = pNew );
+    pNew = Gia_ManDupNoMuxes( pTemp = pNew, 0 );
     Gia_ManStop( pTemp );
 //    if ( pGia->pManTime != NULL )
 //        pNew->pManTime = Tim_ManDup( (Tim_Man_t *)pGia->pManTime, 0 );

@@ -198,9 +198,51 @@ extern DdNode *     Extra_bddAndPermute( DdManager * ddF, DdNode * bF, DdManager
 extern int          Extra_bddCountCubes( DdManager * dd, DdNode ** pFuncs, int nFuncs, int fMode, int nLimit, int * pGuide );
 extern void         Extra_zddDumpPla( DdManager * dd, DdNode * zCover, int nVars, char * pFileName );
 
+/* build the set of all tuples of K variables out of N */
+extern DdNode *     Extra_bddTuples( DdManager * dd, int K, DdNode * bVarsN );
+extern DdNode *      extraBddTuples( DdManager * dd, DdNode * bVarsK, DdNode * bVarsN );
+
 #ifndef ABC_PRB
 #define ABC_PRB(dd,f)       printf("%s = ", #f); Extra_bddPrint(dd,f); printf("\n")
 #endif
+
+/*=== extraMaxMin.c ==============================================================*/
+
+/* maximal/minimimal */
+extern DdNode * Extra_zddMaximal       (DdManager *dd, DdNode *S);
+extern DdNode *  extraZddMaximal       (DdManager *dd, DdNode *S);
+extern DdNode * Extra_zddMinimal       (DdManager *dd, DdNode *S);
+extern DdNode *  extraZddMinimal       (DdManager *dd, DdNode *S);
+/* maximal/minimal of the union of two sets of subsets */
+extern DdNode * Extra_zddMaxUnion      (DdManager *dd, DdNode *S, DdNode *T);
+extern DdNode *  extraZddMaxUnion      (DdManager *dd, DdNode *S, DdNode *T);
+extern DdNode * Extra_zddMinUnion      (DdManager *dd, DdNode *S, DdNode *T);
+extern DdNode *  extraZddMinUnion      (DdManager *dd, DdNode *S, DdNode *T);
+/* dot/cross products */
+extern DdNode * Extra_zddDotProduct    (DdManager *dd, DdNode *S, DdNode *T);
+extern DdNode *  extraZddDotProduct    (DdManager *dd, DdNode *S, DdNode *T);
+extern DdNode * Extra_zddCrossProduct  (DdManager *dd, DdNode *S, DdNode *T);
+extern DdNode *  extraZddCrossProduct  (DdManager *dd, DdNode *S, DdNode *T);
+extern DdNode * Extra_zddMaxDotProduct (DdManager *dd, DdNode *S, DdNode *T);
+extern DdNode *  extraZddMaxDotProduct (DdManager *dd, DdNode *S, DdNode *T);
+
+/*=== extraBddSet.c ==============================================================*/
+
+/* subset/supset operations */
+extern DdNode * Extra_zddSubSet        (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode *  extraZddSubSet        (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode * Extra_zddSupSet        (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode *  extraZddSupSet        (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode * Extra_zddNotSubSet     (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode *  extraZddNotSubSet     (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode * Extra_zddNotSupSet     (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode *  extraZddNotSupSet     (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode * Extra_zddMaxNotSupSet  (DdManager *dd, DdNode *X, DdNode *Y);
+extern DdNode *  extraZddMaxNotSupSet  (DdManager *dd, DdNode *X, DdNode *Y);
+/* check whether the empty combination belongs to the set of subsets */
+extern int Extra_zddEmptyBelongs       (DdManager *dd, DdNode* zS);
+/* check whether the set consists of one subset only */
+extern int Extra_zddIsOneSubset        (DdManager *dd, DdNode* zS);
 
 /*=== extraBddKmap.c ================================================================*/
 

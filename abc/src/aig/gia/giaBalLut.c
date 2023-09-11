@@ -965,7 +965,7 @@ Gia_Man_t * Gia_ManBalanceLut( Gia_Man_t * p, int nLutSize, int nCutNum, int fVe
     pNew1 = Gia_ManBalanceInt( pNew, nLutSize, nCutNum, fVerbose );
     if ( fVerbose )      Gia_ManPrintStats( pNew1, NULL );
     Gia_ManStop( pNew );
-    pNew2 = Gia_ManDupNoMuxes( pNew1 );
+    pNew2 = Gia_ManDupNoMuxes( pNew1, 0 );
     if ( fVerbose )      Gia_ManPrintStats( pNew2, NULL );
     Gia_ManStop( pNew1 );
     return pNew2;

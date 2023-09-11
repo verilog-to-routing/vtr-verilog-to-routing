@@ -319,6 +319,23 @@ Cudd_addOuterSum(
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
 
+
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup2 that can
+              be casted to DD_CTFP.
+
+******************************************************************************/
+static DdNode *
+addMMRecur_dummy(DdManager * dd, DdNode * A, DdNode * B)
+{
+  assert(0);
+  return 0;
+}
+#endif
+
+
 /**Function********************************************************************
 
   Synopsis    [Performs the recursive step of Cudd_addMatrixMultiply.]
@@ -393,7 +410,11 @@ addMMRecur(
     topA = cuddI(dd,A->index); topB = cuddI(dd,B->index);
     topV = ddMin(topA,topB);
 
+#ifdef USE_CASH_DUMMY
+    cacheOp = (DD_CTFP) addMMRecur_dummy;
+#else
     cacheOp = (DD_CTFP) addMMRecur;
+#endif
     res = cuddCacheLookup2(dd,cacheOp,A,B);
     if (res != NULL) {
         /* If the result is 0, there is no need to normalize.

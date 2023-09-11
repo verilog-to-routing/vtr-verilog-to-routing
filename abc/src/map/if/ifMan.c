@@ -97,9 +97,9 @@ If_Man_t * If_ManStart( If_Par_t * pPars )
             p->pPars->nLutSize, 8 * p->nTruth6Words[p->pPars->nLutSize], p->nCutBytes, p->nObjBytes, p->nSetBytes, p->pPars->fCutMin? "yes":"no" );
     // room for temporary truth tables
     p->puTemp[0] = p->pPars->fTruth? ABC_ALLOC( unsigned, 8 * p->nTruth6Words[p->pPars->nLutSize] ) : NULL;
-    p->puTemp[1] = p->puTemp[0] + p->nTruth6Words[p->pPars->nLutSize]*2;
-    p->puTemp[2] = p->puTemp[1] + p->nTruth6Words[p->pPars->nLutSize]*2;
-    p->puTemp[3] = p->puTemp[2] + p->nTruth6Words[p->pPars->nLutSize]*2;
+    p->puTemp[1] = p->pPars->fTruth? p->puTemp[0] + p->nTruth6Words[p->pPars->nLutSize]*2 : NULL;
+    p->puTemp[2] = p->pPars->fTruth? p->puTemp[1] + p->nTruth6Words[p->pPars->nLutSize]*2 : NULL;
+    p->puTemp[3] = p->pPars->fTruth? p->puTemp[2] + p->nTruth6Words[p->pPars->nLutSize]*2 : NULL;
     p->puTempW   = p->pPars->fTruth? ABC_ALLOC( word, p->nTruth6Words[p->pPars->nLutSize] ) : NULL;
     if ( pPars->fUseDsd )
     {
@@ -273,6 +273,8 @@ void If_ManStop( If_Man_t * p )
     Vec_IntFreeP( &p->vPairRes );
     Vec_StrFreeP( &p->vPairPerms );
     Vec_PtrFreeP( &p->vVisited );
+    Vec_StrFreeP( &p->vMarks );
+    Vec_IntFreeP( &p->vVisited2 );
     if ( p->vPairHash )
         Hash_IntManStop( p->vPairHash );
     for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
@@ -284,6 +286,11 @@ void If_ManStop( If_Man_t * p )
     for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
         Vec_IntFreeP( &p->vTtOccurs[i] );
     Mem_FixedStop( p->pMemObj, 0 );
+    if ( p->vTtMem6 )
+    {
+        Vec_MemHashFree( p->vTtMem6 );
+        Vec_MemFreeP( &p->vTtMem6 );
+    }
     ABC_FREE( p->pMemCi );
     ABC_FREE( p->pMemAnd );
     ABC_FREE( p->puTemp[0] );

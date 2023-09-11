@@ -61,7 +61,7 @@ void open_libs() {
     DIR* dirp;
     struct dirent* dp;
     char *env, *init_p, *p;
-    int done;
+    //int done;
 
     env = getenv ("ABC_LIB_PATH");
     if (env == NULL) {
@@ -74,12 +74,14 @@ void open_libs() {
     }
 
     // Extract directories and read libraries
-    done = 0;
+    //done = 0;
     p = init_p;
-    while (!done) {
+    //while (!done) {
+    for (;;) {
       char *endp = strchr (p,':');
-      if (endp == NULL) done = 1; // last directory in the list
-      else *endp = 0; // end of string
+      //if (endp == NULL) done = 1; // last directory in the list
+      //else *endp = 0; // end of string
+      if (endp != NULL) *endp = 0; // end of string
 
       dirp = opendir(p);
       if (dirp == NULL) {
@@ -119,7 +121,12 @@ void open_libs() {
         }
       }
       closedir(dirp);
-      p = endp+1;
+      //p = endp+1;
+      if (endp == NULL) {
+        break; // last directory in the list
+      } else {
+        p = endp+1;
+      }
     }
 
     ABC_FREE(init_p);

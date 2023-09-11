@@ -90,7 +90,7 @@ Aig_Man_t * Dch_ComputeChoices( Aig_Man_t * pAig, Dch_Pars_t * pPars )
 {
     Dch_Man_t * p;
     Aig_Man_t * pResult;
-    abctime clk, clkTotal = Abc_Clock();
+    abctime clk, clk2 = Abc_Clock(), clkTotal = Abc_Clock();
     // reset random numbers
     Aig_ManRandom(1);
     // start the choicing manager
@@ -106,6 +106,8 @@ p->timeSimInit = Abc_Clock() - clk;
     // free memory ahead of time
 p->timeTotal = Abc_Clock() - clkTotal;
     Dch_ManStop( p );
+    if ( pPars->fVerbose ) 
+        Abc_PrintTime( 1, "Old choice computation time", Abc_Clock() - clk2 );
     // create choices
     ABC_FREE( pAig->pTable );
     pResult = Dch_DeriveChoiceAig( pAig, pPars->fSkipRedSupp );

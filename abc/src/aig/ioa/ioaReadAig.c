@@ -438,7 +438,7 @@ Aig_Man_t * Ioa_ReadAiger( char * pFileName, int fCheck )
     // read the file into the buffer
     nFileSize = Ioa_FileSize( pFileName );
     pFile = fopen( pFileName, "rb" );
-    pContents = ABC_ALLOC( char, nFileSize );
+    pContents = ABC_CALLOC( char, nFileSize+1 );
     RetValue = fread( pContents, nFileSize, 1, pFile );
     fclose( pFile );
 

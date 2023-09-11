@@ -847,7 +847,7 @@ Abc_Obj_t * Abc_AigMiter2( Abc_Aig_t * pMan, Vec_Ptr_t * vPairs )
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_AigReplace( Abc_Aig_t * pMan, Abc_Obj_t * pOld, Abc_Obj_t * pNew, int fUpdateLevel )
+int Abc_AigReplace( Abc_Aig_t * pMan, Abc_Obj_t * pOld, Abc_Obj_t * pNew, int fUpdateLevel )
 {
     assert( Vec_PtrSize(pMan->vStackReplaceOld) == 0 );
     assert( Vec_PtrSize(pMan->vStackReplaceNew) == 0 );
@@ -859,6 +859,9 @@ void Abc_AigReplace( Abc_Aig_t * pMan, Abc_Obj_t * pOld, Abc_Obj_t * pNew, int f
     {
         pOld = (Abc_Obj_t *)Vec_PtrPop( pMan->vStackReplaceOld );
         pNew = (Abc_Obj_t *)Vec_PtrPop( pMan->vStackReplaceNew );
+        if ( Abc_ObjFanoutNum(pOld) == 0 )
+            //return 0;
+            continue;
         Abc_AigReplace_int( pMan, pOld, pNew, fUpdateLevel );
     }
     if ( fUpdateLevel )
@@ -867,6 +870,7 @@ void Abc_AigReplace( Abc_Aig_t * pMan, Abc_Obj_t * pOld, Abc_Obj_t * pNew, int f
         if ( pMan->pNtkAig->vLevelsR ) 
             Abc_AigUpdateLevelR_int( pMan );
     }
+    return 1;
 }
 
 /**Function*************************************************************
@@ -894,7 +898,20 @@ void Abc_AigReplace_int( Abc_Aig_t * pMan, Abc_Obj_t * pOld, Abc_Obj_t * pNew, i
     {
         if ( Abc_ObjIsCo(pFanout) )
         {
-            Abc_ObjPatchFanin( pFanout, pOld, pNew );
+            pFanin1 = Abc_ObjRegular( pNew );
+            if ( pFanin1->fMarkB )
+                Abc_AigRemoveFromLevelStructureR( pMan->vLevelsR, pFanin1 );
+            if ( fUpdateLevel && pMan->pNtkAig->vLevelsR )
+            {
+                Abc_ObjSetReverseLevel( pFanin1, Abc_ObjReverseLevel(pOld) );
+                assert( pFanin1->fMarkB == 0 );
+                if ( !Abc_ObjIsCi(pFanin1) )
+                {
+                    pFanin1->fMarkB = 1;
+                    Vec_VecPush( pMan->vLevelsR, Abc_ObjReverseLevel(pFanin1), pFanin1 );
+                }
+            }
+            Abc_ObjPatchFanin( pFanout, pOld, pNew );            
             continue;
         }
         // find the old node as a fanin of this fanout

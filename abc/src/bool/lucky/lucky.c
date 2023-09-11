@@ -47,7 +47,7 @@ int memCompare(word* x, word*  y, int nVars)
  {
      int i, count=1, WordsN = p->nFuncs;
      word tempWord;
-     qsort(a,WordsN,sizeof(word),compareWords1);
+     qsort(a,(size_t)WordsN,sizeof(word),compareWords1);
      tempWord = a[0];
      for(i=1;i<WordsN;i++)  
          if(tempWord != a[i])
@@ -56,7 +56,7 @@ int memCompare(word* x, word*  y, int nVars)
              tempWord = a[i];
              count++;
          }
-         p->nFuncs = count;
+     p->nFuncs = count;
 }
 //////////sort Word** a//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int compareWords2 (const void ** x, const void ** y)
@@ -94,7 +94,7 @@ void sortAndUnique(word** a, Abc_TtStore_t* p)
              tempWordPtr = a[i];
              count++;
          }
-         p->nFuncs = count;
+     p->nFuncs = count;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -302,25 +302,25 @@ int minimalFlip1(word* pInOut, word* pMinimal, word* PDuplicat, int  nVars)
 {
     int i;
     int blockSize = Kit_TruthWordNum_64bit( nVars )*sizeof(word);
-    memcpy(pMinimal, pInOut, blockSize);
-    memcpy(PDuplicat, pInOut, blockSize);
+    memcpy(pMinimal, pInOut, (size_t)blockSize);
+    memcpy(PDuplicat, pInOut, (size_t)blockSize);
     Kit_TruthChangePhase_64bit( pInOut, nVars, 0 );
     for(i=1;i<nVars;i++)
     {
         if( memCompare(pMinimal,pInOut,nVars) == 1)
         {
-            memcpy(pMinimal, pInOut, blockSize);
+            memcpy(pMinimal, pInOut, (size_t)blockSize);
             Kit_TruthChangePhase_64bit( pInOut, nVars, i );
         }
         else
         {
-            memcpy(pInOut, pMinimal, blockSize);
+            memcpy(pInOut, pMinimal, (size_t)blockSize);
             Kit_TruthChangePhase_64bit( pInOut, nVars, i );
         }
     }
     if( memCompare(pMinimal,pInOut,nVars) == -1)
-        memcpy(pInOut, pMinimal, blockSize);
-    if(memcmp(pInOut,PDuplicat,blockSize) == 0)
+        memcpy(pInOut, pMinimal, (size_t)blockSize);
+    if(memcmp(pInOut,PDuplicat,(size_t)blockSize) == 0)
         return 0;
     else
         return 1;
@@ -333,25 +333,25 @@ int minimalSwap1(word* pInOut, word* pMinimal, word* PDuplicat, int  nVars)
 {
     int i;
     int blockSize = Kit_TruthWordNum_64bit( nVars )*sizeof(word);
-    memcpy(pMinimal, pInOut, blockSize);
-    memcpy(PDuplicat, pInOut, blockSize);
+    memcpy(pMinimal, pInOut, (size_t)blockSize);
+    memcpy(PDuplicat, pInOut, (size_t)blockSize);
     Kit_TruthSwapAdjacentVars_64bit( pInOut, nVars, 0 );
     for(i=1;i<nVars-1;i++)
     {
         if( memCompare(pMinimal,pInOut,nVars) == 1)
         {
-            memcpy(pMinimal, pInOut, blockSize);
+            memcpy(pMinimal, pInOut, (size_t)blockSize);
             Kit_TruthSwapAdjacentVars_64bit( pInOut, nVars, i );
         }
         else
         {
-            memcpy(pInOut, pMinimal, blockSize);
+            memcpy(pInOut, pMinimal, (size_t)blockSize);
             Kit_TruthSwapAdjacentVars_64bit( pInOut, nVars, i );
         }
     }
     if( memCompare(pMinimal,pInOut,nVars) == -1)
-        memcpy(pInOut, pMinimal, blockSize);
-    if(memcmp(pInOut,PDuplicat,blockSize) == 0)
+        memcpy(pInOut, pMinimal, (size_t)blockSize);
+    if(memcmp(pInOut,PDuplicat,(size_t)blockSize) == 0)
         return 0;
     else
         return 1;
@@ -380,20 +380,20 @@ int minimalFlip(word* pInOut, word* pMinimal, word* PDuplicat, int  nVars, unsig
     int i;
     unsigned minTemp = *p_uCanonPhase;
     int blockSize = Kit_TruthWordNum_64bit( nVars )*sizeof(word);
-    memcpy(pMinimal, pInOut, blockSize);
-    memcpy(PDuplicat, pInOut, blockSize);       //////////////need one more unsigned!!!!!!!!!!!!!
+    memcpy(pMinimal, pInOut, (size_t)blockSize);
+    memcpy(PDuplicat, pInOut, (size_t)blockSize);       //////////////need one more unsigned!!!!!!!!!!!!!
     Kit_TruthChangePhase_64bit( pInOut, nVars, 0 );
     *p_uCanonPhase ^= (unsigned)1;
     for(i=1;i<nVars;i++)
     {
         if( memCompare(pMinimal,pInOut,nVars) == 1)
         {
-            memcpy(pMinimal, pInOut, blockSize);
+            memcpy(pMinimal, pInOut, (size_t)blockSize);
             minTemp = *p_uCanonPhase;
         }
         else
         {
-            memcpy(pInOut, pMinimal, blockSize);
+            memcpy(pInOut, pMinimal, (size_t)blockSize);
             *p_uCanonPhase = minTemp;
         }
         Kit_TruthChangePhase_64bit( pInOut, nVars, i );
@@ -401,10 +401,10 @@ int minimalFlip(word* pInOut, word* pMinimal, word* PDuplicat, int  nVars, unsig
     }
     if( memCompare(pMinimal,pInOut,nVars) == -1)
     {
-        memcpy(pInOut, pMinimal, blockSize);
+        memcpy(pInOut, pMinimal, (size_t)blockSize);
         *p_uCanonPhase = minTemp;
     }
-    if(memcmp(pInOut,PDuplicat,blockSize) == 0) 
+    if(memcmp(pInOut,PDuplicat,(size_t)blockSize) == 0) 
         return 0;
     else
         return 1;
@@ -478,24 +478,24 @@ int minimalSwap(word* pInOut, word* pMinimal, word* PDuplicat, int  nVars, char 
     int blockSizeWord = Kit_TruthWordNum_64bit( nVars )*sizeof(word);
     int blockSizeChar = nVars *sizeof(char);
     unsigned TempuCanonPhase = *p_uCanonPhase;
-    memcpy(pMinimal, pInOut, blockSizeWord);
-    memcpy(PDuplicat, pInOut, blockSizeWord);
-    memcpy(tempArray, pCanonPerm, blockSizeChar);  
+    memcpy(pMinimal, pInOut, (size_t)blockSizeWord);
+    memcpy(PDuplicat, pInOut, (size_t)blockSizeWord);
+    memcpy(tempArray, pCanonPerm, (size_t)blockSizeChar);  
     Kit_TruthSwapAdjacentVars_64bit( pInOut, nVars, 0 );
     swapInfoAdjacentVars(0, pCanonPerm, p_uCanonPhase);
     for(i=1;i<nVars-1;i++)
     {
         if( memCompare(pMinimal,pInOut,nVars) == 1)
         {
-            memcpy(pMinimal, pInOut, blockSizeWord);
-            memcpy(tempArray, pCanonPerm, blockSizeChar);
+            memcpy(pMinimal, pInOut, (size_t)blockSizeWord);
+            memcpy(tempArray, pCanonPerm, (size_t)blockSizeChar);
             TempuCanonPhase = *p_uCanonPhase;
             
         }
         else
         {
-            memcpy(pInOut, pMinimal, blockSizeWord);
-            memcpy(pCanonPerm, tempArray, blockSizeChar);
+            memcpy(pInOut, pMinimal, (size_t)blockSizeWord);
+            memcpy(pCanonPerm, tempArray, (size_t)blockSizeChar);
             *p_uCanonPhase = TempuCanonPhase;
         }
         Kit_TruthSwapAdjacentVars_64bit( pInOut, nVars, i );
@@ -503,11 +503,11 @@ int minimalSwap(word* pInOut, word* pMinimal, word* PDuplicat, int  nVars, char 
     }
     if( memCompare(pMinimal,pInOut,nVars) == -1)
     {
-        memcpy(pInOut, pMinimal, blockSizeWord);
-        memcpy(pCanonPerm, tempArray, blockSizeChar);
+        memcpy(pInOut, pMinimal, (size_t)blockSizeWord);
+        memcpy(pCanonPerm, tempArray, (size_t)blockSizeChar);
         *p_uCanonPhase = TempuCanonPhase;
     }
-    if(memcmp(pInOut,PDuplicat,blockSizeWord) == 0)
+    if(memcmp(pInOut,PDuplicat,(size_t)blockSizeWord) == 0)
         return 0;
     else
         return 1;

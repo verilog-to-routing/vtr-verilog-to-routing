@@ -24,6 +24,13 @@
 #include "proof/abs/abs.h"
 #include "sat/bmc/bmc.h"
 
+#ifdef WIN32
+#include <process.h> 
+#define unlink _unlink
+#else
+#include <unistd.h>
+#endif
+
 ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
@@ -49,6 +56,7 @@ static int IoCommandReadVerilog ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadStatus  ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadGig     ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadJson    ( Abc_Frame_t * pAbc, int argc, char **argv );
+static int IoCommandReadSF      ( Abc_Frame_t * pAbc, int argc, char **argv );
 
 static int IoCommandWrite       ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteHie    ( Abc_Frame_t * pAbc, int argc, char **argv );
@@ -57,6 +65,7 @@ static int IoCommandWriteAigerCex( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBaf    ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBblif  ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBlif   ( Abc_Frame_t * pAbc, int argc, char **argv );
+static int IoCommandWriteEdgelist( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBlifMv ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBench  ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBook   ( Abc_Frame_t * pAbc, int argc, char **argv );
@@ -76,6 +85,7 @@ static int IoCommandWriteTruths ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteStatus ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteSmv    ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteJson   ( Abc_Frame_t * pAbc, int argc, char **argv );
+static int IoCommandWriteResub  ( Abc_Frame_t * pAbc, int argc, char **argv );
 
 extern void Abc_FrameCopyLTLDataBase( Abc_Frame_t *pAbc, Abc_Ntk_t * pNtk );
 
@@ -106,6 +116,7 @@ void Io_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "I/O", "read_blif_mv",  IoCommandReadBlifMv,   1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_bench",    IoCommandReadBench,    1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_dsd",      IoCommandReadDsd,      1 );
+    Cmd_CommandAdd( pAbc, "I/O", "read_formula",  IoCommandReadDsd,      1 );
 //    Cmd_CommandAdd( pAbc, "I/O", "read_edif",     IoCommandReadEdif,     1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_eqn",      IoCommandReadEqn,      1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_fins",     IoCommandReadFins,     0 );
@@ -117,6 +128,7 @@ void Io_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "I/O", "read_status",   IoCommandReadStatus,   0 );
     Cmd_CommandAdd( pAbc, "I/O", "&read_gig",     IoCommandReadGig,      0 );
     Cmd_CommandAdd( pAbc, "I/O", "read_json",     IoCommandReadJson,     0 );
+    Cmd_CommandAdd( pAbc, "I/O", "read_sf",       IoCommandReadSF,       0 );
 
     Cmd_CommandAdd( pAbc, "I/O", "write",         IoCommandWrite,        0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_hie",     IoCommandWriteHie,     0 );
@@ -134,6 +146,7 @@ void Io_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "I/O", "&write_cnf",    IoCommandWriteCnf2,    0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_dot",     IoCommandWriteDot,     0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_eqn",     IoCommandWriteEqn,     0 );
+    Cmd_CommandAdd( pAbc, "I/O", "write_edgelist",IoCommandWriteEdgelist,    0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_gml",     IoCommandWriteGml,     0 );
 //    Cmd_CommandAdd( pAbc, "I/O", "write_list",    IoCommandWriteList,    0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_pla",     IoCommandWritePla,     0 );
@@ -145,6 +158,7 @@ void Io_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "I/O", "write_status",  IoCommandWriteStatus,  0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_smv",     IoCommandWriteSmv,     0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_json",    IoCommandWriteJson,    0 );
+    Cmd_CommandAdd( pAbc, "I/O", "&write_resub",  IoCommandWriteResub,   0 );
 }
 
 /**Function*************************************************************
@@ -229,6 +243,8 @@ int IoCommandRead( Abc_Frame_t * pAbc, int argc, char ** argv )
     else if ( !strcmp( Extra_FileNameExtension(pFileName), "constr" ) )
         sprintf( Command, "read_constr %s", pFileName );
     else if ( !strcmp( Extra_FileNameExtension(pFileName), "c" ) )
+        sprintf( Command, "so %s", pFileName );
+    else if ( !strcmp( Extra_FileNameExtension(pFileName), "script" ) )
         sprintf( Command, "so %s", pFileName );
     else if ( !strcmp( Extra_FileNameExtension(pFileName), "dsd" ) )
         sprintf( Command, "dsd_load %s", pFileName );
@@ -1102,18 +1118,22 @@ usage:
 int IoCommandReadTruth( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     Abc_Ntk_t * pNtk;
-    char * pSopCover;
-    int fHex;
+    char * pStr = NULL;
+    Vec_Ptr_t * vSops;
+    int fHex  = 1;
+    int fFile = 0;
     int c;
 
-    fHex = 1;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "xh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "xfh" ) ) != EOF )
     {
         switch ( c )
         {
             case 'x':
                 fHex ^= 1;
+                break;
+            case 'f':
+                fFile ^= 1;
                 break;
             case 'h':
                 goto usage;
@@ -1123,24 +1143,39 @@ int IoCommandReadTruth( Abc_Frame_t * pAbc, int argc, char ** argv )
     }
 
     if ( argc != globalUtilOptind + 1 )
-    {
         goto usage;
+
+    if ( fFile )
+    {
+        FILE * pFile = fopen( argv[globalUtilOptind], "rb" );
+        if ( pFile == NULL )
+        {
+            printf( "The file \"%s\" cannot be found.\n", argv[globalUtilOptind] );
+            return 1;
+        }
+        else 
+            fclose( pFile );
+        pStr = Extra_FileReadContents( argv[globalUtilOptind] );
     }
+    else
+        pStr = argv[globalUtilOptind];
 
     // convert truth table to SOP
     if ( fHex )
-        pSopCover = Abc_SopFromTruthHex(argv[globalUtilOptind]);
+        vSops = Abc_SopFromTruthsHex(pStr);
     else
-        pSopCover = Abc_SopFromTruthBin(argv[globalUtilOptind]);
-    if ( pSopCover == NULL || pSopCover[0] == 0 )
+        vSops = Abc_SopFromTruthsBin(pStr);
+    if ( fFile )
+        ABC_FREE( pStr );
+    if ( Vec_PtrSize(vSops) == 0 )
     {
-        ABC_FREE( pSopCover );
+        Vec_PtrFreeFree( vSops );
         fprintf( pAbc->Err, "Reading truth table has failed.\n" );
         return 1;
     }
 
-    pNtk = Abc_NtkCreateWithNode( pSopCover );
-    ABC_FREE( pSopCover );
+    pNtk = Abc_NtkCreateWithNodes( vSops );
+    Vec_PtrFreeFree( vSops );
     if ( pNtk == NULL )
     {
         fprintf( pAbc->Err, "Deriving the network has failed.\n" );
@@ -1152,11 +1187,13 @@ int IoCommandReadTruth( Abc_Frame_t * pAbc, int argc, char ** argv )
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: read_truth [-xh] <truth>\n" );
-    fprintf( pAbc->Err, "\t         creates network with node having given truth table\n" );
-    fprintf( pAbc->Err, "\t-x     : toggles between bin and hex representation [default = %s]\n", fHex? "hex":"bin" );
+    fprintf( pAbc->Err, "usage: read_truth [-xfh] <truth> <file>\n" );
+    fprintf( pAbc->Err, "\t         creates network with node(s) having given truth table(s)\n" );
+    fprintf( pAbc->Err, "\t-x     : toggles between bin and hex notation [default = %s]\n", fHex?  "hex":"bin" );
+    fprintf( pAbc->Err, "\t-f     : toggles reading truth table(s) from file [default = %s]\n",      fFile? "yes": "no" );
     fprintf( pAbc->Err, "\t-h     : prints the command summary\n" );
-    fprintf( pAbc->Err, "\ttruth  : truth table with most signficant bit first (e.g. 1000 for AND(a,b))\n" );
+    fprintf( pAbc->Err, "\ttruth  : truth table with most significant bit first (e.g. 1000 for AND(a,b))\n" );
+    fprintf( pAbc->Err, "\tfile   : file name with the truth table\n" );
     return 1;
 }
 
@@ -1399,6 +1436,73 @@ usage:
     return 1;
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int IoCommandReadSF( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern void Io_TransformSF2PLA( char * pNameIn, char * pNameOut );
+
+    Abc_Ntk_t * pNtk;
+    FILE * pFile;
+    char * pFileName, * pFileTemp = "_temp_sf_.pla";
+    int c;
+
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "h" ) ) != EOF )
+    {
+        switch ( c )
+        {
+            case 'h':
+                goto usage;
+            default:
+                goto usage;
+        }
+    }
+    if ( argc != globalUtilOptind + 1 )
+    {
+        goto usage;
+    }
+
+    // get the input file name
+    pFileName = argv[globalUtilOptind];
+    if ( (pFile = fopen( pFileName, "r" )) == NULL )
+    {
+        fprintf( pAbc->Err, "Cannot open input file \"%s\". \n", pFileName );
+        return 1;
+    }
+    fclose( pFile );
+    Io_TransformSF2PLA( pFileName, pFileTemp );
+    pNtk = Io_Read( pFileTemp, IO_FILE_PLA, 1, 0 );
+    unlink( pFileTemp );
+    if ( pNtk == NULL )
+        return 1;
+    ABC_FREE( pNtk->pName );
+    pNtk->pName = Extra_FileNameGeneric( pFileName );
+    ABC_FREE( pNtk->pSpec );
+    pNtk->pSpec = Abc_UtilStrsav( pFileName );
+    // replace the current network
+    Abc_FrameReplaceCurrentNetwork( pAbc, pNtk );
+    Abc_FrameClearVerifStatus( pAbc );
+
+    return 0;
+
+usage:
+    fprintf( pAbc->Err, "usage: read_sf [-h] <file>\n" );
+    fprintf( pAbc->Err, "\t         reads file in SF format\n" );
+    fprintf( pAbc->Err, "\t-h     : prints the command summary\n" );
+    fprintf( pAbc->Err, "\tfile   : the name of a file to read\n" );
+    return 1;
+}
+
 
 /**Function*************************************************************
 
@@ -1438,7 +1542,7 @@ int IoCommandWrite( Abc_Frame_t * pAbc, int argc, char **argv )
     if ( !strcmp( Extra_FileNameExtension(pFileName), "genlib" )  )
         sprintf( Command, "write_genlib %s", pFileName );
     else if ( !strcmp( Extra_FileNameExtension(pFileName), "lib" ) )
-        sprintf( Command, "write_liberty %s", pFileName );
+        sprintf( Command, "write_lib %s", pFileName );
     else if ( !strcmp( Extra_FileNameExtension(pFileName), "dsd" ) )
         sprintf( Command, "dsd_save %s", pFileName );
     if ( Command[0] )
@@ -2234,6 +2338,17 @@ usage:
     fprintf( pAbc->Err, "\t-v       : toggle printing verbose information [default = %s]\n", fVerbose? "yes" : "no" );
     fprintf( pAbc->Err, "\t-h       : print the help massage\n" );
     fprintf( pAbc->Err, "\tfile     : the name of the file to write\n" );
+    fprintf( pAbc->Err, "\n" );
+    fprintf( pAbc->Err, "\t           CNF variable mapping rules:\n" );
+    fprintf( pAbc->Err, "\n" );
+    fprintf( pAbc->Err, "\t           Assume CNF has N variables, with variable IDs running from 0 to N-1.\n" );
+    fprintf( pAbc->Err, "\t           Variable number 0 is not used in the CNF.\n" );
+    fprintf( pAbc->Err, "\t           Variables 1, 2, 3,... <nPOs> represent POs in their natural order.\n" );
+    fprintf( pAbc->Err, "\t           Variables N-<nPIs>, N-<nPIs>+1, N-<nPIs>+2, ... N-1, represent PIs in their natural order.\n" );
+    fprintf( pAbc->Err, "\t           The internal variables are ordered in a reverse topological order from outputs to inputs.\n" );
+    fprintf( pAbc->Err, "\t           That is, smaller variable IDs tend to be closer to the outputs, while larger\n" );
+    fprintf( pAbc->Err, "\t           variable IDs tend to be closer to the inputs. It was found that this ordering\n" );
+    fprintf( pAbc->Err, "\t           leads to faster SAT solving for hard UNSAT CEC problems.\n" );
     return 1;
 }
 
@@ -2292,6 +2407,165 @@ ABC_NAMESPACE_IMPL_END
 
 ABC_NAMESPACE_IMPL_START
 
+int Abc_NtkCheckSpecialPi( Abc_Ntk_t * pNtk )
+{
+    Abc_Obj_t * pObj;  int i;
+    Abc_NtkForEachPi( pNtk, pObj, i )
+        if ( !strcmp(Abc_ObjName(pObj), "_abc_190121_abc_") )
+            return 1;
+    return 0;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_NtkDumpOneCexSpecial( FILE * pFile, Abc_Ntk_t * pNtk, Abc_Cex_t * pCex )
+{
+    Abc_Cex_t * pCare = NULL; int i, f; Abc_Obj_t * pObj;
+    extern Aig_Man_t * Abc_NtkToDar( Abc_Ntk_t * pNtk, int fExors, int fRegisters );
+    Aig_Man_t * pAig = Abc_NtkToDar( pNtk, 0, 1 );
+    //fprintf( pFile, "# FALSIFYING OUTPUTS:");                                       
+    //fprintf( pFile, " %s", Abc_ObjName(Abc_NtkCo(pNtk, pCex->iPo)) ); 
+    pCare = Bmc_CexCareMinimize( pAig, Saig_ManPiNum(pAig), pCex, 4, 0, 0 );
+    Aig_ManStop( pAig );
+    if( pCare == NULL )   
+    {
+        printf( "Counter-example minimization has failed.\n" ); 
+        return;
+    }
+    // output flop values (unaffected by the minimization)
+    Abc_NtkForEachLatch( pNtk, pObj, i )
+        fprintf( pFile, "CEX: %s@0=%c\n", Abc_ObjName(Abc_ObjFanout0(pObj)), '0'+!Abc_LatchIsInit0(pObj) );
+    // output PI values (while skipping the minimized ones)
+    for ( f = 0; f <= pCex->iFrame; f++ )
+        Abc_NtkForEachPi( pNtk, pObj, i )
+            if ( !pCare || Abc_InfoHasBit(pCare->pData, pCare->nRegs+pCare->nPis*f + i) )
+                fprintf( pFile, "CEX: %s@%d=%c\n", Abc_ObjName(pObj), f, '0'+Abc_InfoHasBit(pCex->pData, pCex->nRegs+pCex->nPis*f + i) );
+    Abc_CexFreeP( &pCare );
+}
+
+
+void Abc_NtkDumpOneCex( FILE * pFile, Abc_Ntk_t * pNtk, Abc_Cex_t * pCex, 
+    int fPrintFull, int fNames, int fUseFfNames, int fMinimize, int fUseOldMin, 
+    int fCheckCex, int fUseSatBased, int fHighEffort, int fAiger, int fVerbose )
+{
+    Abc_Obj_t * pObj;
+    int i, f;
+    if ( fPrintFull )
+    {
+        extern Aig_Man_t * Abc_NtkToDar( Abc_Ntk_t * pNtk, int fExors, int fRegisters );
+        Aig_Man_t * pAig = Abc_NtkToDar( pNtk, 0, 1 );
+        Abc_Cex_t * pCexFull = Saig_ManExtendCex( pAig, pCex );
+        Aig_ManStop( pAig );
+        // output PI values (while skipping the minimized ones)
+        assert( pCexFull->nBits == Abc_NtkCiNum(pNtk) * (pCex->iFrame + 1) );
+        for ( f = 0; f <= pCex->iFrame; f++ )
+            Abc_NtkForEachCi( pNtk, pObj, i )
+                fprintf( pFile, "%s@%d=%c ", Abc_ObjName(pObj), f, '0'+Abc_InfoHasBit(pCexFull->pData, Abc_NtkCiNum(pNtk)*f + i) );
+        Abc_CexFreeP( &pCexFull );
+    }
+    else if ( fNames )
+    {
+        Abc_Cex_t * pCare = NULL;
+        if ( fMinimize )
+        {
+            extern Aig_Man_t * Abc_NtkToDar( Abc_Ntk_t * pNtk, int fExors, int fRegisters );
+            Aig_Man_t * pAig = Abc_NtkToDar( pNtk, 0, 1 );
+            fprintf( pFile, "# FALSIFYING OUTPUTS:");                                       
+            fprintf( pFile, " %s", Abc_ObjName(Abc_NtkCo(pNtk, pCex->iPo)) ); 
+            if ( fUseOldMin )
+            {
+                pCare = Saig_ManCbaFindCexCareBits( pAig, pCex, 0, fVerbose );
+                if ( fCheckCex )
+                    Bmc_CexCareVerify( pAig, pCex, pCare, fVerbose );
+            }
+            else if ( fUseSatBased )
+                pCare = Bmc_CexCareSatBasedMinimize( pAig, Saig_ManPiNum(pAig), pCex, fHighEffort, fCheckCex, fVerbose );
+            else
+                pCare = Bmc_CexCareMinimize( pAig, Saig_ManPiNum(pAig), pCex, 4, fCheckCex, fVerbose );
+            Aig_ManStop( pAig );
+            if(pCare == NULL)                                           
+                printf( "Counter-example minimization has failed.\n" ); 
+        }
+        else
+        {
+            fprintf( pFile, "# FALSIFYING OUTPUTS:");                        
+            fprintf( pFile, " %s", Abc_ObjName(Abc_NtkCo(pNtk, pCex->iPo)) );
+        }
+        fprintf( pFile, "\n");                                           
+        fprintf( pFile, "# COUNTEREXAMPLE LENGTH: %u\n", pCex->iFrame+1);
+        if ( fUseFfNames && Abc_NtkCheckSpecialPi(pNtk) )
+        {
+            int * pValues;
+            int nXValues = 0, iFlop = 0, iPivotPi = -1;
+            Abc_NtkForEachPi( pNtk, pObj, iPivotPi )
+                if ( !strcmp(Abc_ObjName(pObj), "_abc_190121_abc_") )
+                    break;
+            if ( iPivotPi == Abc_NtkPiNum(pNtk) )
+            {
+                fprintf( stdout, "IoCommandWriteCex(): Cannot find special PI required by switch \"-z\".\n" );
+                return;
+            }
+            // count X-valued flops
+            for ( i = iPivotPi+1; i < Abc_NtkPiNum(pNtk); i++ )
+                if ( Abc_ObjName(Abc_NtkPi(pNtk, i))[0] == 'x' )
+                    nXValues++;
+            // map X-valued flops into auxiliary PIs
+            pValues = ABC_FALLOC( int, Abc_NtkPiNum(pNtk) );
+            for ( i = iPivotPi+1; i < Abc_NtkPiNum(pNtk); i++ )
+                if ( Abc_ObjName(Abc_NtkPi(pNtk, i))[0] == 'x' )
+                    pValues[i] = iPivotPi - nXValues + iFlop++;
+            assert( iFlop == nXValues );
+            // write flop values
+            for ( i = iPivotPi+1; i < Abc_NtkPiNum(pNtk); i++ )
+                if ( pValues[i] == -1 )
+                    fprintf( pFile, "%s@0=%c\n", Abc_ObjName(Abc_NtkPi(pNtk, i))+1, Abc_ObjName(Abc_NtkPi(pNtk, i))[0] );
+                else if ( Abc_InfoHasBit(pCare->pData, pCare->nRegs + pValues[i]) )
+                    fprintf( pFile, "%s@0=%c\n", Abc_ObjName(Abc_NtkPi(pNtk, i))+1, '0'+Abc_InfoHasBit(pCex->pData, pCex->nRegs + pValues[i]) );
+            ABC_FREE( pValues );
+            // output PI values (while skipping the minimized ones)
+            for ( f = 0; f <= pCex->iFrame; f++ )
+                Abc_NtkForEachPi( pNtk, pObj, i )
+                {
+                    if ( i == iPivotPi - nXValues ) break;
+                    if ( !pCare || Abc_InfoHasBit(pCare->pData, pCare->nRegs+pCare->nPis*f + i) )
+                        fprintf( pFile, "%s@%d=%c\n", Abc_ObjName(pObj), f, '0'+Abc_InfoHasBit(pCex->pData, pCex->nRegs+pCex->nPis*f + i) );
+                }
+        }
+        else
+        {
+            // output flop values (unaffected by the minimization)
+            Abc_NtkForEachLatch( pNtk, pObj, i )
+                fprintf( pFile, "%s@0=%c\n", Abc_ObjName(Abc_ObjFanout0(pObj)), '0'+!Abc_LatchIsInit0(pObj) );
+            // output PI values (while skipping the minimized ones)
+            for ( f = 0; f <= pCex->iFrame; f++ )
+                Abc_NtkForEachPi( pNtk, pObj, i )
+                    if ( !pCare || Abc_InfoHasBit(pCare->pData, pCare->nRegs+pCare->nPis*f + i) )
+                        fprintf( pFile, "%s@%d=%c\n", Abc_ObjName(pObj), f, '0'+Abc_InfoHasBit(pCex->pData, pCex->nRegs+pCex->nPis*f + i) );
+        }
+        Abc_CexFreeP( &pCare );
+    }
+    else
+    {
+        Abc_NtkForEachLatch( pNtk, pObj, i )
+            fprintf( pFile, "%c", '0'+!Abc_LatchIsInit0(pObj) );
+
+        for ( i = pCex->nRegs; i < pCex->nBits; i++ )
+        {
+            if ( fAiger && (i-pCex->nRegs)%pCex->nPis == 0)
+                fprintf( pFile, "\n");
+            fprintf( pFile, "%c", '0'+Abc_InfoHasBit(pCex->pData, i) );
+        }
+    }
+}
 
 /**Function*************************************************************
 
@@ -2317,10 +2591,11 @@ int IoCommandWriteCex( Abc_Frame_t * pAbc, int argc, char **argv )
     int forceSeq   = 0;
     int fAiger     = 0;
     int fPrintFull = 0;
+    int fUseFfNames = 0;
     int fVerbose   = 0;
 
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "snmueocafvh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "snmueocafzvh" ) ) != EOF )
     {
         switch ( c )
         {
@@ -2351,6 +2626,9 @@ int IoCommandWriteCex( Abc_Frame_t * pAbc, int argc, char **argv )
             case 'f':
                 fPrintFull ^= 1;
                 break;
+            case 'z':
+                fUseFfNames ^= 1;
+                break;
             case 'v':
                 fVerbose ^= 1;
                 break;
@@ -2366,7 +2644,7 @@ int IoCommandWriteCex( Abc_Frame_t * pAbc, int argc, char **argv )
         fprintf( pAbc->Out, "Empty network.\n" );
         return 0;
     }
-    if ( pNtk->pModel == NULL && pAbc->pCex == NULL )
+    if ( pNtk->pModel == NULL && pAbc->pCex == NULL && pAbc->vCexVec == NULL )
     {
         fprintf( pAbc->Out, "Counter-example is not available.\n" );
         return 0;
@@ -2380,12 +2658,10 @@ int IoCommandWriteCex( Abc_Frame_t * pAbc, int argc, char **argv )
     // get the input file name
     pFileName = argv[globalUtilOptind];
     // write the counter-example into the file
-    if ( pAbc->pCex )
+    if ( pAbc->pCex || pAbc->vCexVec )
     { 
         Abc_Cex_t * pCex = pAbc->pCex;
-        Abc_Obj_t * pObj;
-        FILE * pFile;
-        int i, f;
+        FILE * pFile; int i;
         /*
         Abc_NtkForEachLatch( pNtk, pObj, i )
             if ( !Abc_LatchIsInit0(pObj) )
@@ -2401,61 +2677,25 @@ int IoCommandWriteCex( Abc_Frame_t * pAbc, int argc, char **argv )
             fprintf( stdout, "IoCommandWriteCex(): Cannot open the output file \"%s\".\n", pFileName );
             return 1;
         }
-        if ( fPrintFull )
+        if ( pAbc->pCex )
         {
-            extern Aig_Man_t * Abc_NtkToDar( Abc_Ntk_t * pNtk, int fExors, int fRegisters );
-            Aig_Man_t * pAig = Abc_NtkToDar( pNtk, 0, 1 );
-            Abc_Cex_t * pCexFull = Saig_ManExtendCex( pAig, pCex );
-            Aig_ManStop( pAig );
-            // output PI values (while skipping the minimized ones)
-            assert( pCexFull->nBits == Abc_NtkCiNum(pNtk) * (pCex->iFrame + 1) );
-            for ( f = 0; f <= pCex->iFrame; f++ )
-                Abc_NtkForEachCi( pNtk, pObj, i )
-                    fprintf( pFile, "%s@%d=%c ", Abc_ObjName(pObj), f, '0'+Abc_InfoHasBit(pCexFull->pData, Abc_NtkCiNum(pNtk)*f + i) );
-            Abc_CexFreeP( &pCexFull );
+            Abc_NtkDumpOneCex( pFile, pNtk, pCex, 
+                fPrintFull, fNames, fUseFfNames, fMinimize, fUseOldMin, 
+                fCheckCex, fUseSatBased, fHighEffort, fAiger, fVerbose );
         }
-        else if ( fNames )
+        else if ( pAbc->vCexVec )
         {
-            Abc_Cex_t * pCare = NULL;
-            if ( fMinimize )
+            Vec_PtrForEachEntry( Abc_Cex_t *, pAbc->vCexVec, pCex, i )
             {
-                extern Aig_Man_t * Abc_NtkToDar( Abc_Ntk_t * pNtk, int fExors, int fRegisters );
-                Aig_Man_t * pAig = Abc_NtkToDar( pNtk, 0, 1 );
-                if ( fUseOldMin )
-                {
-                    pCare = Saig_ManCbaFindCexCareBits( pAig, pCex, 0, fVerbose );
-                    if ( fCheckCex )
-                        Bmc_CexCareVerify( pAig, pCex, pCare, fVerbose );
-                }
-                else if ( fUseSatBased )
-                    pCare = Bmc_CexCareSatBasedMinimize( pAig, Saig_ManPiNum(pAig), pCex, fHighEffort, fCheckCex, fVerbose );
-                else
-                    pCare = Bmc_CexCareMinimize( pAig, Saig_ManPiNum(pAig), pCex, 4, fCheckCex, fVerbose );
-                Aig_ManStop( pAig );
-            }
-            // output flop values (unaffected by the minimization)
-            Abc_NtkForEachLatch( pNtk, pObj, i )
-                fprintf( pFile, "%s@0=%c ", Abc_ObjName(Abc_ObjFanout0(pObj)), '0'+!Abc_LatchIsInit0(pObj) );
-            // output PI values (while skipping the minimized ones)
-            for ( f = 0; f <= pCex->iFrame; f++ )
-                Abc_NtkForEachPi( pNtk, pObj, i )
-                    if ( !pCare || Abc_InfoHasBit(pCare->pData, pCare->nRegs+pCare->nPis*f + i) )
-                        fprintf( pFile, "%s@%d=%c ", Abc_ObjName(pObj), f, '0'+Abc_InfoHasBit(pCex->pData, pCex->nRegs+pCex->nPis*f + i) );
-            Abc_CexFreeP( &pCare );
-        }
-        else
-        {
-            Abc_NtkForEachLatch( pNtk, pObj, i )
-                fprintf( pFile, "%c", '0'+!Abc_LatchIsInit0(pObj) );
-
-            for ( i = pCex->nRegs; i < pCex->nBits; i++ )
-            {
-                if ( fAiger && (i-pCex->nRegs)%pCex->nPis == 0)
-                    fprintf( pFile, "\n");
-                fprintf( pFile, "%c", '0'+Abc_InfoHasBit(pCex->pData, i) );
+                if ( pCex == NULL )
+                    continue;
+                fprintf( pFile, "#\n#\n# CEX for output %d\n#\n", i ); 
+                Abc_NtkDumpOneCex( pFile, pNtk, pCex, 
+                    fPrintFull, fNames, fUseFfNames, fMinimize, fUseOldMin, 
+                    fCheckCex, fUseSatBased, fHighEffort, fAiger, fVerbose );
             }
         }
-        fprintf( pFile, "\n" );
+        fprintf( pFile, "# DONE\n" ); 
         fclose( pFile );
     }
     else
@@ -2487,7 +2727,7 @@ int IoCommandWriteCex( Abc_Frame_t * pAbc, int argc, char **argv )
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: write_cex [-snmueocfvh] <file>\n" );
+    fprintf( pAbc->Err, "usage: write_cex [-snmueocfzvh] <file>\n" );
     fprintf( pAbc->Err, "\t         saves counter-example (CEX) derived by \"sat\", \"iprove\", \"dprove\", etc\n" );
     fprintf( pAbc->Err, "\t         the output file <file> contains values for each PI in natural order\n" );
     fprintf( pAbc->Err, "\t-s     : always report a sequential CEX (cycle 0 for comb) [default = %s]\n", forceSeq? "yes": "no" );
@@ -2497,9 +2737,10 @@ usage:
     fprintf( pAbc->Err, "\t-e     : use high-effort SAT-based CEX minimization [default = %s]\n", fHighEffort? "yes": "no" );
     fprintf( pAbc->Err, "\t-o     : use old CEX minimization algorithm [default = %s]\n", fUseOldMin? "yes": "no" );
     fprintf( pAbc->Err, "\t-c     : check generated CEX using ternary simulation [default = %s]\n", fCheckCex? "yes": "no" );
-    fprintf( pAbc->Err, "\t-a     : print cex in AIGER 1.9 format [default = %s].\n", fAiger? "yes": "no" );
-    fprintf( pAbc->Err, "\t-f     : enable printing flop values in each timeframe [default = %s].\n", fPrintFull? "yes": "no" );  
-    fprintf( pAbc->Err, "\t-v     : enable verbose output [default = %s].\n", fVerbose? "yes": "no" );  
+    fprintf( pAbc->Err, "\t-a     : print cex in AIGER 1.9 format [default = %s]\n", fAiger? "yes": "no" );
+    fprintf( pAbc->Err, "\t-f     : enable printing flop values in each timeframe [default = %s]\n", fPrintFull? "yes": "no" );  
+    fprintf( pAbc->Err, "\t-z     : toggle using saved flop names [default = %s]\n", fUseFfNames? "yes": "no" );  
+    fprintf( pAbc->Err, "\t-v     : enable verbose output [default = %s]\n", fVerbose? "yes": "no" );  
     fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
     fprintf( pAbc->Err, "\t<file> : the name of the file to write\n" );
     return 1;
@@ -2552,6 +2793,69 @@ usage:
     fprintf( pAbc->Err, "\tfile   : the name of the file to write\n" );
     return 1;
 }
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int IoCommandWriteEdgelist( Abc_Frame_t * pAbc, int argc, char **argv )
+{
+    char * pFileName;
+    int c, fSpecial = 0;
+
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Nh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+            case 'N':
+                fSpecial ^= 1;
+                break;
+            /*
+            case 'a':
+                fUseHie ^= 1;
+                break;
+            case 'h':
+                goto usage;
+            */
+            default:
+                goto usage;
+        }
+    }
+    if ( pAbc->pNtkCur == NULL )
+    {
+        fprintf( pAbc->Out, "Empty network.\n" );
+        return 0;
+    }
+    if ( argc != globalUtilOptind + 1 )
+        goto usage;
+    // get the output file name
+    pFileName = argv[globalUtilOptind];
+    // call the corresponding file writer
+    if ( fSpecial ) // keep original naming
+        Io_WriteEdgelist( pAbc->pNtkCur, pFileName, 1, 0, 0, fSpecial); //last option is fName
+    else
+        Io_WriteEdgelist( pAbc->pNtkCur, pFileName, 1, 0, 0, fSpecial); //last option is fName
+    return 0;
+
+usage:
+    fprintf( pAbc->Err, "usage: write_edgelist [-N] <file>\n" );
+    fprintf( pAbc->Err, "\t         writes the network into edgelist file\n" );
+    fprintf( pAbc->Err, "\t         part of Verilog-2-PyG (PyTorch Geometric). more details https://github.com/ycunxi/Verilog-to-PyG \n" );
+    fprintf( pAbc->Err, "\t-N     : toggle keeping original naming of the netlist in edgelist (default=False)\n");  
+    fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
+    fprintf( pAbc->Err, "\tfile   : the name of the file to write (extension .el)\n" );
+    return 1;
+}
+
+
 
 /**Function*************************************************************
 
@@ -2678,14 +2982,24 @@ usage:
 ***********************************************************************/
 int IoCommandWritePla( Abc_Frame_t * pAbc, int argc, char **argv )
 {
+    extern int Io_WriteMoPlaM( Abc_Ntk_t * pNtk, char * pFileName, int nMints );
     char * pFileName;
-    int c, fUseMoPla = 0;
+    int c, fUseMoPla = 0, nMints = 0;
 
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "mh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Mmh" ) ) != EOF )
     {
         switch ( c )
         {
+            case 'M':
+                if ( globalUtilOptind >= argc )
+                {
+                    Abc_Print( -1, "Command line switch \"-M\" should be followed by an integer.\n" );
+                    goto usage;
+                }
+                nMints = atoi(argv[globalUtilOptind]);
+                globalUtilOptind++;
+                break;
             case 'm':
                 fUseMoPla ^= 1;
                 break;
@@ -2705,15 +3019,28 @@ int IoCommandWritePla( Abc_Frame_t * pAbc, int argc, char **argv )
     // get the output file name
     pFileName = argv[globalUtilOptind];
     // call the corresponding file writer
-    Io_Write( pAbc->pNtkCur, pFileName, fUseMoPla ? IO_FILE_MOPLA : IO_FILE_PLA );
+    if ( nMints )
+    {
+        if ( Abc_NtkIsBddLogic(pAbc->pNtkCur) )
+            Io_WriteMoPlaM( pAbc->pNtkCur, pFileName, nMints );
+        else
+        {
+            Abc_Ntk_t * pStrash = Abc_NtkStrash( pAbc->pNtkCur, 0, 0, 0 );
+            Io_WriteMoPlaM( pStrash, pFileName, nMints );
+            Abc_NtkDelete( pStrash );
+        }
+    }
+    else
+        Io_Write( pAbc->pNtkCur, pFileName, fUseMoPla ? IO_FILE_MOPLA : IO_FILE_PLA );
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: write_pla [-mh] <file>\n" );
-    fprintf( pAbc->Err, "\t         writes the collapsed network into a PLA file\n" );
-    fprintf( pAbc->Err, "\t-m     : toggle writing multi-output PLA [default = %s]\n", fUseMoPla? "yes":"no" );
-    fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
-    fprintf( pAbc->Err, "\tfile   : the name of the file to write\n" );
+    fprintf( pAbc->Err, "usage: write_pla [-M <num>] [-mh] <file>\n" );
+    fprintf( pAbc->Err, "\t           writes the collapsed network into a PLA file\n" );
+    fprintf( pAbc->Err, "\t-M <num> : the number of on-set minterms to write [default = %d]\n", nMints );
+    fprintf( pAbc->Err, "\t-m       : toggle writing multi-output PLA [default = %s]\n", fUseMoPla? "yes":"no" );
+    fprintf( pAbc->Err, "\t-h       : print the help massage\n" );
+    fprintf( pAbc->Err, "\tfile     : the name of the file to write\n" );
     return 1;
 }
 
@@ -2730,16 +3057,35 @@ usage:
 ***********************************************************************/
 int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
 {
+    extern void Io_WriteVerilogLut( Abc_Ntk_t * pNtk, char * pFileName, int nLutSize, int fFixed, int fNoModules );
     char * pFileName;
-    int c, fOnlyAnds = 0;
+    int c, fFixed = 0, fOnlyAnds = 0, fNoModules = 0;
+    int nLutSize = -1;
 
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "ah" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Kfamh" ) ) != EOF )
     {
         switch ( c )
         {
+            case 'K':
+                if ( globalUtilOptind >= argc )
+                {
+                    Abc_Print( -1, "Command line switch \"-K\" should be followed by an integer.\n" );
+                    goto usage;
+                }
+                nLutSize = atoi(argv[globalUtilOptind]);
+                globalUtilOptind++;
+                if ( nLutSize < 2 || nLutSize > 6 )
+                    goto usage;
+                break;
+            case 'f':
+                fFixed ^= 1;
+                break;
             case 'a':
                 fOnlyAnds ^= 1;
+                break;
+            case 'm':
+                fNoModules ^= 1;
                 break;
             case 'h':
                 goto usage;
@@ -2754,6 +3100,8 @@ int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
     }
     if ( argc != globalUtilOptind + 1 )
         goto usage;
+    if ( fFixed )
+        nLutSize = 6;
     // get the output file name
     pFileName = argv[globalUtilOptind];
     // call the corresponding file writer
@@ -2765,14 +3113,19 @@ int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
         Io_WriteVerilog( pNtkTemp, pFileName, 1 );
         Abc_NtkDelete( pNtkTemp );
     }
+    else if ( nLutSize >= 2 && nLutSize <= 6 )
+        Io_WriteVerilogLut( pAbc->pNtkCur, pFileName, nLutSize, fFixed, fNoModules );
     else
-    Io_Write( pAbc->pNtkCur, pFileName, IO_FILE_VERILOG );
+        Io_Write( pAbc->pNtkCur, pFileName, IO_FILE_VERILOG );
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: write_verilog [-ah] <file>\n" );
+    fprintf( pAbc->Err, "usage: write_verilog [-K num] [-famh] <file>\n" );
     fprintf( pAbc->Err, "\t         writes the current network in Verilog format\n" );
+    fprintf( pAbc->Err, "\t-K num : write the network using instances of K-LUTs (2 <= K <= 6) [default = not used]\n" );
+    fprintf( pAbc->Err, "\t-f     : toggle using fixed format [default = %s]\n", fFixed? "yes":"no" );
     fprintf( pAbc->Err, "\t-a     : toggle writing expressions with only ANDs (without XORs and MUXes) [default = %s]\n", fOnlyAnds? "yes":"no" );
+    fprintf( pAbc->Err, "\t-m     : toggle writing additional modules [default = %s]\n", !fNoModules? "yes":"no" );
     fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
     fprintf( pAbc->Err, "\tfile   : the name of the file to write\n" );
     return 1;
@@ -2867,14 +3220,18 @@ int IoCommandWriteTruth( Abc_Frame_t * pAbc, int argc, char **argv )
     char * pFileName;
     FILE * pFile;
     unsigned * pTruth;
+    int fHex = 1;
     int fReverse = 0;
     int c;
 
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "rh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "xrh" ) ) != EOF )
     {
         switch ( c )
         {
+            case 'x':
+                fHex ^= 1;
+                break;
             case 'r':
                 fReverse ^= 1;
                 break;
@@ -2930,14 +3287,18 @@ int IoCommandWriteTruth( Abc_Frame_t * pAbc, int argc, char **argv )
         printf( "Cannot open file \"%s\" for writing.\n", pFileName );
         return 0;
     }
-    Extra_PrintBinary( pFile, pTruth, 1<<Abc_ObjFaninNum(pNode) );
+    if ( fHex )
+        Extra_PrintHex2( pFile, pTruth, Abc_ObjFaninNum(pNode) );
+    else
+        Extra_PrintBinary( pFile, pTruth, 1<<Abc_ObjFaninNum(pNode) );
     fclose( pFile );
     Vec_IntFree( vTruth );
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: write_truth [-rh] <file>\n" );
+    fprintf( pAbc->Err, "usage: write_truth [-xrh] <file>\n" );
     fprintf( pAbc->Err, "\t         writes truth table into a file\n" );
+    fprintf( pAbc->Err, "\t-x     : toggles between bin and hex representation [default = %s]\n", fHex?  "hex":"bin" );
     fprintf( pAbc->Err, "\t-r     : toggle reversing bits in the truth table [default = %s]\n", fReverse? "yes":"no" );
     fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
     fprintf( pAbc->Err, "\tfile   : the name of the file to write\n" );
@@ -2964,19 +3325,23 @@ int IoCommandWriteTruths( Abc_Frame_t * pAbc, int argc, char **argv )
     word * pTruth;
     int nBytes;
     int fReverse = 0;
-    int fBinary = 0;
+    int fHex = 1;
+    int fBinaryFile = 0;
     int c, i;
  
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "rbh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "rxbh" ) ) != EOF )
     {
         switch ( c )
         {
             case 'r':
                 fReverse ^= 1;
                 break;
+            case 'x':
+                fHex ^= 1;
+                break;
             case 'b':
-                fBinary ^= 1;
+                fBinaryFile ^= 1;
                 break;
             case 'h':
                 goto usage;
@@ -3014,19 +3379,22 @@ int IoCommandWriteTruths( Abc_Frame_t * pAbc, int argc, char **argv )
     Gia_ManForEachCo( pAbc->pGia, pObj, i )
     {
         pTruth = Gia_ObjComputeTruthTable( pAbc->pGia, pObj );
-        if ( fBinary )
+        if ( fBinaryFile )
             fwrite( pTruth, nBytes, 1, pFile );
-        else
+        else if ( fHex )
             Extra_PrintHex( pFile, (unsigned *)pTruth, Gia_ManPiNum(pAbc->pGia) ), fprintf( pFile, "\n" );
+        else
+            Extra_PrintBinary( pFile, (unsigned *)pTruth, 1 << Gia_ManPiNum(pAbc->pGia) ), fprintf( pFile, "\n" );
     }
     fclose( pFile );
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: &write_truths [-rbh] <file>\n" );
+    fprintf( pAbc->Err, "usage: &write_truths [-rxbh] <file>\n" );
     fprintf( pAbc->Err, "\t         writes truth tables of each PO of GIA manager into a file\n" );
     fprintf( pAbc->Err, "\t-r     : toggle reversing bits in the truth table [default = %s]\n", fReverse? "yes":"no" );
-    fprintf( pAbc->Err, "\t-b     : toggle using binary format [default = %s]\n", fBinary? "yes":"no" );
+    fprintf( pAbc->Err, "\t-x     : toggle writing in the hex notation [default = %s]\n", fHex? "yes":"no" );
+    fprintf( pAbc->Err, "\t-b     : toggle using binary file format [default = %s]\n", fBinaryFile? "yes":"no" );
     fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
     fprintf( pAbc->Err, "\tfile   : the name of the file to write\n" );
     return 1;
@@ -3138,14 +3506,18 @@ usage:
 int IoCommandWriteJson( Abc_Frame_t * pAbc, int argc, char **argv )
 {
     extern void Json_Write( char * pFileName, Abc_Nam_t * pStr, Vec_Wec_t * vObjs );
+    extern void Json_Extract( char * pFileName, Abc_Nam_t * pStr, Vec_Wec_t * vObjs );
+    int c, fExtract = 0;
     char * pFileName;
-    int c;
 
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "h" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "ch" ) ) != EOF )
     {
         switch ( c )
         {
+            case 'c':
+                fExtract ^= 1;
+                break;
             case 'h':
                 goto usage;
             default:
@@ -3159,15 +3531,68 @@ int IoCommandWriteJson( Abc_Frame_t * pAbc, int argc, char **argv )
     }
     if ( argc != globalUtilOptind + 1 )
         goto usage;
-    // get the output file name
     pFileName = argv[globalUtilOptind];
-    // call the corresponding file writer
-    Json_Write( pFileName, Abc_FrameReadJsonStrs(Abc_FrameReadGlobalFrame()), Abc_FrameReadJsonObjs(Abc_FrameReadGlobalFrame()) );
+    if ( fExtract )
+        Json_Extract( pFileName, Abc_FrameReadJsonStrs(Abc_FrameReadGlobalFrame()), Abc_FrameReadJsonObjs(Abc_FrameReadGlobalFrame()) );
+    else
+        Json_Write( pFileName, Abc_FrameReadJsonStrs(Abc_FrameReadGlobalFrame()), Abc_FrameReadJsonObjs(Abc_FrameReadGlobalFrame()) );
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: write_json [-h] <file>\n" );
+    fprintf( pAbc->Err, "usage: write_json [-ch] <file>\n" );
     fprintf( pAbc->Err, "\t         write the network in JSON format\n" );
+    fprintf( pAbc->Err, "\t-c     : output extracted version\n" );
+    fprintf( pAbc->Err, "\t-h     : print the help message\n" );
+    fprintf( pAbc->Err, "\tfile   : the name of the file to write (extension .json)\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int IoCommandWriteResub( Abc_Frame_t * pAbc, int argc, char **argv )
+{
+    extern void Gia_ManWriteResub( Gia_Man_t * p, char * pFileName );
+    char * pFileName;
+    int c;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "ch" ) ) != EOF )
+    {
+        switch ( c )
+        {
+            case 'h':
+                goto usage;
+            default:
+                goto usage;
+        }
+    }
+    if ( argc != globalUtilOptind + 1 )
+        goto usage;
+    pFileName = argv[globalUtilOptind];
+    if ( pAbc->pGia == NULL )
+    {
+        Abc_Print( -1, "IoCommandWriteResub(): There is no AIG.\n" );
+        return 1;
+    }
+    if ( Gia_ManCiNum(pAbc->pGia) > 20 )
+    {
+        Abc_Print( -1, "IoCommandWriteResub(): The number of inputs is wrong.\n" );
+        return 1;
+    }
+    Gia_ManWriteResub( pAbc->pGia, pFileName );
+    return 0;
+
+usage:
+    fprintf( pAbc->Err, "usage: &write_resub [-ch] <file>\n" );
+    fprintf( pAbc->Err, "\t         write the network in resub format\n" );
     fprintf( pAbc->Err, "\t-h     : print the help message\n" );
     fprintf( pAbc->Err, "\tfile   : the name of the file to write (extension .json)\n" );
     return 1;

@@ -91,7 +91,7 @@ struct If_DsdMan_t_
     Vec_Mem_t *    vTtMem[IF_MAX_FUNC_LUTSIZE+1];  // truth table memory and hash table
     Vec_Ptr_t *    vTtDecs[IF_MAX_FUNC_LUTSIZE+1]; // truth table decompositions
     Vec_Wec_t *    vIsops[IF_MAX_FUNC_LUTSIZE+1];  // ISOP for each function
-    int *          pSched[IF_MAX_FUNC_LUTSIZE];    // grey code schedules
+    int *          pSched[IF_MAX_FUNC_LUTSIZE+1];  // grey code schedules
     int            nTtBits;        // the number of truth table bits
     int            nConfigWords;   // the number of words for config data per node
     Vec_Wrd_t *    vConfigs;       // permutations
@@ -264,7 +264,7 @@ If_DsdObj_t * If_DsdObjAlloc( If_DsdMan_t * p, int Type, int nFans )
 If_DsdMan_t * If_DsdManAlloc( int nVars, int LutSize )
 {
     If_DsdMan_t * p; int v;
-    char pFileName[10];
+    char pFileName[100];
     assert( nVars <= DAU_MAX_VAR );
     sprintf( pFileName, "%02d.dsd", nVars );
     p = ABC_CALLOC( If_DsdMan_t, 1 );
@@ -2074,7 +2074,7 @@ int If_DsdManCompute( If_DsdMan_t * p, word * pTruth, int nLeaves, unsigned char
 //p->timeDsd += Abc_Clock() - clk;
     if ( nSizeNonDec > 0 )
         Abc_TtStretch6( pCopy, nSizeNonDec, p->nVars );
-    memset( pPerm, 0xFF, nLeaves );
+    memset( pPerm, 0xFF, (size_t)nLeaves );
 //clk = Abc_Clock();
     iDsd = If_DsdManAddDsd( p, pDsd, pCopy, pPerm, &nSupp );
 //p->timeCanon += Abc_Clock() - clk;
@@ -2554,7 +2554,7 @@ void Id_DsdManTuneStr1( If_DsdMan_t * p, char * pStruct, int nConfls, int fVerbo
 
 ***********************************************************************/
 #ifndef ABC_USE_PTHREADS
-void Id_DsdManTuneStr( If_DsdMan_t * p, char * pStruct, int nConfls, int nProcs, int fVerbose )
+void Id_DsdManTuneStr( If_DsdMan_t * p, char * pStruct, int nConfls, int nProcs, int nInputs, int fVerbose )
 {
     Id_DsdManTuneStr1( p, pStruct, nConfls, fVerbose );
 }
@@ -2600,7 +2600,7 @@ void * Ifn_WorkerThread( void * pArg )
     assert( 0 );
     return NULL;
 }
-void Id_DsdManTuneStr( If_DsdMan_t * p, char * pStruct, int nConfls, int nProcs, int fVerbose )
+void Id_DsdManTuneStr( If_DsdMan_t * p, char * pStruct, int nConfls, int nProcs, int nInputs, int fVerbose )
 {
     int fVeryVerbose = 0;
     ProgressBar * pProgress = NULL;
@@ -2703,8 +2703,8 @@ void Id_DsdManTuneStr( If_DsdMan_t * p, char * pStruct, int nConfls, int nProcs,
                         Extra_ProgressBarUpdate( pProgress, k, NULL );
                     pObj  = If_DsdVecObj( &p->vObjs, k );
                     nVars = If_DsdObjSuppSize(pObj);
-                    //if ( nVars <= LutSize )
-                    //    continue;
+                    if ( nInputs && nVars < nInputs )
+                        continue;
                     clk = Abc_Clock();
                     If_DsdManComputeTruthPtr( p, Abc_Var2Lit(k, 0), NULL, ThData[i].pTruth );
                     clkUsed += Abc_Clock() - clk;

@@ -314,16 +314,21 @@ void Dtc_ManCutMerge( Gia_Man_t * p, int iObj, int * pList0, int * pList1, Vec_I
         if ( Type == 0 )
             continue;
         vTemp = Type == 1 ? vCutsXor : vCutsMaj;
-        if ( fVerbose )
-            printf( "%d = %s(", iObj, Type == 1 ? "XOR" : "MAJ" );
-        for ( c = 1; c <= pCut[0]; c++ )
+        if ( 0 && Type == 2 )
         {
+            fVerbose = 1;
             if ( fVerbose )
-                printf( " %d", pCut[c] );
-            Vec_IntPush( vTemp, pCut[c] );
+                printf( "%d = %s(", iObj, Type == 1 ? "XOR" : "MAJ" );
+            for ( c = 1; c <= pCut[0]; c++ )
+            {
+                if ( fVerbose )
+                    printf( " %d", pCut[c] );
+                Vec_IntPush( vTemp, pCut[c] );
+            }
+            if ( fVerbose )
+                printf( " )\n" );
+            fVerbose = 0;
         }
-        if ( fVerbose )
-            printf( " )\n" );
         Vec_IntPush( vTemp, iObj );
     }
 }
@@ -438,10 +443,10 @@ Vec_Int_t * Gia_ManDetectFullAdders( Gia_Man_t * p, int fVerbose, Vec_Int_t ** p
 {
     Vec_Int_t * vCutsXor, * vCutsMaj, * vFadds;
     Dtc_ManComputeCuts( p, pvCutsXor2, &vCutsXor, &vCutsMaj, fVerbose );
-    qsort( Vec_IntArray(vCutsXor), Vec_IntSize(vCutsXor)/4, 16, (int (*)(const void *, const void *))Dtc_ManCompare );
-    qsort( Vec_IntArray(vCutsMaj), Vec_IntSize(vCutsMaj)/4, 16, (int (*)(const void *, const void *))Dtc_ManCompare );
+    qsort( Vec_IntArray(vCutsXor), (size_t)(Vec_IntSize(vCutsXor)/4), 16, (int (*)(const void *, const void *))Dtc_ManCompare );
+    qsort( Vec_IntArray(vCutsMaj), (size_t)(Vec_IntSize(vCutsMaj)/4), 16, (int (*)(const void *, const void *))Dtc_ManCompare );
     vFadds = Dtc_ManFindCommonCuts( p, vCutsXor, vCutsMaj );
-    qsort( Vec_IntArray(vFadds), Vec_IntSize(vFadds)/5, 20, (int (*)(const void *, const void *))Dtc_ManCompare2 );
+    qsort( Vec_IntArray(vFadds), (size_t)(Vec_IntSize(vFadds)/5), 20, (int (*)(const void *, const void *))Dtc_ManCompare2 );
     if ( fVerbose )
         printf( "XOR3 cuts = %d.  MAJ cuts = %d.  Full-adders = %d.\n", Vec_IntSize(vCutsXor)/4, Vec_IntSize(vCutsMaj)/4, Vec_IntSize(vFadds)/5 );
     if ( fVerbose )
@@ -449,6 +454,16 @@ Vec_Int_t * Gia_ManDetectFullAdders( Gia_Man_t * p, int fVerbose, Vec_Int_t ** p
     Vec_IntFree( vCutsXor );
     Vec_IntFree( vCutsMaj );
     return vFadds;
+}
+void Gia_ManDetectFullAdders2( Gia_Man_t * p, int fVerbose )
+{
+    Vec_Int_t * vCutsXor2, * vCutsXor, * vCutsMaj;
+    Dtc_ManComputeCuts( p, &vCutsXor2, &vCutsXor, &vCutsMaj, fVerbose );
+    if ( fVerbose )
+        printf( "XOR3 cuts = %d.  MAJ cuts = %d.\n", Vec_IntSize(vCutsXor)/4, Vec_IntSize(vCutsMaj)/4 );
+    Vec_IntFree( vCutsXor2 );
+    Vec_IntFree( vCutsXor );
+    Vec_IntFree( vCutsMaj );
 }
 
 /**Function*************************************************************
@@ -845,7 +860,7 @@ Gia_Man_t * Gia_ManDupWithNaturalBoxes( Gia_Man_t * p, int nFaddMin, int fVerbos
     if ( Gia_ManRegNum(p) )
     {
         if ( fVerbose )
-            printf( "Warning: Sequential design is coverted into combinational one by adding white boxes.\n" );
+            printf( "Warning: Sequential design is converted into combinational one by adding white boxes.\n" );
         pNew->nRegs = 0;
     }
     assert( !Gia_ManHasDangling(pNew) );
@@ -1237,6 +1252,7 @@ Gia_Man_t * Gia_ManDupWithArtificialBoxes( Gia_Man_t * p, int DelayC, int nPathM
     Gia_ManCleanMark01( p );
     return pNew;
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

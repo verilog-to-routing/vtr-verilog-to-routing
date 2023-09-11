@@ -1013,7 +1013,7 @@ Gia_Man_t * Cba_NtkBlast( Cba_Ntk_t * p, int fSeq )
     {
         Gia_ManSetRegNum( pNew, Vec_StrSize(vInit) );
         Vec_StrPush( vInit, '\0' );
-        pNew = Gia_ManDupZeroUndc( pTemp = pNew, Vec_StrArray(vInit), 0, 1 );
+        pNew = Gia_ManDupZeroUndc( pTemp = pNew, Vec_StrArray(vInit), 0, 0, 1 );
         Gia_ManDupRemapLiterals( vBits, pTemp );
         Gia_ManStop( pTemp );
         Vec_StrFreeP( &vInit );

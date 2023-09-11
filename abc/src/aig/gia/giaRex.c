@@ -309,7 +309,7 @@ Gia_Man_t * Gia_ManRex2Gia( char * pStrInit, int fOrder, int fVerbose )
     Gia_ManStop( pTemp );
 
     // add initial state
-    pNew = Gia_ManDupZeroUndc( pTemp = pNew, Vec_StrArray(vInit), 0, 0 );
+    pNew = Gia_ManDupZeroUndc( pTemp = pNew, Vec_StrArray(vInit), 0, 0, 0 );
     Gia_ManStop( pTemp );
     Vec_StrFree( vInit );
 /*

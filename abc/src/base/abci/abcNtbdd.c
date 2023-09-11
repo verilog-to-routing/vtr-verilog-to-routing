@@ -34,6 +34,7 @@ ABC_NAMESPACE_IMPL_START
 
 #ifdef ABC_USE_CUDD
 
+       int         Abc_NtkBddToMuxesPerformGlo( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkNew, int Limit, int fReorder, int fUseAdd );
 static void        Abc_NtkBddToMuxesPerform( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkNew );
 static Abc_Obj_t * Abc_NodeBddToMuxes( Abc_Obj_t * pNodeOld, Abc_Ntk_t * pNtkNew );
 static Abc_Obj_t * Abc_NodeBddToMuxes_rec( DdManager * dd, DdNode * bFunc, Abc_Ntk_t * pNtkNew, st__table * tBdd2Node );
@@ -128,13 +129,23 @@ Abc_Ntk_t * Abc_NtkDeriveFromBdd( void * dd0, void * bFunc, char * pNamePo, Vec_
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkBddToMuxes( Abc_Ntk_t * pNtk )
+Abc_Ntk_t * Abc_NtkBddToMuxes( Abc_Ntk_t * pNtk, int fGlobal, int Limit, int fUseAdd )
 {
     Abc_Ntk_t * pNtkNew;
-    assert( Abc_NtkIsBddLogic(pNtk) );
     pNtkNew = Abc_NtkStartFrom( pNtk, ABC_NTK_LOGIC, ABC_FUNC_SOP );
-    Abc_NtkBddToMuxesPerform( pNtk, pNtkNew );
-    Abc_NtkFinalize( pNtk, pNtkNew );
+    if ( fGlobal ) 
+    {
+        if ( !Abc_NtkBddToMuxesPerformGlo( pNtk, pNtkNew, Limit, 0, fUseAdd ) )
+        {
+            Abc_NtkDelete( pNtkNew );
+            return NULL;
+        }
+    }
+    else
+    {
+        Abc_NtkBddToMuxesPerform( pNtk, pNtkNew );
+        Abc_NtkFinalize( pNtk, pNtkNew );
+    }
     // make sure everything is okay
     if ( !Abc_NtkCheck( pNtkNew ) )
     {
@@ -162,6 +173,7 @@ void Abc_NtkBddToMuxesPerform( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkNew )
     Abc_Obj_t * pNode, * pNodeNew;
     Vec_Ptr_t * vNodes;
     int i;
+    assert( Abc_NtkIsBddLogic(pNtk) );
     // perform conversion in the topological order
     vNodes = Abc_NtkDfs( pNtk, 0 );
     pProgress = Extra_ProgressBarStart( stdout, vNodes->nSize );
@@ -225,8 +237,11 @@ Abc_Obj_t * Abc_NodeBddToMuxes_rec( DdManager * dd, DdNode * bFunc, Abc_Ntk_t * 
 {
     Abc_Obj_t * pNodeNew, * pNodeNew0, * pNodeNew1, * pNodeNewC;
     assert( !Cudd_IsComplement(bFunc) );
-    if ( bFunc == b1 )
+    assert( b1 == a1 );
+    if ( bFunc == a1 )
         return Abc_NtkCreateNodeConst1(pNtkNew);
+    if ( bFunc == a0 )
+        return Abc_NtkCreateNodeConst0(pNtkNew);
     if ( st__lookup( tBdd2Node, (char *)bFunc, (char **)&pNodeNew ) )
         return pNodeNew;
     // solve for the children nodes
@@ -242,6 +257,69 @@ Abc_Obj_t * Abc_NodeBddToMuxes_rec( DdManager * dd, DdNode * bFunc, Abc_Ntk_t * 
     return pNodeNew;
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Converts the node to MUXes.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_NtkBddToMuxesPerformGlo( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkNew, int Limit, int fReorder, int fUseAdd )
+{
+    DdManager * dd;
+    Vec_Ptr_t * vAdds = fUseAdd ? Vec_PtrAlloc(100) : NULL;
+    Abc_Obj_t * pObj, * pObjNew; int i;
+    st__table * tBdd2Node;
+    assert( Abc_NtkIsStrash(pNtk) );
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, Limit, 1, fReorder, 0, 0 );
+    if ( dd == NULL )
+    {
+        printf( "Construction of global BDDs has failed.\n" );
+        return 0;
+    }
+    //printf( "Shared BDD size = %6d nodes.\n", Cudd_ReadKeys(dd) - Cudd_ReadDead(dd) );
+
+    tBdd2Node = st__init_table( st__ptrcmp, st__ptrhash );
+    Abc_NtkForEachCi( pNtkNew, pObjNew, i )
+        st__insert( tBdd2Node, (char *)Cudd_bddIthVar(dd, i), (char *)pObjNew );
+
+    // complement the global functions
+    Abc_NtkForEachCo( pNtk, pObj, i )
+    {
+        DdNode * bFunc = (DdNode *)Abc_ObjGlobalBdd(pObj);
+        if ( fUseAdd )
+        {
+            DdNode * aFunc = Cudd_BddToAdd( dd, bFunc );  Cudd_Ref( aFunc );
+            pObjNew = Abc_NodeBddToMuxes_rec( dd, aFunc, pNtkNew, tBdd2Node );
+            Vec_PtrPush( vAdds, aFunc );
+        }
+        else
+        {
+            pObjNew = Abc_NodeBddToMuxes_rec( dd, Cudd_Regular(bFunc), pNtkNew, tBdd2Node );
+            if ( Cudd_IsComplement(bFunc) )
+                pObjNew = Abc_NtkCreateNodeInv( pNtkNew, pObjNew );
+        }
+        Abc_ObjAddFanin( pObj->pCopy, pObjNew );
+    }
+
+    // cleanup
+    st__free_table( tBdd2Node );
+    Abc_NtkFreeGlobalBdds( pNtk, 0 );
+    if ( vAdds )
+    {
+        DdNode * aTemp;
+        Vec_PtrForEachEntry( DdNode *, vAdds, aTemp, i )
+            Cudd_RecursiveDeref( dd, aTemp );
+        Vec_PtrFree( vAdds );
+    }
+    Extra_StopManager( dd );
+    Abc_NtkCleanCopy( pNtk );
+    return 1;
+}
 
 /**Function*************************************************************
 
@@ -254,7 +332,7 @@ Abc_Obj_t * Abc_NodeBddToMuxes_rec( DdManager * dd, DdNode * bFunc, Abc_Ntk_t * 
   SeeAlso     []
 
 ***********************************************************************/
-void * Abc_NtkBuildGlobalBdds( Abc_Ntk_t * pNtk, int nBddSizeMax, int fDropInternal, int fReorder, int fVerbose )
+void * Abc_NtkBuildGlobalBdds( Abc_Ntk_t * pNtk, int nBddSizeMax, int fDropInternal, int fReorder, int fReverse, int fVerbose )
 {
     ProgressBar * pProgress;
     Abc_Obj_t * pObj, * pFanin;
@@ -287,8 +365,7 @@ void * Abc_NtkBuildGlobalBdds( Abc_Ntk_t * pNtk, int nBddSizeMax, int fDropInter
     Abc_NtkForEachCi( pNtk, pObj, i )
         if ( Abc_ObjFanoutNum(pObj) > 0 )
         {
-            bFunc = dd->vars[i];
-//            bFunc = dd->vars[Abc_NtkCiNum(pNtk) - 1 - i];
+            bFunc = fReverse ? dd->vars[Abc_NtkCiNum(pNtk) - 1 - i] : dd->vars[i];
             Abc_ObjSetGlobalBdd( pObj, bFunc );  Cudd_Ref( bFunc );
         }
 
@@ -353,6 +430,7 @@ void * Abc_NtkBuildGlobalBdds( Abc_Ntk_t * pNtk, int nBddSizeMax, int fDropInter
     if ( fReorder )
     {
         Cudd_ReduceHeap( dd, CUDD_REORDER_SYMM_SIFT, 1 );
+//        Cudd_ReduceHeap( dd, CUDD_REORDER_SYMM_SIFT, 1 );
         Cudd_AutodynDisable( dd );
     }
 //    Cudd_PrintInfo( dd, stdout );
@@ -605,7 +683,7 @@ ABC_PRT( "Time", Abc_Clock() - clk );
 #else
 
 double Abc_NtkSpacePercentage( Abc_Obj_t * pNode ) { return 0.0; }
-Abc_Ntk_t * Abc_NtkBddToMuxes( Abc_Ntk_t * pNtk ) { return NULL; }
+Abc_Ntk_t * Abc_NtkBddToMuxes( Abc_Ntk_t * pNtk, int fGlobal, int Limit, int fUseAdd ) { return NULL; }
 
 
 #endif

@@ -87,14 +87,14 @@ int BacManReadBacNameAndNums( char * pBuffer, int * Num1, int * Num2, int * Num3
 }
 void Bac_ManReadBacVecStr( Vec_Str_t * vOut, int * pPos, Vec_Str_t * p, int nSize )
 {
-    memcpy( Vec_StrArray(p), Vec_StrArray(vOut) + *pPos, nSize );
+    memcpy( Vec_StrArray(p), Vec_StrArray(vOut) + *pPos, (size_t)nSize );
     *pPos += nSize;
     p->nSize = nSize;
     assert( Vec_StrSize(p) == Vec_StrCap(p) );
 }
 void Bac_ManReadBacVecInt( Vec_Str_t * vOut, int * pPos, Vec_Int_t * p, int nSize )
 {
-    memcpy( Vec_IntArray(p), Vec_StrArray(vOut) + *pPos, nSize );
+    memcpy( Vec_IntArray(p), Vec_StrArray(vOut) + *pPos, (size_t)nSize );
     *pPos += nSize;
     p->nSize = nSize / 4;
     assert( Vec_IntSize(p) == Vec_IntCap(p) );
