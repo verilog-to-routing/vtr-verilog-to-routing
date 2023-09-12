@@ -963,6 +963,16 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
             heap_blocks.pop_back();
 
             auto blk_id_type = cluster_ctx.clb_nlist.block_type(blk_id);
+
+            const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(b_from)->pb_type;
+            int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
+            std::vector<size_t> block_nets(block_num_pins, OPEN);
+            for (int ipin = 0; ipin < block_num_pins; ipin++) {
+                block_nets[ipin] = (size_t)cluster_ctx.clb_nlist.block_net(b_from, ipin);
+            }
+            enable_placer_debug(placer_opts, size_t(b_from), block_nets);
+
+
             blocks_placed_since_heap_update++;
 
             bool block_placed = place_one_block(blk_id, pad_loc_type, &blk_types_empty_locs_in_grid[blk_id_type->index], &block_scores);
@@ -1082,7 +1092,10 @@ bool place_one_block(const ClusterBlockId& blk_id,
     return placed_macro;
 }
 
-void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, bool noc_enabled) {
+void initial_placement(const t_placer_opts& placer_opts,
+                       enum e_pad_loc_type pad_loc_type,
+                       const char* constraints_file,
+                       bool noc_enabled) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     /* Go through cluster blocks to calculate the tightest placement

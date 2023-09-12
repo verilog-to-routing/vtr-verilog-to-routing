@@ -544,7 +544,10 @@ void try_place(const Netlist<>& net_list,
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
-    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str(), noc_opts.noc);
+    initial_placement(placer_opts,
+                      placer_opts.pad_loc_type,
+                      placer_opts.constraints_file.c_str(),
+                      noc_opts.noc);
 
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
