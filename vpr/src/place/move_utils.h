@@ -9,8 +9,6 @@
 /* To turn off incremental bounding box updates, set this to a huge value */
 #define SMALL_NET 4
 
-extern bool f_placer_debug;
-
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */

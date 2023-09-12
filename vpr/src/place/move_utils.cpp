@@ -15,8 +15,6 @@
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
 
-bool f_placer_debug = false;
-
 //Records counts of reasons for aborted moves
 static std::map<std::string, size_t> f_move_abort_reasons;
 
@@ -502,6 +500,9 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          int blk_id_num,
                          const std::vector<size_t>& net_id_nums) {
+
+    bool& f_placer_debug = g_vpr_ctx.mutable_placement().f_placer_debug;
+
     bool active_blk_debug = (placer_opts.placer_debug_block >= -1);
     bool active_net_debug = (placer_opts.placer_debug_net >= -1);
 
@@ -792,7 +793,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     VTR_ASSERT_MSG(grid.get_width_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
 
-    VTR_LOGV_DEBUG(f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to.x, to.y, to.layer);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to.x, to.y, to.layer);
     return true;
 }
 
@@ -883,7 +884,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
-    VTR_LOGV_DEBUG(f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to_loc.x, to_loc.y, to_loc.layer);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to_loc.x, to_loc.y, to_loc.layer);
     return true;
 }
 
@@ -967,7 +968,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
-    VTR_LOGV_DEBUG(f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to_loc.x, to_loc.y, to_loc.layer);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to_loc.x, to_loc.y, to_loc.layer);
     return true;
 }
 
@@ -1098,7 +1099,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         }
     }
     if (!legal) {
-        VTR_LOGV_DEBUG(f_placer_debug, "\tCouldn't find any legal position in the given search range\n");
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tCouldn't find any legal position in the given search range\n");
     }
     return legal;
 }
@@ -1252,7 +1253,7 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
         intersect_reg = intersection(regions[0], range_reg);
 
         if (intersect_reg.empty()) {
-            VTR_LOGV_DEBUG(f_placer_debug, "\tCouldn't find an intersection between floorplan constraints and search region\n");
+            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tCouldn't find an intersection between floorplan constraints and search region\n");
             return false;
         } else {
             const auto intersect_coord = intersect_reg.get_region_rect();

@@ -1563,7 +1563,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         } else if (place_algorithm == CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values */
-            VTR_LOGV_DEBUG(f_placer_debug,
+            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\t\tMove bb_delta_c %f, bb_cost_norm %f, timing_tradeoff %f, "
                            "timing_delta_c %f, timing_cost_norm %f\n",
                            bb_delta_c,
@@ -1576,7 +1576,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                             * costs->timing_cost_norm;
         } else {
             VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
-            VTR_LOGV_DEBUG(f_placer_debug,
+            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\t\tMove bb_delta_c %f, bb_cost_norm %f, timing_tradeoff %f, "
                            "timing_delta_c %f, timing_cost_norm %f\n",
                            bb_delta_c,
@@ -1737,7 +1737,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     // greatly slow the placer, but can debug some issues.
     check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts);
 #endif
-    VTR_LOGV_DEBUG(f_placer_debug, "\t\tPlace cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tPlace cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
     return move_outcome;
 }
 
@@ -2081,24 +2081,24 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
 
 static e_move_result assess_swap(double delta_c, double t) {
     /* Returns: 1 -> move accepted, 0 -> rejected. */
-    VTR_LOGV_DEBUG(f_placer_debug, "\tTemperature is: %f delta_c is %f\n", t, delta_c);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %f delta_c is %f\n", t, delta_c);
     if (delta_c <= 0) {
-        VTR_LOGV_DEBUG(f_placer_debug, "\t\tMove is accepted(delta_c < 0)\n");
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(delta_c < 0)\n");
         return ACCEPTED;
     }
 
     if (t == 0.) {
-        VTR_LOGV_DEBUG(f_placer_debug, "\t\tMove is rejected(t == 0)\n");
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(t == 0)\n");
         return REJECTED;
     }
 
     float fnum = vtr::frand();
     float prob_fac = std::exp(-delta_c / t);
     if (prob_fac > fnum) {
-        VTR_LOGV_DEBUG(f_placer_debug, "\t\tMove is accepted(hill climbing)\n");
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(hill climbing)\n");
         return ACCEPTED;
     }
-    VTR_LOGV_DEBUG(f_placer_debug, "\t\tMove is rejected(hill climbing)\n");
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(hill climbing)\n");
     return REJECTED;
 }
 
