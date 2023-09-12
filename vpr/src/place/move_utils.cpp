@@ -500,7 +500,6 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          int blk_id_num,
                          const std::vector<size_t>& net_id_nums) {
-
     bool& f_placer_debug = g_vpr_ctx.mutable_placement().f_placer_debug;
 
     bool active_blk_debug = (placer_opts.placer_debug_block >= -1);
