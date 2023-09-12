@@ -30,7 +30,7 @@ if (${WITH_PARMYS})
                 PREFIX "surelog"
 
                 GIT_REPOSITORY https://github.com/chipsalliance/Surelog.git
-                GIT_TAG 900fb2499c7d3f793409999eabee63db513814b4 # yosys-systemverilog release ac4454e-2023-01-13
+                GIT_TAG v1.71
                 GIT_PROGRESS TRUE
 
                 # setting source, build and install directories
@@ -61,7 +61,7 @@ if (${WITH_PARMYS})
                 PREFIX "f4pga-plugins"
 
                 GIT_REPOSITORY https://github.com/chipsalliance/yosys-f4pga-plugins.git
-                GIT_TAG e81b0c14d554fbf9cef14dd33155f441242d5ca2 # yosys-systemverilog release ac4454e-2023-01-13
+                GIT_TAG v1.20230808
                 GIT_PROGRESS TRUE
 
                 # setting source, build and install directories
