@@ -713,6 +713,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_node_loc_layer(const t_rr_node& node) final {
         return rr_graph_->node_layer(node.id());
     }
+    inline int get_node_loc_twist(const t_rr_node& node) final{
+        return rr_graph_->node_ptc_twist(node.id());
+    }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
         return rr_graph_->node_xhigh(node.id());
     }
@@ -756,6 +759,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         }
     }
+
+    inline void set_node_loc_twist(int twist, int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+        rr_graph_builder_->set_node_ptc_twist_incr(node_id,twist);
+    }
+
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
         if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {

@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/amin/Desktop/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/amin/Desktop/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: 38649d034e0edccbcb511ddb8915cdff
+# Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
 
-@0xd7cc43f5845f4c7f;
+@0xf7009c96d0510b05;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -165,10 +165,11 @@ struct NodeLoc {
 	layer @0 :Int32 = 0;
 	ptc @1 :Int32;
 	side @2 :LocSide;
-	xhigh @3 :Int32;
-	xlow @4 :Int32;
-	yhigh @5 :Int32;
-	ylow @6 :Int32;
+	twist @3 :Int32;
+	xhigh @4 :Int32;
+	xlow @5 :Int32;
+	yhigh @6 :Int32;
+	ylow @7 :Int32;
 }
 
 struct NodeTiming {

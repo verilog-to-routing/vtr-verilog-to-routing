@@ -266,6 +266,7 @@
     <xs:attribute name="yhigh" type="xs:int" use="required"/>
     <xs:attribute name="side" type="loc_side"/>
     <xs:attribute name="ptc" type="xs:int" use="required"/>
+    <xs:attribute name="twist" type="xs:int"/>
   </xs:complexType>
 
   <xs:complexType name="node_timing">
