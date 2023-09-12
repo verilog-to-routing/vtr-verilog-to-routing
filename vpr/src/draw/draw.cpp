@@ -292,6 +292,7 @@ static void default_setup(ezgl::application* app) {
     net_button_setup(app);
     block_button_setup(app);
     search_setup(app);
+    view_button_setup(app);
 }
 
 // Initial Setup functions run default setup if they are a new window. Then, they will run
@@ -526,6 +527,10 @@ void alloc_draw_structs(const t_arch* arch) {
      * not yet know information about the routing resources.				  */
     draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
 
+    draw_state->draw_layer_display.resize(device_ctx.grid.get_num_layers());
+    //By default show the lowest layer only. This is the only die layer for 2D FPGAs
+    draw_state->draw_layer_display[0].visible = true;
+
     draw_state->arch_info = arch;
 
     deselect_all(); /* Set initial colors */
@@ -568,14 +573,14 @@ void init_draw_coords(float width_val) {
     if (!draw_state->show_graphics && !draw_state->save_graphics
         && draw_state->graphics_commands.empty())
         return; //do not initialize only if --disp off and --save_graphics off
+
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
     if (rr_graph.num_nodes() != 0) {
         draw_state->draw_rr_node.resize(rr_graph.num_nodes());
-        /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
-        for (const RRNodeId& rr_id : rr_graph.nodes()) {
-            draw_state->draw_rr_node[(size_t)rr_id].color = DEFAULT_RR_NODE_COLOR;
-            draw_state->draw_rr_node[(size_t)rr_id].node_highlighted = false;
+        for (RRNodeId inode : rr_graph.nodes()) {
+            draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+            draw_state->draw_rr_node[inode].node_highlighted = false;
         }
     }
     draw_coords->tile_width = width_val;
@@ -790,9 +795,9 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-        int hit_node = draw_check_rr_node_hit(x, y);
+        RRNodeId hit_node = draw_check_rr_node_hit(x, y);
 
-        if (hit_node != OPEN) {
+        if (hit_node) {
             //Update message
 
             const auto& device_ctx = g_vpr_ctx.device();
@@ -837,20 +842,20 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 }
 
 //Returns the set of rr nodes which connect driver to sink
-std::vector<int> trace_routed_connection_rr_nodes(
-    const ClusterNetId net_id,
-    const int driver_pin,
-    const int sink_pin) {
+std::vector<RRNodeId> trace_routed_connection_rr_nodes(
+    ClusterNetId net_id,
+    int driver_pin,
+    int sink_pin) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
 
-    VTR_ASSERT(tree.root().inode == RRNodeId(route_ctx.net_rr_terminals[net_id][driver_pin]));
+    VTR_ASSERT(tree.root().inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
 
-    int sink_rr_node = route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][sink_pin];
+    RRNodeId sink_rr_node = route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][sink_pin];
 
-    std::vector<int> rr_nodes_on_path;
+    std::vector<RRNodeId> rr_nodes_on_path;
 
     //Collect the rr nodes
     trace_routed_connection_rr_nodes_recurr(tree.root(),
@@ -867,8 +872,8 @@ std::vector<int> trace_routed_connection_rr_nodes(
 //Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path
 //Returns true if rt_node is on the path
 bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
-                                             int sink_rr_node,
-                                             std::vector<int>& rr_nodes_on_path) {
+                                             RRNodeId sink_rr_node,
+                                             std::vector<RRNodeId>& rr_nodes_on_path) {
     //DFS from the current rt_node to the sink_rr_node, when the sink is found trace back the used rr nodes
 
     if (rt_node.inode == RRNodeId(sink_rr_node)) {
@@ -880,7 +885,7 @@ bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
         bool on_path_to_sink = trace_routed_connection_rr_nodes_recurr(
             child_rt_node, sink_rr_node, rr_nodes_on_path);
         if (on_path_to_sink) {
-            rr_nodes_on_path.push_back(size_t(rt_node.inode));
+            rr_nodes_on_path.push_back(rt_node.inode);
             return true;
         }
     }
@@ -889,12 +894,12 @@ bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
 }
 
 //Find the edge between two rr nodes
-t_edge_size find_edge(int prev_inode, int inode) {
+t_edge_size find_edge(RRNodeId prev_inode, RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     for (t_edge_size iedge = 0;
-         iedge < rr_graph.num_edges(RRNodeId(prev_inode)); ++iedge) {
-        if (size_t(rr_graph.edge_sink_node(RRNodeId(prev_inode), iedge)) == size_t(inode)) {
+         iedge < rr_graph.num_edges(prev_inode); ++iedge) {
+        if (rr_graph.edge_sink_node(prev_inode, iedge) == inode) {
             return iedge;
         }
     }
@@ -935,19 +940,19 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.routing();
 
-    std::vector<float> rr_costs(device_ctx.rr_graph.num_nodes());
+    vtr::vector<RRNodeId, float> rr_costs(device_ctx.rr_graph.num_nodes());
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
         float cost = get_router_expansion_cost(
-            routing_ctx.rr_node_route_inf[(size_t)rr_id],
+            routing_ctx.rr_node_route_inf[inode],
             draw_state->show_router_expansion_cost);
-        rr_costs[(size_t)rr_id] = cost;
+        rr_costs[inode] = cost;
     }
 
     bool all_nan = true;
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        if (std::isinf(rr_costs[(size_t)rr_id])) {
-            rr_costs[(size_t)rr_id] = NAN;
+    for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
+        if (std::isinf(rr_costs[inode])) {
+            rr_costs[inode] = NAN;
         } else {
             all_nan = false;
         }
@@ -978,62 +983,29 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
     }
 }
 
+/**
+ * @brief Highlights the block that was clicked on, looking from the top layer downwards for 3D devices (chooses the block on the top visible layer for overlapping blocks)
+ *        It highlights the block green, as well as its fanin and fanout to blue and red respectively by updating the draw_state variables responsible for holding the
+ *        color of the block as well as its fanout and fanin.
+ * @param x
+ * @param y
+ */
 static void highlight_blocks(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
 
     char msg[vtr::bufsize];
-    ClusterBlockId clb_index = EMPTY_BLOCK_ID;
-    auto& device_ctx = g_vpr_ctx.device();
+    ClusterBlockId clb_index = get_cluster_block_id_from_xy_loc(x, y);
+    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
+        return; /* Nothing was found on any layer*/
+    }
+
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    /// determine block ///
-    ezgl::rectangle clb_bbox;
-
-    //TODO: Change when graphics supports 3D FPGAs
-    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
-    int layer_num = 0;
-    // iterate over grid x
-    for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
-        if (draw_coords->tile_x[i] > x) {
-            break; // we've gone to far in the x direction
-        }
-        // iterate over grid y
-        for (int j = 0; j < (int)device_ctx.grid.height(); ++j) {
-            if (draw_coords->tile_y[j] > y) {
-                break; // we've gone to far in the y direction
-            }
-            // iterate over sub_blocks
-            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
-            for (int k = 0; k < type->capacity; ++k) {
-                // TODO: Change when graphics supports 3D
-                clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
-                if (clb_index != EMPTY_BLOCK_ID) {
-                    clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
-                                                                  cluster_ctx.clb_nlist.block_type(clb_index));
-                    if (clb_bbox.contains({x, y})) {
-                        break;
-                    } else {
-                        clb_index = EMPTY_BLOCK_ID;
-                    }
-                }
-            }
-            if (clb_index != EMPTY_BLOCK_ID) {
-                break; // we've found something
-            }
-        }
-        if (clb_index != EMPTY_BLOCK_ID) {
-            break; // we've found something
-        }
-    }
-
-    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
-        //Nothing found
-        return;
-    }
-
     VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
 
+    ezgl::rectangle clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
     // note: this will clear the selected sub-block if show_blk_internal is 0,
     // or if it doesn't find anything
     ezgl::point2d point_in_clb = ezgl::point2d(x, y) - clb_bbox.bottom_left();
@@ -1056,7 +1028,6 @@ static void highlight_blocks(double x, double y) {
     }
 
     //If manual moves is activated, then user can select block from the grid.
-    t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->manual_moves_state.manual_move_enabled) {
         draw_state->manual_moves_state.user_highlighted_block = true;
         if (!draw_state->manual_moves_state.manual_move_window_is_open) {
@@ -1066,7 +1037,56 @@ static void highlight_blocks(double x, double y) {
 
     application.update_message(msg);
     application.refresh_drawing();
+    return;
 }
+
+ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
+    ClusterBlockId clb_index = EMPTY_BLOCK_ID;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    /// determine block ///
+    ezgl::rectangle clb_bbox;
+
+    //iterate over grid z (layers) first. Start search of the block at the top layer to prioritize highlighting of blocks at higher levels during overlapping of layers.
+    for (int layer_num = device_ctx.grid.get_num_layers() - 1; layer_num >= 0; layer_num--) {
+        if (!draw_state->draw_layer_display[layer_num].visible) {
+            continue; /* Don't check for blocks on non-visible layers*/
+        }
+        // iterate over grid x
+        for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
+            if (draw_coords->tile_x[i] > x) {
+                break; // we've gone too far in the x direction
+            }
+            // iterate over grid y
+            for (int j = 0; j < (int)device_ctx.grid.height(); ++j) {
+                if (draw_coords->tile_y[j] > y) {
+                    break; // we've gone too far in the y direction
+                }
+                // iterate over sub_blocks
+                const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                for (int k = 0; k < type->capacity; ++k) {
+                    clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    if (clb_index != EMPTY_BLOCK_ID) {
+                        clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
+                                                                      cluster_ctx.clb_nlist.block_type(clb_index));
+                        if (clb_bbox.contains({x, y})) {
+                            return clb_index; // we've found the clb
+                        } else {
+                            clb_index = EMPTY_BLOCK_ID;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Searched all layers and found no clb at specified location, returning clb_index = EMPTY_BLOCK_ID.
+    return clb_index;
+}
+
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     GObject* proceed_button = app->get_object("ProceedButton");
@@ -1370,25 +1390,15 @@ void clear_colored_locations() {
     draw_state->colored_locations.clear();
 }
 
-// This routine takes in a (x,y) location.
-// If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
-// otherwise, the function returns false (the location isn't among the highlighted locations)
-bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color) {
+bool highlight_loc_with_specific_color(t_pl_loc curr_loc, ezgl::color& loc_color) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    //define a (x,y) location variable
-    t_pl_loc curr_loc;
-    curr_loc.x = x;
-    curr_loc.y = y;
-    //TODO: Graphic currently doesn't support 3D FPGAs
-    curr_loc.layer = 0;
 
     //search for the current location in the vector of colored locations
     auto it = std::find_if(draw_state->colored_locations.begin(),
                            draw_state->colored_locations.end(),
                            [&curr_loc](const std::pair<t_pl_loc, ezgl::color>& vec_element) {
                                return (vec_element.first.x == curr_loc.x
-                                       && vec_element.first.y == curr_loc.y);
+                                       && vec_element.first.y == curr_loc.y && vec_element.first.layer == curr_loc.layer);
                            });
 
     if (it != draw_state->colored_locations.end()) {
@@ -1441,6 +1451,34 @@ size_t get_max_fanout() {
 
     size_t max = std::max(max_fanout2, max_fanout);
     return max;
+}
+
+bool rgb_is_same(ezgl::color color1, ezgl::color color2) {
+    color1.alpha = 255;
+    color2.alpha = 255;
+    return (color1 == color2);
+}
+t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer) {
+    t_draw_layer_display element_visibility;
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    element_visibility.visible = true;
+    bool cross_layer_enabled = draw_state->cross_layer_display.visible;
+
+    //To only show elements (net flylines,noc links,etc...) that are connected to currently active layers on the screen
+    if (!draw_state->draw_layer_display[sink_layer].visible || !draw_state->draw_layer_display[src_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
+        element_visibility.visible = false; /* Don't Draw */
+    }
+
+    if (src_layer != sink_layer) {
+        //assign transparency from cross layer option if connection is between different layers
+        element_visibility.alpha = draw_state->cross_layer_display.alpha;
+    } else {
+        //otherwise assign transparency of current layer
+        element_visibility.alpha = draw_state->draw_layer_display[src_layer].alpha;
+    }
+
+    return element_visibility;
 }
 
 #endif /* NO_GRAPHICS */

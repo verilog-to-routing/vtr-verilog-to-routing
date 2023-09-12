@@ -2,11 +2,10 @@
 #define VPR_TIMING_UTIL_H
 #include <vector>
 
+#include "netlist_fwd.h"
 #include "tatum/timing_analyzers.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "tatum/timing_paths.hpp"
-
-#include "vtr_vec_id_set.h"
 
 #include "histogram.h"
 #include "timing_info_fwd.h"
@@ -82,117 +81,6 @@ tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range
 
 //Returns the a map of domain's and their clock fanout (i.e. logical outputs at which the clock captures)
 std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);
-
-//Helper class for iterating through the timing edges associated with a particular
-//clustered netlist pin, and invalidating them.
-//
-//For efficiency, it pre-calculates and stores the mapping from ClusterPinId -> tatum::EdgeIds,
-//and tracks whether a particular ClusterPinId has been already invalidated (to avoid the expense
-//of invalidating it multiple times)
-class NetPinTimingInvalidator {
-  public:
-    typedef vtr::Range<const tatum::EdgeId*> tedge_range;
-
-  public:
-    NetPinTimingInvalidator(const Netlist<>& net_list,
-                            const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
-                            const AtomNetlist& atom_nlist,
-                            const AtomLookup& atom_lookup,
-                            const tatum::TimingGraph& timing_graph,
-                            bool is_flat) {
-        size_t num_pins = net_list.pins().size();
-        pin_first_edge_.reserve(num_pins + 1); //Exact
-        timing_edges_.reserve(num_pins + 1);   //Lower bound
-        for (ParentPinId pin_id : net_list.pins()) {
-            pin_first_edge_.push_back(timing_edges_.size());
-            if (is_flat) {
-                tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
-
-                if (!tedge) {
-                    continue;
-                }
-
-                timing_edges_.push_back(tedge);
-            } else {
-                auto cluster_pin_id = convert_to_cluster_pin_id(pin_id);
-                auto atom_pins = clb_atom_pin_lookup.connected_atom_pins(cluster_pin_id);
-                for (const AtomPinId atom_pin : atom_pins) {
-                    tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
-
-                    if (!tedge) {
-                        continue;
-                    }
-
-                    timing_edges_.push_back(tedge);
-                }
-            }
-        }
-
-        //Sentinels
-        timing_edges_.push_back(tatum::EdgeId::INVALID());
-        pin_first_edge_.push_back(timing_edges_.size());
-
-        VTR_ASSERT(pin_first_edge_.size() == net_list.pins().size() + 1);
-    }
-
-    //Returns the set of timing edges associated with the specified cluster pin
-    tedge_range pin_timing_edges(ParentPinId pin) const {
-        int ipin = size_t(pin);
-        return vtr::make_range(&timing_edges_[pin_first_edge_[ipin]],
-                               &timing_edges_[pin_first_edge_[ipin + 1]]);
-    }
-
-    //Invalidates all timing edges associated with the clustered netlist connection
-    //driving the specified pin
-    template<class TimingInfo>
-    void invalidate_connection(ParentPinId pin, TimingInfo* timing_info) {
-        if (invalidated_pins_.count(pin)) return; //Already invalidated
-
-        for (tatum::EdgeId edge : pin_timing_edges(pin)) {
-            timing_info->invalidate_delay(edge);
-        }
-
-        invalidated_pins_.insert(pin);
-    }
-
-    //Resets invalidation state for this class
-    void reset() {
-        invalidated_pins_.clear();
-    }
-
-  private:
-    tatum::EdgeId atom_pin_to_timing_edge(const tatum::TimingGraph& timing_graph,
-                                          const AtomNetlist& atom_nlist,
-                                          const AtomLookup& atom_lookup,
-                                          const AtomPinId atom_pin) {
-        tatum::NodeId pin_tnode = atom_lookup.atom_pin_tnode(atom_pin);
-        VTR_ASSERT_SAFE(pin_tnode);
-
-        AtomNetId atom_net = atom_nlist.pin_net(atom_pin);
-        VTR_ASSERT_SAFE(atom_net);
-
-        AtomPinId atom_net_driver = atom_nlist.net_driver(atom_net);
-        VTR_ASSERT_SAFE(atom_net_driver);
-
-        tatum::NodeId driver_tnode = atom_lookup.atom_pin_tnode(atom_net_driver);
-        VTR_ASSERT_SAFE(driver_tnode);
-
-        //Find and invalidate the incoming timing edge corresponding
-        //to the connection between the net driver and sink pin
-        for (tatum::EdgeId edge : timing_graph.node_in_edges(pin_tnode)) {
-            if (timing_graph.edge_src_node(edge) == driver_tnode) {
-                //The edge corresponding to this atom pin
-                return edge;
-            }
-        }
-        return tatum::EdgeId::INVALID(); //None found
-    }
-
-  private:
-    std::vector<int> pin_first_edge_; //Indicies into timing_edges corresponding
-    std::vector<tatum::EdgeId> timing_edges_;
-    vtr::vec_id_set<ParentPinId> invalidated_pins_;
-};
 
 /*
  * Slack and criticality calculation utilities

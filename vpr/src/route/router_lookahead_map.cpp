@@ -505,11 +505,11 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
+                                            rr_node_arch_name(from_node, is_flat_).c_str(),
                                             describe_rr_node(rr_graph,
                                                              device_ctx.grid,
                                                              device_ctx.rr_indexed_data,
-                                                             size_t(from_node),
+                                                             from_node,
                                                              is_flat_)
                                                 .c_str())
                                 .c_str());
@@ -556,11 +556,11 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
+                                            rr_node_arch_name(from_node, is_flat_).c_str(),
                                             describe_rr_node(rr_graph,
                                                              device_ctx.grid,
                                                              device_ctx.rr_indexed_data,
-                                                             size_t(from_node),
+                                                             from_node,
                                                              is_flat_)
                                                 .c_str())
                                 .c_str());

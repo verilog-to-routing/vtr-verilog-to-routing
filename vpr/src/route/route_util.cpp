@@ -1,7 +1,9 @@
 #include "route_util.h"
 #include "globals.h"
+#include "draw_types.h"
+#include "draw_global.h"
 
-vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat) {
+vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat, bool is_print) {
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -27,13 +29,22 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat) {
 
     //Record number of used resources in each x/y channel
     for (RRNodeId rr_node : rr_nodes) {
+#ifndef NO_GRAPHICS
+        if (!is_print) {
+            t_draw_state* draw_state = get_draw_state_vars();
+            int layer_num = rr_graph.node_layer(rr_node);
+            if (!draw_state->draw_layer_display[layer_num].visible)
+                continue; // don't count usage if layer is not visible
+        }
+#endif
+
         if (rr_type == CHANX) {
             VTR_ASSERT(rr_graph.node_type(rr_node) == CHANX);
             VTR_ASSERT(rr_graph.node_ylow(rr_node) == rr_graph.node_yhigh(rr_node));
 
             int y = rr_graph.node_ylow(rr_node);
             for (int x = rr_graph.node_xlow(rr_node); x <= rr_graph.node_xhigh(rr_node); ++x) {
-                usage[x][y] += route_ctx.rr_node_route_inf[size_t(rr_node)].occ();
+                usage[x][y] += route_ctx.rr_node_route_inf[rr_node].occ();
             }
         } else {
             VTR_ASSERT(rr_type == CHANY);
@@ -42,7 +53,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat) {
 
             int x = rr_graph.node_xlow(rr_node);
             for (int y = rr_graph.node_ylow(rr_node); y <= rr_graph.node_yhigh(rr_node); ++y) {
-                usage[x][y] += route_ctx.rr_node_route_inf[size_t(rr_node)].occ();
+                usage[x][y] += route_ctx.rr_node_route_inf[rr_node].occ();
             }
         }
     }

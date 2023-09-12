@@ -3082,10 +3082,9 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Add the edges from this track to all it's connected pins into the list */
-        int num_edges = 0;
-        num_edges += get_track_to_pins(rr_graph_builder, layer, start, chan_coord, track, tracks_per_chan, node, rr_edges_to_create,
-                                       track_to_pin_lookup, seg_details, chan_type, seg_dimension,
-                                       wire_to_ipin_switch, wire_to_pin_between_dice_switch, directionality);
+        get_track_to_pins(rr_graph_builder, layer, start, chan_coord, track, tracks_per_chan, node, rr_edges_to_create,
+                          track_to_pin_lookup, seg_details, chan_type, seg_dimension,
+                          wire_to_ipin_switch, wire_to_pin_between_dice_switch, directionality);
 
         /* get edges going from the current track into channel segments which are perpendicular to it */
         if (chan_coord > 0) {
@@ -3100,12 +3099,12 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                 max_opposite_chan_width = nodes_per_chan.x_max;
             }
             if (to_seg_details->length() > 0) {
-                num_edges += get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, chan_coord,
-                                                 opposite_chan_type, seg_dimension, max_opposite_chan_width, grid,
-                                                 Fs_per_side, sblock_pattern, node, rr_edges_to_create,
-                                                 from_seg_details, to_seg_details, opposite_chan_details,
-                                                 directionality,
-                                                 switch_block_conn, sb_conn_map);
+                get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, chan_coord,
+                                    opposite_chan_type, seg_dimension, max_opposite_chan_width, grid,
+                                    Fs_per_side, sblock_pattern, node, rr_edges_to_create,
+                                    from_seg_details, to_seg_details, opposite_chan_details,
+                                    directionality,
+                                    switch_block_conn, sb_conn_map);
             }
         }
         if (chan_coord < chan_dimension) {
@@ -3120,12 +3119,11 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                 max_opposite_chan_width = nodes_per_chan.x_max;
             }
             if (to_seg_details->length() > 0) {
-                num_edges += get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, chan_coord + 1,
-                                                 opposite_chan_type, seg_dimension, max_opposite_chan_width, grid,
-                                                 Fs_per_side, sblock_pattern, node, rr_edges_to_create,
-                                                 from_seg_details, to_seg_details, opposite_chan_details,
-                                                 directionality,
-                                                 switch_block_conn, sb_conn_map);
+                get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, chan_coord + 1,
+                                    opposite_chan_type, seg_dimension, max_opposite_chan_width, grid,
+                                    Fs_per_side, sblock_pattern, node, rr_edges_to_create,
+                                    from_seg_details, to_seg_details, opposite_chan_details,
+                                    directionality, switch_block_conn, sb_conn_map);
             }
         }
 
@@ -3153,12 +3151,12 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                     max_chan_width = nodes_per_chan.y_max;
                 }
                 if (to_seg_details->length() > 0) {
-                    num_edges += get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, target_seg,
-                                                     chan_type, seg_dimension, max_chan_width, grid,
-                                                     Fs_per_side, sblock_pattern, node, rr_edges_to_create,
-                                                     from_seg_details, to_seg_details, from_chan_details,
-                                                     directionality,
-                                                     switch_block_conn, sb_conn_map);
+                    get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, target_seg,
+                                        chan_type, seg_dimension, max_chan_width, grid,
+                                        Fs_per_side, sblock_pattern, node, rr_edges_to_create,
+                                        from_seg_details, to_seg_details, from_chan_details,
+                                        directionality,
+                                        switch_block_conn, sb_conn_map);
                 }
             }
         }
@@ -4524,7 +4522,7 @@ static void create_edge_groups(EdgeGroups* groups) {
     rr_graph.rr_nodes().for_each_edge(
         [&](RREdgeId edge, RRNodeId src, RRNodeId sink) {
             if (!rr_graph.rr_switch_inf(RRSwitchId(rr_graph.rr_nodes().edge_switch(edge))).configurable()) {
-                groups->add_non_config_edge(size_t(src), size_t(sink));
+                groups->add_non_config_edge(src, sink);
             }
         });
 

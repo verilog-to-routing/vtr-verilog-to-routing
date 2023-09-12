@@ -62,7 +62,7 @@ vtr::vector<RRNodeId, ParentNetId> annotate_rr_node_nets(const Netlist<>& net_li
                                     describe_rr_node(rr_graph,
                                                      device_ctx.grid,
                                                      device_ctx.rr_indexed_data,
-                                                     (int)size_t(rr_node),
+                                                     rr_node,
                                                      is_flat)
                                         .c_str());
                 } else {

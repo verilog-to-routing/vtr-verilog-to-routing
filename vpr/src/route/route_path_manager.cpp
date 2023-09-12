@@ -12,7 +12,7 @@ PathManager::~PathManager() {
 }
 
 bool PathManager::node_exists_in_tree(t_heap_path* path_data,
-                                      RRNodeId& to_node) {
+                                      RRNodeId to_node) {
     // Prevent seg faults for searching path data structures that haven't been created yet
     if (!path_data || !is_enabled_) return false;
 
@@ -43,9 +43,9 @@ void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, f
     if (!is_enabled_) return;
 
     for (unsigned i = 1; i < path_data->edge.size() - 1; i++) {
-        size_t node_2 = (size_t)path_data->path_rr[i];
+        RRNodeId node_2 = path_data->path_rr[i];
         RREdgeId edge = path_data->edge[i - 1];
-        route_ctx.rr_node_route_inf[node_2].prev_node = (size_t)path_data->path_rr[i - 1];
+        route_ctx.rr_node_route_inf[node_2].prev_node = path_data->path_rr[i - 1];
         route_ctx.rr_node_route_inf[node_2].prev_edge = edge;
         route_ctx.rr_node_route_inf[node_2].path_cost = cost;
         route_ctx.rr_node_route_inf[node_2].backward_path_cost = backward_path_cost;

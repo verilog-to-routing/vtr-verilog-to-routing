@@ -13,8 +13,8 @@ class RouterDelayProfiler {
     RouterDelayProfiler(const Netlist<>& net_list,
                         const RouterLookahead* lookahead,
                         bool is_flat);
-    bool calculate_delay(int source_node,
-                         int sink_node,
+    bool calculate_delay(RRNodeId source_node,
+                         RRNodeId sink_node,
                          const t_router_opts& router_opts,
                          float* net_delay,
                          int layer_num);
@@ -26,9 +26,9 @@ class RouterDelayProfiler {
     bool is_flat_;
 };
 
-std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
-                                                          const t_router_opts& router_opts,
-                                                          bool is_flat);
+vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src_rr_node,
+                                                                    const t_router_opts& router_opts,
+                                                                    bool is_flat);
 
 void alloc_routing_structs(t_chan_width chan_width,
                            const t_router_opts& router_opts,
