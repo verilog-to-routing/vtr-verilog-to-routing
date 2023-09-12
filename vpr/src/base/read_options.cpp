@@ -1569,6 +1569,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
+        .help("Writes out the initial placement of blocks to the specified file")
+        .metavar("INITIAL_PLACE_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_vpr_constraints_file, "--read_vpr_constraints")
         .help("Reads the floorplanning constraints that packing and placement must respect from the specified XML file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
