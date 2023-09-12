@@ -229,7 +229,7 @@ static bool try_dense_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logi
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param constraints_file Used to read block locations if any constraints is available.
  */
-static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file);
+static void place_all_blocks(const t_placer_opts& placer_opts, vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file);
 
 /**
  * @brief If any blocks remain unplaced after all initial placement iterations, this routine
@@ -780,6 +780,12 @@ static bool try_dense_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logi
 static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
+    VTR_LOGV_DEBUG(place_ctx.f_placer_debug, "\t\t\t\tTry to place the macro at %dx%dx%dx%d\n",
+                   head_pos.x,
+                   head_pos.y,
+                   head_pos.sub_tile,
+                   head_pos.layer);
+
     bool macro_placed = false;
 
     // If that location is occupied, do nothing.
@@ -792,6 +798,7 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
     if (mac_can_be_placed) {
         // Place down the macro
         macro_placed = true;
+        VTR_LOGV_DEBUG(place_ctx.f_placer_debug, "\t\t\t\tMacro is placed at the given location\n");
         for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
             t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
 
@@ -808,8 +815,10 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
 static bool place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pad_loc_type pad_loc_type, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid, vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     ClusterBlockId blk_id;
     blk_id = pl_macro.members[0].blk_index;
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tHead of the macro is Block %d\n", size_t(blk_id));
 
     if (is_block_placed(blk_id)) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tBlock is already placed\n", size_t(blk_id));
         return true;
     }
 
@@ -826,6 +835,7 @@ static bool place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
     //Enough to check head member of macro to see if its constrained because
     //constraints propagation was done earlier in initial placement.
     if (is_cluster_constrained(blk_id)) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tMacro's head is constrained\n");
         pr = floorplanning_ctx.cluster_constraints[blk_id];
     } else { //If the block is not constrained, assign a region the size of the grid to its PartitionRegion
         Region reg;
@@ -843,15 +853,18 @@ static bool place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
     //If blk_types_empty_locs_in_grid is not NULL, means that initial placement has been failed in first iteration for this block type
     //We need to place densely in second iteration to be able to find a legal initial placement solution
     if (blk_types_empty_locs_in_grid != NULL && blk_types_empty_locs_in_grid->size() != 0) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry dense placement\n");
         macro_placed = try_dense_placement(pl_macro, pr, block_type, pad_loc_type, blk_types_empty_locs_in_grid);
     }
 
     if (!macro_placed) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry centroid placement\n");
         macro_placed = try_centroid_placement(pl_macro, pr, block_type, pad_loc_type, block_scores);
     }
-
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tMacro is placed: %d\n", macro_placed);
     // If macro is not placed yet, try to place the macro randomly for the max number of random tries
     for (int itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry random place iter: %d\n", itry);
         macro_placed = try_random_placement(pl_macro, pr, block_type, pad_loc_type);
     } // Finished all tries
 
@@ -863,6 +876,7 @@ static bool place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
         // if there are no legal positions, error out
 
         // Exhaustive placement of carry macros
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry exhaustive placement\n");
         macro_placed = try_exhaustive_placement(pl_macro, pr, block_type, pad_loc_type);
     }
     return macro_placed;
@@ -913,7 +927,7 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     return block_scores;
 }
 
-static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
+static void place_all_blocks(const t_placer_opts& placer_opts, vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
@@ -964,14 +978,14 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
 
             auto blk_id_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
-            const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(b_from)->pb_type;
+            const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type;
             int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
             std::vector<size_t> block_nets(block_num_pins, OPEN);
             for (int ipin = 0; ipin < block_num_pins; ipin++) {
-                block_nets[ipin] = (size_t)cluster_ctx.clb_nlist.block_net(b_from, ipin);
+                block_nets[ipin] = (size_t)cluster_ctx.clb_nlist.block_net(blk_id, ipin);
             }
-            enable_placer_debug(placer_opts, size_t(b_from), block_nets);
-
+            enable_placer_debug(placer_opts, size_t(blk_id), block_nets);
+            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Popped Block %d\n", size_t(blk_id));
 
             blocks_placed_since_heap_update++;
 
@@ -984,6 +998,7 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
             }
 
             if (!block_placed) {
+                VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Didn't find a location the block\n", size_t(blk_id));
                 //add current block to list to ensure it will be placed sooner in the next iteration in initial placement
                 number_of_unplaced_blks_in_curr_itr++;
                 block_scores[blk_id].failed_to_place_in_prev_attempts++;
@@ -1075,6 +1090,7 @@ bool place_one_block(const ClusterBlockId& blk_id,
     get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
 
     if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tBelongs to a macro %d\n", imacro);
         pl_macro = place_ctx.pl_macros[imacro];
         placed_macro = place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type, blk_types_empty_locs_in_grid, (*block_scores));
     } else {
@@ -1111,7 +1127,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
 
     //Place all blocks
-    place_all_blocks(block_scores, pad_loc_type, constraints_file);
+    place_all_blocks(placer_opts, block_scores, pad_loc_type, constraints_file);
 
     //if any blocks remain unplaced, print an error
     check_initial_placement_legality();
