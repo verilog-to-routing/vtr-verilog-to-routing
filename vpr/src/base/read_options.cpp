@@ -2127,6 +2127,30 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .choices({"move_type", "move_block_type"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.placer_debug_block, "--placer_debug_block")
+        .help(
+            " Controls when placer debugging is enabled for blocks.\n"
+            " * For values >= 0, the value is taken as the block ID for\n"
+            "   which to enable placer debug output.\n"
+            " * For value == -1, placer debug output is enabled for\n"
+            "   all blocks.\n"
+            " * For values < -1, all block-based placer debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.placer_debug_net, "--placer_debug_net")
+        .help(
+            "Controls when placer debugging is enabled for nets.\n"
+            " * For values >= 0, the value is taken as the net ID for\n"
+            "   which to enable placer debug output.\n"
+            " * For value == -1, placer debug output is enabled for\n"
+            "   all nets.\n"
+            " * For values < -1, all net-based placer debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")

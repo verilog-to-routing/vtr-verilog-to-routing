@@ -121,7 +121,11 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
  *
  * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
  */
-ClusterBlockId propose_block_to_move(int& logical_blk_type_index, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
+                                     int& logical_blk_type_index,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from);
 
 /**
  * @brief Select a random block to be swapped with another block
@@ -329,4 +333,7 @@ int get_random_layer(t_logical_block_type_ptr logical_block);
 
 t_2D_tbb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec);
 
+void enable_placer_debug(const t_placer_opts& placer_opts,
+                         int blk_id_num,
+                         const std::vector<size_t>& net_id_nums);
 #endif

@@ -1230,6 +1230,9 @@ struct t_placer_opts {
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
 
+    int placer_debug_block;
+    int placer_debug_net;
+
     /**
      * @brief Tile types that should be used during delay sampling.
      *
