@@ -2486,9 +2486,9 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     int pnum_src = net_pin_to_tile_pin_index(net_id, 0);
     VTR_ASSERT(pnum_src >= 0);
     int x_src = place_ctx.block_locs[bnum].loc.x
-        + physical_tile_type(bnum)->pin_width_offset[pnum_src];
+                + physical_tile_type(bnum)->pin_width_offset[pnum_src];
     int y_src = place_ctx.block_locs[bnum].loc.y
-        + physical_tile_type(bnum)->pin_height_offset[pnum_src];
+                + physical_tile_type(bnum)->pin_height_offset[pnum_src];
 
     x_src = max(min<int>(x_src, grid.width() - 2), 1);
     y_src = max(min<int>(y_src, grid.height() - 2), 1);
@@ -2511,9 +2511,9 @@ static void get_bb_from_scratch(ClusterNetId net_id,
         VTR_ASSERT(layer >= 0 && layer < num_layers);
         num_sink_pin_layer[layer]++;
         int x = place_ctx.block_locs[bnum].loc.x
-            + physical_tile_type(bnum)->pin_width_offset[pnum];
+                + physical_tile_type(bnum)->pin_width_offset[pnum];
         int y = place_ctx.block_locs[bnum].loc.y
-            + physical_tile_type(bnum)->pin_height_offset[pnum];
+                + physical_tile_type(bnum)->pin_height_offset[pnum];
 
         /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
          * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
@@ -2816,8 +2816,7 @@ static void update_bb_pin_sink_count(ClusterNetId /* net_id */,
                                      const std::vector<int>& curr_layer_pin_sink_count,
                                      std::vector<int>& bb_pin_sink_count_new,
                                      bool is_output_pin) {
-    VTR_ASSERT(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0 ||
-               is_output_pin == 1);
+    VTR_ASSERT(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0 || is_output_pin == 1);
     bb_pin_sink_count_new = curr_layer_pin_sink_count;
     if (!is_output_pin) {
         bb_pin_sink_count_new[pin_old_loc.layer_num] -= 1;

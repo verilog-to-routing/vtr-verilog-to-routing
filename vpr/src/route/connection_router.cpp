@@ -594,8 +594,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                        " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
                        " net bounding box %d,%d,%d x %d,%d,%d)\n",
                        from_node, size_t(from_edge), size_t(to_node),
-                       to_xlow, to_ylow,to_layer,
-                       to_xhigh, to_yhigh,to_layer,
+                       to_xlow, to_ylow, to_layer,
+                       to_xhigh, to_yhigh, to_layer,
                        bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
                        bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
         return; /* Node is outside (expanded) bounding box. */
