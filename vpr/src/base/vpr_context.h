@@ -325,6 +325,7 @@ struct ClusteringHelperContext : public Context {
     std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
 
     // Stats keeper for placement information during packing/clustering
+    // The vector size equals to the number of threads used in the IIP (pack_num_threads)
     std::vector<t_cluster_placement_stats*> cluster_placement_stats;
 
     // total number of models in the architecture
@@ -352,8 +353,10 @@ struct ClusteringHelperContext : public Context {
     // An unordered map of the count of connections between different clb blocks
     // Only blocks that have connections between each others are added to this hash table
     // This may be useful for some type of packing moves.
-    std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash> clb_conn_counts;
+    // Currently unused, commented out
+    //std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash> clb_conn_counts;
 
+    // Some packing options. Saving them here instead of passing them to every packing function
     std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
     std::shared_ptr<SetupTimingInfo> timing_info;
     t_pack_high_fanout_thresholds high_fanout_thresholds;
@@ -363,10 +366,13 @@ struct ClusteringHelperContext : public Context {
 /**
  * @brief State relating to packing multithreading
  *
- * This contain data structures to synchronize multithreading of packing iterative improvement.
+ * This contain data structures to synchronize multithreading of the iterative improvement packing (IIP).
  */
 struct PackingMultithreadingContext : public Context {
+    // One lock per cluster
     vtr::vector<ClusterBlockId, std::mutex*> mu;
+
+    // lock to synchronize atop_pb lookup access
     std::mutex lookup_mu;
 };
 

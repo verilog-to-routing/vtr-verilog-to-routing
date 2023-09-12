@@ -318,7 +318,7 @@ bool try_pack(t_packer_opts* packer_opts,
         VTR_LOG("Move is Done :)\n");
     else
         VTR_LOG("Move failed! :((\n");
-*/
+
     auto rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(3));
     t_pack_molecule* mol = rng.first->second;
     bool moved = move_mol_to_new_cluster(mol, true, 0, clustering_data, 0);
@@ -366,7 +366,7 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("Start the iterative improvement process\n");
     iteratively_improve_packing(*packer_opts, clustering_data, 2);
     VTR_LOG("the iterative improvement process is done\n");
-
+    */
     /* // Elgammal debugging
     for(auto& clb : cluster_ctx.clb_nlist.blocks()) {
         VTR_LOG("@@@ block: %zu --> %s\n", clb, cluster_ctx.clb_nlist.block_pb(clb)->name);

@@ -1273,7 +1273,9 @@ class t_pb_graph_node {
 
     void* temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
 
-    /* indeces for cluster_placement_primitive in the cluster_placement_stats structure (useful during packing) */
+    /* Indices for cluster_placement_primitive in the cluster_placement_stats structure (useful during packing) */
+    /* Now, we pass these indices instead of passing a pointer (t_cluster_placement_primitive*).                */
+    /* This is useful especially in case of multi-threaded packing                                              */
     int cluster_placement_primitive_index;
     int cluster_placement_type_index;
     int lb_type_index;
