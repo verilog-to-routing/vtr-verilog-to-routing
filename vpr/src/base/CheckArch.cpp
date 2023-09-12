@@ -23,6 +23,7 @@ static void CheckSwitches(const t_arch& Arch) {
     t_arch_switch_inf* CurSwitch;
     int i;
     int ipin_cblock_switch_index = UNDEFINED;
+    int ipin_cblock_switch_index_between_dice = UNDEFINED;
 
     /* Check transistors in switches won't be less than minimum size */
     CurSwitch = Arch.Switches;
@@ -33,7 +34,7 @@ static void CheckSwitches(const t_arch& Arch) {
             /* Largest resistance tri-state buffer would have a minimum
              * width transistor in the buffer pull-down and a min-width
              * pass transistoron the output.
-             * Hence largest R = 2 * largest_transistor_R. */
+             * Hence, largest R = 2 * largest_transistor_R. */
             if (CurSwitch->R > 2 * Arch.R_minW_nmos) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
                           "Switch %s R value (%g) is greater than 2 * R_minW_nmos (%g).\n"
@@ -48,10 +49,15 @@ static void CheckSwitches(const t_arch& Arch) {
                           CurSwitch->name.c_str(), CurSwitch->R, Arch.R_minW_nmos, get_arch_file_name());
             }
         }
-
-        /* find the ipin cblock switch index, if it exists */
-        if (Arch.Switches[i].name == Arch.ipin_cblock_switch_name) {
-            ipin_cblock_switch_index = i;
+        for (auto cb_switch_name = 0; cb_switch_name < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name++) {
+            /* find the ipin cblock switch index, if it exists */
+            if (Arch.Switches[i].name == Arch.ipin_cblock_switch_name[cb_switch_name]) {
+                if (cb_switch_name == 0) {
+                    ipin_cblock_switch_index = i;
+                } else {
+                    ipin_cblock_switch_index_between_dice = i;
+                }
+            }
         }
     }
 
@@ -63,6 +69,12 @@ static void CheckSwitches(const t_arch& Arch) {
      * See rr_graph.c:alloc_and_load_rr_switch_inf for more info */
     if (ipin_cblock_switch_index != UNDEFINED) {
         if (!Arch.Switches[ipin_cblock_switch_index].fixed_Tdel()) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Not currently allowing an ipin cblock switch to have fanin dependent values");
+        }
+    }
+    if (ipin_cblock_switch_index_between_dice != UNDEFINED) {
+        if (!Arch.Switches[ipin_cblock_switch_index_between_dice].fixed_Tdel()) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                             "Not currently allowing an ipin cblock switch to have fanin dependent values");
         }

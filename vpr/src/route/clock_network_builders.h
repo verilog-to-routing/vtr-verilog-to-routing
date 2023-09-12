@@ -175,7 +175,8 @@ class ClockRib : public ClockNetwork {
 
     void map_relative_seg_indices(const t_unified_to_parallel_seg_index& index_map) override;
 
-    int create_chanx_wire(int x_start,
+    int create_chanx_wire(int layer,
+                          int x_start,
                           int x_end,
                           int y,
                           int ptc_num,
@@ -242,7 +243,8 @@ class ClockSpine : public ClockNetwork {
                                                              int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
     void map_relative_seg_indices(const t_unified_to_parallel_seg_index& index_map) override;
-    int create_chany_wire(int y_start,
+    int create_chany_wire(int layer,
+                          int y_start,
                           int y_end,
                           int x,
                           int ptc_num,

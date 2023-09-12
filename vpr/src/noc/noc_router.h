@@ -1,7 +1,7 @@
 #ifndef NOC_ROUTER_H
 #define NOC_ROUTER_H
 
-/*
+/**
  * @file
  * @brief This file defines the NocRouter class.
  *
@@ -38,18 +38,27 @@
 
 class NocRouter {
   private:
-    /** this represents a unique id provided by the user when describing the NoC topology in the arch file. The intended
-     * use is to report errors with rouer ids the user understands*/
+    /** This represents a unique id provided by the user when describing the NoC topology in the arch file. The intended
+     * use is to report errors with router ids the user understands*/
     int router_user_id;
 
     // device position of the physical router tile
-    int router_grid_position_x; /*<! Represents the horizontal grid position on the device the physical router tile is located*/
-    int router_grid_position_y; /*<! Represents the vertical grid position on the device the physical router is located*/
+    /** Represents the horizontal grid position on the device 
+     * the physical router tile is located*/
+    int router_grid_position_x;
+    /** Represents the vertical grid position on the device 
+     * the physical router is located*/
+    int router_grid_position_y;
+    /** Represents the layer number of the die 
+     * that the physical router is located*/
+    int router_layer_position;
 
-    ClusterBlockId router_block_ref; /*<! A unique identifier that represents a router block in the clustered netlist that is placed on the physical router*/
+    /** A unique identifier that represents a router block in the 
+     * clustered netlist that is placed on the physical router*/
+    ClusterBlockId router_block_ref;
 
   public:
-    NocRouter(int id, int grid_position_x, int grid_position_y);
+    NocRouter(int id, int grid_position_x, int grid_position_y, int layer_position);
 
     // getters
 
@@ -70,6 +79,12 @@ class NocRouter {
      * @return A numerical value (integer) that represents vertical position of the physical router
      */
     int get_router_grid_position_y(void) const;
+
+    /**
+     * @brief Gets the layer number of the die the the physical router is located
+     * @return A numerical value (integer) that represents layer position of the physical router
+     */
+    int get_router_layer_position(void) const;
 
     /**
      * @brief Gets the unique id of the router block that is current placed on the physical router

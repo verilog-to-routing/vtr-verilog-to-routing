@@ -6,7 +6,9 @@
 #include <numeric>
 #include <chrono>
 #include <vtr_ndmatrix.h>
+#include <optional>
 
+#include "NetPinTimingInvalidator.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
@@ -447,6 +449,13 @@ void try_place(const Netlist<>& net_list,
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
+
+    /*
+     * Currently, the functions that require is_flat as their parameter and are called during placement should
+     * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
+     * if is_flat is false, even if is_flat is set to true from the command line.
+     */
+    VTR_ASSERT(!is_flat);
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -601,11 +610,15 @@ void try_place(const Netlist<>& net_list,
         placer_criticalities = std::make_unique<PlacerCriticalities>(
             cluster_ctx.clb_nlist, netlist_pin_lookup);
 
-        pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>(
-            net_list, netlist_pin_lookup,
-            atom_ctx.nlist, atom_ctx.lookup,
+        pin_timing_invalidator = make_net_pin_timing_invalidator(
+            placer_opts.timing_update_type,
+            net_list,
+            netlist_pin_lookup,
+            atom_ctx.nlist,
+            atom_ctx.lookup,
             *timing_info->timing_graph(),
             is_flat);
+
         //First time compute timing and costs, compute from scratch
         PlaceCritParams crit_params;
         crit_params.crit_exponent = first_crit_exponent;
@@ -749,17 +762,9 @@ void try_place(const Netlist<>& net_list,
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
-    move_type_stat.num_moves.resize(placer_opts.place_static_move_prob.size() + 1,
-                                    0);
-    move_type_stat.accepted_moves.resize(
-        placer_opts.place_static_move_prob.size() + 1, 0);
-    move_type_stat.aborted_moves.resize(
-        placer_opts.place_static_move_prob.size() + 1, 0);
-
-    // if the noc option was turned on then setup the noc placement stats datastructure
-    if (noc_opts.noc) {
-        initialize_noc_placement_stats(placer_opts);
-    }
+    move_type_stat.blk_type_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
+    move_type_stat.accepted_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
+    move_type_stat.rejected_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
@@ -769,8 +774,12 @@ void try_place(const Netlist<>& net_list,
     /* Set the temperature low to ensure that initial placement quality will be preserved */
     first_t = EPSILON;
 
-    t_annealing_state state(annealing_sched, first_t, first_rlim,
-                            first_move_lim, first_crit_exponent);
+    t_annealing_state state(annealing_sched,
+                            first_t,
+                            first_rlim,
+                            first_move_lim,
+                            first_crit_exponent,
+                            device_ctx.grid.get_num_layers());
 
     /* Update the starting temperature for placement annealing to a more appropriate value */
     state.t = starting_t(&state, &costs, annealing_sched,
@@ -859,6 +868,7 @@ void try_place(const Netlist<>& net_list,
 
             print_place_status(state, stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, tot_iter);
+
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
                 && agent_state == EARLY_IN_THE_ANNEAL) {
@@ -949,7 +959,7 @@ void try_place(const Netlist<>& net_list,
     if (placer_opts.place_checkpointing)
         restore_best_placement(placement_checkpoint, timing_info, costs,
                                placer_criticalities, placer_setup_slacks, place_delay_model,
-                               pin_timing_invalidator, crit_params);
+                               pin_timing_invalidator, crit_params, noc_opts);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
@@ -1027,8 +1037,8 @@ void try_place(const Netlist<>& net_list,
     print_placement_swaps_stats(state);
 
     print_placement_move_types_stats(move_type_stat);
+
     if (noc_opts.noc) {
-        print_noc_placement_stats();
         write_noc_placement_file(noc_opts.noc_placement_file_name);
     }
 
@@ -1233,7 +1243,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     if (noc_opts.noc) {
         double new_noc_aggregate_bandwidth_cost = 0.;
         double new_noc_latency_cost = 0.;
-        recompute_noc_costs(&new_noc_aggregate_bandwidth_cost, &new_noc_latency_cost);
+        recompute_noc_costs(new_noc_aggregate_bandwidth_cost, new_noc_latency_cost);
 
         if (fabs(
                 new_noc_aggregate_bandwidth_cost
@@ -1247,8 +1257,8 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
         costs->noc_aggregate_bandwidth_cost = new_noc_aggregate_bandwidth_cost;
 
         // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
-        // Otherwise there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
-        if (check_recomputed_noc_latency_cost(new_noc_latency_cost)) {
+        // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
+        if (new_noc_latency_cost > MIN_EXPECTED_NOC_LATENCY_COST) {
             if (fabs(
                     new_noc_latency_cost
                     - costs->noc_latency_cost)
@@ -1434,7 +1444,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     crit_params.crit_exponent = state->crit_exponent;
     crit_params.crit_limit = placer_opts.place_crit_limit;
 
-    e_move_type move_type = e_move_type::UNIFORM; //move type number
+    // move type and block type chosen by the agent
+    t_propose_action proposed_action{e_move_type::UNIFORM, -1};
 
     num_ts_called++;
 
@@ -1467,18 +1478,20 @@ static e_move_result try_swap(const t_annealing_state* state,
     //When manual move toggle button is active, the manual move window asks the user for input.
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
-        create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, move_type, rlim, placer_opts, criticalities);
+        create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
         create_move_outcome = propose_router_swap(blocks_affected, rlim);
-        move_type = e_move_type::UNIFORM;
+        proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+        create_move_outcome = move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
     }
 
-    ++move_type_stat.num_moves[(int)move_type];
+    if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+        ++move_type_stat.blk_type_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+    }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
     e_move_result move_outcome = e_move_result::ABORTED;
@@ -1491,7 +1504,6 @@ static e_move_result try_swap(const t_annealing_state* state,
 
         move_outcome = ABORTED;
 
-        ++move_type_stat.aborted_moves[(int)move_type];
     } else {
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
@@ -1559,14 +1571,13 @@ static e_move_result try_swap(const t_annealing_state* state,
             delta_c = bb_delta_c * costs->bb_cost_norm;
         }
 
-        int number_of_affected_noc_traffic_flows = 0;
         double noc_aggregate_bandwidth_delta_c = 0; // change in the NoC aggregate bandwidth cost
         double noc_latency_delta_c = 0;             // change in the NoC latency cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            number_of_affected_noc_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
 
-            // Include the NoC delata costs in the total cost change for this swap
+            // Include the NoC delta costs in the total cost change for this swap
             delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c * costs->noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);
         }
 
@@ -1613,19 +1624,15 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
+            if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+                ++move_type_stat.accepted_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+            }
             if (noc_opts.noc) {
-                commit_noc_costs(number_of_affected_noc_traffic_flows);
+                commit_noc_costs();
 
                 costs->noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
                 costs->noc_latency_cost += noc_latency_delta_c;
-
-                // if a noc router block was moved, update the NoC related stats
-                if (number_of_affected_noc_traffic_flows != 0) {
-                    update_noc_placement_stats((int)move_type);
-                }
             }
-
-            ++move_type_stat.accepted_moves[(int)move_type];
 
             //Highlights the new block when manual move is selected.
 #ifndef NO_GRAPHICS
@@ -1670,6 +1677,9 @@ static e_move_result try_swap(const t_annealing_state* state,
                 revert_td_cost(blocks_affected);
             }
 
+            if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+                ++move_type_stat.rejected_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+            }
             /* Revert the traffic flow routes within the NoC*/
             if (noc_opts.noc) {
                 revert_noc_traffic_flow_routes(blocks_affected);
@@ -2969,53 +2979,66 @@ static int check_block_placement_consistency() {
         cluster_ctx.clb_nlist.blocks().size(), 0);
 
     /* Step through device grid and placement. Check it against blocks */
-    for (size_t i = 0; i < device_ctx.grid.width(); i++)
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
-            if (place_ctx.grid_blocks[i][j].usage
-                > type->capacity) {
-                VTR_LOG_ERROR(
-                    "%d blocks were placed at grid location (%zu,%zu), but location capacity is %d.\n",
-                    place_ctx.grid_blocks[i][j].usage, i, j,
-                    type->capacity);
-                error++;
-            }
-            int usage_check = 0;
-            for (int k = 0; k < type->capacity; k++) {
-                auto bnum = place_ctx.grid_blocks[i][j].blocks[k];
-                if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
-                    continue;
-
-                auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-                auto physical_tile = type;
-
-                if (physical_tile_type(bnum) != physical_tile) {
+    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                const t_physical_tile_loc tile_loc(i, j, layer_num);
+                const auto& type = device_ctx.grid.get_physical_type(tile_loc);
+                if (place_ctx.grid_blocks.get_usage(tile_loc) > type->capacity) {
                     VTR_LOG_ERROR(
-                        "Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
-                        size_t(bnum), logical_block->name, i, j,
-                        physical_tile->name);
+                        "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, layer_num,
+                        type->capacity);
                     error++;
                 }
+                int usage_check = 0;
+                for (int k = 0; k < type->capacity; k++) {
+                    auto bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
+                        continue;
 
-                auto& loc = place_ctx.block_locs[bnum].loc;
-                if (loc.x != int(i) || loc.y != int(j)
-                    || !is_sub_tile_compatible(physical_tile, logical_block,
-                                               loc.sub_tile)) {
+                    auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
+                    auto physical_tile = type;
+
+                    if (physical_tile_type(bnum) != physical_tile) {
+                        VTR_LOG_ERROR(
+                            "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
+                            size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
+                        error++;
+                    }
+
+                    auto& loc = place_ctx.block_locs[bnum].loc;
+                    if (loc.x != i || loc.y != j || loc.layer != layer_num
+                        || !is_sub_tile_compatible(physical_tile, logical_block,
+                                                   loc.sub_tile)) {
+                        VTR_LOG_ERROR(
+                            "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
+                            size_t(bnum),
+                            loc.x,
+                            loc.y,
+                            loc.sub_tile,
+                            tile_loc.x,
+                            tile_loc.y,
+                            tile_loc.layer_num,
+                            layer_num);
+                        error++;
+                    }
+                    ++usage_check;
+                    bdone[bnum]++;
+                }
+                if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
                     VTR_LOG_ERROR(
-                        "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
-                        size_t(bnum), loc.x, loc.y, loc.sub_tile, i, j, k);
+                        "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc),
+                        tile_loc.x,
+                        tile_loc.y,
+                        tile_loc.layer_num,
+                        usage_check);
                     error++;
                 }
-                ++usage_check;
-                bdone[bnum]++;
-            }
-            if (usage_check != place_ctx.grid_blocks[i][j].usage) {
-                VTR_LOG_ERROR(
-                    "%d block(s) were placed at location (%zu,%zu), but location contains %d block(s).\n",
-                    place_ctx.grid_blocks[i][j].usage, i, j, usage_check);
-                error++;
             }
         }
+    }
 
     /* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
@@ -3055,7 +3078,7 @@ int check_macro_placement_consistency() {
             }
 
             // Then check the place_ctx.grid data structure
-            if (place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile]
+            if (place_ctx.grid_blocks.block_at_location(member_pos)
                 != member_iblk) {
                 VTR_LOG_ERROR(
                     "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
@@ -3174,7 +3197,7 @@ static void print_resources_utilization() {
         auto block_loc = place_ctx.block_locs[blk_id];
         auto loc = block_loc.loc;
 
-        auto physical_tile = device_ctx.grid.get_physical_type(loc.x, loc.y);
+        auto physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
         num_type_instances[logical_block]++;
@@ -3221,25 +3244,56 @@ static void print_placement_swaps_stats(const t_annealing_state& state) {
 static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat) {
     float moves, accepted, rejected, aborted;
-    float total_moves = std::accumulate(move_type_stat.num_moves.begin(),
-                                        move_type_stat.num_moves.end(), 0.0);
 
-    std::string move_name;
-    VTR_LOG("\n\nPercentage of different move types:\n");
+    VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
 
-    for (size_t i = 0; i < move_type_stat.num_moves.size(); i++) {
-        moves = move_type_stat.num_moves[i];
-        if (moves != 0) {
-            accepted = move_type_stat.accepted_moves[i];
-            aborted = move_type_stat.aborted_moves[i];
-            rejected = moves - (accepted + aborted);
-            move_name = move_type_to_string(e_move_type(i));
-            VTR_LOG(
-                "\t%.17s move: %2.2f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",
-                move_name.c_str(), 100 * moves / total_moves,
-                100 * accepted / moves, 100 * rejected / moves,
-                100 * aborted / moves);
+    VTR_LOG(
+        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
+    VTR_LOG(
+        "    Block Type         Move Type       (%%) of Total      Accepted(%%)     Rejected(%%)    Aborted(%%)\n");
+    VTR_LOG(
+        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
+
+    float total_moves = 0;
+    for (int blk_type_move : move_type_stat.blk_type_moves) {
+        total_moves += blk_type_move;
+    }
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    int count = 0;
+    int num_of_avail_moves = move_type_stat.blk_type_moves.size() / device_ctx.logical_block_types.size();
+
+    //Print placement information for each block type
+    for (const auto& itype : device_ctx.logical_block_types) {
+        //Skip non-existing block types in the netlist
+        if (itype.index == 0 || cluster_ctx.clb_nlist.blocks_per_type(itype).empty()) {
+            continue;
         }
+
+        count = 0;
+
+        for (int imove = 0; imove < num_of_avail_moves; imove++) {
+            const auto& move_name = move_type_to_string(e_move_type(imove));
+            moves = move_type_stat.blk_type_moves[itype.index * num_of_avail_moves + imove];
+            if (moves != 0) {
+                accepted = move_type_stat.accepted_moves[itype.index * num_of_avail_moves + imove];
+                rejected = move_type_stat.rejected_moves[itype.index * num_of_avail_moves + imove];
+                aborted = moves - (accepted + rejected);
+                if (count == 0) {
+                    VTR_LOG("%-18.20s", itype.name);
+                } else {
+                    VTR_LOG("                  ");
+                }
+                VTR_LOG(
+                    " %-22.20s %-16.2f %-15.2f %-14.2f %-13.2f\n",
+                    move_name.c_str(), 100 * moves / total_moves,
+                    100 * accepted / moves, 100 * rejected / moves,
+                    100 * aborted / moves);
+            }
+            count++;
+        }
+        VTR_LOG("\n");
     }
     VTR_LOG("\n");
 }
@@ -3251,16 +3305,19 @@ static void calculate_reward_and_process_outcome(
     float timing_bb_factor,
     MoveGenerator& move_generator) {
     std::string reward_fun_string = placer_opts.place_reward_fun;
-    e_reward_function reward_fun = string_to_reward(reward_fun_string);
+    static std::optional<e_reward_function> reward_fun;
+    if (!reward_fun.has_value()) {
+        reward_fun = string_to_reward(reward_fun_string);
+    }
 
     if (reward_fun == BASIC) {
-        move_generator.process_outcome(-1 * delta_c, reward_fun);
+        move_generator.process_outcome(-1 * delta_c, reward_fun.value());
     } else if (reward_fun == NON_PENALIZING_BASIC
                || reward_fun == RUNTIME_AWARE) {
         if (delta_c < 0) {
-            move_generator.process_outcome(-1 * delta_c, reward_fun);
+            move_generator.process_outcome(-1 * delta_c, reward_fun.value());
         } else {
-            move_generator.process_outcome(0, reward_fun);
+            move_generator.process_outcome(0, reward_fun.value());
         }
     } else if (reward_fun == WL_BIASED_RUNTIME_AWARE) {
         if (delta_c < 0) {
@@ -3270,9 +3327,9 @@ static void calculate_reward_and_process_outcome(
                                     * move_outcome_stats.delta_timing_cost_norm
                               + timing_bb_factor
                                     * move_outcome_stats.delta_bb_cost_norm);
-            move_generator.process_outcome(reward, reward_fun);
+            move_generator.process_outcome(reward, reward_fun.value());
         } else {
-            move_generator.process_outcome(0, reward_fun);
+            move_generator.process_outcome(0, reward_fun.value());
         }
     }
 }

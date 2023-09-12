@@ -3,32 +3,26 @@
 #include <algorithm>
 #include "math.h"
 #include "place_constraints.h"
+#include "move_utils.h"
 
-e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+    ClusterNetId net_from;
+    int pin_from;
+    //Find a movable block based on blk_type
+    ClusterBlockId b_from = propose_block_to_move(proposed_action.logical_blk_type_index, true, &net_from, &pin_from);
+
+    if (!b_from) { //No movable block found
+        return e_create_move::ABORT;
+    }
+
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    /* Pick a random block to be swapped with another random block.   */
-    // pick it from the highly critical blocks
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
-        return e_create_move::ABORT; //No critical block
-    }
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
-    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
-
-    if (!b_from) {
-        return e_create_move::ABORT; //No movable block found
-    }
-
-    if (place_ctx.block_locs[b_from].is_fixed) {
-        return e_create_move::ABORT; //Block is fixed, cannot move
-    }
-
     //from block data
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     /* Calculate the feasible region */
@@ -52,7 +46,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             place_move_ctx.Y_coord.push_back(place_ctx.block_locs[bnum].loc.y);
         }
     }
-    if (place_move_ctx.X_coord.size() != 0) {
+    if (!place_move_ctx.X_coord.empty()) {
         max_x = *(std::max_element(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end()));
         min_x = *(std::min_element(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end()));
         max_y = *(std::max_element(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end()));
@@ -66,10 +60,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     //Get the most critical output of the node
     int xt, yt;
-    xt = 0;
-    yt = 0;
-
-    ClusterBlockId b_output = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
+    ClusterBlockId b_output = cluster_ctx.clb_nlist.net_pin_block(net_from, pin_from);
     t_pl_loc output_loc = place_ctx.block_locs[b_output].loc;
     xt = output_loc.x;
     yt = output_loc.y;
@@ -106,10 +97,9 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
-    t_range_limiters range_limiters;
-    range_limiters.original_rlim = rlim;
-    range_limiters.dm_rlim = placer_opts.place_dm_rlim;
-    range_limiters.first_rlim = place_move_ctx.first_rlim;
+    t_range_limiters range_limiters{rlim,
+                                    place_move_ctx.first_rlim,
+                                    placer_opts.place_dm_rlim};
 
     // Try to find a legal location inside the feasible region
     if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to, b_from)) {
@@ -119,13 +109,15 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         t_pl_loc center;
         center.x = (FR_coords.xmin + FR_coords.xmax) / 2;
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;
+        // TODO: Currently, we don't move blocks between different types of layers
+        center.layer = from.layer;
         if (!find_to_loc_centroid(cluster_from_type, from, center, range_limiters, to, b_from))
             return e_create_move::ABORT;
     }
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 
-    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
         return e_create_move::ABORT;
     }

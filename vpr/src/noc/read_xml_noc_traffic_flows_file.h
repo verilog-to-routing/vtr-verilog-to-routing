@@ -39,12 +39,12 @@
 // identifier when an integer conversion failed while reading an attribute value in an xml file
 constexpr int NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE = -1;
 
-// defines the latency constriant of a traffic flow when not provided by the user
-// This value has to be signifigantly larger than latencies seen within the NoC so that the net effect in the placement cost is 0 (the latency constraint has no effect since there is none)
-// Since the traffic flow latencies will be in nanoseconds, setting this value to 1 second which is signifigantly larger that what will be seen in the NoC
+// defines the latency constraint of a traffic flow when not provided by the user
+// This value has to be significantly larger than latencies seen within the NoC so that the net effect in the placement cost is 0 (the latency constraint has no effect since there is none)
+// Since the traffic flow latencies will be in nanoseconds, setting this value to 1 second which is significantly larger that what will be seen in the NoC
 constexpr double DEFAULT_MAX_TRAFFIC_FLOW_LATENCY = 1.;
 
-// defines the prirority of a traffic flow when not specified by a user
+// defines the priority of a traffic flow when not specified by a user
 constexpr int DEFAULT_TRAFFIC_FLOW_PRIORITY = 1;
 
 /**
@@ -52,7 +52,7 @@ constexpr int DEFAULT_TRAFFIC_FLOW_PRIORITY = 1;
  *        in the NoC. A traffic flow is a communication between one router
  *        in the NoC to another. The XML file contains a number of these traffic
  *        flows and provides additional information about them, such as the
- *        size of data being tranferred and constraints on the latency of the
+ *        size of data being transferred and constraints on the latency of the
  *        data transmission. Once the traffic flows are parsed, they are stored
  *        inside the NocTrafficFlows class.
  * 
@@ -149,7 +149,7 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
  *        priority are all non-negative. An error is thrown if the
  *        above conditions are not met.
  * 
- * @param traffic_flow_bandwidth The transmission size betwee the two routers
+ * @param traffic_flow_bandwidth The transmission size between the two routers
  *                               in the traffic flow.
  * @param max_traffic_flow_latency The allowable latency for the data
  *                                 transmission between the two routers in the
@@ -207,7 +207,7 @@ ClusterBlockId get_router_module_cluster_id(std::string router_module_name, cons
 void check_traffic_flow_router_module_type(std::string router_module_name, ClusterBlockId router_module_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type);
 
 /**
- * @brief Retreives the physical type of a noc router tile.
+ * @brief Retrieves the physical type of a noc router tile.
  * 
  * @param device_ctx Contains the device information. Has a datastructure that
  *                   can determine a tile type based on grid position on the 
@@ -240,7 +240,7 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
 bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file);
 
 /**
- * @brief Goes through the blocks within the clustered netlist and indetifies
+ * @brief Goes through the blocks within the clustered netlist and identifies
  *        all blocks that are compatible with a NoC router tile. BY compatible
  *        it means that we can place the cluster block on a NoC router tile.
  *        The run time for this function is O(N) where N is the number of

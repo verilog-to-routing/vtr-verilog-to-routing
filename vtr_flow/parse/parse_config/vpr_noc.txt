@@ -11,5 +11,6 @@
 %include "timing/vpr.route_min_chan_width.txt"
 %include "timing/vpr.route_relaxed_chan_width.txt"
 
-NoC_agg_bandwidth;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: (.*), noc_latency_cost: .*,
-NoC_latency;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: .*, noc_latency_cost: (.*),
+NoC_agg_bandwidth;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: (.*), noc_latency_cost: .*, noc_latency_constraints_cost: .*,
+NoC_latency;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: .*, noc_latency_cost: (.*), noc_latency_constraints_cost: .*,
+NoC_latency_constraints_cost;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: .*, noc_latency_cost: .*, noc_latency_constraints_cost: (.*),

@@ -17,9 +17,9 @@
 //============================================================================================
 
 //Functions to identify and decompose inout pins
-void decompose_inout_pins(t_module* module, t_arch* arch);
+void decompose_inout_pins(t_module* module, t_arch* arch, string device);
 
-t_model* find_model_in_architecture(t_model* arch_models, t_node* node);
+t_model* find_model_in_architecture(t_model* arch_models, t_node* node, string device);
 
 t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_association* node_port);
 
@@ -33,7 +33,8 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
                                             t_port_vec* pin_node_sources,
                                             t_port_vec* pin_node_sinks           );
 
-void expand_ram_clocks(t_module* module);
+void expand_ram_clocks(t_module* module, string device);
+void expand_dsp_clocks(t_module* module);
 
 //Functions to remove global constants
 void remove_constant_nets(t_module *module);
@@ -52,7 +53,7 @@ void decompose_carry_chains(t_module* module);
 bool is_arithmetic_port(t_node_port_association* node_port);
 
 //Functions to fix connections between clock nets and non-clock ports
-void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types);
+void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, string device);
 t_pin_def* find_associated_clock_net(t_node* node, t_pin_def* clock_net, t_global_nets clock_nets);
 
 //Functions to identify dual-clock RAMs and split them into seperate blocks
@@ -71,13 +72,13 @@ t_node_parameter* duplicate_param(t_node_parameter* orig_param);
 t_node_port_association* duplicate_port(t_node_port_association* orig_port);
 
 //Functions to identify global nets
-void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types);
+void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, string device);
 
 t_global_ports identify_primitive_global_pins(t_arch* arch, t_logical_block_type* arch_types, int num_types, bool clock_only);
 
 t_global_nets identify_global_nets(t_module* module, t_global_ports global_port_vec);
 
-t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_ports global_ports, t_global_nets global_nets);
+t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_ports global_ports, t_global_nets global_nets, string device);
  
 t_assign_vec_pair identify_global_local_assignments(t_module* module, t_global_nets global_nets, t_net_driver_map net_driver_map);
 
@@ -101,6 +102,7 @@ t_node* add_buffer(t_module* module, t_buffer_type buffer_type, int num_buffers_
 void print_map(t_global_ports global_ports);
 
 int find_vqm_port_index(const t_node* node, std::string name);
+vector<int> find_vqm_port_indices(const t_node* node, std::string name);
 void add_port(int idx, t_node* node, const t_node_port_association* base_port, const std::string new_name);
 int get_next_port_idx(const t_node* node, std::set<int>& existing_idxs);
 
@@ -108,7 +110,7 @@ int get_next_port_idx(const t_node* node, std::set<int>& existing_idxs);
 //============================================================================================
 void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, 
                         t_boolean fix_global_nets, t_boolean elaborate_ram_clocks, t_boolean single_clock_primitives,
-                        t_boolean split_carry_chain_logic, t_boolean remove_const_nets){
+                        t_boolean split_carry_chain_logic, t_boolean remove_const_nets, string device){
     /*
      * Put all netlist pre-processing function calls here
      */
@@ -116,7 +118,7 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
     //Clean up 'inout' pins by replacing them with
     // seperate 'input' and 'output' pins
     cout << "\t>> Preprocessing Netlist to decompose inout pins" << endl;
-    decompose_inout_pins(module, arch);
+    decompose_inout_pins(module, arch, device);
     cout << endl;
 
     cout << "\t>> Preprocessing Netlist to identify LUTRAM/MLAB acting as ROM" << endl;
@@ -146,17 +148,17 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
 
         if(elaborate_ram_clocks) {
             cout << "\t>> Preprocessing Netlist to elaborate ram clocks" << endl;
-            expand_ram_clocks(module);
+            expand_ram_clocks(module, device);
         }
     }
     cout << endl;
-
+    expand_dsp_clocks(module);
     if(single_clock_primitives) {
         cout << "\t>> Preprocessing Netlist to remove false clock nets" << endl;
         //VPR may falsely identify nets connected to clock pins, but not driven by clock
         //ports as clock nets, and then error out if they connected to non-clock pins.
         //This works around the issue by removing connections to clock pins for such nets.
-        check_and_fix_clock_to_normal_port_connections(module, arch, arch_types, num_types);
+        check_and_fix_clock_to_normal_port_connections(module, arch, arch_types, num_types, device);
     }
 
     if(fix_global_nets) {
@@ -164,14 +166,14 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
         // routed on 'global' networks, but still drive non-global signals (e.g. LUT
         // inputs, output pins etc.).
         cout << "\t>> Preprocessing Netlist to insert global to non-global buffers" << endl;
-        add_global_to_nonglobal_buffers(module, arch, arch_types, num_types);
+        add_global_to_nonglobal_buffers(module, arch, arch_types, num_types, device);
     }
     cout << endl;
 }
 
 //============================================================================================
 //============================================================================================
-void decompose_inout_pins(t_module* module, t_arch* arch){
+void decompose_inout_pins(t_module* module, t_arch* arch, string device){
     /*
      * Example inout pin connectivity:
      *
@@ -316,7 +318,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
                         t_model_ports* arch_model_port;
 
                         //Find the model
-                        arch_model = find_model_in_architecture(arch->models, node);
+                        arch_model = find_model_in_architecture(arch->models, node, device);
 
                         //Find the architecure model port
                         arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -370,7 +372,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
     cout << "\t>> Decomposed " << number_of_inout_pins_found << " 'inout' pin(s), moving " << number_of_nets_moved << " net(s)" << endl;
 }
 
-t_model* find_model_in_architecture(t_model* arch_models, t_node* node) {
+t_model* find_model_in_architecture(t_model* arch_models, t_node* node, string device) {
     /*
      * Finds the archtecture module corresponding to the node type
      *
@@ -382,7 +384,7 @@ t_model* find_model_in_architecture(t_model* arch_models, t_node* node) {
 
     //The VQM name may not match the architecture name if the architecture contians elaborated modes
     //  So generate the elaborated mode name for this node
-    string elaborated_name = generate_opname(node, arch_models);
+    string elaborated_name = generate_opname(node, arch_models, device);
 
     //Find the correct model, by name matching
     t_model* arch_model = arch_models;
@@ -1093,6 +1095,17 @@ void remove_extra_primitive_clocks(t_module *module) {
 
 }
 
+vector<int> find_vqm_port_indices(const t_node* node, std::string name) {
+    vector<int> index;
+    for (int i = 0; i < node->number_of_ports; ++i) {
+        if (node->array_of_ports[i]->port_name == name) {
+            index.push_back(i);
+        }
+    }
+
+    return index;
+}
+
 int find_vqm_port_index(const t_node* node, std::string name) {
     for (int i = 0; i < node->number_of_ports; ++i) {
         if (node->array_of_ports[i]->port_name == name) {
@@ -1131,17 +1144,17 @@ int get_next_port_idx(const t_node* node, std::set<int>& existing_idxs) {
     return idx;
 }
 
-void expand_ram_clocks(t_module* module) {
+void expand_ram_clocks(t_module* module, string device) {
     int num_ram_blocks_processed = 0;
     int num_clocks_added = 0;
     for (int i = 0; i < module->number_of_nodes; ++i) {
         t_node* node = module->array_of_nodes[i];
 
-        if (strcmp(node->type, "stratixiv_ram_block") == 0) {
+        if (strcmp(node->type, "stratixiv_ram_block") == 0 || strcmp(node->type, "fourteennm_ram_block") == 0) {
             ++num_ram_blocks_processed;
-            RamInfo ram_info = get_ram_info(node);
+            RamInfo ram_info = get_ram_info(node, device);
 
-            //Stratix IV ram blocks use clk0 and clk1 to specify the clocks, and use params
+            //Stratix IV and 10 ram blocks use clk0 and clk1 to specify the clocks, and use params
             //to define which clock controls what port
             //
             //To simply things in down stream tools (since BLIF doesn't support params) we replace the 
@@ -1189,14 +1202,240 @@ void expand_ram_clocks(t_module* module) {
             VTR_ASSERT(existing_clk_idxs.empty());
             VTR_ASSERT(find_vqm_port_index(node, "clk0") < 0);
             VTR_ASSERT(find_vqm_port_index(node, "clk1") < 0);
+
+            if (strcmp(node->type, "fourteennm_ram_block") == 0) {
+
+                //Stratix 10 ram blocks use ena0 and ena1 to specify the clock enables, and use params
+                //to define which clock enable controls what register
+                //
+                //To simply things in down stream tools (since BLIF doesn't support params) we replace the 
+                //VQM clocks enables with the following ports:
+                //   
+                //   * ena_portain    //Clock capturing input data to port a
+                //   * ena_portaout   //Clock launching output data from port a
+                //   * ena_portbin    //Clock capturing input data for port b
+                //   * ena_portbout   //Clock launching output data for port b
+                //
+                //We set these to the appropriate net based on the data set in VQM params
+
+                //Find and record the existing clk enable ports
+                // We do this so we can overwrite them
+                std::set<int> existing_clkena_idxs;
+
+                int ena0_idx = find_vqm_port_index(node, "ena0");
+                if (ena0_idx >= 0) existing_clkena_idxs.insert(ena0_idx);
+
+                int ena1_idx = find_vqm_port_index(node, "ena1");
+                if (ena1_idx >= 0) existing_clkena_idxs.insert(ena1_idx);
+
+                //Specify the port A input clock enable
+                if (ram_info.port_a_input_ena) {
+                    add_port(get_next_port_idx(node, existing_clkena_idxs), node, ram_info.port_a_input_ena, "ena_portain");
+                }
+                //Specify the port A output clock enable
+                if (ram_info.port_a_output_ena) {
+                    add_port(get_next_port_idx(node, existing_clkena_idxs), node, ram_info.port_a_output_ena, "ena_portaout");
+                }
+                //Specify the port B input clock enable
+                if(ram_info.port_b_input_ena) {
+                    add_port(get_next_port_idx(node, existing_clkena_idxs), node, ram_info.port_b_input_ena, "ena_portbin");
+                }
+                //Specify the port B output clock enable
+                if(ram_info.port_b_output_ena) {
+                    add_port(get_next_port_idx(node, existing_clkena_idxs), node, ram_info.port_b_output_ena, "ena_portbout");
+                }
+
+                //if there is a possibility that user instantiates 
+                //the primitive directly, hooking up the enable
+                // ports while setting the related parameters such that the enables are 
+                //not driving any of the clkena ports of the registers
+                //then this assertion will not hold and should be removed
+                VTR_ASSERT(existing_clkena_idxs.empty());
+                VTR_ASSERT(find_vqm_port_index(node, "ena0") < 0);
+                VTR_ASSERT(find_vqm_port_index(node, "ena1") < 0);
+
+
+                //Stratix 10 ram blocks use aclr and sclr to specify the clear signals, and use params
+                //to determine what type of clear each register uses
+                //
+                //The clear signals are used for the output registers only
+                //
+                //To simplify things in down stream tools (since BLIF doesn't support params) we replace the 
+                //VQM clears with the following ports:
+                //   
+                //   * ena_portain    //Clock capturing input data to port a
+                //   * ena_portaout   //Clock launching output data from port a
+                //   * ena_portbin    //Clock capturing input data for port b
+                //   * ena_portbout   //Clock launching output data for port b
+                //
+                //We set these to the appropriate net based on the data set in VQM params
+
+                //Find and record the existing clk enable ports
+                // We do this so we can overwrite them
+                std::set<int> existing_clr_idxs;
+
+                int aclr_idx = find_vqm_port_index(node, "aclr");
+                if (aclr_idx >= 0) existing_clr_idxs.insert(aclr_idx);
+
+                int sclr_idx = find_vqm_port_index(node, "sclr");
+                if (sclr_idx >= 0) existing_clr_idxs.insert(sclr_idx);
+
+                //Specify the port A input clock enable
+                if (ram_info.port_a_dataout_aclr) {
+                    add_port(get_next_port_idx(node, existing_clr_idxs), node, ram_info.port_a_dataout_aclr, "porta_dataout_aclr");
+                }
+                //Specify the port A output clock enable
+                if (ram_info.port_a_dataout_sclr) {
+                    add_port(get_next_port_idx(node, existing_clr_idxs), node, ram_info.port_a_dataout_sclr, "porta_dataout_sclr");
+                }
+                //Specify the port B input clock enable
+                if(ram_info.port_b_dataout_aclr) {
+                    add_port(get_next_port_idx(node, existing_clr_idxs), node, ram_info.port_b_dataout_aclr, "portb_dataout_aclr");
+                }
+                //Specify the port B output clock enable
+                if(ram_info.port_b_dataout_sclr) {
+                    add_port(get_next_port_idx(node, existing_clr_idxs), node, ram_info.port_b_dataout_sclr, "portb_dataout_sclr");
+                }
+
+                //if there is a possibility that user instantiates 
+                //the primitive directly, hooking up the clear
+                // ports while setting the related parameters such that the clears are 
+                //not driving any of the clear ports of the registers
+                //then this assertion will not hold and should be removed
+                VTR_ASSERT(existing_clr_idxs.empty());
+                VTR_ASSERT(find_vqm_port_index(node, "sclr") < 0);
+                VTR_ASSERT(find_vqm_port_index(node, "aclr") < 0);
+            }
         }
+
+
     }
 
     cout << "\t>> Elaborated " << num_clocks_added << " clocks accross " << num_ram_blocks_processed << " ram blocks" << endl;
 
 }
 
-void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types) {
+void expand_dsp_clocks(t_module* module) {
+    int num_ram_blocks_processed = 0;
+    int num_clocks_added = 0;
+    for (int i = 0; i < module->number_of_nodes; ++i) {
+        t_node* node = module->array_of_nodes[i];
+
+        if (strcmp(node->type, "fourteennm_mac") == 0 || strcmp(node->type, "fourteennm_fp_mac") == 0) {
+            ++num_ram_blocks_processed;
+            DSPInfo dsp_info = get_dsp_info(node);
+
+            //Stratix  10 dsp blocks use a 3-bit wide clock port to specify the clocks, and use params
+            //to define which clock controls what port
+            //
+            //To simplify things in down stream tools (since BLIF doesn't support params) we replace the 
+            //VQM clocks with the following ports:
+            //   
+            //   * clock_ax     //Clock capturing input data to port ax
+            //   * clock_ay     //Clock capturing input data to port ay
+            //   * clock_az     //Clock capturing input data to port az
+            //   * clock_bx     //Clock capturing input data to port bx
+            //   * clock_by     //Clock capturing input data to port by
+            //   * clock_bz     //Clock capturing input data to port bz
+            //   * clock_coef_sel_a     //Clock capturing input data to port coef_sel_a
+            //   * clock_coef_sel_b     //Clock capturing input data to port coef_sel_b
+            //   * clock_ay_scan_in     //Clock capturing input data to port ay_scan_in
+            //   * clock_accumulate     //Clock capturing input data to port accumulate
+            //   * clock_load_const     //Clock capturing input data to port load_const
+            //   * clock_negate     //Clock capturing input data to port negate
+            //   * clock_sub     //Clock capturing input data to port sub
+            //   * clock_chainout     //Clock capturing input data to port chainout
+            //   * clock_output     //Clock capturing input data to port output
+            //
+            //We set these to the appropriate net based on the data set in VQM params
+
+            //Find and record the existing clk ports
+            // We do this so we can overwrite them
+            vector<int> existing_clk_idxs_vec = find_vqm_port_indices(node, "clk");
+            
+            std::set<int> existing_clk_idxs(existing_clk_idxs_vec.begin(), existing_clk_idxs_vec.end());
+  
+
+            if (dsp_info.port_ax_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ax_clock, "ax_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_ay_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ay_clock, "ay_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_az_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_az_clock, "az_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_bx_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_bx_clock, "bx_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_by_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_by_clock, "by_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_bz_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_bz_clock, "bz_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_coef_sel_a_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_coef_sel_a_clock, "coef_sel_a_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_coef_sel_b_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_coef_sel_b_clock, "coef_sel_b_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_ay_scan_in_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ay_scan_in_clock, "ay_scan_in_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_accumulate_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_accumulate_clock, "accumulate_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_load_const_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_load_const_clock, "loadconst_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_negate_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_negate_clock, "negate_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_sub_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_sub_clock, "sub_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_chainout_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_chainout_clock, "chainout_clk");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_output_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_output_clock, "output_clk");
+                ++num_clocks_added;
+            }
+
+            set<int>::iterator itr;
+   
+            for (itr = existing_clk_idxs.begin(); itr != existing_clk_idxs.end(); itr++){
+                remove_node_port(node, *itr);
+            }
+
+            VTR_ASSERT(find_vqm_port_index(node, "clk") < 0);
+
+ 
+        }
+
+
+    }
+
+    cout << "\t>> Elaborated " << num_clocks_added << " clocks accross " << num_ram_blocks_processed << " ram blocks" << endl;
+
+}
+
+void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, string device) {
     //Removes connections to clock ports if the net is not driven by a clock port.
     //VPR does not allow clock nets (anything that touches a clock pin) to connect
     //to non-clock pins.
@@ -1257,7 +1496,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                         //check whether it is the driver
 
                         //Find the model
-                        t_model* arch_model = find_model_in_architecture(arch->models, node);
+                        t_model* arch_model = find_model_in_architecture(arch->models, node, device);
 
                         //Look-up the arch model port
                         t_model_ports* arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -1379,7 +1618,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                 t_node_port_association* node_port = node->array_of_ports[j];
 
                 //Find the model
-                t_model* arch_model = find_model_in_architecture(arch->models, node);
+                t_model* arch_model = find_model_in_architecture(arch->models, node, device);
 
                 //Look-up the arch model port
                 t_model_ports* arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -1981,7 +2220,7 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
 
 //============================================================================================
 //============================================================================================
-void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types){
+void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, string device){
 
     //Identify architecture block pins which are globals
     t_global_ports global_ports = identify_primitive_global_pins(arch, arch_types, num_types, false);
@@ -1991,7 +2230,7 @@ void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_b
     t_global_nets global_nets = identify_global_nets(module, global_ports);
 
     //Create an STL map which identifies the driver of each global net
-    t_net_driver_map net_driver_map = identify_net_drivers(module, arch, global_ports, global_nets);
+    t_net_driver_map net_driver_map = identify_net_drivers(module, arch, global_ports, global_nets, device);
 
     //Identify global to local assignment connections
     t_assign_vec_pair global_local_assignments = identify_global_local_assignments(module, global_nets, net_driver_map);
@@ -2216,7 +2455,7 @@ t_global_nets identify_global_nets(t_module* module, t_global_ports global_ports
     return global_nets;
 }
 
-t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_ports global_ports, t_global_nets global_nets) {
+t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_ports global_ports, t_global_nets global_nets, string device) {
     t_net_driver_map net_driver_map;
 
     int total_num_global_sinks = 0;
@@ -2280,7 +2519,7 @@ t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_p
                     t_model_ports* arch_model_port;
 
                     //Find the model
-                    arch_model = find_model_in_architecture(arch->models, node);
+                    arch_model = find_model_in_architecture(arch->models, node, device);
 
                     //Find the architecure model port
                     arch_model_port = find_port_in_architecture_model(arch_model, node_port);

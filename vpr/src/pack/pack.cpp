@@ -239,7 +239,7 @@ bool try_pack(t_packer_opts* packer_opts,
 
                 int num_instances = 0;
                 for (auto type : iter->first->equivalent_tiles)
-                    num_instances += grid.num_instances(type);
+                    num_instances += grid.num_instances(type, -1);
 
                 resource_avail += std::string(iter->first->name) + ": " + std::to_string(num_instances);
             }
@@ -475,7 +475,7 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
 
         float num_total_instances = 0.;
         for (const auto& equivalent_tile : type.equivalent_tiles) {
-            num_total_instances += device_ctx.grid.num_instances(equivalent_tile);
+            num_total_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
         }
 
         if (num_total_instances != 0) {

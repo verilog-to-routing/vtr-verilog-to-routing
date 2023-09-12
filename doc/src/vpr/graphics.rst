@@ -2,7 +2,7 @@
 
 Graphics
 ========
-VPR includes easy-to-use graphics for visualizing both the targetted FPGA architecture, and the circuit VPR has implementation on the architecture.
+VPR includes easy-to-use graphics for visualizing both the targetted FPGA architecture, and the circuit VPR has implemented on the architecture.
 
 .. image:: https://www.verilogtorouting.org/img/des90_routing_util.gif
     :align: center
@@ -35,19 +35,17 @@ When running VPR provide :option:`vpr --disp` ``on`` to enable graphics.
 
 Saving Graphics at Run-time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-When running VPR provide :option:`vpr --save_graphics` ``on`` to enable graphics.
+When running VPR provide :option:`vpr --save_graphics` ``on`` to save an image of the final placement and the final routing created by vpr to pdf files on disk. The files are named vpr_placement.pdf and vpr_routing.pdf.
 
 A graphical window will now pop up when you run VPR.
 
 Navigation
 ----------
-Click on **Zoom-Fit** buttons to zoom the view.
-Click and drag with the left mouse button to pan the view, or scroll the mouse wheel to zoom in and out.
-Click on the **Window**, then on the diagonally opposite corners of a box, to zoom in on a particular area.
-
-Click on **Save** to save the image on screen to PDF, PNG, or SVG file.
-
-**Proceed** tells VPR to continue with the next step in placing and routing the circuit.
+* Click on the **Zoom-Fit** button to get an over-encompassing view of the FPGA architecture.
+* Click and drag with the left mouse button to pan the view, or scroll the mouse wheel to zoom in and out.
+* Click on the **Window** button, then on the diagonally opposite corners of a box, to zoom in on a particular area.
+* Click on **Save** under the **Misc.** tab to save the image on screen to PDF, PNG, or SVG file.
+* **Done** tells VPR to continue with the next step in placing and routing the circuit.
 
 
 .. note:: Menu buttons will be greyed out when they are not selectable (e.g. VPR is working).
@@ -56,16 +54,28 @@ Visualizing Placement
 --------------------------------
 By default VPR's graphics displays the FPGA floorplan (block grid) and current placement.
 
+.. figure:: ../Images/Overall_view.png
+    :align: center 
+    :height: 300
+
+    FPGA floorplan (block grid)    
+
+If the **Placement Macros** drop down is set, any placement macros (e.g. carry chains, which require specific relative placements between some blocks) will be highlighted.
+
 .. figure:: https://www.verilogtorouting.org/img/neuron_placement_macros.gif
     :align: center
 
     Placement with macros (carry chains) highlighted
 
-If the **Placement Macros** drop down is set, any placement macros (e.g. carry chains, which require specific relative placements between some blocks) will be highlighted.
-
 Visualizing Netlist Connectivity
 --------------------------------
-The **Toggle Nets** drop-down list toggles the nets in the circuit visible/invisible.
+The **Toggle Nets** drop-down list under the **Net Settings** tab toggles the nets in the circuit to be visible/invisible. Options include **Cluster Nets** and **Primitive Nets**.
+
+.. figure:: ../Images/Net_Settings.png
+    :align: center 
+    :height: 200
+
+    Toggle Nets drop-down under Net Settings tab
 
 When a placement is being displayed, routing information is not yet known so nets are simply drawn as a “star;” that is, a straight line is drawn from the net source to each of its sinks.
 Click on any clb in the display, and it will be highlighted in green, while its fanin and fanout are highlighted in blue and red, respectively.
@@ -81,9 +91,17 @@ Multiple nets can be highlighted by pressing ctrl + mouse click.
 
 Visualizing the Critical Path
 -----------------------------
-During placement and routing you can click on the **Crit. Path** drop-down menu to visualize the critical path.
+During placement and routing you can click on the **Crit. Path** drop-down menu under the **Misc.** tab to visualize the critical path.
 Each stage between primitive pins is shown in a different colour.
-Cliking the **Crit. Path** button again will toggle through the various visualizations:
+
+.. figure:: ../Images/crit_path.png
+    :align: center 
+    :height: 200
+
+    Crit. Path drop-down list under the Misc. tab
+
+The **Crit. Path** drop-down will toggle through the various visualizations:
+
 * During placement the critical path is shown only as flylines.
 * During routing the critical path can be shown as both flylines and routed net connections.
 
@@ -94,7 +112,16 @@ Cliking the **Crit. Path** button again will toggle through the various visualiz
 
 Visualizing Routing Architecture
 --------------------------------
-When a routing is on-screen, clicking on **Toggle RR** lets you to choose between various views of the routing resources available in the FPGA.
+
+When a routing is on screen, the **Routing Options** tab provides various options to gain more visual information.
+
+.. figure:: ../Images/Routing_Options.png
+    :align: center 
+    :height: 300
+
+    Routing Options
+
+Clicking on **Toggle RR** lets you to choose between various views of the routing resources available in the FPGA.
 
 .. figure:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/raw/master/img/routing_arch.gif
     :align: center
@@ -116,7 +143,7 @@ Multiple routing resources can be highlighted by pressing ctrl + mouse click.
 
 Visualizing Routing Congestion
 ------------------------------
-When a routing is shown on-screen, clicking on the **Congestion** drop-down menu will show a heat map of any overused routing resources (wires or pins).
+When a routing is shown on-screen, clicking on the **Congestion** drop-down menu under the **Routing Options** tab will show a heat map of any overused routing resources (wires or pins).
 Lighter colours (e.g. yellow) correspond to highly overused resources, while darker colours (e.g. blue) correspond to lower overuse.
 The overuse range shown at the bottom of the window.
 
@@ -137,13 +164,32 @@ Lighter colours (e.g. yellow) correspond to highly utilized channels, while dark
 
 Toggle Block Internal
 -------------------------------
-During placement and routing you can adjust the level of block detail you visualize by using the **Toggle Block Internal**. Each block can contain a number of flip flops (ff), look up tables (lut), and other primitives. The higher the number, the deeper into the hierarchy within the cluster level block you see. 
+During placement and routing you can adjust the level of block detail you visualize by using the **Toggle Block Internal** option under the **Block Settings** tab. 
+
+.. figure:: ../Images/Block_Settings.png
+    :align: center 
+    :height: 300
+
+    Block Settings 
+
+Each block can contain a number of flip flops (ff), look up tables (lut), and other primitives. The higher the number, the deeper into the hierarchy within the cluster level block you see. 
 
 .. figure:: https://www.verilogtorouting.org/img/ToggleBlockInternal.gif
     :align: center
 
     Visualizing Block Internals
 
+View Menu
+-----------------------------
+.. figure:: ../Images/view_menu.png
+    :align: center 
+
+    Items under view menu
+
+The view menu is displayed when vpr is targeting a stacked multi-die architecture (more than 1 layer).
+Layers are drawn in ascending order for many drawing features (e.g. blocks); that is layer 0 is drawn first, and (if visible), layer 1 is drawn on top of it etc.
+The visibility and transparency of a layer can be changed, which will affect blocks, nets, routing, and critical path.
+Cross-layer connections refer to connections that are in different layers. 
 
 Button Description Table
 ------------------------
@@ -223,10 +269,13 @@ Manual Moves
 
 The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
 
-.. figure:: https://www.verilogtorouting.org/img/manual_move_toggle_button.png
-   :align: center
+.. figure:: ../Images/manual_move.png
+    :align: center
+    :height: 200
 
-To enable the feature, activate the Manual Move toggle button and press Proceed. Alternatively, the user can active the Manual Move toggle button and click on the block to be moved.
+    Misc. Tab
+
+To enable the feature, activate the **Manual Move** toggle button under the **Misc.** tab and press Done. Alternatively, the user can activate the **Manual Move** toggle button and click on the block to be moved.
 
 .. figure:: https://www.verilogtorouting.org/img/draw_manual_moves_window.png
    :align: center

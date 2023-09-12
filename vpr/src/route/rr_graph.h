@@ -32,9 +32,12 @@ void create_rr_graph(const t_graph_type graph_type,
                      int* Warnings,
                      bool is_flat);
 
+// Build a complete RR graph, including all modes, for the given tile. This is used by router lookahead when
+// flat-routing is enabled. It allows it to store the cost from the border of a tile to a sink inside of it
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          const t_det_routing_arch& det_routing_arch,
                          t_physical_tile_type_ptr physical_tile,
+                         int layer,
                          int x,
                          int y,
                          const int delayless_switch);

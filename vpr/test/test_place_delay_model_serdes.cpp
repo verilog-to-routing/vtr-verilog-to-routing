@@ -9,16 +9,20 @@ static constexpr const char kDeltaDelayBin[] = "test_delta_delay.bin";
 static constexpr const char kOverrideDelayBin[] = "test_override_delay.bin";
 
 TEST_CASE("round_trip_delta_delay_model", "[vpr]") {
+    constexpr size_t kDimLayer = 1;
     constexpr size_t kDimX = 10;
     constexpr size_t kDimY = 10;
-    vtr::Matrix<float> delays;
-    delays.resize({kDimX, kDimY});
+    vtr::NdMatrix<float, 3> delays;
+    delays.resize({kDimLayer, kDimX, kDimY});
 
-    for (size_t x = 0; x < kDimX; ++x) {
-        for (size_t y = 0; y < kDimY; ++y) {
-            delays[x][y] = (x + 1) * (y + 1);
+    for (size_t layer = 0; layer < kDimLayer; ++layer) {
+        for (size_t x = 0; x < kDimX; ++x) {
+            for (size_t y = 0; y < kDimY; ++y) {
+                delays[layer][x][y] = (x + 1) * (y + 1);
+            }
         }
     }
+
     DeltaDelayModel model(std::move(delays), false);
     const auto& delays1 = model.delays();
 
@@ -35,22 +39,26 @@ TEST_CASE("round_trip_delta_delay_model", "[vpr]") {
         REQUIRE(delays1.dim_size(dim) == delays2.dim_size(dim));
     }
 
-    for (size_t x = 0; x < kDimX; ++x) {
-        for (size_t y = 0; y < kDimY; ++y) {
-            CHECK(delays1[x][y] == delays2[x][y]);
+    for (size_t layer = 0; layer < kDimLayer; ++layer) {
+        for (size_t x = 0; x < kDimX; ++x) {
+            for (size_t y = 0; y < kDimY; ++y) {
+                CHECK(delays1[layer][x][y] == delays2[layer][x][y]);
+            }
         }
     }
 }
 
 TEST_CASE("round_trip_override_delay_model", "[vpr]") {
+    constexpr size_t kDimLayer = 1;
     constexpr size_t kDimX = 10;
     constexpr size_t kDimY = 10;
-    vtr::Matrix<float> delays;
-    delays.resize({kDimX, kDimY});
-
-    for (size_t x = 0; x < kDimX; ++x) {
-        for (size_t y = 0; y < kDimY; ++y) {
-            delays[x][y] = (x + 1) * (y + 1);
+    vtr::NdMatrix<float, 3> delays;
+    delays.resize({kDimLayer, kDimX, kDimY});
+    for (size_t layer = 0; layer < kDimLayer; ++layer) {
+        for (size_t x = 0; x < kDimX; ++x) {
+            for (size_t y = 0; y < kDimY; ++y) {
+                delays[layer][x][y] = (x + 1) * (y + 1);
+            }
         }
     }
     OverrideDelayModel model(false);
@@ -73,9 +81,11 @@ TEST_CASE("round_trip_override_delay_model", "[vpr]") {
         REQUIRE(delays1.dim_size(dim) == delays2.dim_size(dim));
     }
 
-    for (size_t x = 0; x < kDimX; ++x) {
-        for (size_t y = 0; y < kDimY; ++y) {
-            CHECK(delays1[x][y] == delays2[x][y]);
+    for (size_t layer = 0; layer < kDimLayer; ++layer) {
+        for (size_t x = 0; x < kDimX; ++x) {
+            for (size_t y = 0; y < kDimY; ++y) {
+                CHECK(delays1[layer][x][y] == delays2[layer][x][y]);
+            }
         }
     }
 

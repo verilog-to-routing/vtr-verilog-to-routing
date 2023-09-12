@@ -172,8 +172,8 @@ struct ParseRoutePredictor {
 struct ParseRouterAlgorithm {
     ConvertedValue<e_router_algorithm> from_str(std::string str) {
         ConvertedValue<e_router_algorithm> conv_value;
-        if (str == "breadth_first")
-            conv_value.set_value(BREADTH_FIRST);
+        if (str == "parallel")
+            conv_value.set_value(PARALLEL);
         else if (str == "timing_driven")
             conv_value.set_value(TIMING_DRIVEN);
         else {
@@ -186,8 +186,8 @@ struct ParseRouterAlgorithm {
 
     ConvertedValue<std::string> to_str(e_router_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == BREADTH_FIRST)
-            conv_value.set_value("breadth_first");
+        if (val == PARALLEL)
+            conv_value.set_value("parallel");
         else {
             VTR_ASSERT(val == TIMING_DRIVEN);
             conv_value.set_value("timing_driven");
@@ -196,7 +196,7 @@ struct ParseRouterAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"breadth_first", "timing_driven"};
+        return {"parallel", "timing_driven"};
     }
 };
 
@@ -458,6 +458,37 @@ struct ParsePlaceAgentAlgorithm {
 
     std::vector<std::string> default_choices() {
         return {"e_greedy", "softmax"};
+    }
+};
+
+struct ParsePlaceAgentSpace {
+    ConvertedValue<e_agent_space> from_str(std::string str) {
+        ConvertedValue<e_agent_space> conv_value;
+        if (str == "move_type")
+            conv_value.set_value(e_agent_space::MOVE_TYPE);
+        else if (str == "move_block_type")
+            conv_value.set_value(e_agent_space::MOVE_BLOCK_TYPE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_agent_space (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_agent_space val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_agent_space::MOVE_TYPE)
+            conv_value.set_value("move_type");
+        else {
+            VTR_ASSERT(val == e_agent_space::MOVE_BLOCK_TYPE);
+            conv_value.set_value("move_block_type");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"move_type", "move_block_type"};
     }
 };
 
@@ -2089,6 +2120,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .choices({"e_greedy", "softmax"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<e_agent_space, ParsePlaceAgentSpace>(args.place_agent_space, "--place_agent_space")
+        .help(
+            "Agent exploration space can be either based on only move types or also consider different block types\n"
+            "The available values are: move_type, move_block_type")
+        .default_value("move_block_type")
+        .choices({"move_type", "move_block_type"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
@@ -2246,8 +2285,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * delay_normalized_length_frequency: like delay_normalized\n"
             "      but scaled by routing resource length, and inversely\n"
             "      by segment type frequency\n"
-            "(Default: demand_only for breadth-first router,\n"
-            "          delay_normalized_length for timing-driven router)")
+            "(Default: delay_normalized_length)")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.bend_cost, "--bend_cost")
@@ -2283,10 +2321,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_grp.add_argument<e_router_algorithm, ParseRouterAlgorithm>(args.RouterAlgorithm, "--router_algorithm")
         .help(
             "Specifies the router algorithm to use.\n"
-            " * breadth_first: focuses solely on routability [DEPRECATED, inferior quality & run-time]\n"
+            " * parallel: [experimental] timing_driven but multithreaded\n"
             " * timing_driven: focuses on routability and circuit speed\n")
         .default_value("timing_driven")
-        .choices({"breadth_first", "timing_driven"})
+        .choices({"parallel", "timing_driven"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
@@ -2876,22 +2914,18 @@ void set_conditional_defaults(t_options& args) {
      */
     //Base cost type
     if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
-        if (args.RouterAlgorithm == BREADTH_FIRST) {
-            args.base_cost_type.set(DEMAND_ONLY, Provenance::INFERRED);
-        } else {
-            VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN);
+        VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN || args.RouterAlgorithm == PARALLEL);
 
-            if (args.RouteType == DETAILED) {
-                if (args.timing_analysis) {
-                    args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
-                } else {
-                    args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
-                }
+        if (args.RouteType == DETAILED) {
+            if (args.timing_analysis) {
+                args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
             } else {
-                VTR_ASSERT(args.RouteType == GLOBAL);
-                //Global RR graphs don't have valid timing, so use demand base cost
                 args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
             }
+        } else {
+            VTR_ASSERT(args.RouteType == GLOBAL);
+            //Global RR graphs don't have valid timing, so use demand base cost
+            args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
         }
     }
 

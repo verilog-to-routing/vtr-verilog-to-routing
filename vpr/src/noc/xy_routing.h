@@ -29,7 +29,7 @@
  * has the same X-coordinate as the destination) the algorithm
  * checks to see whether the y-axis coordinates match between the destination 
  * router and the current router in the path (checking for vertical alignment).
- * Similiar to the x-axis movement, the algorithm moves in the Y-axis towards
+ * Similar to the x-axis movement, the algorithm moves in the Y-axis towards
  * the destination router. Once again, at each router in the path the algorithm
  * checks for vertical alignment; if not aligned it then moves in the y-axis
  * towards the destination router until it is aligned vertically.
@@ -41,7 +41,7 @@
  * 
  * Below we have an example of the path determined by this algorithm for a 
  * 3x3 mesh NoC:
- * 
+ * ```
  *   ---------                   ---------                    ---------
  *   /       /                   /       /                    /       /
  *   /   $   / ----------------- /       / ------------------ /       /
@@ -65,7 +65,7 @@
  *   /       / ----------------- /       / ------------------ /   *   /
  *   /       /                   /       /                    /       /
  *   ---------                   ---------                    ---------
- * 
+ * ```
  * In the example above, the router marked with the '*' character is the start
  * and the router marked with the '$' character is the destination. The path
  * determined by the XY-Routing algorithm is shown as "<++++".
@@ -74,8 +74,8 @@
  * 
  * Usage
  * -----
- * It is recommmended to use this algorithm when the NoC topology is of type
- * Mesh. This algorithm will work for other types of toplogies but the
+ * It is recommended to use this algorithm when the NoC topology is of type
+ * Mesh. This algorithm will work for other types of topologies but the
  * directional nature of the algorithm makes it ideal for mesh topologies. If
  * the algorithm fails to find a router then an error is thrown; this should
  * only happen for non-mesh topologies.
@@ -113,7 +113,7 @@ class XYRouting : public NocRouting {
      * @param sink_router_id The destination router of a traffic flow.
      * Identifies the ending point of the route within the NoC.This represents a 
      * physical router on the FPGA.
-     * @param flow_route Stores the path returned by this fuction
+     * @param flow_route Stores the path returned by this function
      * as a series of NoC links found by 
      * a NoC routing algorithm between two routers in a traffic flow.
      * The function will clear any

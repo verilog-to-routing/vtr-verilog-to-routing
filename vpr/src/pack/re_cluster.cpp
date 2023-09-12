@@ -27,7 +27,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
 
     unsigned int num_instances = 0;
     for (auto equivalent_tile : block_type->equivalent_tiles) {
-        num_instances += device_ctx.grid.num_instances(equivalent_tile);
+        num_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
     }
 
     if (helper_ctx.num_used_type_instances[block_type] == num_instances) {

@@ -977,11 +977,11 @@ void Netlist<BlockId, PortId, PinId, NetId>::remove_block(const BlockId blk_id) 
     StringId name_id = block_names_[blk_id];
     block_name_to_block_id_.insert(name_id, BlockId::INVALID());
 
-    //Mark as invalid
-    block_ids_[blk_id] = BlockId::INVALID();
-
     //Call derived class' remove()
     remove_block_impl(blk_id);
+
+    //Mark as invalid
+    block_ids_[blk_id] = BlockId::INVALID();
 
     //Mark netlist dirty
     dirty_ = true;

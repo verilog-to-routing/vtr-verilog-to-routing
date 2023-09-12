@@ -23,7 +23,6 @@
 #    include "vpr_types.h"
 #    include "draw_types.h"
 #    include "atom_netlist_fwd.h"
-#    include "route_tree_timing.h"
 #    include <unordered_set>
 
 #    include "ezgl/point.hpp"

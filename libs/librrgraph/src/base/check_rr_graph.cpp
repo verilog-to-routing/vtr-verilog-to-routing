@@ -234,9 +234,11 @@ void check_rr_graph(const RRGraphView& rr_graph,
         size_t inode = (size_t)rr_node;
         t_rr_type rr_type = rr_graph.node_type(rr_node);
         int ptc_num = rr_graph.node_ptc_num(rr_node);
+        int layer_num = rr_graph.node_layer(rr_node);
         int xlow = rr_graph.node_xlow(rr_node);
         int ylow = rr_graph.node_ylow(rr_node);
-        t_physical_tile_type_ptr type = grid.get_physical_type(xlow, ylow);
+
+        t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_num});
 
         if (rr_type == IPIN || rr_type == OPIN) {
             // #TODO: No edges are added for internal pins. However, they need to be checked somehow!
@@ -273,7 +275,9 @@ void check_rr_graph(const RRGraphView& rr_graph,
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
                         if (has_adjacent_channel(rr_graph, grid, node)) {
-                            auto block_type = grid.get_physical_type(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));
+                            auto block_type = grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                                      rr_graph.node_ylow(rr_node),
+                                                                      rr_graph.node_layer(rr_node)});
                             std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node), is_flat);
                             /* Print error messages for all the sides that a node may appear */
                             for (const e_side& node_side : SIDES) {
@@ -312,7 +316,9 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
     int ipin;
     t_physical_tile_type_ptr type;
 
-    type = grid.get_physical_type(rr_graph.node_xlow(inode), rr_graph.node_ylow(inode));
+    type = grid.get_physical_type({rr_graph.node_xlow(inode),
+                                   rr_graph.node_ylow(inode),
+                                   rr_graph.node_layer(inode)});
 
     if (rr_graph.node_type(inode) != IPIN)
         return (false);
@@ -335,7 +341,7 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
-    int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
+    int xlow, ylow, xhigh, yhigh, layer_num, ptc_num, capacity;
     t_rr_type rr_type;
     t_physical_tile_type_ptr type;
     int nodes_per_chan, tracks_per_node;
@@ -348,6 +354,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     xhigh = rr_graph.node_xhigh(rr_node);
     ylow = rr_graph.node_ylow(rr_node);
     yhigh = rr_graph.node_yhigh(rr_node);
+    layer_num = rr_graph.node_layer(rr_node);
     ptc_num = rr_graph.node_ptc_num(rr_node);
     capacity = rr_graph.node_capacity(rr_node);
     cost_index = rr_graph.node_cost_index(rr_node);
@@ -363,6 +370,11 @@ void check_rr_node(const RRGraphView& rr_graph,
                         "in check_rr_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
     }
 
+    if (layer_num < 0 || layer_num > int(grid.get_num_layers()) - 1) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in check_rr_node: rr endpoints layer_num (%d) is out of range.\n", layer_num);
+    }
+
     if (ptc_num < 0) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
@@ -374,7 +386,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     }
 
     /* Check that the segment is within the array and such. */
-    type = grid.get_physical_type(xlow, ylow);
+    type = grid.get_physical_type({xlow, ylow, layer_num});
 
     switch (rr_type) {
         case SOURCE:
@@ -596,7 +608,7 @@ static void check_rr_edge(const RRGraphView& rr_graph,
                 std::string msg = "Non-configurable BUFFER type switch must have only one driver. ";
                 msg += vtr::string_fmt(" Actual fan-in was %d (expected 1).\n", to_fanin);
                 msg += "  Possible cause is complex block output pins connecting to:\n";
-                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, to_node, is_flat);
+                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, RRNodeId(to_node), is_flat);
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
             break;

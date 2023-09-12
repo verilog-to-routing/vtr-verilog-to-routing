@@ -271,11 +271,14 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
 
     //Check if the location is within its constraint region
     for (auto reg : pr.get_partition_region()) {
-        if (reg.get_region_rect().contains(vtr::Point<int>(loc.x, loc.y))) {
+        const auto reg_coord = reg.get_region_rect();
+        vtr::Rect<int> reg_rect(reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax);
+        if (reg_coord.layer_num != loc.layer) continue;
+        if (reg_rect.contains(vtr::Point<int>(loc.x, loc.y))) {
             //check if the location is compatible with the block type
-            const auto& type = grid.get_physical_type(loc.x, loc.y);
-            int height_offset = grid.get_height_offset(loc.x, loc.y);
-            int width_offset = grid.get_width_offset(loc.x, loc.y);
+            const auto& type = grid.get_physical_type({loc.x, loc.y, loc.layer});
+            int height_offset = grid.get_height_offset({loc.x, loc.y, loc.layer});
+            int width_offset = grid.get_width_offset({loc.x, loc.y, loc.layer});
             if (is_tile_compatible(type, block_type)) {
                 //Check if the location is an anchor position
                 if (height_offset == 0 && width_offset == 0) {
@@ -291,42 +294,45 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
 
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const int centroid_loc_layer_num = centroid_loc.layer;
 
     //Determine centroid location in the compressed space of the current block
-    int cx_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, centroid_loc.x);
-    int cy_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, centroid_loc.y);
+    auto compressed_centroid_loc = get_compressed_loc_approx(compressed_block_grid,
+                                                             centroid_loc,
+                                                             num_layers);
 
     //range limit (rlim) set a limit for the neighbor search in the centroid placement
     //the neighbor location should be within the defined range to calculated centroid location
     int first_rlim = 15;
-    int rlim_x = std::min<int>(compressed_block_grid.compressed_to_grid_x.size(), first_rlim);
-    int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), first_rlim);
 
-    //Determine the valid compressed grid location ranges
-    int min_cx, max_cx, delta_cx;
-    int min_cy, max_cy;
+    auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
+                                                                compressed_centroid_loc,
+                                                                first_rlim,
+                                                                num_layers);
 
-    min_cx = std::max(0, cx_centroid - rlim_x);
-    max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_centroid + rlim_x);
-
-    min_cy = std::max(0, cy_centroid - rlim_y);
-    max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_centroid + rlim_y);
-
-    delta_cx = max_cx - min_cx;
+    int delta_cx = search_range[centroid_loc_layer_num].xmax - search_range[centroid_loc_layer_num].xmin;
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
-    int cx_from = -1;
-    int cy_from = -1;
+    int cx_from = OPEN;
+    int cy_from = OPEN;
+    int layer_from = centroid_loc_layer_num;
 
-    int cx_to, cy_to;
+    t_physical_tile_loc to_compressed_loc;
 
-    bool legal = find_compatible_compressed_loc_in_range(block_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
+    bool legal = find_compatible_compressed_loc_in_range(block_type,
+                                                         delta_cx,
+                                                         {cx_from, cy_from, layer_from},
+                                                         search_range[centroid_loc_layer_num],
+                                                         to_compressed_loc,
+                                                         false,
+                                                         centroid_loc_layer_num);
 
     if (!legal) {
         return false;
     }
 
-    compressed_grid_to_loc(block_type, cx_to, cy_to, centroid_loc);
+    compressed_grid_to_loc(block_type, to_compressed_loc, centroid_loc);
 
     return legal;
 }
@@ -334,12 +340,21 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
 static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_loc& centroid) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int x, y;
+    t_physical_tile_loc tile_loc;
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
+    int head_layer_num = OPEN;
+    bool find_layer = false;
+    std::vector<int> layer_count(g_vpr_ctx.device().grid.get_num_layers(), 0);
 
     ClusterBlockId head_blk = pl_macro.members.at(0).blk_index;
+    // For now, we put the macro in the same layer as the head block
+    head_layer_num = g_vpr_ctx.placement().block_locs[head_blk].loc.layer;
+    // If block is placed, we use the layer of the block. Otherwise, the layer will be determined later
+    if (head_layer_num == OPEN) {
+        find_layer = true;
+    }
     std::vector<ClusterBlockId> connected_blocks_to_update;
 
     //iterate over the from block pins
@@ -374,10 +389,13 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
                     continue;
                 }
 
-                get_coordinate_of_pin(sink_pin_id, x, y);
-
-                acc_x += x;
-                acc_y += y;
+                get_coordinate_of_pin(sink_pin_id, tile_loc);
+                if (find_layer) {
+                    VTR_ASSERT(tile_loc.layer_num != OPEN);
+                    layer_count[tile_loc.layer_num]++;
+                }
+                acc_x += tile_loc.x;
+                acc_y += tile_loc.y;
                 acc_weight++;
             }
         }
@@ -391,10 +409,13 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
                 continue;
             }
 
-            get_coordinate_of_pin(source_pin, x, y);
-
-            acc_x += x;
-            acc_y += y;
+            get_coordinate_of_pin(source_pin, tile_loc);
+            if (find_layer) {
+                VTR_ASSERT(tile_loc.layer_num != OPEN);
+                layer_count[tile_loc.layer_num]++;
+            }
+            acc_x += tile_loc.x;
+            acc_y += tile_loc.y;
             acc_weight++;
         }
     }
@@ -403,19 +424,27 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
     if (acc_weight > 0) {
         centroid.x = acc_x / acc_weight;
         centroid.y = acc_y / acc_weight;
+        if (find_layer) {
+            auto max_element = std::max_element(layer_count.begin(), layer_count.end());
+            VTR_ASSERT(*max_element != 0);
+            auto index = std::distance(layer_count.begin(), max_element);
+            centroid.layer = static_cast<int>(index);
+        } else {
+            centroid.layer = head_layer_num;
+        }
     }
 
     return connected_blocks_to_update;
 }
 
 static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
-    t_pl_loc centroid_loc(OPEN, OPEN, OPEN);
+    t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
 
     unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc);
 
     //no suggestion was available for this block type
-    if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y)) {
+    if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer})) {
         return false;
     }
 
@@ -430,7 +459,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     }
 
     //no neighbor were found that meet all our requirements, should be placed with random placement
-    if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y) || !pr.is_loc_in_part_reg(centroid_loc)) {
+    if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) || !pr.is_loc_in_part_reg(centroid_loc)) {
         return false;
     }
 
@@ -440,12 +469,12 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     //we don't need to find one agian
     if (!neighbor_legal_loc) {
         const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-        const auto& type = device_ctx.grid.get_physical_type(centroid_loc.x, centroid_loc.y);
-        auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(type->index);
+        const auto& type = device_ctx.grid.get_physical_type({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
+        const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
         centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
     }
-    int width_offset = device_ctx.grid.get_width_offset(centroid_loc.x, centroid_loc.y);
-    int height_offset = device_ctx.grid.get_height_offset(centroid_loc.x, centroid_loc.y);
+    int width_offset = device_ctx.grid.get_width_offset({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
+    int height_offset = device_ctx.grid.get_height_offset({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 
@@ -507,6 +536,7 @@ static int get_blk_type_first_loc(t_pl_loc& loc, t_pl_macro pl_macro, std::vecto
         //set the coordinate of first location that can accomodate macro blocks
         loc.x = first_empty_loc.first_avail_loc.x;
         loc.y = get_y_loc_based_on_macro_direction(first_empty_loc, pl_macro);
+        loc.layer = first_empty_loc.first_avail_loc.layer;
         loc.sub_tile = first_empty_loc.first_avail_loc.sub_tile;
 
         return empty_loc_index;
@@ -519,29 +549,38 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type_index];
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
+    int num_layers = grid.get_num_layers();
 
     //create a vector to store all columns containing block_type_index with their lowest y and number of remaining blocks
     std::vector<t_grid_empty_locs_block_type> block_type_empty_locs;
 
-    //create a region the size of grid to find out first location with a specific block type
-    Region reg;
-    reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-    reg.set_sub_tile(NO_SUBTILE);
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        //create a region the size of grid to find out first location with a specific block type
+        Region reg;
+        reg.set_region_rect({0,
+                             0,
+                             (int)device_ctx.grid.width() - 1,
+                             (int)device_ctx.grid.height() - 1,
+                             layer_num});
+        reg.set_sub_tile(NO_SUBTILE);
+        const auto reg_coord = reg.get_region_rect();
+        int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmin, OPEN, layer_num}).x;
+        int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmax, OPEN, layer_num}).x;
 
-    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, reg.get_region_rect().xmin());
-    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, reg.get_region_rect().xmax());
-
-    //traverse all column and store their empty locations in block_type_empty_locs
-    for (int x_loc = min_cx; x_loc <= max_cx; x_loc++) {
-        t_grid_empty_locs_block_type empty_loc;
-        auto first_avail_loc = compressed_block_grid.grid[x_loc].begin()->second;
-        empty_loc.first_avail_loc.x = first_avail_loc.x;
-        empty_loc.first_avail_loc.y = first_avail_loc.y;
-        const auto& physical_type = grid.get_physical_type(first_avail_loc.x, first_avail_loc.y);
-        const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(physical_type->index);
-        empty_loc.first_avail_loc.sub_tile = *std::min_element(compatible_sub_tiles.begin(), compatible_sub_tiles.end());
-        empty_loc.num_of_empty_locs_in_y_axis = compressed_block_grid.grid[x_loc].size();
-        block_type_empty_locs.push_back(empty_loc);
+        //traverse all column and store their empty locations in block_type_empty_locs
+        for (int x_loc = min_cx; x_loc <= max_cx; x_loc++) {
+            t_grid_empty_locs_block_type empty_loc;
+            const auto& block_rows = compressed_block_grid.get_column_block_map(x_loc, layer_num);
+            auto first_avail_loc = block_rows.begin()->second;
+            empty_loc.first_avail_loc.x = first_avail_loc.x;
+            empty_loc.first_avail_loc.y = first_avail_loc.y;
+            empty_loc.first_avail_loc.layer = first_avail_loc.layer_num;
+            const auto& physical_type = grid.get_physical_type({first_avail_loc.x, first_avail_loc.y, first_avail_loc.layer_num});
+            const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(physical_type->index);
+            empty_loc.first_avail_loc.sub_tile = *std::min_element(compatible_sub_tiles.begin(), compatible_sub_tiles.end());
+            empty_loc.num_of_empty_locs_in_y_axis = block_rows.size();
+            block_type_empty_locs.push_back(empty_loc);
+        }
     }
 
     return block_type_empty_locs;
@@ -552,7 +591,7 @@ static inline void fix_IO_block_types(t_pl_macro pl_macro, t_pl_loc loc, enum e_
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
     //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
-    const auto& type = device_ctx.grid.get_physical_type(loc.x, loc.y);
+    const auto& type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
     if (is_io_type(type) && pad_loc_type == RANDOM) {
         for (unsigned int imember = 0; imember < pl_macro.members.size(); imember++) {
             place_ctx.block_locs[pl_macro.members[imember].blk_index].is_fixed = true;
@@ -584,32 +623,36 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
     }
     Region reg = regions[region_index];
 
-    vtr::Rect<int> rect = reg.get_region_rect();
+    const auto reg_coord = reg.get_region_rect();
 
-    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-    int min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymin());
+    auto min_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmin, reg_coord.ymin, reg_coord.layer_num});
 
-    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
-    int max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymax());
+    auto max_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmax, reg_coord.ymax, reg_coord.layer_num});
 
-    int delta_cx = max_cx - min_cx;
+    int delta_cx = max_compressed_loc.x - min_compressed_loc.x;
 
-    int cx_to;
-    int cy_to;
+    t_physical_tile_loc to_compressed_loc;
 
     bool legal;
-    legal = find_compatible_compressed_loc_in_range(block_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
+    legal = find_compatible_compressed_loc_in_range(block_type,
+                                                    delta_cx,
+                                                    {cx_from, cy_from, reg_coord.layer_num},
+                                                    {min_compressed_loc.x, max_compressed_loc.x,
+                                                     min_compressed_loc.y, max_compressed_loc.y},
+                                                    to_compressed_loc,
+                                                    false,
+                                                    reg_coord.layer_num);
     if (!legal) {
         //No valid position found
         return false;
     }
 
-    compressed_grid_to_loc(block_type, cx_to, cy_to, loc);
+    compressed_grid_to_loc(block_type, to_compressed_loc, loc);
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    int width_offset = device_ctx.grid.get_width_offset(loc.x, loc.y);
-    int height_offset = device_ctx.grid.get_height_offset(loc.x, loc.y);
+    int width_offset = device_ctx.grid.get_width_offset({loc.x, loc.y, loc.layer});
+    int height_offset = device_ctx.grid.get_height_offset({loc.x, loc.y, loc.layer});
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 
@@ -633,14 +676,22 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
     t_pl_loc to_loc;
 
     for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
-        vtr::Rect<int> rect = regions[reg].get_region_rect();
+        const auto reg_coord = regions[reg].get_region_rect();
+        int layer_num = reg_coord.layer_num;
 
-        int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-        int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
+        int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmin, OPEN, layer_num}).x;
+        int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_coord.xmax, OPEN, layer_num}).x;
+
+        // There isn't any block of this type in this region
+        if (min_cx == OPEN) {
+            VTR_ASSERT(max_cx == OPEN);
+            continue;
+        }
 
         for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
-            auto y_lower_iter = compressed_block_grid.grid[cx].begin();
-            auto y_upper_iter = compressed_block_grid.grid[cx].end();
+            const auto& block_rows = compressed_block_grid.get_column_block_map(cx, layer_num);
+            auto y_lower_iter = block_rows.begin();
+            auto y_upper_iter = block_rows.end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
 
@@ -649,17 +700,19 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
             for (int dy = 0; dy < y_range && placed == false; dy++) {
                 int cy = (y_lower_iter + dy)->first;
 
-                to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
-                to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
+                auto grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({cx, cy, layer_num});
+                to_loc.x = grid_loc.x;
+                to_loc.y = grid_loc.y;
+                to_loc.layer = grid_loc.layer_num;
 
                 auto& grid = g_vpr_ctx.device().grid;
-                auto tile_type = grid.get_physical_type(to_loc.x, to_loc.y);
+                auto tile_type = grid.get_physical_type({to_loc.x, to_loc.y, layer_num});
 
                 if (regions[reg].get_sub_tile() != NO_SUBTILE) {
                     int subtile = regions[reg].get_sub_tile();
 
                     to_loc.sub_tile = subtile;
-                    if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                    if (place_ctx.grid_blocks.block_at_location(to_loc) == EMPTY_BLOCK_ID) {
                         placed = try_place_macro(pl_macro, to_loc);
 
                         if (placed) {
@@ -674,7 +727,7 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
 
                             for (int st = st_low; st <= st_high && placed == false; st++) {
                                 to_loc.sub_tile = st;
-                                if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                                if (place_ctx.grid_blocks.block_at_location(to_loc) == EMPTY_BLOCK_ID) {
                                     placed = try_place_macro(pl_macro, to_loc);
                                     if (placed) {
                                         fix_IO_block_types(pl_macro, to_loc, pad_loc_type);
@@ -700,14 +753,14 @@ static bool try_dense_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logi
     int column_index = get_blk_type_first_loc(loc, pl_macro, blk_types_empty_locs_in_grid);
 
     //check if first available location is within the chip and macro's partition region, otherwise placement is not legal
-    if (!is_loc_on_chip(loc.x, loc.y) || !pr.is_loc_in_part_reg(loc)) {
+    if (!is_loc_on_chip({loc.x, loc.y, loc.layer}) || !pr.is_loc_in_part_reg(loc)) {
         return false;
     }
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    int width_offset = device_ctx.grid.get_width_offset(loc.x, loc.y);
-    int height_offset = device_ctx.grid.get_height_offset(loc.x, loc.y);
+    int width_offset = device_ctx.grid.get_width_offset({loc.x, loc.y, loc.layer});
+    int height_offset = device_ctx.grid.get_height_offset({loc.x, loc.y, loc.layer});
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 
@@ -730,7 +783,7 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
     bool macro_placed = false;
 
     // If that location is occupied, do nothing.
-    if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.sub_tile] != EMPTY_BLOCK_ID) {
+    if (place_ctx.grid_blocks.block_at_location(head_pos) != EMPTY_BLOCK_ID) {
         return (macro_placed);
     }
 
@@ -776,9 +829,15 @@ static bool place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
         pr = floorplanning_ctx.cluster_constraints[blk_id];
     } else { //If the block is not constrained, assign a region the size of the grid to its PartitionRegion
         Region reg;
-        reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-        reg.set_sub_tile(NO_SUBTILE);
-        pr.add_to_part_region(reg);
+        for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+            reg.set_region_rect({0,
+                                 0,
+                                 (int)device_ctx.grid.width() - 1,
+                                 (int)device_ctx.grid.height() - 1,
+                                 layer_num});
+            reg.set_sub_tile(NO_SUBTILE);
+            pr.add_to_part_region(reg);
+        }
     }
 
     //If blk_types_empty_locs_in_grid is not NULL, means that initial placement has been failed in first iteration for this block type
@@ -961,15 +1020,17 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
     /* We'll use the grid to record where everything goes. Initialize to the grid has no
      * blocks placed anywhere.
      */
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            const auto& type = device_ctx.grid.get_physical_type(i, j);
-            itype = type->index;
-            if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
-                place_ctx.grid_blocks[i][j].usage = 0;
-                for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                    if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
-                        place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID;
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                itype = type->index;
+                if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
+                    place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
+                    for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
+                        if (place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) != INVALID_BLOCK_ID) {
+                            place_ctx.grid_blocks.set_block_at_location({i, j, k, layer_num}, EMPTY_BLOCK_ID);
+                        }
                     }
                 }
             }
@@ -1044,7 +1105,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
     // route all the traffic flows in the NoC now that all the router cluster block have been placed  (this is done only if the noc optimization is enabled by the user)
     if (noc_enabled) {
-        initial_noc_placement();
+        initial_noc_routing();
     }
 
     //#ifdef VERBOSE

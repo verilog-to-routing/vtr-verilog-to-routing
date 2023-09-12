@@ -133,13 +133,15 @@ class t_annealing_state {
     float UPPER_RLIM;
     float FINAL_RLIM = 1.;
     float INVERSE_DELTA_RLIM;
+    int NUM_LAYERS = 1;
 
   public: //Constructor
     t_annealing_state(const t_annealing_sched& annealing_sched,
                       float first_t,
                       float first_rlim,
                       int first_move_lim,
-                      float first_crit_exponent);
+                      float first_crit_exponent,
+                      int num_layers);
 
   public: //Mutator
     bool outer_loop_update(float success_rate,
@@ -229,10 +231,13 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
 
 /// @brief check if a specified location is within the device grid
-inline bool is_loc_on_chip(int x, int y) {
-    auto& device_ctx = g_vpr_ctx.device();
+inline bool is_loc_on_chip(t_physical_tile_loc loc) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    int x = loc.x;
+    int y = loc.y;
+    int layer_num = loc.layer_num;
     //return false if the location is not within the chip
-    return (x >= 0 && x < int(device_ctx.grid.width()) && y >= 0 && y < int(device_ctx.grid.height()));
+    return (layer_num >= 0 && layer_num < int(grid.get_num_layers()) && x >= 0 && x < int(grid.width()) && y >= 0 && y < int(grid.height()));
 }
 
 /**

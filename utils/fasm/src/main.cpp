@@ -120,11 +120,7 @@ int main(int argc, const char **argv) {
                 (float) (entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 
         /* free data structures */
-        if(is_flat) {
-            vpr_free_all((const Netlist<>&) g_vpr_ctx.atom().nlist, Arch, vpr_setup);
-        } else {
-            vpr_free_all((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, Arch, vpr_setup);
-        }
+        vpr_free_all(Arch, vpr_setup);
 
 
     } catch (const tatum::Error& tatum_error) {

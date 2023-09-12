@@ -2101,9 +2101,9 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                              int rhs_num_instances = 0;
                              // Count number of instances for each type
                              for (auto type : lhs->equivalent_tiles)
-                                 lhs_num_instances += device_ctx.grid.num_instances(type);
+                                 lhs_num_instances += device_ctx.grid.num_instances(type, -1);
                              for (auto type : rhs->equivalent_tiles)
-                                 rhs_num_instances += device_ctx.grid.num_instances(type);
+                                 rhs_num_instances += device_ctx.grid.num_instances(type, -1);
 
                              float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], lhs_num_instances);
                              float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], rhs_num_instances);
@@ -2203,7 +2203,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
     // Check used type instances against the possible equivalent physical locations
     unsigned int num_instances = 0;
     for (auto equivalent_tile : block_type->equivalent_tiles) {
-        num_instances += device_ctx.grid.num_instances(equivalent_tile);
+        num_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
     }
 
     if (num_used_type_instances[block_type] > num_instances) {

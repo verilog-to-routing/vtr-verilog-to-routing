@@ -28,12 +28,24 @@ enum class e_move_type {
     CRIT_UNIFORM,
     FEASIBLE_REGION,
     NUMBER_OF_AUTO_MOVES,
-    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES
+    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
+    INVALID_MOVE
 };
 
 enum class e_create_move {
     VALID, //Move successful and legal
     ABORT, //Unable to perform move
+};
+
+/**
+ * @brief Stores KArmedBanditAgent propose_action output to decide which
+ *        move_type and which block_type should be chosen for the next action.
+ *        The propose_action function can also leave blk_type empty to allow any
+ *        random block type to be chosen to be swapped.
+ */
+struct t_propose_action {
+    e_move_type move_type = e_move_type::INVALID_MOVE; ///<move type that propose_action chooses to perform
+    int logical_blk_type_index = -1;                   ///<propose_action can choose block type or set it to -1 to allow any block type to be chosen
 };
 
 /**
@@ -73,7 +85,7 @@ struct t_range_limiters {
 };
 
 //Records a reasons for an aborted move
-void log_move_abort(std::string reason);
+void log_move_abort(const std::string& reason);
 
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
@@ -98,7 +110,49 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
 
 std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);
 
+/**
+ * @brief Propose block for the RL agent based on required block type.
+ *
+ *  @param logical_blk_type_index: Index of the block type being perturbed, which is used to select the proper agent data
+ *  @param highly_crit_block: block should be chosen from highly critical blocks.
+ *  @param net_from: if block is chosen from highly critical blocks, should store the critical net id.
+ *  @param pin_from: if block is chosen from highly critical blocks, should save its critical pin id.
+ *
+ * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
+ */
+ClusterBlockId propose_block_to_move(int& logical_blk_type_index, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+
+/**
+ * @brief Select a random block to be swapped with another block
+ * 
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ */
 ClusterBlockId pick_from_block();
+
+/**
+ * @brief Find a block with a specific block type to be swapped with another block
+ *
+ *  @param logical_blk_type_index: the agent type of the moving block.
+ * 
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ */
+ClusterBlockId pick_from_block(int logical_blk_type_index);
+
+/**
+ * @brief Select a random highly critical block to be swapped with another block
+ * 
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ */
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from);
+
+/**
+ * @brief Find a block with a specific block type to be swapped with another block
+ *
+ *  @param logical_blk_type_index: the agent type of the moving block.
+ * 
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ */
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, int logical_blk_type_index);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
@@ -150,7 +204,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from);
 
-std::string move_type_to_string(e_move_type);
+const std::string& move_type_to_string(e_move_type);
 
 /* find to loaction helper functions */
 /**
@@ -161,9 +215,11 @@ std::string move_type_to_string(e_move_type);
  * cy: the y coordinate of the compressed location
  * loc: the uncompressed output location (returned in reference)
  */
-void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t_pl_loc& loc);
+void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
+                            t_physical_tile_loc compressed_loc,
+                            t_pl_loc& to_loc);
 /**
- * @brief find compressed location in a compressed range for a specific type
+ * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
  * 
  * type: defines the moving block type
  * min_cx, max_cx: the minimum and maximum x coordinates of the range in the compressed grid
@@ -171,8 +227,77 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  * cx_from, cy_from: the x and y coordinates of the old location 
  * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
  * is_median: true if this is called from find_to_loc_median
+ * to_layer_num: the layer number of the new location (set by the caller)
  */
-bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
+bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
+                                             const int delta_cx,
+                                             const t_physical_tile_loc& from_loc,
+                                             t_bb search_range,
+                                             t_physical_tile_loc& to_loc,
+                                             bool is_median,
+                                             int to_layer_num);
+
+/**
+ * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
+ * @note This assumes the grid_loc corresponds to a location of the block type that compressed_block_grid stores its
+ * compressed location. Otherwise, it would raise an assertion error.
+ * @param compressed_block_grid The class that stores the compressed block grid of the block
+ * @param grid_loc The actual location of the block
+ * @param num_layers The number of layers (dice) of the FPGA
+ * @return Returns the compressed location of the block on each layer
+ */
+std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_grid& compressed_block_grid,
+                                                    t_pl_loc grid_loc,
+                                                    int num_layers);
+
+/**
+ * @brief Get the the compressed loc from the uncompressed loc (grid_loc). Return the nearest compressed location
+ * if grid_loc doesn't fall on a block of the type that compressed_block_grid stores its compressed location.
+ * @param compressed_block_grid
+ * @param grid_loc
+ * @param num_layers
+ * @return
+ */
+std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_block_grid& compressed_block_grid,
+                                                           t_pl_loc grid_loc,
+                                                           int num_layers);
+
+/**
+ * @brief This function calculates the search range around the compressed locs, based on the given rlim value and
+ * the number of rows/columns containing the same block type as the one that compressed_loc belongs to.
+ * If rlim is greater than the number of columns containing the block type on the right side of the compressed_loc,
+ * the search range from the right is limited by that number. Similar constraints apply to other sides as well. The
+ * function returns the final search range based on these conditions.
+ * @param compressed_block_grid
+ * @param compressed_locs
+ * @param rlim
+ * @param num_layers
+ * @return A compressed search range for each layer
+ */
+std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                                          const std::vector<t_physical_tile_loc>& compressed_locs,
+                                                          float rlim,
+                                                          int num_layers);
+
+/**
+ * @brief This function calculates the search range based on the given rlim value and the number of columns/rows
+ * containing the same resource type as the one specified in the compressed_block_grid.
+ * The search range is determined in a square shape, with from_compressed_loc as one of the corners and
+ * directed towards the target_compressed_loc. The function returns the final search range based on these conditions.
+ * @Note This function differs from get_compressed_grid_target_search_range as it doesn't have from_compressed_loc
+ * in the center of the search range.
+ * @param compressed_block_grid
+ * @param from_compressed_loc
+ * @param target_compressed_loc
+ * @param rlim
+ * @param num_layers
+ * @return
+ */
+std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                                           const std::vector<t_physical_tile_loc>& from_compressed_loc,
+                                                           const std::vector<t_physical_tile_loc>& target_compressed_loc,
+                                                           float rlim,
+                                                           int num_layers);
 
 /*
  * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords
@@ -188,8 +313,14 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
  * this routine is done for cpu time optimization, so we do not have to necessarily check each
  * complicated case to get correct functionality during place moves.
  *
+ * The intersection takes place in the layer (die) specified by layer_num.
+ *
  */
-bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type, ClusterBlockId b_from, int& min_cx, int& min_cy, int& max_cx, int& max_cy, int& delta_cx);
+bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
+                                                      ClusterBlockId b_from,
+                                                      t_bb& search_range,
+                                                      int& delta_cx,
+                                                      int layer_num);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
 

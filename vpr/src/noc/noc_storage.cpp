@@ -23,6 +23,10 @@ const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
     return link_storage;
 }
 
+vtr::vector<NocLinkId, NocLink>& NocStorage::get_mutable_noc_links(void) {
+    return link_storage;
+}
+
 int NocStorage::get_number_of_noc_links(void) const {
     return link_storage.size();
 }
@@ -58,7 +62,9 @@ NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
 
 NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location) const {
     // get the key to identify the corresponding hard router block at the provided grid location
-    int router_key = generate_router_key_from_grid_location(hard_router_location.x, hard_router_location.y);
+    int router_key = generate_router_key_from_grid_location(hard_router_location.x,
+                                                            hard_router_location.y,
+                                                            hard_router_location.layer);
 
     // get the hard router block id at the given grid location
     auto hard_router_block = grid_location_to_router_id.find(router_key);
@@ -70,15 +76,15 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
 
 // setters for the NoC
 
-void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
+void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y, int layer_position) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
-    router_storage.emplace_back(id, grid_position_x, grid_posistion_y);
+    router_storage.emplace_back(id, grid_position_x, grid_posistion_y, layer_position);
 
     /* Get the corresponding NocRouterId for the newly added router and
      * add it to the conversion table.
      * Since the router is added at the end of the list, the id is equivalent to the last element index.
-     * We build the conversion table here as it gurantees only unique routers
+     * We build the conversion table here as it guarantees only unique routers
      * in the NoC are added.
      */
     NocRouterId converted_id((int)(router_storage.size() - 1));
@@ -86,7 +92,7 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
 
     /* need to associate the current router with its grid position */
     // get the key to identify the current router
-    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y);
+    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y, layer_position);
     grid_location_to_router_id.insert(std::pair<int, NocRouterId>(router_key, converted_id));
 
     return;
@@ -123,16 +129,22 @@ void NocStorage::set_device_grid_width(int grid_width) {
     return;
 }
 
+void NocStorage::set_device_grid_spec(int grid_width, int grid_height) {
+    device_grid_width = grid_width;
+    num_layer_blocks = grid_width * grid_height;
+    return;
+}
+
 bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_id) {
     // This status variable is used to report externally whether the link was removed or not
     bool link_removed_status = false;
 
-    // check if the src router for the link to remove exists (within the id ranges). Otherwise there is no point looking for the link
+    // check if the src router for the link to remove exists (within the id ranges). Otherwise, there is no point looking for the link
     if ((size_t)src_router_id < router_storage.size()) {
         // get all the outgoing links of the provided sourcer router
         std::vector<NocLinkId>* source_router_outgoing_links = &router_link_list[src_router_id];
 
-        // keeps track of the position of each outgoing link for the provided src router. When the id of the link to remove is found, this index can be used to remove it from the ougoing link vector.
+        // keeps track of the position of each outgoing link for the provided src router. When the id of the link to remove is found, this index can be used to remove it from the outgoing link vector.
         int outgoing_link_index = 0;
 
         // go through each outgoing link of the source router and see if there is a link that also has the corresponding sink router.
@@ -140,7 +152,7 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
         for (auto outgoing_link_id = source_router_outgoing_links->begin(); outgoing_link_id != source_router_outgoing_links->end(); outgoing_link_id++) {
             // check to see if the current link id matches the id of the link to remove
             if (link_storage[*outgoing_link_id].get_sink_router() == sink_router_id) {
-                // found the link we need to remove so we delete it here
+                // found the link we need to remove, so we delete it here
                 //change the link to be invalid
                 link_storage[*outgoing_link_id].set_source_router(NocRouterId::INVALID());
                 link_storage[*outgoing_link_id].set_sink_router(NocRouterId::INVALID());
@@ -211,9 +223,9 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     NocLinkId parallel_link = INVALID_LINK_ID;
 
     // go through the links of the sink router and the link that has the current source router as the sink router of the link is the parallel link we are looking for
-    for (auto link = sink_router_links->begin(); link != sink_router_links->end(); link++) {
-        if (link_storage[*link].get_sink_router() == curr_source_router) {
-            parallel_link = *link;
+    for (auto sink_router_link : *sink_router_links) {
+        if (link_storage[sink_router_link].get_sink_router() == curr_source_router) {
+            parallel_link = sink_router_link;
             break;
         }
     }
@@ -221,9 +233,9 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     return parallel_link;
 }
 
-int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const {
+int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y, int layer_position) const {
     // calculate the key value
-    return (device_grid_width * grid_position_y + grid_position_x);
+    return (num_layer_blocks * layer_position + device_grid_width * grid_position_y + grid_position_x);
 }
 
 void NocStorage::echo_noc(char* file_name) const {
@@ -252,17 +264,17 @@ void NocStorage::echo_noc(char* file_name) const {
     fprintf(fp, "\n");
 
     // go through each router and print its information
-    for (auto router = router_storage.begin(); router != router_storage.end(); router++) {
-        fprintf(fp, "Router %d:\n", router->get_router_user_id());
+    for (const auto& router : router_storage) {
+        fprintf(fp, "Router %d:\n", router.get_router_user_id());
         // if the router tile is larger than a single grid, the position represents the bottom left corner of the tile
-        fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router->get_router_grid_position_x(), router->get_router_grid_position_y());
+        fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router.get_router_grid_position_x(), router.get_router_grid_position_y());
         fprintf(fp, "Router Connections ->");
 
-        auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router->get_router_user_id()));
+        auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router.get_router_user_id()));
 
         // go through the outgoing links of the current router and print the connecting router
-        for (auto link_id = router_connections.begin(); link_id != router_connections.end(); link_id++) {
-            const NocRouterId connecting_router_id = get_single_noc_link(*link_id).get_sink_router();
+        for (auto router_connection : router_connections) {
+            const NocRouterId connecting_router_id = get_single_noc_link(router_connection).get_sink_router();
 
             fprintf(fp, " %d", get_single_noc_router(connecting_router_id).get_router_user_id());
         }

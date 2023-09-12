@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
-# Input file: /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
-# md5sum of input file: cd57d47fc9dfa62c7030397ca759217e
+# Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
 
-@0xe4650d345d47589d;
+@0xf7009c96d0510b05;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -151,9 +151,10 @@ struct BlockTypes {
 struct GridLoc {
 	blockTypeId @0 :Int32;
 	heightOffset @1 :Int32;
-	widthOffset @2 :Int32;
-	x @3 :Int32;
-	y @4 :Int32;
+	layer @2 :Int32 = 0;
+	widthOffset @3 :Int32;
+	x @4 :Int32;
+	y @5 :Int32;
 }
 
 struct GridLocs {
@@ -161,12 +162,14 @@ struct GridLocs {
 }
 
 struct NodeLoc {
-	ptc @0 :Int32;
-	side @1 :LocSide;
-	xhigh @2 :Int32;
-	xlow @3 :Int32;
-	yhigh @4 :Int32;
-	ylow @5 :Int32;
+	layer @0 :Int32 = 0;
+	ptc @1 :Int32;
+	side @2 :LocSide;
+	twist @3 :Int32;
+	xhigh @4 :Int32;
+	xlow @5 :Int32;
+	yhigh @6 :Int32;
+	ylow @7 :Int32;
 }
 
 struct NodeTiming {

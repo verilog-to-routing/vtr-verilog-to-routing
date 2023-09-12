@@ -16,48 +16,42 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
                        ParentNetId net_id,
                        int bb_factor);
 
-void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_sub);
-
-void pathfinder_update_single_node_occupancy(int inode, int add_or_sub);
+void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub);
 
 void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& overuse_info);
 
+/** Update pathfinder cost of all nodes under root (including root) */
+void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_or_sub);
+
 float update_pres_fac(float new_pres_fac);
 
-/* Pass in the hptr starting at a SINK with target_net_pin_index, which is the net pin index corresonding *
- * to the sink (ranging from 1 to fanout). Returns a pointer to the first "new" node in the traceback     *
- * (node not previously in trace).                                                                        */
-t_trace* update_traceback(t_heap* hptr,
-                          int target_net_pin_index,
-                          ParentNetId net_id);
+void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes);
 
-void reset_path_costs(const std::vector<int>& visited_rr_nodes);
-
-float get_rr_cong_cost(int inode, float pres_fac);
+float get_rr_cong_cost(RRNodeId inode, float pres_fac);
 
 /* Returns the base cost of using this rr_node */
-inline float get_single_rr_cong_base_cost(int inode) {
+inline float get_single_rr_cong_base_cost(RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto cost_index = device_ctx.rr_graph.node_cost_index(RRNodeId(inode));
+    auto cost_index = device_ctx.rr_graph.node_cost_index(inode);
 
     return device_ctx.rr_indexed_data[cost_index].base_cost;
 }
 
 /* Returns the accumulated congestion cost of using this rr_node */
-inline float get_single_rr_cong_acc_cost(int inode) {
+inline float get_single_rr_cong_acc_cost(RRNodeId inode) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     return route_ctx.rr_node_route_inf[inode].acc_cost;
 }
 
 /* Returns the present congestion cost of using this rr_node */
-inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
+inline float get_single_rr_cong_pres_cost(RRNodeId inode, float pres_fac) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     int occ = route_ctx.rr_node_route_inf[inode].occ();
-    int capacity = rr_graph.node_capacity(RRNodeId(inode));
+    int capacity = rr_graph.node_capacity(inode);
 
     if (occ >= capacity) {
         return (1. + pres_fac * (occ + 1 - capacity));
@@ -68,13 +62,13 @@ inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
 
 /* Returns the congestion cost of using this rr_node,
  * *ignoring* non-configurable edges */
-inline float get_single_rr_cong_cost(int inode, float pres_fac) {
+inline float get_single_rr_cong_cost(RRNodeId inode, float pres_fac) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     float pres_cost;
-    int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(RRNodeId(inode));
+    int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(inode);
 
     if (overuse >= 0) {
         pres_cost = (1. + pres_fac * (overuse + 1));
@@ -82,7 +76,7 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
         pres_cost = 1.;
     }
 
-    auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
+    auto cost_index = rr_graph.node_cost_index(inode);
 
     float cost = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost * pres_cost;
 
@@ -95,15 +89,9 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
 
 void mark_ends(const Netlist<>& net_list, ParentNetId net_id);
 
-void mark_remaining_ends(ParentNetId net_id, const std::vector<int>& remaining_sinks);
+void mark_remaining_ends(ParentNetId net_id);
 
-void free_traceback(ParentNetId net_id);
-
-void drop_traceback_tail(ParentNetId net_id);
-
-void free_traceback(t_trace* tptr);
-
-void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
+void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf);
 
 void init_route_structs(const Netlist<>& net_list,
                         int bb_factor,
@@ -114,26 +102,13 @@ void alloc_and_load_rr_node_route_structs();
 
 void reset_rr_node_route_structs();
 
-void free_trace_structs(const Netlist<>& net_list);
-
 void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
-
-void free_chunk_memory_trace();
-
-bool validate_traceback(t_trace* trace);
-void print_traceback(ParentNetId net_id);
-void print_traceback(const t_trace* trace);
 
 void print_rr_node_route_inf();
 void print_rr_node_route_inf_dot();
 void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat);
 
-t_trace* alloc_trace_data();
-void free_trace_data(t_trace* trace);
-
-bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
-
-std::string describe_unrouteable_connection(const int source_node, const int sink_node, bool is_flat);
+std::string describe_unrouteable_connection(RRNodeId source_node, RRNodeId sink_node, bool is_flat);
 
 /* If flat_routing isn't enabled, this function would simply pass from_node and to_node to the router_lookahead.
  * However, if flat_routing is enabled, we can not do the same. For the time being, router lookahead is not aware
@@ -152,9 +127,7 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
  * given is lower than the current path_cost to this channel segment.  The  *
  * index of its predecessor is stored to make traceback easy.  The index of *
  * the edge used to get from its predecessor to it is also stored to make   *
- * timing analysis, etc.  The backward_path_cost and R_upstream values are  *
- * used only by the timing-driven router -- the breadth-first router        *
- * ignores them.                                                            *
+ * timing analysis, etc.                                                    *
  *                                                                          *
  * Returns t_heap suitable for adding to heap or nullptr if node is more    *
  * expensive than previously explored path.                                 */
@@ -162,9 +135,9 @@ template<typename T, typename RouteInf>
 t_heap* prepare_to_add_node_to_heap(
     T* heap,
     const RouteInf& rr_node_route_inf,
-    int inode,
+    RRNodeId inode,
     float total_cost,
-    int prev_node,
+    RRNodeId prev_node,
     RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
@@ -187,9 +160,9 @@ template<typename T, typename RouteInf>
 void add_node_to_heap(
     T* heap,
     const RouteInf& rr_node_route_inf,
-    int inode,
+    RRNodeId inode,
     float total_cost,
-    int prev_node,
+    RRNodeId prev_node,
     RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
@@ -209,9 +182,9 @@ template<typename T, typename RouteInf>
 void push_back_node(
     T* heap,
     const RouteInf& rr_node_route_inf,
-    int inode,
+    RRNodeId inode,
     float total_cost,
-    int prev_node,
+    RRNodeId prev_node,
     RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
@@ -230,7 +203,7 @@ void push_back_node(
 template<typename T>
 void push_back_node_with_info(
     T* heap,
-    int inode,
+    RRNodeId inode,
     float total_cost,
     float backward_path_cost,
     float R_upstream,
