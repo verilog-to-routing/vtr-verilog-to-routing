@@ -7,7 +7,7 @@ NegativeFirstRouting::NegativeFirstRouting(const NocStorage& noc_model, const st
 
 NegativeFirstRouting::~NegativeFirstRouting() = default;
 
-const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_directions(NocRouterId src_router_id,
+const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_directions(NocRouterId /*src_router_id*/,
                                                                                            NocRouterId curr_router_id,
                                                                                            NocRouterId dst_router_id) {
     // get current and destination NoC routers

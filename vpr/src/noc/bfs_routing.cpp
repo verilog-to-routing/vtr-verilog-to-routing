@@ -10,7 +10,7 @@ BFSRouting::~BFSRouting() = default;
 
 bool BFSRouting::route_flow(NocRouterId src_router_id,
                             NocRouterId sink_router_id,
-                            NocTrafficFlowId traffic_flow_id,
+                            NocTrafficFlowId /*traffic_flow_id*/,
                             std::vector<NocLinkId>& flow_route) {
     const NocRouter& src_router = noc_model_.get_single_noc_router(src_router_id);
     const NocRouter& sink_router = noc_model_.get_single_noc_router(sink_router_id);

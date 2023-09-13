@@ -7,7 +7,7 @@ NorthLastRouting::NorthLastRouting(const NocStorage& noc_model, const std::optio
     : TurnModelRouting(noc_model, noc_virtual_blocks) {
 }
 
-const std::vector<TurnModelRouting::Direction>& NorthLastRouting::get_legal_directions(NocRouterId src_router_id,
+const std::vector<TurnModelRouting::Direction>& NorthLastRouting::get_legal_directions(NocRouterId /*src_router_id*/,
                                                                                        NocRouterId curr_router_id,
                                                                                        NocRouterId dst_router_id) {
     // get current and destination NoC routers

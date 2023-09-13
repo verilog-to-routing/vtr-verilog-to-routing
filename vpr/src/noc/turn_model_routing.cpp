@@ -36,10 +36,6 @@ bool TurnModelRouting::route_flow(NocRouterId src_router_id,
     // ensure that the route container is empty
     flow_route.clear();
 
-    // get source and destination NoC routers
-    const auto& src_router = noc_model_.get_single_noc_router(src_router_id);
-    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
-
     // the last router added to the path, initialized with the source id
     NocRouterId curr_router_id = src_router_id;
     NocRouterId intermediate_dst_router_id;
@@ -48,14 +44,10 @@ bool TurnModelRouting::route_flow(NocRouterId src_router_id,
     if (noc_virtual_blocks_) {
         const auto& virt_block = noc_virtual_blocks_->get().get_middleman_block(traffic_flow_id);
         const auto mapped_noc_router_id = virt_block.get_mapped_noc_router_id();
-        virt_noc_router = noc_model_.get_single_noc_router(mapped_noc_router_id);
         intermediate_dst_router_id = mapped_noc_router_id;
     } else {
         intermediate_dst_router_id = dst_router_id;
     }
-
-    // get the physical location of the destination router
-    const auto dst_loc = dst_router.get_router_physical_location();
 
     /**
      * Keeps track of which routers have been reached already
