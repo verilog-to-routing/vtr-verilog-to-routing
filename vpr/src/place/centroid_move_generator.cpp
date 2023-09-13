@@ -12,7 +12,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   false,
                                                   nullptr,
                                                   nullptr);
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Centroid Move Choose Block %d\n", size_t(b_from));
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Centroid Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
         return e_create_move::ABORT;
