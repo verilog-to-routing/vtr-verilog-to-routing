@@ -34,7 +34,7 @@
 #include "noc_routing.h"
 
 //Flag to enable multithreading code for iterative packing (IIP)
-#define PACK_MULTITHREADED
+//#define PACK_MULTITHREADED
 
 class SetupTimingInfo;
 /**

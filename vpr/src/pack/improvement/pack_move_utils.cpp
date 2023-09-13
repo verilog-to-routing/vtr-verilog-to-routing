@@ -397,8 +397,9 @@ int update_cutsize_after_move(const std::vector<molMoveDescription>& new_locs,
 
 t_pack_molecule* pick_molecule_randomly() {
     auto& atom_ctx = g_vpr_ctx.atom();
+#ifdef PACK_MULTITHREADED
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
-
+#endif
     bool molecule_picked = false;
     t_pack_molecule* molecule;
 
@@ -408,24 +409,29 @@ t_pack_molecule* pick_molecule_randomly() {
         ClusterBlockId clb_index = atom_to_cluster(random_atom);
         if (!clb_index)
             continue;
+#ifdef PACK_MULTITHREADED
         if (packing_multithreading_ctx.mu[clb_index]->try_lock()) {
+#endif
             auto rng = atom_ctx.atom_molecules.equal_range(random_atom);
             for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 molecule = kv.second;
                 molecule_picked = true;
                 break;
             }
+#ifdef PACK_MULTITHREADED
         } else {
             continue; //CLB is already in-flight
         }
+#endif
     }
     return molecule;
 }
 
 bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
     auto& atom_ctx = g_vpr_ctx.atom();
+#ifdef PACK_MULTITHREADED
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
-
+#endif
     std::vector<ClusterBlockId> connected_blocks;
     calculate_connected_clbs_to_moving_mol(mol_1, connected_blocks);
     if (connected_blocks.empty())
@@ -438,9 +444,13 @@ bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
     while (clb2_not_found && iteration < 20) {
         int rand_num = vtr::irand((int)connected_blocks.size() - 1);
         clb_index_2 = connected_blocks[rand_num];
+#ifdef PACK_MULTITHREADED
         if (packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
+#endif
             clb2_not_found = false;
+#ifdef PACK_MULTITHREADED
         }
+#endif
         iteration++;
     }
 
@@ -459,14 +469,17 @@ bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
         mol_2 = kv.second;
         return true;
     }
-
+#ifdef PACK_MULTITHREADED
     packing_multithreading_ctx.mu[clb_index_2]->unlock();
+#endif
     return false;
 }
 
 bool pick_molecule_connected_compatible_type(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
     auto& atom_ctx = g_vpr_ctx.atom();
+#ifdef PACK_MULTITHREADED
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+#endif
 
     std::vector<ClusterBlockId> connected_blocks;
     calculate_connected_clbs_to_moving_mol(mol_1, connected_blocks);
@@ -479,9 +492,13 @@ bool pick_molecule_connected_compatible_type(t_pack_molecule* mol_1, t_pack_mole
     int iteration = 0;
     while (clb2_not_found && iteration < 10) {
         clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
+#ifdef PACK_MULTITHREADED
         if (packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
+#endif
             clb2_not_found = false;
+#ifdef PACK_MULTITHREADED
         }
+#endif
         iteration++;
     }
 
@@ -507,14 +524,17 @@ bool pick_molecule_connected_compatible_type(t_pack_molecule* mol_1, t_pack_mole
                 iteration++;
         }
     } while (iteration < 20);
-
+#ifdef PACK_MULTITHREADED
     packing_multithreading_ctx.mu[clb_index_2]->unlock();
+#endif
     return false;
 }
 
 bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
     auto& atom_ctx = g_vpr_ctx.atom();
+#ifdef PACK_MULTITHREADED
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+#endif
 
     std::vector<ClusterBlockId> connected_blocks;
     calculate_connected_clbs_to_moving_mol(mol_1, connected_blocks);
@@ -527,9 +547,13 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
     int iteration = 0;
     while (clb2_not_found && iteration < 10) {
         clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
+#ifdef PACK_MULTITHREADED
         if (packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
+#endif
             clb2_not_found = false;
+#ifdef PACK_MULTITHREADED
         }
+#endif
         iteration++;
     }
 
@@ -558,13 +582,17 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
             }
         }
     } while (iteration < 10);
+#ifdef PACK_MULTITHREADED
     packing_multithreading_ctx.mu[clb_index_2]->unlock();
+#endif
     return false;
 }
 
 bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
     auto& atom_ctx = g_vpr_ctx.atom();
+#ifdef PACK_MULTITHREADED
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+#endif
 
     std::vector<ClusterBlockId> connected_blocks;
     calculate_connected_clbs_to_moving_mol(mol_1, connected_blocks);
@@ -579,9 +607,13 @@ bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*&
     int iteration = 0;
     while (clb2_not_found && iteration < 10) {
         clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
+#ifdef PACK_MULTITHREADED
         if (packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
+#endif
             clb2_not_found = false;
+#ifdef PACK_MULTITHREADED
         }
+#endif
         ++iteration;
     }
 
@@ -605,8 +637,9 @@ bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*&
                 iteration++;
         }
     } while (iteration < 20);
-
+#ifdef PACK_MULTITHREADED
     packing_multithreading_ctx.mu[clb_index_2]->unlock();
+#endif
     return false;
 }
 

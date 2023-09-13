@@ -17,9 +17,13 @@
 #include <thread>
 void printProgressBar(double progress);
 void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats);
+
+#ifdef PACK_MULTITHREADED
 void init_multithreading_locks();
 void free_multithreading_locks();
+#endif
 
+#ifdef PACK_MULTITHREADED
 void init_multithreading_locks() {
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
     auto& helper_ctx = g_vpr_ctx.cl_helper();
@@ -29,13 +33,16 @@ void init_multithreading_locks() {
         m = new std::mutex;
     }
 }
+#endif
 
+#ifdef PACK_MULTITHREADED
 void free_multithreading_locks() {
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
     for (auto& m : packing_multithreading_ctx.mu) {
         delete m;
     }
 }
+#endif
 
 void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_data& clustering_data, int) {
     /*
@@ -59,8 +66,9 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
     const int num_threads = packer_opts.pack_num_threads;
     unsigned int moves_per_thread = total_num_moves / num_threads;
     std::thread* my_threads = new std::thread[num_threads];
-
+#ifdef PACK_MULTITHREADED
     init_multithreading_locks();
+#endif
 
     for (int i = 0; i < (num_threads - 1); i++) {
         my_threads[i] = std::thread(try_n_packing_moves, i, moves_per_thread, packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
@@ -77,11 +85,16 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
             pack_stats.legal_moves);
 
     delete[] my_threads;
+#ifdef PACK_MULTITHREADED
     free_multithreading_locks();
+#endif
 }
 
 void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats) {
+#ifdef PACK_MULTITHREADED
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+#endif
+
 
     bool is_proposed, is_valid, is_successful;
     std::vector<molMoveDescription> new_locs;
@@ -178,8 +191,10 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
         }
         is_valid = move_generator->evaluate_move(new_locs);
         if (!is_valid) {
+#ifdef PACK_MULTITHREADED
             packing_multithreading_ctx.mu[new_locs[0].new_clb]->unlock();
             packing_multithreading_ctx.mu[new_locs[1].new_clb]->unlock();
+#endif
             continue;
         } else {
             num_good_moves++;
@@ -188,9 +203,10 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
         is_successful = move_generator->apply_move(new_locs, clustering_data, thread_num);
         if (is_successful)
             num_legal_moves++;
-
+#ifdef PACK_MULTITHREADED
         packing_multithreading_ctx.mu[new_locs[0].new_clb]->unlock();
         packing_multithreading_ctx.mu[new_locs[1].new_clb]->unlock();
+#endif
     }
 
     pack_stats.mu.lock();
