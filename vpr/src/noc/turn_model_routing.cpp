@@ -45,6 +45,9 @@ bool TurnModelRouting::route_flow(NocRouterId src_router_id,
         const auto& virt_block = noc_virtual_blocks_->get().get_middleman_block(traffic_flow_id);
         const auto mapped_noc_router_id = virt_block.get_mapped_noc_router_id();
         intermediate_dst_router_id = mapped_noc_router_id;
+        if (!routability_early_check(src_router_id, mapped_noc_router_id, dst_router_id)) {
+            return false;
+        }
     } else {
         intermediate_dst_router_id = dst_router_id;
     }
@@ -68,12 +71,12 @@ bool TurnModelRouting::route_flow(NocRouterId src_router_id,
             auto curr_router_pos = curr_router.get_router_physical_location();
 
             // get all directions that moves us closer to the destination router
-            const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id);
+            const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, intermediate_dst_router_id);
 
             // select the next direction from the available options
             auto next_step_direction = select_next_direction(legal_directions,
                                                              src_router_id,
-                                                             dst_router_id,
+                                                             intermediate_dst_router_id,
                                                              curr_router_id,
                                                              traffic_flow_id);
 
@@ -194,7 +197,6 @@ uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t
     uint32_t h = seed;
 
     for (uint32_t k : key) {
-
         h ^= murmur_32_scramble(k);
         h = (h << 13) | (h >> 19);
         h = h * 5 + 0xe6546b64;
