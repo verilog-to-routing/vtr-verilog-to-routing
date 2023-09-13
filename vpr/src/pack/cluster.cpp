@@ -130,7 +130,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     const int verbosity = packer_opts.pack_verbosity;
 
     int unclustered_list_head_size;
-    //std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
 
     cluster_stats.num_molecules_processed = 0;
     cluster_stats.mols_since_last_print = 0;
@@ -154,7 +153,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     helper_ctx.timing_driven = packer_opts.timing_driven;
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
-    //std::shared_ptr<SetupTimingInfo> timing_info;
 
     // this data structure tracks the number of Logic Elements (LEs) used. It is
     // populated only for architectures which has LEs. The architecture is assumed

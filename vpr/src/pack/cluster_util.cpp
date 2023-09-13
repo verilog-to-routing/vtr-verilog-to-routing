@@ -1088,7 +1088,7 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                     VTR_ASSERT(block_pack_status == BLK_PASSED);
                     if (molecule->is_chain()) {
                         /* Chained molecules often take up lots of area and are important,
-                         * -                        * if a chain is packed in, want to rename logic block to match chain name */
+                         * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
                         cur_pb = atom_ctx.lookup.atom_pb(chain_root_blk_id)->parent_pb;
                         /* // Elgammal debugging
@@ -1698,6 +1698,10 @@ void store_cluster_info_and_free(const t_packer_opts& packer_opts,
 
     //print clustering progress incrementally
     //print_pack_status(num_clb, num_molecules, num_molecules_processed, mols_since_last_print, device_ctx.grid.width(), device_ctx.grid.height());
+
+    // If no more iterative improvements to be run after the initial packing, clear the date for the packed cluster now
+    if(packer_opts.pack_num_moves == 0)
+        free_pb_stats_recursive(cur_pb);
 }
 
 /* Free up data structures and requeue used molecules */

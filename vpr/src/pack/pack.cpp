@@ -373,8 +373,10 @@ bool try_pack(t_packer_opts* packer_opts,
     }
     */
 
-    for (auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
-        free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(blk_id));
+    if(packer_opts->pack_num_moves != 0) {
+        for (auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
+            free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(blk_id));
+        }
     }
     /******************** End **************************/
 

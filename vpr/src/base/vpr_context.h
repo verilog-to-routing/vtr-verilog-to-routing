@@ -33,6 +33,9 @@
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
 
+//Flag to enable multithreading code for iterative packing (IIP)
+#define PACK_MULTITHREADED
+
 class SetupTimingInfo;
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -626,8 +629,10 @@ class VprContext : public Context {
     const NocContext& noc() const { return noc_; }
     NocContext& mutable_noc() { return noc_; }
 
+#ifdef PACK_MULTITHREADED
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
+#endif
 
   private:
     DeviceContext device_;
@@ -645,7 +650,9 @@ class VprContext : public Context {
     FloorplanningContext constraints_;
     NocContext noc_;
 
+#ifdef PACK_MULTITHREADED
     PackingMultithreadingContext packing_multithreading_;
+#endif
 };
 
 #endif
