@@ -99,3 +99,43 @@ TurnModelRouting::Direction NorthLastRouting::select_next_direction(const std::v
 
     return selected_direction;
 }
+
+bool NorthLastRouting::routability_early_check(NocRouterId src_router_id, NocRouterId virt_router_id, NocRouterId dst_router_id) {
+    // if virtual blocks are not enabled, each (src, dst) pair are routable
+    if (!noc_virtual_blocks_) {
+        return true;
+    }
+
+    // get source, virtual and destination NoC routers
+    const auto& src_router = noc_model_.get_single_noc_router(src_router_id);
+    const auto& virt_router = noc_model_.get_single_noc_router(virt_router_id);
+    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
+
+    // get source, virtual, and destination router locations
+    const auto src_router_pos = src_router.get_router_physical_location();
+    const auto virt_router_pos = virt_router.get_router_physical_location();
+    const auto dst_router_pos = dst_router.get_router_physical_location();
+
+    /* As the name implies, in north-last algorithm, north direction, if taken,
+     * is the last direction to be chosen. No turns are allowed after moving in
+     * north direction. If the virtual block is located at the north of the source,
+     * we need to take north as the last direction. Since we aren't allowed to
+     * change direction afterward, the destination router should be in the
+     * same column as the virtual block and to its north for a route to exist.
+     */
+    if (virt_router_pos.y > src_router_pos.y) {
+        // the destination router is in the same column as the virtual block and to its north
+        if (dst_router_pos.x == virt_router_pos.x && dst_router_pos.y >= virt_router_pos.y) {
+            return true;
+        } else { // we need to turn after taking north direction, which is forbidden
+            return false;
+        }
+    }
+
+    /* Reaching this point means that the virtual block is either at the same row
+     * as the source or to its south. In both cases, we don't need to move towards
+     * north to reach the virtual block. Therefore, the virt-->dst route can take
+     * a turn towards as the last turn.
+     */
+    return true;
+}

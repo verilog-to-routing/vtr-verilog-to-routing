@@ -63,6 +63,8 @@ class TurnModelRouting : public NocRouting {
                                                               NocTrafficFlowId traffic_flow_id)
         = 0;
 
+    virtual bool routability_early_check(NocRouterId src_router_id, NocRouterId virt_router_id, NocRouterId dst_router_id) = 0;
+
   protected:
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector
     // each time it is called

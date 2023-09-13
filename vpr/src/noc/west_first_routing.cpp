@@ -96,3 +96,52 @@ TurnModelRouting::Direction WestFirstRouting::select_next_direction(const std::v
 
     return selected_direction;
 }
+
+bool WestFirstRouting::routability_early_check(NocRouterId src_router_id, NocRouterId virt_router_id, NocRouterId dst_router_id) {
+    // if virtual blocks are not enabled, each (src, dst) pair are routable
+    if (!noc_virtual_blocks_) {
+        return true;
+    }
+
+    // get source, virtual and destination NoC routers
+    const auto& src_router = noc_model_.get_single_noc_router(src_router_id);
+    const auto& virt_router = noc_model_.get_single_noc_router(virt_router_id);
+    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
+
+    // get source, virtual, and destination router locations
+    const auto src_router_pos = src_router.get_router_physical_location();
+    const auto virt_router_pos = virt_router.get_router_physical_location();
+    const auto dst_router_pos = dst_router.get_router_physical_location();
+
+    /*
+     * In the west-first algorithm, if the virtual block is to the west
+     * of the source router, we must move westward until we reach the
+     * same column as the virtual block. If the destination is to the
+     * west of the virtual block, we need to move westward again.
+     * However, we need to ensure that reaching the virtual block
+     * didn't require moving south or north, meaning the virtual block
+     * was at the same row as the source router.
+     */
+
+    if (virt_router_pos.x < src_router_pos.x) { // virtual block is to the west of the source router
+        if (dst_router_pos.x < virt_router_pos.x) { // destination is to the west of the virtual block
+            if (virt_router_pos.y == src_router_pos.y) { // we haven't taken any directions other than west
+                return true;
+            } else { // we needed to take north/south to reach the virtual block
+                return false;
+            }
+        }
+    } else if (virt_router_pos != src_router_pos) {
+        // virtual block is neither to the west of source nor at the same location
+        // therefore we don't move westward to reach the virtual block
+        // since west is not the first direction to be taken, it is not allowed to
+        // be selected after reaching the virtual block
+
+        // we need to move westward but it is not the first direction to be chosen
+        if (dst_router_pos.x < virt_router_pos.x) {
+            return false;
+        }
+    }
+
+    return true;
+}

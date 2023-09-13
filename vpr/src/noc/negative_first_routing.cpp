@@ -110,3 +110,38 @@ TurnModelRouting::Direction NegativeFirstRouting::select_next_direction(const st
 
     return selected_direction;
 }
+
+bool NegativeFirstRouting::routability_early_check(NocRouterId src_router_id, NocRouterId virt_router_id, NocRouterId dst_router_id) {
+    // if virtual blocks are not enabled, each (src, dst) pair are routable
+    if (!noc_virtual_blocks_) {
+        return true;
+    }
+
+    // get source, virtual and destination NoC routers
+    const auto& src_router = noc_model_.get_single_noc_router(src_router_id);
+    const auto& virt_router = noc_model_.get_single_noc_router(virt_router_id);
+    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
+
+    // get source, virtual, and destination router locations
+    const auto src_router_pos = src_router.get_router_physical_location();
+    const auto virt_router_pos = virt_router.get_router_physical_location();
+    const auto dst_router_pos = dst_router.get_router_physical_location();
+
+    /*
+     * In the negative-first algorithm, we are not allowed to move south or west after
+     * moving into north or east direction. We first check if reaching to the virtual
+     * block using a minimal route requires moving to positive directions. If this is
+     * the case, we shouldn't move to negative direction to reach the destination from
+     * the virtual block.
+     */
+
+    // at least one positive direction is taken to arrive at the virtual block
+    if (virt_router_pos.x > src_router_pos.x || virt_router_pos.y > src_router_pos.y) {
+        // at least one negative direction is taken to reach destination from the virtual block
+        if (dst_router_pos.x < virt_router_pos.x || dst_router_pos.y < virt_router_pos.y) {
+            return false;
+        }
+    }
+
+    return true;
+}

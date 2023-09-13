@@ -20,6 +20,8 @@ class OddEvenRouting : public TurnModelRouting{
                                                       NocRouterId curr_router_id,
                                                       NocTrafficFlowId traffic_flow_id) override;
 
+    bool routability_early_check(NocRouterId src_router_id, NocRouterId virt_router_id, NocRouterId dst_router_id) override;
+
     static inline bool is_odd(int number);
     static inline bool is_even(int number);
 };

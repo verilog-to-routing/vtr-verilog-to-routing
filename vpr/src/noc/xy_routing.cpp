@@ -85,3 +85,14 @@ TurnModelRouting::Direction XYRouting::select_next_direction(const std::vector<T
 
     return TurnModelRouting::Direction::INVALID;
 }
+
+bool XYRouting::routability_early_check(NocRouterId /*src_router_id*/, NocRouterId /*virt_router_id*/, NocRouterId /*dst_router_id*/) {
+    // if virtual blocks are not enabled, each (src, dst) pair are routable
+    if (!noc_virtual_blocks_) {
+        return true;
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "XY-routing algorithm does not offer any path diversity."
+                        "It should not be used with virtual Noc Blocks.");
+    }
+}

@@ -140,6 +140,10 @@ TurnModelRouting::Direction OddEvenRouting::select_next_direction(const std::vec
     return selected_direction;
 }
 
+bool OddEvenRouting::routability_early_check(NocRouterId /*src_router_id*/, NocRouterId /*virt_router_id*/, NocRouterId /*dst_router_id*/) {
+    return true;
+}
+
 bool OddEvenRouting::is_odd(int number) {
     return (number % 2) == 1;
 }

@@ -19,6 +19,8 @@ class NegativeFirstRouting : public TurnModelRouting {
                                                       NocRouterId dst_router_id,
                                                       NocRouterId curr_router_id,
                                                       NocTrafficFlowId traffic_flow_id) override;
+
+    bool routability_early_check(NocRouterId src_router_id, NocRouterId virt_router_id, NocRouterId dst_router_id) override;
 };
 
 #endif //VTR_NEGATIVE_FIRST_ROUTING_H
