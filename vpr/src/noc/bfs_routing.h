@@ -26,6 +26,8 @@
 
 class BFSRouting : public NocRouting {
   public:
+    BFSRouting(const NocStorage& noc_model,
+               const std::optional<std::reference_wrapper<const NocVirtualBlockStorage>>& noc_virtual_blocks);
     ~BFSRouting() override;
 
     /**
@@ -54,9 +56,7 @@ class BFSRouting : public NocRouting {
     void route_flow(NocRouterId src_router_id,
                     NocRouterId sink_router_id,
                     NocTrafficFlowId traffic_flow_id,
-                    std::vector<NocLinkId>& flow_route,
-                    const NocStorage& noc_model,
-                    const NocVirtualBlockStorage& noc_virtual_blocks) override;
+                    std::vector<NocLinkId>& flow_route) override;
 
     // internally used helper functions
   private:

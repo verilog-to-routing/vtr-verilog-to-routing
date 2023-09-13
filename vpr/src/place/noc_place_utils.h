@@ -493,7 +493,7 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
  * information.
  * 
  */
-void write_noc_placement_file(std::string file_name);
+void write_noc_placement_file(const std::string& file_name);
 
 /**
  * @brief This function checks whether the routing configuration for NoC traffic flows

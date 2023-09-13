@@ -5,15 +5,18 @@
 #include "globals.h"
 #include "vpr_error.h"
 
+XYRouting::XYRouting(const NocStorage& noc_model, const std::optional<std::reference_wrapper<const NocVirtualBlockStorage>>& noc_virtual_blocks)
+    : TurnModelRouting(noc_model, noc_virtual_blocks) {
+}
+
 XYRouting::~XYRouting() = default;
 
 const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(NocRouterId src_router_id,
                                                                                 NocRouterId curr_router_id,
-                                                                                NocRouterId dst_router_id,
-                                                                                const NocStorage& noc_model) {
+                                                                                NocRouterId dst_router_id) {
     // get current and destination NoC routers
-    const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
-    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
+    const auto& curr_router = noc_model_.get_single_noc_router(curr_router_id);
+    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
 
     // get the position of current and destination NoC routers
     const auto curr_router_pos = curr_router.get_router_physical_location();
@@ -34,11 +37,10 @@ TurnModelRouting::Direction XYRouting::select_next_direction(const std::vector<T
                                                              NocRouterId src_router_id,
                                                              NocRouterId dst_router_id,
                                                              NocRouterId curr_router_id,
-                                                             NocTrafficFlowId traffic_flow_id,
-                                                             const NocStorage& noc_model) {
+                                                             NocTrafficFlowId traffic_flow_id) {
     // get current and destination NoC routers
-    const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
-    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
+    const auto& curr_router = noc_model_.get_single_noc_router(curr_router_id);
+    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
 
     // get the position of current and destination NoC routers
     const auto curr_router_pos = curr_router.get_router_physical_location();

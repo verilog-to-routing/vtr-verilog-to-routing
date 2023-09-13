@@ -22,6 +22,8 @@
  */
 
 #include <vector>
+#include <optional>
+#include <functional>
 
 #include "noc_data_types.h"
 #include "noc_traffic_flows.h"
@@ -32,6 +34,11 @@ class NocRouting {
     // pure virtual functions that should be implemented in derived classes.
   public:
     virtual ~NocRouting() = default;
+    NocRouting() = delete;
+    NocRouting(const NocStorage& noc_model,
+               const std::optional<std::reference_wrapper<const NocVirtualBlockStorage>>& noc_virtual_blocks)
+        : noc_model_(noc_model)
+        , noc_virtual_blocks_(noc_virtual_blocks) {}
 
     /**
      * @brief Finds a route that goes from the starting router in a 
@@ -61,9 +68,11 @@ class NocRouting {
     virtual void route_flow(NocRouterId src_router_id,
                             NocRouterId sink_router_id,
                             NocTrafficFlowId traffic_flow_id,
-                            std::vector<NocLinkId>& flow_route,
-                            const NocStorage& noc_model,
-                            const NocVirtualBlockStorage& noc_virtual_blocks) = 0;
+                            std::vector<NocLinkId>& flow_route) = 0;
+
+  protected:
+    const NocStorage& noc_model_;
+    std::optional<std::reference_wrapper<const NocVirtualBlockStorage>> noc_virtual_blocks_;
 };
 
 #endif

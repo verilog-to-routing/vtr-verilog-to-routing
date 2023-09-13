@@ -1,5 +1,9 @@
 #include "turn_model_routing.h"
 
+TurnModelRouting::TurnModelRouting(const NocStorage& noc_model, const std::optional<std::reference_wrapper<const NocVirtualBlockStorage>>& noc_virtual_blocks)
+    : NocRouting(noc_model, noc_virtual_blocks) {
+}
+
 TurnModelRouting::~TurnModelRouting() = default;
 
 size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id,
@@ -28,15 +32,13 @@ size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id,
 void TurnModelRouting::route_flow(NocRouterId src_router_id,
                                   NocRouterId dst_router_id,
                                   NocTrafficFlowId traffic_flow_id,
-                                  std::vector<NocLinkId>& flow_route,
-                                  const NocStorage& noc_model,
-                                  const NocVirtualBlockStorage& noc_virtual_blocks) {
+                                  std::vector<NocLinkId>& flow_route) {
     // ensure that the route container is empty
     flow_route.clear();
 
     // get source and destination NoC routers
-    const auto& src_router = noc_model.get_single_noc_router(src_router_id);
-    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
+    const auto& src_router = noc_model_.get_single_noc_router(src_router_id);
+    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
 
     // the last router added to the path, initialized with the source id
     NocRouterId curr_router_id = src_router_id;
@@ -56,23 +58,22 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
     // The route is terminated when we reach at the destination router
     while (curr_router_id != dst_router_id) {
         // get the current router (the last one added to the route)
-        const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
+        const auto& curr_router = noc_model_.get_single_noc_router(curr_router_id);
 
         // get the physical location of the current router
         auto curr_router_pos = curr_router.get_router_physical_location();
 
         // get all directions that moves us closer to the destination router
-        const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id, noc_model);
+        const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id);
 
         // select the next direction from the available options
         auto next_step_direction = select_next_direction(legal_directions,
                                                          src_router_id,
                                                          dst_router_id,
                                                          curr_router_id,
-                                                         traffic_flow_id,
-                                                         noc_model);
+                                                         traffic_flow_id);
 
-        auto next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers, noc_model);
+        auto next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers);
 
         if (next_link) {
             flow_route.push_back(next_link);
@@ -89,8 +90,7 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
 NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
                                                 const t_physical_tile_loc& curr_router_position,
                                                 TurnModelRouting::Direction next_step_direction,
-                                                std::unordered_set<NocRouterId>& visited_routers,
-                                                const NocStorage& noc_model) {
+                                                std::unordered_set<NocRouterId>& visited_routers) {
     // represents the router that will be visited when taking an outgoing link
     NocRouterId next_router_id(-1);
 
@@ -104,16 +104,16 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
     bool visited_next_router = false;
 
     // get all the outgoing links for the current router
-    const auto& router_connections = noc_model.get_noc_router_connections(curr_router_id);
+    const auto& router_connections = noc_model_.get_noc_router_connections(curr_router_id);
 
     // go through each outgoing link and determine whether the link leads towards the intended route direction
     for (auto connecting_link : router_connections) {
         // get the current outgoing link which is being processed
-        const NocLink& curr_outgoing_link = noc_model.get_single_noc_link(connecting_link);
+        const NocLink& curr_outgoing_link = noc_model_.get_single_noc_link(connecting_link);
 
         // get the next router that we will visit if we travel across the current link
         next_router_id = curr_outgoing_link.get_sink_router();
-        const NocRouter& next_router = noc_model.get_single_noc_router(next_router_id);
+        const NocRouter& next_router = noc_model_.get_single_noc_router(next_router_id);
 
         // get the coordinates of the next router
         auto next_router_position = next_router.get_router_physical_location();

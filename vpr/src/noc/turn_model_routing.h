@@ -6,14 +6,14 @@
 
 class TurnModelRouting : public NocRouting {
   public:
+    TurnModelRouting(const NocStorage& noc_model,
+                     const std::optional<std::reference_wrapper<const NocVirtualBlockStorage>>& noc_virtual_blocks);
     ~TurnModelRouting() override;
 
     void route_flow(NocRouterId src_router_id,
                     NocRouterId sink_router_id,
                     NocTrafficFlowId traffic_flow_id,
-                    std::vector<NocLinkId>& flow_route,
-                    const NocStorage& noc_model,
-                    const NocVirtualBlockStorage& noc_virtual_blocks) override;
+                    std::vector<NocLinkId>& flow_route) override;
 
   protected:
     /**
@@ -42,8 +42,7 @@ class TurnModelRouting : public NocRouting {
     NocLinkId move_to_next_router(NocRouterId& curr_router_id,
                                   const t_physical_tile_loc& curr_router_position,
                                   TurnModelRouting::Direction next_step_direction,
-                                  std::unordered_set<NocRouterId>& visited_routers,
-                                  const NocStorage& noc_model);
+                                  std::unordered_set<NocRouterId>& visited_routers);
 
     inline uint32_t murmur_32_scramble(uint32_t k);
 
@@ -54,16 +53,14 @@ class TurnModelRouting : public NocRouting {
 
     virtual const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
                                                                                  NocRouterId curr_router_id,
-                                                                                 NocRouterId dst_router_id,
-                                                                                 const NocStorage& noc_model)
+                                                                                 NocRouterId dst_router_id)
         = 0;
 
     virtual TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
                                                               NocRouterId src_router_id,
                                                               NocRouterId dst_router_id,
                                                               NocRouterId curr_router_id,
-                                                              NocTrafficFlowId traffic_flow_id,
-                                                              const NocStorage& noc_model)
+                                                              NocTrafficFlowId traffic_flow_id)
         = 0;
 
   protected:

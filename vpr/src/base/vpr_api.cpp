@@ -555,7 +555,10 @@ void vpr_setup_noc_routing_algorithm(const std::string& noc_routing_algorithm_na
     // newly created routing algorithm to it
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
-    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_routing_algorithm_name);
+    std::optional<std::reference_wrapper<const NocVirtualBlockStorage>> noc_virtual_blocks;
+    noc_virtual_blocks.reset();
+
+    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_routing_algorithm_name, noc_ctx.noc_model, noc_virtual_blocks);
     return;
 }
 

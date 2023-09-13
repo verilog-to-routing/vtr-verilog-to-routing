@@ -3,12 +3,15 @@
 #include "globals.h"
 #include "move_utils.h"
 
+OddEvenRouting::OddEvenRouting(const NocStorage& noc_model, const std::optional<std::reference_wrapper<const NocVirtualBlockStorage>>& noc_virtual_blocks)
+    : TurnModelRouting(noc_model, noc_virtual_blocks) {
+}
+
 OddEvenRouting::~OddEvenRouting() = default;
 
 const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_directions(NocRouterId src_router_id,
                                                                                      NocRouterId curr_router_id,
-                                                                                     NocRouterId dst_router_id,
-                                                                                     const NocStorage& noc_model) {
+                                                                                     NocRouterId dst_router_id) {
     // used to access NoC compressed grid
     auto& place_ctx = g_vpr_ctx.placement();
     // used to get NoC logical block type
@@ -25,9 +28,9 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
 
     // get source, current, and destination NoC routers
-    const auto& src_router = noc_model.get_single_noc_router(src_router_id);
-    const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
-    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
+    const auto& src_router = noc_model_.get_single_noc_router(src_router_id);
+    const auto& curr_router = noc_model_.get_single_noc_router(curr_router_id);
+    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
 
     // get the position of source, current, and destination NoC routers
     const auto src_router_pos = src_router.get_router_physical_location();
@@ -92,16 +95,15 @@ TurnModelRouting::Direction OddEvenRouting::select_next_direction(const std::vec
                                                                   NocRouterId src_router_id,
                                                                   NocRouterId dst_router_id,
                                                                   NocRouterId curr_router_id,
-                                                                  NocTrafficFlowId traffic_flow_id,
-                                                                  const NocStorage& noc_model) {
+                                                                  NocTrafficFlowId traffic_flow_id) {
     // if there is only one legal direction, take it
     if (legal_directions.size() == 1) {
         return legal_directions[0];
     }
 
     // get current and destination NoC routers
-    const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
-    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
+    const auto& curr_router = noc_model_.get_single_noc_router(curr_router_id);
+    const auto& dst_router = noc_model_.get_single_noc_router(dst_router_id);
 
     // get the position of current and destination NoC routers
     const auto curr_router_pos = curr_router.get_router_physical_location();

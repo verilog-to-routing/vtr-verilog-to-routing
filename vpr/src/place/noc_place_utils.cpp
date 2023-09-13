@@ -191,7 +191,7 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
 
     // route the current traffic flow
     std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow_id);
-    noc_flows_router.route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, curr_traffic_flow_route, noc_model, noc_virtual_blocks);
+    noc_flows_router.route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, curr_traffic_flow_route);
 
     return curr_traffic_flow_route;
 }
@@ -457,7 +457,6 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     auto& noc_ctx = g_vpr_ctx.noc();
     const NocStorage& noc_model = noc_ctx.noc_model;
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
-    const NocVirtualBlockStorage& noc_virtual_blocks = noc_ctx.noc_virtual_blocks;
 
     // a copy of NoC link storage used to calculate link bandwidth utilization from scratch
     vtr::vector<NocLinkId, NocLink> temp_noc_link_storage = noc_model.get_noc_links();
@@ -466,7 +465,8 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     std::for_each(temp_noc_link_storage.begin(), temp_noc_link_storage.end(), [](NocLink& link) { link.set_bandwidth_usage(0.0); });
 
     // need to create a temporary noc routing algorithm
-    std::unique_ptr<NocRouting> temp_noc_routing_algorithm = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_opts.noc_routing_algorithm);
+    std::optional<std::reference_wrapper<const NocVirtualBlockStorage>> noc_virtual_blocks;
+    std::unique_ptr<NocRouting> temp_noc_routing_algorithm = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_opts.noc_routing_algorithm, noc_ctx.noc_model, noc_virtual_blocks);
 
     // stores a temporarily found route for a traffic flow
     std::vector<NocLinkId> temp_found_noc_route;
@@ -485,7 +485,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         NocRouterId sink_router_block_id = noc_model.get_router_at_grid_location(placed_cluster_block_locations[logical_sink_router_block_id].loc);
 
         // route the current traffic flow
-        temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, temp_found_noc_route, noc_model, noc_virtual_blocks);
+        temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, temp_found_noc_route);
 
         // now calculate the costs associated to the current traffic flow and accumulate it to find the total cost of the NoC placement
         double current_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth_cost(temp_found_noc_route, curr_traffic_flow);
@@ -914,7 +914,7 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
     return create_move;
 }
 
-void write_noc_placement_file(std::string file_name) {
+void write_noc_placement_file(const std::string& file_name) {
     // we need the clustered netlist to get the names of all the NoC router cluster blocks
     auto& cluster_ctx = g_vpr_ctx.clustering();
     // we need to the placement context to determine the final placed locations of the NoC router cluster blocks

@@ -2,16 +2,18 @@
 
 #include "bfs_routing.h"
 
+BFSRouting::BFSRouting(const NocStorage& noc_model, const std::optional<std::reference_wrapper<const NocVirtualBlockStorage>>& noc_virtual_blocks)
+    : NocRouting(noc_model, noc_virtual_blocks) {
+}
+
 BFSRouting::~BFSRouting() = default;
 
 void BFSRouting::route_flow(NocRouterId src_router_id,
                             NocRouterId sink_router_id,
                             NocTrafficFlowId traffic_flow_id,
-                            std::vector<NocLinkId>& flow_route,
-                            const NocStorage& noc_model,
-                            const NocVirtualBlockStorage& noc_virtual_blocks) {
-    const NocRouter& src_router = noc_model.get_single_noc_router(src_router_id);
-    const NocRouter& sink_router = noc_model.get_single_noc_router(sink_router_id);
+                            std::vector<NocLinkId>& flow_route) {
+    const NocRouter& src_router = noc_model_.get_single_noc_router(src_router_id);
+    const NocRouter& sink_router = noc_model_.get_single_noc_router(sink_router_id);
 
     // destroy any previously stored route
     flow_route.clear();
@@ -58,12 +60,12 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
         routers_to_process.pop();
 
         // get the links leaving the router currently being processed(these represent possible paths to explore in the NoC)
-        const std::vector<NocLinkId>& outgoing_links = noc_model.get_noc_router_connections(processing_router);
+        const std::vector<NocLinkId>& outgoing_links = noc_model_.get_noc_router_connections(processing_router);
 
         // go through the outgoing links of the current router and process the sink routers connected to these links
         for (auto link : outgoing_links) {
             // get the router connected to the current outgoing link
-            NocRouterId connected_router = noc_model.get_single_noc_link(link).get_sink_router();
+            NocRouterId connected_router = noc_model_.get_single_noc_link(link).get_sink_router();
 
             // check if we already explored the router we are visiting
             if (visited_routers.find(connected_router) == visited_routers.end()) {
@@ -90,7 +92,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
     // router.
     if (found_sink_router) {
         // a legal path was found, so construct it
-        generate_route(sink_router_id, flow_route, noc_model, router_parent_link);
+        generate_route(sink_router_id, flow_route, noc_model_, router_parent_link);
     } else {
         // a path was not found so throw an error to the user
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with id:'%d' and the destination router with id:'%d' using the breadth-first search routing algorithm.", src_router.get_router_user_id(), sink_router.get_router_user_id());
@@ -127,3 +129,4 @@ void BFSRouting::generate_route(NocRouterId start_router_id, std::vector<NocLink
 
     return;
 }
+
