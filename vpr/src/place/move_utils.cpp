@@ -792,7 +792,10 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     VTR_ASSERT_MSG(grid.get_width_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to.x, to.y, to.layer);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range[from_layer_num].xmin, search_range[from_layer_num].ymin, from_layer_num,
+                   search_range[from_layer_num].xmax, search_range[from_layer_num].ymax, from_layer_num,
+                   to.x, to.y, to.layer);
     return true;
 }
 
@@ -883,7 +886,10 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to_loc.x, to_loc.y, to_loc.layer);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range.xmin, search_range.ymin, from_layer_num,
+                   search_range.xmax, search_range.ymax, from_layer_num,
+                   to_loc.x, to_loc.y, to_loc.layer);
     return true;
 }
 
@@ -967,7 +973,10 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tA legal position at %d,%d,%d is found\n", to_loc.x, to_loc.y, to_loc.layer);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range[from_layer_num].xmin, search_range[from_layer_num].ymin, from_layer_num,
+                   search_range[from_layer_num].xmax, search_range[from_layer_num].ymax, from_layer_num,
+                   to_loc.x, to_loc.y, to_loc.layer);
     return true;
 }
 
