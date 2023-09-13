@@ -796,7 +796,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
                    search_range.xmin, search_range.ymin, search_range.layer_min,
-                   search_range.xmax, search_range.ymax, search_range.layer_max
+                   search_range.xmax, search_range.ymax, search_range.layer_max,
                    to.x, to.y, to.layer);
     return true;
 }
@@ -1302,7 +1302,12 @@ int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc)
 int get_random_layer(t_logical_block_type_ptr logical_block) {
     const auto& compatible_layers = g_vpr_ctx.placement().compressed_block_grids[logical_block->index].get_layer_nums();
     VTR_ASSERT(!compatible_layers.empty());
-    int layer_num = compatible_layers[vtr::irand(compatible_layers.size() - 1)];
+    int layer_num = OPEN;
+    if (compatible_layers.size() == 1) {
+        layer_num = compatible_layers[0];
+    } else {
+        layer_num = compatible_layers[vtr::irand(compatible_layers.size() - 1)];
+    }
 
     return layer_num;
 }
