@@ -1162,6 +1162,9 @@ t_bb get_compressed_grid_target_search_range(const t_compressed_block_grid& comp
     search_ranges.ymin = std::max(0, compressed_loc.y - rlim_y_max_range);
     search_ranges.ymax = std::min<int>(compressed_block_grid.get_num_rows(layer_num) - 1, compressed_loc.y + rlim_y_max_range);
 
+    search_ranges.layer_min = compressed_loc.layer_num;
+    search_ranges.layer_max = compressed_loc.layer_num;
+
     return search_ranges;
 }
 
