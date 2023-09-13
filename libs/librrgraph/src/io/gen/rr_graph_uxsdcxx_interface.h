@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/amin/Desktop/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/amin/Desktop/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 38649d034e0edccbcb511ddb8915cdff
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
  */
 
 #include <functional>
@@ -368,6 +368,7 @@ public:
 	 *   <xs:attribute name="yhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="side" type="loc_side" />
 	 *   <xs:attribute name="ptc" type="xs:int" use="required" />
+	 *   <xs:attribute name="twist" type="xs:int" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_node_loc_layer(typename ContextTypes::NodeLocReadContext &ctx) = 0;
@@ -375,6 +376,8 @@ public:
 	virtual inline int get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_side(enum_loc_side side, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
+	virtual inline int get_node_loc_twist(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline void set_node_loc_twist(int twist, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline int get_node_loc_xhigh(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline int get_node_loc_xlow(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline int get_node_loc_yhigh(typename ContextTypes::NodeLocReadContext &ctx) = 0;
