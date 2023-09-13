@@ -22,11 +22,11 @@ void NocVirtualBlock::set_mapped_noc_router_id(NocRouterId mapped_noc_router_id)
     mapped_noc_router_id_ = mapped_noc_router_id;
 }
 
-const NocVirtualBlock& NocVirtualBlockStorage::get_middleman_block(NocVirtualMiddlemanBlockId id) {
+const NocVirtualBlock& NocVirtualBlockStorage::get_middleman_block(NocVirtualMiddlemanBlockId id) const{
     return middle_man_blocks_[id];
 }
 
-const NocVirtualBlock& NocVirtualBlockStorage::get_middleman_block(NocTrafficFlowId id) {
+const NocVirtualBlock& NocVirtualBlockStorage::get_middleman_block(NocTrafficFlowId id) const{
     return get_middleman_block((NocVirtualMiddlemanBlockId)static_cast<size_t>(id));
 }
 

@@ -29,7 +29,7 @@ size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id,
     return hash_val;
 }
 
-void TurnModelRouting::route_flow(NocRouterId src_router_id,
+bool TurnModelRouting::route_flow(NocRouterId src_router_id,
                                   NocRouterId dst_router_id,
                                   NocTrafficFlowId traffic_flow_id,
                                   std::vector<NocLinkId>& flow_route) {
@@ -42,6 +42,17 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
 
     // the last router added to the path, initialized with the source id
     NocRouterId curr_router_id = src_router_id;
+    NocRouterId intermediate_dst_router_id;
+
+    std::optional<std::reference_wrapper<const NocRouter>> virt_noc_router;
+    if (noc_virtual_blocks_) {
+        const auto& virt_block = noc_virtual_blocks_->get().get_middleman_block(traffic_flow_id);
+        const auto mapped_noc_router_id = virt_block.get_mapped_noc_router_id();
+        virt_noc_router = noc_model_.get_single_noc_router(mapped_noc_router_id);
+        intermediate_dst_router_id = mapped_noc_router_id;
+    } else {
+        intermediate_dst_router_id = dst_router_id;
+    }
 
     // get the physical location of the destination router
     const auto dst_loc = dst_router.get_router_physical_location();
@@ -57,34 +68,41 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
 
     // The route is terminated when we reach at the destination router
     while (curr_router_id != dst_router_id) {
-        // get the current router (the last one added to the route)
-        const auto& curr_router = noc_model_.get_single_noc_router(curr_router_id);
+        while (curr_router_id != intermediate_dst_router_id) {
+            // get the current router (the last one added to the route)
+            const auto& curr_router = noc_model_.get_single_noc_router(curr_router_id);
 
-        // get the physical location of the current router
-        auto curr_router_pos = curr_router.get_router_physical_location();
+            // get the physical location of the current router
+            auto curr_router_pos = curr_router.get_router_physical_location();
 
-        // get all directions that moves us closer to the destination router
-        const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id);
+            // get all directions that moves us closer to the destination router
+            const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id);
 
-        // select the next direction from the available options
-        auto next_step_direction = select_next_direction(legal_directions,
-                                                         src_router_id,
-                                                         dst_router_id,
-                                                         curr_router_id,
-                                                         traffic_flow_id);
+            // select the next direction from the available options
+            auto next_step_direction = select_next_direction(legal_directions,
+                                                             src_router_id,
+                                                             dst_router_id,
+                                                             curr_router_id,
+                                                             traffic_flow_id);
 
-        auto next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers);
+            auto next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers);
 
-        if (next_link) {
-            flow_route.push_back(next_link);
-        } else {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "No route could be found from starting router with ID:'%d'"
-                            "and the destination router with ID:'%d' using the XY-Routing algorithm.",
-                            src_router.get_router_user_id(),
-                            dst_router.get_router_user_id());
+            if (next_link) {
+                flow_route.push_back(next_link);
+            } else {
+                return false;
+//                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+//                                "No route could be found from starting router with ID:'%d'"
+//                                "and the destination router with ID:'%d' using the XY-Routing algorithm.",
+//                                src_router.get_router_user_id(),
+//                                dst_router.get_router_user_id());
+            }
         }
+        // after reaching the intermediate destination, continue the route towards the final destination
+        intermediate_dst_router_id = dst_router_id;
     }
+
+    return true;
 }
 
 NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,

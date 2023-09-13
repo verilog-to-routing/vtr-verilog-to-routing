@@ -24,8 +24,8 @@ class NocVirtualBlockStorage {
     NocVirtualBlockStorage(const NocVirtualBlockStorage&) = delete;
     void operator=(const NocVirtualBlockStorage&) = delete;
 
-    const NocVirtualBlock& get_middleman_block(NocVirtualMiddlemanBlockId id);
-    const NocVirtualBlock& get_middleman_block(NocTrafficFlowId id);
+    const NocVirtualBlock& get_middleman_block(NocVirtualMiddlemanBlockId id) const;
+    const NocVirtualBlock& get_middleman_block(NocTrafficFlowId id) const;
     NocVirtualBlock& get_mutable_middleman_block(NocVirtualMiddlemanBlockId id);
     NocVirtualBlock& get_mutable_middleman_block(NocTrafficFlowId id);
 

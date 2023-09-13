@@ -53,7 +53,7 @@ class BFSRouting : public NocRouting {
      * @param noc_model A model of the NoC. This is used to traverse the
      * NoC and find a route between the two routers.
      */
-    void route_flow(NocRouterId src_router_id,
+    bool route_flow(NocRouterId src_router_id,
                     NocRouterId sink_router_id,
                     NocTrafficFlowId traffic_flow_id,
                     std::vector<NocLinkId>& flow_route) override;
@@ -82,7 +82,7 @@ class BFSRouting : public NocRouting {
      * router in the NoC (parent link is the link used to visit the router during
      * the BFS routing algorithm).
      */
-    void generate_route(NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model, const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link);
+    void generate_route(NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link);
 };
 
 #endif

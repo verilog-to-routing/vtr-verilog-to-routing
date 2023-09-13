@@ -8,7 +8,7 @@ BFSRouting::BFSRouting(const NocStorage& noc_model, const std::optional<std::ref
 
 BFSRouting::~BFSRouting() = default;
 
-void BFSRouting::route_flow(NocRouterId src_router_id,
+bool BFSRouting::route_flow(NocRouterId src_router_id,
                             NocRouterId sink_router_id,
                             NocTrafficFlowId traffic_flow_id,
                             std::vector<NocLinkId>& flow_route) {
@@ -92,16 +92,16 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
     // router.
     if (found_sink_router) {
         // a legal path was found, so construct it
-        generate_route(sink_router_id, flow_route, noc_model_, router_parent_link);
+        generate_route(sink_router_id, flow_route, router_parent_link);
     } else {
         // a path was not found so throw an error to the user
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with id:'%d' and the destination router with id:'%d' using the breadth-first search routing algorithm.", src_router.get_router_user_id(), sink_router.get_router_user_id());
     }
 
-    return;
+    return true;
 }
 
-void BFSRouting::generate_route(NocRouterId start_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model, const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link) {
+void BFSRouting::generate_route(NocRouterId start_router_id, std::vector<NocLinkId>& flow_route, const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link) {
     // The intermediate router being visited while tracing the path back from the destination router to the starting router in the flow.
     // Initially this is set to the router at the end of the path (destination router)
     NocRouterId curr_intermediate_router = start_router_id;
@@ -122,7 +122,7 @@ void BFSRouting::generate_route(NocRouterId start_router_id, std::vector<NocLink
         route_beginning = flow_route.begin();
 
         // now move to the next intermediate router in the path. This will be the source router of the parent link
-        curr_intermediate_router = noc_model.get_single_noc_link(curr_intermediate_router_parent_link->second).get_source_router();
+        curr_intermediate_router = noc_model_.get_single_noc_link(curr_intermediate_router_parent_link->second).get_source_router();
         // now get the parent of the router we moved to
         curr_intermediate_router_parent_link = router_parent_link.find(curr_intermediate_router);
     }
