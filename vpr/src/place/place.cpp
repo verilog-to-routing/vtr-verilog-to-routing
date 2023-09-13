@@ -2648,7 +2648,7 @@ static double get_net_cost(ClusterNetId /* net_id */,
         if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
-        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num]);
+        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num]+1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
          * connection will be made with no bends and hence no x-cost.    *
