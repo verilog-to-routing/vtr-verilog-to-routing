@@ -171,36 +171,6 @@ static bool isInLocalScope(const std::string *name)
 	return (user_types.count(*name) > 0);
 }
 
-static AstNode *getTypeDefinitionNode(std::string type_name)
-{
-	// check package types
-	if (type_name.find("::") != std::string::npos && pkg_user_types.count(type_name) > 0) {
-		auto typedef_node = pkg_user_types[type_name];
-		log_assert(typedef_node->type == AST_TYPEDEF);
-		return typedef_node->children[0];
-	}
-
-	// check current scope then outer scopes for a name
-	for (auto it = user_type_stack.rbegin(); it != user_type_stack.rend(); ++it) {
-		if (it->count(type_name) > 0) {
-			// return the definition nodes from the typedef statement
-			auto typedef_node = (*it)[type_name];
-			log_assert(typedef_node->type == AST_TYPEDEF);
-			return typedef_node->children[0];
-		}
-	}
-
-	// The lexer recognized the name as a TOK_USER_TYPE, but now we can't find it anymore?
-	log_error("typedef for user type `%s' not found", type_name.c_str());
-}
-
-static AstNode *copyTypeDefinition(std::string type_name)
-{
-	// return a copy of the template from a typedef definition
-	auto typedef_node = getTypeDefinitionNode(type_name);
-	return typedef_node->clone();
-}
-
 static AstNode *makeRange(int msb = 31, int lsb = 0, bool isSigned = true)
 {
 	auto range = new AstNode(AST_RANGE);
@@ -372,7 +342,7 @@ static void rewriteGenForDeclInit(AstNode *loop)
 %token TOK_POS_INDEXED TOK_NEG_INDEXED TOK_PROPERTY TOK_ENUM TOK_TYPEDEF
 %token TOK_RAND TOK_CONST TOK_CHECKER TOK_ENDCHECKER TOK_EVENTUALLY
 %token TOK_INCREMENT TOK_DECREMENT TOK_UNIQUE TOK_UNIQUE0 TOK_PRIORITY
-%token TOK_STRUCT TOK_PACKED TOK_UNSIGNED TOK_INT TOK_BYTE TOK_SHORTINT TOK_LONGINT TOK_UNION
+%token TOK_STRUCT TOK_PACKED TOK_UNSIGNED TOK_INT TOK_BYTE TOK_SHORTINT TOK_LONGINT TOK_VOID TOK_UNION
 %token TOK_BIT_OR_ASSIGN TOK_BIT_AND_ASSIGN TOK_BIT_XOR_ASSIGN TOK_ADD_ASSIGN
 %token TOK_SUB_ASSIGN TOK_DIV_ASSIGN TOK_MOD_ASSIGN TOK_MUL_ASSIGN
 %token TOK_SHL_ASSIGN TOK_SHR_ASSIGN TOK_SSHL_ASSIGN TOK_SSHR_ASSIGN
@@ -1020,6 +990,23 @@ task_func_decl:
 		current_function_or_task = NULL;
 		ast_stack.pop_back();
 	} |
+	attr TOK_FUNCTION opt_automatic TOK_VOID TOK_ID {
+		// The difference between void functions and tasks is that
+		// always_comb's implicit sensitivity list behaves as if functions were
+		// inlined, but ignores signals read only in tasks. This only matters
+		// for event based simulation, and for synthesis we can treat a void
+		// function like a task.
+		current_function_or_task = new AstNode(AST_TASK);
+		current_function_or_task->str = *$5;
+		append_attr(current_function_or_task, $1);
+		ast_stack.back()->children.push_back(current_function_or_task);
+		ast_stack.push_back(current_function_or_task);
+		current_function_or_task_port_id = 1;
+		delete $5;
+	} task_func_args_opt ';' task_func_body TOK_ENDFUNCTION {
+		current_function_or_task = NULL;
+		ast_stack.pop_back();
+	} |
 	attr TOK_FUNCTION opt_automatic func_return_type TOK_ID {
 		current_function_or_task = new AstNode(AST_FUNCTION);
 		current_function_or_task->str = *$5;
@@ -1616,10 +1603,7 @@ param_implicit_type: param_signed param_range;
 param_type:
 	param_integer_type | param_real | param_range_type | param_implicit_type |
 	hierarchical_type_id {
-		astbuf1->is_custom_type = true;
-		astbuf1->children.push_back(new AstNode(AST_WIRETYPE));
-		astbuf1->children.back()->str = *$1;
-		delete $1;
+		addWiretypeNode($1, astbuf1);
 	};
 
 param_decl:
@@ -1792,7 +1776,12 @@ enum_decl: enum_type enum_var_list ';'		{ delete $1; }
 // struct or union
 //////////////////
 
-struct_decl: struct_type struct_var_list ';' 	{ delete astbuf2; }
+struct_decl:
+	attr struct_type {
+		append_attr($2, $1);
+	} struct_var_list ';' {
+		delete astbuf2;
+	}
 	;
 
 struct_type: struct_union { astbuf2 = $1; } struct_body { $$ = astbuf2; }
@@ -1843,21 +1832,7 @@ struct_member_type: { astbuf1 = new AstNode(AST_STRUCT_ITEM); } member_type_toke
 member_type_token:
 	  member_type 
 	| hierarchical_type_id {
-			// use a clone of the typedef definition nodes
-			auto template_node = copyTypeDefinition(*$1);
-			delete $1;
-			switch (template_node->type) {
-			case AST_WIRE:
-				template_node->type = AST_STRUCT_ITEM;
-				break;
-			case AST_STRUCT:
-			case AST_UNION:
-				break;
-			default:
-				frontend_verilog_yyerror("Invalid type for struct member: %s", type2str(template_node->type).c_str());
-			}
-			delete astbuf1;
-			astbuf1 = template_node;
+			addWiretypeNode($1, astbuf1);
 		}
 	| {
 		delete astbuf1;
