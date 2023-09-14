@@ -366,10 +366,13 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         return true;
     }
 
+#ifdef VPR_USE_TBB
+
     /* Set this here, because tbb::global_control doesn't control anything once it's out of scope
      * (contrary to the name). */
     tbb::global_control c(tbb::global_control::max_allowed_parallelism, vpr_setup.num_workers);
-
+#endif
+    
     { //Pack
         bool pack_success = vpr_pack_flow(vpr_setup, arch);
 
