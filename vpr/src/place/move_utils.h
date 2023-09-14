@@ -328,8 +328,9 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
 
 std::string e_move_result_to_string(e_move_result move_outcome);
 
+#ifndef VTR_ENABLE_DEBUG_LOGGING
 void enable_placer_debug(const t_placer_opts& placer_opts,
-                         int blk_id_num,
-                         const std::vector<size_t>& net_id_nums);
+                         ClusterBlockId blk_id);
+#endif
 
 #endif

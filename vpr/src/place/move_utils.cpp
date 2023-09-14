@@ -497,9 +497,23 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     return empty_locs;
 }
 
+#ifndef VTR_ENABLE_DEBUG_LOGGING
 void enable_placer_debug(const t_placer_opts& placer_opts,
-                         int blk_id_num,
-                         const std::vector<size_t>& net_id_nums) {
+                         ClusterBlockId blk_id) {
+    if (!blk_id.is_valid()) {
+        return;
+    }
+
+    int blk_id_num = (int) size_t(blk_id);
+    // Get the nets connected to the block
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type;
+    int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
+    std::vector<ClusterNetId> block_nets(block_num_pins, ClusterNetId::INVALID());
+    for (int ipin = 0; ipin < block_num_pins; ipin++) {
+        block_nets[ipin] = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
+    }
+
     bool& f_placer_debug = g_vpr_ctx.mutable_placement().f_placer_debug;
 
     bool active_blk_debug = (placer_opts.placer_debug_block >= -1);
@@ -517,10 +531,13 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
     if (placer_opts.placer_debug_net == -1) {
         match_net = true;
     } else {
-        for (size_t net_id_num : net_id_nums) {
-            if ((int)net_id_num != OPEN && placer_opts.placer_debug_net == (int)net_id_num) {
-                match_net = true;
-                break;
+        for (const auto& net_id : block_nets) {
+            if (net_id.is_valid()) {
+                int net_id_num = (int) size_t(net_id);
+                if (placer_opts.placer_debug_net == net_id_num) {
+                    match_net = true;
+                    break;
+                }
             }
         }
     }
@@ -528,10 +545,8 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
     if (active_blk_debug) f_placer_debug &= match_blk;
     if (active_net_debug) f_placer_debug &= match_net;
 
-#ifndef VTR_ENABLE_DEBUG_LOGGING
-    VTR_LOGV_WARN(f_placer_debug, "Limited placer debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined\n");
-#endif
 }
+#endif
 
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
@@ -559,16 +574,9 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
             b_from = pick_from_block(logical_blk_type_index);
         }
     }
-
-    if (b_from) {
-        const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(b_from)->pb_type;
-        int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
-        std::vector<size_t> block_nets(block_num_pins, OPEN);
-        for (int ipin = 0; ipin < block_num_pins; ipin++) {
-            block_nets[ipin] = (size_t)cluster_ctx.clb_nlist.block_net(b_from, ipin);
-        }
-        enable_placer_debug(placer_opts, size_t(b_from), block_nets);
-    }
+#ifndef VTR_ENABLE_DEBUG_LOGGING
+        enable_placer_debug(placer_opts, b_from);
+#endif
 
     return b_from;
 }
