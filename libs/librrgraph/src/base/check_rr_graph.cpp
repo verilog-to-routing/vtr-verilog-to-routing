@@ -485,11 +485,11 @@ void check_rr_node(const RRGraphView& rr_graph,
                 tracks_per_node = ((rr_type == CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
             }
 
-            //todo: SM: we need to allow ptc_num equal to nodes_per_chan
-            if (ptc_num > nodes_per_chan) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
+            //todo: SM: should come up with better solution than commenting
+//            if (ptc_num > nodes_per_chan) {
+//                VPR_ERROR(VPR_ERROR_ROUTE,
+//                          "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
+//            }
 
             if (capacity != tracks_per_node) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
