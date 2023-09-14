@@ -178,11 +178,6 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
-    /** @brief Set the node layer (specifies which die the node is located at) */
-    inline void set_node_layer(RRNodeId id, short layer){
-        node_storage_.set_node_layer(id,layer);
-    }
-
     /** @brief The ptc_num carries different meanings for different node types
      * (true in VPR RRG that is currently supported, may not be true in customized RRG)
      * CHANX or CHANY: the track id in routing channels
@@ -195,6 +190,16 @@ class RRGraphBuilder {
 
     inline void set_node_ptc_num(RRNodeId id, int new_ptc_num) {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
+    }
+
+    /** @brief set the layer number at which RRNodeId is located at */
+    inline void set_node_layer(RRNodeId id, int layer){
+        node_storage_.set_node_layer(id, layer);
+    }
+
+    /** @brief set the ptc twist increment number for TILEABLE rr graphs (for more information see rr_graph_storage.h twist increment comment) */
+    inline void set_node_ptc_twist_incr(RRNodeId id, int twist){
+        node_storage_.set_node_ptc_twist_incr(id, twist);
     }
 
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
@@ -329,6 +334,12 @@ class RRGraphBuilder {
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
+
+    /** @brief This function resize node ptc twist increment; Since it is only used for tileable rr-graph, we don't put it in general resize function*/
+    inline void resize_ptc_twist_incr(size_t size){
+        node_storage_.resize(size);
+    }
+
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);

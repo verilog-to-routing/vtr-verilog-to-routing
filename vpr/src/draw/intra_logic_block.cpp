@@ -154,37 +154,38 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    //TODO: Change when graphics supports 3D FPGAs
-    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
-    int layer_num = 0;
-    for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-        for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-            /* Only the first block of a group should control drawing */
-            const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
-            int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
-            int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
+    int total_layer_num = device_ctx.grid.get_num_layers();
 
-            if (width_offset > 0 || height_offset > 0)
-                continue;
+    for (int layer_num = 0; layer_num < total_layer_num; layer_num++) {
+        if (draw_state->draw_layer_display[layer_num].visible) {
+            for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+                for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                    /* Only the first block of a group should control drawing */
+                    const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                    int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
+                    int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
 
-            /* Don't draw if tile is empty. This includes corners. */
-            if (is_empty_type(type))
-                continue;
+                    if (width_offset > 0 || height_offset > 0)
+                        continue;
 
-            int num_sub_tiles = type->capacity;
-            for (int k = 0; k < num_sub_tiles; ++k) {
-                /* Don't draw if block is empty. */
-                // TODO: Change when graphics supports 3D
-                if (place_ctx.grid_blocks.block_at_location({i, j, k, 0}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, 0}) == INVALID_BLOCK_ID)
-                    continue;
+                    /* Don't draw if tile is empty. This includes corners. */
+                    if (is_empty_type(type))
+                        continue;
 
-                /* Get block ID */
-                // TODO: Change when graphics supports 3D
-                ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, 0});
-                /* Safety check, that physical blocks exists in the CLB */
-                if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
-                    continue;
-                draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0), cluster_ctx.clb_nlist.block_type(bnum), g);
+                    int num_sub_tiles = type->capacity;
+                    for (int k = 0; k < num_sub_tiles; ++k) {
+                        /* Don't draw if block is empty. */
+                        if (place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == INVALID_BLOCK_ID)
+                            continue;
+
+                        /* Get block ID */
+                        ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                        /* Safety check, that physical blocks exists in the CLB */
+                        if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
+                            continue;
+                        draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0), cluster_ctx.clb_nlist.block_type(bnum), g);
+                    }
+                }
             }
         }
     }
@@ -340,11 +341,17 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
+
+    auto& place_ctx = g_vpr_ctx.placement();
+
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
     t_pb_type* pb_type = pb->pb_graph_node->pb_type;
     ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
     ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
+
+    int layer_num = place_ctx.block_locs[clb_index].loc.layer;
+    int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
     // if we've gone too far, don't draw anything
     if (pb_type->depth > draw_state->show_blk_internal) {
@@ -359,13 +366,13 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
         // determine default background color
         if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(SELECTED_COLOR);
+            g->set_color(SELECTED_COLOR, transparency_factor);
         } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(DRIVES_IT_COLOR);
+            g->set_color(DRIVES_IT_COLOR, transparency_factor);
         } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
-            g->set_color(DRIVEN_BY_IT_COLOR);
+            g->set_color(DRIVEN_BY_IT_COLOR, transparency_factor);
         } else {
-            g->set_color(draw_state->block_color(clb_index));
+            g->set_color(draw_state->block_color(clb_index), transparency_factor);
         }
     } else {
         // If block is not used, draw as empty block (ie. white
@@ -375,7 +382,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->set_color(ezgl::WHITE);
     }
     g->fill_rectangle(abs_bbox);
-    g->set_color(ezgl::BLACK);
+    g->set_color(ezgl::BLACK, transparency_factor);
 
     if (draw_state->draw_block_outlines) {
         g->draw_rectangle(abs_bbox);
@@ -553,11 +560,13 @@ void draw_logical_connections(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     g->set_line_dash(ezgl::line_dash::none);
 
     //constexpr float NET_ALPHA = 0.0275;
     float NET_ALPHA = draw_state->net_alpha;
+    int transparency_factor;
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.nlist.nets()) {
@@ -567,8 +576,15 @@ void draw_logical_connections(ezgl::renderer* g) {
 
         AtomPinId driver_pin_id = atom_ctx.nlist.net_driver(net_id);
         AtomBlockId src_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
-        const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(src_blk_id);
         ClusterBlockId src_clb = atom_ctx.lookup.atom_clb(src_blk_id);
+
+        int src_layer_num = place_ctx.block_locs[src_clb].loc.layer;
+        //To only show primitive nets that are connected to currently active layers on the screen
+        if (!draw_state->draw_layer_display[src_layer_num].visible) {
+            continue; /* Don't Draw */
+        }
+
+        const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(src_blk_id);
         bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
         bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
@@ -577,15 +593,26 @@ void draw_logical_connections(ezgl::renderer* g) {
             AtomBlockId sink_blk_id = atom_ctx.nlist.pin_block(sink_pin_id);
             const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(sink_blk_id);
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
+            int sink_layer_num = place_ctx.block_locs[sink_clb].loc.layer;
 
+            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(src_layer_num, sink_layer_num);
+
+            if (!element_visibility.visible) {
+                continue; /* Don't Draw */
+            }
+
+            transparency_factor = element_visibility.alpha;
+
+            //color selection
+            //transparency factor is the most transparent of the 2 options that the user selects from the UI
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVES_IT_COLOR, DRIVES_IT_COLOR.alpha * NET_ALPHA);
+                g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor, DRIVES_IT_COLOR.alpha * NET_ALPHA));
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVEN_BY_IT_COLOR, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA);
+                g->set_color(DRIVEN_BY_IT_COLOR, fmin(transparency_factor, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA));
             } else if (draw_state->show_nets == DRAW_PRIMITIVE_NETS && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-                g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA); // if showing all, draw the other ones in black
+                g->set_color(ezgl::BLACK, fmin(transparency_factor, ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
             } else {
-                continue; // not showing all, and not the sperified block, so skip
+                continue; // not showing all, and not the specified block, so skip
             }
 
             draw_one_logical_connection(driver_pin_id, sink_pin_id, g);

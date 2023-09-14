@@ -166,6 +166,11 @@ class RRGraphView {
     inline short node_layer(RRNodeId node) const {
         return node_storage_.node_layer(node);
     }
+    
+     /** @brief Get the ptc number twist of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_ptc_twist(RRNodeId node) const{
+        return node_storage_.node_ptc_twist(node);
+    }
 
     /** @brief Get the first out coming edge of resource node. This function is inlined for runtime optimization. */
     inline RREdgeId node_first_edge(RRNodeId node) const {

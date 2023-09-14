@@ -41,8 +41,12 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     t_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
     short node_layer = node_storage_.node_layer(node);
+    short node_twist = node_storage_.node_ptc_twist(node);
+    int node_offset = 0;
     for (int ix = node_storage_.node_xlow(node); ix <= node_storage_.node_xhigh(node); ix++) {
         for (int iy = node_storage_.node_ylow(node); iy <= node_storage_.node_yhigh(node); iy++) {
+            node_ptc_num += node_twist * node_offset;
+            node_offset++;
             switch (node_type) {
                 case SOURCE:
                 case SINK:

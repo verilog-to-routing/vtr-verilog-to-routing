@@ -59,6 +59,7 @@ bool log_quiet_warnings = false;
 int log_verbose_level;
 string log_last_error;
 void (*log_error_atexit)() = NULL;
+void (*log_verific_callback)(int msg_type, const char *message_id, const char* file_path, unsigned int line_no, const char *msg) = NULL;
 
 int log_make_debug = 0;
 int log_force_debug = 0;
@@ -144,6 +145,12 @@ void logv(const char *format, va_list ap)
 		}
 
 		if (format[0] && format[strlen(format)-1] == '\n')
+			next_print_log = true;
+
+		// Special case to detect newlines in Python log output, since
+		// the binding always calls `log("%s", payload)` and the newline
+		// is then in the first formatted argument
+		if (!strcmp(format, "%s") && str.back() == '\n')
 			next_print_log = true;
 
 		for (auto f : log_files)
@@ -377,14 +384,20 @@ void logv_error(const char *format, va_list ap)
 	logv_error_with_prefix("ERROR: ", format, ap);
 }
 
+void logv_file_error(const string &filename, int lineno,
+                     const char *format, va_list ap)
+{
+	std::string prefix = stringf("%s:%d: ERROR: ",
+				     filename.c_str(), lineno);
+	logv_error_with_prefix(prefix.c_str(), format, ap);
+}
+
 void log_file_error(const string &filename, int lineno,
                     const char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
-	std::string prefix = stringf("%s:%d: ERROR: ",
-				     filename.c_str(), lineno);
-	logv_error_with_prefix(prefix.c_str(), format, ap);
+	logv_file_error(filename, lineno, format, ap);
 }
 
 void log(const char *format, ...)

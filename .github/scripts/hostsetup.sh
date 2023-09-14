@@ -72,6 +72,7 @@ apt install -y \
   wget \
   openssl \
   libssl-dev
+  libtbb-dev
 
 # installing the latest version of cmake
 apt install -y apt-transport-https ca-certificates gnupg
