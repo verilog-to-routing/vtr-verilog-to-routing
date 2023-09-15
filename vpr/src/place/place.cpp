@@ -69,6 +69,8 @@
 
 #include "noc_place_utils.h"
 
+#include "place_re_cluster.h"
+
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
@@ -482,6 +484,8 @@ void try_place(const Netlist<>& net_list,
 
     t_placement_checkpoint placement_checkpoint;
     t_graph_type graph_directionality;
+
+    PlaceReCluster place_re_cluster;
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
@@ -941,6 +945,8 @@ void try_place(const Netlist<>& net_list,
                            critical_path.delay(), sTNS, sWNS, tot_iter);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
+
+    place_re_cluster.re_cluster();
 
     //Final timing analysis
     PlaceCritParams crit_params;
