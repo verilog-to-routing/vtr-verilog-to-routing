@@ -469,6 +469,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const t_rr_type chan_type,
                           const t_track_to_pin_lookup& track_to_pin_lookup,
                           t_sb_connection_map* sb_conn_map,
+                          vtr::NdMatrix<int, 3>& extra_nodes_count_inter_die_count,
                           const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                           const int cost_index_offset,
                           const t_chan_width& nodes_per_chan,
@@ -2126,6 +2127,13 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
+    /*
+     *In case of multi-die FPGAs with custom switchblocks, we map each connection to a new CHANX node with length 0;
+     *To find track num of newly added nodes, we need to keep index of used nodes for each switchblocks.
+     */
+    vtr::NdMatrix<int, 3> inter_die_track_offset_custom_switchblocks;
+    inter_die_track_offset_custom_switchblocks.resize(std::array<size_t, 3>{(size_t)grid.get_num_layers(), grid.width(), grid.height()}, 0);
+
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
         auto& device_ctx = g_vpr_ctx.device();
         /* Skip the current die if architecture file specifies that it doesn't require inter-cluster programmable resource routing */
@@ -2143,7 +2151,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
                 if (i > 0) {
                     int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.x_list[j]);
-                    build_rr_chan(rr_graph_builder, layer, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map, switch_block_conn,
+                    build_rr_chan(rr_graph_builder, layer, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map, inter_die_track_offset_custom_switchblocks, switch_block_conn,
                                   CHANX_COST_INDEX_START,
                                   chan_width, grid, tracks_per_chan,
                                   sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
@@ -2161,7 +2169,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 }
                 if (j > 0) {
                     int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.y_list[i]);
-                    build_rr_chan(rr_graph_builder, layer, i, j, CHANY, track_to_pin_lookup_y, sb_conn_map, switch_block_conn,
+                    build_rr_chan(rr_graph_builder, layer, i, j, CHANY, track_to_pin_lookup_y, sb_conn_map, inter_die_track_offset_custom_switchblocks, switch_block_conn,
                                   CHANX_COST_INDEX_START + num_seg_types_x,
                                   chan_width, grid, tracks_per_chan,
                                   sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
@@ -2180,6 +2188,10 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
         }
     }
+
+    //clear temp data structures
+    inter_die_track_offset_custom_switchblocks.clear();
+
     VTR_LOG("CHAN->CHAN type edge count:%d\n", num_edges);
     num_edges = 0;
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) noexcept {};
@@ -3052,6 +3064,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const t_rr_type chan_type,
                           const t_track_to_pin_lookup& track_to_pin_lookup,
                           t_sb_connection_map* sb_conn_map,
+                          vtr::NdMatrix<int, 3>& extra_nodes_count_inter_die_count,
                           const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                           const int cost_index_offset,
                           const t_chan_width& nodes_per_chan,
@@ -3095,13 +3108,6 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(sblock_pattern.empty() && switch_block_conn.empty());
         custom_switch_block = true;
     }
-
-    /*
-     *In case of multi-die FPGAs with custom switchblocks, we map each connection to a new CHANX node with length 0;
-     *To find track num of newly added nodes, we need to keep index of used nodes for each switch blocks.
-     */
-    vtr::NdMatrix<int, 3> inter_die_track_offset_custom_switchblocks;
-    inter_die_track_offset_custom_switchblocks.resize(std::array<size_t, 3>{(size_t)grid.get_num_layers(), grid.width(), grid.height()}, 0);
 
     /* Loads up all the routing resource nodes in the current channel segment */
     for (int track = 0; track < tracks_per_chan; ++track) {
@@ -3150,7 +3156,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             }
             if (to_seg_details->length() > 0) {
                 get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, chan_coord,
-                                    opposite_chan_type, inter_die_track_offset_custom_switchblocks, seg_dimension, max_opposite_chan_width, grid,
+                                    opposite_chan_type, extra_nodes_count_inter_die_count, seg_dimension, max_opposite_chan_width, grid,
                                     Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                     from_seg_details, to_seg_details, opposite_chan_details,
                                     directionality,
@@ -3170,7 +3176,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             }
             if (to_seg_details->length() > 0) {
                 get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, chan_coord + 1,
-                                    opposite_chan_type, inter_die_track_offset_custom_switchblocks, seg_dimension, max_opposite_chan_width, grid,
+                                    opposite_chan_type, extra_nodes_count_inter_die_count, seg_dimension, max_opposite_chan_width, grid,
                                     Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                     from_seg_details, to_seg_details, opposite_chan_details,
                                     directionality, switch_block_conn, sb_conn_map);
@@ -3202,7 +3208,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                 }
                 if (to_seg_details->length() > 0) {
                     get_track_to_tracks(rr_graph_builder, layer, chan_coord, start, track, chan_type, target_seg,
-                                        chan_type, inter_die_track_offset_custom_switchblocks, seg_dimension, max_chan_width, grid,
+                                        chan_type, extra_nodes_count_inter_die_count, seg_dimension, max_chan_width, grid,
                                         Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                         from_seg_details, to_seg_details, from_chan_details,
                                         directionality,
@@ -3238,9 +3244,6 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_track_num(node, track);
         rr_graph_builder.set_node_direction(node, seg_details[track].direction());
     }
-
-    //clear temp data structures
-    inter_die_track_offset_custom_switchblocks.clear();
 }
 
 static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
