@@ -14,6 +14,12 @@ struct t_pl_moved_block {
     t_pl_loc new_loc;
 };
 
+struct t_pl_moved_atom_block {
+    AtomBlockId block_num;
+    t_pl_atom_loc old_loc;
+    t_pl_atom_loc new_loc;
+};
+
 /* Stores the list of blocks to be moved in a swap during       *
  * placement.                                                   *
  * Store the information on the blocks to be moved in a swap during     *
@@ -38,6 +44,18 @@ struct t_pl_blocks_to_be_moved {
     std::unordered_set<t_pl_loc> moved_to;
 
     std::vector<ClusterPinId> affected_pins;
+};
+
+struct t_pl_atom_blocks_to_be_moved {
+    t_pl_atom_blocks_to_be_moved(size_t max_blocks)
+        : moved_blocks(max_blocks) {}
+
+    int num_moved_blocks = 0;
+    std::vector<t_pl_moved_atom_block> moved_blocks;
+    std::unordered_set<t_pl_atom_loc> moved_from;
+    std::unordered_set<t_pl_atom_loc> moved_to;
+
+    std::vector<AtomPinId> affected_pins;
 };
 
 enum class e_block_move_result {
