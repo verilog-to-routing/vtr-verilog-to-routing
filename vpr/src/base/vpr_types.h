@@ -732,7 +732,7 @@ struct t_pl_loc {
     }
 
     friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
+        return std::tie(lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
     }
 
     friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
@@ -766,7 +766,11 @@ struct t_pl_atom_loc {
     int y = OPEN;
     int sub_tile = OPEN;
     int layer = OPEN;
-}
+
+    friend bool operator==(const t_pl_atom_loc& lhs, const t_pl_atom_loc& rhs) {
+        return std::tie(lhs.primitive_id, lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.primitive_id, rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
+    }
+};
 
 struct t_place_region {
     float capacity; ///<Capacity of this region, in tracks.
