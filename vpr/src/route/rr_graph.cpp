@@ -1273,15 +1273,6 @@ static void build_rr_graph(const t_graph_type graph_type,
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
     }
 
-    for(int layer = 0; layer < grid.get_num_layers(); layer++){
-        for(int x = 0; x < grid.width(); x++){
-            for(int y = 0; y < grid.height(); y++){
-                if(extra_nodes_count[layer][x][y] > 0)
-                    printf("%d, %d, %d\n",layer,x,y);
-            }
-        }
-    }
-
     /* START IPIN MAP */
     /* Create ipin map lookups */
 
@@ -2143,6 +2134,14 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
         for (size_t i = 0; i < grid.width() - 1; ++i) {
             for (size_t j = 0; j < grid.height() - 1; ++j) {
+
+                //In multi-die FPGAs with track-to-track connection between layers, we need to load newly added CHANX nodes
+                if (grid.get_num_layers() > 1 && sb_conn_map != nullptr) {
+                    //custom switch block defined in the architecture
+                    VTR_ASSERT(sblock_pattern.empty() && switch_block_conn.empty());
+                    build_inter_die_custom_sb_rr_chan(rr_graph_builder, layer, i, j, extra_nodes_count_inter_die_count,CHANX_COST_INDEX_START, chan_width, chan_details_x);
+                }
+
                 if (i > 0) {
                     int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.x_list[j]);
                     build_rr_chan(rr_graph_builder, layer, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map, switch_block_conn,
@@ -2178,13 +2177,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                     num_edges += rr_edges_to_create.size();
 
                     rr_edges_to_create.clear();
-                }
-
-                //In multi-die FPGAs with track-to-track connection between layers, we need to load newly added CHANX nodes
-                if (grid.get_num_layers() > 1 && sb_conn_map != nullptr) {
-                    //custom switch block defined in the architecture
-                    VTR_ASSERT(sblock_pattern.empty() && switch_block_conn.empty());
-                    build_inter_die_custom_sb_rr_chan(rr_graph_builder, layer, i, j, extra_nodes_count_inter_die_count,CHANX_COST_INDEX_START, chan_width, chan_details_x);
                 }
             }
         }
@@ -3267,7 +3259,12 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
     int start_track = nodes_per_chan.max;
     int conn_count = extra_nodes_count_inter_die_count[layer][x_coord][y_coord];
 
+    if(conn_count == 0){
+        return; //no new node required in this switchblock
+    }
+
     for (int offset = 0; offset < conn_count; offset++) {
+        int track_num = start_track + offset;
         RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, CHANX, start_track + offset);
         if (node) {
             rr_graph_builder.set_node_layer(node, layer);

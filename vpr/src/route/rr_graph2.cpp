@@ -97,6 +97,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int tile_x,
                                    const int tile_y,
                                    const int layer,
+                                   const int max_chan_width,
                                    const e_side from_side,
                                    const int from_wire,
                                    RRNodeId from_rr_node,
@@ -112,6 +113,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
 
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int layer,
+                                 const int max_chan_width,
                                  const int from_track,
                                  const int to_chan,
                                  const int to_seg,
@@ -1158,8 +1160,8 @@ void get_number_track_to_track_intra_die_conn(vtr::NdMatrix<int,3>& extra_node_c
                             if (sb_conn_map->count(sb_coord) > 0) {
                                 std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
                                 for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
-                                    //connection doesn't cross any layer, no new node is required
                                     if(conn_vector[iconn].to_wire_layer == conn_vector[iconn].from_wire_layer){
+                                        //this connection doesn't cross any layer, no new node is required
                                         continue;
                                     }
                                     else{
@@ -1207,10 +1209,14 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
             for (size_t x = 1; x < grid.width() - 1; ++x) {
                 //count how many track-to-track connection go from current layer to other layers
                 int conn_count = extra_nodes_count[layer][x][y];
+                if(conn_count == 0){
+                    continue;
+                }
                 //reserve extra nodes for inter-die track-to-track connection
                 rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, CHANX, conn_count);
                 for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, y, x, CHANX, nodes_per_chan->max + rr_node_offset);
+                    int track_num = nodes_per_chan->max + rr_node_offset;
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, CHANX, nodes_per_chan->max + rr_node_offset);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
@@ -1559,6 +1565,11 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
 
                         if (rr_graph.node_type(inode) == CHANX) {
                             VTR_ASSERT_MSG(rr_graph.node_ylow(inode) == rr_graph.node_yhigh(inode), "CHANX should be horizontal");
+                            //TODO: SM: remove these
+                            int ylow = rr_graph.node_ylow(inode);
+                            int yhigh = rr_graph.node_yhigh(inode);
+                            int xlow = rr_graph.node_xlow(inode);
+                            int xhigh = rr_graph.node_xhigh(inode);
 
                             if (y != rr_graph.node_ylow(inode)) {
                                 VPR_ERROR(VPR_ERROR_ROUTE, "RR node y position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
@@ -1939,7 +1950,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         if (sb_seg < end_sb_seg) {
             if (custom_switch_block) {
                 if (Direction::DEC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
-                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
+                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side, inter_die_track_offset_custom_switchblocks,
                                                       switch_override,
                                                       sb_conn_map, from_rr_node, rr_edges_to_create);
@@ -1977,7 +1988,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         if (sb_seg > start_sb_seg) {
             if (custom_switch_block) {
                 if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
-                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
+                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side, inter_die_track_offset_custom_switchblocks,
                                                       switch_override,
                                                       sb_conn_map, from_rr_node, rr_edges_to_create);
@@ -2116,6 +2127,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int tile_x,
                                    const int tile_y,
                                    const int layer,
+                                   const int max_chan_width,
                                    const e_side from_side,
                                    const int from_wire,
                                    RRNodeId from_rr_node,
@@ -2170,7 +2182,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
             }
             else{ //track-to_track connection crossing layer
                 VTR_ASSERT(to_layer != layer);
-                int chan_width = g_vpr_ctx.device().chan_width.max;
+
                 /*
                  * In order to connect two tracks in different layers, we need to follow these three steps:
                  * 1) connect "from_track" to extra "chanx" node in the same switchblocks
@@ -2178,8 +2190,8 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                  * 3) connect "chanx" node located in to_layer to "to_track"
                  * */
 
-                RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, CHANX, chan_width + inter_die_track_offset_custom_switchblocks[layer][tile_x][tile_y]);
-                RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, CHANX, chan_width + inter_die_track_offset_custom_switchblocks[to_layer][tile_x][tile_y]);
+                RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, CHANX, max_chan_width + inter_die_track_offset_custom_switchblocks[layer][tile_x][tile_y]);
+                RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, CHANX, max_chan_width + inter_die_track_offset_custom_switchblocks[to_layer][tile_x][tile_y]);
                 RRNodeId chanx_to_track_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
 
                 if(!track_to_chanx_node || !diff_layer_chanx_node || !chanx_to_track_node){
@@ -2217,6 +2229,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
  * connection map sb_conn_map is generated. */
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int layer,
+                                 const int max_chan_width,
                                  const int from_wire,
                                  const int to_chan,
                                  const int to_seg,
@@ -2252,6 +2265,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                            tile_x,
                            tile_y,
                            layer,
+                           max_chan_width,
                            from_side,
                            from_wire,
                            from_rr_node,
@@ -2271,6 +2285,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                tile_x,
                                tile_y,
                                layer,
+                               max_chan_width,
                                from_side,
                                from_wire,
                                from_rr_node,
