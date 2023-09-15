@@ -927,7 +927,11 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     return block_scores;
 }
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
 static void place_all_blocks(const t_placer_opts& placer_opts, vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
+#else
+static void place_all_blocks(const t_placer_opts& /* placer_opts */, vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
+#endif
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();

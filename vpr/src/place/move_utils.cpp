@@ -547,11 +547,19 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
 }
 #endif
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from) {
+#else
+ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
+                                     int& logical_blk_type_index,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from) {
+#endif
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
