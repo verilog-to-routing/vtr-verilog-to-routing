@@ -497,7 +497,7 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     return empty_locs;
 }
 
-#ifndef VTR_ENABLE_DEBUG_LOGGING
+#ifdef VTR_ENABLE_DEBUG_LOGGING
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id) {
     if (!blk_id.is_valid()) {
@@ -574,7 +574,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
             b_from = pick_from_block(logical_blk_type_index);
         }
     }
-#ifndef VTR_ENABLE_DEBUG_LOGGING
+#ifdef VTR_ENABLE_DEBUG_LOGGING
         enable_placer_debug(placer_opts, b_from);
 #endif
 

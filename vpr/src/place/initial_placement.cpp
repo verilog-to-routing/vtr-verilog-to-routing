@@ -978,7 +978,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts, vtr::vector<Clust
 
             auto blk_id_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
-#ifndef VTR_ENABLE_DEBUG_LOGGING
+#ifdef VTR_ENABLE_DEBUG_LOGGING
             enable_placer_debug(placer_opts, blk_id);
 #endif
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Popped Block %d\n", size_t(blk_id));
