@@ -188,7 +188,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_track_to_pin_lookup& track_to_pin_lookup_y,
                                                                   const t_pin_to_track_lookup& opin_to_track_map,
                                                                   const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                                                                  const vtr::NdMatrix<int,3>& extra_nodes_count_inter_die_count,
+                                                                  const vtr::NdMatrix<int, 3>& extra_nodes_count_inter_die_count,
                                                                   t_sb_connection_map* sb_conn_map,
                                                                   const DeviceGrid& grid,
                                                                   const int Fs,
@@ -487,7 +487,7 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
                                               const int layer,
                                               const int x_coord,
                                               const int y_coord,
-                                              const vtr::NdMatrix<int,3>& extra_nodes_count_inter_die_count,
+                                              const vtr::NdMatrix<int, 3>& extra_nodes_count_inter_die_count,
                                               const int const_index_offset,
                                               const t_chan_width& nodes_per_chan,
                                               const t_chan_details& chan_details_x);
@@ -1262,9 +1262,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* END SB LOOKUP */
 
     /* Add extra nodes to switch blocks for multi-layer FPGAs with custom switch blocks that define track-to_track connections */
-    vtr::NdMatrix<int,3> extra_nodes_count;
+    vtr::NdMatrix<int, 3> extra_nodes_count;
     auto& grid_ctx = device_ctx.grid;
-    extra_nodes_count.resize(std::array<size_t,3>{(size_t) grid_ctx.get_num_layers(), grid.width(), grid.height()}, 0);
+    extra_nodes_count.resize(std::array<size_t, 3>{(size_t)grid_ctx.get_num_layers(), grid.width(), grid.height()}, 0);
 
     if (grid.get_num_layers() > 1 && sb_type == CUSTOM) {
         //keep how many nodes each switchblock requires
@@ -2001,7 +2001,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_track_to_pin_lookup& track_to_pin_lookup_y,
                                                                   const t_pin_to_track_lookup& opin_to_track_map,
                                                                   const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                                                                  const vtr::NdMatrix<int,3>& extra_nodes_count_inter_die_count,
+                                                                  const vtr::NdMatrix<int, 3>& extra_nodes_count_inter_die_count,
                                                                   t_sb_connection_map* sb_conn_map,
                                                                   const DeviceGrid& grid,
                                                                   const int Fs,
@@ -2134,12 +2134,11 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
         for (size_t i = 0; i < grid.width() - 1; ++i) {
             for (size_t j = 0; j < grid.height() - 1; ++j) {
-
                 //In multi-die FPGAs with track-to-track connection between layers, we need to load newly added CHANX nodes
                 if (grid.get_num_layers() > 1 && sb_conn_map != nullptr) {
                     //custom switch block defined in the architecture
                     VTR_ASSERT(sblock_pattern.empty() && switch_block_conn.empty());
-                    build_inter_die_custom_sb_rr_chan(rr_graph_builder, layer, i, j, extra_nodes_count_inter_die_count,CHANX_COST_INDEX_START, chan_width, chan_details_x);
+                    build_inter_die_custom_sb_rr_chan(rr_graph_builder, layer, i, j, extra_nodes_count_inter_die_count, CHANX_COST_INDEX_START, chan_width, chan_details_x);
                 }
 
                 if (i > 0) {
@@ -3101,8 +3100,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
      *In case of multi-die FPGAs with custom switchblocks, we map each connection to a new CHANX node with length 0;
      *To find track num of newly added nodes, we need to keep index of used nodes for each switch blocks.
      */
-    vtr::NdMatrix<int,3> inter_die_track_offset_custom_switchblocks;
-    inter_die_track_offset_custom_switchblocks.resize(std::array<size_t,3>{(size_t) grid.get_num_layers(), grid.width(), grid.height()}, 0);
+    vtr::NdMatrix<int, 3> inter_die_track_offset_custom_switchblocks;
+    inter_die_track_offset_custom_switchblocks.resize(std::array<size_t, 3>{(size_t)grid.get_num_layers(), grid.width(), grid.height()}, 0);
 
     /* Loads up all the routing resource nodes in the current channel segment */
     for (int track = 0; track < tracks_per_chan; ++track) {
@@ -3248,7 +3247,7 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
                                               const int layer,
                                               const int x_coord,
                                               const int y_coord,
-                                              const vtr::NdMatrix<int,3>& extra_nodes_count_inter_die_count,
+                                              const vtr::NdMatrix<int, 3>& extra_nodes_count_inter_die_count,
                                               const int const_index_offset,
                                               const t_chan_width& nodes_per_chan,
                                               const t_chan_details& chan_details_x) {
@@ -3259,12 +3258,11 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
     int start_track = nodes_per_chan.max;
     int conn_count = extra_nodes_count_inter_die_count[layer][x_coord][y_coord];
 
-    if(conn_count == 0){
+    if (conn_count == 0) {
         return; //no new node required in this switchblock
     }
 
     for (int offset = 0; offset < conn_count; offset++) {
-        int track_num = start_track + offset;
         RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, CHANX, start_track + offset);
         if (node) {
             rr_graph_builder.set_node_layer(node, layer);

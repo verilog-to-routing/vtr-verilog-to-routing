@@ -105,7 +105,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int to_x,
                                    const int to_y,
                                    const t_rr_type to_chan_type,
-                                   vtr::NdMatrix<int,3>& inter_die_track_offset_custom_switchblocks,
+                                   vtr::NdMatrix<int, 3>& inter_die_track_offset_custom_switchblocks,
                                    const int switch_override,
                                    t_sb_connection_map* sb_conn_map,
                                    t_rr_edge_info_set& rr_edges_to_create,
@@ -120,7 +120,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const t_rr_type to_chan_type,
                                  const e_side from_side,
                                  const e_side to_side,
-                                 vtr::NdMatrix<int,3>& inter_die_track_offset_custom_switchblocks,
+                                 vtr::NdMatrix<int, 3>& inter_die_track_offset_custom_switchblocks,
                                  const int swtich_override,
                                  t_sb_connection_map* sb_conn_map,
                                  RRNodeId from_rr_node,
@@ -1141,33 +1141,30 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
-void get_number_track_to_track_intra_die_conn(vtr::NdMatrix<int,3>& extra_node_count,
+void get_number_track_to_track_intra_die_conn(vtr::NdMatrix<int, 3>& extra_node_count,
                                               t_sb_connection_map* sb_conn_map) {
     auto& grid_ctx = g_vpr_ctx.device().grid;
-    for(auto layer = 0; layer < grid_ctx.get_num_layers(); layer++){
-        for(size_t x = 0; x < grid_ctx.width(); x++){
-            for(size_t y = 0; y < grid_ctx.height(); y++){
-                for(auto from_side : TOTAL_SIDES){
-                    for(auto to_side : TOTAL_SIDES){
-                        if(from_side < NUM_SIDES && to_side < NUM_SIDES){ //this connection is not crossing any layer
+    for (auto layer = 0; layer < grid_ctx.get_num_layers(); layer++) {
+        for (size_t x = 0; x < grid_ctx.width(); x++) {
+            for (size_t y = 0; y < grid_ctx.height(); y++) {
+                for (auto from_side : TOTAL_SIDES) {
+                    for (auto to_side : TOTAL_SIDES) {
+                        if (from_side < NUM_SIDES && to_side < NUM_SIDES) { //this connection is not crossing any layer
                             continue;
-                        }
-                        else if (from_side == to_side){
+                        } else if (from_side == to_side) {
                             continue;
-                        }
-                        else{
+                        } else {
                             Switchblock_Lookup sb_coord(x, y, layer, from_side, to_side);
                             if (sb_conn_map->count(sb_coord) > 0) {
                                 std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
                                 for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
-                                    if(conn_vector[iconn].to_wire_layer == conn_vector[iconn].from_wire_layer){
+                                    if (conn_vector[iconn].to_wire_layer == conn_vector[iconn].from_wire_layer) {
                                         //this connection doesn't cross any layer, no new node is required
                                         continue;
-                                    }
-                                    else{
+                                    } else {
                                         //check if both from_layer and to_layer are valid, might not be valid since patterns in switchblocks are very general
-                                        if(conn_vector[iconn].from_wire_layer >= 0 && conn_vector[iconn].from_wire_layer < grid_ctx.get_num_layers()){
-                                            if(conn_vector[iconn].to_wire_layer >= 0 && conn_vector[iconn].to_wire_layer < grid_ctx.get_num_layers()){
+                                        if (conn_vector[iconn].from_wire_layer >= 0 && conn_vector[iconn].from_wire_layer < grid_ctx.get_num_layers()) {
+                                            if (conn_vector[iconn].to_wire_layer >= 0 && conn_vector[iconn].to_wire_layer < grid_ctx.get_num_layers()) {
                                                 //add an extra node for source layer
                                                 extra_node_count[conn_vector[iconn].from_wire_layer][x][y]++;
                                                 //add an extra node for destination layer
@@ -1188,7 +1185,7 @@ void get_number_track_to_track_intra_die_conn(vtr::NdMatrix<int,3>& extra_node_c
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const t_chan_width* nodes_per_chan,
                                               const DeviceGrid& grid,
-                                              const vtr::NdMatrix<int,3>& extra_nodes_count,
+                                              const vtr::NdMatrix<int, 3>& extra_nodes_count,
                                               int* index) {
     /*
      * In case of multi-die FPGAs, we add extra nodes (can be either CHANX OR CHANY, used CHANX) to
@@ -1209,13 +1206,12 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
             for (size_t x = 1; x < grid.width() - 1; ++x) {
                 //count how many track-to-track connection go from current layer to other layers
                 int conn_count = extra_nodes_count[layer][x][y];
-                if(conn_count == 0){
+                if (conn_count == 0) {
                     continue;
                 }
                 //reserve extra nodes for inter-die track-to-track connection
                 rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, CHANX, conn_count);
                 for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    int track_num = nodes_per_chan->max + rr_node_offset;
                     RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, CHANX, nodes_per_chan->max + rr_node_offset);
                     if (!inode) {
                         inode = RRNodeId(*index);
@@ -1565,12 +1561,6 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
 
                         if (rr_graph.node_type(inode) == CHANX) {
                             VTR_ASSERT_MSG(rr_graph.node_ylow(inode) == rr_graph.node_yhigh(inode), "CHANX should be horizontal");
-                            //TODO: SM: remove these
-                            int ylow = rr_graph.node_ylow(inode);
-                            int yhigh = rr_graph.node_yhigh(inode);
-                            int xlow = rr_graph.node_xlow(inode);
-                            int xhigh = rr_graph.node_xhigh(inode);
-
                             if (y != rr_graph.node_ylow(inode)) {
                                 VPR_ERROR(VPR_ERROR_ROUTE, "RR node y position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
                                           rr_graph.node_ylow(inode),
@@ -1809,7 +1799,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_rr_type from_type,
                         const int to_seg,
                         const t_rr_type to_type,
-                        vtr::NdMatrix<int,3>& inter_die_track_offset_custom_switchblocks,
+                        vtr::NdMatrix<int, 3>& inter_die_track_offset_custom_switchblocks,
                         const int chan_len,
                         const int max_chan_width,
                         const DeviceGrid& grid,
@@ -2135,12 +2125,11 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int to_x,
                                    const int to_y,
                                    const t_rr_type to_chan_type,
-                                   vtr::NdMatrix<int,3>& inter_die_track_offset_custom_switchblocks,
+                                   vtr::NdMatrix<int, 3>& inter_die_track_offset_custom_switchblocks,
                                    const int switch_override,
                                    t_sb_connection_map* sb_conn_map,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    int& edge_count) {
-
     auto& device_ctx = g_vpr_ctx.device();
 
     /* get coordinate to index into the SB map */
@@ -2159,8 +2148,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
             /* Get the index of the switch connecting the two wires */
             int src_switch = conn_vector[iconn].switch_ind;
 
-
-            if(to_layer == layer){ //track-to-track connection within the same layer
+            if (to_layer == layer) { //track-to-track connection within the same layer
                 RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
 
                 if (!to_node) {
@@ -2179,8 +2167,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
                     ++edge_count;
                 }
-            }
-            else{ //track-to_track connection crossing layer
+            } else { //track-to_track connection crossing layer
                 VTR_ASSERT(to_layer != layer);
 
                 /*
@@ -2194,7 +2181,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, CHANX, max_chan_width + inter_die_track_offset_custom_switchblocks[to_layer][tile_x][tile_y]);
                 RRNodeId chanx_to_track_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
 
-                if(!track_to_chanx_node || !diff_layer_chanx_node || !chanx_to_track_node){
+                if (!track_to_chanx_node || !diff_layer_chanx_node || !chanx_to_track_node) {
                     continue;
                 }
 
@@ -2236,7 +2223,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const t_rr_type to_chan_type,
                                  const e_side from_side,
                                  const e_side to_side,
-                                 vtr::NdMatrix<int,3>& inter_die_track_offset_custom_switchblocks,
+                                 vtr::NdMatrix<int, 3>& inter_die_track_offset_custom_switchblocks,
                                  const int switch_override,
                                  t_sb_connection_map* sb_conn_map,
                                  RRNodeId from_rr_node,

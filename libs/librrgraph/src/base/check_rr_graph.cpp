@@ -485,11 +485,14 @@ void check_rr_node(const RRGraphView& rr_graph,
                 tracks_per_node = ((rr_type == CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
             }
 
-            //todo: SM: should come up with better solution than commenting
-//            if (ptc_num > nodes_per_chan) {
-//                VPR_ERROR(VPR_ERROR_ROUTE,
-//                          "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-//            }
+            //if a chanx/chany has length 0, it means it is used to connect different dice together
+            //hence, the ptc number can be larger than nodes_per_chan
+            if(xlow != xhigh || ylow != yhigh) {
+                if (ptc_num > nodes_per_chan) {
+                    VPR_ERROR(VPR_ERROR_ROUTE,
+                              "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                }
+            }
 
             if (capacity != tracks_per_node) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,

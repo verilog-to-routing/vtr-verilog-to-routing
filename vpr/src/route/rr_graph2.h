@@ -32,7 +32,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const t_chan_width* nodes_per_chan,
                                               const DeviceGrid& grid,
-                                              const vtr::NdMatrix<int,3>& extra_nodes_count,
+                                              const vtr::NdMatrix<int, 3>& extra_nodes_count,
                                               int* index);
 
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
@@ -70,7 +70,7 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
                       e_side side = NUM_SIDES);
 
 //Return how many connection inside switch blocks located at each grid location are going to a different layer
-void get_number_track_to_track_intra_die_conn(vtr::NdMatrix<int,3>& extra_node_count,
+void get_number_track_to_track_intra_die_conn(vtr::NdMatrix<int, 3>& extra_node_count,
                                               t_sb_connection_map* sb_conn_map);
 
 int find_average_rr_node_index(int device_width,
@@ -187,7 +187,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_rr_type from_type,
                         const int to_seg,
                         const t_rr_type to_type,
-                        vtr::NdMatrix<int,3>& inter_die_track_offset_custom_switchblocks,
+                        vtr::NdMatrix<int, 3>& inter_die_track_offset_custom_switchblocks,
                         const int chan_len,
                         const int max_chan_width,
                         const DeviceGrid& grid,
