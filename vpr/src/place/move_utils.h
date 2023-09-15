@@ -335,7 +335,7 @@ std::string e_move_result_to_string(e_move_result move_outcome);
  * then debugging information should be printed.
  *
  * @param placer_opts
- * @param blk_id The if of the block that is considered to be moved
+ * @param blk_id The ID of the block that is considered to be moved
  */
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id);
