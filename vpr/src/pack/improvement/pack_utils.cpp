@@ -90,6 +90,21 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
 #endif
 }
 
+const t_pack_molecule* get_atom_mol (AtomBlockId atom_blk_id) {
+    const t_pack_molecule* mol = nullptr;
+    const auto& atom_mol_map = g_vpr_ctx.atom().atom_molecules;
+    auto rng = atom_mol_map.equal_range(atom_blk_id);
+
+    for (auto it = rng.first; it != rng.second; ++it) {
+        mol = it->second;
+        if (mol->valid) {
+            break;
+        }
+    }
+
+    return mol;
+}
+
 void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats) {
 #ifdef PACK_MULTITHREADED
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
