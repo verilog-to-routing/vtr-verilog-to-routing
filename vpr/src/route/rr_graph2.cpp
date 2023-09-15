@@ -2202,7 +2202,11 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 ++edge_count;
 
                 if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
-                    //todo: SM: should complete this part
+                    //Add reverse edge since bi-directional
+                    rr_edges_to_create.emplace_back(track_to_chanx_node, from_rr_node, src_switch, false);
+                    ++edge_count;
+                    rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, src_switch, false);
+                    ++edge_count;
                 }
             }
         }
