@@ -329,6 +329,14 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
 std::string e_move_result_to_string(e_move_result move_outcome);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
+/**
+ * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
+ * connected to the block share the same ID as the net ID passed to the placer_debug_net parameter of the command line,
+ * then debugging information should be printed.
+ *
+ * @param placer_opts
+ * @param blk_id The if of the block that is considered to be moved
+ */
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id);
 #endif

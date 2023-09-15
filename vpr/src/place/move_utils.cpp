@@ -504,7 +504,7 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
         return;
     }
 
-    int blk_id_num = (int) size_t(blk_id);
+    int blk_id_num = (int)size_t(blk_id);
     // Get the nets connected to the block
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type;
@@ -533,7 +533,7 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
     } else {
         for (const auto& net_id : block_nets) {
             if (net_id.is_valid()) {
-                int net_id_num = (int) size_t(net_id);
+                int net_id_num = (int)size_t(net_id);
                 if (placer_opts.placer_debug_net == net_id_num) {
                     match_net = true;
                     break;
@@ -544,7 +544,6 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
 
     if (active_blk_debug) f_placer_debug &= match_blk;
     if (active_net_debug) f_placer_debug &= match_net;
-
 }
 #endif
 
@@ -575,7 +574,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     }
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-        enable_placer_debug(placer_opts, b_from);
+    enable_placer_debug(placer_opts, b_from);
 #endif
 
     return b_from;
