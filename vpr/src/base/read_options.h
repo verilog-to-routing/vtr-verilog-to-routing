@@ -100,6 +100,7 @@ struct t_options {
     argparse::ArgValue<int> pack_verbosity;
     argparse::ArgValue<bool> use_attraction_groups;
     argparse::ArgValue<int> pack_num_moves;
+    argparse::ArgValue<int> pack_num_threads;
     argparse::ArgValue<std::string> pack_move_type;
     /* Placement options */
     argparse::ArgValue<int> Seed;
@@ -134,6 +135,7 @@ struct t_options {
     argparse::ArgValue<float> place_agent_epsilon;
     argparse::ArgValue<float> place_agent_gamma;
     argparse::ArgValue<float> place_dm_rlim;
+    argparse::ArgValue<e_agent_space> place_agent_space;
     argparse::ArgValue<e_agent_algorithm> place_agent_algorithm;
     argparse::ArgValue<std::string> place_reward_fun;
     argparse::ArgValue<float> place_crit_limit;

@@ -30,7 +30,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    // start by deleting any global datastructures (this is so that we dont have corruption from previous tests)
+    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     delete noc_ctx.noc_flows_router;
@@ -38,7 +38,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -58,7 +58,10 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         id_of_all_hard_routers_in_device.push_back(router_number);
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -85,7 +88,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         }
     }
 
-    // now we need to create router cluster blocks and assing them to placed at a router hard block
+    // now we need to create router cluster blocks and passing them to placed at a router hard block
     for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // since the indexes for the hard router blocks start from 0, we will just place the router clusters on hard router blocks with the same id //
 
@@ -93,13 +96,16 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         // now add the cluster and its placed location to the placement datastructures
         place_ctx.block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 
-    // similiar parameters for all traffic flows
+    // similar parameters for all traffic flows
     std::string source_traffic_flow_name = "test";
     std::string sink_traffic_flow_name = "test_2";
     double traffic_flow_latency = 10.0;
@@ -132,10 +138,10 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
             break;
         }
     }
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
-    // start by creating the routing alagorithm
+    // start by creating the routing algorithm
     NocRouting* routing_algorithm_global = new XYRouting();
     noc_ctx.noc_flows_router = routing_algorithm_global;
 
@@ -155,12 +161,12 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
 
     /* in the test function we will be routing all the traffic flows and then updating their link usages. So we will be generating a vector of all links
      * and updating their bandwidths based on the routed traffic flows. This will
-     * then be compared to the link badnwdith usages updated by the test function
+     * then be compared to the link bandwidth usages updated by the test function
      */
     vtr::vector<NocLinkId, double> golden_link_bandwidths;
     golden_link_bandwidths.resize(noc_ctx.noc_model.get_noc_links().size(), 0.0);
 
-    // now go through the routed traffic flows and update the bandwidths of the links. Once a traffic flow has been processsed, we need to clear it so that the test function can update it with the routes it finds
+    // now go through the routed traffic flows and update the bandwidths of the links. Once a traffic flow has been processed, we need to clear it so that the test function can update it with the routes it finds
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
         std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
@@ -173,7 +179,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     }
 
     // now call the test function
-    initial_noc_placement();
+    initial_noc_routing();
 
     // now verify the function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set
     int number_of_links = golden_link_bandwidths.size();
@@ -204,7 +210,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    // start by deleting any global datastructures (this is so that we dont have corruption from previous tests)
+    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     delete noc_ctx.noc_flows_router;
@@ -212,7 +218,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -232,7 +238,10 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         id_of_all_hard_routers_in_device.push_back(router_number);
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -259,7 +268,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         }
     }
 
-    // now we need to create router cluster blocks and assing them to placed at a router hard block
+    // now we need to create router cluster blocks and passing them to placed at a router hard block
     for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // since the indexes for the hard router blocks start from 0, we will just place the router clusters on hard router blocks with the same id //
 
@@ -267,7 +276,10 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         // now add the cluster and its placed location to the placement datastructures
         place_ctx.block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
@@ -276,7 +288,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     noc_ctx.noc_model.set_noc_link_latency(1);
     noc_ctx.noc_model.set_noc_router_latency(1);
 
-    // similiar parameters for all traffic flows
+    // similar parameters for all traffic flows
     std::string source_traffic_flow_name = "test";
     std::string sink_traffic_flow_name = "test_2";
     int number_of_created_traffic_flows = 0;
@@ -310,14 +322,14 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         }
     }
 
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
-    // need to route all the traffic flows so create a datstructure to store them here
+    // need to route all the traffic flows so create a datastructure to store them here
     std::vector<int> golden_traffic_flow_route_sizes;
     golden_traffic_flow_route_sizes.resize(number_of_created_traffic_flows);
 
     // now go and route all the traffic flows //
-    // start by creating the routing alagorithm
+    // start by creating the routing algorithm
     NocRouting* routing_algorithm_global = new XYRouting();
     noc_ctx.noc_flows_router = routing_algorithm_global;
 
@@ -344,8 +356,8 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     }
 
     // assume this works
-    // this is needed to setup the global noc packet router and also global datastructures
-    initial_noc_placement();
+    // this is needed to set up the global noc packet router and also global datastructures
+    initial_noc_routing();
 
     SECTION("test_comp_noc_aggregate_bandwidth_cost") {
         //initialize all the cost calculator datastructures
@@ -440,7 +452,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    // start by deleting any global datastructures (this is so that we dont have corruption from previous tests)
+    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     delete noc_ctx.noc_flows_router;
@@ -448,7 +460,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -456,7 +468,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     int router_grid_position_y;
 
     // noc options used in this test
-    // we creae these randomly
+    // we create these randomly
     t_noc_opts noc_opts;
     noc_opts.noc_latency_constraints_weighting = dist_3(double_engine);
     noc_opts.noc_latency_weighting = dist_3(double_engine);
@@ -480,7 +492,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -507,7 +522,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         }
     }
 
-    // now we need to create router cluster blocks and assing them to placed at a router hard block as an initial position
+    // now we need to create router cluster blocks and passing them to placed at a router hard block as an initial position
     for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // since the indexes for the hard router blocks start from 0, we will just place the router clusters on hard router blocks with the same id //
 
@@ -515,7 +530,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 
@@ -523,7 +541,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         place_ctx.block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 
-    // similiar parameters for all traffic flows
+    // similar parameters for all traffic flows
     std::string source_traffic_flow_name = "test";
     std::string sink_traffic_flow_name = "test_2";
     int number_of_created_traffic_flows = 0;
@@ -538,7 +556,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         ClusterBlockId sink_router_for_traffic_flow;
 
         // randomly choose sink router
-        // make sure the traffic flow does not start and end at the same router and also make sure that the sink router is never that last 2 router cluster blocks (we dont want them associated to any traffic flows)
+        // make sure the traffic flow does not start and end at the same router and also make sure that the sink router is never that last 2 router cluster blocks (we don't want them associated to any traffic flows)
         do {
             sink_router_for_traffic_flow = (ClusterBlockId)dist(rand_num_gen);
         } while (sink_router_for_traffic_flow == source_router_for_traffic_flow);
@@ -559,10 +577,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
             break;
         }
     }
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
-    // start by creating the routing alagorithm
+    // start by creating the routing algorithm
     NocRouting* routing_algorithm_global = new XYRouting();
     noc_ctx.noc_flows_router = routing_algorithm_global;
 
@@ -594,8 +612,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     }
 
     // assume this works
-    // this is needed to setup the global noc packet router and also global datastructures
-    initial_noc_placement();
+    // this is needed to set up the global noc packet router and also global datastructures
+    initial_noc_routing();
 
     // datastructure below will store the bandwidth usages of all the links
     // and will be updated throughout this test.
@@ -640,7 +658,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     std::unordered_set<NocTrafficFlowId> routed_traffic_flows;
 
     /*  Now we imitate placement here by swapping two clusters block
-     * posistions. In each iteration, we first update the positions
+     * positions. In each iteration, we first update the positions
      * of the two router cluster blocks, then we update the traffic
      * flows and then the bandwidth usages of the links. Then we call
      * the test function and then move onto the next iteration.
@@ -654,16 +672,28 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
             swap_router_block_two = (ClusterBlockId)dist(rand_num_gen);
         } while (swap_router_block_one == swap_router_block_two);
 
-        //setup the moved blocks datastructure for the test function
+        //set up the moved blocks datastructure for the test function
         blocks_affected.num_moved_blocks = 2;
 
         blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
-        blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-        blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+        blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                           -1,
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+        blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                           -1,
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
         blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-        blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-        blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+        blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                           -1,
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+        blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                           -1,
+                                                           noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
         // swap the hard router blocks where the two cluster blocks are placed on
         NocRouterId router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
@@ -746,14 +776,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         double delta_laten_cost = 0.;
 
         // call the test function
-        int number_of_affected_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+        find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
 
         // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
         test_noc_bandwidth_costs += delta_aggr_band_cost;
         test_noc_latency_costs += delta_laten_cost;
 
         // need this function to update the local datastructures that store all the traffic flow costs
-        commit_noc_costs(number_of_affected_traffic_flows);
+        commit_noc_costs();
 
         // clear the affected blocks
         clear_move_blocks(blocks_affected);
@@ -766,7 +796,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
      * Now we will run a test where the two routers that are moved share a 
      * traffic flow with each other. This is used to verify whether the
      * function under test correctly gets the positions of the moved blocks.
-     * It also checks that the test function correctly handles the situatio
+     * It also checks that the test function correctly handles the situation
      * where the moved router cluster block is a sink router in its associated traffic flows.
      */
     // start by choosing a random traffic flow
@@ -780,17 +810,29 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     ClusterBlockId swap_router_block_two = chosen_traffic_flow.source_router_cluster_id;
 
     // now perform the swap
-    //setup the moved blocks datastructure for the test function
+    //set up the moved blocks datastructure for the test function
     blocks_affected.num_moved_blocks = 2;
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
-    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
     blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
     // swap the hard router blocks where the two cluster blocks are placed on
     NocRouterId router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
@@ -865,14 +907,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     double delta_laten_cost = 0.;
 
     // call the test function
-    int number_of_affected_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_bandwidth_costs += delta_aggr_band_cost;
     test_noc_latency_costs += delta_laten_cost;
 
     // need this function to update the local datastructures that store all the traffic flow costs
-    commit_noc_costs(number_of_affected_traffic_flows);
+    commit_noc_costs();
 
     // clear the affected blocks
     clear_move_blocks(blocks_affected);
@@ -881,23 +923,35 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
      * Now we will run a test where one of the router clusters we will swap has no traffic flows associated with it. This will make sure whether the test
      * function currently determines that a router cluster block has no traffic flows and also calculates that cost accordingly (cost of 0)
      */
-    // start by picking one of the router cluster blocks that dont have any traffic flows as one of our cluster blocks to swap
+    // start by picking one of the router cluster blocks that don't have any traffic flows as one of our cluster blocks to swap
     swap_router_block_one = (ClusterBlockId)(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
     // the second router block to swap will be one with a traffic flow associated to it
     swap_router_block_two = (ClusterBlockId)(NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST - 4);
 
     // now perform the swap
-    //setup the moved blocks datastructure for the test function
+    //set up the moved blocks datastructure for the test function
     blocks_affected.num_moved_blocks = 2;
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
-    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
     blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
     // swap the hard router blocks where the two cluster blocks are placed on
     router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
@@ -909,7 +963,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     place_ctx.block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
     // get all the associated traffic flows of the moved cluster blocks
-    // remember that the first cluster block doesnt have any traffic flows associated to it
+    // remember that the first cluster block doesn't have any traffic flows associated to it
     assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
     // this is for the second swapped block
@@ -945,14 +999,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     delta_laten_cost = 0.;
 
     // call the test function
-    number_of_affected_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_bandwidth_costs += delta_aggr_band_cost;
     test_noc_latency_costs += delta_laten_cost;
 
     // need this function to update the local datastructures that store all the traffic flow costs
-    commit_noc_costs(number_of_affected_traffic_flows);
+    commit_noc_costs();
 
     // clear the affected blocks
     clear_move_blocks(blocks_affected);
@@ -963,23 +1017,35 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
      * the test function currently determines that both router blocks have no 
      * traffic flows associated with them and calculates the cost change accordingly (total cost of 0)
      */
-    // start by picking one of the router cluster blocks that dont have any traffic flows as one of our cluster blocks to swap
+    // start by picking one of the router cluster blocks that don't have any traffic flows as one of our cluster blocks to swap
     swap_router_block_one = (ClusterBlockId)(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
     // the second router block to swap will be one with a traffic flow associated to it
     swap_router_block_two = (ClusterBlockId)(NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST - 2);
 
     // now perform the swap
-    //setup the moved blocks datastructure for the test function
+    //set up the moved blocks datastructure for the test function
     blocks_affected.num_moved_blocks = 2;
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
-    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
     blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
     // swap the hard router blocks where the two cluster blocks are placed on
     router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
@@ -990,21 +1056,21 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     place_ctx.block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
     place_ctx.block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
-    // we dont have to calculate the costs or update bandwidths because the swapped router blocks do not have any associated traffic flows //
+    // we don't have to calculate the costs or update bandwidths because the swapped router blocks do not have any associated traffic flows //
 
     // reset the delta costs
     delta_aggr_band_cost = 0.;
     delta_laten_cost = 0.;
 
     // call the test function
-    number_of_affected_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_bandwidth_costs += delta_aggr_band_cost;
     test_noc_latency_costs += delta_laten_cost;
 
     // need this function to update the local datastructures that store all the traffic flow costs
-    commit_noc_costs(number_of_affected_traffic_flows);
+    commit_noc_costs();
 
     // clear the affected blocks
     clear_move_blocks(blocks_affected);
@@ -1039,7 +1105,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     test_noc_latency_costs = 0.;
 
     // now execute the test function
-    recompute_noc_costs(&test_noc_bandwidth_costs, &test_noc_latency_costs);
+    recompute_noc_costs(test_noc_bandwidth_costs, test_noc_latency_costs);
 
     // now verify
     REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_latency_costs));
@@ -1129,7 +1195,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    // start by deleting any global datastructures (this is so that we dont have corruption from previous tests)
+    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     delete noc_ctx.noc_flows_router;
@@ -1137,7 +1203,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -1145,7 +1211,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     int router_grid_position_y;
 
     // noc options used in this test
-    // we creae these randomly
+    // we create these randomly
     t_noc_opts noc_opts;
     noc_opts.noc_latency_constraints_weighting = dist_3(double_engine);
     noc_opts.noc_latency_weighting = dist_3(double_engine);
@@ -1166,7 +1232,10 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -1193,7 +1262,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         }
     }
 
-    // now we need to create router cluster blocks and assing them to placed at a router hard block as an initial position
+    // now we need to create router cluster blocks and passing them to placed at a router hard block as an initial position
     for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // since the indexes for the hard router blocks start from 0, we will just place the router clusters on hard router blocks with the same id //
 
@@ -1201,7 +1270,10 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 
@@ -1209,7 +1281,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         place_ctx.block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 
-    // similiar parameters for all traffic flows
+    // similar parameters for all traffic flows
     std::string source_traffic_flow_name = "test";
     std::string sink_traffic_flow_name = "test_2";
     int number_of_created_traffic_flows = 0;
@@ -1244,10 +1316,10 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         }
     }
 
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
-    // start by creating the routing alagorithm
+    // start by creating the routing algorithm
     NocRouting* routing_algorithm_global = new XYRouting();
     noc_ctx.noc_flows_router = routing_algorithm_global;
 
@@ -1271,8 +1343,8 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     }
 
     // assume this works
-    // this is needed to setup the global noc packet router and also global datastructures
-    initial_noc_placement();
+    // this is needed to set up the global noc packet router and also global datastructures
+    initial_noc_routing();
 
     // datastructure below will store the bandwidth usages of all the links
     // and will be updated throughout this test.
@@ -1314,17 +1386,29 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         swap_router_block_two = (ClusterBlockId)dist(rand_num_gen);
     } while (swap_router_block_one == swap_router_block_two);
 
-    //setup the moved blocks datastructure for the test function
-    // this is needed for the test function (it needs to know what blocks were swapped so it can undo it)
+    //set up the moved blocks datastructure for the test function
+    // this is needed for the test function (it needs to know what blocks were swapped, so it can undo it)
     blocks_affected.num_moved_blocks = 2;
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
-    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
 
     blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
-    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
-    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_layer_position());
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(),
+                                                       -1,
+                                                       noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_layer_position());
 
     // swap the hard router blocks where the two cluster blocks are placed on
     // this is needed to that we can
@@ -1346,7 +1430,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
             traffic_flow_route.clear();
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
-            // This shouldnt be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
+            // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
             for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
                 // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
@@ -1357,7 +1441,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
             noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
-            // This shouldnt be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
+            // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
             for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
                 // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
@@ -1379,7 +1463,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
             traffic_flow_route.clear();
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
-            // This shouldnt be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
+            // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
             for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
                 // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
@@ -1390,7 +1474,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
             noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
-            // This shouldnt be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
+            // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
             for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
                 // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
@@ -1402,8 +1486,8 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         }
     }
 
-    // okay so now we undo the swapped blocks. We dont need to update the block locations in the placement datastructure since we initially never moved the blocks that were mswapped at the start.
-    // To undoe this we just need to update the noc link bandwidths as if there was no swap (we do this by calling the test function)
+    // okay so now we undo the swapped blocks. We don't need to update the block locations in the placement datastructure since we initially never moved the blocks that were swapped at the start.
+    // To undo this we just need to update the noc link bandwidths as if there was no swap (we do this by calling the test function)
     // This should then re-update the noc link bandwidths to their values before we imitated the swap above
     // THe result is that the link bandwidths should match the golden link bandwidths that never changed after the initial router block placement (at a point before block swapping)
     revert_noc_traffic_flow_routes(blocks_affected);
@@ -1436,7 +1520,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    // start by deleting any global datastructures (this is so that we dont have corruption from previous tests)
+    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     delete noc_ctx.noc_flows_router;
@@ -1444,7 +1528,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
 
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
-    noc_ctx.noc_model.set_device_grid_width((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST);
+    noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
     // individual router parameters
     int curr_router_id;
@@ -1459,7 +1543,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     double router_latency = 1;
 
     // noc options used in this test
-    // we creae these randomly
+    // we create these randomly
     t_noc_opts noc_opts;
     noc_opts.noc_latency_constraints_weighting = dist_3(double_engine);
     noc_opts.noc_latency_weighting = dist_3(double_engine);
@@ -1481,7 +1565,10 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
 
         // add the router to the noc
-        noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        noc_ctx.noc_model.add_router(curr_router_id,
+                                     router_grid_position_x,
+                                     router_grid_position_y,
+                                     0);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -1508,7 +1595,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         }
     }
 
-    // now we need to create router cluster blocks and assing them to placed at a router hard block as an initial position
+    // now we need to create router cluster blocks and passing them to placed at a router hard block as an initial position
     for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // since the indexes for the hard router blocks start from 0, we will just place the router clusters on hard router blocks with the same id //
 
@@ -1516,7 +1603,10 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
-        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
+        current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(),
+                                                      hard_router_block.get_router_grid_position_y(),
+                                                      -1,
+                                                      hard_router_block.get_router_layer_position());
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 
@@ -1524,7 +1614,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         place_ctx.block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 
-    // similiar parameters for all traffic flows
+    // similar parameters for all traffic flows
     std::string source_traffic_flow_name = "test";
     std::string sink_traffic_flow_name = "test_2";
     int number_of_created_traffic_flows = 0;
@@ -1559,10 +1649,10 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         }
     }
 
-    noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
+    noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
-    // start by creating the routing alagorithm
+    // start by creating the routing algorithm
     NocRouting* routing_algorithm_global = new XYRouting();
     noc_ctx.noc_flows_router = routing_algorithm_global;
 
@@ -1609,7 +1699,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         costs.noc_latency_cost += curr_latency_cost;
     }
 
-    // this defines the error tolerance that is allowed between the golden noc costs and the costs found by the test funcion: check_noc_placement_costs
+    // this defines the error tolerance that is allowed between the golden noc costs and the costs found by the test function: check_noc_placement_costs
     // we will set it to what the VTR placer uses
     double error_tolerance = .01;
 
@@ -1621,7 +1711,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         REQUIRE(error == 0);
     }
     SECTION("Case where the check place fails for both NoC costs") {
-        // we need to make the aggregate badnwdith cost and latency cost be a value that is larger or smaller than the tolerance value
+        // we need to make the aggregate bandwidth cost and latency cost be a value that is larger or smaller than the tolerance value
         costs.noc_aggregate_bandwidth_cost += (costs.noc_aggregate_bandwidth_cost * error_tolerance * 2);
         costs.noc_latency_cost -= (costs.noc_latency_cost * error_tolerance * 2);
 

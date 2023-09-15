@@ -1,11 +1,12 @@
+#include <tuple>
 #include "catch2/catch_test_macros.hpp"
 
+#include "rr_graph_fwd.h"
 #include "vpr_api.h"
 #include "vpr_signal_handler.h"
 #include "globals.h"
 #include "net_delay.h"
 #include "place_and_route.h"
-#include "route_tree_timing.h"
 #include "timing_place_lookup.h"
 
 static constexpr const char kArchFile[] = "../../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml";
@@ -14,15 +15,15 @@ static constexpr int kMaxHops = 10;
 namespace {
 
 // Route from source_node to sink_node, returning either the delay, or infinity if unroutable.
-static float do_one_route(int source_node,
-                          int sink_node,
+static float do_one_route(RRNodeId source_node,
+                          RRNodeId sink_node,
                           const t_det_routing_arch& det_routing_arch,
                           const t_router_opts& router_opts,
                           const std::vector<t_segment_inf>& segment_inf) {
     bool is_flat = router_opts.flat_routing;
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
+    RouteTree tree((RRNodeId(source_node)));
 
     // Update base costs according to fanout and criticality rules.
     update_rr_base_costs(1);
@@ -67,25 +68,24 @@ static float do_one_route(int source_node,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
-    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
-                                                                                           sink_node,
-                                                                                           cost_params,
-                                                                                           bounding_box,
-                                                                                           router_stats,
-                                                                                           conn_params);
+    std::tie(found_path, std::ignore, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
+                                                                                                        sink_node,
+                                                                                                        cost_params,
+                                                                                                        bounding_box,
+                                                                                                        router_stats,
+                                                                                                        conn_params,
+                                                                                                        true);
 
     // Default delay is infinity, which indicates that a route was not found.
     float delay = std::numeric_limits<float>::infinity();
     if (found_path) {
         // Check that the route goes to the requested sink.
-        REQUIRE(cheapest.index == sink_node);
+        REQUIRE(RRNodeId(cheapest.index) == sink_node);
 
         // Get the delay
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr, router_opts.flat_routing);
-        delay = rt_node_of_sink->Tdel;
-
-        // Clean up
-        free_route_tree(rt_root);
+        vtr::optional<const RouteTreeNode&> rt_node_of_sink;
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, router_opts.flat_routing);
+        delay = rt_node_of_sink.value().Tdel;
     }
 
     // Reset for the next router call.
@@ -94,12 +94,12 @@ static float do_one_route(int source_node,
 }
 
 // Find a source and a sink by walking edges.
-std::tuple<size_t, size_t, int> find_source_and_sink() {
+std::tuple<RRNodeId, RRNodeId, int> find_source_and_sink() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
     // Current longest walk
-    std::tuple<size_t, size_t, int> longest = std::make_tuple(0, 0, 0);
+    std::tuple<RRNodeId, RRNodeId, int> longest = std::make_tuple(RRNodeId::INVALID(), RRNodeId::INVALID(), 0);
 
     // Start from each RR node
     for (size_t id = 0; id < rr_graph.num_nodes(); id++) {
@@ -114,7 +114,7 @@ std::tuple<size_t, size_t, int> find_source_and_sink() {
 
             // If this is the new longest walk, store it.
             if (hops > std::get<2>(longest)) {
-                longest = std::make_tuple(size_t(source), size_t(sink), hops);
+                longest = std::make_tuple(source, sink, hops);
             }
         }
     }
@@ -132,9 +132,6 @@ TEST_CASE("connection_router", "[vpr]") {
 
     vpr_install_signal_handler();
     vpr_initialize_logging();
-
-    bool is_flat = vpr_setup.RouterOpts.flat_routing;
-    const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
     // Command line arguments
     const char* argv[] = {
@@ -169,7 +166,8 @@ TEST_CASE("connection_router", "[vpr]") {
         router_opts.flat_routing);
 
     // Find a source and sink to route
-    int source_rr_node, sink_rr_node, hops;
+    RRNodeId source_rr_node, sink_rr_node;
+    int hops;
     std::tie(source_rr_node, sink_rr_node, hops) = find_source_and_sink();
 
     // Check that the route will be non-trivial
@@ -187,9 +185,8 @@ TEST_CASE("connection_router", "[vpr]") {
     REQUIRE(delay < std::numeric_limits<float>::infinity());
 
     // Clean up
-    free_routing_structs(net_list);
-    vpr_free_all(net_list,
-                 arch,
+    free_routing_structs();
+    vpr_free_all(arch,
                  vpr_setup);
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();

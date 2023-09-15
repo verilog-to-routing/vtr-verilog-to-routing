@@ -192,7 +192,7 @@ bool AstNode::get_bool_attribute(RTLIL::IdString id)
 
 	AstNode *attr = attributes.at(id);
 	if (attr->type != AST_CONSTANT)
-		log_file_error(attr->filename, attr->location.first_line, "Attribute `%s' with non-constant value!\n", id.c_str());
+		attr->input_error("Attribute `%s' with non-constant value!\n", id.c_str());
 
 	return attr->integer != 0;
 }
@@ -524,7 +524,13 @@ void AstNode::dumpVlog(FILE *f, std::string indent) const
 		break;
 
 	case AST_IDENTIFIER:
-		fprintf(f, "%s", id2vl(str).c_str());
+		{
+			AST::AstNode *member_node = AST::get_struct_member(this);
+			if (member_node)
+				fprintf(f, "%s[%d:%d]", id2vl(str).c_str(), member_node->range_left, member_node->range_right);
+			else
+				fprintf(f, "%s", id2vl(str).c_str());
+		}
 		for (auto child : children)
 			child->dumpVlog(f, "");
 		break;
@@ -841,7 +847,7 @@ RTLIL::Const AstNode::bitsAsConst(int width, bool is_signed)
 		bits.resize(width);
 	if (width >= 0 && width > int(bits.size())) {
 		RTLIL::State extbit = RTLIL::State::S0;
-		if (is_signed && !bits.empty())
+		if ((is_signed || is_unsized) && !bits.empty())
 			extbit = bits.back();
 		while (width > int(bits.size()))
 			bits.push_back(extbit);
@@ -1033,7 +1039,7 @@ static RTLIL::Module *process_module(RTLIL::Design *design, AstNode *ast, bool d
 	{
 		for (const AstNode *node : ast->children)
 			if (node->type == AST_PARAMETER && param_has_no_default(node))
-				log_file_error(node->filename, node->location.first_line, "Parameter `%s' has no default value and has not been overridden!\n", node->str.c_str());
+				node->input_error("Parameter `%s' has no default value and has not been overridden!\n", node->str.c_str());
 
 		bool blackbox_module = flag_lib;
 
@@ -1055,7 +1061,7 @@ static RTLIL::Module *process_module(RTLIL::Design *design, AstNode *ast, bool d
 		// simplify this module or interface using the current design as context
 		// for lookup up ports and wires within cells
 		set_simplify_design_context(design);
-		while (ast->simplify(!flag_noopt, false, false, 0, -1, false, false)) { }
+		while (ast->simplify(!flag_noopt, false, 0, -1, false, false)) { }
 		set_simplify_design_context(nullptr);
 
 		if (flag_dump_ast2) {
@@ -1093,14 +1099,14 @@ static RTLIL::Module *process_module(RTLIL::Design *design, AstNode *ast, bool d
 		if (!blackbox_module && ast->attributes.count(ID::blackbox)) {
 			AstNode *n = ast->attributes.at(ID::blackbox);
 			if (n->type != AST_CONSTANT)
-				log_file_error(ast->filename, ast->location.first_line, "Got blackbox attribute with non-constant value!\n");
+				ast->input_error("Got blackbox attribute with non-constant value!\n");
 			blackbox_module = n->asBool();
 		}
 
 		if (blackbox_module && ast->attributes.count(ID::whitebox)) {
 			AstNode *n = ast->attributes.at(ID::whitebox);
 			if (n->type != AST_CONSTANT)
-				log_file_error(ast->filename, ast->location.first_line, "Got whitebox attribute with non-constant value!\n");
+				ast->input_error("Got whitebox attribute with non-constant value!\n");
 			blackbox_module = !n->asBool();
 		}
 
@@ -1108,7 +1114,7 @@ static RTLIL::Module *process_module(RTLIL::Design *design, AstNode *ast, bool d
 			if (blackbox_module) {
 				AstNode *n = ast->attributes.at(ID::noblackbox);
 				if (n->type != AST_CONSTANT)
-					log_file_error(ast->filename, ast->location.first_line, "Got noblackbox attribute with non-constant value!\n");
+					ast->input_error("Got noblackbox attribute with non-constant value!\n");
 				blackbox_module = !n->asBool();
 			}
 			delete ast->attributes.at(ID::noblackbox);
@@ -1152,7 +1158,7 @@ static RTLIL::Module *process_module(RTLIL::Design *design, AstNode *ast, bool d
 
 		for (auto &attr : ast->attributes) {
 			if (attr.second->type != AST_CONSTANT)
-				log_file_error(ast->filename, ast->location.first_line, "Attribute `%s' with non-constant value!\n", attr.first.c_str());
+				ast->input_error("Attribute `%s' with non-constant value!\n", attr.first.c_str());
 			module->attributes[attr.first] = attr.second->asAttrConst();
 		}
 		for (size_t i = 0; i < ast->children.size(); i++) {
@@ -1355,7 +1361,7 @@ void AST::process(RTLIL::Design *design, AstNode *ast, bool dump_ast1, bool dump
 		}
 		else if (child->type == AST_PACKAGE) {
 			// process enum/other declarations
-			child->simplify(true, false, false, 1, -1, false, false);
+			child->simplify(true, false, 1, -1, false, false);
 			rename_in_package_stmts(child);
 			design->verilog_packages.push_back(child->clone());
 			current_scope.clear();
@@ -1833,6 +1839,13 @@ void AstModule::loadconfig() const
 	flag_icells = icells;
 	flag_pwires = pwires;
 	flag_autowire = autowire;
+}
+
+void AstNode::input_error(const char *format, ...) const
+{
+	va_list ap;
+	va_start(ap, format);
+	logv_file_error(filename, location.first_line, format, ap);
 }
 
 YOSYS_NAMESPACE_END

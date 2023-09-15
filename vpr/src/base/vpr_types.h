@@ -491,6 +491,8 @@ class t_cluster_placement_stats {
      */
     void free_primitives();
 
+    t_cluster_placement_primitive* get_cluster_placement_primitive_from_pb_graph_node(const t_pb_graph_node* pb_graph_node);
+
   private:
     std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered to pack into
     std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are already tried but current logic block unable to pack to
@@ -575,10 +577,19 @@ struct t_net_power {
  *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1)
  */
 struct t_bb {
-    int xmin = 0;
-    int xmax = 0;
-    int ymin = 0;
-    int ymax = 0;
+    t_bb() = default;
+    t_bb(int xmin_, int xmax_, int ymin_, int ymax_)
+        : xmin(xmin_)
+        , xmax(xmax_)
+        , ymin(ymin_)
+        , ymax(ymax_) {
+        VTR_ASSERT(xmax_ >= xmin_);
+        VTR_ASSERT(ymax_ >= ymin_);
+    }
+    int xmin = OPEN;
+    int xmax = OPEN;
+    int ymin = OPEN;
+    int ymax = OPEN;
 };
 
 /**
@@ -660,22 +671,26 @@ struct hash<t_pl_offset> {
  *
  * x: x-coordinate
  * y: y-coordinate
- * z: z-coordinate (capacity postion)
+ * sub_tile: sub-tile number (capacity position)
+ * layer: layer (die) number
  *
  * @note t_pl_offset should be used to represent an offset between t_pl_loc.
  */
 struct t_pl_loc {
     t_pl_loc() = default;
-    t_pl_loc(int xloc, int yloc, int sub_tile_loc)
+    t_pl_loc(int xloc, int yloc, int sub_tile_loc, int layer_num)
         : x(xloc)
         , y(yloc)
-        , sub_tile(sub_tile_loc) {}
+        , sub_tile(sub_tile_loc)
+        , layer(layer_num) {}
 
     int x = OPEN;
     int y = OPEN;
     int sub_tile = OPEN;
+    int layer = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
+        VTR_ASSERT(this->layer != OPEN);
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
@@ -683,6 +698,7 @@ struct t_pl_loc {
     }
 
     t_pl_loc& operator-=(const t_pl_offset& rhs) {
+        VTR_ASSERT(this->layer != OPEN);
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
@@ -706,15 +722,17 @@ struct t_pl_loc {
     }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return t_pl_offset(lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile);
+        VTR_ASSERT(lhs.layer == rhs.layer);
+        return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile};
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        VTR_ASSERT(lhs.layer == rhs.layer);
         return std::tie(lhs.x, lhs.y, lhs.sub_tile) < std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.x, rhs.y, rhs.sub_tile);
+        return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
@@ -776,6 +794,50 @@ struct t_grid_blocks {
     inline bool subtile_empty(size_t isubtile) const {
         return blocks[isubtile] == EMPTY_BLOCK_ID;
     }
+};
+
+class GridBlock {
+  public:
+    GridBlock() = default;
+
+    GridBlock(size_t width, size_t height, size_t layers) {
+        grid_blocks_.resize({layers, width, height});
+    }
+
+    inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
+        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
+    }
+
+    inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {
+        grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile] = blk_id;
+    }
+
+    inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
+        return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
+    }
+
+    inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
+    }
+
+    inline int set_usage(const t_physical_tile_loc loc, int usage) {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage = usage;
+    }
+
+    inline int get_usage(const t_physical_tile_loc loc) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage;
+    }
+
+    inline bool is_sub_tile_empty(const t_physical_tile_loc loc, int sub_tile) const {
+        return grid_blocks_[loc.layer_num][loc.x][loc.y].subtile_empty(sub_tile);
+    }
+
+    inline void clear() {
+        grid_blocks_.clear();
+    }
+
+  private:
+    vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
 
 ///@brief Names of various files
@@ -856,6 +918,7 @@ struct t_packer_opts {
     e_timing_update_type timing_update_type;
     bool use_attraction_groups;
     int pack_num_moves;
+    int pack_num_threads;
     std::string pack_move_type;
 };
 
@@ -983,6 +1046,18 @@ enum e_agent_algorithm {
     SOFTMAX
 };
 
+/**
+ * @brief Used to determines the dimensionality of the RL agent exploration space
+ *
+ * Agent exploration space can be either based on only move types or
+ * can be based on (block_type, move_type) pair.
+ *
+ */
+enum class e_agent_space {
+    MOVE_TYPE,
+    MOVE_BLOCK_TYPE
+};
+
 ///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
     CIRCUIT,       ///<Effort scales based on circuit size only
@@ -1026,7 +1101,10 @@ enum class e_place_delta_delay_algorithm {
  *              When in CRITICALITY_TIMING_PLACE mode, what is the
  *              tradeoff between timing and wiring costs.
  *   @param place_cost_exp
- *              Power to which denominator is raised for linear_cong.
+ *              Wiring cost is divided by the average channel width over
+ *              a net's bounding box taken to this exponent.
+ *              Only impacts devices with different channel widths in 
+ *              different directions or regions. (Default: 1)
  *   @param place_chan_width
  *              The channel width assumed if only one placement is performed.
  *   @param pad_loc_type
@@ -1038,7 +1116,7 @@ enum class e_place_delta_delay_algorithm {
  *              File to read pad locations from if pad_loc_type is USER.
  *   @param place_freq
  *              Should the placement be skipped, done once, or done
- *              for each channel width in the binary search.
+ *              for each channel width in the binary search. (Default: ONCE)
  *   @param recompute_crit_iter
  *              How many temperature stages pass before we recompute
  *              criticalities based on the current placement and its
@@ -1065,6 +1143,8 @@ enum class e_place_delta_delay_algorithm {
  *   @param place_constraint_subtile
  *              True if subtiles should be specified when printing floorplan
  *              constraints. False if not.
+ *
+ *
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1113,6 +1193,7 @@ struct t_placer_opts {
     float place_agent_epsilon;
     float place_agent_gamma;
     float place_dm_rlim;
+    e_agent_space place_agent_space;
     //int place_timing_cost_func;
     std::string place_reward_fun;
     float place_crit_limit;
@@ -1163,8 +1244,8 @@ struct t_placer_opts {
  *                       channel width given.  If this variable is          *
  *                       == NO_FIXED_CHANNEL_WIDTH, do a binary search      *
  *                       on channel width.                                  *
- * router_algorithm:  BREADTH_FIRST or TIMING_DRIVEN.  Selects the desired  *
- *                    routing algorithm.                                    *
+ * router_algorithm:  TIMING_DRIVEN or PARALLEL.  Selects the desired       *
+ * routing algorithm.                                                       *
  * base_cost_type: Specifies how to compute the base cost of each type of   *
  *                 rr_node.  DELAY_NORMALIZED -> base_cost = "demand"       *
  *                 x average delay to route past 1 CLB.  DEMAND_ONLY ->     *
@@ -1189,7 +1270,7 @@ struct t_placer_opts {
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 
 enum e_router_algorithm {
-    BREADTH_FIRST,
+    PARALLEL,
     TIMING_DRIVEN,
 };
 
@@ -1372,8 +1453,14 @@ struct t_noc_opts {
  *             things that should have no delay).
  *   @param wire_to_arch_ipin_switch  keeps track of the type of architecture
  *             switch that connects wires to ipins
+ *   @param wire_to_arch_ipin_switch_between_dice keeps track of the type of
+ *             architecture switch that connects wires from another die to
+ *             ipins in different die
  *   @param wire_to_rr_ipin_switch  keeps track of the type of RR graph switch
  *             that connects wires to ipins in the RR graph
+ *   @param wire_to_rr_ipin_switch_between_dice keeps track of the type of
+ *             RR graph switch that connects wires from another die to
+ *             ipins in different die in the RR graph
  *   @param R_minW_nmos  Resistance (in Ohms) of a minimum width nmos transistor.
  *             Used only in the FPGA area model.
  *   @param R_minW_pmos  Resistance (in Ohms) of a minimum width pmos transistor.
@@ -1390,7 +1477,9 @@ struct t_det_routing_arch {
     short global_route_switch;
     short delayless_switch;
     int wire_to_arch_ipin_switch;
+    int wire_to_arch_ipin_switch_between_dice = -1;
     int wire_to_rr_ipin_switch;
+    int wire_to_rr_ipin_switch_between_dice = -1;
     float R_minW_nmos;
     float R_minW_pmos;
 
@@ -1418,6 +1507,11 @@ struct t_det_routing_arch {
  *                     relation to the switches from the architecture file,
  *                     not the expanded list of switches that is is built
  *                     at the end of build_rr_graph
+ *   @param arch_opin_between_dice_switch Index of the switch type that connects output
+ *                     pins (OPINs) *to* this segment from *another dice*.
+ *                     Note that this index is in relation to the switches from
+ *                     the architecture file, not the expanded list of switches that is built
+ *                     at the end of build_rr_graph
  *   @param Cmetal     Capacitance of a routing track, per unit logic block length.
  *   @param Rmetal     Resistance of a routing track, per unit logic block length.
  *   @param direction  The direction of a routing track.
@@ -1425,17 +1519,17 @@ struct t_det_routing_arch {
  *                     Note that this index will store the index of the segment
  *                     relative to its **parallel** segment types, not all segments
  *                     as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
- *                     for details but here is an example: say our segment_inf_vec in 
+ *                     for details but here is an example: say our segment_inf_vec in
  *                     device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
- *                     when building the rr_graph, static segment_inf_vectors will be 
- *                     created for each direction, thus you will have the following 
- *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y]. 
- *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec) 
+ *                     when building the rr_graph, static segment_inf_vectors will be
+ *                     created for each direction, thus you will have the following
+ *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y].
+ *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec)
  *                     and != 3 (index in device_ctx segment_inf_vec).
- *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx. 
- *                     Note that the above vector is **unifies** both x-parallel and 
- *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp 
- * 
+ *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx.
+ *                     Note that the above vector is **unifies** both x-parallel and
+ *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
+ *
  *   @param type_name_ptr  pointer to name of the segment type this track belongs
  *                     to. points to the appropriate name in s_segment_inf
  */
@@ -1447,6 +1541,7 @@ struct t_seg_details {
     std::unique_ptr<bool[]> cb;
     short arch_wire_switch = 0;
     short arch_opin_switch = 0;
+    short arch_opin_between_dice_switch = 0;
     float Rmetal = 0;
     float Cmetal = 0;
     bool twisted = 0;
@@ -1488,6 +1583,7 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
+    short arch_opin_between_dice_switch() const { return seg_detail_->arch_opin_between_dice_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 
@@ -1519,7 +1615,7 @@ class t_chan_seg_details {
     const t_seg_details* seg_detail_ = nullptr;
 };
 
-/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)   
+/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)
  * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
  */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
@@ -1539,33 +1635,6 @@ constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY)
 constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == SINK); }
 
 /**
- * @brief Basic element used to store the traceback (routing) of each net.
- *
- *   @param index    Array index (ID) of this routing resource node.
- *   @param net_pin_index:    Net pin index associated with the node. This value       
- *                            ranges from 1 to fanout [1..num_pins-1]. For cases when  
- *                            different speed paths are taken to the same SINK for     
- *                            different pins, node index cannot uniquely identify      
- *                            each SINK, so the net pin index guarantees an unique     
- *                            identification for each SINK node. For non-SINK nodes    
- *                            and for SINK nodes with no associated net pin index      
- *                            (i.e. special SINKs like the source of a clock tree      
- *                            which do not correspond to an actual netlist connection),
- *                            the value for this member should be set to OPEN (-1).
- *   @param iswitch  Index of the switch type used to go from this rr_node to
- *                   the next one in the routing.  OPEN if there is no next node
- *                   (i.e. this node is the last one (a SINK) in a branch of the
- *                   net's routing).
- *   @param next     Pointer to the next traceback element in this route.
- */
-struct t_trace {
-    t_trace* next;
-    int index;
-    int net_pin_index = OPEN;
-    short iswitch;
-};
-
-/**
  * @brief Extra information about each rr_node needed only during routing
  *        (i.e. during the maze expansion).
  *
@@ -1580,13 +1649,13 @@ struct t_trace {
  *                     the expected cost to the target if the timing_driven router
  *                     is being used.
  *   @param backward_path_cost  Total cost of the path up to and including this
- *                     node. Not used by breadth-first router.
+ *                     node.
  *   @param target_flag  Is this node a target (sink) for the current routing?
  *                     Number of times this node must be reached to fully route.
  *   @param occ        The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
-    int prev_node;
+    RRNodeId prev_node;
     RREdgeId prev_edge;
 
     float acc_cost;
@@ -1609,84 +1678,53 @@ struct t_rr_node_route_inf {
  * @brief Information about the current status of a particular
  *        net as pertains to routing
  */
-class t_net_routing_status {
+template<typename NetIdType>
+class t_routing_status {
   public:
     void clear() {
-        is_routed_.clear();
-        is_fixed_.clear();
+        is_routed_.assign(is_routed_.size(), 0);
+        is_fixed_.assign(is_routed_.size(), 0);
     }
-
     void resize(size_t number_nets) {
         is_routed_.resize(number_nets);
-        is_routed_.fill(false);
+        is_routed_.assign(is_routed_.size(), 0);
         is_fixed_.resize(number_nets);
-        is_fixed_.fill(false);
+        is_fixed_.assign(is_routed_.size(), 0);
     }
-    void set_is_routed(ParentNetId net, bool is_routed) {
-        is_routed_.set(index(net), is_routed);
+    void set_is_routed(NetIdType net, bool is_routed) {
+        is_routed_[index(net)] = is_routed;
     }
-    bool is_routed(ParentNetId net) const {
-        return is_routed_.get(index(net));
+    bool is_routed(NetIdType net) const {
+        return is_routed_[index(net)];
     }
-    void set_is_fixed(ParentNetId net, bool is_fixed) {
-        is_fixed_.set(index(net), is_fixed);
+    void set_is_fixed(NetIdType net, bool is_fixed) {
+        is_fixed_[index(net)] = is_fixed;
     }
-    bool is_fixed(ParentNetId net) const {
-        return is_fixed_.get(index(net));
+    bool is_fixed(NetIdType net) const {
+        return is_fixed_[index(net)];
     }
 
   private:
-    ParentNetId index(ParentNetId net) const {
-        VTR_ASSERT_SAFE(net != ParentNetId::INVALID());
+    NetIdType index(NetIdType net) const {
+        VTR_ASSERT_SAFE(net != NetIdType::INVALID());
         return net;
     }
-    vtr::dynamic_bitset<ParentNetId> is_routed_; ///<Whether the net has been legally routed
-    vtr::dynamic_bitset<ParentNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
+    /* vector<int> instead of bitset for thread safety */
+    vtr::vector<NetIdType, int> is_routed_; ///<Whether the net has been legally routed
+    vtr::vector<NetIdType, int> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
 };
 
-class t_atom_net_routing_status {
-  public:
-    void clear() {
-        is_routed_.clear();
-        is_fixed_.clear();
-    }
+typedef t_routing_status<ParentNetId> t_net_routing_status;
+typedef t_routing_status<AtomNetId> t_atom_net_routing_status;
 
-    void resize(size_t number_nets) {
-        is_routed_.resize(number_nets);
-        is_routed_.fill(false);
-        is_fixed_.resize(number_nets);
-        is_fixed_.fill(false);
-    }
-    void set_is_routed(AtomNetId net, bool is_routed) {
-        is_routed_.set(index(net), is_routed);
-    }
-    bool is_routed(AtomNetId net) const {
-        return is_routed_.get(index(net));
-    }
-    void set_is_fixed(AtomNetId net, bool is_fixed) {
-        is_fixed_.set(index(net), is_fixed);
-    }
-    bool is_fixed(AtomNetId net) const {
-        return is_fixed_.get(index(net));
-    }
-
-  private:
-    AtomNetId index(AtomNetId net) const {
-        VTR_ASSERT_SAFE(net != AtomNetId::INVALID());
-        return net;
-    }
-    vtr::dynamic_bitset<AtomNetId> is_routed_; ///<Whether the net has been legally routed
-    vtr::dynamic_bitset<AtomNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
-};
-
+/** Edge between two RRNodes */
 struct t_node_edge {
-    t_node_edge(int fnode, int tnode) {
-        from_node = fnode;
-        to_node = tnode;
-    }
+    t_node_edge(RRNodeId fnode, RRNodeId tnode)
+        : from_node(fnode)
+        , to_node(tnode) {}
 
-    int from_node;
-    int to_node;
+    RRNodeId from_node;
+    RRNodeId to_node;
 
     //For std::set
     friend bool operator<(const t_node_edge& lhs, const t_node_edge& rhs) {
@@ -1696,7 +1734,7 @@ struct t_node_edge {
 
 ///@brief Non-configurably connected nodes and edges in the RR graph
 struct t_non_configurable_rr_sets {
-    std::set<std::set<int>> node_sets;
+    std::set<std::set<RRNodeId>> node_sets;
     std::set<std::set<t_node_edge>> edge_sets;
 };
 
@@ -1708,12 +1746,12 @@ struct t_power_opts {
 };
 
 /** @brief Channel width data
- * @param max= Maximum channel width between x_max and y_max. 
- * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
- * @param y_min= Same as above but for vertical channels. 
- * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
- * @param y_max= Same as above but for vertical channels. 
- * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()] 
+ * @param max= Maximum channel width between x_max and y_max.
+ * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param y_min= Same as above but for vertical channels.
+ * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param y_max= Same as above but for vertical channels.
+ * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
  * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
  * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
@@ -1755,6 +1793,7 @@ struct t_vpr_setup {
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network
     bool exit_before_pack;                     ///<Exits early before starting packing (useful for collecting statistics without running/loading any stages)
+    unsigned int num_workers;                  ///Maximum number of worker threads (determined from an env var or cmdline option)
 };
 
 class RouteStatus {
@@ -1776,7 +1815,7 @@ class RouteStatus {
     int chan_width_ = -1;
 };
 
-typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
@@ -1789,5 +1828,11 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
  * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
  */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
+
+struct pair_hash {
+    std::size_t operator()(const std::pair<ClusterBlockId, ClusterBlockId>& p) const noexcept {
+        return std::hash<ClusterBlockId>()(p.first) ^ (std::hash<ClusterBlockId>()(p.second) << 1);
+    }
+};
 
 #endif

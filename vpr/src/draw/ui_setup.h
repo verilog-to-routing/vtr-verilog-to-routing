@@ -62,14 +62,22 @@ void search_setup(ezgl::application* app);
 void routing_button_setup(ezgl::application* app);
 
 /**
+ * @brief configures and connects signals/functions for View buttons
+ *
+ * Determines how many layers there are and displays depending on number of layers
+ */
+void view_button_setup(ezgl::application* app);
+
+/**
  * @brief connects critical path button to its cbk fn. Called in all setup options that show crit. path
  */
 void crit_path_button_setup(ezgl::application* app);
 
 /**
- * @brief Hides Critical Path Button. Called for options that don't show crit. path button
+ * @brief Hides or displays Critical Path routing / routing delay UI elements,
+ * Use to ensure we don't show inactive buttons etc. when routing data doesn't exist
  */
-void hide_crit_path_button(ezgl::application* app);
+void hide_crit_path_routing(ezgl::application* app, bool hide);
 
 /**
  * @brief Loads block names into Gtk Structures to enable autocomplete

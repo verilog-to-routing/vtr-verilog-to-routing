@@ -80,9 +80,13 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
                 Region modified_reg;
                 auto offset = pl_macro.members[imember].offset;
 
-                vtr::Rect<int> reg_rect = block_regions[i].get_region_rect();
+                const auto block_reg_coord = block_regions[i].get_region_rect();
 
-                modified_reg.set_region_rect(reg_rect.xmin() - offset.x, reg_rect.ymin() - offset.y, reg_rect.xmax() - offset.x, reg_rect.ymax() - offset.y);
+                modified_reg.set_region_rect({block_reg_coord.xmin - offset.x,
+                                              block_reg_coord.ymin - offset.y,
+                                              block_reg_coord.xmax - offset.x,
+                                              block_reg_coord.ymax - offset.y,
+                                              block_reg_coord.layer_num});
 
                 //check that subtile is not an invalid value before changing, otherwise it just stays -1
                 if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
@@ -118,9 +122,13 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
     for (unsigned int i = 0; i < block_regions.size(); i++) {
         Region modified_reg;
 
-        vtr::Rect<int> reg_rect = block_regions[i].get_region_rect();
+        const auto block_reg_coord = block_regions[i].get_region_rect();
 
-        modified_reg.set_region_rect(reg_rect.xmin() + offset.x, reg_rect.ymin() + offset.y, reg_rect.xmax() + offset.x, reg_rect.ymax() + offset.y);
+        modified_reg.set_region_rect({block_reg_coord.xmin + offset.x,
+                                      block_reg_coord.ymin + offset.y,
+                                      block_reg_coord.xmax + offset.x,
+                                      block_reg_coord.ymax + offset.y,
+                                      block_reg_coord.layer_num});
 
         //check that subtile is not an invalid value before changing, otherwise it just stays -1
         if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
@@ -159,14 +167,19 @@ void propagate_place_constraints() {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& device_ctx = g_vpr_ctx.device();
 
-    //Create a PartitionRegion with grid dimensions
-    //Will be used to check that updated PartitionRegions are within grid bounds
-    int width = device_ctx.grid.width() - 1;
-    int height = device_ctx.grid.height() - 1;
+    int num_layers = device_ctx.grid.get_num_layers();
     Region grid_reg;
-    grid_reg.set_region_rect(0, 0, width, height);
     PartitionRegion grid_pr;
-    grid_pr.add_to_part_region(grid_reg);
+
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        //Create a PartitionRegion with grid dimensions
+        //Will be used to check that updated PartitionRegions are within grid bounds
+        int width = device_ctx.grid.width() - 1;
+        int height = device_ctx.grid.height() - 1;
+
+        grid_reg.set_region_rect({0, 0, width, height, layer_num});
+        grid_pr.add_to_part_region(grid_reg);
+    }
 
     for (auto pl_macro : place_ctx.pl_macros) {
         if (is_macro_constrained(pl_macro)) {
@@ -296,12 +309,13 @@ void mark_fixed_blocks() {
  */
 int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
-    vtr::Rect<int> rb = reg.get_region_rect();
+    const auto reg_coord = reg.get_region_rect();
+    const int layer_num = reg.get_layer_num();
     int num_tiles = 0;
 
-    for (int x = rb.xmin(); x <= rb.xmax(); x++) {
-        for (int y = rb.ymin(); y <= rb.ymax(); y++) {
-            const auto& tile = device_ctx.grid.get_physical_type(x, y);
+    for (int x = reg_coord.xmin; x <= reg_coord.xmax; x++) {
+        for (int y = reg_coord.ymin; y <= reg_coord.ymax; y++) {
+            const auto& tile = device_ctx.grid.get_physical_type({x, y, reg_coord.layer_num});
 
             /*
              * If the tile at the grid location is not compatible with the cluster block
@@ -322,6 +336,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                     loc.x = x;
                     loc.y = y;
                     loc.sub_tile = reg.get_sub_tile();
+                    loc.layer = layer_num;
                     if (num_tiles > 1) {
                         return num_tiles;
                     }
@@ -342,6 +357,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                             loc.x = x;
                             loc.y = y;
                             loc.sub_tile = z;
+                            loc.layer = layer_num;
                         }
                         if (num_tiles > 1) {
                             return num_tiles;
@@ -368,13 +384,21 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     bool pr_size_one;
     int pr_size = 0;
     int reg_size;
+    int num_layers = device_ctx.grid.get_num_layers();
 
-    Region intersect_reg;
-    intersect_reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-    Region current_reg;
+    std::vector<Region> intersect_reg(num_layers);
+    for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
+        intersect_reg[layer_num].set_region_rect({0,
+                                                  0,
+                                                  (int)device_ctx.grid.width() - 1,
+                                                  (int)device_ctx.grid.height() - 1,
+                                                  layer_num});
+    }
+    std::vector<Region> current_reg(num_layers);
 
     for (unsigned int i = 0; i < regions.size(); i++) {
         reg_size = region_tile_cover(regions[i], block_type, loc);
+        int layer_num = regions[i].get_layer_num();
 
         /*
          * If multiple regions in the PartitionRegion all have size 1,
@@ -387,9 +411,9 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
          */
         if (reg_size == 1) {
             //get the exact x, y, subtile location covered by the current region (regions[i])
-            current_reg.set_region_rect(loc.x, loc.y, loc.x, loc.y);
-            current_reg.set_sub_tile(loc.sub_tile);
-            intersect_reg = intersection(intersect_reg, current_reg);
+            current_reg[layer_num].set_region_rect({loc.x, loc.y, loc.x, loc.y, layer_num});
+            current_reg[layer_num].set_sub_tile(loc.sub_tile);
+            intersect_reg[layer_num] = intersection(intersect_reg[layer_num], current_reg[layer_num]);
 
             if (i == 0 || intersect_reg.empty()) {
                 pr_size = pr_size + reg_size;

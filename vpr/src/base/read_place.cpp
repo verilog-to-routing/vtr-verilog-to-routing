@@ -200,16 +200,36 @@ void read_place_body(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if (tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) {
+        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) || (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
             //Load the block location
             //
-            //We should have 4 tokens of actual data, with an optional 5th (commented) token indicating VPR's
+            // If the place file corresponds to a 3D architecture, it should contain 5 tokens of actual data, with an optional 6th (commented) token indicating VPR's internal block number.
+            // If it belongs to 2D architecture file, supported for backward compatability, We should have 4 tokens of actual data, with an optional 5th (commented) token indicating VPR's
             //internal block number
+            int block_name_index = 0;
+            int block_x_index = 1;
+            int block_y_index = 2;
+            int sub_tile_index_index = 3;
+            int block_layer_index;
+            if (tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) {
+                //2D architecture
+                block_layer_index = -1;
 
-            std::string block_name = tokens[0];
-            int block_x = vtr::atoi(tokens[1]);
-            int block_y = vtr::atoi(tokens[2]);
-            int sub_tile_index = vtr::atoi(tokens[3]);
+            } else {
+                // 3D architecture
+                block_layer_index = 4;
+            }
+
+            std::string block_name = tokens[block_name_index];
+            int block_x = vtr::atoi(tokens[block_x_index]);
+            int block_y = vtr::atoi(tokens[block_y_index]);
+            int sub_tile_index = vtr::atoi(tokens[sub_tile_index_index]);
+            int block_layer;
+            if (block_layer_index != -1) {
+                block_layer = vtr::atoi(tokens[block_layer_index]);
+            } else {
+                block_layer = 0;
+            }
 
             //c-style block name needed for printing block name in error messages
             char const* c_block_name = block_name.c_str();
@@ -230,7 +250,7 @@ void read_place_body(std::ifstream& placement_file,
 
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
-                if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile) {
+                if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile || block_layer != place_ctx.block_locs[blk_id].loc.layer) {
                     std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
                               "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"
@@ -243,6 +263,7 @@ void read_place_body(std::ifstream& placement_file,
             loc.x = block_x;
             loc.y = block_y;
             loc.sub_tile = sub_tile_index;
+            loc.layer = block_layer;
 
             if (seen_blocks[blk_id] == 0) {
                 set_block_location(blk_id, loc);
@@ -301,8 +322,8 @@ void print_place(const char* net_file,
             net_file,
             net_id);
     fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
-    fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
-    fprintf(fp, "#----------\t--\t--\t------\t------------\n");
+    fprintf(fp, "#block name\tx\ty\tsubblk\tlayer\tblock number\n");
+    fprintf(fp, "#----------\t--\t--\t------\t-----\t------------\n");
 
     if (!place_ctx.block_locs.empty()) { //Only if placement exists
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -310,7 +331,11 @@ void print_place(const char* net_file,
             if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
                 fprintf(fp, "\t");
 
-            fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].loc.x, place_ctx.block_locs[blk_id].loc.y, place_ctx.block_locs[blk_id].loc.sub_tile);
+            fprintf(fp, "%d\t%d\t%d\t%d",
+                    place_ctx.block_locs[blk_id].loc.x,
+                    place_ctx.block_locs[blk_id].loc.y,
+                    place_ctx.block_locs[blk_id].loc.sub_tile,
+                    place_ctx.block_locs[blk_id].loc.layer);
             fprintf(fp, "\t#%zu\n", size_t(blk_id));
         }
     }

@@ -5,20 +5,27 @@
 std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
+    const int num_layers = grid.get_num_layers();
 
     //Collect the set of x/y locations for each instace of a block type
-    std::vector<std::vector<vtr::Point<int>>> block_locations(device_ctx.logical_block_types.size());
-    for (size_t x = 0; x < grid.width(); ++x) {
-        for (size_t y = 0; y < grid.height(); ++y) {
-            int width_offset = grid.get_width_offset(x, y);
-            int height_offset = grid.get_height_offset(x, y);
-            if (width_offset == 0 && height_offset == 0) {
-                const auto& type = grid.get_physical_type(x, y);
-                auto equivalent_sites = get_equivalent_sites_set(type);
+    std::vector<std::vector<std::vector<vtr::Point<int>>>> block_locations(device_ctx.logical_block_types.size()); // [logical_block_type][layer_num][0...num_instance_on_layer] -> (x, y)
+    for (int block_type_num = 0; block_type_num < (int)device_ctx.logical_block_types.size(); block_type_num++) {
+        block_locations[block_type_num].resize(num_layers);
+    }
 
-                for (auto& block : equivalent_sites) {
-                    //Only record at block root location
-                    block_locations[block->index].emplace_back(x, y);
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        for (int x = 0; x < (int)grid.width(); ++x) {
+            for (int y = 0; y < (int)grid.height(); ++y) {
+                int width_offset = grid.get_width_offset({x, y, layer_num});
+                int height_offset = grid.get_height_offset(t_physical_tile_loc(x, y, layer_num));
+                if (width_offset == 0 && height_offset == 0) {
+                    const auto& type = grid.get_physical_type({x, y, layer_num});
+                    auto equivalent_sites = get_equivalent_sites_set(type);
+
+                    for (auto& block : equivalent_sites) {
+                        //Only record at block root location
+                        block_locations[block->index][layer_num].emplace_back(x, y);
+                    }
                 }
             }
         }
@@ -26,7 +33,7 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
 
     std::vector<t_compressed_block_grid> compressed_type_grids(device_ctx.logical_block_types.size());
     for (const auto& logical_block : device_ctx.logical_block_types) {
-        auto compressed_block_grid = create_compressed_block_grid(block_locations[logical_block.index]);
+        auto compressed_block_grid = create_compressed_block_grid(block_locations[logical_block.index], num_layers);
 
         for (const auto& physical_tile : logical_block.equivalent_tiles) {
             std::vector<int> compatible_sub_tiles;
@@ -55,7 +62,7 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
 }
 
 //Given a set of locations, returns a 2D matrix in a compressed space
-t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Point<int>>& locations) {
+t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vector<vtr::Point<int>>>& locations, int num_layers) {
     t_compressed_block_grid compressed_grid;
 
     if (locations.empty()) {
@@ -63,86 +70,75 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Poin
     }
 
     {
-        std::vector<int> x_locs;
-        std::vector<int> y_locs;
+        std::vector<std::vector<int>> x_locs(num_layers);
+        std::vector<std::vector<int>> y_locs(num_layers);
+        compressed_grid.compressed_to_grid_x.resize(num_layers);
+        compressed_grid.compressed_to_grid_y.resize(num_layers);
+        for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+            auto& layer_x_locs = x_locs[layer_num];
+            auto& layer_y_locs = y_locs[layer_num];
+            //Record all the x/y locations seperately
+            for (auto point : locations[layer_num]) {
+                layer_x_locs.emplace_back(point.x());
+                layer_y_locs.emplace_back(point.y());
+            }
 
-        //Record all the x/y locations seperately
-        for (auto point : locations) {
-            x_locs.emplace_back(point.x());
-            y_locs.emplace_back(point.y());
+            //Uniquify x/y locations
+            std::sort(layer_x_locs.begin(), layer_x_locs.end());
+            layer_x_locs.erase(unique(layer_x_locs.begin(), layer_x_locs.end()), layer_x_locs.end());
+
+            std::sort(layer_y_locs.begin(), layer_y_locs.end());
+            layer_y_locs.erase(unique(layer_y_locs.begin(), layer_y_locs.end()), layer_y_locs.end());
+
+            //The index of an x-position in x_locs corresponds to it's compressed
+            //x-coordinate (similarly for y)
+            if (!layer_x_locs.empty()) {
+                compressed_grid.compressed_to_grid_layer.push_back(layer_num);
+            }
+            compressed_grid.compressed_to_grid_x[layer_num] = std::move(layer_x_locs);
+            compressed_grid.compressed_to_grid_y[layer_num] = std::move(layer_y_locs);
         }
-
-        //Uniquify x/y locations
-        std::sort(x_locs.begin(), x_locs.end());
-        x_locs.erase(unique(x_locs.begin(), x_locs.end()), x_locs.end());
-
-        std::sort(y_locs.begin(), y_locs.end());
-        y_locs.erase(unique(y_locs.begin(), y_locs.end()), y_locs.end());
-
-        //The index of an x-position in x_locs corresponds to it's compressed
-        //x-coordinate (similarly for y)
-        compressed_grid.compressed_to_grid_x = x_locs;
-        compressed_grid.compressed_to_grid_y = y_locs;
     }
 
-    //
-    //Build the compressed grid
-    //
+    compressed_grid.grid.resize(num_layers);
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        auto& layer_compressed_grid = compressed_grid.grid[layer_num];
+        const auto& layer_compressed_x_locs = compressed_grid.compressed_to_grid_x[layer_num];
+        const auto& layer_compressed_y_locs = compressed_grid.compressed_to_grid_y[layer_num];
+        //
+        //Build the compressed grid
+        //
 
-    //Create a full/dense x-dimension (since there must be at least one
-    //block per x location)
-    compressed_grid.grid.resize(compressed_grid.compressed_to_grid_x.size());
+        //Create a full/dense x-dimension (since there must be at least one
+        //block per x location)
+        layer_compressed_grid.resize(layer_compressed_x_locs.size());
 
-    //Fill-in the y-dimensions
-    //
-    //Note that we build the y-dimension sparsely (using a flat map), since
-    //there may not be full columns of blocks at each x location, this makes
-    //it efficient to find the non-empty blocks in the y dimension
-    for (auto point : locations) {
-        //Determine the compressed indices in the x & y dimensions
-        auto x_itr = std::lower_bound(compressed_grid.compressed_to_grid_x.begin(), compressed_grid.compressed_to_grid_x.end(), point.x());
-        int cx = std::distance(compressed_grid.compressed_to_grid_x.begin(), x_itr);
+        //Fill-in the y-dimensions
+        //
+        //Note that we build the y-dimension sparsely (using a flat map), since
+        //there may not be full columns of blocks at each x location, this makes
+        //it efficient to find the non-empty blocks in the y dimension
+        for (auto point : locations[layer_num]) {
+            //Determine the compressed indices in the x & y dimensions
+            auto x_itr = std::lower_bound(layer_compressed_x_locs.begin(), layer_compressed_x_locs.end(), point.x());
+            int cx = std::distance(layer_compressed_x_locs.begin(), x_itr);
 
-        auto y_itr = std::lower_bound(compressed_grid.compressed_to_grid_y.begin(), compressed_grid.compressed_to_grid_y.end(), point.y());
-        int cy = std::distance(compressed_grid.compressed_to_grid_y.begin(), y_itr);
+            auto y_itr = std::lower_bound(layer_compressed_y_locs.begin(), layer_compressed_y_locs.end(), point.y());
+            int cy = std::distance(layer_compressed_y_locs.begin(), y_itr);
 
-        VTR_ASSERT(cx >= 0 && cx < (int)compressed_grid.compressed_to_grid_x.size());
-        VTR_ASSERT(cy >= 0 && cy < (int)compressed_grid.compressed_to_grid_y.size());
+            VTR_ASSERT(cx >= 0 && cx < (int)layer_compressed_x_locs.size());
+            VTR_ASSERT(cy >= 0 && cy < (int)layer_compressed_y_locs.size());
 
-        VTR_ASSERT(compressed_grid.compressed_to_grid_x[cx] == point.x());
-        VTR_ASSERT(compressed_grid.compressed_to_grid_y[cy] == point.y());
+            VTR_ASSERT(layer_compressed_x_locs[cx] == point.x());
+            VTR_ASSERT(layer_compressed_y_locs[cy] == point.y());
 
-        auto result = compressed_grid.grid[cx].insert(std::make_pair(cy, t_type_loc(point.x(), point.y())));
+            auto result = layer_compressed_grid[cx].insert(std::make_pair(cy, t_physical_tile_loc(point.x(), point.y(), layer_num)));
 
-        VTR_ASSERT_MSG(result.second, "Duplicates should not exist in compressed grid space");
+            VTR_ASSERT_MSG(result.second, "Duplicates should not exist in compressed grid space");
+        }
     }
 
     return compressed_grid;
-}
-
-int grid_to_compressed(const std::vector<int>& coords, int point) {
-    auto itr = std::lower_bound(coords.begin(), coords.end(), point);
-    VTR_ASSERT(*itr == point);
-
-    return std::distance(coords.begin(), itr);
-}
-
-/**
- * @brief  find the nearest location in the compressed grid.
- *
- * Useful when the point is of a different block type from coords.
- * 
- *   @param point represents a coordinate in one dimension of the point
- *   @param coords represents vector of coordinate values of a single type only
- *
- * Hence, the exact point coordinate will not be found in coords if they are of different block types. In this case the function will return 
- * the nearest compressed location to point by rounding it down 
- */
-int grid_to_compressed_approx(const std::vector<int>& coords, int point) {
-    auto itr = std::lower_bound(coords.begin(), coords.end(), point);
-    if (itr == coords.end())
-        return std::distance(coords.begin(), itr - 1);
-    return std::distance(coords.begin(), itr);
 }
 
 /*Print the contents of the compressed grids to an echo file*/
@@ -151,32 +147,34 @@ void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_
     fp = vtr::fopen(filename, "w");
 
     auto& device_ctx = g_vpr_ctx.device();
+    int num_layers = device_ctx.grid.get_num_layers();
 
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "Compressed Grids: \n");
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "\n");
-
-    for (int i = 0; i < (int)comp_grids.size(); i++) {
-        fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
-
-        fprintf(fp, "X coordinates: \n");
-        for (int j = 0; j < (int)comp_grids[i].compressed_to_grid_x.size(); j++) {
-            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_x[j]);
-        }
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        fprintf(fp, "Layer Num: %d \n", layer_num);
+        fprintf(fp, "--------------------------------------------------------------\n");
         fprintf(fp, "\n");
+        for (int i = 0; i < (int)comp_grids.size(); i++) {
+            fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
 
-        fprintf(fp, "Y coordinates: \n");
-        for (int k = 0; k < (int)comp_grids[i].compressed_to_grid_y.size(); k++) {
-            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[k]);
-        }
-        fprintf(fp, "\n");
+            fprintf(fp, "X coordinates: \n");
+            for (int j = 0; j < (int)comp_grids[i].compressed_to_grid_x.size(); j++) {
+                auto grid_loc = comp_grids[i].compressed_loc_to_grid_loc({j, 0, layer_num});
+                fprintf(fp, "%d ", grid_loc.x);
+            }
+            fprintf(fp, "\n");
 
-        fprintf(fp, "Subtiles: \n");
-        for (int s = 0; s < (int)comp_grids[i].compatible_sub_tiles_for_tile.size(); s++) {
-            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[s]);
+            fprintf(fp, "Y coordinates: \n");
+            for (int k = 0; k < (int)comp_grids[i].compressed_to_grid_y.size(); k++) {
+                auto grid_loc = comp_grids[i].compressed_loc_to_grid_loc({0, k, layer_num});
+                fprintf(fp, "%d ", grid_loc.y);
+            }
+            fprintf(fp, "\n");
+            //TODO: Print the compatible sub-tiles for a logical block type
         }
-        fprintf(fp, "\n");
     }
 
     fclose(fp);

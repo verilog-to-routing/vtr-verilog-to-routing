@@ -50,5 +50,5 @@ class t_placement_checkpoint {
 void save_placement_checkpoint_if_needed(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo> timing_info, t_placer_costs& costs, float cpd);
 
 //restore the checkpoint if it's better than the latest placement solution
-void restore_best_placement(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo>& timing_info, t_placer_costs& costs, std::unique_ptr<PlacerCriticalities>& placer_criticalities, std::unique_ptr<PlacerSetupSlacks>& placer_setup_slacks, std::unique_ptr<PlaceDelayModel>& place_delay_model, std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator, PlaceCritParams crit_params);
+void restore_best_placement(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo>& timing_info, t_placer_costs& costs, std::unique_ptr<PlacerCriticalities>& placer_criticalities, std::unique_ptr<PlacerSetupSlacks>& placer_setup_slacks, std::unique_ptr<PlaceDelayModel>& place_delay_model, std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator, PlaceCritParams crit_params, const t_noc_opts& noc_opts);
 #endif

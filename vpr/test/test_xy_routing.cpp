@@ -54,7 +54,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            noc_model.add_router((i * 4) + j, j, i);
+            noc_model.add_router((i * 4) + j, j, i, 0);
         }
     }
 
@@ -222,12 +222,12 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
 
     // store the reference to device grid with
     // this will be set to the device grid width
-    noc_model.set_device_grid_width((int)4);
+    noc_model.set_device_grid_spec((int)4, 0);
 
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            noc_model.add_router((i * 4) + j, j, i);
+            noc_model.add_router((i * 4) + j, j, i, 0);
         }
     }
 
@@ -331,12 +331,12 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
 
     // store the reference to device grid with
     // this will be set to the device grid width
-    noc_model.set_device_grid_width((int)4);
+    noc_model.set_device_grid_spec((int)4, 0);
 
-    noc_model.add_router(0, 0, 0);
-    noc_model.add_router(1, 2, 2);
-    noc_model.add_router(2, 1, 2);
-    noc_model.add_router(3, 3, 0);
+    noc_model.add_router(0, 0, 0, 0);
+    noc_model.add_router(1, 2, 2, 0);
+    noc_model.add_router(2, 1, 2, 0);
+    noc_model.add_router(3, 3, 0, 0);
 
     noc_model.make_room_for_noc_router_link_list();
 

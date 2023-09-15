@@ -8,7 +8,7 @@
 #include "vpr_utils.h"
 #include "constraints_report.h"
 
-#include "timing_info.h"
+#include "concrete_timing_info.h"
 #include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingGraphResolver.h"
 #include "tatum/echo_writer.hpp"
@@ -147,9 +147,8 @@ void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
 void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
                                               t_pb* pb);
 
-void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
-                               t_cluster_placement_stats** cluster_placement_stats,
-                               t_pb_graph_node*** primitives_list,
+void alloc_and_init_clustering(const t_packer_opts& packer_opts,
+                               const t_molecule_stats& max_molecule_stats,
                                t_pack_molecule* molecules_head,
                                t_clustering_data& clustering_data,
                                std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,

@@ -69,8 +69,7 @@ double atod(const std::string& value);
  */
 int get_file_line_number_of_last_opened_file();
 bool file_exists(const char* filename);
-bool check_file_name_extension(const char* file_name,
-                               const char* file_extension);
+bool check_file_name_extension(std::string file_name, std::string file_extension);
 
 extern std::string out_file_prefix;
 

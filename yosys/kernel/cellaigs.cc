@@ -318,7 +318,7 @@ Aig::Aig(Cell *cell)
 		goto optimize;
 	}
 
-	if (cell->type.in(ID($mux), ID($_MUX_)))
+	if (cell->type.in(ID($mux), ID($_MUX_), ID($_NMUX_)))
 	{
 		int S = mk.inport(ID::S);
 		for (int i = 0; i < GetSize(cell->getPort(ID::Y)); i++) {
@@ -382,6 +382,26 @@ Aig::Aig(Cell *cell)
 		}
 		vector<int> Y = mk.adder(A, B, carry);
 		mk.outport_vec(Y, ID::Y);
+		goto optimize;
+	}
+
+	if (cell->type.in({ID($lt), ID($gt), ID($le), ID($ge)}))
+	{
+		int width = std::max(GetSize(cell->getPort(ID::A)),
+							 GetSize(cell->getPort(ID::B))) + 1;
+		vector<int> A = mk.inport_vec(ID::A, width);
+		vector<int> B = mk.inport_vec(ID::B, width);
+
+		if (cell->type.in({ID($gt), ID($ge)}))
+			std::swap(A, B);
+
+		int carry = mk.bool_node(!cell->type.in({ID($le), ID($ge)}));
+		for (auto &n : B)
+			n = mk.not_gate(n);
+		vector<int> Y = mk.adder(A, B, carry);
+		mk.outport(Y.back(), ID::Y);
+		for (int i = 1; i < GetSize(cell->getPort(ID::Y)); i++)
+			mk.outport(mk.bool_node(false), ID::Y, i);
 		goto optimize;
 	}
 

@@ -127,5 +127,37 @@ void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data
  * its corresponding value in the UI. */
 void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 
+/**
+ * @brief Callback function for 3d layer checkboxes
+ * Updates draw_state->draw_layer_display based on which checkboxes are checked
+ *
+ * @param widget: pointer to the gtk widget for 3d layer checkboxes
+ */
+void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+
+/**
+ * @brief Callback function for 3d layer transparency spin buttons
+ * Updates draw_state->draw_layer_display based on the values in spin buttons
+ *
+ * @param widget: gtk widget for layer transparency spin buttons
+ */
+void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+
+/**
+ * @brief Callback function for cross layer connection checkbox
+ * Updates draw_state->cross_layer_display.visible based on whether the cross layer
+ * connection checkbox is checked.
+ *
+ * @param widget: gtk widget for the cross layer connection checkbox
+ */
+void cross_layer_checkbox_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+
+/**
+ * @brief Callback function for cross layer connection spin button
+ * Updates draw_state->cross_layer_display.alpha based spin button value
+ *
+ * @param widget: gtk widget for the cross layer connection transparency spin button
+ */
+void cross_layer_transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 #endif /* NO_GRAPHICS */
 #endif /* DRAW_TOGGLE_FUNCTIONS_H */

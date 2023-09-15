@@ -24,6 +24,8 @@
 #include "SetupGrid.h"
 #include "re_cluster.h"
 
+#include "pack_utils.h"
+#include "re_cluster_util.h"
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
@@ -114,10 +116,10 @@ bool try_pack(t_packer_opts* packer_opts,
     }
 
     helper_ctx.target_external_pin_util = parse_target_external_pin_util(packer_opts->target_external_pin_util);
-    t_pack_high_fanout_thresholds high_fanout_thresholds = parse_high_fanout_thresholds(packer_opts->high_fanout_threshold);
+    helper_ctx.high_fanout_thresholds = parse_high_fanout_thresholds(packer_opts->high_fanout_threshold);
 
     VTR_LOG("Packing with pin utilization targets: %s\n", target_external_pin_util_to_string(helper_ctx.target_external_pin_util).c_str());
-    VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds_to_string(high_fanout_thresholds).c_str());
+    VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds_to_string(helper_ctx.high_fanout_thresholds).c_str());
 
     bool allow_unrelated_clustering = false;
     if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::ON) {
@@ -150,7 +152,7 @@ bool try_pack(t_packer_opts* packer_opts,
             balance_block_type_util,
             lb_type_rr_graphs,
             helper_ctx.target_external_pin_util,
-            high_fanout_thresholds,
+            helper_ctx.high_fanout_thresholds,
             attraction_groups,
             floorplan_regions_overfull,
             clustering_data);
@@ -237,7 +239,7 @@ bool try_pack(t_packer_opts* packer_opts,
 
                 int num_instances = 0;
                 for (auto type : iter->first->equivalent_tiles)
-                    num_instances += grid.num_instances(type);
+                    num_instances += grid.num_instances(type, -1);
 
                 resource_avail += std::string(iter->first->name) + ": " + std::to_string(num_instances);
             }
@@ -256,25 +258,126 @@ bool try_pack(t_packer_opts* packer_opts,
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
         //attraction_groups.reset_attraction_groups();
 
-        free_cluster_placement_stats(helper_ctx.cluster_placement_stats);
-        delete[] helper_ctx.primitives_list;
+        for (int thread_id = 0; thread_id < packer_opts->pack_num_threads; thread_id++) {
+            free_cluster_placement_stats(helper_ctx.cluster_placement_stats[thread_id]);
+            delete[] helper_ctx.primitives_list[thread_id];
+        }
 
         ++pack_iteration;
     }
 
     /* Packing iterative improvement can be done here */
-    /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
-    VTR_LOG("Start the iterative improvement process\n");
-    //iteratively_improve_packing(*packer_opts, clustering_data, 2);
-    VTR_LOG("the iterative improvement process is done\n");
-
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    // Elgammal debugging
     /*
-     * auto& cluster_ctx = g_vpr_ctx.clustering();
-     * for (auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
-     * free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(blk_id));
+     * for (auto& clb : cluster_ctx.clb_nlist.blocks()) {
+     * VTR_LOG("### block: %zu --> %s\n", clb, cluster_ctx.clb_nlist.block_pb(clb)->name);
      * }
      */
+    /*
+     auto rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(44));
+     t_pack_molecule* mol = rng.first->second;
+     VTR_LOG("Pack move is starting:\n\n");
+     bool moved = move_mol_to_new_cluster(mol, true, 0, clustering_data, 0);
+     if (moved)
+     VTR_LOG("Move is Done :)\n");
+     else
+     VTR_LOG("Move failed! :((\n");
+
+     rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(55));
+     mol = rng.first->second;
+     moved = move_mol_to_existing_cluster(mol,
+     ClusterBlockId(43),
+     true,
+     0,
+     clustering_data,
+     0);
+     if (moved)
+     VTR_LOG("Move is Done :)\n");
+     else
+     VTR_LOG("Move failed! :((\n");
+
+     rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(44));
+     mol = rng.first->second;
+     auto rng2 = atom_ctx.atom_molecules.equal_range(AtomBlockId(77));
+     t_pack_molecule* mol2 = rng2.first->second;
+     moved = swap_two_molecules(mol, mol2, true, 0, clustering_data, 0);
+     if (moved)
+     VTR_LOG("Move is Done :)\n");
+     else
+     VTR_LOG("Move failed! :((\n");
+
+
+    auto rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(3));
+    t_pack_molecule* mol = rng.first->second;
+    auto rng2 = atom_ctx.atom_molecules.equal_range(AtomBlockId(42));
+    t_pack_molecule* mol2 = rng2.first->second;
+    bool moved = swap_two_molecules(mol, mol2, true, 0, clustering_data, 0);
+    if (moved)
+        VTR_LOG("Move is Done :)\n");
+    else
+        VTR_LOG("Move failed! :((\n");
+
+    auto rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(3));
+    t_pack_molecule* mol = rng.first->second;
+    bool moved = move_mol_to_new_cluster(mol, true, 0, clustering_data, 0);
+    if (moved)
+        VTR_LOG("Move is Done :)\n");
+    else
+        VTR_LOG("Move failed! :((\n");
+
+    rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(4));
+    mol = rng.first->second;
+    moved = move_mol_to_existing_cluster(mol,
+                                         ClusterBlockId(4),
+                                         true,
+                                         0,
+                                         clustering_data,
+                                         0);
+    if (moved)
+        VTR_LOG("Move is Done :)\n");
+    else
+        VTR_LOG("Move failed! :((\n");
+
+    rng = atom_ctx.atom_molecules.equal_range(AtomBlockId(4));
+    mol = rng.first->second;
+    auto rng2 = atom_ctx.atom_molecules.equal_range(AtomBlockId(5));
+    t_pack_molecule* mol2 = rng2.first->second;
+    moved = swap_two_molecules(mol, mol2, true, 0, clustering_data, 0);
+    if (moved)
+        VTR_LOG("Move is Done :)\n");
+    else
+        VTR_LOG("Move failed! :((\n");
+
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        VTR_LOG("\n# block id = %d\n", blk_id);
+        VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
+        for (auto atom : *cluster_to_atoms(blk_id)) {
+            VTR_LOG("\tatom = %d\n", atom);
+            for (auto atom_pin : atom_ctx.nlist.block_pins(atom)) {
+                VTR_LOG("\t\tatom_pin = %d, type = %d, atom_net=%d, cluster_net=%d\n", atom_pin, atom_ctx.nlist.pin_type(atom_pin), atom_ctx.nlist.pin_net(atom_pin), atom_ctx.lookup.clb_net(atom_ctx.nlist.pin_net(atom_pin)));
+            }
+        }
+    }
+
+
+    VTR_LOG("Start the iterative improvement process\n");
+    iteratively_improve_packing(*packer_opts, clustering_data, 2);
+    VTR_LOG("the iterative improvement process is done\n");
+    */
+    /* // Elgammal debugging
+    for(auto& clb : cluster_ctx.clb_nlist.blocks()) {
+        VTR_LOG("@@@ block: %zu --> %s\n", clb, cluster_ctx.clb_nlist.block_pb(clb)->name);
+    }
+    */
+
+    if(packer_opts->pack_num_moves != 0) {
+        for (auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
+            free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(blk_id));
+        }
+    }
     /******************** End **************************/
 
     //check clustering and output it
@@ -282,6 +385,11 @@ bool try_pack(t_packer_opts* packer_opts,
 
     // Free Data Structures
     free_clustering_data(*packer_opts, clustering_data);
+
+    for (int i = 0; i < packer_opts->pack_num_threads; i++) {
+        free_cluster_placement_stats(helper_ctx.cluster_placement_stats[i]);
+        delete[] helper_ctx.primitives_list[i];
+    }
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
@@ -369,7 +477,7 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
 
         float num_total_instances = 0.;
         for (const auto& equivalent_tile : type.equivalent_tiles) {
-            num_total_instances += device_ctx.grid.num_instances(equivalent_tile);
+            num_total_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
         }
 
         if (num_total_instances != 0) {

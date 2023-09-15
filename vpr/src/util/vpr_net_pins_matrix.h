@@ -1,6 +1,10 @@
 #ifndef VPR_NET_PINS_MATRIX_H
 #define VPR_NET_PINS_MATRIX_H
 
+#include "atom_netlist_fwd.h"
+#include "clustered_netlist.h"
+#include "clustered_netlist_fwd.h"
+#include "netlist_fwd.h"
 #include "vtr_ragged_matrix.h"
 
 template<typename T, typename NetId>

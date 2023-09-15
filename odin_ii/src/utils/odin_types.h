@@ -147,6 +147,9 @@ struct global_args_t {
     // Arguments for mixing hard and soft logic
     argparse::ArgValue<int> exact_mults;
     argparse::ArgValue<float> mults_ratio;
+
+    argparse::ArgValue<int> exact_adders;
+    argparse::ArgValue<float> adders_ratio;
 };
 
 /**
