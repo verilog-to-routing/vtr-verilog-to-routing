@@ -34,25 +34,3 @@ void ClusteredPinAtomPinsLookup::init_lookup(const ClusteredNetlist& clustered_n
         }
     }
 }
-
-ClusterAtomsLookup::ClusterAtomsLookup() {
-    init_lookup();
-}
-
-void ClusterAtomsLookup::init_lookup() {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    cluster_atoms.resize(cluster_ctx.clb_nlist.blocks().size());
-
-    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
-        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
-
-        cluster_atoms[clb_index].push_back(atom_blk_id);
-    }
-}
-
-std::vector<AtomBlockId> ClusterAtomsLookup::atoms_in_cluster(ClusterBlockId blk_id) {
-    std::vector<AtomBlockId> atoms = cluster_atoms[blk_id];
-    return atoms;
-}
