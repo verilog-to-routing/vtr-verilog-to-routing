@@ -752,6 +752,22 @@ struct hash<t_pl_loc> {
 };
 } // namespace std
 
+struct t_pl_atom_loc {
+    t_pl_atom_loc() = default;
+    t_pl_atom_loc(int primitive_id_, int x_, int y_, int sub_tile_, int layer_)
+        : primitive_id(primitive_id_)
+        , x(x_)
+        , y(y_)
+        , sub_tile(sub_tile_)
+        , layer(layer_) {}
+
+    int primitive_id = OPEN;
+    int x = OPEN;
+    int y = OPEN;
+    int sub_tile = OPEN;
+    int layer = OPEN;
+}
+
 struct t_place_region {
     float capacity; ///<Capacity of this region, in tracks.
     float inv_capacity;
