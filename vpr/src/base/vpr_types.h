@@ -836,6 +836,8 @@ class GridBlock {
         return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
     }
 
+    AtomBlockId block_at_location(const t_pl_atom_loc& loc) const;
+
     inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
         return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
     }

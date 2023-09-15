@@ -303,6 +303,26 @@ void t_cluster_placement_stats::free_primitives() {
     }
 }
 
+AtomBlockId GridBlock::block_at_location(const t_pl_atom_loc& loc) const {
+    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
+    t_pl_loc cluster_loc (loc.x, loc.y, loc.sub_tile, loc.layer);
+    ClusterBlockId cluster_at_loc = block_at_location(cluster_loc);
+    if (cluster_at_loc == ClusterBlockId::INVALID()) {
+        return AtomBlockId::INVALID();
+    } else {
+        const auto& cluster_atoms = g_vpr_ctx.cl_helper().atoms_lookup;
+        const auto& atom_list = cluster_atoms.at(cluster_at_loc);
+        for (const auto& atom : atom_list) {
+            int primitive_pin = atom_lookup.atom_pb_graph_node(atom)->primitive_num;
+            t_pl_atom_loc atom_loc(primitive_pin, cluster_loc.x, cluster_loc.y, cluster_loc.sub_tile, cluster_loc.layer);
+            if (atom_loc == loc) {
+                return atom;
+            }
+        }
+        return AtomBlockId::INVALID();
+    }
+}
+
 t_cluster_placement_primitive* t_cluster_placement_stats::get_cluster_placement_primitive_from_pb_graph_node(const t_pb_graph_node* pb_graph_node) {
     auto it = valid_primitives[pb_graph_node->cluster_placement_type_index].find(pb_graph_node->cluster_placement_primitive_index);
     if (it != valid_primitives[pb_graph_node->cluster_placement_type_index].end())
