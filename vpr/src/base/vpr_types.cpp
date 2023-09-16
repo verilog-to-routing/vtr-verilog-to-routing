@@ -307,9 +307,12 @@ AtomBlockId GridBlock::block_at_location(const t_pl_atom_loc& loc) const {
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
     t_pl_loc cluster_loc (loc.x, loc.y, loc.sub_tile, loc.layer);
     ClusterBlockId cluster_at_loc = block_at_location(cluster_loc);
-    if (cluster_at_loc == ClusterBlockId::INVALID()) {
-        return AtomBlockId::INVALID();
+    if (cluster_at_loc == EMPTY_BLOCK_ID) {
+        return EMPTY_PRIMITIVE_BLOCK_ID;
+    } else if (cluster_at_loc == INVALID_BLOCK_ID) {
+        return INVALID_PRIMITIVE_BLOCK_ID;
     } else {
+        VTR_ASSERT(cluster_at_loc.is_valid());
         const auto& cluster_atoms = g_vpr_ctx.cl_helper().atoms_lookup;
         const auto& atom_list = cluster_atoms.at(cluster_at_loc);
         for (const auto& atom : atom_list) {
@@ -319,7 +322,7 @@ AtomBlockId GridBlock::block_at_location(const t_pl_atom_loc& loc) const {
                 return atom;
             }
         }
-        return AtomBlockId::INVALID();
+        return EMPTY_PRIMITIVE_BLOCK_ID;
     }
 }
 

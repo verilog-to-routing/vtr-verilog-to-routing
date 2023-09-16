@@ -91,7 +91,9 @@ enum class ScreenUpdatePriority {
 
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
+constexpr auto EMPTY_PRIMITIVE_BLOCK_ID = AtomBlockId(-1);
 constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
+constexpr auto INVALID_PRIMITIVE_BLOCK_ID = AtomBlockId(-2);
 
 /*
  * Files
