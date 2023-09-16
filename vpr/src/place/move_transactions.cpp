@@ -3,6 +3,35 @@
 #include "globals.h"
 #include "place_util.h"
 
+e_block_move_result record_block_move(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId blk, t_pl_atom_loc to) {
+    auto res = blocks_affected.moved_to.emplace(to);
+    if (!res.second) {
+        log_move_abort("duplicate block move to location");
+        return e_block_move_result::ABORT;
+    }
+
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    t_pl_atom_loc from = get_atom_loc(blk);
+
+    auto res2 = blocks_affected.moved_from.emplace(from);
+    if (!res2.second) {
+        log_move_abort("duplicate block move from location");
+        return e_block_move_result::ABORT;
+    }
+
+    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
+
+    // Sets up the blocks moved
+    int imoved_blk = blocks_affected.num_moved_blocks;
+    blocks_affected.moved_blocks[imoved_blk].block_num = blk;
+    blocks_affected.moved_blocks[imoved_blk].old_loc = from;
+    blocks_affected.moved_blocks[imoved_blk].new_loc = to;
+    blocks_affected.num_moved_blocks++;
+
+    return e_block_move_result::VALID;
+}
+
 //Records that block 'blk' should be moved to the specified 'to' location
 e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId blk, t_pl_loc to) {
     auto res = blocks_affected.moved_to.emplace(to);
