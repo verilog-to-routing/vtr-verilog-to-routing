@@ -774,6 +774,20 @@ struct t_pl_atom_loc {
     }
 };
 
+namespace std {
+template<>
+struct hash<t_pl_atom_loc> {
+    std::size_t operator()(const t_pl_atom_loc& v) const noexcept {
+        std::size_t seed = std::hash<int>{}(v.x);
+        vtr::hash_combine(seed, v.y);
+        vtr::hash_combine(seed, v.sub_tile);
+        vtr::hash_combine(seed, v.layer);
+        vtr::hash_combine(seed, v.primitive_id);
+        return seed;
+    }
+};
+} // namespace std
+
 struct t_place_region {
     float capacity; ///<Capacity of this region, in tracks.
     float inv_capacity;
