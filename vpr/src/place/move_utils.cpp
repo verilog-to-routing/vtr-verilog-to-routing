@@ -66,6 +66,35 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
     }
 }
 
+e_block_move_result find_affected_blocks(t_pl_atom_blocks_to_be_moved& atom_blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc) {
+
+    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
+    e_block_move_result outcome = e_block_move_result::VALID;
+
+    ClusterBlockId from_cluster_block = atom_lookup.atom_clb(b_from);
+    VTR_ASSERT(from_cluster_block.is_valid());
+
+    //TODO: Currently, if the atom belong to a cluster that is a part of a macro, we don't move it
+    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    int imacro = OPEN;
+    get_imacro_from_iblk(&imacro, from_cluster_block, pl_macros);
+    if (imacro != OPEN) {
+        return e_block_move_result::ABORT;
+    } else {
+        const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks;
+        AtomBlockId to_atom = grid_blocks.block_at_location(to_loc);
+        if (to_atom.is_valid()) {
+            ClusterBlockId to_cluster_block = atom_lookup.atom_clb(to_atom);
+            get_imacro_from_iblk(&imacro, to_cluster_block, pl_macros);
+            if (imacro != OPEN) {
+                return e_block_move_result::ABORT;
+            }
+        }
+        outcome = record_single_block_swap(atom_blocks_affected, b_from, to_loc);
+        return outcome;
+    }
+}
+
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
     /* Finds and set ups the affected_blocks array.
      * Returns abort_swap. */
