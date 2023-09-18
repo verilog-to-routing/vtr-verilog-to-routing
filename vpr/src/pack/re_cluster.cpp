@@ -166,8 +166,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
                         int verbosity,
                         t_clustering_data& clustering_data) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
-
+    
     //define local variables
     PartitionRegion temp_cluster_pr_1, temp_cluster_pr_2;
 
