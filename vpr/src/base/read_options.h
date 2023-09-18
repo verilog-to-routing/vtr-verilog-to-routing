@@ -35,6 +35,7 @@ struct t_options {
 
     argparse::ArgValue<std::string> write_router_lookahead;
     argparse::ArgValue<std::string> read_router_lookahead;
+    argparse::ArgValue<std::string> write_router_lookahead_csv;
 
     argparse::ArgValue<std::string> write_intra_cluster_router_lookahead;
     argparse::ArgValue<std::string> read_intra_cluster_router_lookahead;

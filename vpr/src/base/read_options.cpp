@@ -1590,6 +1590,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Writes the lookahead data to the specified file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.write_router_lookahead_csv, "--write_router_lookahead_csv")
+        .help("Writes the lookahead data to the specified csv file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.write_intra_cluster_router_lookahead, "--write_intra_cluster_router_lookahead")
         .help("Writes the intra-cluster lookahead data to the specified file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
