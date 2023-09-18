@@ -111,7 +111,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
     for (auto atom_id : *clb_atoms) {
         add_atom_as_target(router_data, atom_id);
         const t_pb* pb = atom_ctx.lookup.atom_pb(atom_id);
-        while(pb) {
+        while (pb) {
             set_reset_pb_modes(router_data, pb, true);
             pb = pb->parent_pb;
         }
