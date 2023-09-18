@@ -1232,7 +1232,7 @@ class t_pb_graph_node {
 
     int placement_index;
 
-    int primitive_num;
+    int primitive_num = OPEN;
     /* Contains a collection of mode indices that cannot be used as they produce conflicts during VPR packing stage
      *
      * Illegal modes do arise when children of a graph_node do have inconsistent `edge_modes` with respect to
