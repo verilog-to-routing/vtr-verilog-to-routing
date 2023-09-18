@@ -733,6 +733,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
             vpr_setup.RouterOpts.lookahead_type,
             vpr_setup.RouterOpts.write_router_lookahead,
             vpr_setup.RouterOpts.read_router_lookahead,
+            vpr_setup.RouterOpts.write_router_lookahead_csv,
             vpr_setup.Segments,
             is_flat);
     }
@@ -911,6 +912,7 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
         vpr_setup.RouterOpts.lookahead_type,
         vpr_setup.RouterOpts.write_router_lookahead,
         vpr_setup.RouterOpts.read_router_lookahead,
+        vpr_setup.RouterOpts.write_router_lookahead_csv,
         vpr_setup.Segments,
         is_flat);
 

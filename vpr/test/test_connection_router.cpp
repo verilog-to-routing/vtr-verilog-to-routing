@@ -48,6 +48,7 @@ static float do_one_route(RRNodeId source_node,
                                                   router_opts.lookahead_type,
                                                   router_opts.write_router_lookahead,
                                                   router_opts.read_router_lookahead,
+                                                  router_opts.write_router_lookahead_csv,
                                                   segment_inf,
                                                   is_flat);
 

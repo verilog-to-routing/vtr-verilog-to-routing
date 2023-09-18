@@ -49,6 +49,7 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        e_router_lookahead router_lookahead_type,
                                                        std::string write_lookahead,
                                                        std::string read_lookahead,
+                                                       std::string write_lookahead_csv,
                                                        const std::vector<t_segment_inf>& segment_inf,
                                                        bool is_flat);
 
@@ -63,6 +64,7 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    e_router_lookahead router_lookahead_type,
                                                    std::string write_lookahead,
                                                    std::string read_lookahead,
+                                                   std::string write_lookahead_csv,
                                                    const std::vector<t_segment_inf>& segment_inf,
                                                    bool is_flat);
 

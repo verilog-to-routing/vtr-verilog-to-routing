@@ -129,7 +129,9 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     VTR_ASSERT(is_flat == false);
     t_det_routing_arch det_routing_arch;
     auto router_lookahead = make_router_lookahead(det_routing_arch, e_router_lookahead::NO_OP,
-                                                  /*write_lookahead=*/"", /*read_lookahead=*/"",
+                                                  /*write_lookahead=*/"",
+                                                  /*read_lookahead=*/"",
+                                                  /*write_lookahead_csv=*/"",
                                                   /*segment_inf=*/{},
                                                   is_flat);
 

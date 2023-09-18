@@ -290,6 +290,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                                                                           router_opts.lookahead_type,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
+                                                                          router_opts.write_router_lookahead_csv,
                                                                           segment_inf,
                                                                           is_flat);
 
@@ -310,6 +311,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                                                        router_opts.lookahead_type,
                                                        router_opts.write_router_lookahead,
                                                        router_opts.read_router_lookahead,
+                                                       router_opts.write_router_lookahead_csv,
                                                        segment_inf,
                                                        is_flat);
         if (!router_opts.write_intra_cluster_router_lookahead.empty()) {

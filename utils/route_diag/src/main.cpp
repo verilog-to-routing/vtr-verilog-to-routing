@@ -98,6 +98,7 @@ static void do_one_route(const Netlist<>& net_list,
                                                   router_opts.lookahead_type,
                                                   router_opts.write_router_lookahead,
                                                   router_opts.read_router_lookahead,
+                                                  router_opts.write_router_lookahead_csv,
                                                   segment_inf,
                                                   is_flat);
 
@@ -164,6 +165,7 @@ static void profile_source(const Netlist<>& net_list,
                                                   router_opts.lookahead_type,
                                                   router_opts.write_router_lookahead,
                                                   router_opts.read_router_lookahead,
+                                                  router_opts.write_router_lookahead_csv,
                                                   segment_inf,
                                                   is_flat);
     RouterDelayProfiler profiler(net_list, router_lookahead.get(), is_flat);

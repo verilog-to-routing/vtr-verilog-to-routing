@@ -186,6 +186,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                                           router_opts.lookahead_type,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
+                                                                          router_opts.write_router_lookahead_csv,
                                                                           segment_inf,
                                                                           is_flat);
     RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);

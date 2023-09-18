@@ -30,6 +30,7 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        e_router_lookahead router_lookahead_type,
                                                        std::string write_lookahead,
                                                        std::string read_lookahead,
+                                                         std::string write_lookahead_csv,
                                                        const std::vector<t_segment_inf>& segment_inf,
                                                        bool is_flat) {
     std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(det_routing_arch,
@@ -44,6 +45,10 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
 
     if (!write_lookahead.empty()) {
         router_lookahead->write(write_lookahead);
+    }
+
+    if (!write_lookahead_csv.empty()) {
+        router_lookahead->write_csv(write_lookahead_csv);
     }
 
     return router_lookahead;
@@ -200,6 +205,7 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    e_router_lookahead router_lookahead_type,
                                                    std::string write_lookahead,
                                                    std::string read_lookahead,
+                                                   std::string write_lookahead_csv,
                                                    const std::vector<t_segment_inf>& segment_inf,
                                                    bool is_flat) {
     auto& router_ctx = g_vpr_ctx.routing();
@@ -219,6 +225,7 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                   router_lookahead_type,
                                   write_lookahead,
                                   read_lookahead,
+                                  write_lookahead_csv,
                                   segment_inf,
                                   is_flat));
     }
