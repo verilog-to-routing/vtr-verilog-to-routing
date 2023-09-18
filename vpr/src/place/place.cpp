@@ -946,7 +946,9 @@ void try_place(const Netlist<>& net_list,
     }
     auto post_quench_timing_stats = timing_ctx.stats;
 
-    place_re_cluster.re_cluster();
+    if (placer_opts.place_re_cluster) {
+        place_re_cluster.re_cluster();
+    }
 
     //Final timing analysis
     PlaceCritParams crit_params;
