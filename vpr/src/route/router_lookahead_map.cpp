@@ -206,6 +206,7 @@ struct t_dijkstra_data {
 t_wire_cost_map f_wire_cost_map;
 
 t_access_cost_map f_access_cost_map;
+bool f_access_cost_map_initialized = false;
 
 /******** File-Scope Functions ********/
 
@@ -561,6 +562,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
+    reset_access_cost();
 
     reset_access_cost();
     //First compute the delay map when starting from the various wire types
@@ -666,7 +668,9 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int layer_num, 
     VTR_ASSERT_SAFE(delta_x < (int)f_wire_cost_map.dim_size(3));
     VTR_ASSERT_SAFE(delta_y < (int)f_wire_cost_map.dim_size(4));
 
-    f_access_cost_map[layer_num][chan_index][seg_index][delta_x][delta_y] += 1;
+    if (f_access_cost_map_initialized) {
+        f_access_cost_map[layer_num][chan_index][seg_index][delta_x][delta_y] += 1;
+    }
     return f_wire_cost_map[layer_num][chan_index][seg_index][delta_x][delta_y];
 }
 
@@ -1419,6 +1423,13 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map) {
 }
 
 void reset_access_cost() {
+    f_access_cost_map_initialized = true;
+    VTR_ASSERT(!f_wire_cost_map.empty());
+    f_access_cost_map = t_access_cost_map({f_wire_cost_map.dim_size(0),
+                                           f_wire_cost_map.dim_size(1),
+                                           f_wire_cost_map.dim_size(2),
+                                           f_wire_cost_map.dim_size(3),
+                                           f_wire_cost_map.dim_size(4)});
     for (int layer_num = 0; layer_num < int(f_wire_cost_map.dim_size(0)); ++layer_num) {
         for (int chan_type_id = 0; chan_type_id < int(f_wire_cost_map.dim_size(1)); ++chan_type_id) {
             for (int seg_type_id = 0; seg_type_id < int(f_wire_cost_map.dim_size(2)); seg_type_id++) {
