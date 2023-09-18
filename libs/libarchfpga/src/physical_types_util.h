@@ -187,6 +187,8 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
 ///@brief Verifies whether a logical block and a relative placement location is compatible with a given physical tile
 bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int sub_tile_loc);
 
+bool is_atom_compatible(t_logical_block_type_ptr logical_block, const t_pb_graph_node* atom_pb_graph_node, int loc_primitive_num);
+
 /**
  * @brief Returns the first physical tile type that matches the logical block
  *

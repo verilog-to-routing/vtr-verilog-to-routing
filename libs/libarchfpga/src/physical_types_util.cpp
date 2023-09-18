@@ -524,6 +524,25 @@ bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_bl
     return capacity_compatible && is_tile_compatible(physical_tile, logical_block);
 }
 
+bool is_atom_compatible(t_logical_block_type_ptr logical_block, const t_pb_graph_node* atom_pb_graph_node, int loc_primitive_num) {
+    VTR_ASSERT(loc_primitive_num != OPEN);
+    const t_pb_graph_node* loc_pb_graph_node = nullptr;
+    for (const auto& primiive_node_class_pair : logical_block->primitive_pb_graph_node_class_range) {
+        const auto& primitive_node = primiive_node_class_pair.first;
+        VTR_ASSERT(primitive_node->primitive_num != OPEN);
+        if (primitive_node->primitive_num == loc_primitive_num) {
+            loc_pb_graph_node = primitive_node;
+            break;
+        }
+    }
+    VTR_ASSERT(loc_pb_graph_node != nullptr);
+    if (loc_pb_graph_node->pb_type == atom_pb_graph_node->pb_type)
+        return true;
+    else
+        return false;
+
+}
+
 int get_physical_pin_at_sub_tile_location(t_physical_tile_type_ptr physical_tile,
                                           t_logical_block_type_ptr logical_block,
                                           int sub_tile_capacity,
