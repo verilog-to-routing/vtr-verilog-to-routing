@@ -926,7 +926,7 @@ struct t_logical_block_type {
     std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                   /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
     std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping; /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
     std::vector<t_class> primitive_logical_class_inf;                                             /* primitive_logical_class_inf[class_logical_number] -> class */
-    std::unordered_map<const t_pb_graph_node*, t_class_range> pb_graph_node_class_range;
+    std::unordered_map<const t_pb_graph_node*, t_class_range> primitive_pb_graph_node_class_range;
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
