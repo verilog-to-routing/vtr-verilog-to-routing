@@ -562,9 +562,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
-    reset_access_cost();
 
-    reset_access_cost();
+
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
     compute_router_wire_lookahead(segment_inf);
@@ -572,6 +571,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    reset_access_cost();
 }
 
 void MapLookahead::compute_intra_tile() {
