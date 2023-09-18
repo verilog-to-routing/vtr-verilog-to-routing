@@ -676,6 +676,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
+    PlacerOpts->place_re_cluster = Options.place_re_cluster;
 
     PlacerOpts->seed = Options.Seed;
 }
