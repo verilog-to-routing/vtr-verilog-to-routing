@@ -108,6 +108,8 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro, t_pl_offset swap_offset);
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro, t_pl_offset swap_offset);
 
+bool is_legal_swap_to_location(AtomBlockId blk, t_pl_atom_loc to);
+
 bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
 
 std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);

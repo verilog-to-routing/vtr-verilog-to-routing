@@ -469,6 +469,45 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     return outcome;
 }
 
+bool is_legal_swap_to_location(AtomBlockId blk, t_pl_atom_loc to) {
+    //Make sure that the swap_to location is valid
+    //It must be:
+    // * on chip, and
+    // * match the correct block type
+    //
+    //Note that we need to explicitly check that the types match, since the device floorplan is not
+    //(neccessarily) translationally invariant for an arbitrary macro
+
+    const auto& atom_pb = g_vpr_ctx.atom().lookup.atom_pb(blk);
+
+    ClusterBlockId cluster_block = g_vpr_ctx.placement().grid_blocks.block_at_location({to.x, to.y, to.sub_tile, to.layer});
+    t_pl_loc cluster_loc (to.x, to.y, to.sub_tile, to.layer);
+
+    if (!is_legal_swap_to_location(cluster_block, cluster_loc)) {
+        return false;
+    }
+
+    std::vector<t_logical_block_type_ptr> logical_blocks;
+
+    if (cluster_block.is_valid() && cluster_block != INVALID_BLOCK_ID) {
+        const auto& cluster_ctx = g_vpr_ctx.clustering();
+        auto logical_block = cluster_ctx.clb_nlist.block_type(cluster_block);
+        logical_blocks.push_back(logical_block);
+    } else if (cluster_block == EMPTY_BLOCK_ID) {
+        const auto& physical_tile = g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(to.x, to.y, to.layer));
+        const auto& sub_tile = physical_tile->sub_tiles[to.sub_tile];
+        logical_blocks = sub_tile.equivalent_sites;
+    }
+
+    for (const auto& logical_block : logical_blocks) {
+        if (is_atom_compatible(logical_block, atom_pb->pb_graph_node, to.primitive_id)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     //Make sure that the swap_to location is valid
     //It must be:
