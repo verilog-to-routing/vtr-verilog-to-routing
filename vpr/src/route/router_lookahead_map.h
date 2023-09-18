@@ -60,5 +60,9 @@ class Cost_Entry {
 typedef vtr::NdMatrix<Cost_Entry, 5> t_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
                                                       //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
 
+typedef vtr::NdMatrix<int, 5> t_access_cost_map;
+
 void read_router_lookahead(const std::string& file);
 void write_router_lookahead(const std::string& file);
+void reset_access_cost();
+void write_access_cost();

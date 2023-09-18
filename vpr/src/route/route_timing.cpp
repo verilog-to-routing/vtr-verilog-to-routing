@@ -46,6 +46,8 @@
 #include "tatum/TimingReporter.hpp"
 #include "overuse_report.h"
 
+#include "router_lookahead_map.h"
+
 /*
  * File-scope variables
  */
@@ -318,6 +320,8 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
             router_lookahead->write_intra_cluster(router_opts.write_intra_cluster_router_lookahead);
         }
     }
+
+    reset_access_cost();
 
     VTR_ASSERT(router_lookahead != nullptr);
 
@@ -852,6 +856,8 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     VTR_LOG("total_number_of_adding_high_fanout_rt: %zu ", router_stats.add_high_fanout_rt);
     VTR_LOG("total_number_of_adding_all_rt_from_calling_high_fanout_rt: %zu ", router_stats.add_all_rt_from_high_fanout);
     VTR_LOG("\n");
+
+    write_access_cost();
 
     return routing_is_successful;
 }

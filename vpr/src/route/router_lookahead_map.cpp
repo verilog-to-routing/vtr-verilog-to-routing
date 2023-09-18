@@ -205,6 +205,8 @@ struct t_dijkstra_data {
 //Look-up table from CHANX/CHANY (to SINKs) for various distances
 t_wire_cost_map f_wire_cost_map;
 
+t_access_cost_map f_access_cost_map;
+
 /******** File-Scope Functions ********/
 
 /***
@@ -560,6 +562,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
+    reset_access_cost();
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
     compute_router_wire_lookahead(segment_inf);
@@ -663,6 +666,7 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int layer_num, 
     VTR_ASSERT_SAFE(delta_x < (int)f_wire_cost_map.dim_size(3));
     VTR_ASSERT_SAFE(delta_y < (int)f_wire_cost_map.dim_size(4));
 
+    f_access_cost_map[layer_num][chan_index][seg_index][delta_x][delta_y] += 1;
     return f_wire_cost_map[layer_num][chan_index][seg_index][delta_x][delta_y];
 }
 
@@ -1409,6 +1413,43 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map) {
             for (size_t i = 0; i < router_cost_map[x][y].cost_vector.size(); ++i) {
                 Cost_Entry entry = router_cost_map[x][y].cost_vector[i];
                 VTR_LOG("  %d: delay=%10.3g cong=%10.3g\n", i, entry.delay, entry.congestion);
+            }
+        }
+    }
+}
+
+void reset_access_cost() {
+    for (int layer_num = 0; layer_num < int(f_wire_cost_map.dim_size(0)); ++layer_num) {
+        for (int chan_type_id = 0; chan_type_id < int(f_wire_cost_map.dim_size(1)); ++chan_type_id) {
+            for (int seg_type_id = 0; seg_type_id < int(f_wire_cost_map.dim_size(2)); seg_type_id++) {
+                for(int delta_x = 0; delta_x < int(f_wire_cost_map.dim_size(3)); ++delta_x) {
+                    for(int delta_y = 0; delta_y < int(f_wire_cost_map.dim_size(4)); ++delta_y) {
+                        f_access_cost_map[layer_num][chan_type_id][seg_type_id][delta_x][delta_y] = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void write_access_cost() {
+    std::ofstream access_csv_file("access_cost.csv");
+    if(!access_csv_file.is_open()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Error in openning router lookahead csv file\n");
+    }
+
+    access_csv_file << "layer_num, chan_type_id, seg_type_id, delta_x, delta_y, num_acc" << std::endl;
+
+    for (int layer_num = 0; layer_num < int(f_wire_cost_map.dim_size(0)); ++layer_num) {
+        for (int chan_type_id = 0; chan_type_id < int(f_wire_cost_map.dim_size(1)); ++chan_type_id) {
+            for (int seg_type_id = 0; seg_type_id < int(f_wire_cost_map.dim_size(2)); seg_type_id++) {
+                for(int delta_x = 0; delta_x < int(f_wire_cost_map.dim_size(3)); ++delta_x) {
+                    for(int delta_y = 0; delta_y < int(f_wire_cost_map.dim_size(4)); ++delta_y) {
+                        int num_acc = f_access_cost_map[layer_num][chan_type_id][seg_type_id][delta_x][delta_y];
+                        access_csv_file << layer_num << "," << chan_type_id << "," << seg_type_id << "," << delta_x << \
+                            "," << delta_y << "," << num_acc << std::endl;
+                    }
+                }
             }
         }
     }
