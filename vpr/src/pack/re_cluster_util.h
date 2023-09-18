@@ -102,10 +102,9 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
  */
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
-                                  const ClusterBlockId& clb_index,
+                                  const ClusterBlockId& new_clb,
                                   std::unordered_set<AtomBlockId>* new_clb_atoms,
                                   bool during_packing,
-                                  bool is_swap,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data);
 
