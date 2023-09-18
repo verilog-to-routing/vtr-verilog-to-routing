@@ -103,6 +103,10 @@ class ExtendedMapLookahead : public RouterLookahead {
     void write_intra_cluster(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::write_intra_cluster unimplemented");
     }
+
+    void write_csv(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::write_csv unimplemented");
+    }
 };
 
 #endif

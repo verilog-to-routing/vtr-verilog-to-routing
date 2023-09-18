@@ -36,6 +36,8 @@ class RouterLookahead {
     // May be unimplemented, in which case method should throw an exception.
     virtual void write_intra_cluster(const std::string& file) const = 0;
 
+    virtual void write_csv(const std::string& file) const = 0;
+
     virtual ~RouterLookahead() {}
 };
 
@@ -92,6 +94,10 @@ class ClassicLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write_intra_cluster unimplemented");
     }
 
+    void write_csv(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write_csv unimplemented");
+    }
+
   private:
     float classic_wire_lookahead_cost(RRNodeId node, RRNodeId target_node, float criticality, float R_upstream) const;
 };
@@ -122,6 +128,10 @@ class NoOpLookahead : public RouterLookahead {
 
     void write_intra_cluster(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "write_intra_cluster not supported for NoOpLookahead");
+    }
+
+    void write_csv(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "write_csv not supported for NoOpLookahead\"");
     }
 };
 
