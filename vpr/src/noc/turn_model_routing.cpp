@@ -85,6 +85,7 @@ bool TurnModelRouting::route_flow(NocRouterId src_router_id,
             if (next_link) {
                 flow_route.push_back(next_link);
             } else {
+                flow_route.clear();
                 return false;
 //                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
 //                                "No route could be found from starting router with ID:'%d'"

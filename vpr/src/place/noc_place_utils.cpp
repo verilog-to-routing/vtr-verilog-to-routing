@@ -191,7 +191,11 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
 
     // route the current traffic flow
     std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow_id);
-    noc_flows_router.route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, curr_traffic_flow_route);
+    bool route_success = noc_flows_router.route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, curr_traffic_flow_route);
+    if (!route_success) {
+        // an empty route indicates that routing has failed
+        curr_traffic_flow_route.clear();
+    }
 
     return curr_traffic_flow_route;
 }
@@ -485,7 +489,10 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         NocRouterId sink_router_block_id = noc_model.get_router_at_grid_location(placed_cluster_block_locations[logical_sink_router_block_id].loc);
 
         // route the current traffic flow
-        temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, temp_found_noc_route);
+        bool routing_success = temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, temp_found_noc_route);
+        if (!routing_success) {
+            temp_found_noc_route.clear();
+        }
 
         // now calculate the costs associated to the current traffic flow and accumulate it to find the total cost of the NoC placement
         double current_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth_cost(temp_found_noc_route, curr_traffic_flow);
@@ -543,6 +550,14 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
 
 double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info) {
     int num_of_links_in_traffic_flow = traffic_flow_route.size();
+    ClusterBlockId src_id = traffic_flow_info.source_router_cluster_id;
+    ClusterBlockId dst_id = traffic_flow_info.sink_router_cluster_id;
+
+    // A route between source and destination NoC routers doesn't exist
+    if (num_of_links_in_traffic_flow == 0 && src_id != dst_id) {
+        // return positive infinity so that simulated annealing rejects the swap
+        return std::numeric_limits<double>::infinity();
+    }
 
     // the traffic flow aggregate bandwidth cost is scaled by its priority, which dictates its importance to the placement
     return (traffic_flow_info.traffic_flow_priority * traffic_flow_info.traffic_flow_bandwidth * num_of_links_in_traffic_flow);
@@ -553,6 +568,14 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
     int num_of_links_in_traffic_flow = traffic_flow_route.size();
     int num_of_routers_in_traffic_flow = num_of_links_in_traffic_flow + 1;
     double max_latency = traffic_flow_info.max_traffic_flow_latency;
+    ClusterBlockId src_id = traffic_flow_info.source_router_cluster_id;
+    ClusterBlockId dst_id = traffic_flow_info.sink_router_cluster_id;
+
+    // A route between source and destination NoC routers doesn't exist
+    if (num_of_links_in_traffic_flow == 0 && src_id != dst_id) {
+        // return positive infinity so that simulated annealing rejects the swap
+        return std::numeric_limits<double>::infinity();
+    }
 
     // latencies of the noc
     double noc_link_latency = noc_model.get_noc_link_latency();
