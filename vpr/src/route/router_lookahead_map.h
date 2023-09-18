@@ -34,6 +34,7 @@ class MapLookahead : public RouterLookahead {
     void read_intra_cluster(const std::string& file) override;
     void write(const std::string& file) const override;
     void write_intra_cluster(const std::string& file) const override;
+    void write_csv(const std::string& file) const override;
 };
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates

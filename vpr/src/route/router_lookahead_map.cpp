@@ -25,6 +25,7 @@
 #include <vector>
 #include <queue>
 #include <ctime>
+#include <fstream>
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
@@ -620,6 +621,32 @@ void MapLookahead::write(const std::string& file) const {
 void MapLookahead::write_intra_cluster(const std::string& file) const {
     write_intra_cluster_router_lookahead(file,
                                          inter_tile_pin_primitive_pin_delay);
+}
+
+void MapLookahead::write_csv(const std::string& file) const {
+
+    std::ofstream lookahead_csv_file(file);
+    if(!lookahead_csv_file.is_open()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Error in openning router lookahead csv file\n");
+    }
+
+    lookahead_csv_file << "layer_num, chan_type_id, seg_type_id, delta_x, delta_y, delay, congestion" << std::endl;
+
+    for (int layer_num = 0; layer_num < int(f_wire_cost_map.dim_size(0)); ++layer_num) {
+        for (int chan_type_id = 0; chan_type_id < int(f_wire_cost_map.dim_size(1)); ++chan_type_id) {
+            for (int seg_type_id = 0; seg_type_id < int(f_wire_cost_map.dim_size(2)); seg_type_id++) {
+                for(int delta_x = 0; delta_x < int(f_wire_cost_map.dim_size(3)); ++delta_x) {
+                    for(int delta_y = 0; delta_y < int(f_wire_cost_map.dim_size(4)); ++delta_y) {
+                        const auto& cost_entry = f_wire_cost_map[layer_num][chan_type_id][seg_type_id][delta_x][delta_y];
+                        lookahead_csv_file << layer_num << "," << chan_type_id << "," << seg_type_id << "," << delta_x <<
+                            "," << delta_y << "," << cost_entry.delay << "," << cost_entry.congestion << std::endl;
+                    }
+                }
+            }
+        }
+    }
+
+
 }
 
 /******** Function Definitions ********/
