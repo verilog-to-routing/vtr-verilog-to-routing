@@ -90,9 +90,10 @@ e_block_move_result find_affected_blocks(t_pl_atom_blocks_to_be_moved& atom_bloc
                 return e_block_move_result::ABORT;
             }
         }
-        outcome = record_single_block_swap(atom_blocks_affected, b_from, to_loc);
-        return outcome;
     }
+
+    outcome = record_single_block_swap(atom_blocks_affected, b_from, to_loc);
+    return outcome;
 }
 
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
@@ -138,6 +139,44 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         }
 
     } // Finish handling cases for blocks in macro and otherwise
+
+    return outcome;
+}
+
+e_block_move_result record_single_block_swap(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc) {
+
+    VTR_ASSERT(b_from);
+    ClusterBlockId cluster_b_from = g_vpr_ctx.atom().lookup.atom_clb(b_from);
+
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    if (place_ctx.block_locs[cluster_b_from].is_fixed) {
+        return e_block_move_result::ABORT;
+    }
+
+    VTR_ASSERT_SAFE(to_loc.sub_tile < int(place_ctx.grid_blocks.num_blocks_at_location({to_loc.x, to_loc.y, to_loc.layer})));
+
+    e_block_move_result outcome = e_block_move_result::ABORT;
+
+    AtomBlockId b_to = place_ctx.grid_blocks.block_at_location(to_loc);
+
+    if (b_to == EMPTY_PRIMITIVE_BLOCK_ID) {
+        outcome = record_block_move(blocks_affected, b_from, to_loc);
+    } else if (b_to != INVALID_PRIMITIVE_BLOCK_ID) {
+        ClusterBlockId cluster_b_to = g_vpr_ctx.atom().lookup.atom_clb(b_to);
+        if (!(is_legal_swap_to_location(b_to, to_loc)) || place_ctx.block_locs[cluster_b_to].is_fixed) {
+            return e_block_move_result::ABORT;
+        }
+
+        outcome = record_block_move(blocks_affected, b_from, to_loc);
+
+        if (outcome != e_block_move_result::VALID) {
+            return outcome;
+        }
+
+        t_pl_atom_loc from_atom_loc = get_atom_loc(b_from);
+        outcome = record_block_move(blocks_affected, b_to, from_atom_loc);
+    }
 
     return outcome;
 }
