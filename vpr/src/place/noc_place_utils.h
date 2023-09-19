@@ -223,7 +223,9 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  * @param updated_traffic_flows Keeps track of traffic flows that have been
  * re-routed. Used to prevent re-routing the same traffic flow multiple times.
  */
-void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
+template<class T,
+         class = typename std::enable_if<std::is_same<T, ClusterBlockId>::value || std::is_same<T, NocVirtualMiddlemanBlockId>::value>::type>
+void re_route_associated_traffic_flows(T moved_router_block_id,
                                        NocTrafficFlows& noc_traffic_flows_storage,
                                        NocStorage& noc_model,
                                        NocRouting& noc_flows_router,

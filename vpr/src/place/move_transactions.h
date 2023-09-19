@@ -2,6 +2,7 @@
 #define VPR_MOVE_TRANSACTIONS_H
 #include "vpr_types.h"
 #include "clustered_netlist_utils.h"
+#include "noc_virtual_block.h"
 
 /* Stores the information of the move for a block that is       *
  * moved during placement                                       *
@@ -12,6 +13,12 @@ struct t_pl_moved_block {
     ClusterBlockId block_num;
     t_pl_loc old_loc;
     t_pl_loc new_loc;
+};
+
+struct t_moved_noc_virtual_block {
+    NocVirtualMiddlemanBlockId block_num;
+    NocRouterId old_mapped_router_id;
+    NocRouterId new_mapped_router_id;
 };
 
 /* Stores the list of blocks to be moved in a swap during       *
@@ -34,6 +41,7 @@ struct t_pl_blocks_to_be_moved {
 
     int num_moved_blocks = 0;
     std::vector<t_pl_moved_block> moved_blocks;
+    std::vector<t_moved_noc_virtual_block> moved_noc_virtual_blocks;
     std::unordered_set<t_pl_loc> moved_from;
     std::unordered_set<t_pl_loc> moved_to;
 
