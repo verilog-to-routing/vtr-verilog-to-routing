@@ -90,6 +90,8 @@ void log_move_abort(const std::string& reason);
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
 
+e_create_move create_move(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId b_from, t_pl_atom_loc to);
+
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
 e_block_move_result find_affected_blocks(t_pl_atom_blocks_to_be_moved& atom_blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc);

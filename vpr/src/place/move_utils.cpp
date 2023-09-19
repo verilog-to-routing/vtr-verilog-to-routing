@@ -33,6 +33,19 @@ void report_aborted_moves() {
     }
 }
 
+e_create_move create_move(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId b_from, t_pl_atom_loc to) {
+    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to);
+    // Currently, for re-clustering during placement, we don't support INVERT
+    VTR_ASSERT(outcome != e_block_move_result::INVERT || outcome != e_block_move_result::INVERT_VALID);
+
+    if (outcome == e_block_move_result::VALID) {
+        return e_create_move::VALID;
+    } else {
+        VTR_ASSERT(outcome == e_block_move_result::ABORT);
+        return e_create_move::ABORT;
+    }
+}
+
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
     e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to);
 
