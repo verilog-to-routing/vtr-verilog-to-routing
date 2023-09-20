@@ -992,7 +992,6 @@ static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = 
     "W. Median",
     "Crit. Uniform",
     "Feasible Region",
-    "UniformInterLayer",
     "Manual Move"};
 
 //To convert enum move type to string

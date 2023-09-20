@@ -27,7 +27,6 @@ enum class e_move_type {
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
-    UniformInterLayer,
     NUMBER_OF_AUTO_MOVES,
     MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
     INVALID_MOVE

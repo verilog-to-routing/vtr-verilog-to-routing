@@ -48,11 +48,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
         int num_1st_state_avail_moves = placer_opts.place_algorithm.is_timing_driven() ? NUM_PL_1ST_STATE_MOVE_TYPES : NUM_PL_NONTIMING_MOVE_TYPES;
         int num_2nd_state_avail_moves;
         if (placer_opts.place_algorithm.is_timing_driven()) {
-            if (is_multi_layer) {
-                num_2nd_state_avail_moves = NUM_PL_MOVE_TYPES;
-            } else {
-                num_2nd_state_avail_moves = NUM_PL_MOVE_TYPES - 1;
-            }
+            num_2nd_state_avail_moves = NUM_PL_MOVE_TYPES;
         } else {
             num_2nd_state_avail_moves = NUM_PL_NONTIMING_MOVE_TYPES;
         }

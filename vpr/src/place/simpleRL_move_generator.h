@@ -235,9 +235,6 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, bool is_
     avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
     avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
     avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
-    if (is_multi_layer) {
-        avail_moves[(int)e_move_type::UniformInterLayer] = std::make_unique<UniformInterLayerMoveGenerator>();
-    }
 
     karmed_bandit_agent = std::move(agent);
 }
