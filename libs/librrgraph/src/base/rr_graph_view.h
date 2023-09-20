@@ -234,7 +234,7 @@ class RRGraphView {
     }
 
     /** @brief Get string of information about routing resource node. The string will contain the following information.
-     * type, side, x_low, x_high, y_low, y_high, length, direction, segment_name
+     * type, side, x_low, x_high, y_low, y_high, length, direction, segment_name, layer num
      * This function is inlined for runtime optimization.
      */
     inline const std::string node_coordinate_to_string(RRNodeId node) const {
@@ -258,14 +258,14 @@ class RRGraphView {
             coordinate_string += ")"; //add the side of the routing resource node
             // For OPINs and IPINs the starting and ending coordinate are identical, so we can just arbitrarily assign the start to larger values
             // and the end to the lower coordinate
-            start_layer_num = " (" + std::to_string(node_layer(node)) + ",";
-            start_x =  std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
-            start_y = std::to_string(node_yhigh(node)) + ")";
+            start_x =  " (" + std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
+            start_y = std::to_string(node_yhigh(node)) + ",";
+            start_layer_num = std::to_string(node_layer(node)) + ")";
         } else if (node_type(node) == SOURCE || node_type(node) == SINK) {
             // For SOURCE and SINK the starting and ending coordinate are identical, so just use start
-            start_layer_num = " (" + std::to_string(node_layer(node)) + ",";
-            start_x = std::to_string(node_xhigh(node)) + ",";
-            start_y = std::to_string(node_yhigh(node)) + ")";
+            start_x = " (" + std::to_string(node_xhigh(node)) + ",";
+            start_y = std::to_string(node_yhigh(node)) + ",";
+            start_layer_num = std::to_string(node_layer(node)) + ")";
         } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
@@ -276,30 +276,31 @@ class RRGraphView {
             arrow = "->"; //we will point the coordinates from start to finish, left to right
 
             if (node_direction(node) == Direction::DEC) {                //signal travels along decreasing direction
-                start_layer_num = " (" + std::to_string(node_layer(node)) + ","; //layer number
-                start_x = std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
-                start_y = std::to_string(node_yhigh(node)) + ")";
-                end_layer_num = " (" + std::to_string(node_layer(node)) + ",";
-                end_x = std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
-                end_y = std::to_string(node_ylow(node)) + ")";
+
+                start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
+                start_y = std::to_string(node_yhigh(node)) + ",";
+                start_layer_num = std::to_string(node_layer(node)) + ")"; //layer number
+                end_x = " (" + std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
+                end_y = std::to_string(node_ylow(node)) + ",";
+                end_layer_num = std::to_string(node_layer(node)) + ")";
             }
 
             else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
-                start_layer_num = " (" + std::to_string(node_layer(node)) + ","; //layer number
-                start_x = std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
-                start_y = std::to_string(node_ylow(node)) + ")";
-                end_layer_num = " (" + std::to_string(node_layer(node)) + ",";
-                end_x = std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
-                end_y = std::to_string(node_yhigh(node)) + ")";
+                start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
+                start_y = std::to_string(node_ylow(node)) + ",";
+                start_layer_num = std::to_string(node_layer(node)) + ")"; //layer number
+                end_x = " (" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
+                end_y = std::to_string(node_yhigh(node)) + ",";
+                end_layer_num = std::to_string(node_layer(node)) + ")";
                 if (node_direction(node) == Direction::BIDIR) {
                     arrow = "<->"; //indicate that signal can travel both direction
                 }
             }
         }
 
-        coordinate_string += start_layer_num + start_x + start_y; //Write the starting coordinates
+        coordinate_string +=  start_x + start_y + start_layer_num; //Write the starting coordinates
         coordinate_string += arrow;             //Indicate the direction
-        coordinate_string += end_layer_num + end_x + end_y;     //Write the end coordinates
+        coordinate_string += end_x + end_y + end_layer_num;     //Write the end coordinates
         return coordinate_string;
     }
 
