@@ -441,7 +441,7 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
 TEST_CASE("MacroConstraints", "[vpr]") {
     t_pl_macro pl_macro;
     PartitionRegion head_pr;
-    t_pl_offset offset(0, 2, 1, 0);
+    t_pl_offset offset(2, 1, 0, 0);
 
     Region reg;
     reg.set_region_rect({5, 2, 9, 6, 0});

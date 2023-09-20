@@ -626,30 +626,30 @@ struct t_2D_tbb {
  */
 struct t_pl_offset {
     t_pl_offset() = default;
-    t_pl_offset(int layer_offset, int xoffset, int yoffset, int sub_tile_offset)
-        : layer(layer_offset)
-        , x(xoffset)
+    t_pl_offset(int xoffset, int yoffset, int sub_tile_offset, int layer_offset)
+        :x(xoffset)
         , y(yoffset)
-        , sub_tile(sub_tile_offset) {}
+        , sub_tile(sub_tile_offset)
+        , layer(layer_offset) {}
 
-    int layer = 0;
     int x = 0;
     int y = 0;
     int sub_tile = 0;
+    int layer = 0;
 
     t_pl_offset& operator+=(const t_pl_offset& rhs) {
-        layer += rhs.layer;
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
+        layer += rhs.layer;
         return *this;
     }
 
     t_pl_offset& operator-=(const t_pl_offset& rhs) {
-        layer -= rhs.layer;
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
+        layer -= rhs.layer;
         return *this;
     }
 
@@ -664,10 +664,10 @@ struct t_pl_offset {
     }
 
     friend t_pl_offset operator-(const t_pl_offset& other) {
-        return t_pl_offset(-other.layer, -other.x, -other.y, -other.sub_tile);
+        return t_pl_offset(-other.x, -other.y, -other.sub_tile, -other.layer);
     }
     friend t_pl_offset operator+(const t_pl_offset& other) {
-        return t_pl_offset(+other.layer, +other.x, +other.y, +other.sub_tile);
+        return t_pl_offset(+other.x, +other.y, +other.sub_tile, +other.layer);
     }
 
     friend bool operator<(const t_pl_offset& lhs, const t_pl_offset& rhs) {
@@ -676,7 +676,7 @@ struct t_pl_offset {
     }
 
     friend bool operator==(const t_pl_offset& lhs, const t_pl_offset& rhs) {
-        return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
+        return std::tie(lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
     }
 
     friend bool operator!=(const t_pl_offset& lhs, const t_pl_offset& rhs) {
@@ -691,6 +691,7 @@ struct hash<t_pl_offset> {
         std::size_t seed = std::hash<int>{}(v.x);
         vtr::hash_combine(seed, v.y);
         vtr::hash_combine(seed, v.sub_tile);
+        vtr::hash_combine(seed, v.layer);
         return seed;
     }
 };
