@@ -828,7 +828,6 @@ static void compute_wireconn_connections(
                 sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
             } else {
                 VTR_ASSERT(from_layer != to_layer);
-                //TODO: SM: should figure out whether this is correct
                 sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_opin_between_dice_switch();
             }
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);

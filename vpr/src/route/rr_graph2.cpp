@@ -1210,9 +1210,9 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                     continue;
                 }
                 //reserve extra nodes for inter-die track-to-track connection
-                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, CHANX, conn_count);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, y, x, CHANX, conn_count + nodes_per_chan->max);
                 for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, CHANX, nodes_per_chan->max + rr_node_offset);
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, y, x, CHANX, nodes_per_chan->max + rr_node_offset);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
@@ -2169,14 +2169,17 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 }
             } else { //track-to_track connection crossing layer
                 VTR_ASSERT(to_layer != layer);
-
+                //check if current connection is valid, since switchblock pattern is very general,
+                //we might see invalid layer in connection, so we just skip those
+                if((layer < 0 || layer >= device_ctx.grid.get_num_layers()) || (to_layer < 0 || to_layer >= device_ctx.grid.get_num_layers())){
+                    continue;
+                }
                 /*
                  * In order to connect two tracks in different layers, we need to follow these three steps:
                  * 1) connect "from_track" to extra "chanx" node in the same switchblocks
                  * 2) connect extra "chanx" node located in from_layer to another extra "chanx" node located in to_layer
                  * 3) connect "chanx" node located in to_layer to "to_track"
                  * */
-
                 RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, CHANX, max_chan_width + inter_die_track_offset_custom_switchblocks[layer][tile_x][tile_y]);
                 RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, CHANX, max_chan_width + inter_die_track_offset_custom_switchblocks[to_layer][tile_x][tile_y]);
                 RRNodeId chanx_to_track_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
