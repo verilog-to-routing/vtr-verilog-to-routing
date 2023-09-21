@@ -2,19 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-<<<<<<< HEAD
 # Cmdline: uxsdcxx/uxsdcap.py /home/sara/Desktop/rr_3d/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 # Input file: /home/sara/Desktop/rr_3d/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: f7e40b36c91943d162c8a51368b16c3f
+# md5sum of input file: aad09e42e426be6012c2f65ddb636cd0
 
-@0x8b56fc76f51f64b2;
-=======
-# Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
-
-@0xf7009c96d0510b05;
->>>>>>> 37d59288324e5373898ad76c77a114ae0b1e91f1
+@0x8112499188102de5;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
