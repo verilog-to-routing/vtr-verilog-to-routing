@@ -2715,7 +2715,6 @@ static void get_non_updateable_bb(ClusterNetId net_id,
                 + physical_tile_type(bnum)->pin_height_offset[pnum];
 
         int layer_num = place_ctx.block_locs[bnum].loc.layer;
-        VTR_ASSERT(layer_num >= 0 && layer_num < num_layers);
         num_sink_layer[layer_num]++;
         if (x < xmin[layer_num]) {
             xmin[layer_num] = x;
