@@ -85,7 +85,7 @@ static void do_one_route(const Netlist<>& net_list,
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
     bounding_box.layer_min = 0;
-    bounding_box.layer_max = device_ctx.grid.get_num_layers() + 1;
+    bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = router_opts.max_criticality;
