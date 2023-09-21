@@ -6,3 +6,4 @@ leak:libfontconfig.so
 #Leaks from TBB library, which
 #allows VPR to run with parallelism
 leak:libtbb.so
+leak:pthread_getattr_np

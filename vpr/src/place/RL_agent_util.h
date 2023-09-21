@@ -30,10 +30,4 @@ void assign_current_move_generator(std::unique_ptr<MoveGenerator>& move_generato
  * @ brief move the updated current_move_generator to its original move_Generator structure based on he placer_options and the agent state
  */
 void update_move_generator(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, e_agent_state agent_state, const t_placer_opts& placer_opts, bool in_quench, std::unique_ptr<MoveGenerator>& current_move_generator);
-
-/**
- * @ brief determine which block types used by the netlist and create a map between physical block types and agent block types (the ones that are used in the netlist)
- */
-void determine_agent_block_types();
-
 #endif
