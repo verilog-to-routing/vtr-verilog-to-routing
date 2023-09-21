@@ -2171,7 +2171,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 VTR_ASSERT(to_layer != layer);
                 //check if current connection is valid, since switchblock pattern is very general,
                 //we might see invalid layer in connection, so we just skip those
-                if((layer < 0 || layer >= device_ctx.grid.get_num_layers()) || (to_layer < 0 || to_layer >= device_ctx.grid.get_num_layers())){
+                if ((layer < 0 || layer >= device_ctx.grid.get_num_layers()) || (to_layer < 0 || to_layer >= device_ctx.grid.get_num_layers())) {
                     continue;
                 }
                 /*
