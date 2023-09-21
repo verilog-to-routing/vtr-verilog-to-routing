@@ -225,7 +225,7 @@ class SimpleRLMoveGenerator : public MoveGenerator {
 };
 
 template<class T, class>
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, bool is_multi_layer) {
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, bool /*is_multi_layer*/) {
     avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
