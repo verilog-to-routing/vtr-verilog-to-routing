@@ -2147,15 +2147,12 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
-<<<<<<< HEAD
     /*
      *In case of multi-die FPGAs with custom switchblocks, we map each connection to a new CHANX node with length 0;
      *To find track num of newly added nodes, we need to keep index of used nodes for each switchblocks.
      */
     vtr::NdMatrix<int, 3> inter_die_track_offset_custom_switchblocks;
     inter_die_track_offset_custom_switchblocks.resize(std::array<size_t, 3>{(size_t)grid.get_num_layers(), grid.width(), grid.height()}, 0);
-=======
->>>>>>> 37d59288324e5373898ad76c77a114ae0b1e91f1
 
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
         auto& device_ctx = g_vpr_ctx.device();
