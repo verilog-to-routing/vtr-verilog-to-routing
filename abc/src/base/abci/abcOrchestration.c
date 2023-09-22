@@ -198,7 +198,7 @@ Rwr_ManAddTimeCuts( pManRwr, Abc_Clock() - clk );
     pManRwr->nNodesBeg = Abc_NtkNodeNum(pNtk);
     nNodes = Abc_NtkObjNumMax(pNtk);
 
-    printf("nNodes: %d\n", nNodes);
+    //printf("nNodes: %d\n", nNodes);
     if ( pGain_rw ) *pGain_rw = Vec_IntAlloc(1);
 
     pProgress = Extra_ProgressBarStart( stdout, nNodes );
@@ -489,7 +489,7 @@ int Abc_NtkRefactor3( Abc_Ntk_t * pNtk, Vec_Int_t **pGain_ref, int nNodeSizeMax,
         Abc_NtkStartReverseLevels( pNtk, 0 );
     pManRef->nNodesBeg = Abc_NtkNodeNum(pNtk);
     nNodes = Abc_NtkObjNumMax(pNtk);
-    printf("nNodes: %d\n", nNodes);
+    //printf("nNodes: %d\n", nNodes);
     if (pGain_ref) *pGain_ref = Vec_IntAlloc(1);
 
     pProgress = Extra_ProgressBarStart( stdout, nNodes );
@@ -605,7 +605,7 @@ int Abc_NtkResubstitute3( Abc_Ntk_t * pNtk, Vec_Int_t **pGain_res, int nCutMax, 
     // resynthesize each node once
     pManRes->nNodesBeg = Abc_NtkNodeNum(pNtk);
     nNodes = Abc_NtkObjNumMax(pNtk);
-    printf("nNodes: %d\n", nNodes);
+    //printf("nNodes: %d\n", nNodes);
     if (pGain_res) *pGain_res = Vec_IntAlloc(1);
 
     pProgress = Extra_ProgressBarStart( stdout, nNodes );
@@ -2732,7 +2732,7 @@ Rwr_ManAddTimeCuts( pManRwr, Abc_Clock() - clk );
     pManRef->nNodesBeg = Abc_NtkNodeNum(pNtk);
 
     nNodes = Abc_NtkObjNumMax(pNtk);
-    printf("nNodes: %d\n", nNodes);
+    //printf("nNodes: %d\n", nNodes);
     if (pGain_res) *pGain_res = Vec_IntAlloc(1);
     if (pGain_ref) *pGain_ref = Vec_IntAlloc(1);
     if (pGain_rwr) *pGain_rwr = Vec_IntAlloc(1);
@@ -5315,6 +5315,319 @@ pManRef->timeTotal = Abc_Clock() - clkStart;
         return 0;
     }
 s_ResubTime = Abc_Clock() - clkStart;
+    return 1;
+}
+
+// orchestration with sudo random decision list
+int Abc_NtkOrchRand( Abc_Ntk_t * pNtk, Vec_Int_t **pGain_rwr, Vec_Int_t **pGain_res,Vec_Int_t **pGain_ref, Vec_Int_t **DecisionMask, char * DecisionFile, int Rand_Seed, int fUseZeros_rwr, int fUseZeros_ref, int fPlaceEnable, int nCutMax, int nStepsMax, int nLevelsOdc, int fUpdateLevel, int fVerbose, int fVeryVerbose, int nNodeSizeMax, int nConeSizeMax, int fUseDcs )
+{
+    extern int           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
+    ProgressBar * pProgress;
+    // For resub
+    Abc_ManRes_t * pManRes;
+    Abc_ManCut_t * pManCutRes;
+    Odc_Man_t * pManOdc = NULL;
+    Dec_Graph_t * pFFormRes;
+    Vec_Ptr_t * vLeaves;
+    // For rewrite
+    Cut_Man_t * pManCutRwr;
+    Rwr_Man_t * pManRwr;
+    Dec_Graph_t * pGraph;
+    // For refactor
+    Abc_ManRef_t * pManRef;
+    Abc_ManCut_t * pManCutRef;
+    Dec_Graph_t * pFFormRef;
+    Vec_Ptr_t * vFanins;
+
+    Abc_Obj_t * pNode;
+    FILE *fpt;
+    abctime clk, clkStart = Abc_Clock();
+    int i, nNodes, nNodes_after, nGain, fCompl;
+    int RetValue = 1;
+    int ops_rwr = 0;
+    int ops_res = 0;
+    int ops_ref = 0;
+    int ops_null = 0;
+    int Valid_Len = 0;
+    //Vec_Int_t *Valid_Ops;
+
+    //clock_t begin= clock();
+    assert( Abc_NtkIsStrash(pNtk) );
+
+    // cleanup the AIG
+    Abc_AigCleanup((Abc_Aig_t *)pNtk->pManFunc);
+
+    // start the managers resub
+    pManCutRes = Abc_NtkManCutStart( nCutMax, 100000, 100000, 100000 );
+    pManRes = Abc_ManResubStart( nCutMax, ABC_RS_DIV1_MAX );
+    if ( nLevelsOdc > 0 )
+    pManOdc = Abc_NtkDontCareAlloc( nCutMax, nLevelsOdc, fVerbose, fVeryVerbose );
+    // start the managers refactor
+    pManCutRef = Abc_NtkManCutStart( nNodeSizeMax, nConeSizeMax, 2, 1000 );
+    pManRef = Abc_NtkManRefStart_1( nNodeSizeMax, nConeSizeMax, fUseDcs, fVerbose );
+    pManRef->vLeaves   = Abc_NtkManCutReadCutLarge( pManCutRef );
+    // start the managers rewrite
+    pManRwr = Rwr_ManStart( 0 );
+    if ( pManRwr == NULL )
+        return 0;
+
+    // compute the reverse levels if level update is requested
+    if ( fUpdateLevel )
+        Abc_NtkStartReverseLevels( pNtk, 0 );
+
+    // 'Resub only'
+    
+    if ( Abc_NtkLatchNum(pNtk) ) {
+        Abc_NtkForEachLatch(pNtk, pNode, i)
+            pNode->pNext = (Abc_Obj_t *)pNode->pData;
+    }
+    
+    // cut manager for rewrite
+clk = Abc_Clock();
+    pManCutRwr = Abc_NtkStartCutManForRewrite( pNtk );
+Rwr_ManAddTimeCuts( pManRwr, Abc_Clock() - clk );
+    pNtk->pManCut = pManCutRwr;
+
+    if ( fVeryVerbose )
+        Rwr_ScoresClean( pManRwr );
+
+  // resynthesize each node once
+  // resub
+    pManRes->nNodesBeg = Abc_NtkNodeNum(pNtk);
+  // rewrite
+    pManRwr->nNodesBeg = Abc_NtkNodeNum(pNtk);
+  // refactor
+    pManRef->nNodesBeg = Abc_NtkNodeNum(pNtk);
+
+//clock_t resyn_end=clock();
+//double resyn_time_spent = (double)(resyn_end-begin)/CLOCKS_PER_SEC;
+//printf("time %f\n", resyn_time_spent);
+    nNodes = Abc_NtkObjNumMax(pNtk);
+    //printf("nNodes: %d\n", nNodes);
+    //for(int i=0; i < nNodes; i++){printf("mask check: %d\n", (*DecisionMask)->pArray[i]);}
+    //printf("mask size:%d", (**DecisionMask).nSize);
+    if (pGain_res) *pGain_res = Vec_IntAlloc(1);
+    if (pGain_ref) *pGain_ref = Vec_IntAlloc(1);
+    if (pGain_rwr) *pGain_rwr = Vec_IntAlloc(1);
+    Vec_Int_t  *Valid_Ops = Vec_IntAlloc(1);
+
+    pProgress = Extra_ProgressBarStart( stdout, nNodes );
+    fpt = fopen(DecisionFile, "w");
+
+    Abc_NtkForEachNode( pNtk, pNode, i )
+    {
+        //printf("Ochestration id: %d\n", pNode->Id);
+        int iterNode = pNode->Id;
+        Extra_ProgressBarUpdate( pProgress, i, NULL );
+        // skip the constant node
+//        if ( Abc_NodeIsConst(pNode) )
+//            continue;
+        // stop if all nodes have been tried once
+        if ( i >= nNodes )
+            break;
+        // skip persistant nodes
+        if ( Abc_NodeIsPersistant(pNode) )
+        {
+            //fprintf(fpt, "%d, %s, %d\n", pNode->Id, "None" , -99);
+            Vec_IntPush((*pGain_res), -99);
+            Vec_IntPush((*pGain_ref), -99);
+            Vec_IntPush((*pGain_rwr), -99);
+            continue;
+        } 
+        // skip the nodes with many fanouts
+        if ( Abc_ObjFanoutNum(pNode) > 1000 )
+        {
+            //fprintf(fpt, "%d, %s, %d\n", pNode->Id,"None", -99);
+            Vec_IntPush((*pGain_res), -99);
+            Vec_IntPush((*pGain_ref), -99);
+            Vec_IntPush((*pGain_rwr), -99);
+            continue;
+        }
+clk = Abc_Clock();
+
+// Generate random operation
+// check transformability of all three operations
+    Vec_IntPush( (Valid_Ops), -1);
+    nGain = Rwr_NodeRewrite( pManRwr, pManCutRwr, pNode, fUpdateLevel, fUseZeros_rwr, fPlaceEnable );
+    Vec_IntPush( (*pGain_rwr), nGain);
+    if (nGain > 0 || (nGain == 0 && fUseZeros_rwr))
+    {
+        Vec_IntPush( (Valid_Ops), 0);
+    }
+    vLeaves = Abc_NodeFindCut( pManCutRes, pNode, 0 ); 
+    pManRes->timeCut += Abc_Clock() - clk;
+    if ( pManOdc )
+    {
+clk = Abc_Clock();
+        Abc_NtkDontCareClear( pManOdc );
+        Abc_NtkDontCareCompute( pManOdc, pNode, vLeaves, pManRes->pCareSet );
+pManRes->timeTruth += Abc_Clock() - clk;
+    }
+clk = Abc_Clock();
+    pFFormRes = Abc_ManResubEval( pManRes, pNode, vLeaves, nStepsMax, fUpdateLevel, fVerbose );
+pManRes->timeRes += Abc_Clock() - clk;
+    Vec_IntPush((*pGain_res), pManRes->nLastGain);
+    if (pManRes->nLastGain > 0)
+    {
+        if ( pFFormRes != NULL ){
+        Vec_IntPush( (Valid_Ops), 1);
+        }
+    }
+    
+    vFanins = Abc_NodeFindCut( pManCutRef, pNode, fUseDcs );
+pManRef->timeCut += Abc_Clock() - clk;
+clk = Abc_Clock();
+    pFFormRef = Abc_NodeRefactor_1( pManRef, pNode, vFanins, fUpdateLevel, fUseZeros_ref, fUseDcs, fVerbose );
+pManRef->timeRes += Abc_Clock() - clk;
+
+    Vec_IntPush((*pGain_ref), pManRef->nLastGain);
+    if (pManRef->nLastGain > 0 || (pManRef->nLastGain ==0 && fUseZeros_ref))
+    {
+         if ( pFFormRef != NULL ){
+             Vec_IntPush( (Valid_Ops), 2);
+         }
+    }
+    Valid_Len = (Valid_Ops)->nSize;
+    //printf("The length of valid operations: %d\n", Valid_Len);
+
+//Pick a random operations from valid ones
+if (Rand_Seed == -1)
+{
+    srand(time(NULL));
+}
+else
+{
+    srand(Rand_Seed);
+}
+
+int r = rand() % Valid_Len;
+
+    if ((Valid_Ops)->pArray[r] == -1){ 
+        (*DecisionMask)->pArray[iterNode] = -1;
+        ops_null++;
+    Vec_IntZero(Valid_Ops); // reset updates
+        continue;
+    }
+    else if ((Valid_Ops->pArray[r]) == 0){
+    // apply rewrite
+        pGraph = (Dec_Graph_t *)Rwr_ManReadDecs(pManRwr);
+        fCompl = Rwr_ManReadCompl(pManRwr);
+        if ( fPlaceEnable )
+            Abc_AigUpdateReset( (Abc_Aig_t *)pNtk->pManFunc );
+        if ( fCompl ) Dec_GraphComplement( pGraph );
+clk = Abc_Clock();
+        Dec_GraphUpdateNetwork( pNode, pGraph, fUpdateLevel, nGain );
+Rwr_ManAddTimeUpdate( pManRwr, Abc_Clock() - clk );
+        if ( fCompl ) Dec_GraphComplement( pGraph );
+        (*DecisionMask)->pArray[iterNode] = 0;
+        ops_rwr++;
+    Vec_IntZero(Valid_Ops); // reset updates
+        continue;
+    }
+    else if ((Valid_Ops->pArray[r] == 1)){
+    // apply res
+        pManRes->nTotalGain += pManRes->nLastGain;
+clk = Abc_Clock();
+        Dec_GraphUpdateNetwork( pNode, pFFormRes, fUpdateLevel, pManRes->nLastGain );
+pManRes->timeNtk += Abc_Clock() - clk;
+        Dec_GraphFree( pFFormRes );
+        (*DecisionMask)->pArray[iterNode] = 1;
+        ops_res++;
+    Vec_IntZero(Valid_Ops); // reset updates
+        continue;
+    }
+    else if ((Valid_Ops->pArray[r] == 2)){
+clk = Abc_Clock();
+        if ( !Dec_GraphUpdateNetwork( pNode, pFFormRef, fUpdateLevel, pManRef->nLastGain ) )
+                 {
+                     Dec_GraphFree( pFFormRef );
+                     RetValue = -1;
+                     break;
+                 }
+pManRef->timeNtk += Abc_Clock() - clk;
+        Dec_GraphFree( pFFormRef );
+        (*DecisionMask)->pArray[iterNode] = 2;
+        ops_ref++;
+    Vec_IntZero(Valid_Ops); // reset updates
+        continue;
+      }
+    }
+    //fwrite((**DecisionMask).pArray, sizeof(int), sizeof((**DecisionMask).pArray), fpt);
+    for (int i = 0; i < (nNodes); i++){
+        fprintf(fpt, "%d\n", (*DecisionMask)->pArray[i]);}
+    fclose(fpt);
+/*
+    printf("size of vector %d\n", Valid_Len);
+    printf("Nodes with rewrite: %d\n", ops_rwr);
+    printf("Nodes with resub: %d\n", ops_res);
+    printf("Nodes with refactor: %d\n", ops_ref);
+    printf("Nodes without updates: %d\n", ops_null);
+*/
+    Extra_ProgressBarStop( pProgress );
+// Rewrite
+Rwr_ManAddTimeTotal( pManRwr, Abc_Clock() - clkStart );
+    pManRwr->nNodesEnd = Abc_NtkNodeNum(pNtk);
+
+// Resub
+pManRes->timeTotal = Abc_Clock() - clkStart;
+    pManRes->nNodesEnd = Abc_NtkNodeNum(pNtk);
+
+// Refactor
+pManRef->timeTotal = Abc_Clock() - clkStart;
+    pManRef->nNodesEnd = Abc_NtkNodeNum(pNtk);
+
+    // print statistics
+    if ( fVerbose ){
+        Abc_ManResubPrint( pManRes );
+        Rwr_ManPrintStats( pManRwr );
+        Abc_NtkManRefPrintStats_1( pManRef );
+    }
+    if ( fVeryVerbose )
+        Rwr_ScoresReport( pManRwr );
+    // delete the managers
+    // resub
+    Abc_ManResubStop( pManRes );
+    Abc_NtkManCutStop( pManCutRes );
+    // rewrite
+    Rwr_ManStop( pManRwr );
+    Cut_ManStop( pManCutRwr );
+    pNtk->pManCut = NULL;
+    // refactor
+    Abc_NtkManCutStop( pManCutRef );
+    Abc_NtkManRefStop_1( pManRef );
+
+    if ( pManOdc ) Abc_NtkDontCareFree( pManOdc );
+
+    // clean the data field
+    Abc_NtkForEachObj( pNtk, pNode, i )
+        pNode->pData = NULL;
+
+    if ( Abc_NtkLatchNum(pNtk) ) {
+        Abc_NtkForEachLatch(pNtk, pNode, i)
+            pNode->pData = pNode->pNext, pNode->pNext = NULL;
+    }
+
+    // put the nodes into the DFS order and reassign their IDs
+    Abc_NtkReassignIds( pNtk );
+//    Abc_AigCheckFaninOrder( pNtk->pManFunc );
+
+    // fix the levels
+    if ( fUpdateLevel )
+        Abc_NtkStopReverseLevels( pNtk );
+    else
+        Abc_NtkLevel( pNtk );
+    // check
+    if ( !Abc_NtkCheck( pNtk ) )
+    {
+        printf( "Abc_NtkOchestraction: The network check has failed.\n" );
+        return 0;
+    }
+    nNodes_after = Abc_NtkObjNumMax(pNtk);
+    //printf("nNodes after optimization: %d\n", nNodes_after);
+//s_ResubTime = Abc_Clock() - clkStart;
+//clock_t end=clock();
+//double time_spent = (double)(end-begin)/CLOCKS_PER_SEC;
+//printf("time %f\n", time_spent);
     return 1;
 }
 

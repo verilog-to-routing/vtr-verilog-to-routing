@@ -1228,6 +1228,98 @@ void Gia_MiniAigGenerateFromFile()
     Mini_AigStop( p );
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Str_t * Gia_ManRetimableF( Gia_Man_t * p, int * pRst, int * pSet, int * pEna )
+{
+    Vec_Str_t * vStops = Vec_StrStart( Gia_ManObjNum(p) );
+    Vec_Int_t * vTemps = Vec_IntStartFull( 3*Gia_ManObjNum(p) );
+    Gia_Obj_t * pObj, * pObjRi, * pObjRo; int i;
+    char * pStops = Vec_StrArray(vStops);
+    assert( Gia_ManRegNum(p) > 0 );
+    Gia_ManForEachRiRo( p, pObjRi, pObjRo, i ) {
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjId(p, pObjRo) + 0, pRst[i] );
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjId(p, pObjRo) + 1, pSet[i] );
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjId(p, pObjRo) + 2, pEna[i] );
+    }
+    Gia_ManForEachAnd( p, pObj, i ) {
+        int * pFan0 = Vec_IntEntryP( vTemps, 3*Gia_ObjFaninId0(pObj, i) );
+        int * pFan1 = Vec_IntEntryP( vTemps, 3*Gia_ObjFaninId1(pObj, i) );
+        int * pNode = Vec_IntEntryP( vTemps, 3*i );
+        pStops[i] = (char)1;
+        if ( pFan0[0] != -1 && pFan0[0] == pFan1[0] && pFan0[1] == pFan1[1] && pFan0[2] == pFan1[2] )
+            pStops[i] = (char)0, pNode[0] = pFan0[0], pNode[1] = pFan0[1], pNode[2] = pFan0[2]; 
+    }
+    Vec_IntFree( vTemps );
+    return vStops;
+}
+Vec_Str_t * Gia_ManRetimableB( Gia_Man_t * p, int * pRst, int * pSet, int * pEna )
+{
+    Vec_Str_t * vStops = Vec_StrStart( Gia_ManObjNum(p) );
+    Vec_Int_t * vTemps = Vec_IntStartFull( 3*Gia_ManObjNum(p) );
+    Gia_Obj_t * pObj, * pObjRi, * pObjRo; int i, n;
+    char * pStops = Vec_StrArray(vStops);
+    assert( Gia_ManRegNum(p) > 0 );
+    Gia_ManForEachRiRo( p, pObjRi, pObjRo, i ) {
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjFaninId0p(p, pObjRi) + 0, pRst[i] );
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjFaninId0p(p, pObjRi) + 1, pSet[i] );
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjFaninId0p(p, pObjRi) + 2, pEna[i] );        
+    }
+    Gia_ManForEachAndReverse( p, pObj, i ) {
+        int   iFans[2] = { Gia_ObjFaninId0(pObj, i), Gia_ObjFaninId1(pObj, i) };
+        int * pFans[2] = { Vec_IntEntryP( vTemps, 3*iFans[0] ), Vec_IntEntryP( vTemps, 3*iFans[1] ) };
+        int * pNode = Vec_IntEntryP( vTemps, 3*i );
+        if ( pNode[0] == -1 )
+            continue;
+        for ( n = 0; n < 2; n++ )
+            if ( pFans[n][0] == -1 )
+                pStops[iFans[n]] = (char)1, pFans[n][0] = pNode[0], pFans[n][1] = pNode[1], pFans[n][2] = pNode[2];
+            else if ( pFans[n][0] != pNode[0] || pFans[n][1] != pNode[1] || pFans[n][2] != pNode[2] )
+                pStops[iFans[n]] = (char)0;
+    }
+    pStops[0] = (char)0;
+    Gia_ManForEachCi( p, pObj, i )
+        pStops[Gia_ObjId(p, pObj)] = (char)0;
+    Gia_ManForEachAnd( p, pObj, i )
+        pStops[i] = (char)!pStops[i];      
+    Vec_IntFree( vTemps );    
+    return vStops;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_FrameSetRetimingData( Abc_Frame_t * pAbc, int * pRst, int * pSet, int * pEna )
+{
+    Gia_Man_t * pGia;
+    if ( pAbc == NULL )
+        printf( "ABC framework is not initialized by calling Abc_Start()\n" );
+    pGia = Abc_FrameReadGia( pAbc );
+    if ( pGia == NULL )
+        printf( "Current network in ABC framework is not defined.\n" );
+    assert( pGia->vStopsF == NULL );
+    assert( pGia->vStopsB == NULL );
+    pGia->vStopsF = Gia_ManRetimableF( pGia, pRst, pSet, pEna );
+    pGia->vStopsB = Gia_ManRetimableB( pGia, pRst, pSet, pEna );    
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////

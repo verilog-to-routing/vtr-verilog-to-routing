@@ -265,7 +265,7 @@ void Abc_SclDnsizePerformInt( SC_Lib * pLib, Abc_Ntk_t * pNtk, SC_SizePars * pPa
     assert( p->vGatesBest == NULL );
     p->vGatesBest = Vec_IntDup( p->pNtk->vGates );
 
-    // perform upsizing
+    // perform downsizing
     vNodes = Vec_IntAlloc( 1000 );
     vEvals = Vec_IntAlloc( 1000 );
     vTryLater = Vec_IntAlloc( 1000 );

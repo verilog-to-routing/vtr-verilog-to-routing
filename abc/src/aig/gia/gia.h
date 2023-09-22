@@ -241,6 +241,9 @@ struct Gia_Man_t_
     Vec_Int_t      vSuppVars;     // used variables
     Vec_Int_t      vVarMap;       // used variables
     Gia_Dat_t *    pUData;
+    // retiming data
+    Vec_Str_t *    vStopsF;
+    Vec_Str_t *    vStopsB;    
 };
 
 
@@ -1527,7 +1530,7 @@ extern void                Gia_ManPrintStatsMiter( Gia_Man_t * p, int fVerbose )
 extern void                Gia_ManSetRegNum( Gia_Man_t * p, int nRegs );
 extern void                Gia_ManReportImprovement( Gia_Man_t * p, Gia_Man_t * pNew );
 extern void                Gia_ManPrintNpnClasses( Gia_Man_t * p );
-extern void                Gia_ManDumpVerilog( Gia_Man_t * p, char * pFileName, Vec_Int_t * vObjs, int fVerBufs, int fInter );
+extern void                Gia_ManDumpVerilog( Gia_Man_t * p, char * pFileName, Vec_Int_t * vObjs, int fVerBufs, int fInter, int fInterComb, int fAssign );
 /*=== giaMem.c ===========================================================*/
 extern Gia_MmFixed_t *     Gia_MmFixedStart( int nEntrySize, int nEntriesMax );
 extern void                Gia_MmFixedStop( Gia_MmFixed_t * p, int fVerbose );
