@@ -332,9 +332,6 @@ int get_random_layer(t_logical_block_type_ptr logical_block);
 
 t_bb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec);
 
-void enable_placer_debug(const t_placer_opts& placer_opts,
-                         int blk_id_num,
-                         const std::vector<size_t>& net_id_nums);
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 /**
  * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
