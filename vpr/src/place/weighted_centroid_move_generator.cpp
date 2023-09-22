@@ -14,7 +14,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Centroid Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo moveable block found\n");
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
 
