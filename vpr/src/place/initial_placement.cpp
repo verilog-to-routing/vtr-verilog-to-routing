@@ -927,7 +927,11 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     return block_scores;
 }
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
 static void place_all_blocks(const t_placer_opts& placer_opts, vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
+#else
+static void place_all_blocks(const t_placer_opts& /* placer_opts */, vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
+#endif
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
@@ -978,13 +982,9 @@ static void place_all_blocks(const t_placer_opts& placer_opts, vtr::vector<Clust
 
             auto blk_id_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
-            const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type;
-            int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
-            std::vector<size_t> block_nets(block_num_pins, OPEN);
-            for (int ipin = 0; ipin < block_num_pins; ipin++) {
-                block_nets[ipin] = (size_t)cluster_ctx.clb_nlist.block_net(blk_id, ipin);
-            }
-            enable_placer_debug(placer_opts, size_t(blk_id), block_nets);
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+            enable_placer_debug(placer_opts, blk_id);
+#endif
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Popped Block %d\n", size_t(blk_id));
 
             blocks_placed_since_heap_update++;
