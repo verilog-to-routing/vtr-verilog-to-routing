@@ -753,10 +753,10 @@ struct t_pl_loc {
     }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return {lhs.layer - rhs.layer,
-                lhs.x - rhs.x,
+        return {lhs.x - rhs.x,
                 lhs.y - rhs.y,
-                lhs.sub_tile - rhs.sub_tile};
+                lhs.sub_tile - rhs.sub_tile,
+                lhs.layer - rhs.layer};
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
