@@ -5708,8 +5708,8 @@ Gia_Man_t * Gia_ManBoundaryMiter( Gia_Man_t * p1, Gia_Man_t * p2, int fVerbose )
     }
     Gia_ManForEachCo( p2, pObj, i )
         Gia_ManAppendCo( pNew, Gia_ObjFanin0Copy(pObj) );
-    Gia_ManForEachCo( p1, pObj, i )
-        Gia_ManAppendCo( pNew, Gia_ObjFanin0Copy(pObj) );
+    //Gia_ManForEachCo( p1, pObj, i )
+    //    Gia_ManAppendCo( pNew, Gia_ObjFanin0Copy(pObj) );
     Vec_IntForEachEntry( vLits, iLit, i )
         Gia_ManAppendCo( pNew, iLit );
     Vec_IntFree( vLits );

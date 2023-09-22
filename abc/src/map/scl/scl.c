@@ -1136,9 +1136,9 @@ int Scl_CommandBuffer( Abc_Frame_t * pAbc, int argc, char ** argv )
 
 usage:
     fprintf( pAbc->Err, "usage: buffer [-GSN num] [-sbpcvwh]\n" );
-    fprintf( pAbc->Err, "\t           performs buffering and sizing and mapped network\n" );
+    fprintf( pAbc->Err, "\t           performs buffering and sizing on mapped network\n" );
     fprintf( pAbc->Err, "\t-G <num> : target gain percentage [default = %d]\n", pPars->GainRatio );
-    fprintf( pAbc->Err, "\t-S <num> : target slew in pisoseconds [default = %d]\n", pPars->Slew );
+    fprintf( pAbc->Err, "\t-S <num> : target slew in picoseconds [default = %d]\n", pPars->Slew );
     fprintf( pAbc->Err, "\t-N <num> : the maximum fanout count [default = %d]\n", pPars->nDegree );
     fprintf( pAbc->Err, "\t-s       : toggle performing only sizing [default = %s]\n", pPars->fSizeOnly? "yes": "no" );
     fprintf( pAbc->Err, "\t-b       : toggle using buffers instead of inverters [default = %s]\n", pPars->fAddBufs? "yes": "no" );
@@ -1787,9 +1787,9 @@ int Scl_CommandDnsize( Abc_Frame_t * pAbc, int argc, char **argv )
 usage:
     fprintf( pAbc->Err, "usage: dnsize [-IJNDGTX num] [-csdvwh]\n" );
     fprintf( pAbc->Err, "\t           selectively decreases gate sizes while maintaining delay\n" );
-    fprintf( pAbc->Err, "\t-I <num> : the number of upsizing iterations to perform [default = %d]\n", pPars->nIters );
+    fprintf( pAbc->Err, "\t-I <num> : the number of downsizing iterations to perform [default = %d]\n", pPars->nIters );
     fprintf( pAbc->Err, "\t-J <num> : the number of iterations without improvement to stop [default = %d]\n", pPars->nIterNoChange );
-    fprintf( pAbc->Err, "\t-N <num> : limit on discrete upsizing steps at a node [default = %d]\n", pPars->Notches );
+    fprintf( pAbc->Err, "\t-N <num> : limit on discrete downsizing steps at a node [default = %d]\n", pPars->Notches );
     fprintf( pAbc->Err, "\t-D <num> : delay target set by the user, in picoseconds [default = %d]\n", pPars->DelayUser );
     fprintf( pAbc->Err, "\t-G <num> : delay gap during updating, in picoseconds [default = %d]\n", pPars->DelayGap );
     fprintf( pAbc->Err, "\t-T <num> : approximate timeout in seconds [default = %d]\n", pPars->TimeOut );

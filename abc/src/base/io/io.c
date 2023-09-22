@@ -276,6 +276,18 @@ int IoCommandRead( Abc_Frame_t * pAbc, int argc, char ** argv )
         return 0;
     }
     // read the file using the corresponding file reader
+    if ( strstr(pFileName, ".") && !strcmp(strstr(pFileName, "."), ".s") ) 
+    {
+        char Command[1000];
+        assert( strlen(pFileName) < 980 );
+        sprintf( Command, "source -x %s", pFileName );
+        if ( Cmd_CommandExecute( pAbc, Command ) )
+        {
+            fprintf( stdout, "Cannot execute command \"%s\".\n", Command );
+            return 1;
+        }
+        return 0;
+    }
     pNtk = Io_Read( pFileName, Io_ReadFileType(pFileName), fCheck, fBarBufs );
     if ( pNtk == NULL )
         return 0;

@@ -22,6 +22,7 @@
 #include <process.h>
 #else
 #include <unistd.h>
+#include <dirent.h>
 #endif
 
 #include "base/abc/abc.h"
@@ -54,6 +55,8 @@ static int CmdCommandScanDir       ( Abc_Frame_t * pAbc, int argc, char ** argv 
 static int CmdCommandRenameFiles   ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int CmdCommandLs            ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int CmdCommandScrGen        ( Abc_Frame_t * pAbc, int argc, char ** argv );
+#else
+static int CmdCommandScrGenLinux   ( Abc_Frame_t * pAbc, int argc, char ** argv );
 #endif
 static int CmdCommandVersion       ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int CmdCommandSis           ( Abc_Frame_t * pAbc, int argc, char ** argv );
@@ -104,6 +107,8 @@ void Cmd_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "Basic", "renamefiles",   CmdCommandRenameFiles,     0 );
     Cmd_CommandAdd( pAbc, "Basic", "ls",            CmdCommandLs,              0 );
     Cmd_CommandAdd( pAbc, "Basic", "scrgen",        CmdCommandScrGen,          0 );
+#else
+    Cmd_CommandAdd( pAbc, "Basic", "scrgen",        CmdCommandScrGenLinux,     0 );
 #endif
     Cmd_CommandAdd( pAbc, "Basic", "version",       CmdCommandVersion,         0 );
 
@@ -1628,11 +1633,11 @@ int CmdCommandScrGen( Abc_Frame_t * pAbc, int argc, char **argv )
     int    nFileNameMax, nFileNameCur;
     int    Counter = 0;
     int    fUseCurrent;
-    char   c;
+    int    c;
 
     fUseCurrent = 0;
     Extra_UtilGetoptReset();
-    while ( (c = Extra_UtilGetopt(argc, argv, "FDCWch") ) != EOF )
+    while ( (c = Extra_UtilGetopt(argc, argv, "FRCWch") ) != EOF )
     {
         switch (c)
         {
@@ -1645,7 +1650,7 @@ int CmdCommandScrGen( Abc_Frame_t * pAbc, int argc, char **argv )
             pFileStr = argv[globalUtilOptind];
             globalUtilOptind++;
             break;
-        case 'D':
+        case 'R':
             if ( globalUtilOptind >= argc )
             {
                 fprintf( pAbc->Err, "Command line switch \"-D\" should be followed by a string.\n" );
@@ -1795,7 +1800,7 @@ int CmdCommandScrGen( Abc_Frame_t * pAbc, int argc, char **argv )
                         Line[c] = '/';
                 fprintf( pFile, "%s", Line );
             }
-            fprintf( pFile, "\n", Line );
+            fprintf( pFile, "\n" );
         }
         while( _findnext( hFile, &c_file ) == 0 );
         _findclose( hFile );
@@ -1815,17 +1820,171 @@ int CmdCommandScrGen( Abc_Frame_t * pAbc, int argc, char **argv )
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: scrgen -F <str> -D <str> -C <str> -W <str> -ch\n" );
+    fprintf( pAbc->Err, "usage: scrgen -F <str> -R <str> -C <str> -W <str> -ch\n" );
     fprintf( pAbc->Err, "\t          generates script for running ABC\n" );
     fprintf( pAbc->Err, "\t-F str  : the name of the script file [default = \"test.s\"]\n" );
-    fprintf( pAbc->Err, "\t-D str  : the directory to read files from [default = current]\n" );
+    fprintf( pAbc->Err, "\t-R str  : the directory to read files from [default = current]\n" );
     fprintf( pAbc->Err, "\t-C str  : the sequence of commands to run [default = \"ps\"]\n" );
     fprintf( pAbc->Err, "\t-W str  : the directory to write the resulting files [default = no writing]\n" );
     fprintf( pAbc->Err, "\t-c      : toggle placing file in current/target dir [default = %s]\n", fUseCurrent? "current": "target" );
     fprintf( pAbc->Err, "\t-h      : print the command usage\n\n");
-    fprintf( pAbc->Err, "\tExample : scrgen -F test1.s -D a/in -C \"ps; st; ps\" -W a/out\n" );
+    fprintf( pAbc->Err, "\tExample : scrgen -F test1.s -R a/in -C \"ps; st; ps\" -W a/out\n" );
     return 1;
 }
+
+#else
+
+Vec_Ptr_t * CmdReturnFileNames( char * pDirStr ) 
+{
+    Vec_Ptr_t * vRes = Vec_PtrAlloc( 100 );
+    struct dirent **namelist;
+    int num_files = scandir(pDirStr, &namelist, NULL, alphasort);
+    if (num_files == -1) {
+        printf("Error opening directory.\n");
+        return NULL;
+    }
+    for (int i = 0; i < num_files; i++) {
+        char * pExt = strstr(namelist[i]->d_name, ".");
+        if ( !pExt || !strcmp(pExt, ".") || !strcmp(pExt, "..") || !strcmp(pExt, ".s") || !strcmp(pExt, ".txt") )
+            continue;    
+        Vec_PtrPush( vRes, Abc_UtilStrsav(namelist[i]->d_name) );
+        free(namelist[i]);
+    }
+    free(namelist);
+    return vRes;
+}
+
+int CmdCommandScrGenLinux( Abc_Frame_t * pAbc, int argc, char **argv )
+{
+    Vec_Ptr_t * vNames = NULL;
+    FILE * pFile = NULL;
+    char * pFileStr = (char *)"test.s";
+    char * pDirStr = (char *)".";
+    char * pComStr = (char *)"ps";
+    char * pWriteStr = NULL;
+    char * pWriteExt = NULL;    
+    char   Line[2000], * pName;
+    int    nFileNameMax;
+    int    c, k;
+
+    Extra_UtilGetoptReset();
+    while ( (c = Extra_UtilGetopt(argc, argv, "FRCWEh") ) != EOF )
+    {
+        switch (c)
+        {
+        case 'F':
+            if ( globalUtilOptind >= argc )
+            {
+                fprintf( pAbc->Err, "Command line switch \"-F\" should be followed by a string.\n" );
+                goto usage;
+            }
+            pFileStr = argv[globalUtilOptind];
+            globalUtilOptind++;
+            break;
+        case 'R':
+            if ( globalUtilOptind >= argc )
+            {
+                fprintf( pAbc->Err, "Command line switch \"-D\" should be followed by a string.\n" );
+                goto usage;
+            }
+            pDirStr = argv[globalUtilOptind];
+            globalUtilOptind++;
+            break;
+        case 'C':
+            if ( globalUtilOptind >= argc )
+            {
+                fprintf( pAbc->Err, "Command line switch \"-C\" should be followed by a string.\n" );
+                goto usage;
+            }
+            pComStr = argv[globalUtilOptind];
+            globalUtilOptind++;
+            break;
+        case 'W':
+            if ( globalUtilOptind >= argc )
+            {
+                fprintf( pAbc->Err, "Command line switch \"-W\" should be followed by a string.\n" );
+                goto usage;
+            }
+            pWriteStr = argv[globalUtilOptind];
+            globalUtilOptind++;
+            break;
+        case 'E':
+            if ( globalUtilOptind >= argc )
+            {
+                fprintf( pAbc->Err, "Command line switch \"-E\" should be followed by a string.\n" );
+                goto usage;
+            }
+            pWriteExt = argv[globalUtilOptind];
+            globalUtilOptind++;
+            break;            
+        default:
+            goto usage;
+        }
+    }
+    pFile = fopen( pFileStr, "w" );
+    if ( pFile == NULL )
+    {
+        printf( "Cannot open output file %s.\n", pFileStr );
+        return 0;
+    }
+    vNames = CmdReturnFileNames( pDirStr );
+    if ( !vNames || !Vec_PtrSize(vNames) )
+    {
+        if ( vNames )
+            printf( "It looks like the directory \"%s\" does not contain any relevant files.\n", pDirStr );
+        Vec_PtrFreeP(&vNames);
+        return 0;
+    }
+    nFileNameMax = 0;
+    Vec_PtrForEachEntry( char *, vNames, pName, k )
+        if ( nFileNameMax < strlen(pName) )
+            nFileNameMax = strlen(pName);
+    {
+        int fAndSpace = pComStr[0] == '&';
+        fprintf( pFile, "# Script file produced by ABC on %s\n", Extra_TimeStamp() );
+        fprintf( pFile, "# Command line was: scrgen -F %s -D %s -C \"%s\"%s%s%s%s\n",
+            pFileStr, pDirStr, pComStr, 
+            pWriteStr?" -W ":"", pWriteStr?pWriteStr:"", 
+            pWriteExt?" -E ":"", pWriteExt?pWriteExt:"" );
+        Vec_PtrForEachEntry( char *, vNames, pName, k ) {
+            char * pExt = strstr(pName, ".");
+            if ( !pExt || !strcmp(pExt, ".") || !strcmp(pExt, "..") || !strcmp(pExt, ".s") || !strcmp(pExt, ".txt") )
+                continue;
+            sprintf( Line, "%sread %s%s%-*s ; %s", fAndSpace ? "&" : "", pDirStr?pDirStr:"", pDirStr?"/":"", nFileNameMax, pName, pComStr );
+            for ( c = (int)strlen(Line)-1; c >= 0; c-- )
+                if ( Line[c] == '\\' )
+                    Line[c] = '/';
+            fprintf( pFile, "%s", Line );
+            if ( pWriteStr )
+            {
+                char * pFNameOut = pWriteExt ? Extra_FileNameGenericAppend(pName, pWriteExt) : pName;
+                sprintf( Line, " ; %swrite %s/%-*s", fAndSpace ? "&" : "", pWriteStr, nFileNameMax, pFNameOut );
+                for ( c = (int)strlen(Line)-1; c >= 0; c-- )
+                    if ( Line[c] == '\\' )
+                        Line[c] = '/';
+                fprintf( pFile, "%s", Line );
+            }
+            fprintf( pFile, "\n" );
+        }
+    }
+    fclose( pFile );
+    printf( "Script file \"%s\" with command lines for %d files.\n", pFileStr, Vec_PtrSize(vNames) );
+    Vec_PtrFreeFree( vNames );
+    return 0;
+
+usage:
+    fprintf( pAbc->Err, "usage: scrgen -F <str> -R <str> -C <str> -W <str> -E <str> -h\n" );
+    fprintf( pAbc->Err, "\t          generates script for running ABC\n" );
+    fprintf( pAbc->Err, "\t-F str  : the name of the script file [default = \"test.s\"]\n" );
+    fprintf( pAbc->Err, "\t-R str  : the directory to read files from [default = current]\n" );
+    fprintf( pAbc->Err, "\t-C str  : the sequence of commands to run [default = \"ps\"]\n" );
+    fprintf( pAbc->Err, "\t-W str  : the directory to write the resulting files [default = no writing]\n" );
+    fprintf( pAbc->Err, "\t-E str  : the output files extension (with \".\") [default = the same as input files]\n" );
+    fprintf( pAbc->Err, "\t-h      : print the command usage\n\n");
+    fprintf( pAbc->Err, "\tExample : scrgen -F test1.s -R a/in -C \"ps; st; ps\" -W a/out -E .blif\n" );
+    return 1;
+}
+
 #endif
 
 
