@@ -106,8 +106,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.Y_coord.push_back(merged_coords.ymax);
     }
 
-    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()))
+    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord and y_coord are empty\n");
         return e_create_move::ABORT;
+    }
 
     //calculate the median region
     std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
