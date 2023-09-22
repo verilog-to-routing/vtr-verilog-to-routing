@@ -1497,6 +1497,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tBefore move Place cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
+
     e_move_result move_outcome = e_move_result::ABORTED;
 
     if (create_move_outcome == e_create_move::ABORT) {
@@ -1740,7 +1742,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     // greatly slow the placer, but can debug some issues.
     check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts);
 #endif
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tPlace cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tAfter move Place cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
     return move_outcome;
 }
 
