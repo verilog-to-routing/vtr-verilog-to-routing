@@ -28940,105 +28940,346 @@
 
   </complexblocklist>
   <switchblocklist>
+    <!-- Stratix 10 uses a uni-directional routing architecture with a Driver Input Mux (DIM) size of 12 (i.e.
+           each wire can be driven by one of 12 block/outputs or wires) for the L4s.
+           
+           In the Stratix IV architecture the long wires (L16 here) are accessible only from the short wires, 
+           and are not connected to the block pins (i.e. connection blocks). Furthermore, they only connect 
+           to switch blocks every 4 LABs (to avoid expensive deep via stacks).
+           We approximate the L16 DIM size as 40:1 (in reality it is a pair of 20:1 (?) muxes with a 2:1 swap mux
+           in front, which has nearly the same connectivity as a full 40:1).
+
+           L4 wires
+           ================
+           At a channel width of 300 there are 260 L4/L4prime wires. At an effective Fc_out of 0.075 
+           and 40 LAB outputs this yeilds:
+
+                40 * 2 = 80 outputs per channel  [2 LABs per-channel]
+
+                80 * 0.075 = 6 outputs drive each L4 wire [output connection block]
+
+           This leaves:
+
+                12 - 6 = 6 inputs to the DIMs from other routing wires [switch block]
+
+           Since L4s connect at every switch block, there are:
+
+                260 L16 wires per channel + direction which can drive wires at a particular switchblock
+                (via switchpoints 0, 1, 2, 3)
+
+           And for each direction (260 wires) only:
+
+               260 / 4 = 65 wires starting/ending per channel + direction at each switch block
+               (i.e. from each direction, north/south/east/west, there are 32 L4s starting, and 32 L4s ending; + 1 wire for the 65th)
+
+           Which we allocate as follows:
+
+                L4
+                =====
+                straight-through connection: 2 (from L4 or L16)
+                clock-wise turn            : 2 (from L4 or L16)
+                counter-clock-wise turn    : 2 (from L4 or L16)
+
+           L16 wires
+           =========
+           At a channel width of 300 there are 40 L16 wires (20 in each direction), which do not connect to the input/output connection blocks.
+           This leaves 40 inputs to the DIM to select from routing wires (long wires use larger DIMs to improve reachability,
+           the area cost is relatively small since they are so rare).
+
+           Since L16s only connect at every 4th switch block there are:
+
+                40 / 4 = 10 L16 wires per channel (5 in each direction) which can drive wires at a particular switchblock
+                (via switchpoints 0, 4, 8, 12)
+
+           And for each direction (20 wires) only:
+
+               40 / 16 = 2.25 => 2 wires starting/ending per channel + direction at each switch block
+               (i.e. from each direction, north/south/east/west, there is one L16 starting, and one L16 ending)
+           
+           We assign the 40 DIM inputs as follows:
+
+                L16
+                =====
+                straight-through connection:  3 (from L16)
+                straight-through connection: 11 (from L4)
+                clock-wise turn            :  3 (from L16)
+                clock-wise turn            : 10 (from L4)
+                counter clock-wise turn    :  3 (from L16)
+                counter clock-wise turn    : 10 (from L4)
+
+           Switch pattern
+           ==============
+           This switch block is based on the Wilton switch block (see Page 103 of Steve Wilton's PhD Thesis 
+           "Architecture and Algorithms for Field-Programmable Gate Arrays with Embedded Memory", 1997):
+
+                left-to-top: W - t
+                top-to-right: t + 1
+                right-to-bottom: 2*W - 2 - t
+                bottom-to-left: t + 1
+                left-to-right: t
+                top-to-bottom: t
+
+           Since Wilton assumed bidirection routing (while we use unidirectional routing),
+           we mirror the clock-wise turns to match the conter-clock-wise specification.
+    -->
+    <!-- Short H wires have DIM of size 12
+         Fan-in distribution: 
+         5 of the inputs come from logic block outputs - This is modelled by setting fc_out to the right value
+         1 input coming from a long wire - It is assumed that for short wires on the right/left the long wires are coming from the top/bottom
+         2 stitches - one from wire of the same type one from other short wires
+         4 inputs from short V wires of different type
+    -->  
+    <!-- Short V wires have DIM of size 15
+         Fan-in distribution: 
+         6 of the inputs come from logic block outputs - This is modelled by setting fc_out to the right value
+         1 input coming from a long wire - It is assumed that for short wires on the top/bottom the long wires are coming from the left/right
+         1 stitch from wire of the same type 
+         7 inputs from short H wires of different types
+    -->  
+    <!-- Long wires have DIM of size 50
+         The wires share four 12:1 muxes - since this cannot be modelled with the current switch box syntax
+         it is approximated that each wire has 50 separate inputs. 
+         Fan-in distribution: 
+         2 stitches - one optimal and one suboptimal
+         10 long wires for turns - 5 from each side 
+         38 short wires - only short H wires can drive long wires   
+    -->  
+    <!-- Describing SB connections from vertical sides to horizontal sides in counter-clockwise direction -->
     <switchblock name="wilton_turn_counter_clockwise_v2h_core" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <func formula="W-t" type="tl"/>
-        <func formula="2*W-2-t" type="br"/>
+        <func type="tl" formula="W-t"/>
+        <!-- top to left -->
+        <func type="br" formula="2*W-2-t"/>
+        <!-- bottom to right -->
       </switchfuncs>
-      <wireconn from_order="shuffled" from_switchpoint="0,1" from_type="V2" num_conns="to" to_switchpoint="0" to_type="H2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2" from_type="V3" num_conns="to" to_switchpoint="0" to_type="H2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1" from_type="V2" num_conns="to" to_switchpoint="0" to_type="H4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2" from_type="V3" num_conns="to" to_switchpoint="0" to_type="H4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1" from_type="V2" num_conns="to" to_switchpoint="0" to_type="H10"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2" from_type="V3" num_conns="to" to_switchpoint="0" to_type="H10"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,8,12" from_type="V16" num_conns="5*to" to_switchpoint="0" to_type="H24"/>
+      
+      <!--  H2 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- Half of the four inputs coming from the short v wires (the other half comes from the other vertical side) -->
+      <wireconn num_conns="to" from_type="V2" from_switchpoint="0,1" to_type="H2" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="V3" from_switchpoint="0,1,2" to_type="H2" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- H4 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- Half of the four inputs coming from the short v wires (the other half comes from the other vertical side) -->
+      <wireconn num_conns="to" from_type="V2" from_switchpoint="0,1" to_type="H4" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="V3" from_switchpoint="0,1,2" to_type="H4" to_switchpoint="0" from_order="shuffled"/>
+
+
+      <!-- H10 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- Half of the four inputs coming from the short v wires (the other half comes from the other vertical side) -->
+      <wireconn num_conns="to" from_type="V2" from_switchpoint="0,1" to_type="H10" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="V3" from_switchpoint="0,1,2" to_type="H10" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- H24 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The five inputs coming from the long wires of one vertical side -->
+      <wireconn num_conns="5*to" from_type="V16" from_switchpoint="0,8,12" to_type="H24" to_switchpoint="0" from_order="shuffled"/>
     </switchblock>
+
+    <!-- Describing SB connections from vertical sides to horizontal sides in clockwise direction -->
     <switchblock name="wilton_turn_clockwise_v2h_core" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <func formula="t+1" type="tr"/>
-        <func formula="t+1" type="bl"/>
+        <func type="tr" formula="t+1"/>
+        <!-- top to right -->
+        <func type="bl" formula="t+1"/>
+        <!-- bottom to left -->
       </switchfuncs>
-      <wireconn from_order="shuffled" from_switchpoint="0,8,12" from_type="V16" num_conns="to" to_switchpoint="0" to_type="H2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2" from_type="V3" num_conns="to" to_switchpoint="0" to_type="H2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="V4" num_conns="to" to_switchpoint="0" to_type="H2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,8,12" from_type="V16" num_conns="to" to_switchpoint="0" to_type="H4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2" from_type="V3" num_conns="to" to_switchpoint="0" to_type="H4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="V4" num_conns="to" to_switchpoint="0" to_type="H4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,8,12" from_type="V16" num_conns="to" to_switchpoint="0" to_type="H10"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2" from_type="V3" num_conns="to" to_switchpoint="0" to_type="H10"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="V4" num_conns="to" to_switchpoint="0" to_type="H10"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,8,12" from_type="V16" num_conns="5*to" to_switchpoint="0" to_type="H24"/>
+      
+      <!--  H2 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The input coming from the long wire -->
+      <wireconn num_conns="to" from_type="V16" from_switchpoint="0,8,12" to_type="H2" to_switchpoint="0" from_order="shuffled"/>
+      <!-- Half of the four inputs coming from the short v wires (the other half comes from the other vertical side) -->
+      <wireconn num_conns="to" from_type="V3" from_switchpoint="0,1,2" to_type="H2" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="V4" from_switchpoint="0,1,2,3" to_type="H2" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- H4 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The input coming from the long wire -->
+      <wireconn num_conns="to" from_type="V16" from_switchpoint="0,8,12" to_type="H4" to_switchpoint="0" from_order="shuffled"/>
+      <!-- Half of the four inputs coming from the short v wires (the other half comes from the other vertical side) -->
+      <wireconn num_conns="to" from_type="V3" from_switchpoint="0,1,2" to_type="H4" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="V4" from_switchpoint="0,1,2,3" to_type="H4" to_switchpoint="0" from_order="shuffled"/>
+
+
+      <!-- H10 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The input coming from the long wire -->
+      <wireconn num_conns="to" from_type="V16" from_switchpoint="0,8,12" to_type="H10" to_switchpoint="0" from_order="shuffled"/>
+      <!-- Half of the four inputs coming from the short v wires (the other half comes from the other vertical side) -->
+      <wireconn num_conns="to" from_type="V3" from_switchpoint="0,1,2" to_type="H10" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="V4" from_switchpoint="0,1,2,3" to_type="H10" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- H24 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The five inputs coming from the long wires of one vertical side -->
+      <wireconn num_conns="5*to" from_type="V16" from_switchpoint="0,8,12" to_type="H24" to_switchpoint="0" from_order="shuffled"/>
+
     </switchblock>
+
+    <!-- Describing SB connections going straight in horizontal direction -->
     <switchblock name="wilton_turn_straight_h2h_core" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <func formula="t" type="lr"/>
-        <func formula="t" type="rl"/>
+        <func type="lr" formula="t"/>
+        <!-- left to right -->
+        <func type="rl" formula="t"/>
+        <!-- right to left -->
       </switchfuncs>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="H2" num_conns="to" to_switchpoint="0" to_type="H2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="H10" num_conns="to" to_switchpoint="0" to_type="H2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="H10" num_conns="to" to_switchpoint="0" to_type="H4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="H4" num_conns="to" to_switchpoint="0" to_type="H4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="H4" num_conns="to" to_switchpoint="0" to_type="H10"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="H10" num_conns="to" to_switchpoint="0" to_type="H10"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1" from_type="H2" num_conns="4*to" to_switchpoint="0" to_type="H24"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="14*to" to_switchpoint="0" to_type="H24"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="20*to" to_switchpoint="0" to_type="H24"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="H24" num_conns="to" to_switchpoint="0" to_type="H24"/>
-      <wireconn from_order="shuffled" from_switchpoint="23" from_type="H24" num_conns="to" to_switchpoint="0" to_type="H24"/>
+      
+      <!--  H2 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The two stitches -->
+      <wireconn num_conns="to" from_type="H2" from_switchpoint="0" to_type="H2" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="H10" from_switchpoint="0" to_type="H2" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- H4 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The two stitches -->
+      <wireconn num_conns="to" from_type="H10" from_switchpoint="0" to_type="H4" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="H4" from_switchpoint="0" to_type="H4" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- H10 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The two stitches -->
+      <wireconn num_conns="to" from_type="H4" from_switchpoint="0" to_type="H10" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="H10" from_switchpoint="0" to_type="H10" to_switchpoint="0" from_order="shuffled"/>
+
+
+      <!-- H24 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- 38 inputs coming from short h wires -->
+      <wireconn num_conns="4*to" from_type="H2" from_switchpoint="0,1" to_type="H24" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="14*to" from_type="H4" from_switchpoint="0,1,2,3" to_type="H24" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="20*to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="H24" to_switchpoint="0" from_order="shuffled"/>
+      <!-- one optimal and one sub-optimal stitch -->
+      <wireconn num_conns="to" from_type="H24" from_switchpoint="0" to_type="H24" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="H24" from_switchpoint="23" to_type="H24" to_switchpoint="0" from_order="shuffled"/>
     </switchblock>
+
+    <!-- Describing SB connections from horizontal sides to vertical sides in counter-clockwise direction -->
     <switchblock name="wilton_turn_counter_clockwise_h2v_core" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <func formula="t+1" type="rt"/>
-        <func formula="t+1" type="lb"/>
+        <func type="rt" formula="t+1"/>
+        <!-- right to top -->
+        <func type="lb" formula="t+1"/>
+        <!-- left to bottom -->
       </switchfuncs>
-      <wireconn from_order="shuffled" from_switchpoint="0,1" from_type="H2" num_conns="to" to_switchpoint="0" to_type="V2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="to" to_switchpoint="0" to_type="V2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="to" to_switchpoint="0" to_type="V2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="2*to" to_switchpoint="0" to_type="V3"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="to" to_switchpoint="0" to_type="V3"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="to" to_switchpoint="0" to_type="V4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="2*to" to_switchpoint="0" to_type="V4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,7,15" from_type="H24" num_conns="5*to" to_switchpoint="0" to_type="V16"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1" from_type="H2" num_conns="2*to" to_switchpoint="0" to_type="V16"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="7*to" to_switchpoint="0" to_type="V16"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="10*to" to_switchpoint="0" to_type="V16"/>
+      
+      <!--  V2 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- Three of the seven inputs coming from the short h wires (the remaining comes from the other horizontal side) -->
+      <wireconn num_conns="to" from_type="H2" from_switchpoint="0,1" to_type="V2" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="H4" from_switchpoint="0,1,2,3" to_type="V2" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="V2" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- V3 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- Three of the seven inputs coming from the short h wires (the remaining comes from the other horizontal side) -->
+      <wireconn num_conns="2*to" from_type="H4" from_switchpoint="0,1,2,3" to_type="V3" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="V3" to_switchpoint="0" from_order="shuffled"/>
+
+
+      <!-- V4 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- Three of the seven inputs coming from the short h wires (the remaining comes from the other horizontal side) -->
+      <wireconn num_conns="to" from_type="H4" from_switchpoint="0,1,2,3" to_type="V4" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="2*to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="V4" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- V16 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The five inputs coming from the long wires of one horizontal side -->
+      <wireconn num_conns="5*to" from_type="H24" from_switchpoint="0,7,15" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
+      <!-- half of the 38 inputs coming from short h wires (the remaining comes from the other horizontal side)-->
+      <wireconn num_conns="2*to" from_type="H2" from_switchpoint="0,1" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="7*to" from_type="H4" from_switchpoint="0,1,2,3" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="10*to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
     </switchblock>
+
+    <!-- Describing SB connections from horizontal sides to vertical sides in clockwise direction -->
     <switchblock name="wilton_turn_clockwise_h2v_core" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <func formula="t+1" type="lt"/>
-        <func formula="t+1" type="rb"/>
+        <func type="lt" formula="t+1"/>
+        <!-- left to top -->
+        <func type="rb" formula="t+1"/>
+        <!-- right to bottom -->
       </switchfuncs>
-      <wireconn from_order="shuffled" from_switchpoint="0,7,15" from_type="H24" num_conns="to" to_switchpoint="0" to_type="V2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1" from_type="H2" num_conns="to" to_switchpoint="0" to_type="V2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="to" to_switchpoint="0" to_type="V2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="2*to" to_switchpoint="0" to_type="V2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,7,15" from_type="H24" num_conns="to" to_switchpoint="0" to_type="V3"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="2*to" to_switchpoint="0" to_type="V3"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="2*to" to_switchpoint="0" to_type="V3"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,7,15" from_type="H24" num_conns="to" to_switchpoint="0" to_type="V4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="2*to" to_switchpoint="0" to_type="V4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="2*to" to_switchpoint="0" to_type="V4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,7,15" from_type="H24" num_conns="5*to" to_switchpoint="0" to_type="V16"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1" from_type="H2" num_conns="3*to" to_switchpoint="0" to_type="V16"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,1,2,3" from_type="H4" num_conns="7*to" to_switchpoint="0" to_type="V16"/>
-      <wireconn from_order="shuffled" from_switchpoint="0,2,4,6,8" from_type="H10" num_conns="9*to" to_switchpoint="0" to_type="V16"/>
+      
+      <!--  V2 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The input coming from the long wire -->
+      <wireconn num_conns="to" from_type="H24" from_switchpoint="0,7,15" to_type="V2" to_switchpoint="0" from_order="shuffled"/>
+      <!-- Four of the seven inputs coming from the short h wires (the remaining comes from the other horizontal side) -->
+      <wireconn num_conns="to" from_type="H2" from_switchpoint="0,1" to_type="V2" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="H4" from_switchpoint="0,1,2,3" to_type="V2" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="2*to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="V2" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- V3 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The input coming from the long wire -->
+      <wireconn num_conns="to" from_type="H24" from_switchpoint="0,7,15" to_type="V3" to_switchpoint="0" from_order="shuffled"/>
+      <!-- Four of the seven inputs coming from the short h wires (the remaining comes from the other horizontal side) -->
+      <wireconn num_conns="2*to" from_type="H4" from_switchpoint="0,1,2,3" to_type="V3" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="2*to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="V3" to_switchpoint="0" from_order="shuffled"/>
+
+
+      <!-- V4 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The input coming from the long wire -->
+      <wireconn num_conns="to" from_type="H24" from_switchpoint="0,7,15" to_type="V4" to_switchpoint="0" from_order="shuffled"/>
+      <!-- Four of the seven inputs coming from the short h wires (the remaining comes from the other horizontal side) -->
+      <wireconn num_conns="2*to" from_type="H4" from_switchpoint="0,1,2,3" to_type="V4" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="2*to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="V4" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- V16 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- The five inputs coming from the long wires of one horizontal side -->
+      <wireconn num_conns="5*to" from_type="H24" from_switchpoint="0,7,15" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
+      <!-- half of the 38 inputs coming from short h wires (the remaining comes from the other horizontal side)-->
+      <wireconn num_conns="3*to" from_type="H2" from_switchpoint="0,1" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="7*to" from_type="H4" from_switchpoint="0,1,2,3" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="9*to" from_type="H10" from_switchpoint="0,2,4,6,8" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
     </switchblock>
+
+
+    <!-- Describing SB connections going straight in vertical direction -->
     <switchblock name="wilton_turn_straight_v2v_core" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <func formula="t" type="tb"/>
-        <func formula="t" type="bt"/>
+        <func type="tb" formula="t"/>
+        <!-- top to bottom -->
+        <func type="bt" formula="t"/>
+        <!-- bottom to top -->
       </switchfuncs>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="V2" num_conns="to" to_switchpoint="0" to_type="V2"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="V3" num_conns="to" to_switchpoint="0" to_type="V3"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="V4" num_conns="to" to_switchpoint="0" to_type="V4"/>
-      <wireconn from_order="shuffled" from_switchpoint="0" from_type="V16" num_conns="to" to_switchpoint="0" to_type="V16"/>
-      <wireconn from_order="shuffled" from_switchpoint="15" from_type="V16" num_conns="to" to_switchpoint="0" to_type="V16"/>
+      
+      <!--  V2 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- one stitch -->
+      <wireconn num_conns="to" from_type="V2" from_switchpoint="0" to_type="V2" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- V3 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- one stitch -->
+      <wireconn num_conns="to" from_type="V3" from_switchpoint="0" to_type="V3" to_switchpoint="0" from_order="shuffled"/>
+
+      <!-- V4 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- one stitch -->
+      <wireconn num_conns="to" from_type="V4" from_switchpoint="0" to_type="V4" to_switchpoint="0" from_order="shuffled"/>
+
+
+      <!-- V16 drivers -->
+      <!-- shuffling switchpoints for more diversity -->
+      <!-- one optimal and one sub-optimal stitch -->
+      <wireconn num_conns="to" from_type="V16" from_switchpoint="0" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
+      <wireconn num_conns="to" from_type="V16" from_switchpoint="15" to_type="V16" to_switchpoint="0" from_order="shuffled"/>
     </switchblock>
+
   </switchblocklist>
 </architecture>
