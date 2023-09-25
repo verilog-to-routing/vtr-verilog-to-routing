@@ -346,7 +346,7 @@ static void update_bb_pin_sink_count(ClusterNetId net_id,
                                      std::vector<int>& bb_pin_sink_count_new,
                                      bool is_output_pin);
 
-static void update_bb_edge (ClusterNetId net_id,
+static void update_bb_edge(ClusterNetId net_id,
                            std::vector<t_2D_tbb>& bb_edge_new,
                            std::vector<t_2D_tbb>& bb_coord_new,
                            std::vector<int>& bb_layer_pin_sink_count,
@@ -354,7 +354,6 @@ static void update_bb_edge (ClusterNetId net_id,
                            const int& old_edge_coord,
                            int& new_num_block_on_edge,
                            int& new_edge_coord);
-
 
 static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
                             const t_2D_tbb& bb_edge_old,
@@ -2609,7 +2608,7 @@ static double get_net_wirelength_estimate(ClusterNetId /* net_id */,
         if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
-        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num]+1);
+        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
          * connection will be made with no bends and hence no x-cost.    *
@@ -2641,7 +2640,7 @@ static double get_net_cost(ClusterNetId /* net_id */,
         if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
-        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num]+1);
+        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
          * connection will be made with no bends and hence no x-cost.    *
@@ -2764,7 +2763,6 @@ static void update_bb(ClusterNetId net_id,
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
 
-
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
@@ -2853,7 +2851,7 @@ static void update_bb(ClusterNetId net_id,
                 bb_edge_new[layer_new].xmax = 1;
                 bb_coord_new[layer_new].xmax = x_new;
             } else if (x_new == (*curr_bb_coord)[layer_new].xmax) {
-                    bb_edge_new[layer_new].xmax++;
+                bb_edge_new[layer_new].xmax++;
             }
         }
     }
@@ -2869,16 +2867,16 @@ static void update_bb(ClusterNetId net_id,
                            bb_edge_new[layer_old].ymax,
                            bb_coord_new[layer_old].ymax);
             if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
-                    return;
+                return;
             }
         }
 
         if (!layer_changed) {
             if (y_new < (*curr_bb_coord)[layer_new].ymin) {
-                    bb_edge_new[layer_new].ymin = 1;
-                    bb_coord_new[layer_new].ymin = y_new;
+                bb_edge_new[layer_new].ymin = 1;
+                bb_coord_new[layer_new].ymin = y_new;
             } else if (y_new == (*curr_bb_coord)[layer_new].ymin) {
-                    bb_edge_new[layer_new].ymin++;
+                bb_edge_new[layer_new].ymin++;
             }
         }
 
@@ -2893,16 +2891,16 @@ static void update_bb(ClusterNetId net_id,
                            bb_edge_new[layer_old].ymin,
                            bb_coord_new[layer_old].ymin);
             if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
-                    return;
+                return;
             }
         }
 
         if (!layer_changed) {
             if (y_new > (*curr_bb_coord)[layer_new].ymax) {
-                    bb_edge_new[layer_new].ymax = 1;
-                    bb_coord_new[layer_new].ymax = y_new;
+                bb_edge_new[layer_new].ymax = 1;
+                bb_coord_new[layer_new].ymax = y_new;
             } else if (y_new == (*curr_bb_coord)[layer_new].ymax) {
-                    bb_edge_new[layer_new].ymax++;
+                bb_edge_new[layer_new].ymax++;
             }
         }
     }
@@ -2934,7 +2932,7 @@ static void update_bb_pin_sink_count(ClusterNetId /* net_id */,
     }
 }
 
-static void update_bb_edge (ClusterNetId net_id,
+static void update_bb_edge(ClusterNetId net_id,
                            std::vector<t_2D_tbb>& bb_edge_new,
                            std::vector<t_2D_tbb>& bb_coord_new,
                            std::vector<int>& bb_layer_pin_sink_count,

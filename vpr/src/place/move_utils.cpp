@@ -1335,7 +1335,7 @@ t_bb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec) {
                    OPEN,
                    OPEN,
                    0,
-                   tbb_vec.size()-1);
+                   tbb_vec.size() - 1);
 
     for (const auto& bb : tbb_vec) {
         if (bb.xmin == OPEN) {

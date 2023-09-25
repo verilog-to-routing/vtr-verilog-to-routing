@@ -627,7 +627,7 @@ struct t_2D_tbb {
 struct t_pl_offset {
     t_pl_offset() = default;
     t_pl_offset(int xoffset, int yoffset, int sub_tile_offset, int layer_offset)
-        :x(xoffset)
+        : x(xoffset)
         , y(yoffset)
         , sub_tile(sub_tile_offset)
         , layer(layer_offset) {}
