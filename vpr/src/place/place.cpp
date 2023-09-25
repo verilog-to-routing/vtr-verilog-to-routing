@@ -2958,79 +2958,35 @@ static void add_block_to_bb(const t_2D_tbb& bb_edge_old,
     int layer_old = old_pin_loc.layer_num;
     int layer_new = new_pin_loc.layer_num;
 
-    VTR_ASSERT(bb_edge_old.layer_num == bb_edge_new.layer_num);
-    VTR_ASSERT(bb_coord_old.layer_num == bb_coord_new.layer_num);
-    VTR_ASSERT(bb_edge_old.layer_num == bb_coord_old.layer_num);
+    VTR_ASSERT_SAFE(bb_edge_old.layer_num == bb_edge_new.layer_num);
+    VTR_ASSERT_SAFE(bb_coord_old.layer_num == bb_coord_new.layer_num);
+    VTR_ASSERT_SAFE(bb_edge_old.layer_num == bb_coord_old.layer_num);
 
-    if (xold == xnew && layer_old == layer_new) {
-        bb_edge_new.xmin = bb_edge_old.xmin;
-        bb_coord_new.xmin = bb_coord_old.xmin;
-        bb_edge_new.xmax = bb_edge_old.xmax;
-        bb_coord_new.xmax = bb_coord_old.xmax;
-    } else if (xnew > bb_coord_old.xmax) {
+    bb_edge_new = bb_edge_old;
+    bb_coord_new= bb_coord_old;
+
+    if (xnew > bb_coord_old.xmax) {
         bb_edge_new.xmax = 1;
         bb_coord_new.xmax = xnew;
-        if (layer_old != layer_new) {
-            bb_edge_new.xmin = bb_edge_old.xmin;
-            bb_coord_new.xmin = bb_coord_old.xmin;
-        }
     } else if (xnew == bb_coord_old.xmax) {
         bb_edge_new.xmax = bb_edge_old.xmax + 1;
-        bb_coord_new.xmax = xnew;
-        if (layer_old != layer_new) {
-            bb_edge_new.xmin = bb_edge_old.xmin;
-            bb_coord_new.xmin = bb_coord_old.xmin;
-        }
     } else if (xnew < bb_coord_old.xmin) {
         bb_edge_new.xmin = 1;
         bb_coord_new.xmin = xnew;
-        if (layer_old != layer_new) {
-            bb_edge_new.xmax = bb_edge_old.xmax;
-            bb_coord_new.xmax = bb_coord_old.xmax;
-        }
     } else if (xnew == bb_coord_old.xmin) {
         bb_edge_new.xmin = bb_edge_old.xmin + 1;
-        bb_coord_new.xmin = xnew;
-        if (layer_old != layer_new) {
-            bb_edge_new.xmax = bb_edge_old.xmax;
-            bb_coord_new.xmax = bb_coord_old.xmax;
-        }
     }
 
-    if (yold == ynew && layer_old == layer_new) {
-        bb_edge_new.ymin = bb_edge_old.ymin;
-        bb_coord_new.ymin = bb_coord_old.ymin;
-        bb_edge_new.ymax = bb_edge_old.ymax;
-        bb_coord_new.ymax = bb_coord_old.ymax;
-    } else if (ynew > bb_coord_old.ymax) {
+    if (ynew > bb_coord_old.ymax) {
         bb_edge_new.ymax = bb_edge_old.ymax + 1;
         bb_coord_new.ymax = ynew;
-        if (layer_new != layer_old) {
-            bb_edge_new.ymin = bb_edge_old.ymin;
-            bb_coord_new.ymin = bb_coord_old.ymin;
-        }
     } else if (ynew == bb_coord_old.ymax) {
-        bb_edge_new.ymax = 1;
-        bb_coord_new.ymax = ynew;
-        if (layer_new != layer_old) {
-            bb_edge_new.ymin = bb_edge_old.ymin;
-            bb_coord_new.ymin = bb_coord_old.ymin;
-        }
-
+        bb_edge_new.ymax = bb_edge_old.ymax + 1;
     } else if (ynew < bb_coord_old.ymin) {
         bb_edge_new.ymin = 1;
         bb_coord_new.ymin = ynew;
-        if (layer_new != layer_old) {
-            bb_edge_new.ymax = bb_edge_old.ymax;
-            bb_coord_new.ymax = bb_coord_old.ymax;
-        }
     } else if (ynew == bb_coord_old.ymin) {
         bb_edge_new.ymin = bb_edge_old.ymin + 1;
-        bb_coord_new.ymin = ynew;
-        if (layer_new != layer_old) {
-            bb_edge_new.ymax = bb_edge_old.ymax;
-            bb_coord_new.ymax = bb_coord_old.ymax;
-        }
     }
 }
 
