@@ -2796,10 +2796,6 @@ static void update_bb(ClusterNetId net_id,
                              bb_pin_sink_count_new,
                              is_output_pin);
 
-    if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
-        return;
-    }
-
     int x_old = pin_old_loc.x;
     int x_new = pin_new_loc.x;
 
