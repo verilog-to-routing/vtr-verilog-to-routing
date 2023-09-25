@@ -682,7 +682,10 @@ void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node,
 
 /* This is a helper function for highlight_rr_nodes(). It determines whether
  * a routing resource has been clicked on by computing a bounding box for that
- *  and checking if the mouse click hit inside its bounding box.
+ *  and checking if the mouse click hit inside its bounding box. The function does not check 
+ * routing resources that are on currently invisible layers (layer view is toggled off) to ensure that 
+ * only resources on visible layers are set to be highlighted. There is no priority based on FPGA layer 
+ * for highlighting routing resources (Does not iterate through nodes by order of layer a node is located on).
  *
  *  It returns the hit RR node's ID (or OPEN if no hit)
  */
@@ -691,16 +694,20 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
     ezgl::rectangle bound_box;
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
+        int layer_num = rr_graph.node_layer(inode);
+        if (!draw_state->draw_layer_display[layer_num].visible) {
+            continue; /* Don't check RR nodes on currently invisible layers*/
+        }
         switch (rr_graph.node_type(inode)) {
             case IPIN:
             case OPIN: {
                 int i = rr_graph.node_xlow(inode);
                 int j = rr_graph.node_ylow(inode);
-                int layer_num = rr_graph.node_layer(inode);
                 t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                 int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});

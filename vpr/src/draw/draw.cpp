@@ -983,10 +983,66 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
     }
 }
 
+/**
+ * @brief Highlights the block that was clicked on, looking from the top layer downwards for 3D devices (chooses the block on the top visible layer for overlapping blocks)
+ *        It highlights the block green, as well as its fanin and fanout to blue and red respectively by updating the draw_state variables responsible for holding the
+ *        color of the block as well as its fanout and fanin.
+ * @param x
+ * @param y
+ */
 static void highlight_blocks(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
 
     char msg[vtr::bufsize];
+    ClusterBlockId clb_index = get_cluster_block_id_from_xy_loc(x, y);
+    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
+        return; /* Nothing was found on any layer*/
+    }
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
+
+    ezgl::rectangle clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
+    // note: this will clear the selected sub-block if show_blk_internal is 0,
+    // or if it doesn't find anything
+    ezgl::point2d point_in_clb = ezgl::point2d(x, y) - clb_bbox.bottom_left();
+    highlight_sub_block(point_in_clb, clb_index,
+                        cluster_ctx.clb_nlist.block_pb(clb_index));
+
+    if (get_selected_sub_block_info().has_selection()) {
+        t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
+        sprintf(msg, "sub-block %s (a \"%s\") selected",
+                selected_subblock->name,
+                selected_subblock->pb_graph_node->pb_type->name);
+    } else {
+        /* Highlight block and fan-in/fan-outs. */
+        draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index),
+                                    clb_index);
+        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index),
+                cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
+                place_ctx.block_locs[clb_index].loc.x,
+                place_ctx.block_locs[clb_index].loc.y);
+    }
+
+    //If manual moves is activated, then user can select block from the grid.
+    if (draw_state->manual_moves_state.manual_move_enabled) {
+        draw_state->manual_moves_state.user_highlighted_block = true;
+        if (!draw_state->manual_moves_state.manual_move_window_is_open) {
+            draw_manual_moves_window(std::to_string(size_t(clb_index)));
+        }
+    }
+
+    application.update_message(msg);
+    application.refresh_drawing();
+    return;
+}
+
+ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
     ClusterBlockId clb_index = EMPTY_BLOCK_ID;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -995,8 +1051,11 @@ static void highlight_blocks(double x, double y) {
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
-    //iterate over grid z (layers) first, so we draw from bottom to top die. This makes partial transparency of layers draw properly.
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    //iterate over grid z (layers) first. Start search of the block at the top layer to prioritize highlighting of blocks at higher levels during overlapping of layers.
+    for (int layer_num = device_ctx.grid.get_num_layers() - 1; layer_num >= 0; layer_num--) {
+        if (!draw_state->draw_layer_display[layer_num].visible) {
+            continue; /* Don't check for blocks on non-visible layers*/
+        }
         // iterate over grid x
         for (int i = 0; i < (int)device_ctx.grid.width(); ++i) {
             if (draw_coords->tile_x[i] > x) {
@@ -1015,61 +1074,17 @@ static void highlight_blocks(double x, double y) {
                         clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
                                                                       cluster_ctx.clb_nlist.block_type(clb_index));
                         if (clb_bbox.contains({x, y})) {
-                            break;
+                            return clb_index; // we've found the clb
                         } else {
                             clb_index = EMPTY_BLOCK_ID;
                         }
                     }
                 }
-                if (clb_index != EMPTY_BLOCK_ID) {
-                    break; // we've found something
-                }
-            }
-            if (clb_index != EMPTY_BLOCK_ID) {
-                break; // we've found something
             }
         }
-
-        if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
-            //Nothing found
-            return;
-        }
-
-        VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
-
-        // note: this will clear the selected sub-block if show_blk_internal is 0,
-        // or if it doesn't find anything
-        ezgl::point2d point_in_clb = ezgl::point2d(x, y) - clb_bbox.bottom_left();
-        highlight_sub_block(point_in_clb, clb_index,
-                            cluster_ctx.clb_nlist.block_pb(clb_index));
-
-        if (get_selected_sub_block_info().has_selection()) {
-            t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
-            sprintf(msg, "sub-block %s (a \"%s\") selected",
-                    selected_subblock->name,
-                    selected_subblock->pb_graph_node->pb_type->name);
-        } else {
-            /* Highlight block and fan-in/fan-outs. */
-            draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index),
-                                        clb_index);
-            sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index),
-                    cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                    place_ctx.block_locs[clb_index].loc.x,
-                    place_ctx.block_locs[clb_index].loc.y);
-        }
-
-        //If manual moves is activated, then user can select block from the grid.
-        t_draw_state* draw_state = get_draw_state_vars();
-        if (draw_state->manual_moves_state.manual_move_enabled) {
-            draw_state->manual_moves_state.user_highlighted_block = true;
-            if (!draw_state->manual_moves_state.manual_move_window_is_open) {
-                draw_manual_moves_window(std::to_string(size_t(clb_index)));
-            }
-        }
-
-        application.update_message(msg);
-        application.refresh_drawing();
     }
+    // Searched all layers and found no clb at specified location, returning clb_index = EMPTY_BLOCK_ID.
+    return clb_index;
 }
 
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
@@ -1450,8 +1465,8 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
     element_visibility.visible = true;
     bool cross_layer_enabled = draw_state->cross_layer_display.visible;
 
-    //To only show primitive nets that are connected to currently active layers on the screen
-    if (!draw_state->draw_layer_display[sink_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
+    //To only show elements (net flylines,noc links,etc...) that are connected to currently active layers on the screen
+    if (!draw_state->draw_layer_display[sink_layer].visible || !draw_state->draw_layer_display[src_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
         element_visibility.visible = false; /* Don't Draw */
     }
 
