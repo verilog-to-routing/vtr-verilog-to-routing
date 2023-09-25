@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <architecture>
   <models>
+    <!-- LAB Primitives -->
     <model name="fourteennm_lcell_comb5">
       <input_ports>
         <port combinational_sink_ports="combout sumout cout" name="dataa"/>
@@ -16,6 +17,7 @@
         <port name="cout"/>
       </output_ports>
     </model>
+
     <model name="fourteennm_lcell_comb6">
       <input_ports>
         <port combinational_sink_ports="combout sumout cout" name="dataa"/>
@@ -34,6 +36,7 @@
         <port name="cout"/>
       </output_ports>
     </model>
+
     <model name="fourteennm_ff">
       <input_ports>
         <port is_clock="1" name="clk"/>
@@ -46,6 +49,7 @@
         <port clock="clk" name="q"/>
       </output_ports>
     </model>
+
     <model name="fourteennm_mlab_cell">
       <input_ports>
         <port is_clock="1" name="clk0"/>
@@ -60,6 +64,8 @@
         <port clock="clk0" name="portbdataout"/>
       </output_ports>
     </model>
+
+    <!-- OCT Primitives -->
     <model name="fourteennm_termination">
       <input_ports>
         <port clock="clkusr" name="rzqin"/>
@@ -82,6 +88,7 @@
         <port clock="clkusr" name="ser_data_ca_to_core"/>
       </output_ports>
     </model>
+
     <model name="fourteennm_termination_logic">
       <input_ports>
         <port combinational_sink_ports="scan_out seriesterminationcontrol parallelterminationcontrol" name="s2pload"/>
@@ -95,6 +102,8 @@
         <port name="parallelterminationcontrol"/>
       </output_ports>
     </model>
+
+    <!-- PLL Primitive -->
     <model name="fourteennm_iopll">
       <input_ports>
         <port clock="core_refclk" name="clken"/>
@@ -168,6 +177,8 @@
         <port clock="core_refclk" name="csr_out"/>
       </output_ports>
     </model>
+
+    <!-- Clock Primitives -->
     <model name="fourteennm_clk_divider">
       <input_ports>
         <port is_clock="1" name="inclk"/>
@@ -178,6 +189,7 @@
         <port clock="inclk" name="clock_div4"/>
       </output_ports>
     </model>
+
     <model name="fourteennm_clk_gate">
       <input_ports>
         <port is_clock="1" name="inclk"/>
@@ -187,6 +199,8 @@
         <port clock="inclk" name="outclk"/>
       </output_ports>
     </model>
+
+    <!-- IO Primitives -->
     <model name="fourteennm_io_obuf">
       <input_ports>
         <port combinational_sink_ports="o obar" name="i"/>
@@ -4795,17 +4809,92 @@
   </models>
   <tiles>
     <tile height="2" name="iolane">
-      <sub_tile name="iolane">
+      <sub_tile name="io_cell1">
         <equivalent_sites>
-          <site pb_type="iolane" pin_mapping="direct"/>
+          <site pb_type="io_cell" pin_mapping="direct"/>
         </equivalent_sites>
-        <input equivalent="none" name="core_in" num_pins="55"/>
-        <output equivalent="none" name="core_out" num_pins="24"/>
+        <input equivalent="none" name="core_in" num_pins="36"/>
+        <output equivalent="none" name="core_out" num_pins="6"/>
         <clock name="clk" num_pins="1"/>
         <pinlocations pattern="custom">
-          <loc side="top">   iolane.core_in  iolane.core_out iolane.clk</loc>
-          <loc side="left">  iolane.core_in[22:0]  iolane.core_out[11:0]  iolane.clk</loc>
-          <loc side="right">  iolane.core_in[54:23]  iolane.core_out[23:12]  iolane.clk</loc>
+          <loc side="top">   io_cell1.core_in  io_cell1.core_out io_cell1.clk</loc>
+          <loc side="left">  io_cell1.core_in[17:0]  io_cell1.core_out[2:0]  io_cell1.clk</loc>
+          <loc side="right">  io_cell1.core_in[35:18]  io_cell1.core_out[5:3]  io_cell1.clk</loc>
+        </pinlocations>
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="4">
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="H4"/>
+          <fc_override fc_type="abs" fc_val="6" port_name="core_out" segment_name="H4"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_in" segment_name="H10"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_out" segment_name="H10"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V2"/>
+          <fc_override fc_type="abs" fc_val="6" port_name="core_out" segment_name="V2"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V3"/>
+          <fc_override fc_type="abs" fc_val="12" port_name="core_out" segment_name="V3"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V4"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_out" segment_name="V4"/>
+        </fc>
+      </sub_tile>
+      <sub_tile name="io_cell2">
+        <equivalent_sites>
+          <site pb_type="io_cell" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input equivalent="none" name="core_in" num_pins="36"/>
+        <output equivalent="none" name="core_out" num_pins="6"/>
+        <clock name="clk" num_pins="1"/>
+        <pinlocations pattern="custom">
+          <loc side="top">   io_cell2.core_in  io_cell2.core_out io_cell2.clk</loc>
+          <loc side="left">  io_cell2.core_in[17:0]  io_cell2.core_out[2:0]  io_cell2.clk</loc>
+          <loc side="right">  io_cell2.core_in[35:18]  io_cell2.core_out[5:3]  io_cell2.clk</loc>
+        </pinlocations>
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="4">
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="H4"/>
+          <fc_override fc_type="abs" fc_val="6" port_name="core_out" segment_name="H4"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_in" segment_name="H10"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_out" segment_name="H10"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V2"/>
+          <fc_override fc_type="abs" fc_val="6" port_name="core_out" segment_name="V2"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V3"/>
+          <fc_override fc_type="abs" fc_val="12" port_name="core_out" segment_name="V3"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V4"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_out" segment_name="V4"/>
+        </fc>
+      </sub_tile>
+      <sub_tile name="io_cell3">
+        <equivalent_sites>
+          <site pb_type="io_cell" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input equivalent="none" name="core_in" num_pins="36"/>
+        <output equivalent="none" name="core_out" num_pins="6"/>
+        <clock name="clk" num_pins="1"/>
+        <pinlocations pattern="custom">
+          <loc side="top">   io_cell3.core_in  io_cell3.core_out io_cell3.clk</loc>
+          <loc side="left">  io_cell3.core_in[17:0]  io_cell3.core_out[2:0]  io_cell3.clk</loc>
+          <loc side="right">  io_cell3.core_in[35:18]  io_cell3.core_out[5:3]  io_cell3.clk</loc>
+        </pinlocations>
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="4">
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="H4"/>
+          <fc_override fc_type="abs" fc_val="6" port_name="core_out" segment_name="H4"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_in" segment_name="H10"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_out" segment_name="H10"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V2"/>
+          <fc_override fc_type="abs" fc_val="6" port_name="core_out" segment_name="V2"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V3"/>
+          <fc_override fc_type="abs" fc_val="12" port_name="core_out" segment_name="V3"/>
+          <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="V4"/>
+          <fc_override fc_type="abs" fc_val="4" port_name="core_out" segment_name="V4"/>
+        </fc>
+      </sub_tile>
+      <sub_tile name="io_cell4">
+        <equivalent_sites>
+          <site pb_type="io_cell" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input equivalent="none" name="core_in" num_pins="36"/>
+        <output equivalent="none" name="core_out" num_pins="6"/>
+        <clock name="clk" num_pins="1"/>
+        <pinlocations pattern="custom">
+          <loc side="top">   io_cell4.core_in  io_cell4.core_out io_cell4.clk</loc>
+          <loc side="left">  io_cell4.core_in[17:0]  io_cell4.core_out[2:0]  io_cell4.clk</loc>
+          <loc side="right">  io_cell4.core_in[35:18]  io_cell4.core_out[5:3]  io_cell4.clk</loc>
         </pinlocations>
         <fc in_type="abs" in_val="2" out_type="abs" out_val="4">
           <fc_override fc_type="abs" fc_val="2" port_name="core_in" segment_name="H4"/>
@@ -5805,8 +5894,11 @@
     <direct from_pin="M20K.data_out[39:20]" from_side="top" name="Mem_side_sneak_LAB1" to_pin="LAB.data_in[50:31]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[29:0]" from_side="top" name="DSP_side_sneak_LAB0" to_pin="LAB.data_in[29:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[59:30]" from_side="top" name="DSP_side_sneak_LAB1" to_pin="LAB.data_in[59:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LAB_0" to_pin="LAB.data_in[34:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LAB_1" to_pin="LAB.data_in[58:35]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <!-- <direct from_pin="io_cell.core_out[5:0]" from_side="top" name="iolane_side_sneak_LAB_00" to_pin="LAB.data_in[56:51]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/> -->
+    <!-- <direct from_pin="io_cell2.core_out[5:0]" from_side="top" name="iolane_side_sneak_LAB_01" to_pin="LAB.data_in[22:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct from_pin="io_cell3.core_out[5:0]" from_side="top" name="iolane_side_sneak_LAB_02" to_pin="LAB.data_in[28:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct from_pin="io_cell4.core_out[5:0]" from_side="top" name="iolane_side_sneak_LAB_03" to_pin="LAB.data_in[34:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/> -->
+    <!-- <direct from_pin="iocell1.core_out[5:0]" from_side="top" name="iolane_side_sneak_LAB_1" to_pin="LAB.data_in[58:35]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/> -->
         <!-- self-sneaks -->
     <!-- two fan-outs from data_out[0:0] -->
     <direct name="LABMLAB_self_sneak0" from_pin="LABMLAB.data_out[0:0]" from_side="top" to_pin="LABMLAB.data_in[0:0]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
@@ -5947,8 +6039,8 @@
     <direct from_pin="M20K.data_out[39:20]" from_side="top" name="Mem_side_sneak_LABMLAB1" to_pin="LABMLAB.data_in[50:31]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[29:0]" from_side="top" name="DSP_side_sneak_LABMLAB0" to_pin="LABMLAB.data_in[29:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[59:30]" from_side="top" name="DSP_side_sneak_LABMLAB1" to_pin="LABMLAB.data_in[59:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LABMLAB_0" to_pin="LABMLAB.data_in[34:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LABMLAB_1" to_pin="LABMLAB.data_in[58:35]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <!-- <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LABMLAB_0" to_pin="LABMLAB.data_in[34:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LABMLAB_1" to_pin="LABMLAB.data_in[58:35]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/> -->
     <direct from_pin="LAB.data_out[1:1]" from_side="top" name="LAB_side_sneak_DSP_1" to_pin="DSP.dspin[1:1]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="LAB.data_out[3:3]" from_side="top" name="LAB_side_sneak_DSP_3" to_pin="DSP.dspin[3:3]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="LAB.data_out[5:5]" from_side="top" name="LAB_side_sneak_DSP_5" to_pin="DSP.dspin[5:5]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
@@ -6033,8 +6125,8 @@
     <direct from_pin="M20K.data_out[39:0]" from_side="top" name="Mem_side_sneak_DSP1" to_pin="DSP.dspin[79:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[73:0]" from_side="top" name="DSP_side_sneak_DSP0" to_pin="DSP.dspin[187:114]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[73:0]" from_side="top" name="DSP_side_sneak_DSP1" to_pin="DSP.dspin[113:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LAB0" to_pin="DSP.dspin[137:114]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LAB1" to_pin="DSP.dspin[63:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <!-- <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LAB0" to_pin="DSP.dspin[137:114]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct from_pin="iolane.core_out[23:0]" from_side="top" name="iolane_side_sneak_LAB1" to_pin="DSP.dspin[63:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/> -->
     <direct from_pin="LAB.data_out[1:1]" from_side="top" name="LAB_side_sneak_Mem_1" to_pin="M20K.data_addr_control_in[0:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="LAB.data_out[3:3]" from_side="top" name="LAB_side_sneak_Mem_3" to_pin="M20K.data_addr_control_in[18:18]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="LAB.data_out[5:5]" from_side="top" name="LAB_side_sneak_Mem_5" to_pin="M20K.data_addr_control_in[36:36]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
@@ -6139,7 +6231,7 @@
     <direct from_pin="DSP.result[47:36]" from_side="top" name="DSP_side_sneak_Mem9" to_pin="M20K.data_addr_control_in[71:60]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[59:48]" from_side="top" name="DSP_side_sneak_Mem10" to_pin="M20K.data_addr_control_in[89:78]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[73:60]" from_side="top" name="DSP_side_sneak_Mem11" to_pin="M20K.data_addr_control_in[119:106]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct from_pin="iolane.core_out[3:0]" from_side="top" name="iolane_side_sneak_Mem0" to_pin="M20K.data_addr_control_in[3:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- <direct from_pin="iolane.core_out[3:0]" from_side="top" name="iolane_side_sneak_Mem0" to_pin="M20K.data_addr_control_in[3:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="iolane.core_out[7:4]" from_side="top" name="iolane_side_sneak_Mem1" to_pin="M20K.data_addr_control_in[21:18]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="iolane.core_out[11:8]" from_side="top" name="iolane_side_sneak_Mem2" to_pin="M20K.data_addr_control_in[39:36]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="iolane.core_out[15:12]" from_side="top" name="iolane_side_sneak_Mem3" to_pin="M20K.data_addr_control_in[57:54]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
@@ -6234,7 +6326,7 @@
     <direct from_pin="M20K.data_out[39:0]" from_side="top" name="Mem_side_sneak_iolane0" to_pin="iolane.core_in[39:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <direct from_pin="M20K.data_out[39:0]" from_side="top" name="Mem_side_sneak_iolane1" to_pin="iolane.core_in[39:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
     <direct from_pin="DSP.result[54:0]" from_side="top" name="DSP_side_sneak_iolane0" to_pin="iolane.core_in[54:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct from_pin="DSP.result[54:0]" from_side="top" name="DSP_side_sneak_iolane1" to_pin="iolane.core_in[54:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct from_pin="DSP.result[54:0]" from_side="top" name="DSP_side_sneak_iolane1" to_pin="iolane.core_in[54:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/> -->
   </directlist>
   <complexblocklist>
     <pb_type name="PLL">
@@ -7136,223 +7228,210 @@
         <complete input="oct_logic.scan_out oct_logic.seriesterminationcontrol oct_logic.parallelterminationcontrol" name="oct_logic_to_core" output="OCT.core_out"/>
       </interconnect>
     </pb_type>
-    <pb_type name="iolane">
-      <input name="core_in" num_pins="55"/>
-      <output name="core_out" num_pins="24"/>
+    <pb_type name="io_cell">
+      <input name="data_in" num_pins="36"/>
+      <output name="data_out" num_pins="6"/>
       <clock name="clk" num_pins="1"/>
-      <pb_type name="io_cell" num_pb="4">
-        <input name="data_in" num_pins="36"/>
-        <output name="data_out" num_pins="6"/>
-        <clock name="clk" num_pins="1"/>
-        <mode name="io_cell" num_pb="1">
-          <pb_type name="pad" num_pb="1">
-            <output name="recieve_off_chip" num_pins="1"/>
-            <input name="drive_off_chip" num_pins="1"/>
-            <mode name="inpad">
-              <pb_type blif_model=".input" name="inpad" num_pb="1">
-                <output name="inpad" num_pins="1"/>
-              </pb_type>
-              <interconnect>
-                <direct input="inpad.inpad" name="inpad" output="pad.recieve_off_chip"/>
-              </interconnect>
-            </mode>
-            <mode name="outpad">
-              <pb_type blif_model=".output" name="outpad" num_pb="1">
-                <input name="outpad" num_pins="1"/>
-              </pb_type>
-              <interconnect>
-                <direct input="pad.drive_off_chip" name="outpad" output="outpad.outpad"/>
-              </interconnect>
-            </mode>
-          </pb_type>
-          <pb_type blif_model=".subckt fourteennm_io_obuf" name="obuf" num_pb="1">
-            <input name="i" num_pins="1"/>
-            <input name="oe" num_pins="1"/>
-            <input name="dynamicterminationcontrol" num_pins="1"/>
-            <input name="seriesterminationcontrol" num_pins="16"/>
-            <input name="parallelterminationcontrol" num_pins="16"/>
-            <output name="o" num_pins="1"/>
-            <output name="obar" num_pins="1"/>
-            <delay_constant in_port="obuf.i" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
-            <delay_constant in_port="obuf.i" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
-            <delay_constant in_port="obuf.oe" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
-            <delay_constant in_port="obuf.oe" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
-            <delay_constant in_port="obuf.dynamicterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
-            <delay_constant in_port="obuf.dynamicterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
-            <delay_constant in_port="obuf.seriesterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
-            <delay_constant in_port="obuf.seriesterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
-            <delay_constant in_port="obuf.parallelterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
-            <delay_constant in_port="obuf.parallelterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
-          </pb_type>
-          <pb_type blif_model=".subckt fourteennm_io_ibuf" name="ibuf" num_pb="1">
-            <input name="i" num_pins="1"/>
-            <input name="ibar" num_pins="1"/>
-            <input name="dynamicterminationcontrol" num_pins="1"/>
-            <input name="seriesterminationcontrol" num_pins="16"/>
-            <input name="parallelterminationcontrol" num_pins="16"/>
-            <output name="o" num_pins="1"/>
-            <delay_constant in_port="ibuf.i" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
-            <delay_constant in_port="ibuf.ibar" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
-            <delay_constant in_port="ibuf.dynamicterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
-            <delay_constant in_port="ibuf.seriesterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
-            <delay_constant in_port="ibuf.parallelterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
-          </pb_type>
-          <pb_type blif_model=".subckt fourteennm_ddio_out" name="ddio_out" num_pb="1">
-            <input name="areset" num_pins="1"/>
-            <input name="sreset" num_pins="1"/>
-            <input name="ena" num_pins="1"/>
-            <clock name="clk" num_pins="1"/>
-            <input name="clkhi" num_pins="1"/>
-            <input name="clklo" num_pins="1"/>
-            <input name="muxsel" num_pins="1"/>
-            <input name="datainlo" num_pins="1"/>
-            <input name="datainhi" num_pins="1"/>
-            <output name="dataout" num_pins="1"/>
-            <T_setup clock="clk" port="ddio_out.areset" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.areset" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.areset"/>
-            <T_setup clock="clk" port="ddio_out.sreset" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.sreset" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.sreset"/>
-            <T_setup clock="clk" port="ddio_out.ena" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.ena" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.ena"/>
-            <T_setup clock="clk" port="ddio_out.clkhi" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.clkhi" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.clkhi"/>
-            <T_setup clock="clk" port="ddio_out.clklo" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.clklo" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.clklo"/>
-            <T_setup clock="clk" port="ddio_out.muxsel" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.muxsel" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.muxsel"/>
-            <T_setup clock="clk" port="ddio_out.datainlo" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.datainlo" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.datainlo"/>
-            <T_setup clock="clk" port="ddio_out.datainhi" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.datainhi" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.datainhi"/>
-            <T_setup clock="clk" port="ddio_out.dataout" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_out.dataout" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.dataout"/>
-          </pb_type>
-          <pb_type blif_model=".subckt fourteennm_ddio_in" name="ddio_in" num_pb="1">
-            <clock name="clk" num_pins="1"/>
-            <input name="clkn" num_pins="1"/>
-            <input name="areset" num_pins="1"/>
-            <input name="sreset" num_pins="1"/>
-            <input name="ena" num_pins="1"/>
-            <input name="datain" num_pins="1"/>
-            <output name="regoutlo" num_pins="1"/>
-            <output name="regouthi" num_pins="1"/>
-            <T_setup clock="clk" port="ddio_in.clkn" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_in.clkn" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.clkn"/>
-            <T_setup clock="clk" port="ddio_in.areset" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_in.areset" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.areset"/>
-            <T_setup clock="clk" port="ddio_in.sreset" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_in.sreset" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.sreset"/>
-            <T_setup clock="clk" port="ddio_in.ena" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_in.ena" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.ena"/>
-            <T_setup clock="clk" port="ddio_in.datain" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_in.datain" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.datain"/>
-            <T_setup clock="clk" port="ddio_in.regoutlo" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_in.regoutlo" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.regoutlo"/>
-            <T_setup clock="clk" port="ddio_in.regouthi" value="0.0e-12"/>
-            <T_hold clock="clk" port="ddio_in.regouthi" value="0.0e-12"/>
-            <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.regouthi"/>
-          </pb_type>
-          <pb_type blif_model=".subckt fourteennm_pseudo_diff_out" name="pseudo_diff_out" num_pb="1">
-            <input name="i" num_pins="1"/>
-            <input name="ibar" num_pins="1"/>
-            <input name="oein" num_pins="1"/>
-            <input name="oebin" num_pins="1"/>
-            <input name="dtcin" num_pins="1"/>
-            <input name="dtcbarin" num_pins="1"/>
-            <output name="o" num_pins="1"/>
-            <output name="obar" num_pins="1"/>
-            <output name="oeout" num_pins="1"/>
-            <output name="oebout" num_pins="1"/>
-            <output name="dtc" num_pins="1"/>
-            <output name="dtcbar" num_pins="1"/>
-            <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
-            <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
-            <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
-            <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
-            <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
-            <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
-            <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
-            <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
-            <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
-            <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
-            <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
-            <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
-            <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
-            <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
-            <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
-            <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
-            <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
-            <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
-            <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
-            <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
-            <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
-            <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
-            <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
-            <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
-            <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
-            <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
-            <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
-            <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
-            <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
-            <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
-            <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
-            <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
-            <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
-            <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
-            <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
-            <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
-          </pb_type>
-          <interconnect>
-            <complete input="io_cell.data_in" name="core_to_ddio_out" num_pins="1" output="ddio_out.areset ddio_out.sreset ddio_out.ena ddio_out.clkhi ddio_out.clklo ddio_out.muxsel ddio_out.datainlo ddio_out.datainhi"/>
-            <direct input="io_cell.clk" name="ddio_out_clk" num_pins="1" output="ddio_out.clk"/>
-            <complete input="io_cell.data_in" name="core_to_obuf" output="obuf.dynamicterminationcontrol obuf.seriesterminationcontrol obuf.parallelterminationcontrol"/>
-            <complete input="io_cell.data_in ddio_out.dataout pseudo_diff_out.o" name="i_obuff" num_pins="1" output="obuf.i"/>
-            <complete input="io_cell.data_in pseudo_diff_out.oeout" name="oe_obuff" num_pins="1" output="obuf.oe"/>
-            <complete input="io_cell.data_in" name="core_to_ibuff" output="ibuf.ibar ibuf.dynamicterminationcontrol ibuf.seriesterminationcontrol ibuf.parallelterminationcontrol"/>
-            <direct input="pad.recieve_off_chip" name="pad_receive" num_pins="1" output="ibuf.i">
-              <pack_pattern in_port="pad.recieve_off_chip" name="pad_to_ibuf" out_port="ibuf.i"/>
-            </direct>
-            <complete input="io_cell.data_in" name="core_to_pseudo_diff_out" num_pins="1" output="pseudo_diff_out.ibar pseudo_diff_out.oebin pseudo_diff_out.dtcin pseudo_diff_out.dtcbarin"/>
-            <complete input="io_cell.data_in ddio_out.dataout" name="i_pseudo_diff" num_pins="1" output=" pseudo_diff_out.i"/>
-            <complete input="io_cell.data_in" name="oe_pseudo_diff" num_pins="1" output="pseudo_diff_out.oein"/>
-            <complete input="io_cell.data_in" name="core_to_ddio_in" num_pins="1" output="ddio_in.clkn ddio_in.areset ddio_in.sreset ddio_in.ena"/>
-            <direct input="io_cell.clk" name="ddioi_clk" num_pins="1" output="ddio_in.clk"/>
-            <complete input="ibuf.o io_cell.data_in" name="ddioi_datain" num_pins="1" output="ddio_in.datain"/>
-            <complete input="io_cell.data_in obuf.o obuf.obar" name="pad_drive" num_pins="1" output="pad.drive_off_chip">
-              <pack_pattern in_port="obuf.o" name="obuf_to_pad" out_port="pad.drive_off_chip"/>
-            </complete>
-            <direct input="pseudo_diff_out.obar" name="io_cell_obar" num_pins="1" output="io_cell.data_out[0]"/>
-            <direct input="pseudo_diff_out.oebout" name="io_cell_oeout" num_pins="1" output="io_cell.data_out[1]"/>
-            <direct input="pseudo_diff_out.dtc" name="io_cell_dtc" num_pins="1" output="io_cell.data_out[2]"/>
-            <direct input="pseudo_diff_out.dtcbar" name="io_cell_dtcbar" num_pins="1" output="io_cell.data_out[3]"/>
-            <complete input="ibuf.o ddio_in.regoutlo pad.recieve_off_chip" name="io_cell_regoutlo" num_pins="1" output="io_cell.data_out[4]"/>
-            <direct input="ddio_in.regouthi" name="io_cell_regouthi" num_pins="1" output="io_cell.data_out[5]"/>
-          </interconnect>
-        </mode>
-      </pb_type>
-      <interconnect>
-        <complete input="iolane.core_in" name="core_to_io" output="io_cell.data_in"/>
-        <complete input="io_cell.data_out" name="io_to_core" output="iolane.core_out"/>
-        <direct input="iolane.clk" name="clk_connection0" output="io_cell[0].clk"/>
-        <direct input="iolane.clk" name="clk_connection1" output="io_cell[1].clk"/>
-        <direct input="iolane.clk" name="clk_connection2" output="io_cell[2].clk"/>
-        <direct input="iolane.clk" name="clk_connection3" output="io_cell[3].clk"/>
-      </interconnect>
+      <mode name="io_cell" num_pb="1">
+        <pb_type name="pad" num_pb="1">
+          <output name="recieve_off_chip" num_pins="1"/>
+          <input name="drive_off_chip" num_pins="1"/>
+          <mode name="inpad">
+            <pb_type blif_model=".input" name="inpad" num_pb="1">
+              <output name="inpad" num_pins="1"/>
+            </pb_type>
+            <interconnect>
+              <direct input="inpad.inpad" name="inpad" output="pad.recieve_off_chip"/>
+            </interconnect>
+          </mode>
+          <mode name="outpad">
+            <pb_type blif_model=".output" name="outpad" num_pb="1">
+              <input name="outpad" num_pins="1"/>
+            </pb_type>
+            <interconnect>
+              <direct input="pad.drive_off_chip" name="outpad" output="outpad.outpad"/>
+            </interconnect>
+          </mode>
+        </pb_type>
+        <pb_type blif_model=".subckt fourteennm_io_obuf" name="obuf" num_pb="1">
+          <input name="i" num_pins="1"/>
+          <input name="oe" num_pins="1"/>
+          <input name="dynamicterminationcontrol" num_pins="1"/>
+          <input name="seriesterminationcontrol" num_pins="16"/>
+          <input name="parallelterminationcontrol" num_pins="16"/>
+          <output name="o" num_pins="1"/>
+          <output name="obar" num_pins="1"/>
+          <delay_constant in_port="obuf.i" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
+          <delay_constant in_port="obuf.i" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
+          <delay_constant in_port="obuf.oe" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
+          <delay_constant in_port="obuf.oe" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
+          <delay_constant in_port="obuf.dynamicterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
+          <delay_constant in_port="obuf.dynamicterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
+          <delay_constant in_port="obuf.seriesterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
+          <delay_constant in_port="obuf.seriesterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
+          <delay_constant in_port="obuf.parallelterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.o"/>
+          <delay_constant in_port="obuf.parallelterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="obuf.obar"/>
+        </pb_type>
+        <pb_type blif_model=".subckt fourteennm_io_ibuf" name="ibuf" num_pb="1">
+          <input name="i" num_pins="1"/>
+          <input name="ibar" num_pins="1"/>
+          <input name="dynamicterminationcontrol" num_pins="1"/>
+          <input name="seriesterminationcontrol" num_pins="16"/>
+          <input name="parallelterminationcontrol" num_pins="16"/>
+          <output name="o" num_pins="1"/>
+          <delay_constant in_port="ibuf.i" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
+          <delay_constant in_port="ibuf.ibar" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
+          <delay_constant in_port="ibuf.dynamicterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
+          <delay_constant in_port="ibuf.seriesterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
+          <delay_constant in_port="ibuf.parallelterminationcontrol" max="0.0e-12" min="0.0e-12" out_port="ibuf.o"/>
+        </pb_type>
+        <pb_type blif_model=".subckt fourteennm_ddio_out" name="ddio_out" num_pb="1">
+          <input name="areset" num_pins="1"/>
+          <input name="sreset" num_pins="1"/>
+          <input name="ena" num_pins="1"/>
+          <clock name="clk" num_pins="1"/>
+          <input name="clkhi" num_pins="1"/>
+          <input name="clklo" num_pins="1"/>
+          <input name="muxsel" num_pins="1"/>
+          <input name="datainlo" num_pins="1"/>
+          <input name="datainhi" num_pins="1"/>
+          <output name="dataout" num_pins="1"/>
+          <T_setup clock="clk" port="ddio_out.areset" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.areset" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.areset"/>
+          <T_setup clock="clk" port="ddio_out.sreset" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.sreset" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.sreset"/>
+          <T_setup clock="clk" port="ddio_out.ena" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.ena" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.ena"/>
+          <T_setup clock="clk" port="ddio_out.clkhi" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.clkhi" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.clkhi"/>
+          <T_setup clock="clk" port="ddio_out.clklo" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.clklo" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.clklo"/>
+          <T_setup clock="clk" port="ddio_out.muxsel" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.muxsel" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.muxsel"/>
+          <T_setup clock="clk" port="ddio_out.datainlo" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.datainlo" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.datainlo"/>
+          <T_setup clock="clk" port="ddio_out.datainhi" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.datainhi" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.datainhi"/>
+          <T_setup clock="clk" port="ddio_out.dataout" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_out.dataout" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_out.dataout"/>
+        </pb_type>
+        <pb_type blif_model=".subckt fourteennm_ddio_in" name="ddio_in" num_pb="1">
+          <clock name="clk" num_pins="1"/>
+          <input name="clkn" num_pins="1"/>
+          <input name="areset" num_pins="1"/>
+          <input name="sreset" num_pins="1"/>
+          <input name="ena" num_pins="1"/>
+          <input name="datain" num_pins="1"/>
+          <output name="regoutlo" num_pins="1"/>
+          <output name="regouthi" num_pins="1"/>
+          <T_setup clock="clk" port="ddio_in.clkn" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_in.clkn" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.clkn"/>
+          <T_setup clock="clk" port="ddio_in.areset" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_in.areset" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.areset"/>
+          <T_setup clock="clk" port="ddio_in.sreset" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_in.sreset" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.sreset"/>
+          <T_setup clock="clk" port="ddio_in.ena" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_in.ena" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.ena"/>
+          <T_setup clock="clk" port="ddio_in.datain" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_in.datain" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.datain"/>
+          <T_setup clock="clk" port="ddio_in.regoutlo" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_in.regoutlo" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.regoutlo"/>
+          <T_setup clock="clk" port="ddio_in.regouthi" value="0.0e-12"/>
+          <T_hold clock="clk" port="ddio_in.regouthi" value="0.0e-12"/>
+          <T_clock_to_Q clock="clk" max="0.0e-12" min="0.0e-12" port="ddio_in.regouthi"/>
+        </pb_type>
+        <pb_type blif_model=".subckt fourteennm_pseudo_diff_out" name="pseudo_diff_out" num_pb="1">
+          <input name="i" num_pins="1"/>
+          <input name="ibar" num_pins="1"/>
+          <input name="oein" num_pins="1"/>
+          <input name="oebin" num_pins="1"/>
+          <input name="dtcin" num_pins="1"/>
+          <input name="dtcbarin" num_pins="1"/>
+          <output name="o" num_pins="1"/>
+          <output name="obar" num_pins="1"/>
+          <output name="oeout" num_pins="1"/>
+          <output name="oebout" num_pins="1"/>
+          <output name="dtc" num_pins="1"/>
+          <output name="dtcbar" num_pins="1"/>
+          <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
+          <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
+          <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
+          <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
+          <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
+          <delay_constant in_port="pseudo_diff_out.i" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
+          <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
+          <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
+          <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
+          <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
+          <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
+          <delay_constant in_port="pseudo_diff_out.ibar" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
+          <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
+          <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
+          <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
+          <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
+          <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
+          <delay_constant in_port="pseudo_diff_out.oein" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
+          <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
+          <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
+          <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
+          <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
+          <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
+          <delay_constant in_port="pseudo_diff_out.oebin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
+          <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
+          <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
+          <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
+          <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
+          <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
+          <delay_constant in_port="pseudo_diff_out.dtcin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
+          <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.o"/>
+          <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.obar"/>
+          <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oeout"/>
+          <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.oebout"/>
+          <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtc"/>
+          <delay_constant in_port="pseudo_diff_out.dtcbarin" max="0.0e-12" min="0.0e-12" out_port="pseudo_diff_out.dtcbar"/>
+        </pb_type>
+        <interconnect>
+          <complete input="io_cell.data_in" name="core_to_ddio_out" num_pins="1" output="ddio_out.areset ddio_out.sreset ddio_out.ena ddio_out.clkhi ddio_out.clklo ddio_out.muxsel ddio_out.datainlo ddio_out.datainhi"/>
+          <direct input="io_cell.clk" name="ddio_out_clk" num_pins="1" output="ddio_out.clk"/>
+          <complete input="io_cell.data_in" name="core_to_obuf" output="obuf.dynamicterminationcontrol obuf.seriesterminationcontrol obuf.parallelterminationcontrol"/>
+          <complete input="io_cell.data_in ddio_out.dataout pseudo_diff_out.o" name="i_obuff" num_pins="1" output="obuf.i"/>
+          <complete input="io_cell.data_in pseudo_diff_out.oeout" name="oe_obuff" num_pins="1" output="obuf.oe"/>
+          <complete input="io_cell.data_in" name="core_to_ibuff" output="ibuf.ibar ibuf.dynamicterminationcontrol ibuf.seriesterminationcontrol ibuf.parallelterminationcontrol"/>
+          <direct input="pad.recieve_off_chip" name="pad_receive" num_pins="1" output="ibuf.i">
+            <pack_pattern in_port="pad.recieve_off_chip" name="pad_to_ibuf" out_port="ibuf.i"/>
+          </direct>
+          <complete input="io_cell.data_in" name="core_to_pseudo_diff_out" num_pins="1" output="pseudo_diff_out.ibar pseudo_diff_out.oebin pseudo_diff_out.dtcin pseudo_diff_out.dtcbarin"/>
+          <complete input="io_cell.data_in ddio_out.dataout" name="i_pseudo_diff" num_pins="1" output=" pseudo_diff_out.i"/>
+          <complete input="io_cell.data_in" name="oe_pseudo_diff" num_pins="1" output="pseudo_diff_out.oein"/>
+          <complete input="io_cell.data_in" name="core_to_ddio_in" num_pins="1" output="ddio_in.clkn ddio_in.areset ddio_in.sreset ddio_in.ena"/>
+          <direct input="io_cell.clk" name="ddioi_clk" num_pins="1" output="ddio_in.clk"/>
+          <complete input="ibuf.o io_cell.data_in" name="ddioi_datain" num_pins="1" output="ddio_in.datain"/>
+          <complete input="io_cell.data_in obuf.o obuf.obar" name="pad_drive" num_pins="1" output="pad.drive_off_chip">
+            <pack_pattern in_port="obuf.o" name="obuf_to_pad" out_port="pad.drive_off_chip"/>
+          </complete>
+          <direct input="pseudo_diff_out.obar" name="io_cell_obar" num_pins="1" output="io_cell.data_out[0]"/>
+          <direct input="pseudo_diff_out.oebout" name="io_cell_oeout" num_pins="1" output="io_cell.data_out[1]"/>
+          <direct input="pseudo_diff_out.dtc" name="io_cell_dtc" num_pins="1" output="io_cell.data_out[2]"/>
+          <direct input="pseudo_diff_out.dtcbar" name="io_cell_dtcbar" num_pins="1" output="io_cell.data_out[3]"/>
+          <complete input="ibuf.o ddio_in.regoutlo pad.recieve_off_chip" name="io_cell_regoutlo" num_pins="1" output="io_cell.data_out[4]"/>
+          <direct input="ddio_in.regouthi" name="io_cell_regouthi" num_pins="1" output="io_cell.data_out[5]"/>
+        </interconnect>
+      </mode>
     </pb_type>
     <pb_type name="DSP">
       <input name="dspin" num_pins="240"/>
