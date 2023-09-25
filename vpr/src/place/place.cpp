@@ -2963,30 +2963,34 @@ static void add_block_to_bb(const t_2D_tbb& bb_edge_old,
     VTR_ASSERT_SAFE(bb_edge_old.layer_num == bb_coord_old.layer_num);
 
     bb_edge_new = bb_edge_old;
-    bb_coord_new= bb_coord_old;
+    bb_coord_new = bb_coord_old;
 
-    if (xnew > bb_coord_old.xmax) {
-        bb_edge_new.xmax = 1;
-        bb_coord_new.xmax = xnew;
-    } else if (xnew == bb_coord_old.xmax) {
-        bb_edge_new.xmax = bb_edge_old.xmax + 1;
-    } else if (xnew < bb_coord_old.xmin) {
-        bb_edge_new.xmin = 1;
-        bb_coord_new.xmin = xnew;
-    } else if (xnew == bb_coord_old.xmin) {
-        bb_edge_new.xmin = bb_edge_old.xmin + 1;
+    if (xnew != xold) {
+        if (xnew > bb_coord_old.xmax) {
+            bb_edge_new.xmax = 1;
+            bb_coord_new.xmax = xnew;
+        } else if (xnew == bb_coord_old.xmax) {
+            bb_edge_new.xmax = bb_edge_old.xmax + 1;
+        } else if (xnew < bb_coord_old.xmin) {
+            bb_edge_new.xmin = 1;
+            bb_coord_new.xmin = xnew;
+        } else if (xnew == bb_coord_old.xmin) {
+            bb_edge_new.xmin = bb_edge_old.xmin + 1;
+        }
     }
 
-    if (ynew > bb_coord_old.ymax) {
-        bb_edge_new.ymax = bb_edge_old.ymax + 1;
-        bb_coord_new.ymax = ynew;
-    } else if (ynew == bb_coord_old.ymax) {
-        bb_edge_new.ymax = bb_edge_old.ymax + 1;
-    } else if (ynew < bb_coord_old.ymin) {
-        bb_edge_new.ymin = 1;
-        bb_coord_new.ymin = ynew;
-    } else if (ynew == bb_coord_old.ymin) {
-        bb_edge_new.ymin = bb_edge_old.ymin + 1;
+    if (ynew != yold) {
+        if (ynew > bb_coord_old.ymax) {
+            bb_edge_new.ymax = bb_edge_old.ymax + 1;
+            bb_coord_new.ymax = ynew;
+        } else if (ynew == bb_coord_old.ymax) {
+            bb_edge_new.ymax = bb_edge_old.ymax + 1;
+        } else if (ynew < bb_coord_old.ymin) {
+            bb_edge_new.ymin = 1;
+            bb_coord_new.ymin = ynew;
+        } else if (ynew == bb_coord_old.ymin) {
+            bb_edge_new.ymin = bb_edge_old.ymin + 1;
+        }
     }
 }
 
