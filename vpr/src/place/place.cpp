@@ -2965,7 +2965,7 @@ static void add_block_to_bb(const t_2D_tbb& bb_edge_old,
     bb_edge_new = bb_edge_old;
     bb_coord_new = bb_coord_old;
 
-    if (xnew != xold) {
+    if (xnew != xold || layer_old != layer_new) {
         if (xnew > bb_coord_old.xmax) {
             bb_edge_new.xmax = 1;
             bb_coord_new.xmax = xnew;
@@ -2979,7 +2979,7 @@ static void add_block_to_bb(const t_2D_tbb& bb_edge_old,
         }
     }
 
-    if (ynew != yold) {
+    if (ynew != yold || layer_old != layer_new) {
         if (ynew > bb_coord_old.ymax) {
             bb_edge_new.ymax = bb_edge_old.ymax + 1;
             bb_coord_new.ymax = ynew;
