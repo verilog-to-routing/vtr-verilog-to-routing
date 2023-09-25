@@ -346,28 +346,19 @@ static void update_bb_pin_sink_count(ClusterNetId net_id,
                                      std::vector<int>& bb_pin_sink_count_new,
                                      bool is_output_pin);
 
-static void try_remove_block_from_bb_edge(ClusterNetId net_id,
-                                          const t_physical_tile_loc& pin_old_loc,
-                                          const t_physical_tile_loc& pin_new_loc,
-                                          const std::vector<t_2D_tbb>& curr_bb_edge,
-                                          const std::vector<t_2D_tbb>& curr_bb_coord,
-                                          std::vector<t_2D_tbb>& bb_edge_new,
-                                          std::vector<t_2D_tbb>& bb_coord_new,
-                                          std::vector<int>& bb_pin_sink_count_new);
+static void update_bb_edge (ClusterNetId net_id,
+                           std::vector<t_2D_tbb>& bb_edge_new,
+                           std::vector<t_2D_tbb>& bb_coord_new,
+                           std::vector<int>& bb_layer_pin_sink_count,
+                           const int& old_num_block_on_edge,
+                           const int& old_edge_coord,
+                           int& new_num_block_on_edge,
+                           int& new_edge_coord);
 
-static void remove_block_from_bb_edge(ClusterNetId net_id,
-                                      std::vector<t_2D_tbb>& bb_edge_new,
-                                      std::vector<t_2D_tbb>& bb_coord_new,
-                                      std::vector<int>& bb_layer_pin_sink_count,
-                                      const int& old_num_block_on_edge,
-                                      const int& old_edge_coord,
-                                      int& new_num_block_on_edge,
-                                      int& new_edge_coord);
 
-static void add_block_to_bb(const t_2D_tbb& bb_edge_old,
+static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
+                            const t_2D_tbb& bb_edge_old,
                             const t_2D_tbb& bb_coord_old,
-                            const t_physical_tile_loc& old_pin_loc,
-                            const t_physical_tile_loc& new_pin_loc,
                             t_2D_tbb& bb_edge_new,
                             t_2D_tbb& bb_coord_new);
 
@@ -2773,7 +2764,6 @@ static void update_bb(ClusterNetId net_id,
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
 
-    int new_layer = pin_new_loc.layer_num;
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -2806,25 +2796,128 @@ static void update_bb(ClusterNetId net_id,
                              bb_pin_sink_count_new,
                              is_output_pin);
 
-    try_remove_block_from_bb_edge(net_id,
-                                  pin_old_loc,
-                                  pin_new_loc,
-                                  *curr_bb_edge,
-                                  *curr_bb_coord,
-                                  bb_edge_new,
-                                  bb_coord_new,
-                                  bb_pin_sink_count_new);
-
     if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
         return;
     }
 
-    add_block_to_bb((*curr_bb_edge)[new_layer],
-                    (*curr_bb_coord)[new_layer],
-                    pin_old_loc,
-                    pin_new_loc,
-                    bb_edge_new[new_layer],
-                    bb_coord_new[new_layer]);
+    int x_old = pin_old_loc.x;
+    int x_new = pin_new_loc.x;
+
+    int y_old = pin_old_loc.y;
+    int y_new = pin_new_loc.y;
+
+    int layer_old = pin_old_loc.layer_num;
+    int layer_new = pin_new_loc.layer_num;
+    bool layer_changed = (layer_old != layer_new);
+
+    bb_edge_new = *curr_bb_edge;
+    bb_coord_new = *curr_bb_coord;
+
+    if (x_new < x_old || layer_changed) {
+        if (x_old == (*curr_bb_coord)[layer_old].xmax) {
+            update_bb_edge(net_id,
+                           bb_edge_new,
+                           bb_coord_new,
+                           bb_pin_sink_count_new,
+                           (*curr_bb_edge)[layer_old].xmax,
+                           (*curr_bb_coord)[layer_old].xmax,
+                           bb_edge_new[layer_old].xmax,
+                           bb_coord_new[layer_old].xmax);
+            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+                return;
+            }
+        }
+
+        if (!layer_changed) {
+            if (x_new < (*curr_bb_coord)[layer_new].xmin) {
+                bb_edge_new[layer_new].xmin = 1;
+                bb_coord_new[layer_new].xmin = x_new;
+            } else if (x_new == (*curr_bb_coord)[layer_new].xmin) {
+                bb_edge_new[layer_new].xmin++;
+            }
+        }
+
+    } else if (x_new > x_old || layer_old != layer_new) {
+        if (x_old == (*curr_bb_coord)[layer_old].xmin) {
+            update_bb_edge(net_id,
+                           bb_edge_new,
+                           bb_coord_new,
+                           bb_pin_sink_count_new,
+                           (*curr_bb_edge)[layer_old].xmin,
+                           (*curr_bb_coord)[layer_old].xmin,
+                           bb_edge_new[layer_old].xmin,
+                           bb_coord_new[layer_old].xmin);
+            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+                return;
+            }
+        }
+
+        if (!layer_changed) {
+            if (x_new > (*curr_bb_coord)[layer_new].xmax) {
+                bb_edge_new[layer_new].xmax = 1;
+                bb_coord_new[layer_new].xmax = x_new;
+            } else if (x_new == (*curr_bb_coord)[layer_new].xmax) {
+                    bb_edge_new[layer_new].xmax++;
+            }
+        }
+    }
+
+    if (y_new < y_old || layer_changed) {
+        if (y_old == (*curr_bb_coord)[layer_old].ymax) {
+            update_bb_edge(net_id,
+                           bb_edge_new,
+                           bb_coord_new,
+                           bb_pin_sink_count_new,
+                           (*curr_bb_edge)[layer_old].ymax,
+                           (*curr_bb_coord)[layer_old].ymax,
+                           bb_edge_new[layer_old].ymax,
+                           bb_coord_new[layer_old].ymax);
+            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+                    return;
+            }
+        }
+
+        if (!layer_changed) {
+            if (y_new < (*curr_bb_coord)[layer_new].ymin) {
+                    bb_edge_new[layer_new].ymin = 1;
+                    bb_coord_new[layer_new].ymin = y_new;
+            } else if (y_new == (*curr_bb_coord)[layer_new].ymin) {
+                    bb_edge_new[layer_new].ymin++;
+            }
+        }
+
+    } else if (y_new > y_old || layer_old != layer_new) {
+        if (y_old == (*curr_bb_coord)[layer_old].ymin) {
+            update_bb_edge(net_id,
+                           bb_edge_new,
+                           bb_coord_new,
+                           bb_pin_sink_count_new,
+                           (*curr_bb_edge)[layer_old].ymin,
+                           (*curr_bb_coord)[layer_old].ymin,
+                           bb_edge_new[layer_old].ymin,
+                           bb_coord_new[layer_old].ymin);
+            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+                    return;
+            }
+        }
+
+        if (!layer_changed) {
+            if (y_new > (*curr_bb_coord)[layer_new].ymax) {
+                    bb_edge_new[layer_new].ymax = 1;
+                    bb_coord_new[layer_new].ymax = y_new;
+            } else if (y_new == (*curr_bb_coord)[layer_new].ymax) {
+                    bb_edge_new[layer_new].ymax++;
+            }
+        }
+    }
+
+    if (layer_changed) {
+        add_block_to_bb(pin_new_loc,
+                        (*curr_bb_edge)[layer_new],
+                        (*curr_bb_coord)[layer_new],
+                        bb_edge_new[layer_new],
+                        bb_coord_new[layer_new]);
+    }
 
     if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
         bb_updated_before[net_id] = UPDATED_ONCE;
@@ -2845,93 +2938,14 @@ static void update_bb_pin_sink_count(ClusterNetId /* net_id */,
     }
 }
 
-static void try_remove_block_from_bb_edge(ClusterNetId net_id,
-                                          const t_physical_tile_loc& pin_old_loc,
-                                          const t_physical_tile_loc& pin_new_loc,
-                                          const std::vector<t_2D_tbb>& curr_bb_edge,
-                                          const std::vector<t_2D_tbb>& curr_bb_coord,
-                                          std::vector<t_2D_tbb>& bb_edge_new,
-                                          std::vector<t_2D_tbb>& bb_coord_new,
-                                          std::vector<int>& bb_pin_sink_count_new) {
-    int old_layer = pin_old_loc.layer_num;
-    int new_layer = pin_new_loc.layer_num;
-
-    bb_edge_new = curr_bb_edge;
-    bb_coord_new = curr_bb_coord;
-
-    if (pin_old_loc.x == curr_bb_coord[old_layer].xmax) {
-        if (old_layer != new_layer || pin_new_loc.x < pin_old_loc.x) {
-            remove_block_from_bb_edge(net_id,
-                                      bb_edge_new,
-                                      bb_coord_new,
-                                      bb_pin_sink_count_new,
-                                      curr_bb_edge[old_layer].xmax,
-                                      curr_bb_coord[old_layer].xmax,
-                                      bb_edge_new[old_layer].xmax,
-                                      bb_coord_new[old_layer].xmax);
-            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
-                return;
-            }
-        }
-    }
-
-    if (pin_old_loc.x == curr_bb_coord[old_layer].xmin) {
-        if (old_layer != new_layer || pin_new_loc.x > pin_old_loc.x) {
-            remove_block_from_bb_edge(net_id,
-                                      bb_edge_new,
-                                      bb_coord_new,
-                                      bb_pin_sink_count_new,
-                                      curr_bb_edge[old_layer].xmin,
-                                      curr_bb_coord[old_layer].xmin,
-                                      bb_edge_new[old_layer].xmin,
-                                      bb_coord_new[old_layer].xmin);
-            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
-                return;
-            }
-        }
-    }
-
-    if (pin_old_loc.y == curr_bb_coord[old_layer].ymax) {
-        if (old_layer != new_layer || pin_new_loc.y < pin_old_loc.y) {
-            remove_block_from_bb_edge(net_id,
-                                      bb_edge_new,
-                                      bb_coord_new,
-                                      bb_pin_sink_count_new,
-                                      curr_bb_edge[old_layer].ymax,
-                                      curr_bb_coord[old_layer].ymax,
-                                      bb_edge_new[old_layer].ymax,
-                                      bb_coord_new[old_layer].ymax);
-            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
-                return;
-            }
-        }
-    }
-
-    if (pin_old_loc.y == curr_bb_coord[old_layer].ymin) {
-        if (old_layer != new_layer || pin_new_loc.y > pin_old_loc.y) {
-            remove_block_from_bb_edge(net_id,
-                                      bb_edge_new,
-                                      bb_coord_new,
-                                      bb_pin_sink_count_new,
-                                      curr_bb_edge[old_layer].ymin,
-                                      curr_bb_coord[old_layer].ymin,
-                                      bb_edge_new[old_layer].ymin,
-                                      bb_coord_new[old_layer].ymin);
-            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
-                return;
-            }
-        }
-    }
-}
-
-static void remove_block_from_bb_edge(ClusterNetId net_id,
-                                      std::vector<t_2D_tbb>& bb_edge_new,
-                                      std::vector<t_2D_tbb>& bb_coord_new,
-                                      std::vector<int>& bb_layer_pin_sink_count,
-                                      const int& old_num_block_on_edge,
-                                      const int& old_edge_coord,
-                                      int& new_num_block_on_edge,
-                                      int& new_edge_coord) {
+static void update_bb_edge (ClusterNetId net_id,
+                           std::vector<t_2D_tbb>& bb_edge_new,
+                           std::vector<t_2D_tbb>& bb_coord_new,
+                           std::vector<int>& bb_layer_pin_sink_count,
+                           const int& old_num_block_on_edge,
+                           const int& old_edge_coord,
+                           int& new_num_block_on_edge,
+                           int& new_edge_coord) {
     if (old_num_block_on_edge == 1) {
         get_bb_from_scratch(net_id,
                             bb_edge_new,
@@ -2945,52 +2959,36 @@ static void remove_block_from_bb_edge(ClusterNetId net_id,
     }
 }
 
-static void add_block_to_bb(const t_2D_tbb& bb_edge_old,
+static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
+                            const t_2D_tbb& bb_edge_old,
                             const t_2D_tbb& bb_coord_old,
-                            const t_physical_tile_loc& old_pin_loc,
-                            const t_physical_tile_loc& new_pin_loc,
                             t_2D_tbb& bb_edge_new,
                             t_2D_tbb& bb_coord_new) {
-    int xold = old_pin_loc.x;
-    int xnew = new_pin_loc.x;
-    int yold = old_pin_loc.y;
-    int ynew = new_pin_loc.y;
-    int layer_old = old_pin_loc.layer_num;
-    int layer_new = new_pin_loc.layer_num;
+    int x_new = new_pin_loc.x;
+    int y_new = new_pin_loc.y;
 
-    VTR_ASSERT_SAFE(bb_edge_old.layer_num == bb_edge_new.layer_num);
-    VTR_ASSERT_SAFE(bb_coord_old.layer_num == bb_coord_new.layer_num);
-    VTR_ASSERT_SAFE(bb_edge_old.layer_num == bb_coord_old.layer_num);
-
-    bb_edge_new = bb_edge_old;
-    bb_coord_new = bb_coord_old;
-
-    if (xnew != xold || layer_old != layer_new) {
-        if (xnew > bb_coord_old.xmax) {
-            bb_edge_new.xmax = 1;
-            bb_coord_new.xmax = xnew;
-        } else if (xnew == bb_coord_old.xmax) {
-            bb_edge_new.xmax = bb_edge_old.xmax + 1;
-        } else if (xnew < bb_coord_old.xmin) {
-            bb_edge_new.xmin = 1;
-            bb_coord_new.xmin = xnew;
-        } else if (xnew == bb_coord_old.xmin) {
-            bb_edge_new.xmin = bb_edge_old.xmin + 1;
-        }
+    if (x_new > bb_coord_old.xmax) {
+        bb_edge_new.xmax = 1;
+        bb_coord_new.xmax = x_new;
+    } else if (x_new == bb_coord_old.xmax) {
+        bb_edge_new.xmax = bb_edge_old.xmax + 1;
+    } else if (x_new < bb_coord_old.xmin) {
+        bb_edge_new.xmin = 1;
+        bb_coord_new.xmin = x_new;
+    } else if (x_new == bb_coord_old.xmin) {
+        bb_edge_new.xmin = bb_edge_old.xmin + 1;
     }
 
-    if (ynew != yold || layer_old != layer_new) {
-        if (ynew > bb_coord_old.ymax) {
-            bb_edge_new.ymax = bb_edge_old.ymax + 1;
-            bb_coord_new.ymax = ynew;
-        } else if (ynew == bb_coord_old.ymax) {
-            bb_edge_new.ymax = bb_edge_old.ymax + 1;
-        } else if (ynew < bb_coord_old.ymin) {
-            bb_edge_new.ymin = 1;
-            bb_coord_new.ymin = ynew;
-        } else if (ynew == bb_coord_old.ymin) {
-            bb_edge_new.ymin = bb_edge_old.ymin + 1;
-        }
+    if (y_new > bb_coord_old.ymax) {
+        bb_edge_new.ymax = 1;
+        bb_coord_new.ymax = y_new;
+    } else if (y_new == bb_coord_old.ymax) {
+        bb_edge_new.ymax = bb_edge_old.ymax + 1;
+    } else if (y_new < bb_coord_old.ymin) {
+        bb_edge_new.ymin = 1;
+        bb_coord_new.ymin = y_new;
+    } else if (y_new == bb_coord_old.ymin) {
+        bb_edge_new.ymin = bb_edge_old.ymin + 1;
     }
 }
 
