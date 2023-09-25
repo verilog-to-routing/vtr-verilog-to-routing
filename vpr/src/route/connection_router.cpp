@@ -5,7 +5,7 @@
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
-inline static bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
+static inline bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
                                     const RRGraphView* rr_graph,
                                     RRNodeId from_node,
                                     RRNodeId sink_node) {
