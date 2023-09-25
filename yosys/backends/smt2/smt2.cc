@@ -626,9 +626,13 @@ struct Smt2Worker
 				}
 
 				bool init_only = cell->type.in(ID($anyconst), ID($anyinit), ID($allconst));
-				for (auto chunk : cell->getPort(QY).chunks())
+				bool clk2fflogic = cell->type == ID($anyinit) && cell->get_bool_attribute(ID(clk2fflogic));
+				int smtoffset = 0;
+				for (auto chunk : cell->getPort(clk2fflogic ? ID::D : QY).chunks()) {
 					if (chunk.is_wire())
-						decls.push_back(witness_signal(init_only ? "init" : "seq", chunk.width, chunk.offset, "", idcounter, chunk.wire));
+						decls.push_back(witness_signal(init_only ? "init" : "seq", chunk.width, chunk.offset, "", idcounter, chunk.wire, smtoffset));
+					smtoffset += chunk.width;
+				}
 
 				makebits(stringf("%s#%d", get_id(module), idcounter), GetSize(cell->getPort(QY)), log_signal(cell->getPort(QY)));
 				if (cell->type == ID($anyseq))
@@ -769,7 +773,7 @@ struct Smt2Worker
 			int arrayid = idcounter++;
 			memarrays[mem] = arrayid;
 
-			int abits = ceil_log2(mem->size);
+			int abits = max(1, ceil_log2(mem->size));
 
 			bool has_sync_wr = false;
 			bool has_async_wr = false;
@@ -1216,7 +1220,7 @@ struct Smt2Worker
 			{
 				int arrayid = memarrays.at(mem);
 
-				int abits = ceil_log2(mem->size);;
+				int abits = max(1, ceil_log2(mem->size));
 
 				bool has_sync_wr = false;
 				bool has_async_wr = false;
