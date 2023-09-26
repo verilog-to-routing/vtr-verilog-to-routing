@@ -232,13 +232,7 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        if (!first_block[layer_num]) {
-            bb_coord_new[layer_num].xmin = OPEN;
-            bb_coord_new[layer_num].ymin = OPEN;
-            bb_coord_new[layer_num].xmax = OPEN;
-            bb_coord_new[layer_num].ymax = OPEN;
-            continue;
-        }
+        VTR_ASSERT_SAFE(first_block[layer_num]);
         bb_coord_new[layer_num].xmin = std::max(std::min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
         bb_coord_new[layer_num].ymin = std::max(std::min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
         bb_coord_new[layer_num].xmax = std::max(std::min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
