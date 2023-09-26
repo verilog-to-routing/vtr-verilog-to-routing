@@ -1330,28 +1330,31 @@ int get_random_layer(t_logical_block_type_ptr logical_block) {
 }
 
 t_bb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec) {
-    t_bb merged_bb(OPEN,
-                   OPEN,
-                   OPEN,
-                   OPEN,
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    VTR_ASSERT_SAFE((int)tbb_vec.size() == num_layers);
+    t_bb merged_bb(tbb_vec[0].xmin,
+                   tbb_vec[0].xmax,
+                   tbb_vec[0].ymin,
+                   tbb_vec[0].ymax,
                    0,
-                   tbb_vec.size() - 1);
+                   num_layers - 1);
 
-    for (const auto& bb : tbb_vec) {
-        if (bb.xmin == OPEN) {
+    for (int layer_num = 1; layer_num < num_layers; layer_num++) {
+        const auto& layer_bb = tbb_vec[layer_num];
+        if (layer_bb.xmin == OPEN) {
             continue;
         }
-        if (merged_bb.xmin == OPEN || bb.xmin < merged_bb.xmin) {
-            merged_bb.xmin = bb.xmin;
+        if (merged_bb.xmin == OPEN || layer_bb.xmin < merged_bb.xmin) {
+            merged_bb.xmin = layer_bb.xmin;
         }
-        if (merged_bb.xmax == OPEN || bb.xmax > merged_bb.xmax) {
-            merged_bb.xmax = bb.xmax;
+        if (merged_bb.xmax == OPEN || layer_bb.xmax > merged_bb.xmax) {
+            merged_bb.xmax = layer_bb.xmax;
         }
-        if (merged_bb.ymin == OPEN || bb.ymin < merged_bb.ymin) {
-            merged_bb.ymin = bb.ymin;
+        if (merged_bb.ymin == OPEN || layer_bb.ymin < merged_bb.ymin) {
+            merged_bb.ymin = layer_bb.ymin;
         }
-        if (merged_bb.ymax == OPEN || bb.ymax > merged_bb.ymax) {
-            merged_bb.ymax = bb.ymax;
+        if (merged_bb.ymax == OPEN || layer_bb.ymax > merged_bb.ymax) {
+            merged_bb.ymax = layer_bb.ymax;
         }
     }
 
