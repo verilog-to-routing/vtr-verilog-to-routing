@@ -3060,22 +3060,25 @@ float get_molecule_gain(t_pack_molecule* molecule, const ClusterBlockId cluster_
         }
 
         // Calculate the score affected by external atom attraction data
-        const auto& atom_blocks_ids = cl_helper_ctx.incomplete_cluster_to_atoms_lookup.at(cluster_index);
-        for (const auto& blk : atom_blocks_ids) {
-            auto itr = external_atom_attraction_data.find(blk);
-            if (itr == external_atom_attraction_data.end()) {
-                external_attraction_score += external_attraction_default_value;
-                continue;
-            }
+        if (!external_atom_attraction_data.empty())
+        {
+            const auto& atom_blocks_ids = cl_helper_ctx.incomplete_cluster_to_atoms_lookup.at(cluster_index);
+            for (const auto& blk : atom_blocks_ids) {
+                auto itr = external_atom_attraction_data.find(blk);
+                if (itr == external_atom_attraction_data.end()) {
+                    external_attraction_score += external_attraction_default_value;
+                    continue;
+                }
 
-            auto dst_itr = itr->second.find(blk_id);
-            if (dst_itr == itr->second.end())
-            {
-                external_attraction_score += external_attraction_default_value;
-                continue;
-            }
+                auto dst_itr = itr->second.find(blk_id);
+                if (dst_itr == itr->second.end())
+                {
+                    external_attraction_score += external_attraction_default_value;
+                    continue;
+                }
 
-            external_attraction_score += external_atom_attraction_data.at(blk).at(blk_id);
+                external_attraction_score += external_atom_attraction_data.at(blk).at(blk_id);
+            }
         }
     }
     
