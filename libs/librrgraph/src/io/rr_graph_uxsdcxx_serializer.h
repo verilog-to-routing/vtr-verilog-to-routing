@@ -325,6 +325,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , is_flat_(is_flat) {
         // Initialize internal data
         init_side_map();
+        init_segment_inf_x_y();
+        curr_tmp_block_type_id = -1;
+        curr_tmp_height_offset = -1;
+        curr_tmp_width_offset = -1;
+        curr_tmp_layer = 0;
+        curr_tmp_x = -1;
+        curr_tmp_y = -1;
     }
 
     /* A truth table to help understand the conversion from VPR side mask to uxsd side code
@@ -379,6 +386,58 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         side_map_[(1 << TOP) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_BOTTOM_LEFT;
         side_map_[(1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::RIGHT_BOTTOM_LEFT;
         side_map_[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT;
+    }
+
+    /**
+     * @brief This function separates the segments in segment_inf_ based on whether their parallel axis 
+     *        is X or Y, and it stores them in segment_inf_x_ and segment_inf_y_.
+     */
+    void init_segment_inf_x_y(){
+
+        /* Create a temp copy to convert from vtr::vector to std::vector
+         * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
+         * type for ``rr_segments``
+         * Note that this is a dirty fix (to avoid massive code changes)
+         * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
+         */
+        std::vector<t_segment_inf> rr_segs;
+        rr_segs.reserve(segment_inf_.size());
+        for (auto& rr_seg : segment_inf_) {
+            rr_segs.push_back(rr_seg);
+        }
+
+        t_unified_to_parallel_seg_index seg_index_map;
+        segment_inf_x_ = get_parallel_segs(rr_segs, seg_index_map, X_AXIS);
+        segment_inf_y_ = get_parallel_segs(rr_segs, seg_index_map, Y_AXIS);
+
+    }
+
+    /**
+     * @brief Search for a segment with a matching segment ID and return its position index
+     *        in the list of segments along the corresponding axis (X or Y).
+     * @param segment_id The ID of the segment to search for.
+     * @param axis The axis along which to search for the segment (X or Y).
+     * @return int The position index of the matching segment.
+     */
+    int find_segment_index_along_axis(int segment_id, e_parallel_axis axis) const {
+        const std::vector<t_segment_inf>* segment_inf_vec_ptr;
+
+        if (axis == X_AXIS)
+            segment_inf_vec_ptr = &segment_inf_x_;
+        else
+            segment_inf_vec_ptr = &segment_inf_y_;
+
+        for(std::vector<t_segment_inf>::size_type i=0; i < (*segment_inf_vec_ptr).size(); i++){
+            if((*segment_inf_vec_ptr)[i].seg_index == segment_id)
+                return static_cast<int>(i);
+        }
+
+        if (axis == X_AXIS)
+            VTR_LOG_ERROR("Segment ID %d not found in the list of segments along X axis.\n", segment_id);
+        else
+            VTR_LOG_ERROR("Segment ID %d not found in the list of segments along Y axis.\n", segment_id);
+        
+        return -1;
     }
 
   public:
@@ -633,12 +692,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
 
-    inline int init_node_loc(int& inode, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
+    inline int init_node_loc(int& inode, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
-        rr_graph_builder_->set_node_layer(node_id, layer);
+        // We set the layer num 0 - If it is specified in the XML, it will be overwritten
+        rr_graph_builder_->set_node_layer(node_id, 0);
         rr_graph_builder_->set_node_ptc_num(node_id, ptc);
         return inode;
     }
@@ -653,6 +713,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_node_loc_layer(const t_rr_node& node) final {
         return rr_graph_->node_layer(node.id());
     }
+    inline int get_node_loc_twist(const t_rr_node& node) final{
+        return rr_graph_->node_ptc_twist(node.id());
+    }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
         return rr_graph_->node_xhigh(node.id());
     }
@@ -664,6 +727,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline int get_node_loc_ylow(const t_rr_node& node) final {
         return rr_graph_->node_ylow(node.id());
+    }
+
+    inline void set_node_loc_layer(int layer_num, int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+
+
+        VTR_ASSERT(layer_num >= 0);
+        rr_graph_builder_->set_node_layer(node_id, layer_num);
     }
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
@@ -687,6 +759,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         }
     }
+
+    inline void set_node_loc_twist(int twist, int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+        rr_graph_builder_->set_node_ptc_twist_incr(node_id,twist);
+    }
+
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
         if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {
@@ -748,10 +827,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         if (GRAPH_GLOBAL == graph_type_) {
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(0));
         } else if (rr_graph.node_type(node.id()) == CHANX) {
-            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_id));
+            int seg_ind_x = find_segment_index_along_axis(segment_id, X_AXIS);
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + seg_ind_x));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         } else if (rr_graph.node_type(node.id()) == CHANY) {
-            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_.size() + segment_id));
+            int seg_ind_y = find_segment_index_along_axis(segment_id, Y_AXIS);
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_x_.size() + seg_ind_y));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }
         return inode;
@@ -884,7 +965,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline void* init_rr_graph_rr_nodes(void*& /*ctx*/) final {
         rr_nodes_->clear();
-        seg_index_.resize(CHANX_COST_INDEX_START + 2 * segment_inf_.size(), -1);
+        seg_index_.resize(CHANX_COST_INDEX_START + segment_inf_x_.size() + segment_inf_y_.size(), -1);
         return nullptr;
     }
     inline void finish_rr_graph_rr_nodes(void*& /*ctx*/) final {
@@ -1483,28 +1564,58 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 grid_.grid_size(), size);
         }
     }
-    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y, int layer) final {
-        const auto& type = grid_.get_physical_type({x, y, layer});
-        int grid_width_offset = grid_.get_width_offset({x, y, layer});
-        int grid_height_offset = grid_.get_height_offset({x, y, layer});
+    inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) final {
+        curr_tmp_block_type_id = block_type_id;
+        curr_tmp_height_offset = height_offset;
+        curr_tmp_width_offset = width_offset;
+        curr_tmp_x = x;
+        curr_tmp_y = y;
 
-        if (type->index != block_type_id) {
-            report_error(
-                "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
-                (type->index), block_type_id);
-        }
-        if (grid_width_offset != width_offset) {
-            report_error(
-                "Architecture file does not match RR graph's width_offset at (%d, %d)", x, y);
-        }
-
-        if (grid_height_offset != height_offset) {
-            report_error(
-                "Architecture file does not match RR graph's height_offset at (%d, %d)", x, y);
-        }
         return nullptr;
     }
-    inline void finish_grid_locs_grid_loc(void*& /*ctx*/) final {}
+    inline void finish_grid_locs_grid_loc(void*& /*ctx*/) final {
+        VTR_ASSERT(curr_tmp_block_type_id >= 0);
+        VTR_ASSERT(curr_tmp_height_offset >= 0);
+        VTR_ASSERT(curr_tmp_width_offset >= 0);
+        VTR_ASSERT(curr_tmp_layer >= 0);
+        VTR_ASSERT(curr_tmp_x >= 0);
+        VTR_ASSERT(curr_tmp_y >= 0);
+        const auto& type = grid_.get_physical_type({curr_tmp_x, curr_tmp_y, curr_tmp_layer});
+        int grid_width_offset = grid_.get_width_offset({curr_tmp_x, curr_tmp_y, curr_tmp_layer});
+        int grid_height_offset = grid_.get_height_offset({curr_tmp_x, curr_tmp_y, curr_tmp_layer});
+
+        if (type->index != curr_tmp_block_type_id) {
+            report_error(
+                "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.",
+                curr_tmp_layer,
+                curr_tmp_x,
+                curr_tmp_y,
+                (type->index),
+                curr_tmp_block_type_id);
+        }
+        if (grid_width_offset != curr_tmp_width_offset) {
+            report_error(
+                "Architecture file does not match RR graph's width_offset at (%d, %d)",
+                curr_tmp_layer,
+                curr_tmp_x,
+                curr_tmp_y);
+        }
+
+        if (grid_height_offset != curr_tmp_height_offset) {
+            report_error(
+                "Architecture file does not match RR graph's height_offset at (%d, %d)",
+                curr_tmp_layer,
+                curr_tmp_x,
+                curr_tmp_y);
+        }
+
+        curr_tmp_block_type_id = -1;
+        curr_tmp_height_offset = -1;
+        curr_tmp_width_offset = -1;
+        curr_tmp_layer = 0;
+        curr_tmp_x = -1;
+        curr_tmp_y = -1;
+    }
 
     inline void* init_rr_graph_grid(void*& /*ct*/) final {
         return nullptr;
@@ -1537,6 +1648,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline const t_grid_tile* get_grid_locs_grid_loc(int n, void*& /*ctx*/) final {
         return grid_.get_grid_locs_grid_loc(n);
+    }
+
+    inline void set_grid_loc_layer(int layer_num, void*& /*ctx*/) final {
+        curr_tmp_layer = layer_num;
     }
 
 
@@ -1612,21 +1727,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         process_rr_node_indices();
 
         rr_graph_builder_->init_fan_in();
-        /* Create a temp copy to convert from vtr::vector to std::vector
-         * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
-         * type for ``rr_segments``
-         * Note that this is a dirty fix (to avoid massive code changes)
-         * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
-         */
+        
         std::vector<t_segment_inf> temp_rr_segs;
         temp_rr_segs.reserve(segment_inf_.size());
         for (auto& rr_seg : segment_inf_) {
             temp_rr_segs.push_back(rr_seg);
         }
-
-        t_unified_to_parallel_seg_index seg_index_map;
-        auto segment_inf_x_ = get_parallel_segs(temp_rr_segs, seg_index_map, X_AXIS);
-        auto segment_inf_y_ = get_parallel_segs(temp_rr_segs, seg_index_map, Y_AXIS);
 
         alloc_and_load_rr_indexed_data(
             *rr_graph_,
@@ -1972,6 +2078,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * the methods following routines:rr_graph_rr_nodes and init_node_segment according to the changes in 
      * rr_graph_indexed_data.cpp */
     const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
+    std::vector<t_segment_inf> segment_inf_x_; // [num_segs_along_x_axis-1:0] - vector of segment information for segments along the x-axis.
+    std::vector<t_segment_inf> segment_inf_y_; // [num_segs_along_y_axis-1:0] - vector of segment information for segments along the y-axis.
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;
     MetadataStorage<int>* rr_node_metadata_;
@@ -1980,4 +2088,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     vtr::interned_string empty_;
     const std::function<void(const char*)>* report_error_;
     bool is_flat_;
+
+    // Temporary data to check grid block types
+    int curr_tmp_block_type_id;
+    int curr_tmp_height_offset;
+    int curr_tmp_width_offset;
+    int curr_tmp_layer;
+    int curr_tmp_x;
+    int curr_tmp_y;
 };

@@ -70,8 +70,8 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch
     int from_ylow, to_ylow, from_yhigh, to_yhigh; //, from_x, to_x;
 
     // Get the coordinates of the channel wires.
-    from_chan = draw_get_rr_chan_bbox(size_t(from_node));
-    to_chan = draw_get_rr_chan_bbox(size_t(to_node));
+    from_chan = draw_get_rr_chan_bbox(from_node);
+    to_chan = draw_get_rr_chan_bbox(to_node);
 
     // from_x = rr_graph.node_xlow(RRNodeId(from_node));
     // to_x = rr_graph.node_xlow(RRNodeId(to_node));
@@ -137,7 +137,7 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch
     g->draw_line({x1, y1}, {x2, y2});
 
     if (draw_state->draw_rr_toggle == DRAW_ALL_RR
-        || draw_state->draw_rr_node[size_t(from_node)].node_highlighted) {
+        || draw_state->draw_rr_node[from_node].node_highlighted) {
         draw_rr_switch(x1, y1, x2, y2,
                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
@@ -160,8 +160,8 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
     int from_xlow, to_xlow, from_xhigh, to_xhigh;
 
     // Get the coordinates of the channel wires.
-    from_chan = draw_get_rr_chan_bbox(size_t(from_node));
-    to_chan = draw_get_rr_chan_bbox(size_t(to_node));
+    from_chan = draw_get_rr_chan_bbox(from_node);
+    to_chan = draw_get_rr_chan_bbox(to_node);
 
     /* (x1, y1) point on from_node, (x2, y2) point on to_node. */
 
@@ -229,14 +229,14 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
     g->draw_line({x1, y1}, {x2, y2});
 
     if (draw_state->draw_rr_toggle == DRAW_ALL_RR
-        || draw_state->draw_rr_node[size_t(from_node)].node_highlighted) {
+        || draw_state->draw_rr_node[from_node].node_highlighted) {
         draw_rr_switch(x1, y1, x2, y2,
                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
     }
 }
 
-void draw_chanx_to_chany_edge(int chanx_node, int chany_node, enum e_edge_dir edge_dir, short switch_type, ezgl::renderer* g) {
+void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_edge_dir edge_dir, short switch_type, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -260,17 +260,17 @@ void draw_chanx_to_chany_edge(int chanx_node, int chany_node, enum e_edge_dir ed
     x2 = chany_bbox.left();
 
     // these values xhigh/low yhigh/low mark the cordinates for the begining and ends of the wire.
-    chanx_xlow = rr_graph.node_xlow(RRNodeId(chanx_node));
-    chanx_y = rr_graph.node_ylow(RRNodeId(chanx_node));
-    chany_x = rr_graph.node_xlow(RRNodeId(chany_node));
-    chany_ylow = rr_graph.node_ylow(RRNodeId(chany_node));
+    chanx_xlow = rr_graph.node_xlow(chanx_node);
+    chanx_y = rr_graph.node_ylow(chanx_node);
+    chany_x = rr_graph.node_xlow(chany_node);
+    chany_ylow = rr_graph.node_ylow(chany_node);
 
     if (chanx_xlow <= chany_x) { /* Can draw connection going right */
         /* Connection not at end of the CHANX segment. */
         x1 = draw_coords->tile_x[chany_x] + draw_coords->get_tile_width();
-        if (rr_graph.node_direction(RRNodeId(chanx_node)) != Direction::BIDIR && (SwitchType)switch_type != SwitchType::SHORT) {
+        if (rr_graph.node_direction(chanx_node) != Direction::BIDIR && (SwitchType)switch_type != SwitchType::SHORT) {
             if (edge_dir == FROM_X_TO_Y) {
-                if (rr_graph.node_direction(RRNodeId(chanx_node)) == Direction::DEC) { /* If dec wire, then going left */
+                if (rr_graph.node_direction(chanx_node) == Direction::DEC) { /* If dec wire, then going left */
                     x1 = draw_coords->tile_x[chany_x + 1];
                 }
             }
@@ -282,9 +282,9 @@ void draw_chanx_to_chany_edge(int chanx_node, int chany_node, enum e_edge_dir ed
         /* Connection not at end of the CHANY segment. */
         y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width();
 
-        if (rr_graph.node_direction(RRNodeId(chany_node)) != Direction::BIDIR && (SwitchType)switch_type != SwitchType::SHORT) {
+        if (rr_graph.node_direction(chany_node) != Direction::BIDIR && (SwitchType)switch_type != SwitchType::SHORT) {
             if (edge_dir == FROM_Y_TO_X) {
-                if (rr_graph.node_direction(RRNodeId(chany_node)) == Direction::DEC) { /* If dec wire, then going down */
+                if (rr_graph.node_direction(chany_node) == Direction::DEC) { /* If dec wire, then going down */
                     y2 = draw_coords->tile_y[chanx_y + 1];
                 }
             }
@@ -310,12 +310,12 @@ void draw_chanx_to_chany_edge(int chanx_node, int chany_node, enum e_edge_dir ed
     }
 }
 
-void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
+void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {
     /* This routine draws an edge from the opin rr node to the ipin rr node */
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    VTR_ASSERT(rr_graph.node_type(RRNodeId(opin_node)) == OPIN);
-    VTR_ASSERT(rr_graph.node_type(RRNodeId(ipin_node)) == IPIN);
+    VTR_ASSERT(rr_graph.node_type(opin_node) == OPIN);
+    VTR_ASSERT(rr_graph.node_type(ipin_node) == IPIN);
 
     /* FIXME: May use a smarter strategy
      * Currently, we use the last side found for both OPIN and IPIN
@@ -325,7 +325,7 @@ void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     float x1 = 0, y1 = 0;
     std::vector<e_side> opin_candidate_sides;
     for (const e_side& opin_candidate_side : SIDES) {
-        if (rr_graph.is_node_on_specific_side(RRNodeId(opin_node), opin_candidate_side)) {
+        if (rr_graph.is_node_on_specific_side(opin_node, opin_candidate_side)) {
             opin_candidate_sides.push_back(opin_candidate_side);
         }
     }
@@ -335,7 +335,7 @@ void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     float x2 = 0, y2 = 0;
     std::vector<e_side> ipin_candidate_sides;
     for (const e_side& ipin_candidate_side : SIDES) {
-        if (rr_graph.is_node_on_specific_side(RRNodeId(ipin_node), ipin_candidate_side)) {
+        if (rr_graph.is_node_on_specific_side(ipin_node, ipin_candidate_side)) {
             ipin_candidate_sides.push_back(ipin_candidate_side);
         }
     }
@@ -349,21 +349,21 @@ void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
 }
 
-void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
+void draw_pin_to_sink(RRNodeId ipin_node, RRNodeId sink_node, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     float x1 = 0, y1 = 0;
     /* Draw the line for each ipin on different sides */
     for (const e_side& pin_side : SIDES) {
-        if (!rr_graph.is_node_on_specific_side(RRNodeId(ipin_node), pin_side)) {
+        if (!rr_graph.is_node_on_specific_side(ipin_node, pin_side)) {
             continue;
         }
 
         draw_get_rr_pin_coords(ipin_node, &x1, &y1, pin_side);
 
         float x2 = 0, y2 = 0;
-        draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[sink_node], &x2, &y2);
+        draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(sink_node)], &x2, &y2);
 
         g->draw_line({x1, y1}, {x2, y2});
 
@@ -373,16 +373,16 @@ void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
     }
 }
 
-void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g) {
+void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     float x1 = 0, y1 = 0;
-    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[source_node], &x1, &y1);
+    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(source_node)], &x1, &y1);
 
     /* Draw the line for each ipin on different sides */
     for (const e_side& pin_side : SIDES) {
-        if (!rr_graph.is_node_on_specific_side(RRNodeId(opin_node), pin_side)) {
+        if (!rr_graph.is_node_on_specific_side(opin_node, pin_side)) {
             continue;
         }
 
@@ -397,7 +397,7 @@ void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g) {
     }
 }
 
-void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
+void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer* g) {
     /* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
      * CHANY).  The connection is made to the nearest end of the track instead   *
      * of perpendicular to the track to symbolize a single-drive connection.     */
@@ -408,19 +408,14 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    //const t_rr_node& pin_rr = device_ctx.rr_nodes[pin_node];
-    auto pin_rr = RRNodeId(pin_node);
-    auto chan_rr = RRNodeId(chan_node);
+    t_physical_tile_loc tile_loc = {
+        rr_graph.node_xlow(pin_node),
+        rr_graph.node_ylow(pin_node),
+        rr_graph.node_layer(pin_node)};
 
-    const auto& grid_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(pin_rr),
-                                                               rr_graph.node_ylow(pin_rr),
-                                                               rr_graph.node_layer(pin_rr)});
-    int width_offset = device_ctx.grid.get_width_offset({rr_graph.node_xlow(pin_rr),
-                                                         rr_graph.node_ylow(pin_rr),
-                                                         rr_graph.node_layer(pin_rr)});
-    int height_offset = device_ctx.grid.get_height_offset({rr_graph.node_xlow(pin_rr),
-                                                           rr_graph.node_ylow(pin_rr),
-                                                           rr_graph.node_layer(pin_rr)});
+    const auto& grid_type = device_ctx.grid.get_physical_type(tile_loc);
+    int width_offset = device_ctx.grid.get_width_offset(tile_loc);
+    int height_offset = device_ctx.grid.get_height_offset(tile_loc);
 
     float x1 = 0, y1 = 0;
     /* If there is only one side, no need for the following inference!!!
@@ -461,8 +456,8 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
      */
     std::vector<e_side> pin_candidate_sides;
     for (const e_side& pin_candidate_side : SIDES) {
-        if ((rr_graph.is_node_on_specific_side(pin_rr, pin_candidate_side))
-            && (grid_type->pinloc[width_offset][height_offset][pin_candidate_side][rr_graph.node_pin_num(pin_rr)])) {
+        if ((rr_graph.is_node_on_specific_side(pin_node, pin_candidate_side))
+            && (grid_type->pinloc[width_offset][height_offset][pin_candidate_side][rr_graph.node_pin_num(pin_node)])) {
             pin_candidate_sides.push_back(pin_candidate_side);
         }
     }
@@ -470,18 +465,18 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
      * Any rr_node of a grid should have at least 1 side!!!
      */
     e_side pin_side = NUM_SIDES;
-    const t_rr_type channel_type = rr_graph.node_type(RRNodeId(chan_node));
+    const t_rr_type channel_type = rr_graph.node_type(chan_node);
     if (1 == pin_candidate_sides.size()) {
         pin_side = pin_candidate_sides[0];
     } else {
         VTR_ASSERT(1 < pin_candidate_sides.size());
-        if (CHANX == channel_type && rr_graph.node_ylow(pin_rr) <= rr_graph.node_ylow(chan_rr)) {
+        if (CHANX == channel_type && rr_graph.node_ylow(pin_node) <= rr_graph.node_ylow(chan_node)) {
             pin_side = TOP;
-        } else if (CHANX == channel_type && rr_graph.node_ylow(pin_rr) - 1 >= rr_graph.node_ylow(chan_rr)) {
+        } else if (CHANX == channel_type && rr_graph.node_ylow(pin_node) - 1 >= rr_graph.node_ylow(chan_node)) {
             pin_side = BOTTOM;
-        } else if (CHANY == channel_type && rr_graph.node_xlow(pin_rr) <= rr_graph.node_xlow(chan_rr)) {
+        } else if (CHANY == channel_type && rr_graph.node_xlow(pin_node) <= rr_graph.node_xlow(chan_node)) {
             pin_side = RIGHT;
-        } else if (CHANY == channel_type && rr_graph.node_xlow(pin_rr) - 1 >= rr_graph.node_xlow(chan_rr)) {
+        } else if (CHANY == channel_type && rr_graph.node_xlow(pin_node) - 1 >= rr_graph.node_xlow(chan_node)) {
             pin_side = LEFT;
         }
         /* The inferred side must be in the list of sides of the pin rr_node!!! */
@@ -528,13 +523,13 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     ezgl::rectangle chan_bbox = draw_get_rr_chan_bbox(chan_node);
 
     float x2 = 0, y2 = 0;
-    const Direction chan_rr_direction = rr_graph.node_direction(RRNodeId(chan_node));
+    const Direction chan_rr_direction = rr_graph.node_direction(chan_node);
     switch (channel_type) {
         case CHANX: {
             y1 += draw_pin_offset;
             y2 = chan_bbox.bottom();
             x2 = x1;
-            if (is_opin(rr_graph.node_pin_num(pin_rr), grid_type)) {
+            if (is_opin(rr_graph.node_pin_num(pin_node), grid_type)) {
                 if (chan_rr_direction == Direction::INC) {
                     x2 = chan_bbox.left();
                 } else if (chan_rr_direction == Direction::DEC) {
@@ -547,7 +542,7 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
             x1 += draw_pin_offset;
             x2 = chan_bbox.left();
             y2 = y1;
-            if (is_opin(rr_graph.node_pin_num(pin_rr), grid_type)) {
+            if (is_opin(rr_graph.node_pin_num(pin_node), grid_type)) {
                 if (chan_rr_direction == Direction::INC) {
                     y2 = chan_bbox.bottom();
                 } else if (chan_rr_direction == Direction::DEC) {
@@ -564,7 +559,7 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     g->draw_line({x1, y1}, {x2, y2});
 
     //don't draw the ex, or triangle unless zoomed in really far
-    if (chan_rr_direction == Direction::BIDIR || !is_opin(rr_graph.node_pin_num(pin_rr), grid_type)) {
+    if (chan_rr_direction == Direction::BIDIR || !is_opin(rr_graph.node_pin_num(pin_node), grid_type)) {
         draw_x(x2, y2, 0.7 * draw_coords->pin_size, g);
     } else {
         float xend = x2 + (x1 - x2) / 10.;

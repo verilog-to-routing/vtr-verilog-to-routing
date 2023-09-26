@@ -10,9 +10,7 @@ std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 void free_trace_data(t_trace* tptr);
 
-/* Builds a skeleton route tree from a traceback
- * does not calculate R_upstream, C_downstream, or Tdel (left uninitialized)
- * returns the root of the converted route tree */
+/** Build a route tree from a traceback */
 vtr::optional<RouteTree> TracebackCompat::traceback_to_route_tree(t_trace* head) {
     if (head == nullptr)
         return vtr::nullopt;
@@ -121,8 +119,8 @@ void print_traceback(const t_trace* trace) {
     auto& route_ctx = g_vpr_ctx.routing();
     const t_trace* prev = nullptr;
     while (trace) {
-        int inode = trace->index;
-        VTR_LOG("%d (%s)", inode, rr_node_typename[rr_graph.node_type(RRNodeId(inode))]);
+        RRNodeId inode(trace->index);
+        VTR_LOG("%d (%s)", inode, rr_node_typename[rr_graph.node_type(inode)]);
 
         if (trace->iswitch == OPEN) {
             VTR_LOG(" !"); //End of branch
@@ -132,7 +130,7 @@ void print_traceback(const t_trace* trace) {
             VTR_LOG("*"); //Reached non-configurably
         }
 
-        if (route_ctx.rr_node_route_inf[inode].occ() > rr_graph.node_capacity(RRNodeId(inode))) {
+        if (route_ctx.rr_node_route_inf[inode].occ() > rr_graph.node_capacity(inode)) {
             VTR_LOG(" x"); //Overused
         }
         VTR_LOG("\n");

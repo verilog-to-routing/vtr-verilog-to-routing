@@ -60,8 +60,8 @@ constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g.
 
 static void do_one_route(const Netlist<>& net_list,
                          const t_det_routing_arch& det_routing_arch,
-                         int source_node,
-                         int sink_node,
+                         RRNodeId source_node,
+                         RRNodeId sink_node,
                          const t_router_opts& router_opts,
                          const std::vector<t_segment_inf>& segment_inf,
                          bool is_flat) {
@@ -117,12 +117,13 @@ static void do_one_route(const Netlist<>& net_list,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
-    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
+    std::tie(found_path, std::ignore, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
                                                                                                     sink_node,
                                                                                                     cost_params,
                                                                                                     bounding_box,
                                                                                                     router_stats,
-                                                                                                    conn_params);
+                                                                                                    conn_params,
+                                                                                                    true);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
@@ -137,7 +138,7 @@ static void do_one_route(const Netlist<>& net_list,
         tree.print();
         VTR_LOG("\n");
 
-        VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[size_t(tree.root().inode)].occ() <= rr_graph.node_capacity(tree.root().inode), "SOURCE should never be congested");
+        VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode), "SOURCE should never be congested");
     } else {
         VTR_LOG("Routing failed");
     }
@@ -148,7 +149,7 @@ static void do_one_route(const Netlist<>& net_list,
 
 static void profile_source(const Netlist<>& net_list,
                            const t_det_routing_arch& det_routing_arch,
-                           int source_rr_node,
+                           RRNodeId source_rr_node,
                            const t_router_opts& router_opts,
                            const std::vector<t_segment_inf>& segment_inf,
                            bool is_flat) {
@@ -187,27 +188,28 @@ static void profile_source(const Netlist<>& net_list,
             bool successfully_routed;
             for (int sink_ptc : best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
+
                 //TODO: should pass layer_num instead of 0 to node_lookup once the multi-die FPGAs support is completed
-                int sink_rr_node = size_t(device_ctx.rr_graph.node_lookup().find_node(0,sink_x, sink_y, SINK, sink_ptc));
+                RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0, sink_x, sink_y, SINK, sink_ptc);
 
                 if (directconnect_exists(source_rr_node, sink_rr_node)) {
                     //Skip if we shouldn't measure direct connects and a direct connect exists
                     continue;
                 }
 
-                VTR_ASSERT(sink_rr_node != OPEN);
+                VTR_ASSERT(sink_rr_node);
 
                 {
                     vtr::ScopedStartFinishTimer delay_timer(vtr::string_fmt(
                         "Routing Src: %d Sink: %d", source_rr_node,
                         sink_rr_node));
-                    successfully_routed = profiler.calculate_delay(source_rr_node, sink_rr_node,
+                    successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node), RRNodeId(sink_rr_node),
                                                         router_opts,
                                                         &delays[sink_x][sink_y]);
                 }
 
                 if (successfully_routed) {
-                    sink_nodes[sink_x][sink_y] = sink_rr_node;
+                    sink_nodes[sink_x][sink_y] = size_t(sink_rr_node);
                     break;
                 }
             }
@@ -334,15 +336,15 @@ int main(int argc, const char **argv) {
         if(route_options.profile_source) {
             profile_source(net_list,
                            vpr_setup.RoutingArch,
-                           route_options.source_rr_node,
+                           RRNodeId(route_options.source_rr_node),
                            vpr_setup.RouterOpts,
                            vpr_setup.Segments,
                            is_flat);
         } else {
             do_one_route(net_list,
                          vpr_setup.RoutingArch,
-                         route_options.source_rr_node,
-                         route_options.sink_rr_node,
+                         RRNodeId(route_options.source_rr_node),
+                         RRNodeId(route_options.sink_rr_node),
                          vpr_setup.RouterOpts,
                          vpr_setup.Segments,
                          is_flat);

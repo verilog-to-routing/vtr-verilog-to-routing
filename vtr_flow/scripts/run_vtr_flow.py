@@ -2,6 +2,7 @@
 """
     Module to run the VTR Flow
 """
+import vtr
 import sys
 from pathlib import Path
 import argparse
@@ -11,9 +12,9 @@ import socket
 from datetime import datetime
 from collections import OrderedDict
 import os
+import os
 # pylint: disable=wrong-import-position, import-error
 sys.path.insert(0, str(Path(__file__).resolve().parent / "python_libs"))
-import vtr
 
 # pylint: enable=wrong-import-position, import-error
 
@@ -22,6 +23,8 @@ BASIC_VERBOSITY = 1
 VTR_STAGES = ["odin", "parmys", "abc", "ace", "vpr"]
 
 # pylint: disable=too-few-public-methods
+
+
 class VtrStageArgparseAction(argparse.Action):
     """
     Class to parse the VTR stages to begin and end at.
@@ -187,7 +190,7 @@ def vtr_command_argparser(prog=None):
     house_keeping.add_argument(
         "-temp_dir",
         default=os.getcwd() + "/temp",
-        help="Directory to run the flow in (will be created if non-existant).",
+        help="Absolute Directory to run the flow in (will be created if non-existent).",
     )
 
     house_keeping.add_argument("-name", default=None, help="Name for this run to be output.")
@@ -411,10 +414,16 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR to verify the routing resource graph.",
     )
     vpr.add_argument(
+        "-no_second_run",
+        default=False,
+        action="store_true",
+        help="Don't run VPR a second time to check if it can read intermediate files.",
+    )
+    vpr.add_argument(
         "-rr_graph_ext",
         default=".xml",
         type=str,
-        help="Determines the output rr_graph files' extention.",
+        help="Determines the output rr_graph files' extension.",
     )
     vpr.add_argument(
         "-check_route",
@@ -527,10 +536,9 @@ def vtr_command_main(arg_list, prog=None):
     # Load the arguments
     args, unknown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
     error_status = "Error"
-    if args.temp_dir is None:
-        temp_dir = Path("./temp")
-    else:
-        temp_dir = Path(args.temp_dir)
+
+    assert args.temp_dir
+    temp_dir = Path(args.temp_dir)
     # Specify how command should be run
     command_runner = vtr.CommandRunner(
         track_memory=args.track_memory_usage,
@@ -587,6 +595,7 @@ def vtr_command_main(arg_list, prog=None):
             relax_w_factor=args.relax_w_factor,
             check_route=args.check_route,
             check_place=args.check_place,
+            no_second_run=args.no_second_run,
         )
         error_status = "OK"
     except vtr.VtrError as error:
@@ -595,7 +604,7 @@ def vtr_command_main(arg_list, prog=None):
         )
 
     except KeyboardInterrupt as error:
-        print("{} recieved keyboard interrupt".format(prog))
+        print("{} received keyboard interrupt".format(prog))
         exit_status = 4
         return_status = exit_status
 

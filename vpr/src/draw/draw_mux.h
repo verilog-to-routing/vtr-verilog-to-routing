@@ -37,10 +37,13 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-/* Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6, labelled with its size.
+/**
+ * @brief Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6, labelled with its size.
  * Takes in point of origin, orientation, height, mux size and renderer.
+ * Also takes in transparency factor, based on the transparency of the layer the mux is to be drawn on
+ * (0 is opaque and 255 is transparent).
  */
-void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g);
+void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, int transparency_factor, ezgl::renderer* g);
 
 /* Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6.
  * Takes in point of origin, orientation, height and renderer.

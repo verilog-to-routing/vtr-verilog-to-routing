@@ -245,6 +245,7 @@ class SmtIo:
             self.logic_uf = False
             self.unroll_idcnt = 0
             self.unroll_buffer = ""
+            self.unroll_level = 0
             self.unroll_sorts = set()
             self.unroll_objs = set()
             self.unroll_decls = dict()
@@ -420,13 +421,15 @@ class SmtIo:
                     self.p_close()
 
         if unroll and self.unroll:
-            stmt = self.unroll_buffer + stmt
-            self.unroll_buffer = ""
-
             s = re.sub(r"\|[^|]*\|", "", stmt)
-            if s.count("(") != s.count(")"):
-                self.unroll_buffer = stmt + " "
+            self.unroll_level += s.count("(") - s.count(")")
+            if self.unroll_level > 0:
+                self.unroll_buffer += stmt
+                self.unroll_buffer += " "
                 return
+            else:
+                stmt = self.unroll_buffer + stmt
+                self.unroll_buffer = ""
 
             s = self.parse(stmt)
 
@@ -768,7 +771,7 @@ class SmtIo:
 
             if self.timeinfo:
                 i = 0
-                s = "/-\|"
+                s = r"/-\|"
 
                 count = 0
                 num_bs = 0
@@ -1171,7 +1174,7 @@ class MkVcd:
 
     def escape_name(self, name):
         name = re.sub(r"\[([0-9a-zA-Z_]*[a-zA-Z_][0-9a-zA-Z_]*)\]", r"<\1>", name)
-        if re.match("[\[\]]", name) and name[0] != "\\":
+        if re.match(r"[\[\]]", name) and name[0] != "\\":
             name = "\\" + name
         return name
 

@@ -124,13 +124,12 @@ ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height,
 }
 
 /* Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6, labelled with its size.
- * Takes in point of origin, orientation, height, mux size and renderer.
  */
-void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g) {
-    g->set_color(ezgl::YELLOW);
+void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, int transparency_factor, ezgl::renderer* g) {
+    g->set_color(ezgl::YELLOW, transparency_factor);
     auto bounds = draw_mux(origin, orientation, height, g);
 
-    g->set_color(ezgl::BLACK);
+    g->set_color(ezgl::BLACK, transparency_factor);
     g->draw_text(bounds.center(), std::to_string(size), bounds.width(),
                  bounds.height());
 }

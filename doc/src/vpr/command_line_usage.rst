@@ -879,6 +879,38 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 
     **Default:** ``move_block_type``
 
+.. option:: --placer_debug_block <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which block the placer produces detailed debug information for. 
+    
+    If the block being moved has the same ID as the number assigned to this parameter, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the block ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all blocks.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
+.. option:: --placer_debug_net <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which net the placer produces detailed debug information for.
+
+    If a net with the same ID assigned to this parameter is connected to the block that is being moved, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the net ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all nets.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
 
 .. _timing_driven_placer_options:
 
@@ -1127,7 +1159,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     * ``delay_normalized_length_frequency`` like ``delay_normalized``, but scaled by routing resource length and scaled inversely by routing resource frequency.
 
-    **Default:** ``delay_normalized_length`` for the timing-driven router and ``demand_only`` for the breadth-first router
+    **Default:** ``delay_normalized_length``
 
 .. option:: --bend_cost <float>
 
@@ -1172,22 +1204,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
-.. option:: --router_algorithm {breadth_first | timing_driven}
+.. option:: --router_algorithm {parallel | timing_driven}
 
     Selects which router algorithm to use.
 
     .. warning::
 
-        The ``breadth_first`` router **should NOT be used to compare the run-time/quality** of alternate routing algorithms.
-
-        It is inferrior to the ``timing_driven`` router from a circuit speed (2x - 10x slower) and run-time perspective (takes 10-100x longer on the large benchmarks).
-        The ``breadth_first`` router is deprecated and may be removed in a future release.
-
-    The ``breadth_first`` router :cite:`betz_arch_cad` focuses solely on routing a design successfully, while the ``timing_driven`` router :cite:`betz_arch_cad,murray_air` focuses both on achieving a successful route and achieving good circuit speed.
-
-    The breadth-first router is capable of routing a design using slightly fewer tracks than the timing-driving router (typically 5% if the timing-driven router uses its default parameters.
-    This can be reduced to about 2% if the router parameters are set so the timing-driven router pays more attention to routability and less to area).
-    The designs produced by the timing-driven router are much faster, however, (2x - 10x) and it uses less CPU time to route.
+        The ``parallel`` router is experimental. (TODO: more explanation)
 
     **Default:** ``timing_driven``
 
