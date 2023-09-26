@@ -268,13 +268,6 @@ static bool get_bb_incrementally(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        if (layer_num == layer) {
-            continue;
-        }
-        bb_coord_new[layer_num] = place_move_ctx.bb_coords[net_id][layer];
-    }
-
     /* The net had NOT been updated before, could use the old values */
     curr_bb_coord = &(place_move_ctx.bb_coords[net_id][layer]);
     curr_bb_edge = &(place_move_ctx.bb_num_on_edges[net_id][layer]);
