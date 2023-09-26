@@ -632,13 +632,13 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
     t_physical_tile_loc to_compressed_loc;
 
     bool legal;
-    t_bb place_bb(min_compressed_loc.x, max_compressed_loc.x,
-                  min_compressed_loc.y, max_compressed_loc.y,
-                  reg_coord.layer_num, reg_coord.layer_num);
+
     legal = find_compatible_compressed_loc_in_range(block_type,
                                                     delta_cx,
                                                     {cx_from, cy_from, reg_coord.layer_num},
-                                                    place_bb,
+                                                    {min_compressed_loc.x, max_compressed_loc.x,
+                                                     min_compressed_loc.y, max_compressed_loc.y,
+                                                     reg_coord.layer_num, reg_coord.layer_num},
                                                     to_compressed_loc,
                                                     false,
                                                     reg_coord.layer_num);
