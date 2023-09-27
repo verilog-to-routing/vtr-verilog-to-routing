@@ -3880,7 +3880,6 @@ void load_external_attraction_data(const std::string& attraction_file, const int
     }
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    size_t num_atom = atom_ctx.nlist.blocks().size();
     // initialize external attraction data in clustering helper context
     auto& attraction_data = g_vpr_ctx.mutable_cl_helper().external_atom_attraction_data;
 
