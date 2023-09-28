@@ -63,7 +63,7 @@ Vec_Int_t * Saig_ManFindIsoPermCos( Aig_Man_t * pAig, Vec_Int_t * vPermCis )
             pObj->iData = Abc_Var2Lit( pFanin->iData, Aig_ObjFaninC0(pObj) );
             Vec_PtrPush( vRoots, pObj );
         }
-        Vec_PtrSort( vRoots, (int (*)(void))Iso_ObjCompareByData );
+        Vec_PtrSort( vRoots, (int (*)(const void *, const void *))Iso_ObjCompareByData );
         Vec_PtrForEachEntry( Aig_Obj_t *, vRoots, pObj, i )
             Vec_IntPush( vPermCos, Aig_ObjCioId(pObj) );
         Vec_PtrFree( vRoots );
@@ -467,7 +467,7 @@ Aig_Man_t * Iso_ManFilterPos( Aig_Man_t * pAig, Vec_Ptr_t ** pvPosEquivs, int fV
 
     // sort the infos
     clk = Abc_Clock();
-    Vec_PtrSort( vBuffers, (int (*)(void))Iso_StoCompareVecStr );
+    Vec_PtrSort( vBuffers, (int (*)(const void *, const void *))Iso_StoCompareVecStr );
 
     // create classes
     clk = Abc_Clock();
@@ -493,7 +493,7 @@ Aig_Man_t * Iso_ManFilterPos( Aig_Man_t * pAig, Vec_Ptr_t ** pvPosEquivs, int fV
 
     // report the results
 //    Vec_VecPrintInt( (Vec_Vec_t *)vClasses );
-//    printf( "Devided %d outputs into %d cand equiv classes.\n", Saig_ManPoNum(pAig), Vec_PtrSize(vClasses) );
+//    printf( "Divided %d outputs into %d cand equiv classes.\n", Saig_ManPoNum(pAig), Vec_PtrSize(vClasses) );
 /*
     if ( fVerbose )
     {

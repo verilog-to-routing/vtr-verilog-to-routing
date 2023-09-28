@@ -133,7 +133,7 @@ void Cgt_ManDetectFanout( Aig_Man_t * pAig, Aig_Obj_t * pObj, int nOdcMax, Vec_P
         Vec_PtrWriteEntry( vFanout, k++, pObj );
     }
     Vec_PtrShrink( vFanout, k );
-    Vec_PtrSort( vFanout, (int (*)(void))Aig_ObjCompareIdIncrease );
+    Vec_PtrSort( vFanout, (int (*)(const void *, const void *))Aig_ObjCompareIdIncrease );
     assert( Vec_PtrSize(vFanout) > 0 );
 }
 

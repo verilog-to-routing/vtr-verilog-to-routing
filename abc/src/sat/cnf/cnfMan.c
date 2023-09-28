@@ -103,10 +103,8 @@ void Cnf_ManStop( Cnf_Man_t * p )
 ***********************************************************************/
 Vec_Int_t * Cnf_DataCollectPiSatNums( Cnf_Dat_t * pCnf, Aig_Man_t * p )
 {
-    Vec_Int_t * vCiIds;
-    Aig_Obj_t * pObj;
-    int i;
-    vCiIds = Vec_IntAlloc( Aig_ManCiNum(p) );
+    Aig_Obj_t * pObj; int i;
+    Vec_Int_t * vCiIds = Vec_IntAlloc( Aig_ManCiNum(p) );
     Aig_ManForEachCi( p, pObj, i )
         Vec_IntPush( vCiIds, pCnf->pVarNums[pObj->Id] );
     return vCiIds;
@@ -126,9 +124,7 @@ Vec_Int_t * Cnf_DataCollectPiSatNums( Cnf_Dat_t * pCnf, Aig_Man_t * p )
 Cnf_Dat_t * Cnf_DataAlloc( Aig_Man_t * pAig, int nVars, int nClauses, int nLiterals )
 {
     Cnf_Dat_t * pCnf;
-    int i;
-    pCnf = ABC_ALLOC( Cnf_Dat_t, 1 );
-    memset( pCnf, 0, sizeof(Cnf_Dat_t) );
+    pCnf = ABC_CALLOC( Cnf_Dat_t, 1 );
     pCnf->pMan = pAig;
     pCnf->nVars = nVars;
     pCnf->nClauses = nClauses;
@@ -136,10 +132,8 @@ Cnf_Dat_t * Cnf_DataAlloc( Aig_Man_t * pAig, int nVars, int nClauses, int nLiter
     pCnf->pClauses = ABC_ALLOC( int *, nClauses + 1 );
     pCnf->pClauses[0] = ABC_ALLOC( int, nLiterals );
     pCnf->pClauses[nClauses] = pCnf->pClauses[0] + nLiterals;
-    pCnf->pVarNums = ABC_ALLOC( int, Aig_ManObjNumMax(pAig) );
-//    memset( pCnf->pVarNums, 0xff, sizeof(int) * Aig_ManObjNumMax(pAig) );
-    for ( i = 0; i < Aig_ManObjNumMax(pAig); i++ )
-        pCnf->pVarNums[i] = -1;
+    if ( pCnf->pVarNums )
+    pCnf->pVarNums = ABC_FALLOC( int, Aig_ManObjNumMax(pAig) );
     return pCnf;
 }
 
@@ -160,9 +154,42 @@ Cnf_Dat_t * Cnf_DataDup( Cnf_Dat_t * p )
     int i;
     pCnf = Cnf_DataAlloc( p->pMan, p->nVars, p->nClauses, p->nLiterals );
     memcpy( pCnf->pClauses[0], p->pClauses[0], sizeof(int) * p->nLiterals );
+    if ( p->pVarNums )
     memcpy( pCnf->pVarNums, p->pVarNums, sizeof(int) * Aig_ManObjNumMax(p->pMan) );
     for ( i = 1; i < p->nClauses; i++ )
         pCnf->pClauses[i] = pCnf->pClauses[0] + (p->pClauses[i] - p->pClauses[0]);
+    return pCnf;
+}
+Cnf_Dat_t * Cnf_DataDupCof( Cnf_Dat_t * p, int Lit )
+{
+    Cnf_Dat_t * pCnf;
+    int i;
+    pCnf = Cnf_DataAlloc( p->pMan, p->nVars, p->nClauses+1, p->nLiterals+1 );
+    memcpy( pCnf->pClauses[0], p->pClauses[0], sizeof(int) * p->nLiterals );
+    if ( pCnf->pVarNums )
+    memcpy( pCnf->pVarNums, p->pVarNums, sizeof(int) * Aig_ManObjNumMax(p->pMan) );
+    for ( i = 1; i < p->nClauses; i++ )
+        pCnf->pClauses[i] = pCnf->pClauses[0] + (p->pClauses[i] - p->pClauses[0]);
+    pCnf->pClauses[p->nClauses] = pCnf->pClauses[0] + p->nLiterals;
+    pCnf->pClauses[p->nClauses][0] = Lit;
+    assert( pCnf->pClauses[p->nClauses+1] == pCnf->pClauses[0] + p->nLiterals+1 );
+    return pCnf;
+}
+Cnf_Dat_t * Cnf_DataDupCofArray( Cnf_Dat_t * p, Vec_Int_t * vLits )
+{
+    Cnf_Dat_t * pCnf;
+    int i, iLit;
+    pCnf = Cnf_DataAlloc( p->pMan, p->nVars, p->nClauses+Vec_IntSize(vLits), p->nLiterals+Vec_IntSize(vLits) );
+    memcpy( pCnf->pClauses[0], p->pClauses[0], sizeof(int) * p->nLiterals );
+    if ( pCnf->pVarNums )
+    memcpy( pCnf->pVarNums, p->pVarNums, sizeof(int) * Aig_ManObjNumMax(p->pMan) );
+    for ( i = 1; i < p->nClauses; i++ )
+        pCnf->pClauses[i] = pCnf->pClauses[0] + (p->pClauses[i] - p->pClauses[0]);
+    Vec_IntForEachEntry( vLits, iLit, i ) {
+        pCnf->pClauses[p->nClauses+i] = pCnf->pClauses[0] + p->nLiterals+i;
+        pCnf->pClauses[p->nClauses+i][0] = iLit;
+    }
+    assert( pCnf->pClauses[p->nClauses+Vec_IntSize(vLits)] == pCnf->pClauses[0] + p->nLiterals+Vec_IntSize(vLits) );
     return pCnf;
 }
 
@@ -303,6 +330,48 @@ void Cnf_DataWriteIntoFileGz( Cnf_Dat_t * p, char * pFileName, int fReadable, Ve
     gzprintf( pFile, "\n" );
     gzclose( pFile );
 }
+void Cnf_DataWriteIntoFileInvGz( Cnf_Dat_t * p, char * pFileName, int fReadable, Vec_Int_t * vExists1, Vec_Int_t * vForAlls, Vec_Int_t * vExists2 )
+{
+    gzFile pFile;
+    int * pLit, * pStop, i, VarId;
+    pFile = gzopen( pFileName, "wb" );
+    if ( pFile == NULL )
+    {
+        printf( "Cnf_WriteIntoFile(): Output file cannot be opened.\n" );
+        return;
+    }
+    gzprintf( pFile, "c Result of efficient AIG-to-CNF conversion using package CNF\n" );
+    gzprintf( pFile, "p cnf %d %d\n", p->nVars, p->nClauses );
+    if ( vExists1 )
+    {
+        gzprintf( pFile, "e " );
+        Vec_IntForEachEntry( vExists1, VarId, i )
+            gzprintf( pFile, "%d ", fReadable? VarId : VarId+1 );
+        gzprintf( pFile, "0\n" );
+    }
+    if ( vForAlls )
+    {
+        gzprintf( pFile, "a " );
+        Vec_IntForEachEntry( vForAlls, VarId, i )
+            gzprintf( pFile, "%d ", fReadable? VarId : VarId+1 );
+        gzprintf( pFile, "0\n" );
+    }
+    if ( vExists2 )
+    {
+        gzprintf( pFile, "e " );
+        Vec_IntForEachEntry( vExists2, VarId, i )
+            gzprintf( pFile, "%d ", fReadable? VarId : VarId+1 );
+        gzprintf( pFile, "0\n" );
+    }
+    for ( i = 0; i < p->nClauses; i++ )
+    {
+        for ( pLit = p->pClauses[i], pStop = p->pClauses[i+1]; pLit < pStop; pLit++ )
+            gzprintf( pFile, "%d ", fReadable? Cnf_Lit2Var2(*pLit) : Cnf_Lit2Var(*pLit) );
+        gzprintf( pFile, "0\n" );
+    }
+    gzprintf( pFile, "\n" );
+    gzclose( pFile );
+}
 
 /**Function*************************************************************
 
@@ -343,6 +412,53 @@ void Cnf_DataWriteIntoFile( Cnf_Dat_t * p, char * pFileName, int fReadable, Vec_
     {
         fprintf( pFile, "e " );
         Vec_IntForEachEntry( vExists, VarId, i )
+            fprintf( pFile, "%d ", fReadable? VarId : VarId+1 );
+        fprintf( pFile, "0\n" );
+    }
+    for ( i = 0; i < p->nClauses; i++ )
+    {
+        for ( pLit = p->pClauses[i], pStop = p->pClauses[i+1]; pLit < pStop; pLit++ )
+            fprintf( pFile, "%d ", fReadable? Cnf_Lit2Var2(*pLit) : Cnf_Lit2Var(*pLit) );
+        fprintf( pFile, "0\n" );
+    }
+    fprintf( pFile, "\n" );
+    fclose( pFile );
+}
+void Cnf_DataWriteIntoFileInv( Cnf_Dat_t * p, char * pFileName, int fReadable, Vec_Int_t * vExists1, Vec_Int_t * vForAlls, Vec_Int_t * vExists2 )
+{
+    FILE * pFile;
+    int * pLit, * pStop, i, VarId;
+    if ( !strncmp(pFileName+strlen(pFileName)-3,".gz",3) ) 
+    {
+        Cnf_DataWriteIntoFileInvGz( p, pFileName, fReadable, vExists1, vForAlls, vExists2 );
+        return;
+    }
+    pFile = fopen( pFileName, "w" );
+    if ( pFile == NULL )
+    {
+        printf( "Cnf_WriteIntoFile(): Output file cannot be opened.\n" );
+        return;
+    }
+    fprintf( pFile, "c Result of efficient AIG-to-CNF conversion using package CNF\n" );
+    fprintf( pFile, "p cnf %d %d\n", p->nVars, p->nClauses );
+    if ( vExists1 )
+    {
+        fprintf( pFile, "e " );
+        Vec_IntForEachEntry( vExists1, VarId, i )
+            fprintf( pFile, "%d ", fReadable? VarId : VarId+1 );
+        fprintf( pFile, "0\n" );
+    }
+    if ( vForAlls )
+    {
+        fprintf( pFile, "a " );
+        Vec_IntForEachEntry( vForAlls, VarId, i )
+            fprintf( pFile, "%d ", fReadable? VarId : VarId+1 );
+        fprintf( pFile, "0\n" );
+    }
+    if ( vExists2 )
+    {
+        fprintf( pFile, "e " );
+        Vec_IntForEachEntry( vExists2, VarId, i )
             fprintf( pFile, "%d ", fReadable? VarId : VarId+1 );
         fprintf( pFile, "0\n" );
     }

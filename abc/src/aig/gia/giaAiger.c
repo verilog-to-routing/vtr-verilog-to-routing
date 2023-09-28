@@ -176,6 +176,7 @@ Vec_Str_t * Gia_AigerWriteLiterals( Vec_Int_t * vLits )
 Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSimple, int fSkipStrash, int fCheck )
 {
     Gia_Man_t * pNew, * pTemp;
+    Vec_Ptr_t * vNamesIn = NULL, * vNamesOut = NULL, * vNamesRegIn = NULL, * vNamesRegOut = NULL, * vNamesNode = NULL;
     Vec_Int_t * vLits = NULL, * vPoTypes = NULL;
     Vec_Int_t * vNodes, * vDrivers, * vInits = NULL;
     int iObj, iNode0, iNode1, fHieOnly = 0;
@@ -377,6 +378,101 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
     pCur = pSymbols;
     if ( pCur < (unsigned char *)pContents + nFileSize && *pCur != 'c' )
     {
+        int fReadNames = 1;
+        if ( fReadNames )
+        {
+            int fError = 0;
+            while ( !fError && pCur < (unsigned char *)pContents + nFileSize && *pCur != 'c' )
+            {
+                int iTerm;
+                char * pType = (char *)pCur;
+                char * pName = NULL;
+                // check terminal type
+                if ( *pCur != 'i' && *pCur != 'o' && *pCur != 'l' && *pCur != 'n' )
+                {
+                    fError = 1;
+                    break;
+                }
+                // get terminal number
+                iTerm = atoi( (char *)++pCur );  while ( *pCur++ != ' ' );
+                // skip spaces
+                while ( *pCur == ' ' )
+                    pCur++;
+                // skip till the end of line
+                for ( pName = (char *)pCur; *pCur && *pCur != '\n'; pCur++ );
+                if ( *pCur == '\n' )
+                    *pCur = 0;
+                // save the name
+                if ( *pType == 'i' )
+                {
+                    if ( vNamesIn == NULL )
+                        vNamesIn = Vec_PtrAlloc( nInputs + nLatches );
+                    if ( Vec_PtrSize(vNamesIn) != iTerm )
+                    {
+                        fError = 1;
+                        break;
+                    }
+                    Vec_PtrPush( vNamesIn, Abc_UtilStrsav(pName) );
+                }
+                else if ( *pType == 'o' )
+                {
+                    if ( vNamesOut == NULL )
+                        vNamesOut = Vec_PtrAlloc( nOutputs + nLatches );
+                    if ( Vec_PtrSize(vNamesOut) != iTerm )
+                    {
+                        fError = 1;
+                        break;
+                    }
+                    Vec_PtrPush( vNamesOut, Abc_UtilStrsav(pName) );
+                }
+                else if ( *pType == 'l' )
+                {
+                    char Buffer[1000];
+                    assert( strlen(pName) < 995 );
+                    sprintf( Buffer, "%s_in", pName );
+                    if ( vNamesRegIn == NULL )
+                        vNamesRegIn = Vec_PtrAlloc( nLatches );
+                    if ( vNamesRegOut == NULL )
+                        vNamesRegOut = Vec_PtrAlloc( nLatches );
+                    if ( Vec_PtrSize(vNamesRegIn) != iTerm )
+                    {
+                        fError = 1;
+                        break;
+                    }
+                    Vec_PtrPush( vNamesRegIn,  Abc_UtilStrsav(Buffer) );
+                    Vec_PtrPush( vNamesRegOut, Abc_UtilStrsav(pName) );
+                }
+                else if ( *pType == 'n' )
+                {
+                    if ( Vec_IntSize(&pNew->vHTable) != 0 )
+                    {
+                        printf( "Structural hashing should be disabled to read internal nodes names.\n" );
+                        fError = 1;
+                        break;
+                    }
+                    if ( vNamesNode == NULL )
+                        vNamesNode = Vec_PtrStart( Gia_ManObjNum(pNew) );
+                    Vec_PtrWriteEntry( vNamesNode, iTerm, Abc_UtilStrsav(pName) );
+                }
+                else
+                {
+                    fError = 1;
+                    break;
+                }
+                pCur++;
+            }
+            if ( fError )
+            {
+                printf( "Error occurred when reading signal names. Signal names ignored.\n" );
+                if ( vNamesIn ) Vec_PtrFreeFree( vNamesIn ), vNamesIn = NULL;
+                if ( vNamesOut ) Vec_PtrFreeFree( vNamesOut ), vNamesOut = NULL;
+                if ( vNamesRegIn ) Vec_PtrFreeFree( vNamesRegIn ), vNamesRegIn = NULL;
+                if ( vNamesRegOut ) Vec_PtrFreeFree( vNamesRegOut ), vNamesRegOut = NULL;
+                if ( vNamesNode )    Vec_PtrFreeFree( vNamesNode ),    vNamesNode = NULL;
+            }
+        }
+        else
+        {
         int fBreakUsed = 0;
         unsigned char * pCurOld = pCur;
         pNew->vUserPiIds = Vec_IntStartFull( nInputs );
@@ -505,6 +601,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
             }
             Vec_IntFree( vPoNames );
         }
+        }
     }
 
 
@@ -525,7 +622,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
             {
                 pCur++;
                 vStr = Vec_StrStart( Gia_AigerReadInt(pCur) );             pCur += 4;
-                memcpy( Vec_StrArray(vStr), pCur, Vec_StrSize(vStr) );
+                memcpy( Vec_StrArray(vStr), pCur, (size_t)Vec_StrSize(vStr) );
                 pCur += Vec_StrSize(vStr);
                 pNew->pAigExtra = Gia_AigerReadFromMemory( Vec_StrArray(vStr), Vec_StrSize(vStr), 0, 0, 0 );
                 Vec_StrFree( vStr );
@@ -552,7 +649,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
                 pCur++;
                 nInputs = Gia_AigerReadInt(pCur)/4;                        pCur += 4;
                 pNew->vInArrs  = Vec_FltStart( nInputs );
-                memcpy( Vec_FltArray(pNew->vInArrs),  pCur, 4*nInputs );   pCur += 4*nInputs;
+                memcpy( Vec_FltArray(pNew->vInArrs),  pCur, (size_t)4*nInputs );   pCur += 4*nInputs;
                 if ( fVerbose ) printf( "Finished reading extension \"i\".\n" );
             }
             else if ( *pCur == 'o' )
@@ -560,7 +657,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
                 pCur++;
                 nOutputs = Gia_AigerReadInt(pCur)/4;                       pCur += 4;
                 pNew->vOutReqs  = Vec_FltStart( nOutputs );
-                memcpy( Vec_FltArray(pNew->vOutReqs),  pCur, 4*nOutputs ); pCur += 4*nOutputs;
+                memcpy( Vec_FltArray(pNew->vOutReqs),  pCur, (size_t)4*nOutputs ); pCur += 4*nOutputs;
                 if ( fVerbose ) printf( "Finished reading extension \"o\".\n" );
             }
             // read equivalence classes
@@ -580,7 +677,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
                 pCur++;
                 assert( Gia_AigerReadInt(pCur) == 4*Gia_ManRegNum(pNew) );   pCur += 4;
                 pNew->vFlopClasses  = Vec_IntStart( Gia_ManRegNum(pNew) );
-                memcpy( Vec_IntArray(pNew->vFlopClasses),  pCur, 4*Gia_ManRegNum(pNew) );   pCur += 4*Gia_ManRegNum(pNew);
+                memcpy( Vec_IntArray(pNew->vFlopClasses),  pCur, (size_t)4*Gia_ManRegNum(pNew) );   pCur += 4*Gia_ManRegNum(pNew);
                 if ( fVerbose ) printf( "Finished reading extension \"f\".\n" );
             }
             // read gate classes
@@ -589,7 +686,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
                 pCur++;
                 assert( Gia_AigerReadInt(pCur) == 4*Gia_ManObjNum(pNew) );   pCur += 4;
                 pNew->vGateClasses  = Vec_IntStart( Gia_ManObjNum(pNew) );
-                memcpy( Vec_IntArray(pNew->vGateClasses),  pCur, 4*Gia_ManObjNum(pNew) );   pCur += 4*Gia_ManObjNum(pNew);
+                memcpy( Vec_IntArray(pNew->vGateClasses),  pCur, (size_t)4*Gia_ManObjNum(pNew) );   pCur += 4*Gia_ManObjNum(pNew);
                 if ( fVerbose ) printf( "Finished reading extension \"g\".\n" );
             }
             // read hierarchy information
@@ -597,7 +694,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
             {
                 pCur++;
                 vStr = Vec_StrStart( Gia_AigerReadInt(pCur) );          pCur += 4;
-                memcpy( Vec_StrArray(vStr), pCur, Vec_StrSize(vStr) );
+                memcpy( Vec_StrArray(vStr), pCur, (size_t)Vec_StrSize(vStr) );
                 pCur += Vec_StrSize(vStr);
                 pNew->pManTime = Tim_ManLoad( vStr, 1 );
                 Vec_StrFree( vStr );
@@ -636,6 +733,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
                 pCur++;
                 if ( (*pCur >= 'a' && *pCur <= 'z') || (*pCur >= 'A' && *pCur <= 'Z') || (*pCur >= '0' && *pCur <= '9') )
                 {
+                    ABC_FREE( pNew->pName );
                     pNew->pName = Abc_UtilStrsav( (char *)pCur );       pCur += strlen(pNew->pName) + 1;
                 }
                 else
@@ -653,7 +751,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
                 pCur++;
                 pCurTemp = pCur + Gia_AigerReadInt(pCur) + 4;           pCur += 4;
                 pPlacement = ABC_ALLOC( Gia_Plc_t, Gia_ManObjNum(pNew) );
-                memcpy( pPlacement, pCur, 4*Gia_ManObjNum(pNew) );      pCur += 4*Gia_ManObjNum(pNew);
+                memcpy( pPlacement, pCur, (size_t)4*Gia_ManObjNum(pNew) );      pCur += 4*Gia_ManObjNum(pNew);
                 assert( pCur == pCurTemp );
                 pNew->pPlacement = pPlacement;
                 if ( fVerbose ) printf( "Finished reading extension \"p\".\n" );
@@ -696,7 +794,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
                 nSize = nSize - strlen(pNew->pCellStr) - 1;
                 assert( nSize % 4 == 0 );
                 pNew->vConfigs = Vec_IntAlloc(nSize / 4);
-//                memcpy(Vec_IntArray(pNew->vConfigs), pCur, nSize);      pCur += nSize;
+//                memcpy(Vec_IntArray(pNew->vConfigs), pCur, (size_t)nSize);      pCur += nSize;
                 for ( i = 0; i < nSize / 4; i++ )
                     Vec_IntPush( pNew->vConfigs, Gia_AigerReadInt(pCur) ), pCur += 4;
                 assert( pCur == pCurTemp );
@@ -728,7 +826,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
                 pCur++;
                 pCurTemp = pCur + Gia_AigerReadInt(pCur) + 4;           pCur += 4;
                 pSwitching = ABC_ALLOC( unsigned char, Gia_ManObjNum(pNew) );
-                memcpy( pSwitching, pCur, Gia_ManObjNum(pNew) );        pCur += Gia_ManObjNum(pNew);
+                memcpy( pSwitching, pCur, (size_t)Gia_ManObjNum(pNew) );        pCur += Gia_ManObjNum(pNew);
                 assert( pCur == pCurTemp );
                 if ( fVerbose ) printf( "Finished reading extension \"s\".\n" );
             }
@@ -737,7 +835,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
             {
                 pCur++;
                 vStr = Vec_StrStart( Gia_AigerReadInt(pCur) );          pCur += 4;
-                memcpy( Vec_StrArray(vStr), pCur, Vec_StrSize(vStr) );  pCur += Vec_StrSize(vStr);
+                memcpy( Vec_StrArray(vStr), pCur, (size_t)Vec_StrSize(vStr) );  pCur += Vec_StrSize(vStr);
                 pNew->pManTime = Tim_ManLoad( vStr, 0 );
                 Vec_StrFree( vStr );
                 if ( fVerbose ) printf( "Finished reading extension \"t\".\n" );
@@ -747,7 +845,7 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
             {
                 pCur++;
                 pNew->vObjClasses = Vec_IntStart( Gia_AigerReadInt(pCur)/4 ); pCur += 4;
-                memcpy( Vec_IntArray(pNew->vObjClasses), pCur, 4*Vec_IntSize(pNew->vObjClasses) );
+                memcpy( Vec_IntArray(pNew->vObjClasses), pCur, (size_t)4*Vec_IntSize(pNew->vObjClasses) );
                 pCur += 4*Vec_IntSize(pNew->vObjClasses);
                 if ( fVerbose ) printf( "Finished reading extension \"v\".\n" );
             }
@@ -794,19 +892,26 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
     if ( !fGiaSimple && !fSkipStrash && Gia_ManHasDangling(pNew) )
     {
         Tim_Man_t * pManTime;
-        Vec_Int_t * vFlopMap, * vGateMap, * vObjMap;
-        vFlopMap = pNew->vFlopClasses; pNew->vFlopClasses = NULL;
-        vGateMap = pNew->vGateClasses; pNew->vGateClasses = NULL;
-        vObjMap  = pNew->vObjClasses;  pNew->vObjClasses  = NULL;
-        pManTime = (Tim_Man_t *)pNew->pManTime; pNew->pManTime     = NULL;
+        Gia_Man_t * pAigExtra;
+        Vec_Int_t * vFlopMap, * vGateMap, * vObjMap, * vRegClasses, * vRegInits;
+        vRegClasses = pNew->vRegClasses;  pNew->vRegClasses    = NULL;
+        vRegInits   = pNew->vRegInits;    pNew->vRegInits      = NULL;
+        vFlopMap    = pNew->vFlopClasses; pNew->vFlopClasses   = NULL;
+        vGateMap    = pNew->vGateClasses; pNew->vGateClasses   = NULL;
+        vObjMap     = pNew->vObjClasses;  pNew->vObjClasses    = NULL;
+        pManTime = (Tim_Man_t *)pNew->pManTime; pNew->pManTime = NULL;
+        pAigExtra   = pNew->pAigExtra;    pNew->pAigExtra      = NULL;
         pNew = Gia_ManCleanup( pTemp = pNew );
         if ( (vGateMap || vObjMap) && (Gia_ManObjNum(pNew) < Gia_ManObjNum(pTemp)) )
             printf( "Cleanup removed objects after reading. Old gate/object abstraction maps are invalid!\n" );
         Gia_ManStop( pTemp );
+        pNew->vRegClasses  = vRegClasses;
+        pNew->vRegInits    = vRegInits;
         pNew->vFlopClasses = vFlopMap;
         pNew->vGateClasses = vGateMap;
         pNew->vObjClasses  = vObjMap;
         pNew->pManTime     = pManTime;
+        pNew->pAigExtra    = pAigExtra;
     }
 
     if ( fHieOnly )
@@ -848,9 +953,12 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
             }
         }
         pInit[i] = 0;
-        pNew = Gia_ManDupZeroUndc( pTemp = pNew, pInit, fGiaSimple, 1 );
-        pNew->nConstrs = pTemp->nConstrs; pTemp->nConstrs = 0;
-        Gia_ManStop( pTemp );
+        if ( !fSkipStrash ) 
+        {
+            pNew = Gia_ManDupZeroUndc( pTemp = pNew, pInit, 0, fGiaSimple, 1 );
+            pNew->nConstrs = pTemp->nConstrs; pTemp->nConstrs = 0;
+            Gia_ManStop( pTemp );
+        }
         ABC_FREE( pInit );
     }
     Vec_IntFreeP( &vInits );
@@ -859,6 +967,39 @@ Gia_Man_t * Gia_AigerReadFromMemory( char * pContents, int nFileSize, int fGiaSi
         Abc_Print( 0, "Structural hashing enabled while reading AIGER invalidated the mapping.  Consider using \"&r -s\".\n" );
         Vec_IntFreeP( &pNew->vMapping );
     }
+    if ( vNamesIn && Gia_ManPiNum(pNew) != Vec_PtrSize(vNamesIn) )
+        Abc_Print( 0, "The number of inputs does not match the number of input names.\n" );
+    else if ( vNamesOut && Gia_ManPoNum(pNew) != Vec_PtrSize(vNamesOut) )
+        Abc_Print( 0, "The number of output does not match the number of output names.\n" );
+    else if ( vNamesRegOut && Gia_ManRegNum(pNew) != Vec_PtrSize(vNamesRegOut) )
+        Abc_Print( 0, "The number of inputs does not match the number of flop names.\n" );
+    else if ( vNamesIn && vNamesOut )
+    {
+        pNew->vNamesIn  = vNamesIn;   vNamesIn = NULL;
+        pNew->vNamesOut = vNamesOut;  vNamesOut = NULL;
+        if ( vNamesRegOut )
+        {
+            Vec_PtrAppend( pNew->vNamesIn, vNamesRegOut );
+            Vec_PtrClear( vNamesRegOut );
+            Vec_PtrFree( vNamesRegOut );
+            vNamesRegOut = NULL;
+        }
+        if ( vNamesRegIn )
+        {
+            Vec_PtrAppend( pNew->vNamesOut, vNamesRegIn );
+            Vec_PtrClear( vNamesRegIn );
+            Vec_PtrFree( vNamesRegIn );
+            vNamesRegIn = NULL;
+        }
+    }
+    if ( vNamesNode && Gia_ManObjNum(pNew) != Vec_PtrSize(vNamesNode) )
+        Abc_Print( 0, "The size of the node name array does not match the number of objects. Names are not entered.\n" );
+    else if ( vNamesNode )
+        pNew->vNamesNode = vNamesNode, vNamesNode = NULL;
+    if ( vNamesIn ) Vec_PtrFreeFree( vNamesIn );
+    if ( vNamesOut ) Vec_PtrFreeFree( vNamesOut );
+    if ( vNamesRegIn ) Vec_PtrFreeFree( vNamesRegIn );
+    if ( vNamesRegOut ) Vec_PtrFreeFree( vNamesRegOut );
     return pNew;
 }
 
@@ -1076,7 +1217,7 @@ Vec_Str_t * Gia_AigerWriteIntoMemoryStrPart( Gia_Man_t * p, Vec_Int_t * vCis, Ve
   SeeAlso     []
 
 ***********************************************************************/
-void Gia_AigerWrite( Gia_Man_t * pInit, char * pFileName, int fWriteSymbols, int fCompact )
+void Gia_AigerWrite( Gia_Man_t * pInit, char * pFileName, int fWriteSymbols, int fCompact, int fWriteNewLine )
 {
     int fVerbose = XAIG_VERBOSE;
     FILE * pFile;
@@ -1110,9 +1251,7 @@ void Gia_AigerWrite( Gia_Man_t * pInit, char * pFileName, int fWriteSymbols, int
         Gia_ManTransferMapping( p, pInit );
         Gia_ManTransferPacking( p, pInit );
         Gia_ManTransferTiming( p, pInit );
-        p->vNamesIn   = pInit->vNamesIn;   pInit->vNamesIn   = NULL;
-        p->vNamesOut  = pInit->vNamesOut;  pInit->vNamesOut  = NULL;
-        p->nConstrs   = pInit->nConstrs;   pInit->nConstrs   = 0;
+        p->nConstrs   = pInit->nConstrs;
     }
     else
         p = pInit;
@@ -1192,10 +1331,20 @@ void Gia_AigerWrite( Gia_Man_t * pInit, char * pFileName, int fWriteSymbols, int
         Gia_ManForEachPo( p, pObj, i )
             fprintf( pFile, "o%d %s\n", i, (char *)Vec_PtrEntry(p->vNamesOut, i) );
     }
+    if ( p->vNamesNode && Vec_PtrSize(p->vNamesNode) != Gia_ManObjNum(p) )
+        Abc_Print( 0, "The size of the node name array does not match the number of objects. Names are not written.\n" );
+    else if ( p->vNamesNode )
+    {
+        Gia_ManForEachAnd( p, pObj, i )
+            if ( Vec_PtrEntry(p->vNamesNode, i) )
+                fprintf( pFile, "n%d %s\n", i, (char *)Vec_PtrEntry(p->vNamesNode, i) );
+    }
 
     // write the comment
-//    fprintf( pFile, "c\n" );
-    fprintf( pFile, "c" );
+    if ( fWriteNewLine ) 
+        fprintf( pFile, "c\n" );
+    else
+        fprintf( pFile, "c" );
 
     // write additional AIG
     if ( p->pAigExtra )
@@ -1406,14 +1555,14 @@ void Gia_AigerWrite( Gia_Man_t * pInit, char * pFileName, int fWriteSymbols, int
         fprintf( pFile, "%c", '\0' );
     }
     // write comments
+    if ( fWriteNewLine )
+        fprintf( pFile, "c\n" );
     fprintf( pFile, "\nThis file was produced by the GIA package in ABC on %s\n", Gia_TimeStamp() );
     fprintf( pFile, "For information about AIGER format, refer to %s\n", "http://fmv.jku.at/aiger" );
     fclose( pFile );
     if ( p != pInit )
     {
-        pInit->pManTime  = p->pManTime;  p->pManTime = NULL;
-        pInit->vNamesIn  = p->vNamesIn;  p->vNamesIn = NULL;
-        pInit->vNamesOut = p->vNamesOut; p->vNamesOut = NULL;
+        Gia_ManTransferTiming( pInit, p );
         Gia_ManStop( p );
     }
 }
@@ -1433,7 +1582,7 @@ void Gia_DumpAiger( Gia_Man_t * p, char * pFilePrefix, int iFileNum, int nFileNu
 {
     char Buffer[100];
     sprintf( Buffer, "%s%0*d.aig", pFilePrefix, nFileNumDigits, iFileNum );
-    Gia_AigerWrite( p, Buffer, 0, 0 );
+    Gia_AigerWrite( p, Buffer, 0, 0, 0 );
 }
 
 /**Function*************************************************************
@@ -1469,6 +1618,148 @@ void Gia_AigerWriteSimple( Gia_Man_t * pInit, char * pFileName )
     Vec_StrFree( vStr );
     fclose( pFile );
 }
+
+
+
+/**Function*************************************************************
+
+  Synopsis    [Simple AIGER reader/writer.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline unsigned Aiger_ReadUnsigned( FILE * pFile )
+{
+    unsigned x = 0, i = 0;
+    unsigned char ch;
+    while ((ch = fgetc(pFile)) & 0x80)
+        x |= (ch & 0x7f) << (7 * i++);
+    return x | (ch << (7 * i));
+}
+static inline void Aiger_WriteUnsigned( FILE * pFile, unsigned x )
+{
+    unsigned char ch;
+    while (x & ~0x7f)
+    {
+        ch = (x & 0x7f) | 0x80;
+        fputc( ch, pFile );
+        x >>= 7;
+    }
+    ch = x;
+    fputc( ch, pFile );
+}
+int * Aiger_Read( char * pFileName, int * pnObjs, int * pnIns, int * pnLats, int * pnOuts, int * pnAnds )
+{
+    int i, Temp, Value = 0, nTotal, nObjs, nIns, nLats, nOuts, nAnds, * pObjs;
+    FILE * pFile = fopen( pFileName, "rb" );
+    if ( pFile == NULL )
+    {
+        fprintf( stdout, "Aiger_Read(): Cannot open the output file \"%s\".\n", pFileName );
+        return NULL;
+    }
+    if ( fgetc(pFile) != 'a' || fgetc(pFile) != 'i' || fgetc(pFile) != 'g' )
+    {
+        fprintf( stdout, "Aiger_Read(): Can only read binary AIGER.\n" );
+        fclose( pFile );
+        return NULL;
+    }
+    if ( fscanf(pFile, "%d %d %d %d %d", &nTotal, &nIns, &nLats, &nOuts, &nAnds) != 5 )
+    {
+        fprintf( stdout, "Aiger_Read(): Cannot read the header line.\n" );
+        fclose( pFile );
+        return NULL;
+    }
+    if ( nTotal != nIns + nLats + nAnds )
+    {
+        fprintf( stdout, "The number of objects does not match.\n" );
+        fclose( pFile );
+        return NULL;
+    }
+    nObjs = 1 + nIns + 2*nLats + nOuts + nAnds;
+    pObjs = ABC_CALLOC( int, nObjs * 2 );
+    // read flop input literals
+    for ( i = 0; i < nLats; i++ )
+    {
+        while ( fgetc(pFile) != '\n' );
+        Value += fscanf( pFile, "%d", &Temp );
+        pObjs[2*(nObjs-nLats+i)+0] = Temp;
+        pObjs[2*(nObjs-nLats+i)+1] = Temp;
+    }
+    // read output literals
+    for ( i = 0; i < nOuts; i++ )
+    {
+        while ( fgetc(pFile) != '\n' );
+        Value += fscanf( pFile, "%d", &Temp );
+        pObjs[2*(nObjs-nOuts-nLats+i)+0] = Temp;
+        pObjs[2*(nObjs-nOuts-nLats+i)+1] = Temp;
+    }
+    assert( Value == nLats + nOuts );
+    // read the binary part
+    while ( fgetc(pFile) != '\n' );
+    for ( i = 0; i < nAnds; i++ )
+    {
+        int uLit  = 2*(1 + nIns + nLats + i);
+        int uLit1 = uLit  - Aiger_ReadUnsigned( pFile );
+        int uLit0 = uLit1 - Aiger_ReadUnsigned( pFile );
+        pObjs[2*(1+nIns+nLats+i)+0] = uLit0;
+        pObjs[2*(1+nIns+nLats+i)+1] = uLit1;
+    }
+    fclose( pFile );
+    if ( pnObjs ) *pnObjs = nObjs;
+    if ( pnIns )  *pnIns  = nIns;
+    if ( pnLats ) *pnLats = nLats;
+    if ( pnOuts ) *pnOuts = nOuts;
+    if ( pnAnds ) *pnAnds = nAnds;
+    return pObjs;
+}
+void Aiger_Write( char * pFileName, int * pObjs, int nObjs, int nIns, int nLats, int nOuts, int nAnds )
+{
+    FILE * pFile = fopen( pFileName, "wb" ); int i;
+    if ( pFile == NULL )
+    {
+        fprintf( stdout, "Aiger_Write(): Cannot open the output file \"%s\".\n", pFileName );
+        return;
+    }
+    fprintf( pFile, "aig %d %d %d %d %d\n", nIns + nLats + nAnds, nIns, nLats, nOuts, nAnds );
+    for ( i = 0; i < nLats; i++ )
+        fprintf( pFile, "%d\n", pObjs[2*(nObjs-nLats+i)+0] );
+    for ( i = 0; i < nOuts; i++ )
+        fprintf( pFile, "%d\n", pObjs[2*(nObjs-nOuts-nLats+i)+0] );
+    for ( i = 0; i < nAnds; i++ )
+    {
+        int uLit  = 2*(1 + nIns + nLats + i);
+        int uLit0 = pObjs[2*(1+nIns+nLats+i)+0];
+        int uLit1 = pObjs[2*(1+nIns+nLats+i)+1];
+        Aiger_WriteUnsigned( pFile, uLit  - uLit1 );
+        Aiger_WriteUnsigned( pFile, uLit1 - uLit0 );
+    }
+    fprintf( pFile, "c\n" );
+    fclose( pFile );
+}
+void Aiger_Test( char * pFileNameIn, char * pFileNameOut )
+{
+    int nObjs, nIns, nLats, nOuts, nAnds, * pObjs = Aiger_Read( pFileNameIn, &nObjs, &nIns, &nLats, &nOuts, &nAnds );
+    if ( pObjs == NULL )
+        return;
+    printf( "Read input file \"%s\".\n", pFileNameIn );
+    Aiger_Write( pFileNameOut, pObjs, nObjs, nIns, nLats, nOuts, nAnds );
+    printf( "Written output file \"%s\".\n", pFileNameOut );
+    ABC_FREE( pObjs );
+}
+
+/*
+int main( int argc, char ** argv )
+{
+    if ( argc != 3 )
+        return 0;
+    Aiger_Test( argv[1], argv[2] );
+    return 1;
+}
+*/
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

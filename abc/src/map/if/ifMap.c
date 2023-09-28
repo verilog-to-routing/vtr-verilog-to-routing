@@ -167,7 +167,7 @@ void If_ObjPerformMappingAnd( If_Man_t * p, If_Obj_t * pObj, int Mode, int fPrep
     int fFunc0R, fFunc1R;
     int i, k, v, iCutDsd, fChange;
     int fSave0 = p->pPars->fDelayOpt || p->pPars->fDelayOptLut || p->pPars->fDsdBalance || p->pPars->fUserRecLib || p->pPars->fUserSesLib || 
-        p->pPars->fUseDsdTune || p->pPars->fUseCofVars || p->pPars->fUseAndVars || p->pPars->fUse34Spec || p->pPars->pLutStruct || p->pPars->pFuncCell2;
+        p->pPars->fUseDsdTune || p->pPars->fUseCofVars || p->pPars->fUseAndVars || p->pPars->fUse34Spec || p->pPars->pLutStruct || p->pPars->pFuncCell2 || p->pPars->fUseCheck1 || p->pPars->fUseCheck2;
     int fUseAndCut = (p->pPars->nAndDelay > 0) || (p->pPars->nAndArea > 0);
     assert( !If_ObjIsAnd(pObj->pFanin0) || pObj->pFanin0->pCutSet->nCuts > 0 );
     assert( !If_ObjIsAnd(pObj->pFanin1) || pObj->pFanin1->pCutSet->nCuts > 0 );
@@ -217,7 +217,7 @@ void If_ObjPerformMappingAnd( If_Man_t * p, If_Obj_t * pObj, int Mode, int fPrep
         assert( pCut->Delay != -1 );
 //        assert( pCut->Delay <= pObj->Required + p->fEpsilon );
         if ( pCut->Delay > pObj->Required + 2*p->fEpsilon )
-            Abc_Print( 1, "If_ObjPerformMappingAnd(): Warning! Delay of node %d (%f) exceeds the required times (%f).\n", 
+            Abc_Print( 1, "If_ObjPerformMappingAnd(): Warning! Node with ID %d has delay (%f) exceeding the required times (%f).\n", 
                 pObj->Id, pCut->Delay, pObj->Required + p->fEpsilon );
         pCut->Area = (Mode == 2)? If_CutAreaDerefed( p, pCut ) : If_CutAreaFlow( p, pCut );
         if ( p->pPars->fEdge )
@@ -225,7 +225,7 @@ void If_ObjPerformMappingAnd( If_Man_t * p, If_Obj_t * pObj, int Mode, int fPrep
         if ( p->pPars->fPower )
             pCut->Power = (Mode == 2)? If_CutPowerDerefed( p, pCut, pObj ) : If_CutPowerFlow( p, pCut, pObj );
         // save the best cut from the previous iteration
-        if ( !fPreprocess )
+        if ( !fPreprocess || pCut->nLeaves <= 1 )
             If_CutCopy( p, pCutSet->ppCuts[pCutSet->nCuts++], pCut );
     }
 
@@ -291,6 +291,8 @@ void If_ObjPerformMappingAnd( If_Man_t * p, If_Obj_t * pObj, int Mode, int fPrep
             if ( p->pPars->fVerbose )
                 p->timeCache[4] += Abc_Clock() - clk;
             if ( !p->pPars->fSkipCutFilter && fChange && If_CutFilter( pCutSet, pCut, fSave0 ) )
+                continue;
+            if ( p->pPars->fLut6Filter && pCut->nLeaves == 6 && !If_CutCheckTruth6(p, pCut) )
                 continue;
             if ( p->pPars->fUseDsd )
             {
@@ -514,7 +516,8 @@ void If_ObjPerformMappingChoice( If_Man_t * p, If_Obj_t * pObj, int Mode, int fP
 
     // remove elementary cuts
     for ( pTemp = pObj; pTemp; pTemp = pTemp->pEquiv )
-        pTemp->pCutSet->nCuts--;
+        if ( pTemp != pObj || pTemp->pCutSet->nCuts > 1 )
+            pTemp->pCutSet->nCuts--;
 
     // update the cutset of the node
     pCutSet = pObj->pCutSet;
@@ -631,6 +634,8 @@ int If_ManPerformMappingRound( If_Man_t * p, int nCutsUsed, int Mode, int fPrepr
             }
             else if ( If_ObjIsConst1(pObj) )
             {
+                arrTime = -IF_INFINITY;
+                If_ObjSetArrTime( pObj, arrTime );
             }
             else
                 assert( 0 );

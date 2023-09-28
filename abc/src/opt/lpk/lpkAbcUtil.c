@@ -124,7 +124,7 @@ Lpk_Fun_t * Lpk_FunDup( Lpk_Fun_t * p, unsigned * pTruth )
     pNew->uSupp = Kit_TruthSupport( pTruth, p->nVars );
     Kit_TruthCopy( Lpk_FunTruth(pNew,0), pTruth, p->nVars );
     memcpy( pNew->pFanins, p->pFanins, 16 );
-    memcpy( pNew->pDelays, p->pDelays, 16 );
+    memcpy( pNew->pDelays, p->pDelays, sizeof(int)*16 );
     Vec_PtrPush( p->vNodes, pNew );
     return pNew;
 }
@@ -212,7 +212,7 @@ void Lpk_FunComputeCofSupps( Lpk_Fun_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-int Lpk_SuppDelay( unsigned uSupp, char * pDelays )
+int Lpk_SuppDelay( unsigned uSupp, int * pDelays )
 {
     int Delay, Var;
     Delay = 0;

@@ -32,7 +32,7 @@ ABC_NAMESPACE_IMPL_START
     http://www.emis.de/journals/JGAA/accepted/2004/HarelKoren2004.8.2.pdf 
 
     Iterative refinement is described in the paper: F. A. Aloul, I. L. Markov, and K. A. Sakallah.
-    "FORCE: A Fast and Easy-To-Implement Variable-Ordering Heuristic", Proc. GLSVLSI’03.
+    "FORCE: A Fast and Easy-To-Implement Variable-Ordering Heuristic", Proc. GLSVLSI 03.
     http://www.eecs.umich.edu/~imarkov/pubs/conf/glsvlsi03-force.pdf
 */
 

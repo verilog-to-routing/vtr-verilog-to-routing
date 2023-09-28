@@ -195,8 +195,6 @@ clkV = Abc_Clock() - clkV;
             ABC_PRT( "Syn", clkS );
 //            ABC_PRT( "Ver", clkV );
         }
-        if ( nIters+1 == nItersMax )
-            break;
     }
     Abc_NtkDelete( pNtkSyn );
     // report the results
@@ -206,12 +204,10 @@ clkV = Abc_Clock() - clkV;
         printf( "Parameters: " );
         Abc_NtkVectorPrintPars( vPiValues, nPars );
         printf( "  Statistics: 0=%d 1=%d\n", nZeros, Vec_IntSize(vPiValues) - nZeros );
-        printf( "Solved after %d interations.  ", nIters );
+        printf( "Solved after %d iterations.  ", nIters );
     }
     else if ( nIters == nItersMax )
-        printf( "Unsolved after %d interations.  ", nIters );
-    else if ( nIters == nItersMax )
-        printf( "Quit after %d interatios.  ", nItersMax );
+        printf( "Quit after %d iterations.  ", nItersMax );
     else
         printf( "Implementation does not exist.  " );
     ABC_PRT( "Total runtime", Abc_Clock() - clkTotal );

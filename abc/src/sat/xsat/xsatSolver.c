@@ -944,7 +944,7 @@ void xSAT_SolverClaRealloc( xSAT_Mem_t * pDest, xSAT_Mem_t * pSrc, unsigned * pC
     }
     nNewCRef = xSAT_MemAppend( pDest, 3 + pOldCla->fLearnt + pOldCla->nSize );
     pNewCla = xSAT_MemClauseHand( pDest, nNewCRef );
-    memcpy( pNewCla, pOldCla, ( 3 + pOldCla->fLearnt + pOldCla->nSize ) * 4 );
+    memcpy( pNewCla, pOldCla, (size_t)(( 3 + pOldCla->fLearnt + pOldCla->nSize ) * 4) );
     pOldCla->fReallocd = 1;
     pOldCla->nSize = ( unsigned ) nNewCRef;
     *pCRef = nNewCRef;

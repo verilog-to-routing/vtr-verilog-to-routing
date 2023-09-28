@@ -682,7 +682,7 @@ zddGroupSifting(
         }
     }
 
-    qsort((void *)var,classes,sizeof(int),(DD_QSFP)zddUniqueCompareGroup);
+    qsort((void *)var,(size_t)classes,sizeof(int),(DD_QSFP)zddUniqueCompareGroup);
 
     /* Now sift. */
     for (i = 0; i < ddMin(table->siftMaxVar,classes); i++) {

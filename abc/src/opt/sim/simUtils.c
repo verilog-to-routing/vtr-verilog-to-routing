@@ -60,7 +60,8 @@ Vec_Ptr_t * Sim_UtilInfoAlloc( int nSize, int nWords, int fClean )
     int i;
     assert( nSize > 0 && nWords > 0 );
     vInfo = Vec_PtrAlloc( nSize );
-    vInfo->pArray[0] = ABC_ALLOC( unsigned, nSize * nWords );
+    vInfo->pArray[0] = ABC_ALLOC( unsigned, (long)nSize * (long)nWords );
+    assert( vInfo->pArray[0]);
     if ( fClean )
         memset( vInfo->pArray[0], 0, sizeof(unsigned) * nSize * nWords );
     for ( i = 1; i < nSize; i++ )

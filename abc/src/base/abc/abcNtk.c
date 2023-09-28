@@ -1231,6 +1231,41 @@ Abc_Ntk_t * Abc_NtkCreateFromNode( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode )
 
 /**Function*************************************************************
 
+  Synopsis    [Creates the network composed of one node.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Abc_Ntk_t * Abc_NtkCreateFromRange( Abc_Ntk_t * pNtk )
+{    
+    Abc_Ntk_t * pNtkNew; 
+    Abc_Obj_t * pObj, * pNodeNew, * pNodePo;
+    Gia_Man_t * p = Abc_NtkClpGia( pNtk );  int i;
+    Vec_Str_t * vStr = Gia_ManComputeRange( p );
+    Gia_ManStop( p );
+    pNtkNew = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
+    pNtkNew->pName = Extra_UtilStrsav("range");
+    Abc_NtkForEachCo( pNtk, pObj, i )
+        Abc_ObjAssignName( Abc_NtkCreatePi(pNtkNew), Abc_ObjName(pObj), NULL );
+    pNodeNew = Abc_NtkCreateObj( pNtkNew, ABC_OBJ_NODE );
+    pNodeNew->pData = Abc_SopRegister( (Mem_Flex_t *)pNtkNew->pManFunc, Vec_StrArray(vStr) );
+    Vec_StrFree( vStr );
+    Abc_NtkForEachCi( pNtkNew, pObj, i )
+        Abc_ObjAddFanin( pNodeNew, pObj );
+    pNodePo = Abc_NtkCreatePo( pNtkNew );
+    Abc_ObjAddFanin( pNodePo, pNodeNew );
+    Abc_ObjAssignName( pNodePo, "range", NULL );
+    if ( !Abc_NtkCheck( pNtkNew ) )
+        fprintf( stdout, "Abc_NtkCreateFromNode(): Network check has failed.\n" );
+    return pNtkNew;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Creates the network composed of one node with the given SOP.]
 
   Description []
@@ -1272,6 +1307,52 @@ Abc_Ntk_t * Abc_NtkCreateWithNode( char * pSop )
 
 /**Function*************************************************************
 
+  Synopsis    [Creates the network composed of one node with the given SOP.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Abc_Ntk_t * Abc_NtkCreateWithNodes( Vec_Ptr_t * vSop )
+{    
+    Abc_Ntk_t * pNtkNew; 
+    Abc_Obj_t * pFanin, * pNode, * pNodePo;
+    Vec_Ptr_t * vNames;
+    int i, k, nVars; char Buffer[100];
+    char * pSop = (char *)Vec_PtrEntry(vSop, 0);
+    // start the network
+    pNtkNew = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
+    pNtkNew->pName = Extra_UtilStrsav("ex");
+    // create PIs
+    Vec_PtrPush( pNtkNew->vObjs, NULL );
+    nVars = Abc_SopGetVarNum( pSop );
+    vNames = Abc_NodeGetFakeNames( nVars );
+    for ( i = 0; i < nVars; i++ )
+        Abc_ObjAssignName( Abc_NtkCreatePi(pNtkNew), (char *)Vec_PtrEntry(vNames, i), NULL );
+    Abc_NodeFreeNames( vNames );
+    // create the node, add PIs as fanins, set the function
+    Vec_PtrForEachEntry( char *, vSop, pSop, i )
+    {
+        pNode = Abc_NtkCreateNode( pNtkNew );
+        Abc_NtkForEachPi( pNtkNew, pFanin, k )
+            Abc_ObjAddFanin( pNode, pFanin );
+        pNode->pData = Abc_SopRegister( (Mem_Flex_t *)pNtkNew->pManFunc, pSop );
+        // create the only PO
+        pNodePo = Abc_NtkCreatePo(pNtkNew);
+        Abc_ObjAddFanin( pNodePo, pNode );
+        sprintf( Buffer, "F%d", i );
+        Abc_ObjAssignName( pNodePo, Buffer, NULL );
+    }
+    if ( !Abc_NtkCheck( pNtkNew ) )
+        fprintf( stdout, "Abc_NtkCreateWithNode(): Network check has failed.\n" );
+    return pNtkNew;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Deletes the Ntk.]
 
   Description []
@@ -1286,6 +1367,7 @@ void Abc_NtkDelete( Abc_Ntk_t * pNtk )
     Abc_Obj_t * pObj;
     void * pAttrMan;
     int TotalMemory, i;
+    int fWarning = 0;
 //    int LargePiece = (4 << ABC_NUM_STEPS);
     if ( pNtk == NULL )
         return;
@@ -1310,9 +1392,11 @@ void Abc_NtkDelete( Abc_Ntk_t * pNtk )
 //            ABC_FREE( pObj->vFanouts.pArray );
         // these flags should be always zero
         // if this is not true, something is wrong somewhere
-        assert( pObj->fMarkA == 0 );
-        assert( pObj->fMarkB == 0 );
-        assert( pObj->fMarkC == 0 );
+//        assert( pObj->fMarkA == 0 );
+//        assert( pObj->fMarkB == 0 );
+//        assert( pObj->fMarkC == 0 );
+        if ( !fWarning && (pObj->fMarkA || pObj->fMarkB || pObj->fMarkC) )
+            { printf( "Flags A, B, or C are not zero.\n" ), fWarning = 1; }
     }
     // free the nodes
     if ( pNtk->pMmStep == NULL )
@@ -2091,7 +2175,7 @@ int Abc_NodeCompareByFanoutCount( Abc_Obj_t ** pp1, Abc_Obj_t ** pp2 )
 void Abc_NtkPermutePiUsingFanout( Abc_Ntk_t * pNtk )
 {
     Abc_Obj_t * pNode; int i;
-    qsort( (void *)Vec_PtrArray(pNtk->vPis), Vec_PtrSize(pNtk->vPis), sizeof(Abc_Obj_t *), 
+    qsort( (void *)Vec_PtrArray(pNtk->vPis), (size_t)Vec_PtrSize(pNtk->vPis), sizeof(Abc_Obj_t *), 
         (int (*)(const void *, const void *)) Abc_NodeCompareByFanoutCount );
     Vec_PtrClear( pNtk->vCis );
     Vec_PtrForEachEntry( Abc_Obj_t *, pNtk->vPis, pNode, i )
@@ -2250,15 +2334,43 @@ Abc_Ntk_t * Abc_NtkCreateFromSops( char * pName, Vec_Ptr_t * vSops )
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkCreateFromGias( char * pName, Vec_Ptr_t * vGias )
+Abc_Ntk_t * Abc_NtkCreateFromGias( char * pName, Vec_Ptr_t * vGias, Gia_Man_t * pMulti )
 {
-    Gia_Man_t * pGia = (Gia_Man_t *)Vec_PtrEntry(vGias, 0);
+    Gia_Man_t * pGia = pMulti ? pMulti : (Gia_Man_t *)Vec_PtrEntry(vGias, 0);
     Abc_Ntk_t * pNtk = Abc_NtkAlloc( ABC_NTK_STRASH, ABC_FUNC_AIG, 1 );
     Abc_Obj_t * pAbcObj, * pAbcObjPo;
     Gia_Obj_t * pObj; int i, k;
     pNtk->pName = Extra_UtilStrsav( pName );
     for ( k = 0; k < Gia_ManCiNum(pGia); k++ )
         Abc_NtkCreatePi( pNtk );
+    if ( pMulti )
+    {
+        Gia_ManCleanValue(pGia);
+        Gia_ManForEachCi( pGia, pObj, k )
+            pObj->Value = Abc_ObjId( Abc_NtkCi(pNtk, k) );
+        Gia_ManForEachAnd( pGia, pObj, k )
+        {
+            Abc_Obj_t * pAbcObj0 = Abc_NtkObj( pNtk, Gia_ObjFanin0(pObj)->Value );
+            Abc_Obj_t * pAbcObj1 = Abc_NtkObj( pNtk, Gia_ObjFanin1(pObj)->Value );
+            pAbcObj0 = Abc_ObjNotCond( pAbcObj0, Gia_ObjFaninC0(pObj) );
+            pAbcObj1 = Abc_ObjNotCond( pAbcObj1, Gia_ObjFaninC1(pObj) );
+            pAbcObj  = Abc_AigAnd( (Abc_Aig_t *)pNtk->pManFunc, pAbcObj0, pAbcObj1 );
+            pObj->Value = Abc_ObjId( pAbcObj ); 
+        }
+        Gia_ManForEachCo( pGia, pObj, k )
+        {
+            //pObj = Gia_ManCo(pGia, 0);
+            if ( Gia_ObjFaninId0p(pGia, pObj) == 0 )
+                pAbcObj = Abc_ObjNot( Abc_AigConst1(pNtk) );
+            else
+                pAbcObj = Abc_NtkObj( pNtk, Gia_ObjFanin0(pObj)->Value );
+            pAbcObj = Abc_ObjNotCond( pAbcObj, Gia_ObjFaninC0(pObj) );
+            pAbcObjPo = Abc_NtkCreatePo( pNtk );
+            Abc_ObjAddFanin( pAbcObjPo, pAbcObj );
+        }
+    }
+    else
+    {
     Vec_PtrForEachEntry( Gia_Man_t *, vGias, pGia, i )
     {
         assert( Gia_ManCoNum(pGia) == 1 );
@@ -2282,6 +2394,7 @@ Abc_Ntk_t * Abc_NtkCreateFromGias( char * pName, Vec_Ptr_t * vGias )
         pAbcObj = Abc_ObjNotCond( pAbcObj, Gia_ObjFaninC0(pObj) );
         pAbcObjPo = Abc_NtkCreatePo( pNtk );
         Abc_ObjAddFanin( pAbcObjPo, pAbcObj );
+    }
     }
     Abc_NtkAddDummyPiNames( pNtk );
     Abc_NtkAddDummyPoNames( pNtk );

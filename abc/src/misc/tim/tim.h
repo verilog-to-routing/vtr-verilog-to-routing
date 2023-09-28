@@ -55,7 +55,7 @@
     Finally, the TFO cone of the POs is traversed and all new logic nodes 
     encountered added to the AIG.
     In the end, the POs of the AIG is constructed in 1-to-1 correspondence with 
-    the PIs of the original combinational logic network.
+    the POs of the original combinational logic network.
 
     Delay tables representing input-to-output delays of each type of white
     box should be computed in advance and given to the timing manager in one array

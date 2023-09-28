@@ -1154,7 +1154,7 @@ Aig_Man_t * Aig_ManDupOneOutput( Aig_Man_t * p, int iPoNum, int fAddRegs )
     Aig_Man_t * pNew;
     Aig_Obj_t * pObj = NULL;
     int i;
-    assert( Aig_ManRegNum(p) > 0 );
+    //assert( Aig_ManRegNum(p) > 0 );
     assert( iPoNum < Aig_ManCoNum(p)-Aig_ManRegNum(p) );
     // create the new manager
     pNew = Aig_ManStart( Aig_ManObjNumMax(p) );

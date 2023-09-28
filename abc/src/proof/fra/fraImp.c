@@ -395,7 +395,7 @@ finish:
     }
     Vec_PtrFree( vNodes );
     // reorder implications topologically
-    qsort( (void *)Vec_IntArray(vImps), Vec_IntSize(vImps), sizeof(int), 
+    qsort( (void *)Vec_IntArray(vImps), (size_t)Vec_IntSize(vImps), sizeof(int), 
             (int (*)(const void *, const void *)) Sml_CompareMaxId );
 if ( p->pPars->fVerbose )
 {
