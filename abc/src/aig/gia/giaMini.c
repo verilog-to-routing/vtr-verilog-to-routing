@@ -1257,7 +1257,7 @@ Vec_Str_t * Gia_ManRetimableF( Gia_Man_t * p, int * pRst, int * pSet, int * pEna
         int * pNode = Vec_IntEntryP( vTemps, 3*i );
         pStops[i] = (char)1;
         if ( pFan0[0] != -1 && pFan0[0] == pFan1[0] && pFan0[1] == pFan1[1] && pFan0[2] == pFan1[2] )
-            pStops[i] = (char)0, pNode[0] = pFan0[0], pNode[1] = pFan0[1], pNode[2] = pFan0[2]; 
+            pStops[i] = (char)0, pNode[0] = pFan0[0], pNode[1] = pFan0[1], pNode[2] = pFan0[2];
     }
     Vec_IntFree( vTemps );
     return vStops;
@@ -1266,32 +1266,37 @@ Vec_Str_t * Gia_ManRetimableB( Gia_Man_t * p, int * pRst, int * pSet, int * pEna
 {
     Vec_Str_t * vStops = Vec_StrStart( Gia_ManObjNum(p) );
     Vec_Int_t * vTemps = Vec_IntStartFull( 3*Gia_ManObjNum(p) );
-    Gia_Obj_t * pObj, * pObjRi, * pObjRo; int i, n;
+    Gia_Obj_t * pObj, * pObjRi, * pObjRo; int i, n, iFanout;
     char * pStops = Vec_StrArray(vStops);
     assert( Gia_ManRegNum(p) > 0 );
     Gia_ManForEachRiRo( p, pObjRi, pObjRo, i ) {
-        Vec_IntWriteEntry( vTemps, 3*Gia_ObjFaninId0p(p, pObjRi) + 0, pRst[i] );
-        Vec_IntWriteEntry( vTemps, 3*Gia_ObjFaninId0p(p, pObjRi) + 1, pSet[i] );
-        Vec_IntWriteEntry( vTemps, 3*Gia_ObjFaninId0p(p, pObjRi) + 2, pEna[i] );        
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjId(p, pObjRi) + 0, pRst[i] );
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjId(p, pObjRi) + 1, pSet[i] );
+        Vec_IntWriteEntry( vTemps, 3*Gia_ObjId(p, pObjRi) + 2, pEna[i] );        
     }
+    Gia_ManStaticFanoutStart( p );
     Gia_ManForEachAndReverse( p, pObj, i ) {
-        int   iFans[2] = { Gia_ObjFaninId0(pObj, i), Gia_ObjFaninId1(pObj, i) };
-        int * pFans[2] = { Vec_IntEntryP( vTemps, 3*iFans[0] ), Vec_IntEntryP( vTemps, 3*iFans[1] ) };
+        int * pFan0 = Vec_IntEntryP( vTemps, 3*Gia_ObjFanoutId(p, i, 0) );
         int * pNode = Vec_IntEntryP( vTemps, 3*i );
-        if ( pNode[0] == -1 )
+        pStops[i] = (char)1;        
+        if ( pFan0[0] == -1 )
             continue;
-        for ( n = 0; n < 2; n++ )
-            if ( pFans[n][0] == -1 )
-                pStops[iFans[n]] = (char)1, pFans[n][0] = pNode[0], pFans[n][1] = pNode[1], pFans[n][2] = pNode[2];
-            else if ( pFans[n][0] != pNode[0] || pFans[n][1] != pNode[1] || pFans[n][2] != pNode[2] )
-                pStops[iFans[n]] = (char)0;
+        Gia_ObjForEachFanoutStaticId( p, i, iFanout, n ) {
+            int * pFan1 = Vec_IntEntryP( vTemps, 3*iFanout );
+            if ( pFan1[0] == -1 || pFan0[0] != pFan1[0] || pFan0[1] != pFan1[1] || pFan0[2] != pFan1[2] )
+                break;
+        }
+        if ( n < Gia_ObjFanoutNum(p, pObj) )
+            continue;
+        pStops[i] = (char)0, pNode[0] = pFan0[0], pNode[1] = pFan0[1], pNode[2] = pFan0[2];
     }
-    pStops[0] = (char)0;
-    Gia_ManForEachCi( p, pObj, i )
-        pStops[Gia_ObjId(p, pObj)] = (char)0;
-    Gia_ManForEachAnd( p, pObj, i )
-        pStops[i] = (char)!pStops[i];      
-    Vec_IntFree( vTemps );    
+    Gia_ManStaticFanoutStop( p );
+    Vec_IntFree( vTemps );
+    Gia_ManForEachRiRo( p, pObjRi, pObjRo, i ) {
+        if ( Gia_ObjIsAnd(Gia_ManObj(p, Abc_Lit2Var(pRst[i]))) ) pStops[Abc_Lit2Var(pRst[i])] = 1;
+        if ( Gia_ObjIsAnd(Gia_ManObj(p, Abc_Lit2Var(pSet[i]))) ) pStops[Abc_Lit2Var(pSet[i])] = 1;
+        if ( Gia_ObjIsAnd(Gia_ManObj(p, Abc_Lit2Var(pEna[i]))) ) pStops[Abc_Lit2Var(pEna[i])] = 1;                
+    }    
     return vStops;
 }
 

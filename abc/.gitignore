@@ -6,11 +6,13 @@ ReleaseLib/
 ReleaseExe/
 ReleaseExt/
 
+_/
 _TEST/
 lib/abc*
 lib/m114*
 lib/bip*
 docs/
+.vscode/
 
 src/ext*
 src/xxx/
@@ -59,3 +61,4 @@ tags
 
 /cmake
 /cscope
+abc.history

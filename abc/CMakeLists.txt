@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3.0...3.13) # ! This line is edited to get rid of a CMake deprecation error
+cmake_minimum_required(VERSION 3.3.0)
 
 include(CMakeParseArguments)
 include(CheckCCompilerFlag)
