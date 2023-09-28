@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3.0)
+cmake_minimum_required(VERSION 3.3.0...3.13)
 
 include(CMakeParseArguments)
 include(CheckCCompilerFlag)
