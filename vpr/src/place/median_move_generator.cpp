@@ -5,7 +5,7 @@
 #include "placer_globals.h"
 #include "move_utils.h"
 
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int layer, int xold, int yold, int xnew, int ynew);
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int layer);
 
 static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
@@ -38,8 +38,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     /* Calculate the median region */
     t_pl_loc to;
 
-    t_tbb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
-    t_tbb limit_coords;
+    t_bb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
+    t_bb limit_coords;
     ClusterBlockId bnum;
     int pnum, xnew, xold, ynew, yold;
 
@@ -92,18 +92,17 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 ynew = place_move_ctx.bb_coords[net_id][block_layer].ymin;
             }
 
-            if (!get_bb_incrementally(net_id, coords, block_layer, xold, yold, xnew, ynew)) {
+            if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew, block_layer)) {
                 get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
                 if (skip_net)
                     continue;
             }
         }
         //push the calculated coorinates into X,Y coord vectors
-        auto merged_coords = union_2d_tbb(coords);
-        place_move_ctx.X_coord.push_back(merged_coords.xmin);
-        place_move_ctx.X_coord.push_back(merged_coords.xmax);
-        place_move_ctx.Y_coord.push_back(merged_coords.ymin);
-        place_move_ctx.Y_coord.push_back(merged_coords.ymax);
+        place_move_ctx.X_coord.push_back(coords.xmin);
+        place_move_ctx.X_coord.push_back(coords.xmax);
+        place_move_ctx.Y_coord.push_back(coords.ymin);
+        place_move_ctx.Y_coord.push_back(coords.ymax);
     }
 
     if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {
@@ -161,8 +160,6 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
     //TODO: account for multiple physical pin instances per logical pin
 
     skip_net = true;
-
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     int xmin = OPEN;
     int xmax = OPEN;
@@ -247,7 +244,7 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
  * the pins always lie on the outside of the bounding box.            *
  * The x and y coordinates are the pin's x and y coordinates.         */
 /* IO blocks are considered to be one cell in for simplicity.         */
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int layer, int xold, int yold, int xnew, int ynew) {
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
     const t_2D_tbb *curr_bb_edge, *curr_bb_coord;
