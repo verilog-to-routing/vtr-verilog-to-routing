@@ -3002,10 +3002,8 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                                            std::vector<t_2D_tbb>& bb_coord_new) {
 
     int x_old = pin_old_loc.x;
-    int x_new = pin_new_loc.x;
 
     int y_old = pin_old_loc.y;
-    int y_new = pin_new_loc.y;
 
     int old_layer_num = pin_old_loc.layer_num;
     int new_layer_num = pin_new_loc.layer_num;
