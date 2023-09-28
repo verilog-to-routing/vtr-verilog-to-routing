@@ -5,9 +5,9 @@
 #include "placer_globals.h"
 #include "move_utils.h"
 
-static bool get_bb_incrementally(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_coord_new, int layer, int xold, int yold, int xnew, int ynew);
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int layer, int xold, int yold, int xnew, int ynew);
 
-static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
+static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     //Find a movable block based on blk_type
@@ -38,8 +38,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     /* Calculate the median region */
     t_pl_loc to;
 
-    std::vector<t_2D_tbb> coords(num_layers, t_2D_tbb(OPEN, OPEN, OPEN, OPEN, OPEN));
-    t_2D_tbb limit_coords;
+    t_tbb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
+    t_tbb limit_coords;
     ClusterBlockId bnum;
     int pnum, xnew, xold, ynew, yold;
 
@@ -157,17 +157,17 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
+static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
 
     skip_net = true;
 
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    std::vector<int> xmin(num_layers, OPEN);
-    std::vector<int> xmax(num_layers, OPEN);
-    std::vector<int> ymin(num_layers, OPEN);
-    std::vector<int> ymax(num_layers, OPEN);
+    int xmin = OPEN;
+    int xmax = OPEN;
+    int ymin = OPEN;
+    int ymax = OPEN;
 
     int pnum;
 
@@ -176,7 +176,7 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector
     auto& device_ctx = g_vpr_ctx.device();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    std::vector<bool> first_block(num_layers, false);
+    bool first_block = false;
 
     if (bnum != block_id) {
         skip_net = false;
@@ -184,13 +184,11 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector
         int src_x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         int src_y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
-        for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-            xmin[layer_num] = src_x;
-            ymin[layer_num] = src_y;
-            xmax[layer_num] = src_x;
-            ymax[layer_num] = src_y;
-            first_block[layer_num] = true;
-        }
+        xmin = src_x;
+        ymin = src_y;
+        xmax = src_x;
+        ymax = src_y;
+        first_block = true;
     }
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -201,26 +199,25 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector
         skip_net = false;
         int x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         int y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
-        int layer_num = place_ctx.block_locs[bnum].loc.layer;
 
-        if (!first_block[layer_num]) {
-            xmin[layer_num] = x;
-            ymin[layer_num] = y;
-            xmax[layer_num] = x;
-            ymax[layer_num] = y;
-            first_block[layer_num] = true;
+        if (!first_block) {
+            xmin = x;
+            ymin = y;
+            xmax = x;
+            ymax = y;
+            first_block = true;
             continue;
         }
-        if (x < xmin[layer_num]) {
-            xmin[layer_num] = x;
-        } else if (x > xmax[layer_num]) {
-            xmax[layer_num] = x;
+        if (x < xmin) {
+            xmin = x;
+        } else if (x > xmax) {
+            xmax = x;
         }
 
-        if (y < ymin[layer_num]) {
-            ymin[layer_num] = y;
-        } else if (y > ymax[layer_num]) {
-            ymax[layer_num] = y;
+        if (y < ymin) {
+            ymin = y;
+        } else if (y > ymax) {
+            ymax = y;
         }
     }
 
@@ -231,13 +228,10 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector
      * channel immediately to the left of the bounding box, I want to    *
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        VTR_ASSERT_SAFE(first_block[layer_num]);
-        bb_coord_new[layer_num].xmin = std::max(std::min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-        bb_coord_new[layer_num].ymin = std::max(std::min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-        bb_coord_new[layer_num].xmax = std::max(std::min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-        bb_coord_new[layer_num].ymax = std::max(std::min<int>(ymax[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    }
+    bb_coord_new.xmin = std::max(std::min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    bb_coord_new.ymin = std::max(std::min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.xmax = std::max(std::min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    bb_coord_new.ymax = std::max(std::min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 }
 
 /*
@@ -253,7 +247,7 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, std::vector
  * the pins always lie on the outside of the bounding box.            *
  * The x and y coordinates are the pin's x and y coordinates.         */
 /* IO blocks are considered to be one cell in for simplicity.         */
-static bool get_bb_incrementally(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_coord_new, int layer, int xold, int yold, int xnew, int ynew) {
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int layer, int xold, int yold, int xnew, int ynew) {
     //TODO: account for multiple physical pin instances per logical pin
 
     const t_2D_tbb *curr_bb_edge, *curr_bb_coord;
@@ -280,20 +274,20 @@ static bool get_bb_incrementally(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_
             if (curr_bb_edge->xmax == 1) {
                 return false;
             } else {
-                bb_coord_new[layer].xmax = curr_bb_coord->xmax;
+                bb_coord_new.xmax = curr_bb_coord->xmax;
             }
         } else { /* Move to left, old postion was not at xmax. */
-            bb_coord_new[layer].xmax = curr_bb_coord->xmax;
+            bb_coord_new.xmax = curr_bb_coord->xmax;
         }
 
         /* Now do the xmin fields for coordinates and number of edges. */
 
         if (xnew < curr_bb_coord->xmin) { /* Moved past xmin */
-            bb_coord_new[layer].xmin = xnew;
+            bb_coord_new.xmin = xnew;
         } else if (xnew == curr_bb_coord->xmin) { /* Moved to xmin */
-            bb_coord_new[layer].xmin = xnew;
+            bb_coord_new.xmin = xnew;
         } else { /* Xmin unchanged. */
-            bb_coord_new[layer].xmin = curr_bb_coord->xmin;
+            bb_coord_new.xmin = curr_bb_coord->xmin;
         }
         /* End of move to left case. */
 
@@ -305,25 +299,25 @@ static bool get_bb_incrementally(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_
             if (curr_bb_edge->xmin == 1) {
                 return false;
             } else {
-                bb_coord_new[layer].xmin = curr_bb_coord->xmin;
+                bb_coord_new.xmin = curr_bb_coord->xmin;
             }
         } else { /* Move to right, old position was not at xmin. */
-            bb_coord_new[layer].xmin = curr_bb_coord->xmin;
+            bb_coord_new.xmin = curr_bb_coord->xmin;
         }
         /* Now do the xmax fields for coordinates and number of edges. */
 
         if (xnew > curr_bb_coord->xmax) { /* Moved past xmax. */
-            bb_coord_new[layer].xmax = xnew;
+            bb_coord_new.xmax = xnew;
         } else if (xnew == curr_bb_coord->xmax) { /* Moved to xmax */
-            bb_coord_new[layer].xmax = xnew;
+            bb_coord_new.xmax = xnew;
         } else { /* Xmax unchanged. */
-            bb_coord_new[layer].xmax = curr_bb_coord->xmax;
+            bb_coord_new.xmax = curr_bb_coord->xmax;
         }
         /* End of move to right case. */
 
     } else { /* xnew == xold -- no x motion. */
-        bb_coord_new[layer].xmin = curr_bb_coord->xmin;
-        bb_coord_new[layer].xmax = curr_bb_coord->xmax;
+        bb_coord_new.xmin = curr_bb_coord->xmin;
+        bb_coord_new.xmax = curr_bb_coord->xmax;
     }
 
     /* Now account for the y-direction motion. */
@@ -336,20 +330,20 @@ static bool get_bb_incrementally(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_
             if (curr_bb_edge->ymax == 1) {
                 return false;
             } else {
-                bb_coord_new[layer].ymax = curr_bb_coord->ymax;
+                bb_coord_new.ymax = curr_bb_coord->ymax;
             }
         } else { /* Move down, old postion was not at ymax. */
-            bb_coord_new[layer].ymax = curr_bb_coord->ymax;
+            bb_coord_new.ymax = curr_bb_coord->ymax;
         }
 
         /* Now do the ymin fields for coordinates and number of edges. */
 
         if (ynew < curr_bb_coord->ymin) { /* Moved past ymin */
-            bb_coord_new[layer].ymin = ynew;
+            bb_coord_new.ymin = ynew;
         } else if (ynew == curr_bb_coord->ymin) { /* Moved to ymin */
-            bb_coord_new[layer].ymin = ynew;
+            bb_coord_new.ymin = ynew;
         } else { /* ymin unchanged. */
-            bb_coord_new[layer].ymin = curr_bb_coord->ymin;
+            bb_coord_new.ymin = curr_bb_coord->ymin;
         }
         /* End of move down case. */
 
@@ -361,26 +355,26 @@ static bool get_bb_incrementally(ClusterNetId net_id, std::vector<t_2D_tbb>& bb_
             if (curr_bb_edge->ymin == 1) {
                 return false;
             } else {
-                bb_coord_new[layer].ymin = curr_bb_coord->ymin;
+                bb_coord_new.ymin = curr_bb_coord->ymin;
             }
         } else { /* Moved up, old position was not at ymin. */
-            bb_coord_new[layer].ymin = curr_bb_coord->ymin;
+            bb_coord_new.ymin = curr_bb_coord->ymin;
         }
 
         /* Now do the ymax fields for coordinates and number of edges. */
 
         if (ynew > curr_bb_coord->ymax) { /* Moved past ymax. */
-            bb_coord_new[layer].ymax = ynew;
+            bb_coord_new.ymax = ynew;
         } else if (ynew == curr_bb_coord->ymax) { /* Moved to ymax */
-            bb_coord_new[layer].ymax = ynew;
+            bb_coord_new.ymax = ynew;
         } else { /* ymax unchanged. */
-            bb_coord_new[layer].ymax = curr_bb_coord->ymax;
+            bb_coord_new.ymax = curr_bb_coord->ymax;
         }
         /* End of move up case. */
 
     } else { /* ynew == yold -- no y motion. */
-        bb_coord_new[layer].ymin = curr_bb_coord->ymin;
-        bb_coord_new[layer].ymax = curr_bb_coord->ymax;
+        bb_coord_new.ymin = curr_bb_coord->ymin;
+        bb_coord_new.ymax = curr_bb_coord->ymax;
     }
     return true;
 }
