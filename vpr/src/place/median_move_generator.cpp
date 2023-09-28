@@ -19,6 +19,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
 
@@ -100,8 +101,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.Y_coord.push_back(coords.ymax);
     }
 
-    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()))
+    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord and y_coord are empty\n");
         return e_create_move::ABORT;
+    }
 
     //calculate the median region
     std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
