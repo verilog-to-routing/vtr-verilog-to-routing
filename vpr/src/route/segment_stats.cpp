@@ -47,6 +47,14 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         {X_AXIS, std::vector<int>(max_segment_length + 1, 0)},
         {Y_AXIS, std::vector<int>(max_segment_length + 1, 0)}};
 
+    std::map<e_parallel_axis, std::vector<int>> directed_occ_by_type = {
+        {X_AXIS, std::vector<int>(segment_inf.size(), 0)},
+        {Y_AXIS, std::vector<int>(segment_inf.size(), 0)}};
+
+    std::map<e_parallel_axis, std::vector<int>> directed_cap_by_type = {
+        {X_AXIS, std::vector<int>(segment_inf.size(), 0)},
+        {Y_AXIS, std::vector<int>(segment_inf.size(), 0)}};
+
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
         auto node_type = rr_graph.node_type(inode);
         if (node_type == CHANX || node_type == CHANY) {
@@ -62,6 +70,9 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             auto ax = (node_type == CHANX) ? X_AXIS : Y_AXIS;
             directed_occ_by_length[ax][length] += occ;
             directed_cap_by_length[ax][length] += inode_capacity;
+
+            directed_occ_by_type[ax][seg_type] += occ;
+            directed_cap_by_type[ax][seg_type] += inode_capacity;
         }
     }
 
@@ -101,7 +112,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     }
 
     VTR_LOG("\n");
-    VTR_LOG("Segment usage by type (index): %sname type utilization\n", std::string(std::max(max_segment_name_length - 4, 0), ' ').c_str());
+    VTR_LOG("Segment occupancy by length: %sname type utilization\n", std::string(std::max(max_segment_name_length - 4, 0), ' ').c_str());
     VTR_LOG("                               %s ---- -----------\n", std::string(std::max(4, max_segment_name_length), '-').c_str());
 
     for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
@@ -114,6 +125,25 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             for (auto ax : {X_AXIS, Y_AXIS}) {
                 occ += directed_occ_by_length[ax][seg_length];
                 cap += directed_cap_by_length[ax][seg_length];
+            }
+            utilization = (float)occ / (float)cap;
+            VTR_LOG("                               %s%s %4d %11.3g\n", std::string(std::max(4 - seg_name_size, (max_segment_name_length - seg_name_size)), ' ').c_str(), seg_name.c_str(), seg_type, utilization);
+        }
+    }
+
+    VTR_LOG("\n");
+    VTR_LOG("Segment occupancy by type (index): %sname type utilization\n", std::string(std::max(max_segment_name_length - 4, 0), ' ').c_str());
+    VTR_LOG("                               %s ---- -----------\n", std::string(std::max(4, max_segment_name_length), '-').c_str());
+
+    for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
+        if (directed_cap_by_type[X_AXIS][seg_type] != 0 || directed_cap_by_type[Y_AXIS][seg_type] != 0) {
+            std::string seg_name = segment_inf[seg_type].name;
+            int seg_name_size = static_cast<int>(seg_name.size());
+            int occ = 0;
+            int cap = 0;
+            for (auto ax : {X_AXIS, Y_AXIS}) {
+                occ += directed_occ_by_type[ax][seg_type];
+                cap += directed_cap_by_type[ax][seg_type];
             }
             utilization = (float)occ / (float)cap;
             VTR_LOG("                               %s%s %4d %11.3g\n", std::string(std::max(4 - seg_name_size, (max_segment_name_length - seg_name_size)), ' ').c_str(), seg_name.c_str(), seg_type, utilization);
