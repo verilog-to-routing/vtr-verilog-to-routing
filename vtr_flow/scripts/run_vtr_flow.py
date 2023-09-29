@@ -2,7 +2,7 @@
 """
     Module to run the VTR Flow
 """
-import vtr
+
 import sys
 from pathlib import Path
 import argparse
@@ -15,7 +15,7 @@ import os
 import os
 # pylint: disable=wrong-import-position, import-error
 sys.path.insert(0, str(Path(__file__).resolve().parent / "python_libs"))
-
+import vtr
 # pylint: enable=wrong-import-position, import-error
 
 BASIC_VERBOSITY = 1
