@@ -94,7 +94,7 @@ struct PlacerMoveContext : public Context {
 
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
     vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
-    
+
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
     vtr::vector<ClusterNetId, t_bb> bb_coords;
 

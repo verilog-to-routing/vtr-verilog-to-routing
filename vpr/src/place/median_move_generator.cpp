@@ -78,16 +78,16 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
             //To calulate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
-            if (place_move_ctx.bb_coords[net_id][block_layer].xmin == xold) {
-                xnew = place_move_ctx.bb_coords[net_id][block_layer].xmax;
+            if (place_move_ctx.bb_coords[net_id].xmin == xold) {
+                xnew = place_move_ctx.bb_coords[net_id].xmax;
             } else {
-                xnew = place_move_ctx.bb_coords[net_id][block_layer].xmin;
+                xnew = place_move_ctx.bb_coords[net_id].xmin;
             }
 
-            if (place_move_ctx.bb_coords[net_id][block_layer].ymin == yold) {
-                ynew = place_move_ctx.bb_coords[net_id][block_layer].ymax;
+            if (place_move_ctx.bb_coords[net_id].ymin == yold) {
+                ynew = place_move_ctx.bb_coords[net_id].ymax;
             } else {
-                ynew = place_move_ctx.bb_coords[net_id][block_layer].ymin;
+                ynew = place_move_ctx.bb_coords[net_id].ymin;
             }
 
             if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew, block_layer)) {
@@ -242,10 +242,10 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
  * the pins always lie on the outside of the bounding box.            *
  * The x and y coordinates are the pin's x and y coordinates.         */
 /* IO blocks are considered to be one cell in for simplicity.         */
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int layer) {
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int /* layer */) {
     //TODO: account for multiple physical pin instances per logical pin
 
-    const t_2D_tbb *curr_bb_edge, *curr_bb_coord;
+    const t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
@@ -256,8 +256,8 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
     /* The net had NOT been updated before, could use the old values */
-    curr_bb_coord = &(place_move_ctx.bb_coords[net_id][layer]);
-    curr_bb_edge = &(place_move_ctx.bb_num_on_edges[net_id][layer]);
+    curr_bb_coord = &(place_move_ctx.bb_coords[net_id]);
+    curr_bb_edge = &(place_move_ctx.bb_num_on_edges[net_id]);
 
     /* Check if I can update the bounding box incrementally. */
 
