@@ -329,8 +329,11 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks);
 static e_move_result assess_swap(double delta_c, double t);
 
 static void get_non_updateable_bb(ClusterNetId net_id,
-                                  std::vector<t_2D_tbb>& bb_coord_new,
-                                  std::vector<int>& num_sink_layer);
+                                  t_bb& bb_coord_new);
+
+static void get_non_updateable_layer_bb(ClusterNetId net_id,
+                                        std::vector<t_2D_tbb>& bb_coord_new,
+                                        std::vector<int>& num_sink_layer);
 
 static void update_bb(ClusterNetId net_id,
                       t_bb& bb_edge_new,
@@ -1935,8 +1938,7 @@ static void update_net_bb(const ClusterNetId net,
 
         if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
             get_non_updateable_bb(net,
-                                  ts_bb_coord_new[net],
-                                  ts_layer_sink_pin_count[net]);
+                                  ts_bb_coord_new[net]);
         }
     } else {
         //For large nets, update bounding box incrementally
@@ -2838,8 +2840,67 @@ static double get_net_layer_cost(ClusterNetId /* net_id */,
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
 static void get_non_updateable_bb(ClusterNetId net_id,
-                                  std::vector<t_2D_tbb>& bb_coord_new,
-                                  std::vector<int>& num_sink_layer) {
+                                  t_bb& bb_coord_new) {
+    //TODO: account for multiple physical pin instances per logical pin
+
+    int xmax, ymax, xmin, ymin, x, y;
+    int pnum;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+    pnum = net_pin_to_tile_pin_index(net_id, 0);
+
+    x = place_ctx.block_locs[bnum].loc.x
+        + physical_tile_type(bnum)->pin_width_offset[pnum];
+    y = place_ctx.block_locs[bnum].loc.y
+        + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+    xmin = x;
+    ymin = y;
+    xmax = x;
+    ymax = y;
+
+    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+        pnum = tile_pin_index(pin_id);
+        x = place_ctx.block_locs[bnum].loc.x
+            + physical_tile_type(bnum)->pin_width_offset[pnum];
+        y = place_ctx.block_locs[bnum].loc.y
+            + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+        if (x < xmin) {
+            xmin = x;
+        } else if (x > xmax) {
+            xmax = x;
+        }
+
+        if (y < ymin) {
+            ymin = y;
+        } else if (y > ymax) {
+            ymax = y;
+        }
+    }
+
+    /* Now I've found the coordinates of the bounding box.  There are no *
+     * channels beyond device_ctx.grid.width()-2 and                     *
+     * device_ctx.grid.height() - 2, so I want to clip to that.  As well,*
+     * since I'll always include the channel immediately below and the   *
+     * channel immediately to the left of the bounding box, I want to    *
+     * clip to 1 in both directions as well (since minimum channel index *
+     * is 0).  See route_common.cpp for a channel diagram.               */
+
+    bb_coord_new.xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    bb_coord_new.ymin = max(min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    bb_coord_new.ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+}
+
+static void get_non_updateable_layer_bb(ClusterNetId net_id,
+                                        std::vector<t_2D_tbb>& bb_coord_new,
+                                        std::vector<int>& num_sink_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
     auto& device_ctx = g_vpr_ctx.device();
