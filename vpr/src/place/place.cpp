@@ -406,9 +406,11 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
 
 static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
-static double get_net_cost(ClusterNetId net_id,
-                           const std::vector<t_2D_tbb>& bbptr,
-                           const std::vector<int>& layer_pin_sink_count);
+static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr);
+
+static double get_net_layer_cost(ClusterNetId /* net_id */,
+                                 const std::vector<t_2D_tbb>& bbptr,
+                                 const std::vector<int>& layer_pin_sink_count);
 
 static void get_bb_from_scratch(ClusterNetId net_id,
                                 t_bb& coords,
@@ -1841,6 +1843,7 @@ static int find_affected_nets_and_update_costs(
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     int num_affected_nets = 0;
 
@@ -1879,9 +1882,15 @@ static int find_affected_nets_and_update_costs(
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        proposed_net_cost[net_id] = get_net_cost(net_id,
-                                                 ts_bb_coord_new[net_id],
-                                                 ts_layer_sink_pin_count[net_id]);
+        if (num_layers == 1) {
+            proposed_net_cost[net_id] = get_net_cost(net_id,
+                                                     ts_bb_coord_new[net_id]);
+        } else {
+            proposed_net_cost[net_id] = get_net_layer_cost(net_id,
+                                                           layer_ts_bb_coord_new[net_id],
+                                                           ts_layer_sink_pin_count[net_id]);
+        }
+
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
@@ -2757,9 +2766,35 @@ static double get_net_wirelength_estimate(ClusterNetId /* net_id */,
     return (ncost);
 }
 
-static double get_net_cost(ClusterNetId /* net_id */,
-                           const std::vector<t_2D_tbb>& bbptr,
-                           const std::vector<int>& layer_pin_sink_count) {
+static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
+    /* Finds the cost due to one net by looking at its coordinate bounding  *
+     * box.                                                                 */
+
+    double ncost, crossing;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    crossing = wirelength_crossing_count(
+        cluster_ctx.clb_nlist.net_pins(net_id).size());
+
+    /* Could insert a check for xmin == xmax.  In that case, assume  *
+     * connection will be made with no bends and hence no x-cost.    *
+     * Same thing for y-cost.                                        */
+
+    /* Cost = wire length along channel * cross_count / average      *
+     * channel capacity.   Do this for x, then y direction and add.  */
+
+    ncost = (bbptr.xmax - bbptr.xmin + 1) * crossing
+            * chanx_place_cost_fac[bbptr.ymax][bbptr.ymin - 1];
+
+    ncost += (bbptr.ymax - bbptr.ymin + 1) * crossing
+             * chany_place_cost_fac[bbptr.xmax][bbptr.xmin - 1];
+
+    return (ncost);
+}
+
+static double get_net_layer_cost(ClusterNetId /* net_id */,
+                                 const std::vector<t_2D_tbb>& bbptr,
+                                 const std::vector<int>& layer_pin_sink_count) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
 
