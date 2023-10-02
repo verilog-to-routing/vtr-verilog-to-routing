@@ -430,9 +430,11 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
                                       std::vector<t_2D_tbb>& coords,
                                       std::vector<int>& layer_pin_sink_count);
 
-static double get_net_wirelength_estimate(ClusterNetId net_id,
-                                          const std::vector<t_2D_tbb>& bbptr,
-                                          const std::vector<int>& layer_pin_sink_count);
+static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bbptr);
+
+static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
+                                                const std::vector<t_2D_tbb>& bbptr,
+                                                const std::vector<int>& layer_pin_sink_count);
 
 static void free_try_swap_arrays();
 
@@ -2740,9 +2742,33 @@ static double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-static double get_net_wirelength_estimate(ClusterNetId /* net_id */,
-                                          const std::vector<t_2D_tbb>& bbptr,
-                                          const std::vector<int>& layer_pin_sink_count) {
+static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bbptr) {
+    /* WMF: Finds the estimate of wirelength due to one net by looking at   *
+     * its coordinate bounding box.                                         */
+
+    double ncost, crossing;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    crossing = wirelength_crossing_count(
+        cluster_ctx.clb_nlist.net_pins(net_id).size());
+
+    /* Could insert a check for xmin == xmax.  In that case, assume  *
+     * connection will be made with no bends and hence no x-cost.    *
+     * Same thing for y-cost.                                        */
+
+    /* Cost = wire length along channel * cross_count / average      *
+     * channel capacity.   Do this for x, then y direction and add.  */
+
+    ncost = (bbptr.xmax - bbptr.xmin + 1) * crossing;
+
+    ncost += (bbptr.ymax - bbptr.ymin + 1) * crossing;
+
+    return (ncost);
+}
+
+static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
+                                                const std::vector<t_2D_tbb>& bbptr,
+                                                const std::vector<int>& layer_pin_sink_count) {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
      * its coordinate bounding box.                                         */
 
