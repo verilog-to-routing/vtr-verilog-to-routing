@@ -2608,8 +2608,8 @@ static void alloc_and_load_try_swap_structs() {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     if (num_layers == 1) {
-        ts_bb_coord_new.resize(num_nets, t_bb());
         ts_bb_edge_new.resize(num_nets, t_bb());
+        ts_bb_coord_new.resize(num_nets, t_bb());
     } else {
         VTR_ASSERT(num_layers > 1);
         layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
@@ -3139,8 +3139,8 @@ static void update_bb(ClusterNetId net_id,
         return;
     } else if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
-        curr_bb_coord = &place_move_ctx.bb_coords[net_id];
         curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
+        curr_bb_coord = &place_move_ctx.bb_coords[net_id];
         bb_updated_before[net_id] = UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */
