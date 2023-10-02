@@ -148,8 +148,8 @@ static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); //[0...device_ctx.g
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
-static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
-static vtr::vector<ClusterNetId, std::vector<t_2D_tbb>> layer_ts_bb_coord_new, layer_ts_bb_edge_new;
+static vtr::vector<ClusterNetId, t_bb> ts_bb_edge_new, ts_bb_coord_new;
+static vtr::vector<ClusterNetId, std::vector<t_2D_tbb>> layer_ts_bb_edge_new, layer_ts_bb_coord_new;
 static vtr::vector<ClusterNetId, std::vector<int>> ts_layer_sink_pin_count;
 static std::vector<ClusterNetId> ts_nets_to_update;
 
@@ -1467,14 +1467,27 @@ static void update_move_nets(int num_nets_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
     for (int inet_affected = 0; inet_affected < num_nets_affected;
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
-        place_move_ctx.num_sink_pin_layer[net_id] = ts_layer_sink_pin_count[net_id];
-        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
-            place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
+        if (num_layers == 1) {
+            place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
+        } else {
+            place_move_ctx.layer_bb_coords[net_id] = layer_ts_bb_coord_new[net_id];
+            place_move_ctx.num_sink_pin_layer[net_id] = ts_layer_sink_pin_count[net_id];
+        }
+
+
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
+            if (num_layers == 1) {
+                place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
+            } else {
+                place_move_ctx.layer_bb_num_on_edges[net_id] = layer_ts_bb_edge_new[net_id];
+            }
+        }
 
         net_cost[net_id] = proposed_net_cost[net_id];
 
@@ -1998,8 +2011,9 @@ static void update_net_layer_bb(const ClusterNetId net,
         //For small nets brute-force bounding box update is faster
 
         if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
-            get_non_updateable_bb(net,
-                                  ts_bb_coord_new[net]);
+            get_non_updateable_layer_bb(net,
+                                        layer_ts_bb_coord_new[net],
+                                        ts_layer_sink_pin_count[net]);
         }
     } else {
         //For large nets, update bounding box incrementally
