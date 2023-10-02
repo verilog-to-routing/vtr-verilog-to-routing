@@ -333,12 +333,18 @@ static void get_non_updateable_bb(ClusterNetId net_id,
                                   std::vector<int>& num_sink_layer);
 
 static void update_bb(ClusterNetId net_id,
-                      std::vector<t_2D_tbb>& bb_edge_new,
-                      std::vector<t_2D_tbb>& bb_coord_new,
-                      std::vector<int>& bb_pin_sink_count_new,
+                      t_bb& bb_edge_new,
+                      t_bb& bb_coord_new,
                       t_physical_tile_loc pin_old_loc,
-                      t_physical_tile_loc pin_new_loc,
-                      bool is_output_pin);
+                      t_physical_tile_loc pin_new_loc);
+
+static void update_layer_bb(ClusterNetId net_id,
+                            std::vector<t_2D_tbb>& bb_edge_new,
+                            std::vector<t_2D_tbb>& bb_coord_new,
+                            std::vector<int>& bb_pin_sink_count_new,
+                            t_physical_tile_loc pin_old_loc,
+                            t_physical_tile_loc pin_new_loc,
+                            bool is_output_pin);
 
 static inline void update_bb_same_layer(ClusterNetId net_id,
                                         const t_physical_tile_loc& pin_old_loc,
@@ -1953,10 +1959,8 @@ static void update_net_bb(const ClusterNetId net,
         update_bb(net,
                   ts_bb_edge_new[net],
                   ts_bb_coord_new[net],
-                  ts_layer_sink_pin_count[net],
                   pin_old_loc,
-                  pin_new_loc,
-                  pin_dir == e_pin_type::DRIVER);
+                  pin_new_loc);
     }
 }
 
@@ -2905,12 +2909,206 @@ static void get_non_updateable_bb(ClusterNetId net_id,
 }
 
 static void update_bb(ClusterNetId net_id,
-                      std::vector<t_2D_tbb>& bb_edge_new,
-                      std::vector<t_2D_tbb>& bb_coord_new,
-                      std::vector<int>& bb_pin_sink_count_new,
+                      t_bb& bb_edge_new,
+                      t_bb& bb_coord_new,
                       t_physical_tile_loc pin_old_loc,
-                      t_physical_tile_loc pin_new_loc,
-                      bool is_output_pin) {
+                      t_physical_tile_loc pin_new_loc) {
+    /* Updates the bounding box of a net by storing its coordinates in    *
+     * the bb_coord_new data structure and the number of blocks on each   *
+     * edge in the bb_edge_new data structure.  This routine should only  *
+     * be called for large nets, since it has some overhead relative to   *
+     * just doing a brute force bounding box calculation.  The bounding   *
+     * box coordinate and edge information for inet must be valid before  *
+     * this routine is called.                                            *
+     * Currently assumes channels on both sides of the CLBs forming the   *
+     * edges of the bounding box can be used.  Essentially, I am assuming *
+     * the pins always lie on the outside of the bounding box.            *
+     * The x and y coordinates are the pin's x and y coordinates.         */
+    /* IO blocks are considered to be one cell in for simplicity.         */
+    //TODO: account for multiple physical pin instances per logical pin
+    const t_bb *curr_bb_edge, *curr_bb_coord;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_move_ctx = g_placer_ctx.move();
+
+    pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+
+    /* Check if the net had been updated before. */
+    if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+        /* The net had been updated from scratch, DO NOT update again! */
+        return;
+    } else if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
+        /* The net had NOT been updated before, could use the old values */
+        curr_bb_coord = &place_move_ctx.bb_coords[net_id];
+        curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
+        bb_updated_before[net_id] = UPDATED_ONCE;
+    } else {
+        /* The net had been updated before, must use the new values */
+        curr_bb_coord = &bb_coord_new;
+        curr_bb_edge = &bb_edge_new;
+    }
+
+    /* Check if I can update the bounding box incrementally. */
+
+    if (pin_new_loc.x < pin_old_loc.x) { /* Move to left. */
+
+        /* Update the xmax fields for coordinates and number of edges first. */
+
+        if (pin_old_loc.x == curr_bb_coord->xmax) { /* Old position at xmax. */
+            if (curr_bb_edge->xmax == 1) {
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                return;
+            } else {
+                bb_edge_new.xmax = curr_bb_edge->xmax - 1;
+                bb_coord_new.xmax = curr_bb_coord->xmax;
+            }
+        } else { /* Move to left, old postion was not at xmax. */
+            bb_coord_new.xmax = curr_bb_coord->xmax;
+            bb_edge_new.xmax = curr_bb_edge->xmax;
+        }
+
+        /* Now do the xmin fields for coordinates and number of edges. */
+
+        if (pin_new_loc.x < curr_bb_coord->xmin) { /* Moved past xmin */
+            bb_coord_new.xmin = pin_new_loc.x;
+            bb_edge_new.xmin = 1;
+        } else if (pin_new_loc.x == curr_bb_coord->xmin) { /* Moved to xmin */
+            bb_coord_new.xmin = pin_new_loc.x;
+            bb_edge_new.xmin = curr_bb_edge->xmin + 1;
+        } else { /* Xmin unchanged. */
+            bb_coord_new.xmin = curr_bb_coord->xmin;
+            bb_edge_new.xmin = curr_bb_edge->xmin;
+        }
+        /* End of move to left case. */
+
+    } else if (pin_new_loc.x > pin_old_loc.x) { /* Move to right. */
+
+        /* Update the xmin fields for coordinates and number of edges first. */
+
+        if (pin_old_loc.x == curr_bb_coord->xmin) { /* Old position at xmin. */
+            if (curr_bb_edge->xmin == 1) {
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                return;
+            } else {
+                bb_edge_new.xmin = curr_bb_edge->xmin - 1;
+                bb_coord_new.xmin = curr_bb_coord->xmin;
+            }
+        } else { /* Move to right, old position was not at xmin. */
+            bb_coord_new.xmin = curr_bb_coord->xmin;
+            bb_edge_new.xmin = curr_bb_edge->xmin;
+        }
+
+        /* Now do the xmax fields for coordinates and number of edges. */
+
+        if (pin_new_loc.x > curr_bb_coord->xmax) { /* Moved past xmax. */
+            bb_coord_new.xmax = pin_new_loc.x;
+            bb_edge_new.xmax = 1;
+        } else if (pin_new_loc.x == curr_bb_coord->xmax) { /* Moved to xmax */
+            bb_coord_new.xmax = pin_new_loc.x;
+            bb_edge_new.xmax = curr_bb_edge->xmax + 1;
+        } else { /* Xmax unchanged. */
+            bb_coord_new.xmax = curr_bb_coord->xmax;
+            bb_edge_new.xmax = curr_bb_edge->xmax;
+        }
+        /* End of move to right case. */
+
+    } else { /* pin_new_loc.x == pin_old_loc.x -- no x motion. */
+        bb_coord_new.xmin = curr_bb_coord->xmin;
+        bb_coord_new.xmax = curr_bb_coord->xmax;
+        bb_edge_new.xmin = curr_bb_edge->xmin;
+        bb_edge_new.xmax = curr_bb_edge->xmax;
+    }
+
+    /* Now account for the y-direction motion. */
+
+    if (pin_new_loc.y < pin_old_loc.y) { /* Move down. */
+
+        /* Update the ymax fields for coordinates and number of edges first. */
+
+        if (pin_old_loc.y == curr_bb_coord->ymax) { /* Old position at ymax. */
+            if (curr_bb_edge->ymax == 1) {
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                return;
+            } else {
+                bb_edge_new.ymax = curr_bb_edge->ymax - 1;
+                bb_coord_new.ymax = curr_bb_coord->ymax;
+            }
+        } else { /* Move down, old postion was not at ymax. */
+            bb_coord_new.ymax = curr_bb_coord->ymax;
+            bb_edge_new.ymax = curr_bb_edge->ymax;
+        }
+
+        /* Now do the ymin fields for coordinates and number of edges. */
+
+        if (pin_new_loc.y < curr_bb_coord->ymin) { /* Moved past ymin */
+            bb_coord_new.ymin = pin_new_loc.y;
+            bb_edge_new.ymin = 1;
+        } else if (pin_new_loc.y == curr_bb_coord->ymin) { /* Moved to ymin */
+            bb_coord_new.ymin = pin_new_loc.y;
+            bb_edge_new.ymin = curr_bb_edge->ymin + 1;
+        } else { /* ymin unchanged. */
+            bb_coord_new.ymin = curr_bb_coord->ymin;
+            bb_edge_new.ymin = curr_bb_edge->ymin;
+        }
+        /* End of move down case. */
+
+    } else if (pin_new_loc.y > pin_old_loc.y) { /* Moved up. */
+
+        /* Update the ymin fields for coordinates and number of edges first. */
+
+        if (pin_old_loc.y == curr_bb_coord->ymin) { /* Old position at ymin. */
+            if (curr_bb_edge->ymin == 1) {
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                return;
+            } else {
+                bb_edge_new.ymin = curr_bb_edge->ymin - 1;
+                bb_coord_new.ymin = curr_bb_coord->ymin;
+            }
+        } else { /* Moved up, old position was not at ymin. */
+            bb_coord_new.ymin = curr_bb_coord->ymin;
+            bb_edge_new.ymin = curr_bb_edge->ymin;
+        }
+
+        /* Now do the ymax fields for coordinates and number of edges. */
+
+        if (pin_new_loc.y > curr_bb_coord->ymax) { /* Moved past ymax. */
+            bb_coord_new.ymax = pin_new_loc.y;
+            bb_edge_new.ymax = 1;
+        } else if (pin_new_loc.y == curr_bb_coord->ymax) { /* Moved to ymax */
+            bb_coord_new.ymax = pin_new_loc.y;
+            bb_edge_new.ymax = curr_bb_edge->ymax + 1;
+        } else { /* ymax unchanged. */
+            bb_coord_new.ymax = curr_bb_coord->ymax;
+            bb_edge_new.ymax = curr_bb_edge->ymax;
+        }
+        /* End of move up case. */
+
+    } else { /* pin_new_loc.y == yold -- no y motion. */
+        bb_coord_new.ymin = curr_bb_coord->ymin;
+        bb_coord_new.ymax = curr_bb_coord->ymax;
+        bb_edge_new.ymin = curr_bb_edge->ymin;
+        bb_edge_new.ymax = curr_bb_edge->ymax;
+    }
+
+    if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
+        bb_updated_before[net_id] = UPDATED_ONCE;
+    }
+}
+
+static void update_layer_bb(ClusterNetId net_id,
+                            std::vector<t_2D_tbb>& bb_edge_new,
+                            std::vector<t_2D_tbb>& bb_coord_new,
+                            std::vector<int>& bb_pin_sink_count_new,
+                            t_physical_tile_loc pin_old_loc,
+                            t_physical_tile_loc pin_new_loc,
+                            bool is_output_pin) {
     /* Updates the bounding box of a net by storing its coordinates in    *
      * the bb_coord_new data structure and the number of blocks on each   *
      * edge in the bb_edge_new data structure.  This routine should only  *
@@ -2941,8 +3139,8 @@ static void update_bb(ClusterNetId net_id,
         return;
     } else if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
-        curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
-        curr_bb_coord = &place_move_ctx.bb_coords[net_id];
+        curr_bb_edge = &place_move_ctx.layer_bb_num_on_edges[net_id];
+        curr_bb_coord = &place_move_ctx.layer_bb_coords[net_id];
         curr_layer_pin_sink_count = &place_move_ctx.num_sink_pin_layer[net_id];
         bb_updated_before[net_id] = UPDATED_ONCE;
     } else {
