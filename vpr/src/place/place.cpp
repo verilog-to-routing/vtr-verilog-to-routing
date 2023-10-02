@@ -411,9 +411,13 @@ static double get_net_cost(ClusterNetId net_id,
                            const std::vector<int>& layer_pin_sink_count);
 
 static void get_bb_from_scratch(ClusterNetId net_id,
-                                std::vector<t_2D_tbb>& num_on_edges,
-                                std::vector<t_2D_tbb>& coords,
-                                std::vector<int>& layer_pin_sink_count);
+                                t_bb& coords,
+                                t_bb& num_on_edges);
+
+static void get_layer_bb_from_scratch(ClusterNetId net_id,
+                                      std::vector<t_2D_tbb>& num_on_edges,
+                                      std::vector<t_2D_tbb>& coords,
+                                      std::vector<int>& layer_pin_sink_count);
 
 static double get_net_wirelength_estimate(ClusterNetId net_id,
                                           const std::vector<t_2D_tbb>& bbptr,
@@ -2401,11 +2405,16 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     net_cost.resize(num_nets, -1.);
     proposed_net_cost.resize(num_nets, -1.);
-    place_move_ctx.bb_num_on_edges.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
 
-    place_move_ctx.bb_coords.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
-
-    place_move_ctx.num_sink_pin_layer.resize(num_nets, std::vector<int>(num_layers, 0));
+    if (num_layers == 1) {
+        place_move_ctx.bb_coords.resize(num_nets, t_bb());
+        place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
+    } else {
+        VTR_ASSERT(num_layers > 1);
+        place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+        place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+        place_move_ctx.num_sink_pin_layer.resize(num_nets, std::vector<int>(num_layers, 0));
+    }
 
     /* Used to store costs for moves not yet made and to indicate when a net's   *
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
@@ -2502,10 +2511,101 @@ static void free_try_swap_structs() {
  * from only the block location information).  It updates both the       *
  * coordinate and number of pins on each edge information.  It           *
  * should only be called when the bounding box information is not valid. */
-static void get_bb_from_scratch(ClusterNetId net_id,
-                                std::vector<t_2D_tbb>& num_on_edges,
-                                std::vector<t_2D_tbb>& coords,
-                                std::vector<int>& layer_pin_sink_count) {
+static void get_bb_from_scratch(ClusterNetId net_id, t_bb& coords, t_bb& num_on_edges) {
+    int pnum, x, y, xmin, xmax, ymin, ymax;
+    int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
+
+    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+    pnum = net_pin_to_tile_pin_index(net_id, 0);
+    VTR_ASSERT(pnum >= 0);
+    x = place_ctx.block_locs[bnum].loc.x
+        + physical_tile_type(bnum)->pin_width_offset[pnum];
+    y = place_ctx.block_locs[bnum].loc.y
+        + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+    x = max(min<int>(x, grid.width() - 2), 1);
+    y = max(min<int>(y, grid.height() - 2), 1);
+
+    xmin = x;
+    ymin = y;
+    xmax = x;
+    ymax = y;
+    xmin_edge = 1;
+    ymin_edge = 1;
+    xmax_edge = 1;
+    ymax_edge = 1;
+
+    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+        pnum = tile_pin_index(pin_id);
+        x = place_ctx.block_locs[bnum].loc.x
+            + physical_tile_type(bnum)->pin_width_offset[pnum];
+        y = place_ctx.block_locs[bnum].loc.y
+            + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+        /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
+         * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
+         * I always take all channels impinging on the bounding box to be within   *
+         * that bounding box.  Hence, this "movement" of IO blocks does not affect *
+         * the which channels are included within the bounding box, and it         *
+         * simplifies the code a lot.                                              */
+
+        x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
+        y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
+
+        if (x == xmin) {
+            xmin_edge++;
+        }
+        if (x == xmax) { /* Recall that xmin could equal xmax -- don't use else */
+            xmax_edge++;
+        } else if (x < xmin) {
+            xmin = x;
+            xmin_edge = 1;
+        } else if (x > xmax) {
+            xmax = x;
+            xmax_edge = 1;
+        }
+
+        if (y == ymin) {
+            ymin_edge++;
+        }
+        if (y == ymax) {
+            ymax_edge++;
+        } else if (y < ymin) {
+            ymin = y;
+            ymin_edge = 1;
+        } else if (y > ymax) {
+            ymax = y;
+            ymax_edge = 1;
+        }
+    }
+
+    /* Copy the coordinates and number on edges information into the proper   *
+     * structures.                                                            */
+    coords.xmin = xmin;
+    coords.xmax = xmax;
+    coords.ymin = ymin;
+    coords.ymax = ymax;
+
+    num_on_edges.xmin = xmin_edge;
+    num_on_edges.xmax = xmax_edge;
+    num_on_edges.ymin = ymin_edge;
+    num_on_edges.ymax = ymax_edge;
+}
+
+/* This routine finds the bounding box of each net from scratch (i.e.   *
+ * from only the block location information).  It updates both the       *
+ * coordinate and number of pins on each edge information.  It           *
+ * should only be called when the bounding box information is not valid. */
+static void get_layer_bb_from_scratch(ClusterNetId net_id,
+                                      std::vector<t_2D_tbb>& num_on_edges,
+                                      std::vector<t_2D_tbb>& coords,
+                                      std::vector<int>& layer_pin_sink_count) {
     auto& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
     num_on_edges.resize(num_layers, t_2D_tbb());
