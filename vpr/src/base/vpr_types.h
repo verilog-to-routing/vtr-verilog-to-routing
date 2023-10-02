@@ -1145,6 +1145,9 @@ enum class e_place_delta_delay_algorithm {
  *   @param constraints_file
  *              File that specifies locations of locked down (constrained)
  *              blocks for placement. Empty string means no constraints file.
+ *   @param write_initial_place_file
+ *              Write the initial placement into this file. Empty string means
+ *              the initial placement is not written.
  *   @param pad_loc_file
  *              File to read pad locations from if pad_loc_type is USER.
  *   @param place_freq
@@ -1187,6 +1190,7 @@ struct t_placer_opts {
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;
+    std::string write_initial_place_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;

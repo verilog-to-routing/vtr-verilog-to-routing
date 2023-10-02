@@ -622,6 +622,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->constraints_file = Options.constraints_file;
 
+    PlacerOpts->write_initial_place_file = Options.write_initial_place_file;
+
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
 
     PlacerOpts->place_chan_width = Options.PlaceChanWidth;
