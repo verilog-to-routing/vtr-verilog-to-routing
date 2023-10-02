@@ -570,9 +570,8 @@ struct t_net_power {
 };
 
 /**
- * @brief Stores the bounding box of a net in terms of the minimum and
- *        maximum coordinates of the blocks forming the net, clipped to
- *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1, 0..device_ctx.grid.num_layers()-1)
+ * @brief Stores a 3D bounding box in terms of the minimum and
+ *        maximum coordinates: x, y, layer
  */
 struct t_bb {
     t_bb() = default;
@@ -609,6 +608,7 @@ struct t_2D_tbb {
         , layer_num(layer_num_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
+        VTR_ASSERT(layer_num_ >= 0);
     }
     int xmin = OPEN;
     int xmax = OPEN;
