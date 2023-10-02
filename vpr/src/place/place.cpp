@@ -271,6 +271,8 @@ static void free_fast_cost_update();
 
 static double comp_bb_cost(e_cost_methods method);
 
+static double comp_layer_bb_cost(e_cost_methods method);
+
 static void update_move_nets(int num_nets_affected);
 static void reset_move_nets(int num_nets_affected);
 
@@ -545,6 +547,8 @@ void try_place(const Netlist<>& net_list,
     float first_crit_exponent, first_rlim, first_t;
     int first_move_lim;
 
+    int num_layers = device_ctx.grid.get_num_layers();
+
     t_placer_costs costs(placer_opts.place_algorithm);
 
     tatum::TimingPathInfo critical_path;
@@ -653,7 +657,13 @@ void try_place(const Netlist<>& net_list,
     /* Gets initial cost and loads bounding boxes. */
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        costs.bb_cost = comp_bb_cost(NORMAL);
+        if (num_layers == 1) {
+            costs.bb_cost = comp_bb_cost(NORMAL);
+        } else {
+            VTR_ASSERT_SAFE(num_layers > 1);
+            costs.bb_cost = comp_layer_bb_cost(NORMAL);
+        }
+
 
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
@@ -2330,23 +2340,58 @@ static double comp_bb_cost(e_cost_methods method) {
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET
                 && method == NORMAL) {
                 get_bb_from_scratch(net_id,
-                                    place_move_ctx.bb_num_on_edges[net_id],
                                     place_move_ctx.bb_coords[net_id],
-                                    place_move_ctx.num_sink_pin_layer[net_id]);
+                                    place_move_ctx.bb_num_on_edges[net_id]);
             } else {
-                get_non_updateable_bb(net_id,
-                                      place_move_ctx.bb_coords[net_id],
-                                      place_move_ctx.num_sink_pin_layer[net_id]);
+                get_non_updateable_bb(net_id, place_move_ctx.bb_coords[net_id]);
             }
 
-            net_cost[net_id] = get_net_cost(net_id,
-                                            place_move_ctx.bb_coords[net_id],
-                                            place_move_ctx.num_sink_pin_layer[net_id]);
+            net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
             cost += net_cost[net_id];
             if (method == CHECK)
-                expected_wirelength += get_net_wirelength_estimate(net_id,
-                                                                   place_move_ctx.bb_coords[net_id],
-                                                                   place_move_ctx.num_sink_pin_layer[net_id]);
+                expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
+        }
+    }
+
+    if (method == CHECK) {
+        VTR_LOG("\n");
+        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
+                expected_wirelength);
+    }
+    return cost;
+}
+
+
+static double comp_layer_bb_cost(e_cost_methods method) {
+    double cost = 0;
+    double expected_wirelength = 0.0;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
+            /* Small nets don't use incremental updating on their bounding boxes, *
+             * so they can use a fast bounding box calculator.                    */
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET
+                && method == NORMAL) {
+                get_layer_bb_from_scratch(net_id,
+                                    place_move_ctx.layer_bb_num_on_edges[net_id],
+                                    place_move_ctx.layer_bb_coords[net_id],
+                                    place_move_ctx.num_sink_pin_layer[net_id]);
+            } else {
+                get_non_updateable_layer_bb(net_id,
+                                            place_move_ctx.layer_bb_coords[net_id],
+                                            place_move_ctx.num_sink_pin_layer[net_id]);
+            }
+
+            net_cost[net_id] = get_net_layer_cost(net_id,
+                                                  place_move_ctx.layer_bb_coords[net_id],
+                                                  place_move_ctx.num_sink_pin_layer[net_id]);
+            cost += net_cost[net_id];
+            if (method == CHECK)
+                expected_wirelength += get_net_layer_wirelength_estimate(net_id,
+                                                                         place_move_ctx.layer_bb_coords[net_id],
+                                                                         place_move_ctx.num_sink_pin_layer[net_id]);
         }
     }
 
@@ -3547,10 +3592,10 @@ static inline void update_bb_edge(ClusterNetId net_id,
                                   int& new_num_block_on_edge,
                                   int& new_edge_coord) {
     if (old_num_block_on_edge == 1) {
-        get_bb_from_scratch(net_id,
-                            bb_edge_new,
-                            bb_coord_new,
-                            bb_layer_pin_sink_count);
+        get_layer_bb_from_scratch(net_id,
+                                  bb_edge_new,
+                                  bb_coord_new,
+                                  bb_layer_pin_sink_count);
         bb_updated_before[net_id] = GOT_FROM_SCRATCH;
         return;
     } else {
@@ -3766,7 +3811,15 @@ static int check_placement_costs(const t_placer_costs& costs,
     double bb_cost_check;
     double timing_cost_check;
 
-    bb_cost_check = comp_bb_cost(CHECK);
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
+    if (num_layers == 1) {
+        bb_cost_check = comp_bb_cost(CHECK);
+    } else {
+        VTR_ASSERT_SAFE(num_layers > 1);
+        bb_cost_check = comp_layer_bb_cost(CHECK);
+    }
+
     if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
         VTR_LOG_ERROR(
             "bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
