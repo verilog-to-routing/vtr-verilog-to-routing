@@ -406,6 +406,13 @@ static void update_net_bb(const ClusterNetId net,
                           int iblk,
                           const ClusterBlockId blk,
                           const ClusterPinId blk_pin);
+
+static void update_net_layer_bb(const ClusterNetId net,
+                                const t_pl_blocks_to_be_moved& blocks_affected,
+                                int iblk,
+                                const ClusterBlockId blk,
+                                const ClusterPinId blk_pin);
+
 static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
@@ -1887,7 +1894,11 @@ static int find_affected_nets_and_update_costs(
             record_affected_net(net_id, num_affected_nets);
 
             /* Update the net bounding boxes. */
-            update_net_bb(net_id, blocks_affected, iblk, blk, blk_pin);
+            if (num_layers == 1) {
+                update_net_bb(net_id, blocks_affected, iblk, blk, blk_pin);
+            } else {
+                update_net_layer_bb(net_id, blocks_affected, iblk, blk, blk_pin);
+            }
 
             if (place_algorithm.is_timing_driven()) {
                 /* Determine the change in connection delay and timing cost. */
@@ -1949,6 +1960,44 @@ static void update_net_bb(const ClusterNetId net,
         //For small nets brute-force bounding box update is faster
 
         if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
+            get_non_updateable_bb(net, ts_bb_coord_new[net]);
+        }
+    } else {
+        //For large nets, update bounding box incrementally
+        int iblk_pin = tile_pin_index(blk_pin);
+
+        t_physical_tile_type_ptr blk_type = physical_tile_type(blk);
+        int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
+        int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
+
+        //Incremental bounding box update
+        t_physical_tile_loc pin_old_loc(
+            blocks_affected.moved_blocks[iblk].old_loc.x + pin_width_offset,
+            blocks_affected.moved_blocks[iblk].old_loc.y + pin_height_offset,
+            blocks_affected.moved_blocks[iblk].old_loc.layer);
+        t_physical_tile_loc pin_new_loc(
+            blocks_affected.moved_blocks[iblk].new_loc.x + pin_width_offset,
+            blocks_affected.moved_blocks[iblk].new_loc.y + pin_height_offset,
+            blocks_affected.moved_blocks[iblk].new_loc.layer);
+        update_bb(net,
+                  ts_bb_coord_new[net],
+                  ts_bb_edge_new[net],
+                  pin_old_loc,
+                  pin_new_loc);
+    }
+}
+
+static void update_net_layer_bb(const ClusterNetId net,
+                                const t_pl_blocks_to_be_moved& blocks_affected,
+                                int iblk,
+                                const ClusterBlockId blk,
+                                const ClusterPinId blk_pin) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
+        //For small nets brute-force bounding box update is faster
+
+        if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
             get_non_updateable_bb(net,
                                   ts_bb_coord_new[net]);
         }
@@ -1970,11 +2019,13 @@ static void update_net_bb(const ClusterNetId net,
             blocks_affected.moved_blocks[iblk].new_loc.y + pin_height_offset,
             blocks_affected.moved_blocks[iblk].new_loc.layer);
         auto pin_dir = get_pin_type_from_pin_physical_num(blk_type, iblk_pin);
-        update_bb(net,
-                  ts_bb_edge_new[net],
-                  ts_bb_coord_new[net],
-                  pin_old_loc,
-                  pin_new_loc);
+        update_layer_bb(net,
+                        layer_ts_bb_edge_new[net],
+                        layer_ts_bb_coord_new[net],
+                        ts_layer_sink_pin_count[net],
+                        pin_old_loc,
+                        pin_new_loc,
+                        pin_dir);
     }
 }
 
