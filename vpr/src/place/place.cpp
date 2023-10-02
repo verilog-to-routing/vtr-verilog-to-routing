@@ -635,6 +635,13 @@ void try_place(const Netlist<>& net_list,
                       placer_opts.constraints_file.c_str(),
                       noc_opts.noc);
 
+    if (!placer_opts.write_initial_place_file.empty()) {
+        print_place(nullptr,
+                    nullptr,
+                    (placer_opts.write_initial_place_file + ".init.place").c_str(),
+                    true);
+    }
+
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
      * Analytic Placer:
