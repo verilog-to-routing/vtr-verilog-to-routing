@@ -219,12 +219,12 @@ def run(
 
     # parse top module
     # NOTE: the default value is '-auto-top'
+    top_module = '-auto-top'
     if ('topmodule' in parmys_args):
         if (parmys_args['topmodule'] is not None) and (parmys_args['topmodule'] != ''):
             top_module = '-top ' + parmys_args['topmodule']
         del parmys_args['topmodule']
-    else:
-        top_module = '-auto-top'
+        
 
     init_script_file(
         yosys_script_full_path,
