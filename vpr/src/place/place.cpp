@@ -148,7 +148,8 @@ static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); //[0...device_ctx.g
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
-static vtr::vector<ClusterNetId, std::vector<t_2D_tbb>> ts_bb_coord_new, ts_bb_edge_new;
+static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
+static vtr::vector<ClusterNetId, std::vector<t_2D_tbb>> layer_ts_bb_coord_new, layer_ts_bb_edge_new;
 static vtr::vector<ClusterNetId, std::vector<int>> ts_layer_sink_pin_count;
 static std::vector<ClusterNetId> ts_nets_to_update;
 
@@ -2442,8 +2443,13 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
 
     vtr::release_memory(net_cost);
     vtr::release_memory(proposed_net_cost);
-    vtr::release_memory(place_move_ctx.bb_coords);
     vtr::release_memory(place_move_ctx.bb_num_on_edges);
+    vtr::release_memory(place_move_ctx.bb_coords);
+
+    vtr::release_memory(place_move_ctx.layer_bb_num_on_edges);
+    vtr::release_memory(place_move_ctx.layer_bb_coords);
+
+    vtr::release_memory(place_move_ctx.num_sink_pin_layer);
 
     vtr::release_memory(bb_updated_before);
 
@@ -2465,9 +2471,15 @@ static void alloc_and_load_try_swap_structs() {
 
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    ts_bb_edge_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
-    ts_bb_coord_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
-    ts_layer_sink_pin_count.resize(num_nets, std::vector<int>(num_layers, OPEN));
+    if (num_layers == 1) {
+        ts_bb_coord_new.resize(num_nets, t_bb());
+        ts_bb_edge_new.resize(num_nets, t_bb());
+    } else {
+        VTR_ASSERT(num_layers > 1);
+        layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+        layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+        ts_layer_sink_pin_count.resize(num_nets, std::vector<int>(num_layers, OPEN));
+    }
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -2477,6 +2489,8 @@ static void alloc_and_load_try_swap_structs() {
 static void free_try_swap_structs() {
     vtr::release_memory(ts_bb_edge_new);
     vtr::release_memory(ts_bb_coord_new);
+    vtr::release_memory(layer_ts_bb_edge_new);
+    vtr::release_memory(layer_ts_bb_coord_new);
     vtr::release_memory(ts_layer_sink_pin_count);
     vtr::release_memory(ts_nets_to_update);
 
