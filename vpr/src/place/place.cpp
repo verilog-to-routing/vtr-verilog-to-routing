@@ -1884,7 +1884,7 @@ static int find_affected_nets_and_update_costs(
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     int num_affected_nets = 0;
 
@@ -1993,8 +1993,8 @@ static void update_net_bb(const ClusterNetId net,
             blocks_affected.moved_blocks[iblk].new_loc.y + pin_height_offset,
             blocks_affected.moved_blocks[iblk].new_loc.layer);
         update_bb(net,
-                  ts_bb_coord_new[net],
                   ts_bb_edge_new[net],
+                  ts_bb_coord_new[net],
                   pin_old_loc,
                   pin_new_loc);
     }
