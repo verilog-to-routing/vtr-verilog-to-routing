@@ -825,7 +825,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0,
                                                0);
         VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str());
+        print_place(nullptr, nullptr, filename.c_str(), false);
     }
 
     first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
@@ -1060,7 +1060,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
                                                state.num_temps + 1, 0);
         VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str());
+        print_place(nullptr, nullptr, filename.c_str(), false);
     }
 
     // TODO:
@@ -1293,7 +1293,7 @@ static void placement_inner_loop(const t_annealing_state* state,
             VTR_LOG(
                 "Saving placement to file at temperature move %d / %d: %s\n",
                 inner_iter, state->move_lim, filename.c_str());
-            print_place(nullptr, nullptr, filename.c_str());
+            print_place(nullptr, nullptr, filename.c_str(), false);
             ++inner_placement_save_count;
         }
     }

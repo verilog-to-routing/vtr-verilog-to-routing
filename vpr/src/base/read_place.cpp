@@ -309,7 +309,8 @@ void read_place_body(std::ifstream& placement_file,
  */
 void print_place(const char* net_file,
                  const char* net_id,
-                 const char* place_file) {
+                 const char* place_file,
+                 bool is_initial_place) {
     FILE* fp;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -342,5 +343,9 @@ void print_place(const char* net_file,
     fclose(fp);
 
     //Calculate the ID of the placement
-    place_ctx.placement_id = vtr::secure_digest_file(place_file);
+    if(is_initial_place) {
+        place_ctx.initial_placement_id = vtr::secure_digest_file(place_file);
+    } else {
+        place_ctx.placement_id = vtr::secure_digest_file(place_file);
+    }
 }
