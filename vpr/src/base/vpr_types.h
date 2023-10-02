@@ -595,8 +595,8 @@ struct t_bb {
 };
 
 /**
- * @brief Stores a 2D bounding box.
- * @note layer_num indicates the layer of the bounding box
+ * @brief Stores a 2D bounding box in terms of the minimum and maximum x and y
+ * @note layer_num indicates the layer that the bounding box is on.
  */
 struct t_2D_bb {
     t_2D_bb() = default;
