@@ -1329,18 +1329,18 @@ int get_random_layer(t_logical_block_type_ptr logical_block) {
     return layer_num;
 }
 
-t_bb union_2d_tbb(const std::vector<t_2D_tbb>& tbb_vec) {
+t_bb union_2d_bb(const std::vector<t_2D_bb>& bb_vec) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    VTR_ASSERT_SAFE((int)tbb_vec.size() == num_layers);
-    t_bb merged_bb(tbb_vec[0].xmin,
-                   tbb_vec[0].xmax,
-                   tbb_vec[0].ymin,
-                   tbb_vec[0].ymax,
+    VTR_ASSERT_SAFE((int)bb_vec.size() == num_layers);
+    t_bb merged_bb(bb_vec[0].xmin,
+                   bb_vec[0].xmax,
+                   bb_vec[0].ymin,
+                   bb_vec[0].ymax,
                    0,
                    num_layers - 1);
 
     for (int layer_num = 1; layer_num < num_layers; layer_num++) {
-        const auto& layer_bb = tbb_vec[layer_num];
+        const auto& layer_bb = bb_vec[layer_num];
         if (layer_bb.xmin == OPEN) {
             continue;
         }

@@ -149,7 +149,7 @@ static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); //[0...device_ctx.g
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
 static vtr::vector<ClusterNetId, t_bb> ts_bb_edge_new, ts_bb_coord_new;
-static vtr::vector<ClusterNetId, std::vector<t_2D_tbb>> layer_ts_bb_edge_new, layer_ts_bb_coord_new;
+static vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_edge_new, layer_ts_bb_coord_new;
 static vtr::vector<ClusterNetId, std::vector<int>> ts_layer_sink_pin_count;
 static std::vector<ClusterNetId> ts_nets_to_update;
 
@@ -334,7 +334,7 @@ static void get_non_updateable_bb(ClusterNetId net_id,
                                   t_bb& bb_coord_new);
 
 static void get_non_updateable_layer_bb(ClusterNetId net_id,
-                                        std::vector<t_2D_tbb>& bb_coord_new,
+                                        std::vector<t_2D_bb>& bb_coord_new,
                                         std::vector<int>& num_sink_layer);
 
 static void update_bb(ClusterNetId net_id,
@@ -344,8 +344,8 @@ static void update_bb(ClusterNetId net_id,
                       t_physical_tile_loc pin_new_loc);
 
 static void update_layer_bb(ClusterNetId net_id,
-                            std::vector<t_2D_tbb>& bb_edge_new,
-                            std::vector<t_2D_tbb>& bb_coord_new,
+                            std::vector<t_2D_bb>& bb_edge_new,
+                            std::vector<t_2D_bb>& bb_coord_new,
                             std::vector<int>& bb_pin_sink_count_new,
                             t_physical_tile_loc pin_old_loc,
                             t_physical_tile_loc pin_new_loc,
@@ -354,20 +354,20 @@ static void update_layer_bb(ClusterNetId net_id,
 static inline void update_bb_same_layer(ClusterNetId net_id,
                                         const t_physical_tile_loc& pin_old_loc,
                                         const t_physical_tile_loc& pin_new_loc,
-                                        const std::vector<t_2D_tbb>& curr_bb_edge,
-                                        const std::vector<t_2D_tbb>& curr_bb_coord,
+                                        const std::vector<t_2D_bb>& curr_bb_edge,
+                                        const std::vector<t_2D_bb>& curr_bb_coord,
                                         std::vector<int>& bb_pin_sink_count_new,
-                                        std::vector<t_2D_tbb>& bb_edge_new,
-                                        std::vector<t_2D_tbb>& bb_coord_new);
+                                        std::vector<t_2D_bb>& bb_edge_new,
+                                        std::vector<t_2D_bb>& bb_coord_new);
 
 static inline void update_bb_layer_changed(ClusterNetId net_id,
                                            const t_physical_tile_loc& pin_old_loc,
                                            const t_physical_tile_loc& pin_new_loc,
-                                           const std::vector<t_2D_tbb>& curr_bb_edge,
-                                           const std::vector<t_2D_tbb>& curr_bb_coord,
+                                           const std::vector<t_2D_bb>& curr_bb_edge,
+                                           const std::vector<t_2D_bb>& curr_bb_coord,
                                            std::vector<int>& bb_pin_sink_count_new,
-                                           std::vector<t_2D_tbb>& bb_edge_new,
-                                           std::vector<t_2D_tbb>& bb_coord_new);
+                                           std::vector<t_2D_bb>& bb_edge_new,
+                                           std::vector<t_2D_bb>& bb_coord_new);
 
 static void update_bb_pin_sink_count(ClusterNetId net_id,
                                      const t_physical_tile_loc& pin_old_loc,
@@ -377,8 +377,8 @@ static void update_bb_pin_sink_count(ClusterNetId net_id,
                                      bool is_output_pin);
 
 static inline void update_bb_edge(ClusterNetId net_id,
-                                  std::vector<t_2D_tbb>& bb_edge_new,
-                                  std::vector<t_2D_tbb>& bb_coord_new,
+                                  std::vector<t_2D_bb>& bb_edge_new,
+                                  std::vector<t_2D_bb>& bb_coord_new,
                                   std::vector<int>& bb_layer_pin_sink_count,
                                   const int& old_num_block_on_edge,
                                   const int& old_edge_coord,
@@ -386,10 +386,10 @@ static inline void update_bb_edge(ClusterNetId net_id,
                                   int& new_edge_coord);
 
 static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
-                            const t_2D_tbb& bb_edge_old,
-                            const t_2D_tbb& bb_coord_old,
-                            t_2D_tbb& bb_edge_new,
-                            t_2D_tbb& bb_coord_new);
+                            const t_2D_bb& bb_edge_old,
+                            const t_2D_bb& bb_coord_old,
+                            t_2D_bb& bb_edge_new,
+                            t_2D_bb& bb_coord_new);
 
 static int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
@@ -427,7 +427,7 @@ static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_
 static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr);
 
 static double get_net_layer_cost(ClusterNetId /* net_id */,
-                                 const std::vector<t_2D_tbb>& bbptr,
+                                 const std::vector<t_2D_bb>& bbptr,
                                  const std::vector<int>& layer_pin_sink_count);
 
 static void get_bb_from_scratch(ClusterNetId net_id,
@@ -435,14 +435,14 @@ static void get_bb_from_scratch(ClusterNetId net_id,
                                 t_bb& num_on_edges);
 
 static void get_layer_bb_from_scratch(ClusterNetId net_id,
-                                      std::vector<t_2D_tbb>& num_on_edges,
-                                      std::vector<t_2D_tbb>& coords,
+                                      std::vector<t_2D_bb>& num_on_edges,
+                                      std::vector<t_2D_bb>& coords,
                                       std::vector<int>& layer_pin_sink_count);
 
 static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bbptr);
 
 static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
-                                                const std::vector<t_2D_tbb>& bbptr,
+                                                const std::vector<t_2D_bb>& bbptr,
                                                 const std::vector<int>& layer_pin_sink_count);
 
 static void free_try_swap_arrays();
@@ -2545,8 +2545,8 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
     } else {
         VTR_ASSERT(num_layers > 1);
-        place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
-        place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+        place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.num_sink_pin_layer.resize(num_nets, std::vector<int>(num_layers, 0));
     }
 
@@ -2619,8 +2619,8 @@ static void alloc_and_load_try_swap_structs() {
         ts_bb_coord_new.resize(num_nets, t_bb());
     } else {
         VTR_ASSERT(num_layers > 1);
-        layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
-        layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_tbb>(num_layers, t_2D_tbb()));
+        layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         ts_layer_sink_pin_count.resize(num_nets, std::vector<int>(num_layers, OPEN));
     }
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
@@ -2737,13 +2737,13 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb& coords, t_bb& num_on_
  * coordinate and number of pins on each edge information.  It           *
  * should only be called when the bounding box information is not valid. */
 static void get_layer_bb_from_scratch(ClusterNetId net_id,
-                                      std::vector<t_2D_tbb>& num_on_edges,
-                                      std::vector<t_2D_tbb>& coords,
+                                      std::vector<t_2D_bb>& num_on_edges,
+                                      std::vector<t_2D_bb>& coords,
                                       std::vector<int>& layer_pin_sink_count) {
     auto& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
-    num_on_edges.resize(num_layers, t_2D_tbb());
-    coords.resize(num_layers, t_2D_tbb());
+    num_on_edges.resize(num_layers, t_2D_bb());
+    coords.resize(num_layers, t_2D_bb());
     layer_pin_sink_count.resize(num_layers, 0);
     std::vector<int> xmin(num_layers, OPEN);
     std::vector<int> xmax(num_layers, OPEN);
@@ -2884,7 +2884,7 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bbptr
 }
 
 static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
-                                                const std::vector<t_2D_tbb>& bbptr,
+                                                const std::vector<t_2D_bb>& bbptr,
                                                 const std::vector<int>& layer_pin_sink_count) {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
      * its coordinate bounding box.                                         */
@@ -2942,7 +2942,7 @@ static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
 }
 
 static double get_net_layer_cost(ClusterNetId /* net_id */,
-                                 const std::vector<t_2D_tbb>& bbptr,
+                                 const std::vector<t_2D_bb>& bbptr,
                                  const std::vector<int>& layer_pin_sink_count) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
@@ -3042,7 +3042,7 @@ static void get_non_updateable_bb(ClusterNetId net_id,
 }
 
 static void get_non_updateable_layer_bb(ClusterNetId net_id,
-                                        std::vector<t_2D_tbb>& bb_coord_new,
+                                        std::vector<t_2D_bb>& bb_coord_new,
                                         std::vector<int>& num_sink_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
@@ -3307,8 +3307,8 @@ static void update_bb(ClusterNetId net_id,
 }
 
 static void update_layer_bb(ClusterNetId net_id,
-                            std::vector<t_2D_tbb>& bb_edge_new,
-                            std::vector<t_2D_tbb>& bb_coord_new,
+                            std::vector<t_2D_bb>& bb_edge_new,
+                            std::vector<t_2D_bb>& bb_coord_new,
                             std::vector<int>& bb_pin_sink_count_new,
                             t_physical_tile_loc pin_old_loc,
                             t_physical_tile_loc pin_new_loc,
@@ -3326,7 +3326,7 @@ static void update_layer_bb(ClusterNetId net_id,
      * The x and y coordinates are the pin's x and y coordinates.         */
     /* IO blocks are considered to be one cell in for simplicity.         */
     //TODO: account for multiple physical pin instances per logical pin
-    const std::vector<t_2D_tbb> *curr_bb_edge, *curr_bb_coord;
+    const std::vector<t_2D_bb> *curr_bb_edge, *curr_bb_coord;
     const std::vector<int>* curr_layer_pin_sink_count;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -3396,11 +3396,11 @@ static void update_layer_bb(ClusterNetId net_id,
 static inline void update_bb_same_layer(ClusterNetId net_id,
                                         const t_physical_tile_loc& pin_old_loc,
                                         const t_physical_tile_loc& pin_new_loc,
-                                        const std::vector<t_2D_tbb>& curr_bb_edge,
-                                        const std::vector<t_2D_tbb>& curr_bb_coord,
+                                        const std::vector<t_2D_bb>& curr_bb_edge,
+                                        const std::vector<t_2D_bb>& curr_bb_coord,
                                         std::vector<int>& bb_pin_sink_count_new,
-                                        std::vector<t_2D_tbb>& bb_edge_new,
-                                        std::vector<t_2D_tbb>& bb_coord_new) {
+                                        std::vector<t_2D_bb>& bb_edge_new,
+                                        std::vector<t_2D_bb>& bb_coord_new) {
     int x_old = pin_old_loc.x;
     int x_new = pin_new_loc.x;
 
@@ -3546,11 +3546,11 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
 static inline void update_bb_layer_changed(ClusterNetId net_id,
                                            const t_physical_tile_loc& pin_old_loc,
                                            const t_physical_tile_loc& pin_new_loc,
-                                           const std::vector<t_2D_tbb>& curr_bb_edge,
-                                           const std::vector<t_2D_tbb>& curr_bb_coord,
+                                           const std::vector<t_2D_bb>& curr_bb_edge,
+                                           const std::vector<t_2D_bb>& curr_bb_coord,
                                            std::vector<int>& bb_pin_sink_count_new,
-                                           std::vector<t_2D_tbb>& bb_edge_new,
-                                           std::vector<t_2D_tbb>& bb_coord_new) {
+                                           std::vector<t_2D_bb>& bb_edge_new,
+                                           std::vector<t_2D_bb>& bb_coord_new) {
 
     int x_old = pin_old_loc.x;
 
@@ -3656,8 +3656,8 @@ static void update_bb_pin_sink_count(ClusterNetId /* net_id */,
 }
 
 static inline void update_bb_edge(ClusterNetId net_id,
-                                  std::vector<t_2D_tbb>& bb_edge_new,
-                                  std::vector<t_2D_tbb>& bb_coord_new,
+                                  std::vector<t_2D_bb>& bb_edge_new,
+                                  std::vector<t_2D_bb>& bb_coord_new,
                                   std::vector<int>& bb_layer_pin_sink_count,
                                   const int& old_num_block_on_edge,
                                   const int& old_edge_coord,
@@ -3677,10 +3677,10 @@ static inline void update_bb_edge(ClusterNetId net_id,
 }
 
 static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
-                            const t_2D_tbb& bb_edge_old,
-                            const t_2D_tbb& bb_coord_old,
-                            t_2D_tbb& bb_edge_new,
-                            t_2D_tbb& bb_coord_new) {
+                            const t_2D_bb& bb_edge_old,
+                            const t_2D_bb& bb_coord_old,
+                            t_2D_bb& bb_edge_new,
+                            t_2D_bb& bb_coord_new) {
     int x_new = new_pin_loc.x;
     int y_new = new_pin_loc.y;
 

@@ -598,9 +598,9 @@ struct t_bb {
  * @brief Stores a 2D bounding box.
  * @note layer_num indicates the layer of the bounding box
  */
-struct t_2D_tbb {
-    t_2D_tbb() = default;
-    t_2D_tbb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
+struct t_2D_bb {
+    t_2D_bb() = default;
+    t_2D_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
         : xmin(xmin_)
         , xmax(xmax_)
         , ymin(ymin_)
