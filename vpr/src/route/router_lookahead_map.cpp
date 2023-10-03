@@ -490,9 +490,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                                                        delta_y);
         } else if (from_layer_num != to_layer_num) {
             std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
-                                                                                               to_layer_num,
-                                                                                               delta_x,
-                                                                                               delta_y);
+                                                                                       to_layer_num,
+                                                                                       delta_x,
+                                                                                       delta_y);
         }
 
         expected_delay_cost *= params.criticality;
@@ -518,18 +518,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT(from_seg_index >= 0);
 
         bool get_cost_entry = true;
-        if (from_layer_num != to_layer_num) {
-            t_physical_tile_type_ptr to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
-                                                                                       rr_graph.node_ylow(to_node),
-                                                                                       to_layer_num});
-            auto to_tile_index = std::distance(&device_ctx.physical_tile_types[0], to_tile_type);
-            auto to_ptc = rr_graph.node_ptc_num(to_node);
-            if (inter_layer_connection[to_layer_num][to_tile_index][to_ptc].find(from_layer_num) == inter_layer_connection[to_layer_num][to_tile_index][to_ptc].end()) {
-                get_cost_entry = false;
-                expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
-                expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
-            }
-        }
+        // Since we assume that inter-layer connections are only from a block output pin to another layer, if the from node is of type CHANX/Y, it
+        // should be on the same layer as the sink node.
+        VTR_ASSERT(from_layer_num != to_layer_num);
 
         if (get_cost_entry) {
             /* now get the expected cost from our lookahead map */
@@ -540,10 +531,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                         delta_y);
             expected_delay_cost = cost_entry.delay;
             expected_cong_cost = cost_entry.congestion;
-            if (from_layer_num != to_layer_num) {
-                VTR_ASSERT(std::isfinite(inter_layer_connection_box_sw_delay));
-                expected_delay_cost += inter_layer_connection_box_sw_delay;
-            }
 
             expected_delay_cost *= params.criticality;
             expected_cong_cost *= (1 - params.criticality);
