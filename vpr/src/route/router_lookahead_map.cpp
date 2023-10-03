@@ -471,9 +471,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         t_physical_tile_type_ptr from_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
                                                                                      rr_graph.node_ylow(from_node),
                                                                                      from_layer_num});
-        t_physical_tile_type_ptr to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
-                                                                                   rr_graph.node_ylow(to_node),
-                                                                                   to_layer_num});
 
         auto from_tile_index = std::distance(&device_ctx.physical_tile_types[0], from_tile_type);
 
