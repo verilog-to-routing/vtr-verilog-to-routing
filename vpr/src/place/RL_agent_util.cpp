@@ -14,7 +14,6 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             VTR_LOG("Probability of Weighted_median_move : %f \n", placer_opts.place_static_move_prob[4]);
             VTR_LOG("Probability of Timing_feasible_region_move : %f \n", placer_opts.place_static_move_prob[5]);
             VTR_LOG("Probability of Critical_uniform_move : %f \n", placer_opts.place_static_move_prob[6]);
-            VTR_LOG("Probability of Inter Layer Uniform Move : %f \n", placer_opts.place_static_move_prob[7]);
             move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
             move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
         } else { //Non-timing driven placement
@@ -46,12 +45,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
          *      This state is activated late in the anneal and in the Quench   */
 
         int num_1st_state_avail_moves = placer_opts.place_algorithm.is_timing_driven() ? NUM_PL_1ST_STATE_MOVE_TYPES : NUM_PL_NONTIMING_MOVE_TYPES;
-        int num_2nd_state_avail_moves;
-        if (placer_opts.place_algorithm.is_timing_driven()) {
-            num_2nd_state_avail_moves = NUM_PL_MOVE_TYPES;
-        } else {
-            num_2nd_state_avail_moves = NUM_PL_NONTIMING_MOVE_TYPES;
-        }
+        int num_2nd_state_avail_moves = placer_opts.place_algorithm.is_timing_driven() ? NUM_PL_MOVE_TYPES : NUM_PL_NONTIMING_MOVE_TYPES;
 
         if (placer_opts.place_agent_algorithm == E_GREEDY) {
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent1, karmed_bandit_agent2;
