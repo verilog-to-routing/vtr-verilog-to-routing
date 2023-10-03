@@ -22,7 +22,6 @@ class MapLookahead : public RouterLookahead {
     // [tile_index][from_layer_num][to_layer_num] -> pair<seg_index, t_reachable_wire_inf>
     util::t_src_opin_inter_layer_delays src_opin_inter_layer_delays;
 
-    float inter_layer_connection_box_sw_delay;
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
 

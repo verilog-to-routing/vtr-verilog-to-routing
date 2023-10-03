@@ -302,21 +302,7 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 /******** Interface class member function definitions ********/
 MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
     : det_routing_arch_(det_routing_arch)
-    , is_flat_(is_flat) {
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    if (num_layers > 1) {
-        const auto& sw_inf = g_vpr_ctx.device().all_sw_inf;
-        int inter_layer_sw_id = det_routing_arch_.wire_to_arch_ipin_switch_between_dice;
-        if (inter_layer_sw_id != OPEN) {
-            inter_layer_connection_box_sw_delay = sw_inf.at(inter_layer_sw_id).Tdel();
-        } else {
-            inter_layer_connection_box_sw_delay = std::numeric_limits<float>::max();
-        }
-    } else {
-        VTR_ASSERT(num_layers == 1);
-        inter_layer_connection_box_sw_delay = 0.;
-    }
-}
+    , is_flat_(is_flat) {}
 
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
