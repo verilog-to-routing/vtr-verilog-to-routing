@@ -476,10 +476,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                                                    to_layer_num});
 
         auto from_tile_index = std::distance(&device_ctx.physical_tile_types[0], from_tile_type);
-        auto to_tile_index = std::distance(&device_ctx.physical_tile_types[0], to_tile_type);
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
-        auto to_ptc = rr_graph.node_ptc_num(to_node);
 
         // Currently, we assume inter-layer connections are only from a block output pin to another layer. Thus, if the from and to layers are different,
         // We use src_opin_inter_layer_delays.
