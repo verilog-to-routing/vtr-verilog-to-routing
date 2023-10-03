@@ -501,7 +501,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         bool get_cost_entry = true;
         // Since we assume that inter-layer connections are only from a block output pin to another layer, if the from node is of type CHANX/Y, it
         // should be on the same layer as the sink node.
-        VTR_ASSERT(from_layer_num != to_layer_num);
+        VTR_ASSERT(from_layer_num == to_layer_num);
 
         if (get_cost_entry) {
             /* now get the expected cost from our lookahead map */
