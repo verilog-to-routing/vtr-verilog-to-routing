@@ -273,6 +273,7 @@ struct t_reachable_wire_inf {
 // When querying this data structure, the minimum cost is computed for each delay/congestion pair, and returned
 // as the lookahead expected cost. [opin/src layer_num][tile_index][opin/src ptc_number] -> pair<seg_index, t_reachable_wire_inf>
 typedef std::vector<std::vector<std::vector<std::map<int, t_reachable_wire_inf>>>> t_src_opin_delays;
+// Store the wire segments on to_layer_num reachable from a given SOURCE/OPIN
 // [from_layer_num][tile_index][from opin/src ptc num][to_layer_num] -> pair<seg_index, t_reachable_wire_inf>
 typedef std::vector<std::vector<std::vector<std::vector<std::map<int, util::t_reachable_wire_inf>>>>> t_src_opin_inter_layer_delays;
 // [from layer num][tile_index][sink ptc number] -> set of layers that have connections to the given sink

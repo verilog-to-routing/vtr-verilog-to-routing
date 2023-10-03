@@ -629,6 +629,7 @@ static void dijkstra_flood_to_wires(int itile,
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].congestion = curr.congestion;
             } else if (is_multi_layer && (!src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num].count(seg_index) || curr.delay < src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].delay)
                        && curr_layer_num != node_layer_num) {
+                // Store a CHANX/Y node or a SINK node on another layer that is reachable by the current node.
                 src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].wire_rr_type = curr_rr_type;
                 src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].wire_seg_index = seg_index;
                 src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].delay = curr.delay;

@@ -481,23 +481,18 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         auto from_ptc = rr_graph.node_ptc_num(from_node);
         auto to_ptc = rr_graph.node_ptc_num(to_node);
 
-        if (from_layer_num == to_layer_num || inter_layer_connection[to_layer_num][to_tile_index][to_ptc].find(from_layer_num) != inter_layer_connection[to_layer_num][to_tile_index][to_ptc].end()) {
+        // Currently, we assume inter-layer connections are only from a block output pin to another layer. Thus, if the from and to layers are different,
+        // We use src_opin_inter_layer_delays.
+        if (from_layer_num == to_layer_num) {
             std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc],
                                                                                        from_layer_num,
                                                                                        delta_x,
                                                                                        delta_y);
-        }
-
-        if (from_layer_num != to_layer_num) {
-            float tmp_expected_delay_cost, tmp_expected_cong_cost;
-            std::tie(tmp_expected_delay_cost, tmp_expected_cong_cost) = get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
+        } else if (from_layer_num != to_layer_num) {
+            std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
                                                                                                to_layer_num,
                                                                                                delta_x,
                                                                                                delta_y);
-            if (tmp_expected_delay_cost < expected_delay_cost) {
-                expected_delay_cost = tmp_expected_delay_cost;
-                expected_cong_cost = tmp_expected_cong_cost;
-            }
         }
 
         expected_delay_cost *= params.criticality;
