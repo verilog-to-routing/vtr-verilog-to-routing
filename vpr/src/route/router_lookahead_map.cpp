@@ -563,9 +563,6 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
     std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
-
-    // Store the sinks that have connections to other layers
-    this->inter_layer_connection = util::register_block_inter_layer_connection(is_flat_);
 }
 
 void MapLookahead::compute_intra_tile() {
@@ -589,8 +586,6 @@ void MapLookahead::read(const std::string& file) {
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
     std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
-
-    this->inter_layer_connection = util::register_block_inter_layer_connection(is_flat_);
 }
 
 void MapLookahead::read_intra_cluster(const std::string& file) {

@@ -276,8 +276,6 @@ typedef std::vector<std::vector<std::vector<std::map<int, t_reachable_wire_inf>>
 // Store the wire segments on to_layer_num reachable from a given SOURCE/OPIN
 // [from_layer_num][tile_index][from opin/src ptc num][to_layer_num] -> pair<seg_index, t_reachable_wire_inf>
 typedef std::vector<std::vector<std::vector<std::vector<std::map<int, util::t_reachable_wire_inf>>>>> t_src_opin_inter_layer_delays;
-// [from layer num][tile_index][sink ptc number] -> set of layers that have connections to the given sink
-typedef std::vector<std::vector<std::vector<std::unordered_set<int>>>> t_sink_inter_layer_connection;
 
 //[from pin ptc num][target src ptc num]->cost
 typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_delays;
@@ -294,13 +292,6 @@ typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_d
 typedef std::vector<std::vector<std::vector<t_reachable_wire_inf>>> t_chan_ipins_delays;
 
 std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_opin_lookahead(bool is_flat);
-
-/**
- *
- * @brief Register which layers has connection to each block type
- * @return
- */
-t_sink_inter_layer_connection register_block_inter_layer_connection(bool is_flat);
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead();
 

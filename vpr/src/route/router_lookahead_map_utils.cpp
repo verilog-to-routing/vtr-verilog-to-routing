@@ -409,63 +409,6 @@ std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_o
     return std::make_pair(src_opin_delays, src_opin_inter_layer_delays);
 }
 
-t_sink_inter_layer_connection register_block_inter_layer_connection(bool is_flat) {
-    //TODO: This function uses architectural information to determine the inter-layer connections.
-    // However, this infromation should be extracted from the RR graph. This is a temporary solution
-    // Moreover, there is an underlying assumption that the connection pattern for each block type on a layer is the same.
-    vtr::ScopedStartFinishTimer timer("Computing sink inter layer lookahead");
-    auto& device_ctx = g_vpr_ctx.device();
-
-    int num_layers = device_ctx.grid.get_num_layers();
-    bool is_multi_layer = (num_layers > 1);
-    if (!is_multi_layer) {
-        return t_sink_inter_layer_connection();
-    }
-    // AM: Currently, for 3D stuff, I am only focusing on the case that flat-router is not enabled. If flat_router is on, I am not sure whether it works.
-    VTR_ASSERT(!is_flat);
-
-    t_sink_inter_layer_connection inter_layer_conn;
-    inter_layer_conn.resize(num_layers);
-    // Resize inter_layer_conn to accommodate all the layers, block types, and number of classes for each block type
-    for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
-        const auto& physical_tiles = device_ctx.physical_tile_types;
-        int num_physical_tile_types = (int)device_ctx.physical_tile_types.size();
-
-        inter_layer_conn[from_layer_num].resize(num_physical_tile_types);
-        for (int itile = 0; itile < num_physical_tile_types; itile++) {
-            if (device_ctx.grid.num_instances(&physical_tiles[itile], from_layer_num) == 0) {
-                continue;
-            }
-            int num_classes = (int)physical_tiles[itile].class_inf.size();
-            inter_layer_conn[from_layer_num][itile].resize(num_classes);
-        }
-    }
-
-    for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
-        for (int itile = 0; itile < (int)device_ctx.physical_tile_types.size(); itile++) {
-            for (int class_num = 0; class_num < (int)inter_layer_conn[from_layer_num][itile].size(); class_num++) {
-                const auto& physical_tile = device_ctx.physical_tile_types[itile];
-                if (get_class_type_from_class_physical_num(&physical_tile, class_num) == e_pin_type::RECEIVER) {
-                    for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
-                        if (from_layer_num == to_layer_num) {
-                            continue;
-                        } else {
-                            for (int pin_num : get_pin_list_from_class_physical_num(&physical_tile, class_num)) {
-                                if (is_pin_conencted_to_layer(&physical_tile, pin_num, from_layer_num, to_layer_num, num_layers)) {
-                                    inter_layer_conn[from_layer_num][itile][class_num].insert(to_layer_num);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return inter_layer_conn;
-}
-
 t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     vtr::ScopedStartFinishTimer timer("Computing chan/ipin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
