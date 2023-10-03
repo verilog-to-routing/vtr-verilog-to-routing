@@ -409,7 +409,10 @@ std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_o
     return std::make_pair(src_opin_delays, src_opin_inter_layer_delays);
 }
 
-t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(bool is_flat) {
+t_sink_inter_layer_connection register_block_inter_layer_connection(bool is_flat) {
+    //TODO: This function uses architectural information to determine the inter-layer connections.
+    // However, this infromation should be extracted from the RR graph. This is a temporary solution
+    // Moreover, there is an underlying assumption that the connection pattern for each block type on a layer is the same.
     vtr::ScopedStartFinishTimer timer("Computing sink inter layer lookahead");
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -423,6 +426,7 @@ t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(b
 
     t_sink_inter_layer_connection inter_layer_conn;
     inter_layer_conn.resize(num_layers);
+    // Resize inter_layer_conn to accommodate all the layers, block types, and number of classes for each block type
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         const auto& physical_tiles = device_ctx.physical_tile_types;
         int num_physical_tile_types = (int)device_ctx.physical_tile_types.size();

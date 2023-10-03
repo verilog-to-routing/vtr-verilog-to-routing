@@ -294,7 +294,12 @@ typedef std::vector<std::vector<std::vector<t_reachable_wire_inf>>> t_chan_ipins
 
 std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_opin_lookahead(bool is_flat);
 
-t_sink_inter_layer_connection register_tiles_with_inter_layer_connection_block(bool is_flat);
+/**
+ *
+ * @brief Register which layers has connection to each block type
+ * @return
+ */
+t_sink_inter_layer_connection register_block_inter_layer_connection(bool is_flat);
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead();
 
