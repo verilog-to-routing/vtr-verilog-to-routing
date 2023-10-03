@@ -306,6 +306,9 @@ void read_place_body(std::ifstream& placement_file,
  *
  * The architecture and netlist files used to generate this placement are recorded
  * in the file to avoid loading a placement with the wrong support file later.
+ *
+ * The is_initial_place bool indicates whether this is the initial placement or not. It is used to determine the
+ * suffix of the output file name.
  */
 void print_place(const char* net_file,
                  const char* net_id,
