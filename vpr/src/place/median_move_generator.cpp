@@ -253,19 +253,26 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
 static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int /* layer */) {
     //TODO: account for multiple physical pin instances per logical pin
 
-    const t_bb *curr_bb_edge, *curr_bb_coord;
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
+
+    bool is_multi_layer = (device_ctx.grid.get_num_layers() > 1);
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
+    t_bb union_bb_edge;
+    t_bb union_bb;
+    if (is_multi_layer) {
+        std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_coords[net_id],
+                                                             place_move_ctx.layer_bb_num_on_edges[net_id]);
+    }
+
     /* The net had NOT been updated before, could use the old values */
-    curr_bb_coord = &(place_move_ctx.bb_coords[net_id]);
-    curr_bb_edge = &(place_move_ctx.bb_num_on_edges[net_id]);
+    const t_bb& curr_bb_edge = is_multi_layer ? union_bb_edge : place_move_ctx.bb_num_on_edges[net_id];
+    const t_bb& curr_bb_coord = is_multi_layer ? union_bb : place_move_ctx.bb_coords[net_id];
 
     /* Check if I can update the bounding box incrementally. */
 
@@ -273,24 +280,24 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
 
         /* Update the xmax fields for coordinates and number of edges first. */
 
-        if (xold == curr_bb_coord->xmax) { /* Old position at xmax. */
-            if (curr_bb_edge->xmax == 1) {
+        if (xold == curr_bb_coord.xmax) { /* Old position at xmax. */
+            if (curr_bb_edge.xmax == 1) {
                 return false;
             } else {
-                bb_coord_new.xmax = curr_bb_coord->xmax;
+                bb_coord_new.xmax = curr_bb_coord.xmax;
             }
         } else { /* Move to left, old postion was not at xmax. */
-            bb_coord_new.xmax = curr_bb_coord->xmax;
+            bb_coord_new.xmax = curr_bb_coord.xmax;
         }
 
         /* Now do the xmin fields for coordinates and number of edges. */
 
-        if (xnew < curr_bb_coord->xmin) { /* Moved past xmin */
+        if (xnew < curr_bb_coord.xmin) { /* Moved past xmin */
             bb_coord_new.xmin = xnew;
-        } else if (xnew == curr_bb_coord->xmin) { /* Moved to xmin */
+        } else if (xnew == curr_bb_coord.xmin) { /* Moved to xmin */
             bb_coord_new.xmin = xnew;
         } else { /* Xmin unchanged. */
-            bb_coord_new.xmin = curr_bb_coord->xmin;
+            bb_coord_new.xmin = curr_bb_coord.xmin;
         }
         /* End of move to left case. */
 
@@ -298,29 +305,29 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
 
         /* Update the xmin fields for coordinates and number of edges first. */
 
-        if (xold == curr_bb_coord->xmin) { /* Old position at xmin. */
-            if (curr_bb_edge->xmin == 1) {
+        if (xold == curr_bb_coord.xmin) { /* Old position at xmin. */
+            if (curr_bb_edge.xmin == 1) {
                 return false;
             } else {
-                bb_coord_new.xmin = curr_bb_coord->xmin;
+                bb_coord_new.xmin = curr_bb_coord.xmin;
             }
         } else { /* Move to right, old position was not at xmin. */
-            bb_coord_new.xmin = curr_bb_coord->xmin;
+            bb_coord_new.xmin = curr_bb_coord.xmin;
         }
         /* Now do the xmax fields for coordinates and number of edges. */
 
-        if (xnew > curr_bb_coord->xmax) { /* Moved past xmax. */
+        if (xnew > curr_bb_coord.xmax) { /* Moved past xmax. */
             bb_coord_new.xmax = xnew;
-        } else if (xnew == curr_bb_coord->xmax) { /* Moved to xmax */
+        } else if (xnew == curr_bb_coord.xmax) { /* Moved to xmax */
             bb_coord_new.xmax = xnew;
         } else { /* Xmax unchanged. */
-            bb_coord_new.xmax = curr_bb_coord->xmax;
+            bb_coord_new.xmax = curr_bb_coord.xmax;
         }
         /* End of move to right case. */
 
     } else { /* xnew == xold -- no x motion. */
-        bb_coord_new.xmin = curr_bb_coord->xmin;
-        bb_coord_new.xmax = curr_bb_coord->xmax;
+        bb_coord_new.xmin = curr_bb_coord.xmin;
+        bb_coord_new.xmax = curr_bb_coord.xmax;
     }
 
     /* Now account for the y-direction motion. */
@@ -329,24 +336,24 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
 
         /* Update the ymax fields for coordinates and number of edges first. */
 
-        if (yold == curr_bb_coord->ymax) { /* Old position at ymax. */
-            if (curr_bb_edge->ymax == 1) {
+        if (yold == curr_bb_coord.ymax) { /* Old position at ymax. */
+            if (curr_bb_edge.ymax == 1) {
                 return false;
             } else {
-                bb_coord_new.ymax = curr_bb_coord->ymax;
+                bb_coord_new.ymax = curr_bb_coord.ymax;
             }
         } else { /* Move down, old postion was not at ymax. */
-            bb_coord_new.ymax = curr_bb_coord->ymax;
+            bb_coord_new.ymax = curr_bb_coord.ymax;
         }
 
         /* Now do the ymin fields for coordinates and number of edges. */
 
-        if (ynew < curr_bb_coord->ymin) { /* Moved past ymin */
+        if (ynew < curr_bb_coord.ymin) { /* Moved past ymin */
             bb_coord_new.ymin = ynew;
-        } else if (ynew == curr_bb_coord->ymin) { /* Moved to ymin */
+        } else if (ynew == curr_bb_coord.ymin) { /* Moved to ymin */
             bb_coord_new.ymin = ynew;
         } else { /* ymin unchanged. */
-            bb_coord_new.ymin = curr_bb_coord->ymin;
+            bb_coord_new.ymin = curr_bb_coord.ymin;
         }
         /* End of move down case. */
 
@@ -354,30 +361,30 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
 
         /* Update the ymin fields for coordinates and number of edges first. */
 
-        if (yold == curr_bb_coord->ymin) { /* Old position at ymin. */
-            if (curr_bb_edge->ymin == 1) {
+        if (yold == curr_bb_coord.ymin) { /* Old position at ymin. */
+            if (curr_bb_edge.ymin == 1) {
                 return false;
             } else {
-                bb_coord_new.ymin = curr_bb_coord->ymin;
+                bb_coord_new.ymin = curr_bb_coord.ymin;
             }
         } else { /* Moved up, old position was not at ymin. */
-            bb_coord_new.ymin = curr_bb_coord->ymin;
+            bb_coord_new.ymin = curr_bb_coord.ymin;
         }
 
         /* Now do the ymax fields for coordinates and number of edges. */
 
-        if (ynew > curr_bb_coord->ymax) { /* Moved past ymax. */
+        if (ynew > curr_bb_coord.ymax) { /* Moved past ymax. */
             bb_coord_new.ymax = ynew;
-        } else if (ynew == curr_bb_coord->ymax) { /* Moved to ymax */
+        } else if (ynew == curr_bb_coord.ymax) { /* Moved to ymax */
             bb_coord_new.ymax = ynew;
         } else { /* ymax unchanged. */
-            bb_coord_new.ymax = curr_bb_coord->ymax;
+            bb_coord_new.ymax = curr_bb_coord.ymax;
         }
         /* End of move up case. */
 
     } else { /* ynew == yold -- no y motion. */
-        bb_coord_new.ymin = curr_bb_coord->ymin;
-        bb_coord_new.ymax = curr_bb_coord->ymax;
+        bb_coord_new.ymin = curr_bb_coord.ymin;
+        bb_coord_new.ymax = curr_bb_coord.ymax;
     }
     return true;
 }
