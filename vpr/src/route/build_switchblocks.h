@@ -82,6 +82,12 @@ struct t_switchblock_edge {
     short to_wire_layer;
 };
 
+/** @brief Contain required information to create track-to-track connection in switchblocks in multi-die FPGAs **/
+struct t_inter_die_switchblock_edge{
+    std::vector<short> from_track; // keeps the tracks that should connect to the same track in another layer
+    short offset_to_extra_chanx_node = -1; //index to length-0 extra node available in the switchblock
+};
+
 /* Switchblock connections are made as [x][y][from_side][to_side][from_wire_ind].
  * The Switchblock_Lookup class specifies these dimensions.
  * Furthermore, a source_wire at a given 5-d coordinate may connect to multiple destination wires so the value
