@@ -73,7 +73,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
             }
 
-            const auto& net_bb_coords = is_multi_layer ? place_move_ctx.bb_coords[net_id] : union_bb;
+            const auto& net_bb_coords = is_multi_layer ? union_bb: place_move_ctx.bb_coords[net_id];
             //use the incremental update of the bb
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
