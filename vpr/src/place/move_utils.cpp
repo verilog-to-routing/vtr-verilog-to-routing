@@ -1377,58 +1377,58 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
             continue;
         }
         if (merged_bb.xmin == OPEN || layer_bb.xmin <= merged_bb.xmin) {
-            merged_bb.xmin = layer_bb.xmin;
             if (layer_bb.xmin == merged_bb.xmin) {
                 VTR_ASSERT_SAFE(merged_num_edge.xmin != OPEN);
                 merged_num_edge.xmin += num_edge_vec[layer_bb.layer_num].xmin;
             } else {
                 merged_num_edge.xmin = num_edge_vec[merged_bb.layer_min].xmin;
             }
+            merged_bb.xmin = layer_bb.xmin;
         }
         if (merged_bb.xmax == OPEN || layer_bb.xmax >= merged_bb.xmax) {
-            merged_bb.xmax = layer_bb.xmax;
             if (layer_bb.xmax == merged_bb.xmax) {
                 VTR_ASSERT_SAFE(merged_num_edge.xmax != OPEN);
                 merged_num_edge.xmax += num_edge_vec[layer_bb.layer_num].xmax;
             } else {
                 merged_num_edge.xmax = num_edge_vec[merged_bb.layer_max].xmax;
             }
+            merged_bb.xmax = layer_bb.xmax;
         }
         if (merged_bb.ymin == OPEN || layer_bb.ymin <= merged_bb.ymin) {
-            merged_bb.ymin = layer_bb.ymin;
             if (layer_bb.ymin == merged_bb.ymin) {
                 VTR_ASSERT_SAFE(merged_num_edge.ymin != OPEN);
                 merged_num_edge.ymin += num_edge_vec[layer_bb.layer_num].ymin;
             } else {
                 merged_num_edge.ymin = num_edge_vec[merged_bb.layer_min].ymin;
             }
+            merged_bb.ymin = layer_bb.ymin;
         }
         if (merged_bb.ymax == OPEN || layer_bb.ymax >= merged_bb.ymax) {
-            merged_bb.ymax = layer_bb.ymax;
             if (layer_bb.ymax == merged_bb.ymax) {
                 VTR_ASSERT_SAFE(merged_num_edge.ymax != OPEN);
                 merged_num_edge.ymax += num_edge_vec[layer_bb.layer_num].ymax;
             } else {
                 merged_num_edge.ymax = num_edge_vec[merged_bb.layer_max].ymax;
             }
+            merged_bb.ymax = layer_bb.ymax;
         }
         if (merged_bb.layer_min == OPEN || layer_bb.layer_num <= merged_bb.layer_min) {
-            merged_bb.layer_min = layer_bb.layer_num;
             if (layer_bb.layer_num == merged_bb.layer_min) {
                 VTR_ASSERT_SAFE(merged_num_edge.layer_min != OPEN);
                 merged_num_edge.layer_min += num_edge_vec[layer_bb.layer_num].layer_num;
             } else {
                 merged_num_edge.layer_min = num_edge_vec[merged_bb.layer_min].layer_num;
             }
+            merged_bb.layer_min = layer_bb.layer_num;
         }
         if (merged_bb.layer_max == OPEN || layer_bb.layer_num >= merged_bb.layer_max) {
-            merged_bb.layer_max = layer_bb.layer_num;
             if (layer_bb.layer_num == merged_bb.layer_max) {
                 VTR_ASSERT_SAFE(merged_num_edge.layer_max != OPEN);
                 merged_num_edge.layer_max += num_edge_vec[layer_bb.layer_num].layer_num;
             } else {
                 merged_num_edge.layer_max = num_edge_vec[merged_bb.layer_max].layer_num;
             }
+            merged_bb.layer_max = layer_bb.layer_num;
         }
     }
 
