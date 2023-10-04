@@ -3368,6 +3368,10 @@ static void update_layer_bb(ClusterNetId net_id,
     int layer_new = pin_new_loc.layer_num;
     bool layer_changed = (layer_old != layer_new);
 
+    bb_edge_new = *curr_bb_edge;
+    bb_coord_new = *curr_bb_coord;
+
+
     if(layer_changed) {
         update_bb_layer_changed(net_id,
                                 pin_old_loc,
@@ -3423,9 +3427,6 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
             if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
                 return;
             }
-        } else {
-            bb_edge_new[layer_num].xmax = curr_bb_edge[layer_num].xmax;
-            bb_coord_new[layer_num].xmax = curr_bb_coord[layer_num].xmax;
         }
 
         if (x_new < curr_bb_coord[layer_num].xmin) {
@@ -3433,9 +3434,6 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
             bb_coord_new[layer_num].xmin = x_new;
         } else if (x_new == curr_bb_coord[layer_num].xmin) {
             bb_edge_new[layer_num].xmin = curr_bb_edge[layer_num].xmin + 1;
-            bb_coord_new[layer_num].xmin = curr_bb_coord[layer_num].xmin;
-        } else {
-            bb_edge_new[layer_num].xmin = curr_bb_edge[layer_num].xmin;
             bb_coord_new[layer_num].xmin = curr_bb_coord[layer_num].xmin;
         }
 
@@ -3452,9 +3450,6 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
             if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
                 return;
             }
-        } else {
-            bb_edge_new[layer_num].xmin = curr_bb_edge[layer_num].xmin;
-            bb_coord_new[layer_num].xmin = curr_bb_coord[layer_num].xmin;
         }
 
         if (x_new > curr_bb_coord[layer_num].xmax) {
@@ -3463,17 +3458,8 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
         } else if (x_new == curr_bb_coord[layer_num].xmax) {
             bb_edge_new[layer_num].xmax = curr_bb_edge[layer_num].xmax + 1;
             bb_coord_new[layer_num].xmax = curr_bb_coord[layer_num].xmax;
-        } else {
-            bb_edge_new[layer_num].xmax = curr_bb_edge[layer_num].xmax;
-            bb_coord_new[layer_num].xmax = curr_bb_coord[layer_num].xmax;
         }
 
-    } else {
-        /* block has not moved */
-        bb_edge_new[layer_num].xmin = curr_bb_edge[layer_num].xmin;
-        bb_coord_new[layer_num].xmin = curr_bb_coord[layer_num].xmin;
-        bb_edge_new[layer_num].xmax = curr_bb_edge[layer_num].xmax;
-        bb_coord_new[layer_num].xmax = curr_bb_coord[layer_num].xmax;
     }
 
     if (y_new < y_old) {
@@ -3489,9 +3475,6 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
             if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
                 return;
             }
-        } else {
-            bb_edge_new[layer_num].ymax = curr_bb_edge[layer_num].ymax;
-            bb_coord_new[layer_num].ymax = curr_bb_coord[layer_num].ymax;
         }
 
         if (y_new < curr_bb_coord[layer_num].ymin) {
@@ -3499,9 +3482,6 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
             bb_coord_new[layer_num].ymin = y_new;
         } else if (y_new == curr_bb_coord[layer_num].ymin) {
             bb_edge_new[layer_num].ymin = curr_bb_edge[layer_num].ymin + 1;
-            bb_coord_new[layer_num].ymin = curr_bb_coord[layer_num].ymin;
-        } else {
-            bb_edge_new[layer_num].ymin = curr_bb_edge[layer_num].ymin;
             bb_coord_new[layer_num].ymin = curr_bb_coord[layer_num].ymin;
         }
 
@@ -3518,9 +3498,6 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
             if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
                 return;
             }
-        } else {
-            bb_edge_new[layer_num].ymin = curr_bb_edge[layer_num].ymin;
-            bb_coord_new[layer_num].ymin = curr_bb_coord[layer_num].ymin;
         }
 
         if (y_new > curr_bb_coord[layer_num].ymax) {
@@ -3529,16 +3506,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
         } else if (y_new == curr_bb_coord[layer_num].ymax) {
             bb_edge_new[layer_num].ymax = curr_bb_edge[layer_num].ymax + 1;
             bb_coord_new[layer_num].ymax = curr_bb_coord[layer_num].ymax;
-        } else {
-            bb_edge_new[layer_num].ymax = curr_bb_edge[layer_num].ymax;
-            bb_coord_new[layer_num].ymax = curr_bb_coord[layer_num].ymax;
         }
-    } else {
-        /* block has not moved */
-        bb_edge_new[layer_num].ymin = curr_bb_edge[layer_num].ymin;
-        bb_coord_new[layer_num].ymin = curr_bb_coord[layer_num].ymin;
-        bb_edge_new[layer_num].ymax = curr_bb_edge[layer_num].ymax;
-        bb_coord_new[layer_num].ymax = curr_bb_coord[layer_num].ymax;
     }
 
 }
@@ -3572,8 +3540,6 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
         if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
             return;
         }
-        bb_edge_new[old_layer_num].xmin = curr_bb_edge[old_layer_num].xmin;
-        bb_coord_new[old_layer_num].xmin = curr_bb_coord[old_layer_num].xmin;
     } else if (x_old == curr_bb_coord[old_layer_num].xmin) {
         update_bb_edge(net_id,
                        bb_edge_new,
@@ -3586,14 +3552,6 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
         if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
             return;
         }
-        bb_edge_new[old_layer_num].xmax = curr_bb_edge[old_layer_num].xmax;
-        bb_coord_new[old_layer_num].xmax = curr_bb_coord[old_layer_num].xmax;
-    } else {
-        /* block has not moved */
-        bb_edge_new[old_layer_num].xmin = curr_bb_edge[old_layer_num].xmin;
-        bb_coord_new[old_layer_num].xmin = curr_bb_coord[old_layer_num].xmin;
-        bb_edge_new[old_layer_num].xmax = curr_bb_edge[old_layer_num].xmax;
-        bb_coord_new[old_layer_num].xmax = curr_bb_coord[old_layer_num].xmax;
     }
 
     if (y_old == curr_bb_coord[old_layer_num].ymax) {
@@ -3608,8 +3566,6 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
         if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
             return;
         }
-        bb_edge_new[old_layer_num].ymin = curr_bb_edge[old_layer_num].ymin;
-        bb_coord_new[old_layer_num].ymin = curr_bb_coord[old_layer_num].ymin;
     } else if (y_old == curr_bb_coord[old_layer_num].ymin) {
         update_bb_edge(net_id,
                        bb_edge_new,
@@ -3622,15 +3578,6 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
         if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
             return;
         }
-        bb_edge_new[old_layer_num].ymax = curr_bb_edge[old_layer_num].ymax;
-        bb_coord_new[old_layer_num].ymax = curr_bb_coord[old_layer_num].ymax;
-
-    } else {
-        /* block has not moved */
-        bb_edge_new[old_layer_num].ymin = curr_bb_edge[old_layer_num].ymin;
-        bb_coord_new[old_layer_num].ymin = curr_bb_coord[old_layer_num].ymin;
-        bb_edge_new[old_layer_num].ymax = curr_bb_edge[old_layer_num].ymax;
-        bb_coord_new[old_layer_num].ymax = curr_bb_coord[old_layer_num].ymax;
     }
 
     add_block_to_bb(pin_new_loc,
@@ -3689,10 +3636,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
         bb_coord_new.xmax = x_new;
     } else if (x_new == bb_coord_old.xmax) {
         bb_edge_new.xmax = bb_edge_old.xmax + 1;
-        bb_coord_new.xmax = bb_coord_old.xmax;
-    } else {
-        bb_edge_new.xmax = bb_edge_old.xmax;
-        bb_coord_new.xmax = bb_coord_old.xmax;
     }
 
     if (x_new < bb_coord_old.xmin) {
@@ -3700,10 +3643,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
         bb_coord_new.xmin = x_new;
     } else if (x_new == bb_coord_old.xmin) {
         bb_edge_new.xmin = bb_edge_old.xmin + 1;
-        bb_coord_new.xmin = bb_coord_old.xmin;
-    } else {
-        bb_edge_new.xmin = bb_edge_old.xmin;
-        bb_coord_new.xmin = bb_coord_old.xmin;
     }
 
     if (y_new > bb_coord_old.ymax) {
@@ -3711,10 +3650,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
         bb_coord_new.ymax = y_new;
     } else if (y_new == bb_coord_old.ymax) {
         bb_edge_new.ymax = bb_edge_old.ymax + 1;
-        bb_coord_new.ymax = bb_coord_old.ymax;
-    } else {
-        bb_edge_new.ymax = bb_edge_old.ymax;
-        bb_coord_new.ymax = bb_coord_old.ymax;
     }
 
     if (y_new < bb_coord_old.ymin) {
@@ -3722,10 +3657,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
         bb_coord_new.ymin = y_new;
     } else if (y_new == bb_coord_old.ymin) {
         bb_edge_new.ymin = bb_edge_old.ymin + 1;
-        bb_coord_new.ymin = bb_coord_old.ymin;
-    } else {
-        bb_edge_new.ymin = bb_edge_old.ymin;
-        bb_coord_new.ymin = bb_coord_old.ymin;
     }
 }
 
