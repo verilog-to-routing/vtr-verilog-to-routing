@@ -1381,7 +1381,7 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                 VTR_ASSERT_SAFE(merged_num_edge.xmin != OPEN);
                 merged_num_edge.xmin += num_edge_vec[layer_bb.layer_num].xmin;
             } else {
-                merged_num_edge.xmin = num_edge_vec[merged_bb.layer_min].xmin;
+                merged_num_edge.xmin = num_edge_vec[layer_bb.layer_num].xmin;
             }
             merged_bb.xmin = layer_bb.xmin;
         }
@@ -1390,7 +1390,7 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                 VTR_ASSERT_SAFE(merged_num_edge.xmax != OPEN);
                 merged_num_edge.xmax += num_edge_vec[layer_bb.layer_num].xmax;
             } else {
-                merged_num_edge.xmax = num_edge_vec[merged_bb.layer_max].xmax;
+                merged_num_edge.xmax = num_edge_vec[layer_bb.layer_num].xmax;
             }
             merged_bb.xmax = layer_bb.xmax;
         }
@@ -1399,7 +1399,7 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                 VTR_ASSERT_SAFE(merged_num_edge.ymin != OPEN);
                 merged_num_edge.ymin += num_edge_vec[layer_bb.layer_num].ymin;
             } else {
-                merged_num_edge.ymin = num_edge_vec[merged_bb.layer_min].ymin;
+                merged_num_edge.ymin = num_edge_vec[layer_bb.layer_num].ymin;
             }
             merged_bb.ymin = layer_bb.ymin;
         }
@@ -1408,7 +1408,7 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                 VTR_ASSERT_SAFE(merged_num_edge.ymax != OPEN);
                 merged_num_edge.ymax += num_edge_vec[layer_bb.layer_num].ymax;
             } else {
-                merged_num_edge.ymax = num_edge_vec[merged_bb.layer_max].ymax;
+                merged_num_edge.ymax = num_edge_vec[layer_bb.layer_num].ymax;
             }
             merged_bb.ymax = layer_bb.ymax;
         }
@@ -1417,7 +1417,7 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                 VTR_ASSERT_SAFE(merged_num_edge.layer_min != OPEN);
                 merged_num_edge.layer_min += num_edge_vec[layer_bb.layer_num].layer_num;
             } else {
-                merged_num_edge.layer_min = num_edge_vec[merged_bb.layer_min].layer_num;
+                merged_num_edge.layer_min = num_edge_vec[layer_bb.layer_num].layer_num;
             }
             merged_bb.layer_min = layer_bb.layer_num;
         }
@@ -1426,7 +1426,7 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                 VTR_ASSERT_SAFE(merged_num_edge.layer_max != OPEN);
                 merged_num_edge.layer_max += num_edge_vec[layer_bb.layer_num].layer_num;
             } else {
-                merged_num_edge.layer_max = num_edge_vec[merged_bb.layer_max].layer_num;
+                merged_num_edge.layer_max = num_edge_vec[layer_bb.layer_num].layer_num;
             }
             merged_bb.layer_max = layer_bb.layer_num;
         }
