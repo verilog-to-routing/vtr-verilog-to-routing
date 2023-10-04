@@ -498,12 +498,12 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         VTR_ASSERT(from_seg_index >= 0);
 
-        bool get_cost_entry = true;
-        // Since we assume that inter-layer connections are only from a block output pin to another layer, if the from node is of type CHANX/Y, it
-        // should be on the same layer as the sink node.
-        VTR_ASSERT(from_layer_num == to_layer_num);
-
-        if (get_cost_entry) {
+        // Since we assume that inter-layer connections are only from a block output pin to another layer, if the from node
+        // is of type CHANX/CHANY, and the sink node is on the other layer, there will no path from that node to the sink
+        if(from_layer_num != to_layer_num) {
+            expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
+            expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
+        } else {
             /* now get the expected cost from our lookahead map */
             Cost_Entry cost_entry = get_wire_cost_entry(from_type,
                                                         from_seg_index,
@@ -513,20 +513,19 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
             expected_delay_cost = cost_entry.delay;
             expected_cong_cost = cost_entry.congestion;
 
-            expected_delay_cost *= params.criticality;
-            expected_cong_cost *= (1 - params.criticality);
+            VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
+                                vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
+                                                rr_node_arch_name(from_node, is_flat_).c_str(),
+                                                describe_rr_node(rr_graph,
+                                                                 device_ctx.grid,
+                                                                 device_ctx.rr_indexed_data,
+                                                                 from_node,
+                                                                 is_flat_)
+                                                    .c_str())
+                                    .c_str());
         }
-
-        VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
-                            vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(from_node, is_flat_).c_str(),
-                                            describe_rr_node(rr_graph,
-                                                             device_ctx.grid,
-                                                             device_ctx.rr_indexed_data,
-                                                             from_node,
-                                                             is_flat_)
-                                                .c_str())
-                                .c_str());
+        expected_delay_cost *= params.criticality;
+        expected_cong_cost *= (1 - params.criticality);
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
