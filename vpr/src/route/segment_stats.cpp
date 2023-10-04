@@ -112,8 +112,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     }
 
     VTR_LOG("\n");
-    VTR_LOG("Segment occupancy by length: %sname utilization\n", std::string(std::max(max_segment_name_length - 4, 0), ' ').c_str());
-    VTR_LOG("                               %s -----------\n", std::string(std::max(4, max_segment_name_length), '-').c_str());
+    VTR_LOG("Segment occupancy by length: name utilization\n");
+    VTR_LOG("                             ---- -----------\n");
     std::set<int> seen_lengths;
     for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
         int seg_length = segment_inf[seg_type].length;
@@ -124,7 +124,6 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         }
         if (directed_cap_by_length[X_AXIS][seg_length] != 0 || directed_cap_by_length[Y_AXIS][seg_length] != 0) {
             std::string seg_name = "L" + std::to_string(seg_length);
-            int seg_name_size = static_cast<int>(seg_name.size());
 
             int occ = 0;
             int cap = 0;
@@ -133,13 +132,14 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
                 cap += directed_cap_by_length[ax][seg_length];
             }
             utilization = (float)occ / (float)cap;
-            VTR_LOG("                               %s%s %11.3g\n", std::string(std::max(4 - seg_name_size, (max_segment_name_length - seg_name_size)), ' ').c_str(), seg_name.c_str(), utilization);
+            VTR_LOG("                             ---- -----------\n");
+            VTR_LOG("                             %s   %11.3g\n", seg_name.c_str(), utilization);
         }
     }
 
     VTR_LOG("\n");
     VTR_LOG("Segment occupancy by type: %sname type utilization\n", std::string(std::max(max_segment_name_length - 4, 0), ' ').c_str());
-    VTR_LOG("                               %s ---- -----------\n", std::string(std::max(4, max_segment_name_length), '-').c_str());
+    VTR_LOG("                           %s ---- -----------\n", std::string(std::max(4, max_segment_name_length), '-').c_str());
 
     for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
         if (directed_cap_by_type[X_AXIS][seg_type] != 0 || directed_cap_by_type[Y_AXIS][seg_type] != 0) {
@@ -152,7 +152,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
                 cap += directed_cap_by_type[ax][seg_type];
             }
             utilization = (float)occ / (float)cap;
-            VTR_LOG("                               %s%s %4d %11.3g\n", std::string(std::max(4 - seg_name_size, (max_segment_name_length - seg_name_size)), ' ').c_str(), seg_name.c_str(), seg_type, utilization);
+            VTR_LOG("                           %s%s %4d %11.3g\n", std::string(std::max(4 - seg_name_size, (max_segment_name_length - seg_name_size)), ' ').c_str(), seg_name.c_str(), seg_type, utilization);
         }
     }
 }
