@@ -2046,7 +2046,7 @@ static void update_net_layer_bb(const ClusterNetId net,
                         ts_layer_sink_pin_count[net],
                         pin_old_loc,
                         pin_new_loc,
-                        pin_dir);
+                        pin_dir == e_pin_type::DRIVER);
     }
 }
 
