@@ -266,8 +266,8 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     t_bb union_bb_edge;
     t_bb union_bb;
     if (is_multi_layer) {
-        std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_coords[net_id],
-                                                             place_move_ctx.layer_bb_num_on_edges[net_id]);
+        std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
+                                                             place_move_ctx.layer_bb_coords[net_id]);
     }
 
     /* The net had NOT been updated before, could use the old values */
