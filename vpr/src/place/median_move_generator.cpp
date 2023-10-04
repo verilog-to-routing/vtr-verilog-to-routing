@@ -28,6 +28,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
+    bool is_multi_layer = (device_ctx.grid.get_num_layers() > 1);
+
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
@@ -66,6 +68,12 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             if (skip_net)
                 continue;
         } else {
+            t_bb union_bb;
+            if (is_multi_layer) {
+                union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
+            }
+
+            const auto& net_bb_coords = is_multi_layer ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
@@ -78,16 +86,16 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
             //To calulate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
-            if (place_move_ctx.bb_coords[net_id].xmin == xold) {
-                xnew = place_move_ctx.bb_coords[net_id].xmax;
+            if (net_bb_coords.xmin == xold) {
+                xnew = net_bb_coords.xmax;
             } else {
-                xnew = place_move_ctx.bb_coords[net_id].xmin;
+                xnew = net_bb_coords.xmin;
             }
 
-            if (place_move_ctx.bb_coords[net_id].ymin == yold) {
-                ynew = place_move_ctx.bb_coords[net_id].ymax;
+            if (net_bb_coords.ymin == yold) {
+                ynew = net_bb_coords.ymax;
             } else {
-                ynew = place_move_ctx.bb_coords[net_id].ymin;
+                ynew = net_bb_coords.ymin;
             }
 
             if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew, block_layer)) {
