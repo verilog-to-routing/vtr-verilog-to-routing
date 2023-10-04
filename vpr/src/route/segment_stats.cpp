@@ -104,7 +104,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
                 std::string length_str = (length == LONGLINE) ? "longline" : std::to_string(length);
                 utilization = (float)directed_occ_by_length[ax][length] / (float)directed_cap_by_length[ax][length];
                 VTR_LOG("                                       %s%s %11.3g\n",
-                        std::string(std::max(6 - (int)length_str.length(), 0), ' ').c_str(),
+                        std::string(std::max(7 - (int)length_str.length(), 0), ' ').c_str(),
                         length_str.c_str(),
                         utilization);
             }
@@ -123,8 +123,9 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             continue;
         }
         if (directed_cap_by_length[X_AXIS][seg_length] != 0 || directed_cap_by_length[Y_AXIS][seg_length] != 0) {
-            std::string seg_name = segment_inf[seg_type].name;
+            std::string seg_name = "L" + std::to_string(seg_length);
             int seg_name_size = static_cast<int>(seg_name.size());
+
             int occ = 0;
             int cap = 0;
             for (auto ax : {X_AXIS, Y_AXIS}) {
@@ -137,7 +138,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     }
 
     VTR_LOG("\n");
-    VTR_LOG("Segment occupancy by type (index): %sname type utilization\n", std::string(std::max(max_segment_name_length - 4, 0), ' ').c_str());
+    VTR_LOG("Segment occupancy by type: %sname type utilization\n", std::string(std::max(max_segment_name_length - 4, 0), ' ').c_str());
     VTR_LOG("                               %s ---- -----------\n", std::string(std::max(4, max_segment_name_length), '-').c_str());
 
     for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
