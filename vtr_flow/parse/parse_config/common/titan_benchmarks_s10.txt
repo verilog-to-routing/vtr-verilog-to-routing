@@ -1,5 +1,5 @@
 #Titan benchmark packed metrics
-num_io;vpr.out;Netlist iolane blocks:\s*(\d+)
+num_io;vpr.out;Netlist io_cell blocks:\s*(\d+)
 num_LAB;vpr.out;Netlist LAB blocks:\s*(\d+)
 num_MLAB;vpr.out;Netlist MLAB blocks:\s*(\d+)
 num_DSP;vpr.out;Netlist DSP blocks:\s*(\d+)
