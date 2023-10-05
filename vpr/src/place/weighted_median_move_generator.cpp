@@ -34,7 +34,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     /* Calculate the Edge weighted median region */
     t_pl_loc to;
-    to.layer = find_free_layer(cluster_from_type, from);
+    to.layer = from.layer;
 
     t_bb_cost coords;
     t_bb limit_coords;
