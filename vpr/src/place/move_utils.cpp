@@ -831,7 +831,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         t_pl_loc& to_loc,
                         ClusterBlockId b_from) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    int to_layer_num = to_loc.layer;
+    const int to_layer_num = to_loc.layer;
     VTR_ASSERT(to_layer_num != OPEN);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
