@@ -186,17 +186,26 @@ ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr no
  */
 void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
-
-    //set the color of the marker
-    g->set_color(ezgl::BLACK);
+    t_draw_state* draw_state = get_draw_state_vars();
 
     int router_grid_position_x = 0;
     int router_grid_position_y = 0;
+    int router_grid_position_layer = 0;
 
     ezgl::rectangle updated_connection_marker_bbox;
 
     // go through the routers and create the connection marker
     for (auto router = router_list.begin(); router != router_list.end(); router++) {
+        router_grid_position_layer = router->get_router_layer_position();
+
+        t_draw_layer_display marker_box_visibility = draw_state->draw_layer_display[router_grid_position_layer];
+        if (!marker_box_visibility.visible) {
+            continue; /* Don't Draw marker box if not on visible layer*/
+        }
+
+        //set the color of the marker with the layer transparency
+        g->set_color(ezgl::BLACK, marker_box_visibility.alpha);
+
         router_grid_position_x = router->get_router_grid_position_x();
         router_grid_position_y = router->get_router_grid_position_y();
 
@@ -264,12 +273,21 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
         source_router = noc_link_list[link_id].get_source_router();
         sink_router = noc_link_list[link_id].get_sink_router();
 
-        // calculate the grid positions of the source and sink routers
+        //Calculate the layer position of the source and sink routers
         source_router_layer_position = router_list[source_router].get_router_layer_position();
+        sink_router_layer_position = router_list[sink_router].get_router_layer_position();
+
+        //Get visibility settings of the current NoC link based on the layer visibility settings set by the user
+        t_draw_layer_display noc_link_visibility = get_element_visibility_and_transparency(source_router_layer_position, sink_router_layer_position);
+
+        if (!noc_link_visibility.visible) {
+            continue; /* Don't Draw link */
+        }
+
+        // calculate the grid positions of the source and sink routers
         source_router_x_position = router_list[source_router].get_router_grid_position_x();
         source_router_y_position = router_list[source_router].get_router_grid_position_y();
 
-        sink_router_layer_position = router_list[sink_router].get_router_layer_position();
         sink_router_x_position = router_list[sink_router].get_router_grid_position_x();
         sink_router_y_position = router_list[sink_router].get_router_grid_position_y();
 
@@ -284,7 +302,7 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
         shift_noc_link(link_coords, list_of_noc_link_shift_directions[link_id], link_type, noc_connection_marker_quarter_width, noc_connection_marker_quarter_height);
 
         // set the color to draw the current link
-        g->set_color(noc_link_colors[link_id]);
+        g->set_color(noc_link_colors[link_id], noc_link_visibility.alpha);
 
         //draw a line between the center of the two routers this link connects
         g->draw_line(link_coords.start, link_coords.end);

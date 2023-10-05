@@ -465,9 +465,9 @@ struct ParsePlaceAgentSpace {
     ConvertedValue<e_agent_space> from_str(std::string str) {
         ConvertedValue<e_agent_space> conv_value;
         if (str == "move_type")
-            conv_value.set_value(MOVE_TYPE);
+            conv_value.set_value(e_agent_space::MOVE_TYPE);
         else if (str == "move_block_type")
-            conv_value.set_value(MOVE_BLOCK_TYPE);
+            conv_value.set_value(e_agent_space::MOVE_BLOCK_TYPE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_agent_space (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -478,10 +478,10 @@ struct ParsePlaceAgentSpace {
 
     ConvertedValue<std::string> to_str(e_agent_space val) {
         ConvertedValue<std::string> conv_value;
-        if (val == MOVE_TYPE)
+        if (val == e_agent_space::MOVE_TYPE)
             conv_value.set_value("move_type");
         else {
-            VTR_ASSERT(val == MOVE_BLOCK_TYPE);
+            VTR_ASSERT(val == e_agent_space::MOVE_BLOCK_TYPE);
             conv_value.set_value("move_block_type");
         }
         return conv_value;
@@ -2120,6 +2120,30 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "The available values are: move_type, move_block_type")
         .default_value("move_block_type")
         .choices({"move_type", "move_block_type"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.placer_debug_block, "--placer_debug_block")
+        .help(
+            " Controls when placer debugging is enabled for blocks.\n"
+            " * For values >= 0, the value is taken as the block ID for\n"
+            "   which to enable placer debug output.\n"
+            " * For value == -1, placer debug output is enabled for\n"
+            "   all blocks.\n"
+            " * For values < -1, all block-based placer debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.placer_debug_net, "--placer_debug_net")
+        .help(
+            "Controls when placer debugging is enabled for nets.\n"
+            " * For values >= 0, the value is taken as the net ID for\n"
+            "   which to enable placer debug output.\n"
+            " * For value == -1, placer debug output is enabled for\n"
+            "   all nets.\n"
+            " * For values < -1, all net-based placer debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
