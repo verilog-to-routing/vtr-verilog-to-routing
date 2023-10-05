@@ -96,7 +96,7 @@ class KArmedBanditAgent {
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
-    std::vector<double> time_elapsed_{1.0, 3.6, 5.4, 1.0, 2.5, 2.1, 0.8, 2.2};
+    std::vector<double> time_elapsed_{1.0, 3.6, 5.4, 2.5, 2.1, 0.8, 2.2};
 
     FILE* agent_info_file_ = nullptr;
 
@@ -233,7 +233,6 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, bool /*i
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
     avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
     avail_moves[(int)e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
-    avail_moves[(int)e_move_type::INTER_LAYRE_UNIFORM] = std::make_unique<UniformInterLayerMoveGenerator>();
     avail_moves[(int)e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
     avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
     avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
