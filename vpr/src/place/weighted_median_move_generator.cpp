@@ -34,6 +34,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     /* Calculate the Edge weighted median region */
     t_pl_loc to;
+    to.layer = find_free_layer(cluster_from_type, from);
 
     t_bb_cost coords;
     t_bb limit_coords;
@@ -108,7 +109,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     w_median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
     // TODO: Currently, we don't move blocks between different types of layers
     w_median_point.layer = from.layer;
-    to.layer = from.layer;
+
     if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }

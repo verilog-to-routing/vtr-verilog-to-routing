@@ -33,7 +33,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     /* Calculate the feasible region */
     t_pl_loc to;
-    to.layer = from.layer;
+    to.layer = find_free_layer(cluster_from_type, from);
     int ipin;
     ClusterBlockId bnum;
     int max_x, min_x, max_y, min_y;
