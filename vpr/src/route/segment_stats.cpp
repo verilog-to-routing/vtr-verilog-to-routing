@@ -42,11 +42,12 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     for (const auto& seg_inf: segment_inf) {
         int seg_length = seg_inf.longline ? LONGLINE : seg_inf.length;
 
-        directed_cap_by_length[X_AXIS].insert({seg_length, 0});
-        directed_cap_by_length[Y_AXIS].insert({seg_length, 0});
+        for (auto ax : {X_AXIS, Y_AXIS}) {
+            directed_cap_by_length[ax].insert({seg_length, 0});
+            directed_occ_by_length[ax].insert({seg_length, 0});
+        }
 
-        directed_occ_by_length[X_AXIS].insert({seg_length, 0});
-        directed_occ_by_length[Y_AXIS].insert({seg_length, 0});
+
         segment_lengths.insert(seg_length);
 
         max_segment_name_length = std::max(max_segment_name_length, static_cast<int>(seg_inf.name.size()));
@@ -65,14 +66,12 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         if (node_type == CHANX || node_type == CHANY) {
             cost_index = rr_graph.node_cost_index(inode);
             size_t seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
-            int length = -1;
-            if (!segment_inf[seg_type].longline)
-                length = segment_inf[seg_type].length;
-            else
-                length = LONGLINE;
+            int length = segment_inf[seg_type].longline ? LONGLINE : segment_inf[seg_type].length;
+
             const short& inode_capacity = rr_graph.node_capacity(inode);
             int occ = route_ctx.rr_node_route_inf[inode].occ();
             auto ax = (node_type == CHANX) ? X_AXIS : Y_AXIS;
+
             directed_occ_by_length[ax][length] += occ;
             directed_cap_by_length[ax][length] += inode_capacity;
 
@@ -119,14 +118,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     VTR_LOG("\n");
     VTR_LOG("Segment occupancy by length: Length utilization\n");
     VTR_LOG("                             ------ -----------\n");
-    std::set<int> seen_lengths;
-    for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
-        int seg_length = segment_inf[seg_type].length;
-        if (seen_lengths.count(seg_length) == 0) {
-            seen_lengths.insert(seg_length);
-        } else {
-            continue;
-        }
+    for (const auto& seg_length : segment_lengths) {
         if (directed_cap_by_length[X_AXIS][seg_length] != 0 || directed_cap_by_length[Y_AXIS][seg_length] != 0) {
             std::string seg_name = "L" + std::to_string(seg_length);
 
