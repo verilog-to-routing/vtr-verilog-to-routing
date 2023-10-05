@@ -1003,6 +1003,7 @@ static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = 
     "Uniform",
     "Median",
     "Centroid",
+    "INTER_LAYRE_UNIFORM",
     "W. Centroid",
     "W. Median",
     "Crit. Uniform",

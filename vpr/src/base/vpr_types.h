@@ -530,8 +530,8 @@ enum class e_timing_update_type {
  ****************************************************************************/
 
 /* Values of number of placement available move types */
-#define NUM_PL_MOVE_TYPES 7
-#define NUM_PL_NONTIMING_MOVE_TYPES 3
+#define NUM_PL_MOVE_TYPES 8
+#define NUM_PL_NONTIMING_MOVE_TYPES 4
 #define NUM_PL_1ST_STATE_MOVE_TYPES 4
 
 /* Timing data structures end */

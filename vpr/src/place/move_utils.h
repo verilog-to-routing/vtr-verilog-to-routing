@@ -23,6 +23,7 @@ enum class e_move_type {
     UNIFORM,
     MEDIAN,
     CENTROID,
+    INTER_LAYRE_UNIFORM,
     W_CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
