@@ -30,22 +30,27 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
 
     max_segment_length = 0;
     int max_segment_name_length = 0;
-    for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
-        if (segment_inf[seg_type].longline == false) {
-            max_segment_length = std::max(max_segment_length,
-                                          segment_inf[seg_type].length);
-        }
+    std::map<e_parallel_axis, std::map<int, int>> directed_occ_by_length = {
+        {X_AXIS, std::map<int, int>()},
+        {Y_AXIS, std::map<int, int>()}};
 
-        max_segment_name_length = std::max(max_segment_name_length, static_cast<int>(segment_inf[seg_type].name.size()));
+    std::map<e_parallel_axis, std::map<int, int>> directed_cap_by_length = {
+        {X_AXIS, std::map<int, int>()},
+        {Y_AXIS, std::map<int, int>()}};
+
+    std::set<int> segment_lengths;
+    for (const auto& seg_inf: segment_inf) {
+        int seg_length = seg_inf.longline ? LONGLINE : seg_inf.length;
+
+        directed_cap_by_length[X_AXIS].insert({seg_length, 0});
+        directed_cap_by_length[Y_AXIS].insert({seg_length, 0});
+
+        directed_occ_by_length[X_AXIS].insert({seg_length, 0});
+        directed_occ_by_length[Y_AXIS].insert({seg_length, 0});
+        segment_lengths.insert(seg_length);
+
+        max_segment_name_length = std::max(max_segment_name_length, static_cast<int>(seg_inf.name.size()));
     }
-
-    std::map<e_parallel_axis, std::vector<int>> directed_occ_by_length = {
-        {X_AXIS, std::vector<int>(max_segment_length + 1, 0)},
-        {Y_AXIS, std::vector<int>(max_segment_length + 1, 0)}};
-
-    std::map<e_parallel_axis, std::vector<int>> directed_cap_by_length = {
-        {X_AXIS, std::vector<int>(max_segment_length + 1, 0)},
-        {Y_AXIS, std::vector<int>(max_segment_length + 1, 0)}};
 
     std::map<e_parallel_axis, std::vector<int>> directed_occ_by_type = {
         {X_AXIS, std::vector<int>(segment_inf.size(), 0)},
