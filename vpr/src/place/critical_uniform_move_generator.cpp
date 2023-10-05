@@ -28,7 +28,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_pl_loc to;
-    to.layer = from.layer;
+    to.layer = find_free_layer(cluster_from_type, from);
     if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from)) {
         return e_create_move::ABORT;
     }

@@ -120,7 +120,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;
         // TODO: Currently, we don't move blocks between different types of layers
         center.layer = from.layer;
-        to.layer = from.layer;
+        to.layer = find_free_layer(cluster_from_type, from);
         if (!find_to_loc_centroid(cluster_from_type, from, center, range_limiters, to, b_from))
             return e_create_move::ABORT;
     }

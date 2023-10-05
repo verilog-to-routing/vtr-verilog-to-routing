@@ -39,7 +39,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     calculate_centroid_loc(b_from, true, centroid, criticalities);
 
     /* Find a  */
-    to.layer = from.layer;
+    to.layer = find_free_layer(cluster_from_type, from);
     if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }
