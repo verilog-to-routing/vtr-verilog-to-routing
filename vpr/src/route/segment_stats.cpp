@@ -38,7 +38,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         {X_AXIS, std::map<int, int>()},
         {Y_AXIS, std::map<int, int>()}};
 
-    std::set<int> segment_lengths;
+    std::set<int, std::less<int>> segment_lengths;
     for (const auto& seg_inf: segment_inf) {
         int seg_length = seg_inf.longline ? LONGLINE : seg_inf.length;
 
@@ -83,7 +83,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     VTR_LOG("\n");
     VTR_LOG("Total Number of Wiring Segments by Direction: direction length number\n");
     VTR_LOG("                                              --------- ------ -------\n");
-    for (int length = 0; length <= max_segment_length; length++) {
+    for (auto length : segment_lengths) {
         for (auto ax : {X_AXIS, Y_AXIS}) {
             std::string ax_name = (ax == X_AXIS) ? "X" : "Y";
             if (directed_cap_by_length[ax][length] != 0) {
@@ -103,7 +103,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         VTR_LOG("\n");
         VTR_LOG("%s - Directed Wiring Segment usage by length: length utilization\n", ax_name.c_str());
         VTR_LOG("                                             ------ -----------\n");
-        for (int length = 0; length <= max_segment_length; length++) {
+        for (auto length : segment_lengths) {
             if (directed_cap_by_length[ax][length] != 0) {
                 std::string length_str = (length == LONGLINE) ? "longline" : std::to_string(length);
                 utilization = (float)directed_occ_by_length[ax][length] / (float)directed_cap_by_length[ax][length];
