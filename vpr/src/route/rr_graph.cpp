@@ -1268,9 +1268,11 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     if (grid.get_num_layers() > 1 && sb_type == CUSTOM) {
         //keep how many nodes each switchblock requires
-        get_number_track_to_track_inter_die_conn(multi_layer_track_conn, sb_conn_map, device_ctx.rr_graph_builder);
-        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, &nodes_per_chan, grid, multi_layer_track_conn, &num_rr_nodes);
+        auto extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(multi_layer_track_conn, sb_conn_map, device_ctx.rr_graph_builder);
+        //allocate new nodes in each switchblocks
+        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, &nodes_per_chan, grid, extra_nodes_per_switchblock, &num_rr_nodes);
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
+        extra_nodes_per_switchblock.clear();
     }
 
     /* START IPIN MAP */
