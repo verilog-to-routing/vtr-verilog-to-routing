@@ -831,7 +831,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         t_pl_loc& to_loc,
                         ClusterBlockId b_from) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    int from_layer_num = from_loc.layer;
+    int to_layer_num = to_loc.layer;
+    VTR_ASSERT(to_layer_num != OPEN);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
     //Determine the coordinates in the compressed grid space of the current block
@@ -844,27 +845,27 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
 
     //Determine the valid compressed grid location ranges
     std::vector<t_physical_tile_loc> min_compressed_loc = get_compressed_loc_approx(compressed_block_grid,
-                                                                                    {limit_coords->xmin, limit_coords->ymin, 0, from_layer_num},
+                                                                                    {limit_coords->xmin, limit_coords->ymin, 0, to_layer_num},
                                                                                     num_layers);
     std::vector<t_physical_tile_loc> max_compressed_loc = get_compressed_loc_approx(compressed_block_grid,
-                                                                                    {limit_coords->xmax, limit_coords->ymax, 0, from_layer_num},
+                                                                                    {limit_coords->xmax, limit_coords->ymax, 0, to_layer_num},
                                                                                     num_layers);
 
-    VTR_ASSERT(min_compressed_loc[from_layer_num].x >= 0);
-    VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_columns(from_layer_num)) - 1 - max_compressed_loc[from_layer_num].x >= 0);
-    VTR_ASSERT(max_compressed_loc[from_layer_num].x >= min_compressed_loc[from_layer_num].x);
-    int delta_cx = max_compressed_loc[from_layer_num].x - min_compressed_loc[from_layer_num].x;
+    VTR_ASSERT(min_compressed_loc[to_layer_num].x >= 0);
+    VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_columns(to_layer_num)) - 1 - max_compressed_loc[to_layer_num].x >= 0);
+    VTR_ASSERT(max_compressed_loc[to_layer_num].x >= min_compressed_loc[to_layer_num].x);
+    int delta_cx = max_compressed_loc[to_layer_num].x - min_compressed_loc[to_layer_num].x;
 
-    VTR_ASSERT(min_compressed_loc[from_layer_num].y >= 0);
-    VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_rows(from_layer_num)) - 1 - max_compressed_loc[from_layer_num].y >= 0);
-    VTR_ASSERT(max_compressed_loc[from_layer_num].y >= min_compressed_loc[from_layer_num].y);
+    VTR_ASSERT(min_compressed_loc[to_layer_num].y >= 0);
+    VTR_ASSERT(static_cast<int>(compressed_block_grid.get_num_rows(to_layer_num)) - 1 - max_compressed_loc[to_layer_num].y >= 0);
+    VTR_ASSERT(max_compressed_loc[to_layer_num].y >= min_compressed_loc[to_layer_num].y);
 
-    t_bb search_range(min_compressed_loc[from_layer_num].x,
-                      max_compressed_loc[from_layer_num].x,
-                      min_compressed_loc[from_layer_num].y,
-                      max_compressed_loc[from_layer_num].y,
-                      from_layer_num,
-                      from_layer_num);
+    t_bb search_range(min_compressed_loc[to_layer_num].x,
+                      max_compressed_loc[to_layer_num].x,
+                      min_compressed_loc[to_layer_num].y,
+                      max_compressed_loc[to_layer_num].y,
+                      to_layer_num,
+                      to_layer_num);
 
     t_physical_tile_loc to_compressed_loc;
     bool legal = false;
@@ -874,7 +875,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                                                                           b_from,
                                                                           search_range,
                                                                           delta_cx,
-                                                                          from_layer_num);
+                                                                          to_layer_num);
         if (!intersect) {
             return false;
         }
@@ -882,11 +883,11 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
 
     legal = find_compatible_compressed_loc_in_range(blk_type,
                                                     delta_cx,
-                                                    from_compressed_locs[from_layer_num],
+                                                    from_compressed_locs[to_layer_num],
                                                     search_range,
                                                     to_compressed_loc,
                                                     true,
-                                                    from_layer_num);
+                                                    to_layer_num);
 
     if (!legal) {
         //No valid position found
