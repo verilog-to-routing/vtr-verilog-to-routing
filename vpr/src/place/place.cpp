@@ -1056,21 +1056,32 @@ void try_place(const Netlist<>& net_list,
     place_td_est_f << "Net id" << "\t" << "Sink id" << "\t" << "Expected delay" << "\n";
 
     for (const auto& net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            t_bb bb_coords;
-            get_non_updateable_bb(net_id,
-                                  &bb_coords);
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
 
-            double expected_wirelength = get_net_wirelength_estimate(net_id, &bb_coords);
+        t_bb bb_coords;
+        get_non_updateable_bb(net_id,
+                              &bb_coords);
 
-            place_wl_est_f << size_t(net_id) << "\t" << expected_wirelength << "\n";
+        double expected_wirelength = get_net_wirelength_estimate(net_id, &bb_coords);
 
-            for (int sink_id = 1; sink_id < (int)cluster_ctx.clb_nlist.net_pins(net_id).size(); sink_id++) {
-                place_td_est_f << size_t(net_id) << "\t" << sink_id << "\t"
-                               << p_timing_ctx.connection_delay[net_id][sink_id] << "\n"
-                               << "\n";
-            }
+        place_wl_est_f << size_t(net_id) << "\t" << expected_wirelength << "\n";
+
+        for (int sink_id = 1; sink_id < (int)cluster_ctx.clb_nlist.net_pins(net_id).size(); sink_id++) {
+            place_td_est_f << size_t(net_id) << "\t" << sink_id << "\t"
+                           << p_timing_ctx.connection_delay[net_id][sink_id] << "\n";
         }
+    }
+
+    std::ofstream net_info_f_name("net_info.txt");
+
+    net_info_f_name << "Net id" << "\t" << "Num Sinks" << "\n";
+    for (const auto& net_id : cluster_ctx.clb_nlist.nets()) {
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
+
+        int num_sinks = (int)cluster_ctx.clb_nlist.net_sinks(net_id).size();
+        net_info_f_name << size_t(net_id) << "\t" << num_sinks << "\n";
     }
 
     free_placement_structs(placer_opts, noc_opts);
