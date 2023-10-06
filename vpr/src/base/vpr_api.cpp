@@ -53,6 +53,7 @@
 #include "pb_type_graph.h"
 #include "route_common.h"
 #include "timing_place_lookup.h"
+#include "route.h"
 #include "route_export.h"
 #include "vpr_api.h"
 #include "read_sdc.h"
@@ -61,9 +62,9 @@
 #include "lb_type_rr_graph.h"
 #include "read_activity.h"
 #include "net_delay.h"
-#include "AnalysisDelayCalculator.h"
 #include "concrete_timing_info.h"
 #include "netlist_writer.h"
+#include "AnalysisDelayCalculator.h"
 #include "RoutingDelayCalculator.h"
 #include "check_route.h"
 #include "constant_nets.h"
@@ -367,7 +368,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
 #ifdef VPR_USE_TBB
-
     /* Set this here, because tbb::global_control doesn't control anything once it's out of scope
      * (contrary to the name). */
     tbb::global_control c(tbb::global_control::max_allowed_parallelism, vpr_setup.num_workers);
@@ -805,10 +805,11 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
-
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat);
-
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
+        } else {
+            /* No delay calculator (segfault if the code calls into it) and wirelength driven routing */
+            timing_info = make_constant_timing_info(0);
         }
 
         if (router_opts.doRouting == STAGE_DO) {
@@ -922,20 +923,20 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
     }
     bool status = false;
-    status = try_route(net_list,
-                       fixed_channel_width,
-                       vpr_setup.RouterOpts,
-                       vpr_setup.AnalysisOpts,
-                       &vpr_setup.RoutingArch,
-                       vpr_setup.Segments,
-                       net_delay,
-                       timing_info,
-                       delay_calc,
-                       arch.Chans,
-                       arch.Directs,
-                       arch.num_directs,
-                       ScreenUpdatePriority::MAJOR,
-                       is_flat);
+    status = route(net_list,
+                   fixed_channel_width,
+                   vpr_setup.RouterOpts,
+                   vpr_setup.AnalysisOpts,
+                   &vpr_setup.RoutingArch,
+                   vpr_setup.Segments,
+                   net_delay,
+                   timing_info,
+                   delay_calc,
+                   arch.Chans,
+                   arch.Directs,
+                   arch.num_directs,
+                   ScreenUpdatePriority::MAJOR,
+                   is_flat);
 
     return RouteStatus(status, fixed_channel_width);
 }
