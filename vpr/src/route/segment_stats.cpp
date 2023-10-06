@@ -20,7 +20,6 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
      * are counted as full-length segments (e.g. length 4 even if the last 2    *
      * units of wire were chopped off by the chip edge).                        */
 
-    int max_segment_length;
     RRIndexedDataId cost_index;
     float utilization;
 
@@ -28,7 +27,6 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
-    max_segment_length = 0;
     int max_segment_name_length = 0;
     std::map<e_parallel_axis, std::map<int, int>> directed_occ_by_length = {
         {X_AXIS, std::map<int, int>()},
