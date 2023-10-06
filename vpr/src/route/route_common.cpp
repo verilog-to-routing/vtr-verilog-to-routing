@@ -304,6 +304,57 @@ bool try_route(const Netlist<>& net_list,
                                           is_flat);
 
         profiling::time_on_fanout_analysis();
+
+        const auto& rr_graph = device_ctx.rr_graph;
+
+        std::string route_wl_file = "route_wl.txt";
+        std::string route_td_file_name = "route_td.txt";
+
+        std::ofstream route_wl_f(route_wl_file);
+        std::ofstream route_td_f(route_td_file_name);
+
+        route_wl_f << "Net id" << "\t" << "Expected wirelength" << "\n";
+        route_td_f << "Net id" << "\t" << "Sink id" << "\t" << "Expected delay" << "\n";
+
+        for (const auto& net_id : cluster_ctx.clb_nlist.nets()) {
+            if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+                continue;
+
+            int length = 0;
+
+            const vtr::optional<RouteTree>& tree = g_vpr_ctx.routing().route_trees[net_id];
+            if (!tree) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "in get_num_bends_and_length: net #%lu has no routing.\n", size_t(net_id));
+            }
+
+            t_rr_type prev_type = rr_graph.node_type(tree->root().inode);
+            RouteTree::iterator it = tree->all_nodes().begin();
+            RouteTree::iterator end = tree->all_nodes().end();
+            ++it; /* start from the next node after source */
+
+            for (; it != end; ++it) {
+                const RouteTreeNode& rt_node = *it;
+                RRNodeId inode = rt_node.inode;
+                t_rr_type curr_type = rr_graph.node_type(inode);
+
+                if (curr_type == CHANX || curr_type == CHANY) {
+                    length += rr_graph.node_length(inode);
+                }
+
+                /* The all_nodes iterator walks all nodes in the tree. If we are at a leaf and going back to the top, prev_type is invalid: just set it to SINK */
+                prev_type = rt_node.is_leaf() ? SINK : curr_type;
+            }
+            route_wl_f << size_t(net_id) << "\t" << length << "\n";
+
+            for (int sink_id = 1; sink_id < (int)cluster_ctx.clb_nlist.net_pins(net_id).size(); sink_id++) {
+                float sink_delay = net_delay[net_id][sink_id];
+                route_td_f << size_t(net_id) << "\t" << sink_id << "\t" << sink_delay << "\n";
+            }
+        }
+
+        route_wl_f.close();
+        route_td_f.close();
     }
 
     return (success);
