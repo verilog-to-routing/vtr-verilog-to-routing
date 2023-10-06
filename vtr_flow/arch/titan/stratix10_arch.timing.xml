@@ -1,3 +1,20 @@
+/*
+ * FPGA Architecture Description - Intel Stratix 10
+ *
+ * This file provides a VPR-compatible
+ * description of Intel's Stratix 10 FPGA device and can be used by developers for
+ * exploring and testing new architecture or CAD algorithms. The architecture description was used
+ * to evaluate the performance of VPR in terms of quality of results (QoR) and runtime compared to Quartus Prime 21.2.
+ *
+ * Research Details:
+ * - Thesis: "Capturing Realistic Architectures for Field Programmable Gate
+ *            Array Optimization" by Kimia Talaei Khoozani
+ * - Paper: "Titan 2.0: Enabling Open-Source CAD Evaluation with a Modern
+ *          Architecture Capture" by Kimia Talaei Khoozani, Arash Ahmadian
+ *          Dehkordi, and Vaughn Betz
+ *
+ */
+
 <?xml version="1.0" ?>
 <architecture>
   <models>
