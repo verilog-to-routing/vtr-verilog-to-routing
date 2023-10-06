@@ -1084,6 +1084,11 @@ void try_place(const Netlist<>& net_list,
         net_info_f_name << size_t(net_id) << "\t" << num_sinks << "\n";
     }
 
+    place_wl_est_f.close();
+    place_td_est_f.close();
+    net_info_f_name.close();
+
+
     free_placement_structs(placer_opts, noc_opts);
     free_try_swap_arrays();
 
