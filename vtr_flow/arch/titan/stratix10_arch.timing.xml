@@ -7368,6 +7368,206 @@
         <output name="vcoph" num_pins="8"/> <!-- VCO output clocks -->
         <output name="iopll_out_sig1" num_pins="1"/>
         <output name="iopll_out_sig2" num_pins="1"/>
+
+        <T_setup clock="core_refclk" port="iopll.clken" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.clken" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.clken"/>
+        <T_setup clock="core_refclk" port="iopll.cnt_sel" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.cnt_sel" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.cnt_sel"/>
+        <T_setup clock="core_refclk" port="iopll.dps_rst_n" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.dps_rst_n" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.dps_rst_n"/>
+        <T_setup clock="core_refclk" port="iopll.extswitch" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.extswitch" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.extswitch"/>
+        <T_setup clock="core_refclk" port="iopll.fbclk_in" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.fbclk_in" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.fbclk_in"/>
+        <T_setup clock="core_refclk" port="iopll.fblvds_in" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.fblvds_in" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.fblvds_in"/>
+        <T_setup clock="core_refclk" port="iopll.refclk" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.refclk" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.refclk"/>
+        <T_setup clock="core_refclk" port="iopll.mdio_dis" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.mdio_dis" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.mdio_dis"/>
+        <T_setup clock="core_refclk" port="iopll.rst_n" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.rst_n" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.rst_n"/>
+        <T_setup clock="core_refclk" port="iopll.num_phase_shifts" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.num_phase_shifts" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.num_phase_shifts"/>
+        <T_setup clock="core_refclk" port="iopll.pfden" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.pfden" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.pfden"/>
+        <T_setup clock="core_refclk" port="iopll.pll_cascade_in" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.pll_cascade_in" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.pll_cascade_in"/>
+        <T_setup clock="core_refclk" port="iopll.scan_mode_n" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.scan_mode_n" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.scan_mode_n"/>
+        <T_setup clock="core_refclk" port="iopll.scan_shift_n" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.scan_shift_n" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.scan_shift_n"/>
+        <T_setup clock="core_refclk" port="iopll.csr_clk" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.csr_clk" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.csr_clk"/>
+        <T_setup clock="core_refclk" port="iopll.csr_en" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.csr_en" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.csr_en"/>
+        <T_setup clock="core_refclk" port="iopll.phase_en" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.phase_en" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.phase_en"/>
+        <T_setup clock="core_refclk" port="iopll.csr_in" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.csr_in" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.csr_in"/>
+        <T_setup clock="core_refclk" port="iopll.uc_cal_addr" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.uc_cal_addr" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.uc_cal_addr"/>
+        <T_setup clock="core_refclk" port="iopll.uc_cal_clk" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.uc_cal_clk" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.uc_cal_clk"/>
+        <T_setup clock="core_refclk" port="iopll.uc_cal_read" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.uc_cal_read" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.uc_cal_read"/>
+        <T_setup clock="core_refclk" port="iopll.uc_cal_write" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.uc_cal_write" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.uc_cal_write"/>
+        <T_setup clock="core_refclk" port="iopll.uc_cal_writedata" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.uc_cal_writedata" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.uc_cal_writedata"/>
+        <T_setup clock="core_refclk" port="iopll.up_dn" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.up_dn" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.up_dn"/>
+        <T_setup clock="core_refclk" port="iopll.user_mode" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.user_mode" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.user_mode"/>
+        <T_setup clock="core_refclk" port="iopll.zdb_in" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.zdb_in" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.zdb_in"/>
+        <T_setup clock="core_refclk" port="iopll.dprio_address" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.dprio_address" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.dprio_address"/>
+        <T_setup clock="core_refclk" port="iopll.dprio_clk" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.dprio_clk" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.dprio_clk"/>
+        <T_setup clock="core_refclk" port="iopll.read" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.read" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.read"/>
+        <T_setup clock="core_refclk" port="iopll.write" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.write" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.write"/>
+        <T_setup clock="core_refclk" port="iopll.writedata" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.writedata" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.writedata"/>
+        <T_setup clock="core_refclk" port="iopll.dprio_rst_n" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.dprio_rst_n" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.dprio_rst_n"/>
+        <T_setup clock="core_refclk" port="iopll.pipeline_global_en_n" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.pipeline_global_en_n" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.pipeline_global_en_n"/>
+        <T_setup clock="core_refclk" port="iopll.pma_csr_test_dis" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.pma_csr_test_dis" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.pma_csr_test_dis"/>
+        <T_setup clock="core_refclk" port="iopll.block_select" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.block_select" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.block_select"/>
+        <T_setup clock="core_refclk" port="iopll.clk0_bad" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.clk0_bad" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.clk0_bad"/>
+        <T_setup clock="core_refclk" port="iopll.clk1_bad" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.clk1_bad" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.clk1_bad"/>
+        <T_setup clock="core_refclk" port="iopll.clksel" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.clksel" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.clksel"/>
+        <T_setup clock="core_refclk" port="iopll.cal_ok" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.cal_ok" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.cal_ok"/>
+        <T_setup clock="core_refclk" port="iopll.core_avl_busy" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.core_avl_busy" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.core_avl_busy"/>
+        <T_setup clock="core_refclk" port="iopll.core_cal_done" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.core_cal_done" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.core_cal_done"/>
+        <T_setup clock="core_refclk" port="iopll.extclk_output" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.extclk_output" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.extclk_output"/>
+        <T_setup clock="core_refclk" port="iopll.extclk_dft" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.extclk_dft" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.extclk_dft"/>
+        <T_setup clock="core_refclk" port="iopll.fblvds_out" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.fblvds_out" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.fblvds_out"/>
+        <T_setup clock="core_refclk" port="iopll.lf_reset" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.lf_reset" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.lf_reset"/>
+        <T_setup clock="core_refclk" port="iopll.loaden" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.loaden" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.loaden"/>
+        <T_setup clock="core_refclk" port="iopll.lock" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.lock" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.lock"/>
+        <T_setup clock="core_refclk" port="iopll.lock2io12lane0" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.lock2io12lane0" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.lock2io12lane0"/>
+        <T_setup clock="core_refclk" port="iopll.lock2io12lane1" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.lock2io12lane1" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.lock2io12lane1"/>
+        <T_setup clock="core_refclk" port="iopll.lock2io12lane2" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.lock2io12lane2" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.lock2io12lane2"/>
+        <T_setup clock="core_refclk" port="iopll.lock2io12lane3" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.lock2io12lane3" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.lock2io12lane3"/>
+        <T_setup clock="core_refclk" port="iopll.lock2iohmc" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.lock2iohmc" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.lock2iohmc"/>
+        <T_setup clock="core_refclk" port="iopll.phase_done" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.phase_done" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.phase_done"/>
+        <T_setup clock="core_refclk" port="iopll.pll_cascade_out" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.pll_cascade_out" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.pll_cascade_out"/>
+        <T_setup clock="core_refclk" port="iopll.pll_pd" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.pll_pd" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.pll_pd"/>
+        <T_setup clock="core_refclk" port="iopll.outclk" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.outclk" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.outclk"/>
+        <T_setup clock="core_refclk" port="iopll.dll_output" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.dll_output" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.dll_output"/>
+        <T_setup clock="core_refclk" port="iopll.fbclk_out" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.fbclk_out" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.fbclk_out"/>
+        <T_setup clock="core_refclk" port="iopll.uc_cal_readdata" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.uc_cal_readdata" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.uc_cal_readdata"/>
+        <T_setup clock="core_refclk" port="iopll.vcop_en" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.vcop_en" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.vcop_en"/>
+        <T_setup clock="core_refclk" port="iopll.vcoph" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.vcoph" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.vcoph"/>
+        <T_setup clock="core_refclk" port="iopll.iopll_out_sig1" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.iopll_out_sig1" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.iopll_out_sig1"/>
+        <T_setup clock="core_refclk" port="iopll.iopll_out_sig2" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.iopll_out_sig2" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.iopll_out_sig2"/>
+        <T_setup clock="core_refclk" port="iopll.readdata" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.readdata" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.readdata"/>
+        <T_setup clock="core_refclk" port="iopll.lvds_clk" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.lvds_clk" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.lvds_clk"/>
+        <T_setup clock="core_refclk" port="iopll.csr_out" value="0.0e-12"/>
+        <T_hold clock="core_refclk" port="iopll.csr_out" value="0.0e-12"/>
+        <T_clock_to_Q clock="core_refclk" max="0.0e-12" min="0.0e-12" port="iopll.csr_out"/>
+        
       </pb_type>
 
       <interconnect>
