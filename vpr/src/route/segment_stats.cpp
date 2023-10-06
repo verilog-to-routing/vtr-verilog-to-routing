@@ -39,14 +39,13 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         {Y_AXIS, std::map<int, int>()}};
 
     std::set<int, std::less<int>> segment_lengths;
-    for (const auto& seg_inf: segment_inf) {
+    for (const auto& seg_inf : segment_inf) {
         int seg_length = seg_inf.longline ? LONGLINE : seg_inf.length;
 
         for (auto ax : {X_AXIS, Y_AXIS}) {
             directed_cap_by_length[ax].insert({seg_length, 0});
             directed_occ_by_length[ax].insert({seg_length, 0});
         }
-
 
         segment_lengths.insert(seg_length);
 
