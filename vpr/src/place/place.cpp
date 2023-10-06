@@ -678,7 +678,6 @@ void try_place(const Netlist<>& net_list,
             costs.bb_cost = comp_layer_bb_cost(NORMAL);
         }
 
-
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
         num_connections = count_connections();
@@ -1486,7 +1485,6 @@ static void update_move_nets(int num_nets_affected) {
             place_move_ctx.layer_bb_coords[net_id] = layer_ts_bb_coord_new[net_id];
             place_move_ctx.num_sink_pin_layer[net_id] = ts_layer_sink_pin_count[net_id];
         }
-
 
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
             if (num_layers == 1) {
@@ -2433,7 +2431,6 @@ static double comp_bb_cost(e_cost_methods method) {
     return cost;
 }
 
-
 static double comp_layer_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
@@ -2447,9 +2444,9 @@ static double comp_layer_bb_cost(e_cost_methods method) {
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET
                 && method == NORMAL) {
                 get_layer_bb_from_scratch(net_id,
-                                    place_move_ctx.layer_bb_num_on_edges[net_id],
-                                    place_move_ctx.layer_bb_coords[net_id],
-                                    place_move_ctx.num_sink_pin_layer[net_id]);
+                                          place_move_ctx.layer_bb_num_on_edges[net_id],
+                                          place_move_ctx.layer_bb_coords[net_id],
+                                          place_move_ctx.num_sink_pin_layer[net_id]);
             } else {
                 get_non_updateable_layer_bb(net_id,
                                             place_move_ctx.layer_bb_coords[net_id],
@@ -3326,7 +3323,7 @@ static void update_layer_bb(ClusterNetId net_id,
      * The x and y coordinates are the pin's x and y coordinates.         */
     /* IO blocks are considered to be one cell in for simplicity.         */
     //TODO: account for multiple physical pin instances per logical pin
-    const std::vector<t_2D_bb> *curr_bb_edge, *curr_bb_coord;
+    const std::vector<t_2D_bb>*curr_bb_edge, *curr_bb_coord;
     const std::vector<int>* curr_layer_pin_sink_count;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -3363,7 +3360,6 @@ static void update_layer_bb(ClusterNetId net_id,
                              bb_pin_sink_count_new,
                              is_output_pin);
 
-
     int layer_old = pin_old_loc.layer_num;
     int layer_new = pin_new_loc.layer_num;
     bool layer_changed = (layer_old != layer_new);
@@ -3371,8 +3367,7 @@ static void update_layer_bb(ClusterNetId net_id,
     bb_edge_new = *curr_bb_edge;
     bb_coord_new = *curr_bb_coord;
 
-
-    if(layer_changed) {
+    if (layer_changed) {
         update_bb_layer_changed(net_id,
                                 pin_old_loc,
                                 pin_new_loc,
@@ -3459,7 +3454,6 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
             bb_edge_new[layer_num].xmax = curr_bb_edge[layer_num].xmax + 1;
             bb_coord_new[layer_num].xmax = curr_bb_coord[layer_num].xmax;
         }
-
     }
 
     if (y_new < y_old) {
@@ -3508,7 +3502,6 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
             bb_coord_new[layer_num].ymax = curr_bb_coord[layer_num].ymax;
         }
     }
-
 }
 
 static inline void update_bb_layer_changed(ClusterNetId net_id,
@@ -3519,7 +3512,6 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                                            std::vector<int>& bb_pin_sink_count_new,
                                            std::vector<t_2D_bb>& bb_edge_new,
                                            std::vector<t_2D_bb>& bb_coord_new) {
-
     int x_old = pin_old_loc.x;
 
     int y_old = pin_old_loc.y;
@@ -3585,7 +3577,6 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                     curr_bb_coord[new_layer_num],
                     bb_edge_new[new_layer_num],
                     bb_coord_new[new_layer_num]);
-
 }
 
 static void update_bb_pin_sink_count(ClusterNetId /* net_id */,

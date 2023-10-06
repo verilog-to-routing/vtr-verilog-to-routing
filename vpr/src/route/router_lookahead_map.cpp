@@ -500,7 +500,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         // Since we assume that inter-layer connections are only from a block output pin to another layer, if the from node
         // is of type CHANX/CHANY, and the sink node is on the other layer, there will no path from that node to the sink
-        if(from_layer_num != to_layer_num) {
+        if (from_layer_num != to_layer_num) {
             expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
             expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
         } else {

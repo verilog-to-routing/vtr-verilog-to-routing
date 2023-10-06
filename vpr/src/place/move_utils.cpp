@@ -1433,8 +1433,5 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
         }
     }
 
-
     return std::make_pair(merged_num_edge, merged_bb);
-
-
 }

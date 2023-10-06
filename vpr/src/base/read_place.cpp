@@ -346,7 +346,7 @@ void print_place(const char* net_file,
     fclose(fp);
 
     //Calculate the ID of the placement
-    if(is_initial_place) {
+    if (is_initial_place) {
         place_ctx.initial_placement_id = vtr::secure_digest_file(place_file);
     } else {
         place_ctx.placement_id = vtr::secure_digest_file(place_file);
