@@ -1058,6 +1058,24 @@ void try_place(const Netlist<>& net_list,
             p_runtime_ctx.f_update_td_costs_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
+
+    std::string place_wl_est_f_name = "place_wl_est.txt";
+    std::string place_td_est_f_name = "place_td_est.txt";
+
+    std::ofstream place_wl_est_f(place_wl_est_f_name);
+    std::ofstream place_td_est_f(place_td_est_f_name);
+
+    for (const auto& net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            t_bb bb_coords;
+            get_non_updateable_bb(net_id,
+                                  &bb_coords);
+
+            double expected_wirelength = get_net_wirelength_estimate(net_id, &bb_coords);
+
+            place_wl_est_f << size_t(net_id) << "\t" << expected_wirelength << "\n";
+        }
+    }
 }
 
 /* Function to update the setup slacks and criticalities before the inner loop of the annealing/quench */
