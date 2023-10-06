@@ -13,8 +13,6 @@ sdc_dir=benchmarks/titan_blif/other_benchmarks/stratix10
 archs_dir=arch/titan
 
 # Add circuits to list to sweep
-circuit_list_add=radar20_stratix10_arch_timing.blif
-circuit_list_add=picosoc_stratix10_arch_timing.blif
 circuit_list_add=murax_stratix10_arch_timing.blif
 
 # Add architectures to list to sweep
