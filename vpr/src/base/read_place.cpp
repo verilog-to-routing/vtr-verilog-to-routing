@@ -217,7 +217,7 @@ void read_place_body(std::ifstream& placement_file,
             int block_layer_index;
             if (tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) {
                 //2D architecture
-                block_layer_index = -1;
+                block_layer_index = OPEN;
 
             } else {
                 // 3D architecture
@@ -229,7 +229,7 @@ void read_place_body(std::ifstream& placement_file,
             int block_y = vtr::atoi(tokens[block_y_index]);
             int sub_tile_index = vtr::atoi(tokens[sub_tile_index_index]);
             int block_layer;
-            if (block_layer_index != -1) {
+            if (block_layer_index != OPEN) {
                 block_layer = vtr::atoi(tokens[block_layer_index]);
             } else {
                 block_layer = 0;
