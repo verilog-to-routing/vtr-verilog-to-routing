@@ -474,9 +474,11 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     }
 
     //Mark the grid location and usage of the block
+    if (place_ctx.grid_blocks.block_at_location(location) != blk_id) {
+        place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
+                                        place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
+    }
     place_ctx.grid_blocks.set_block_at_location(location, blk_id);
-    place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
-                                    place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
     place_sync_external_block_connections(blk_id);
 }
 
