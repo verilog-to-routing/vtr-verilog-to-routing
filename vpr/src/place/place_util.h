@@ -209,6 +209,9 @@ class t_placer_statistics {
     void single_swap_update(const t_placer_costs& costs);
 };
 
+///@brief Initialize grid block data structures to neutral values.
+void initialize_grid_blocks();
+
 ///@brief Initialize the placer's block-grid dual direction mapping.
 void init_placement_context();
 
