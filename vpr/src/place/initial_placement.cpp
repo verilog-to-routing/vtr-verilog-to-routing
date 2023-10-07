@@ -1115,7 +1115,23 @@ void initial_placement(const t_placer_opts& placer_opts,
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     if(placer_opts.initial_place_file != NULL && placer_opts.initial_place_file[0] != '\0'){
+        auto& place_ctx = g_vpr_ctx.mutable_placement();
         const auto& device_ctx = g_vpr_ctx.device();
+        for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+            for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+                for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                    const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                    int itype = type->index;
+                    place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
+                    for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
+                        if (place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) != INVALID_BLOCK_ID) {
+                            place_ctx.grid_blocks.set_block_at_location({i, j, k, layer_num}, EMPTY_BLOCK_ID);
+                        }
+                    }
+                }
+            }
+        }
+
         read_place(nullptr, placer_opts.initial_place_file, false, true, device_ctx.grid);
         if (strlen(constraints_file) != 0) {
             read_constraints(constraints_file);
