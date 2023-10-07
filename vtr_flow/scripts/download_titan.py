@@ -239,7 +239,26 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
 
         # Extract matching files into the temporary directory
         with tarfile.TarFile.open(tar_gz_filename, mode="r|*") as tar_file:
-            tar_file.extractall(path=tmpdir, members=extract_callback(tar_file))
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(tar_file, path=tmpdir, members=extract_callback(tar_file))
 
         # Move the extracted files to the relevant directories, SDC files first (since we
         # need to look up the BLIF name to make it match)
