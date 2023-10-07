@@ -1860,6 +1860,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("circuit")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+
+    place_grp.add_argument(args.InitPlaceFile, "--init_place_file")
+        .help(
+                "Pass user-defined placement file to be used as an initial point for the placement engine ")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.PlaceInitT, "--init_t")
         .help("Initial temperature for manual annealing schedule")
         .default_value("100.0")

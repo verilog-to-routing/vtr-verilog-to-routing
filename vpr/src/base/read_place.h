@@ -10,6 +10,7 @@ void read_place(
     const char* net_file,
     const char* place_file,
     bool verify_file_hashes,
+    bool is_init_place,
     const DeviceGrid& grid);
 
 /**

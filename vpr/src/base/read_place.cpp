@@ -22,17 +22,19 @@ void read_place_header(
     const char* net_file,
     const char* place_file,
     bool verify_file_hashes,
+    bool is_init_place,
     const DeviceGrid& grid);
 
 void read_place_body(
-    std::ifstream& placement_file,
-    const char* place_file,
-    bool is_place_file);
+        std::ifstream& placement_file,
+        const char* place_file,
+        bool is_place_file);
 
 void read_place(
     const char* net_file,
     const char* place_file,
     bool verify_file_digests,
+    bool is_init_place,
     const DeviceGrid& grid) {
     std::ifstream fstream(place_file);
     if (!fstream) {
@@ -46,7 +48,7 @@ void read_place(
     VTR_LOG("Reading %s.\n", place_file);
     VTR_LOG("\n");
 
-    read_place_header(fstream, net_file, place_file, verify_file_digests, grid);
+    read_place_header(fstream, net_file, place_file, verify_file_digests, is_init_place, grid);
     read_place_body(fstream, place_file, is_place_file);
 
     VTR_LOG("Successfully read %s.\n", place_file);
@@ -84,6 +86,7 @@ void read_place_header(std::ifstream& placement_file,
                        const char* net_file,
                        const char* place_file,
                        bool verify_file_digests,
+                       bool is_init_place,
                        const DeviceGrid& grid) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -119,17 +122,18 @@ void read_place_header(std::ifstream& placement_file,
 
             std::string place_netlist_id = tokens[3];
             std::string place_netlist_file = tokens[1];
-
-            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id().c_str()) {
-                auto msg = vtr::string_fmt(
-                    "The packed netlist file that generated placement (File: '%s' ID: '%s')"
-                    " does not match current netlist (File: '%s' ID: '%s')",
-                    place_netlist_file.c_str(), place_netlist_id.c_str(),
-                    net_file, cluster_ctx.clb_nlist.netlist_id().c_str());
-                if (verify_file_digests) {
-                    vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
-                } else {
-                    VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
+            if(!is_init_place) {
+                if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id().c_str()) {
+                    auto msg = vtr::string_fmt(
+                            "The packed netlist file that generated placement (File: '%s' ID: '%s')"
+                            " does not match current netlist (File: '%s' ID: '%s')",
+                            place_netlist_file.c_str(), place_netlist_id.c_str(),
+                            net_file, cluster_ctx.clb_nlist.netlist_id().c_str());
+                    if (verify_file_digests) {
+                        vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
+                    } else {
+                        VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
+                    }
                 }
             }
 

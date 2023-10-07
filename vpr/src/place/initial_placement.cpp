@@ -1114,27 +1114,34 @@ void initial_placement(const t_placer_opts& placer_opts,
                        bool noc_enabled) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
-    /* Go through cluster blocks to calculate the tightest placement
-     * floorplan constraint for each constrained block
-     */
-    propagate_place_constraints();
+    if(placer_opts.initial_place_file != NULL && placer_opts.initial_place_file[0] != '\0'){
+        const auto& device_ctx = g_vpr_ctx.device();
+        read_place(nullptr, placer_opts.initial_place_file, false, true, device_ctx.grid);
+    }
+    else {
+        /* Go through cluster blocks to calculate the tightest placement
+         * floorplan constraint for each constrained block
+         */
+        propagate_place_constraints();
 
-    /*Mark the blocks that have already been locked to one spot via floorplan constraints
-     * as fixed so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
-    mark_fixed_blocks();
+        /*Mark the blocks that have already been locked to one spot via floorplan constraints
+         * as fixed so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
+        mark_fixed_blocks();
 
-    //Assign scores to blocks and placement macros according to how difficult they are to place
-    vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
+        //Assign scores to blocks and placement macros according to how difficult they are to place
+        vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
 
-    //Place all blocks
-    place_all_blocks(placer_opts, block_scores, pad_loc_type, constraints_file);
+        //Place all blocks
+        place_all_blocks(placer_opts, block_scores, pad_loc_type, constraints_file);
 
-    //if any blocks remain unplaced, print an error
-    check_initial_placement_legality();
 
-    // route all the traffic flows in the NoC now that all the router cluster block have been placed  (this is done only if the noc optimization is enabled by the user)
-    if (noc_enabled) {
-        initial_noc_routing();
+        //if any blocks remain unplaced, print an error
+        check_initial_placement_legality();
+
+        // route all the traffic flows in the NoC now that all the router cluster block have been placed  (this is done only if the noc optimization is enabled by the user)
+        if (noc_enabled) {
+            initial_noc_routing();
+        }
     }
 
     //#ifdef VERBOSE

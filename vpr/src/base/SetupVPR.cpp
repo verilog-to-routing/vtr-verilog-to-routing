@@ -608,6 +608,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
         PlacerOpts->doPlacement = STAGE_DO;
     }
 
+    PlacerOpts->initial_place_file = Options.InitPlaceFile;
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
     PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
 
