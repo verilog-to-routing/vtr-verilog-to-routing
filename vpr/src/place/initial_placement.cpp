@@ -1099,10 +1099,10 @@ void initial_placement(const t_placer_opts& placer_opts,
                        bool noc_enabled) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
-    if(placer_opts.initial_place_file != NULL && placer_opts.initial_place_file[0] != '\0'){
+    if(!placer_opts.initial_place_file.empty()){
         const auto& device_ctx = g_vpr_ctx.device();
         initialize_grid_blocks();
-        read_place(nullptr, placer_opts.initial_place_file, false, true, device_ctx.grid);
+        read_place(nullptr, placer_opts.initial_place_file.c_str(), false, true, device_ctx.grid);
         if (strlen(constraints_file) != 0) {
             read_constraints(constraints_file);
         }
