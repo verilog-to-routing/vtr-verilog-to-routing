@@ -1120,6 +1120,12 @@ void initial_placement(const t_placer_opts& placer_opts,
         if (strlen(constraints_file) != 0) {
             read_constraints(constraints_file);
         }
+        check_initial_placement_legality();
+
+        // route all the traffic flows in the NoC now that all the router cluster block have been placed  (this is done only if the noc optimization is enabled by the user)
+        if (noc_enabled) {
+            initial_noc_routing();
+        }
     } else {
         /* Go through cluster blocks to calculate the tightest placement
          * floorplan constraint for each constrained block
