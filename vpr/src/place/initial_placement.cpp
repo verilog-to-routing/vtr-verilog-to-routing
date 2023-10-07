@@ -1117,8 +1117,10 @@ void initial_placement(const t_placer_opts& placer_opts,
     if(placer_opts.initial_place_file != NULL && placer_opts.initial_place_file[0] != '\0'){
         const auto& device_ctx = g_vpr_ctx.device();
         read_place(nullptr, placer_opts.initial_place_file, false, true, device_ctx.grid);
-    }
-    else {
+        if (strlen(constraints_file) != 0) {
+            read_constraints(constraints_file);
+        }
+    } else {
         /* Go through cluster blocks to calculate the tightest placement
          * floorplan constraint for each constrained block
          */
