@@ -1144,7 +1144,7 @@ enum class e_place_delta_delay_algorithm {
  *
  */
 struct t_placer_opts {
-    string initial_place_file;
+    std::string initial_place_file;
     t_place_algorithm place_algorithm;
     t_place_algorithm place_quench_algorithm;
     float timing_tradeoff;
