@@ -1040,7 +1040,6 @@ static void clear_block_type_grid_locs(std::unordered_set<int> unplaced_blk_type
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    int itype;
 
     /* We'll use the grid to record where everything goes. Initialize to the grid has no
      * blocks placed anywhere.
