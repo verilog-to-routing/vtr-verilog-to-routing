@@ -461,6 +461,8 @@ void try_place(const Netlist<>& net_list,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
+    const auto& place_ctx = g_vpr_ctx.placement();
+
     const auto& p_timing_ctx = g_placer_ctx.timing();
     const auto& p_runtime_ctx = g_placer_ctx.runtime();
 
@@ -1053,7 +1055,7 @@ void try_place(const Netlist<>& net_list,
     std::ofstream place_td_est_f(place_td_est_f_name);
 
     place_wl_est_f << "Net id" << "\t" << "Expected wirelength" << "\n";
-    place_td_est_f << "Net id" << "\t" << "Sink id" << "\t" << "Expected delay" << "\n";
+    place_td_est_f << "Net id" << "\t" << "Sink id" << "\t" << "dx" << "\t" << "dy" << "\t" << "Expected delay" << "\n";
 
     for (const auto& net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
@@ -1066,9 +1068,22 @@ void try_place(const Netlist<>& net_list,
         double expected_wirelength = get_net_wirelength_estimate(net_id, &bb_coords);
 
         place_wl_est_f << size_t(net_id) << "\t" << expected_wirelength << "\n";
-
+        ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
+        ClusterBlockId source_block = cluster_ctx.clb_nlist.pin_block(source_pin);
+        int source_x = place_ctx.block_locs[source_block].loc.x;
+        int source_y = place_ctx.block_locs[source_block].loc.y;
         for (int sink_id = 1; sink_id < (int)cluster_ctx.clb_nlist.net_pins(net_id).size(); sink_id++) {
+            ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net_id, sink_id);
+            ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(sink_pin);
+
+            int sink_x = place_ctx.block_locs[sink_block].loc.x;
+            int sink_y = place_ctx.block_locs[sink_block].loc.y;
+
+            int dx = abs(source_x - sink_x);
+            int dy = abs(source_y - sink_y);
             place_td_est_f << size_t(net_id) << "\t" << sink_id << "\t"
+                           << dx << "\t"
+                           << dy << "\t"
                            << p_timing_ctx.connection_delay[net_id][sink_id] << "\n";
         }
     }
