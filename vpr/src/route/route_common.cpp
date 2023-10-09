@@ -314,7 +314,7 @@ bool try_route(const Netlist<>& net_list,
         std::ofstream route_td_f(route_td_file_name);
 
         route_wl_f << "Net id" << "\t" << "Expected wirelength" << "\n";
-        route_td_f << "Net id" << "\t" << "Sink id" << "\t" << "Expected delay" << "\n";
+        route_td_f << "Net id" << "\t" << "Sink id" << "\t" << "dx" << "\t" << "dy" << "\t" << "Expected delay" << "\n";
 
         for (const auto& net_id : cluster_ctx.clb_nlist.nets()) {
             if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
@@ -347,9 +347,17 @@ bool try_route(const Netlist<>& net_list,
             }
             route_wl_f << size_t(net_id) << "\t" << length << "\n";
 
+            const auto& src_rr_node = g_vpr_ctx.routing().net_rr_terminals[net_id][0];
+            int src_x = rr_graph.node_xlow(src_rr_node);
+            int src_y = rr_graph.node_ylow(src_rr_node);
             for (int sink_id = 1; sink_id < (int)cluster_ctx.clb_nlist.net_pins(net_id).size(); sink_id++) {
+                const auto& sink_rr_node = g_vpr_ctx.routing().net_rr_terminals[net_id][sink_id];
+                int x = rr_graph.node_xlow(sink_rr_node);
+                int y = rr_graph.node_ylow(sink_rr_node);
+                int dx = abs(x - src_x);
+                int dy = abs(y - src_y);
                 float sink_delay = net_delay[net_id][sink_id];
-                route_td_f << size_t(net_id) << "\t" << sink_id << "\t" << sink_delay << "\n";
+                route_td_f << size_t(net_id) << "\t" << sink_id << "\t" << dx << "\t" << dy << "\t" << sink_delay << "\n";
             }
         }
 
