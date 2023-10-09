@@ -86,6 +86,7 @@ struct t_switchblock_edge {
 struct t_inter_die_switchblock_edge{
     std::vector<short> from_track; // keeps the tracks that should connect to the same track in another layer
     short offset_to_extra_chanx_node = -1; //index to length-0 extra node available in the switchblock
+    bool connected_to_des = false;
 };
 
 /* Switchblock connections are made as [x][y][from_side][to_side][from_wire_ind].
