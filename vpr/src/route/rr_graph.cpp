@@ -2204,43 +2204,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
-    if (grid.get_num_layers() > 1 && sb_conn_map != nullptr) {
-        auto& device_ctx = g_vpr_ctx.device();
-        //need to connect extra nodes once to avoid creating same edge multiple times
-        for(int layer = 0; layer < grid.get_num_layers(); ++layer){
-            /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
-            if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
-                continue;
-            }
-            /* Start building up edges from die 0*/
-            if(layer + 1 >= grid.get_num_layers()){
-                continue;
-            }
-            int offset = 0;
-            for (size_t i = 0; i < grid.width() - 1; ++i) {
-                for (size_t j = 0; j < grid.height() - 1; ++j) {
-                    while (true) {
-                        RRNodeId bottom_die_node = rr_graph_builder.node_lookup().find_node(layer, i, j, CHANX, chan_width.x_max + offset);
-                        RRNodeId top_die_node = rr_graph_builder.node_lookup().find_node(layer + 1, i, j, CHANX, chan_width.x_max + offset);
-                        if (bottom_die_node && top_die_node) {
-                            rr_edges_to_create.emplace_back(bottom_die_node, top_die_node, wire_to_pin_between_dice_switch, false);
-                            offset++;
-                        }
-                        else{
-                            VTR_ASSERT(!bottom_die_node && !top_die_node);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        //create the actual CHANX->CHANX edges
-        uniquify_edges(rr_edges_to_create);
-        alloc_and_load_edges(rr_graph_builder,rr_edges_to_create);
-        num_edges += rr_edges_to_create.size();
-        rr_edges_to_create.clear();
-    }
-
     VTR_LOG("CHAN->CHAN type edge count:%d\n", num_edges);
     num_edges = 0;
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) noexcept {};

@@ -2207,6 +2207,10 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     continue;
                 }
 
+                if(tile_x != to_x || tile_y != to_y){
+                    continue;
+                }
+
                 /*
                  * In order to connect two tracks in different layers, we need to follow these three steps:
                  * 1) connect "from_track" to extra "chanx" node in the same switchblocks
@@ -2233,6 +2237,9 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 //we only add the following edge once for the first driver, otherwise we are adding the same edge multiple times
                 if(!multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].connected_to_des) {
                     multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].connected_to_des = true;
+                    rr_edges_to_create.emplace_back(track_to_chanx_node, diff_layer_chanx_node, src_switch, false);
+                    ++edge_count;
+
                     rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, src_switch, false);
                     ++edge_count;
                 }
