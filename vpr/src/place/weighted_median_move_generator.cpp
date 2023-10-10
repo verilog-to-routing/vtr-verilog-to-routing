@@ -114,6 +114,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
+    to.layer = find_free_layer(cluster_from_type, to);
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
