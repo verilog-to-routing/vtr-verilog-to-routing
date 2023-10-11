@@ -81,8 +81,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             for (int layer_num = 0; layer_num < num_layers; layer_num++) {
                 layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
             }
-            VTR_ASSERT(layer_blk_cnt[from.layer] > 0);
-            layer_blk_cnt[from.layer]--;
+            if(cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
+                VTR_ASSERT(layer_blk_cnt[from.layer] > 0);
+                layer_blk_cnt[from.layer]--;
+            }
         }
     }
 
