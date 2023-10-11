@@ -28,16 +28,18 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    bool is_multi_layer = (device_ctx.grid.get_num_layers() > 1);
+    const int num_layers = device_ctx.grid.get_num_layers();
+    bool is_multi_layer = (num_layers > 1);
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    int from_layer = from.layer;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from_layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     /* Calculate the median region */
     t_pl_loc to;
-    to.layer = from.layer;
+    to.layer = from_layer;
 
     t_bb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
     t_bb limit_coords;
@@ -48,6 +50,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     //reused to save allocation time
     place_move_ctx.X_coord.clear();
     place_move_ctx.Y_coord.clear();
+    std::vector<int> layer_blk_cnt(0, num_layers);
 
     //true if the net is a feedback from the block to itself
     bool skip_net;
@@ -110,6 +113,13 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.X_coord.push_back(coords.xmax);
         place_move_ctx.Y_coord.push_back(coords.ymin);
         place_move_ctx.Y_coord.push_back(coords.ymax);
+        if (is_multi_layer) {
+            for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
+            }
+            VTR_ASSERT(layer_blk_cnt[from_layer] > 0);
+            layer_blk_cnt[from_layer]--;
+        }
     }
 
     if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {
@@ -138,6 +148,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
     // TODO: When placer is updated to support moving blocks between dice, this needs to be changed. Currently, we only move blocks within a die.
     median_point.layer = from.layer;
+    if (is_multi_layer) {
+        to.layer = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
+    }
     if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }
@@ -200,8 +213,9 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
         if (bnum == block_id)
             continue;
         skip_net = false;
-        int x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-        int y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+        const auto& block_loc = place_ctx.block_locs[bnum].loc;
+        int x = block_loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
+        int y = block_loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
         if (!first_block) {
             xmin = x;
