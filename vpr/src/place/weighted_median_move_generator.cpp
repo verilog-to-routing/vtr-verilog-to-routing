@@ -46,7 +46,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //reused to save allocation time
     place_move_ctx.X_coord.clear();
     place_move_ctx.Y_coord.clear();
-    std::vector<int> layer_blk_cnt(0, num_layers);
+    std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
     bool skip_net;
