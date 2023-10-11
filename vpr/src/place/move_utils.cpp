@@ -755,7 +755,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    const int to_layer_num = to.layer;
+    const int to_layer_num = get_random_layer(type);
     VTR_ASSERT(to_layer_num != OPEN);
 
     //Determine the coordinates in the compressed grid space of the current block
