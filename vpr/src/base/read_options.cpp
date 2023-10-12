@@ -430,6 +430,41 @@ struct ParsePlaceAlgorithm {
     }
 };
 
+struct ParsePlaceBoundingBox {
+    ConvertedValue<e_place_bounding_box_mode> from_str(std::string str) {
+        ConvertedValue<e_place_bounding_box_mode> conv_value;
+        if (str == "auto_bb") {
+            conv_value.set_value(AUTO_BB);
+        } else if (str == "cube_bb") {
+            conv_value.set_value(CUBE_BB);
+        } else if (str == "per_layer_bb") {
+            conv_value.set_value(PER_LAYER_BB);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_place_bounding_box_mode val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == AUTO_BB) {
+            conv_value.set_value("auto_bb");
+        } else if (val == CUBE_BB) {
+            conv_value.set_value("cube_bb");
+        } else {
+            VTR_ASSERT(val == PER_LAYER_BB);
+            conv_value.set_value("per_layer_bb");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"auto_bb", "cube_bb", "per_layer_bb"};
+    }
+};
+
 struct ParsePlaceAgentAlgorithm {
     ConvertedValue<e_agent_algorithm> from_str(std::string str) {
         ConvertedValue<e_agent_algorithm> conv_value;
