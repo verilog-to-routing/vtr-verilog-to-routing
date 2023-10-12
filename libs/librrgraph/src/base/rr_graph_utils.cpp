@@ -5,12 +5,8 @@
  ***************************************************************************/
 #include <queue>
 #include <random>
-#include <algorithm>
 
 #include "rr_graph_utils.h"
-
-#include "vtr_memory.h"
-#include "vtr_time.h"
 
 #include "vpr_error.h"
 
