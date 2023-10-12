@@ -48,4 +48,5 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
 int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node);
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node);
 
+bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
 #endif
