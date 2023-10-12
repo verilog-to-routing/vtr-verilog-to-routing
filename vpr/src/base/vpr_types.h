@@ -1010,6 +1010,12 @@ enum e_place_algorithm {
     SLACK_TIMING_PLACE
 };
 
+enum e_place_bounding_box_mode {
+    AUTO_BB,
+    CUBE_BB,
+    PER_LAYER_BB
+};
+
 /**
  * @brief Provides a wrapper around enum e_place_algorithm.
  *
