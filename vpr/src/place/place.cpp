@@ -1254,7 +1254,8 @@ static void placement_inner_loop(const t_annealing_state* state,
         e_move_result swap_result = try_swap(state, costs, move_generator,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
-                                             placer_opts, noc_opts, move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
+                                             placer_opts, noc_opts, move_type_stat, place_algorithm,
+                                             timing_bb_factor, manual_move_enabled, bounding_box_mode);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
