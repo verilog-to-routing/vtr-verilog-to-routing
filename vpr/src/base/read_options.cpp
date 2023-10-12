@@ -2047,6 +2047,21 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("10")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<e_place_bounding_box_mode, ParsePlaceBoundingBox>(args.place_bounding_box_mode, "--place_bounding_box_mode")
+        .help(
+            "Specifies the type of bounding box to be used in 3D architectures.\n"
+            "\n"
+            "MODE options:\n"
+            "  auto_bb     : Automatically determine the appropriate bounding box based on the connections between layers.\n"
+            "  cube_bb            : Use 3D bounding boxes.\n"
+            "  per_layer_bb     : Use per-layer bounding boxes.\n"
+            "\n"
+            "Choose one of the available modes to define the behavior of bounding boxes in your 3D architecture. The default mode is 'automatic'.")
+        .default_value("auto_bb")
+        .choices({"auto_bb", "cube_bb", "per_layer_bb"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+
     place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
         .help(
             "Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement."

@@ -128,6 +128,7 @@ struct t_options {
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
     argparse::ArgValue<std::vector<float>> place_static_notiming_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
+    argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
 
     argparse::ArgValue<bool> RL_agent_placement;
     argparse::ArgValue<bool> place_agent_multistate;

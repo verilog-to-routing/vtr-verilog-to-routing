@@ -1232,6 +1232,7 @@ struct t_placer_opts {
     bool place_agent_multistate;
     bool place_checkpointing;
     int place_high_fanout_net;
+    e_place_bounding_box_mode place_bounding_box_mode;
     e_agent_algorithm place_agent_algorithm;
     float place_agent_epsilon;
     float place_agent_gamma;
