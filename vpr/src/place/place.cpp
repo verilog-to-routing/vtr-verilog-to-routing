@@ -254,6 +254,9 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
 void print_clb_placement(const char* fname);
 #endif
 
+static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
+                       const RRGraphView& rr_graph);
+
 static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
@@ -292,7 +295,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
                               bool manual_move_enabled,
-                              const bool bounding_box_mode);
+                              const bool cube_bb);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
@@ -323,7 +326,7 @@ static float starting_t(const t_annealing_state* state,
                         const t_placer_opts& placer_opts,
                         const t_noc_opts& noc_opts,
                         MoveTypeStat& move_type_stat,
-                        const bool bounding_box_mode);
+                        const bool cube_bb);
 
 static int count_connections();
 
@@ -410,7 +413,7 @@ static int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
-    const bool bounding_box_mode,
+    const bool cube_bb,
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c);
@@ -493,7 +496,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  const t_place_algorithm& place_algorithm,
                                  MoveTypeStat& move_type_stat,
                                  float timing_bb_factor,
-                                 const bool bounding_box_mode);
+                                 const bool cube_bb);
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                          const t_noc_opts& noc_opts,
@@ -571,7 +574,7 @@ void try_place(const Netlist<>& net_list,
     float first_crit_exponent, first_rlim, first_t;
     int first_move_lim;
 
-    bool bounding_box_mode = false;
+    bool cube_bb;
 
     int num_layers = device_ctx.grid.get_num_layers();
 
@@ -627,6 +630,9 @@ void try_place(const Netlist<>& net_list,
                 getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
         }
     }
+
+    cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode,
+                         device_ctx.rr_graph);
 
     int move_lim = 1;
     move_lim = (int)(annealing_sched.inner_num
@@ -906,7 +912,7 @@ void try_place(const Netlist<>& net_list,
                          place_delay_model.get(), placer_criticalities.get(),
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          *manual_move_generator, pin_timing_invalidator.get(),
-                         blocks_affected, placer_opts, noc_opts, move_type_stat, bounding_box_mode);
+                         blocks_affected, placer_opts, noc_opts, move_type_stat, cube_bb);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -978,7 +984,7 @@ void try_place(const Netlist<>& net_list,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
                                  timing_bb_factor,
-                                 bounding_box_mode);
+                                 cube_bb);
 
             //move the update used move_generator to its original variable
             update_move_generator(move_generator, move_generator2, agent_state,
@@ -1044,7 +1050,7 @@ void try_place(const Netlist<>& net_list,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
                              timing_bb_factor,
-                             bounding_box_mode);
+                             cube_bb);
 
         //move the update used move_generator to its original variable
         update_move_generator(move_generator, move_generator2, agent_state,
@@ -1238,7 +1244,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  const t_place_algorithm& place_algorithm,
                                  MoveTypeStat& move_type_stat,
                                  float timing_bb_factor,
-                                 const bool bounding_box_mode) {
+                                 const bool cube_bb) {
     int inner_crit_iter_count, inner_iter;
 
     int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
@@ -1255,7 +1261,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, place_algorithm,
-                                             timing_bb_factor, manual_move_enabled, bounding_box_mode);
+                                             timing_bb_factor, manual_move_enabled, cube_bb);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1427,7 +1433,7 @@ static float starting_t(const t_annealing_state* state,
                         const t_placer_opts& placer_opts,
                         const t_noc_opts& noc_opts,
                         MoveTypeStat& move_type_stat,
-                        const bool bounding_box_mode) {
+                        const bool cube_bb) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1460,7 +1466,7 @@ static float starting_t(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, placer_opts.place_algorithm,
-                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, bounding_box_mode);
+                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, cube_bb);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
@@ -1581,7 +1587,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
                               bool manual_move_enabled,
-                              const bool bounding_box_mode) {
+                              const bool cube_bb) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1682,7 +1688,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         //Also find all the pins affected by the swap, and calculates new connection
         //delays and timing costs and store them in proposed_* data structures.
         int num_nets_affected = find_affected_nets_and_update_costs(
-            place_algorithm, delay_model, criticalities, bounding_box_mode, blocks_affected,
+            place_algorithm, delay_model, criticalities, cube_bb, blocks_affected,
             bb_delta_c, timing_delta_c);
 
         //For setup slack analysis, we first do a timing analysis to get the newest
@@ -1895,6 +1901,27 @@ static e_move_result try_swap(const t_annealing_state* state,
     return move_outcome;
 }
 
+static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
+                       const RRGraphView& rr_graph) {
+    bool cube_bb;
+
+    if (place_bb_mode == AUTO_BB) {
+        if (inter_layer_connections_limited_to_opin(rr_graph)) {
+            cube_bb = false;
+        } else {
+            cube_bb = true;
+        }
+    } else if (place_bb_mode == CUBE_BB) {
+        cube_bb = true;
+    } else {
+        VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
+        cube_bb = false;
+    }
+
+    return cube_bb;
+
+}
+
 /**
  * @brief Find all the nets and pins affected by this swap and update costs.
  *
@@ -1921,14 +1948,13 @@ static int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
-    const bool bounding_box_mode,
+    const bool cube_bb,
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c) {
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     int num_affected_nets = 0;
 
@@ -1951,7 +1977,7 @@ static int find_affected_nets_and_update_costs(
             record_affected_net(net_id, num_affected_nets);
 
             /* Update the net bounding boxes. */
-            if (num_layers == 1) {
+            if (cube_bb) {
                 update_net_bb(net_id, blocks_affected, iblk, blk, blk_pin);
             } else {
                 update_net_layer_bb(net_id, blocks_affected, iblk, blk, blk_pin);
@@ -1971,7 +1997,7 @@ static int find_affected_nets_and_update_costs(
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        if (num_layers == 1) {
+        if (cube_bb) {
             proposed_net_cost[net_id] = get_net_cost(net_id,
                                                      ts_bb_coord_new[net_id]);
         } else {
