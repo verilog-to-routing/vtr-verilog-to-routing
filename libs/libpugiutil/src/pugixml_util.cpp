@@ -11,7 +11,7 @@ loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded w
     //store the position of last '.' in the file name
     size_t position = filename.find_last_of(".");
     std::string result = "";
-    if(position != std::string::npos) {
+    if (position != std::string::npos) {
         //store the characters after the '.' from the file_name string
         result = filename.substr(position);
     }
