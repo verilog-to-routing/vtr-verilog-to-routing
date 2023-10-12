@@ -402,6 +402,12 @@ struct PlacementContext : public Context {
      * Used for unique identification and consistency checking
      */
     std::string placement_id;
+
+    /**
+     * Use during placement to print extra debug information. It is set to true based on the number assigned to
+     * placer_debug_net or placer_debug_block parameters in the command line.
+     */
+    bool f_placer_debug = false;
 };
 
 /**

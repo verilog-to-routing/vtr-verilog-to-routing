@@ -371,6 +371,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         return true;
     }
 
+#ifdef VPR_USE_TBB
+
     /* Set this here, because tbb::global_control doesn't control anything once it's out of scope
      * (contrary to the name). */
 #ifdef VPR_USE_TBB
