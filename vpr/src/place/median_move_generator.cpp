@@ -150,9 +150,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
     // TODO: When placer is updated to support moving blocks between dice, this needs to be changed. Currently, we only move blocks within a die.
     median_point.layer = from.layer;
-//    if (is_multi_layer) {
-//        to.layer = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
-//    }
+    if (is_multi_layer) {
+        to.layer = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
+    }
     if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }
