@@ -442,23 +442,24 @@ REUSABLE_FILES = {
     "route": ["route", "--route_file"],
     "rr_graph": ["rr_graph.xml", "--read_rr_graph"],
     "lookahead": ["lookahead.bin", "--read_router_lookahead"],
+    "blif": ["pre-vpr.blif", "REPLACE_BLIF"],
 }
 
 
-def argparse_use_previous(inp: str) -> List[Tuple[str, List]]:
+def argparse_use_previous(x: str) -> List[Tuple[str, List]]:
     """
     Parse a -use_previous parameter. Throw if not valid.
     Returns a list with (run dir name, [extension, cmdline option]) elements.
     """
-    tokens = [w.strip() for w in inp.split(",")]
+    tokens = [w.strip() for w in x.split(",")]
     tokens = [w for w in tokens if len(w)]
     out = []
     for w in tokens:
         r = re.fullmatch(r"(\w+):(\w+)", w)
         if not r:
-            raise argparse.ArgumentTypeError("Invalid input to -use_previous: %s" % w)
+            raise argparse.ArgumentError("Invalid input to -use_previous: %s" % w)
         if not REUSABLE_FILES.get(r.group(2)):
-            raise argparse.ArgumentTypeError(
+            raise argparse.ArgumentError(
                 "Unknown file type to use_previous: %s, available types: %s"
                 % (r.group(2), ",".join(REUSABLE_FILES.keys()))
             )

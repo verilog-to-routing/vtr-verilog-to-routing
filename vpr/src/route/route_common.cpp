@@ -190,6 +190,12 @@ void try_graph(int width_fac,
                     is_flat);
 }
 
+/** Attempts a routing via an iterated maze router algorithm. \p width_fac
+ * specifies the relative width of the channels, while the members of
+ * router_opts determine the value of the costs assigned to routing
+ * resource node, etc.  det_routing_arch describes the detailed routing
+ * architecture (connection and switch boxes) of the FPGA; it is used
+ * only if a DETAILED routing has been selected. */
 bool try_route(const Netlist<>& net_list,
                int width_fac,
                const t_router_opts& router_opts,
@@ -204,12 +210,6 @@ bool try_route(const Netlist<>& net_list,
                int num_directs,
                ScreenUpdatePriority first_iteration_priority,
                bool is_flat) {
-    /* Attempts a routing via an iterated maze router algorithm.  Width_fac *
-     * specifies the relative width of the channels, while the members of   *
-     * router_opts determine the value of the costs assigned to routing     *
-     * resource node, etc.  det_routing_arch describes the detailed routing *
-     * architecture (connection and switch boxes) of the FPGA; it is used   *
-     * only if a DETAILED routing has been selected.                        */
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -309,11 +309,10 @@ bool try_route(const Netlist<>& net_list,
     return (success);
 }
 
+/** This routine checks to see if this is a resource-feasible routing.
+ * That is, are all rr_node capacity limitations respected?  It assumes
+ * that the occupancy arrays are up to date when it is called. */
 bool feasible_routing() {
-    /* This routine checks to see if this is a resource-feasible routing.      *
-     * That is, are all rr_node capacity limitations respected?  It assumes    *
-     * that the occupancy arrays are up to date when it is called.             */
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -387,8 +386,27 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
+#ifdef VPR_USE_TBB
+    tbb::combinable<size_t> overused_nodes(0), total_overuse(0), worst_overuse(0);
+    tbb::parallel_for_each(rr_graph.nodes().begin(), rr_graph.nodes().end(), [&](RRNodeId rr_id){
+        int overuse = route_ctx.rr_node_route_inf[rr_id].occ() - rr_graph.node_capacity(rr_id);
+
+        // If overused, update the acc_cost and add this node to the overuse info
+        // If not, do nothing
+        if (overuse > 0) {
+            route_ctx.rr_node_route_inf[rr_id].acc_cost += overuse * acc_fac;
+
+            ++overused_nodes.local();
+            total_overuse.local() += overuse;
+            worst_overuse.local() = std::max(worst_overuse.local(), size_t(overuse));
+        }
+    });
+    overuse_info.overused_nodes = overused_nodes.combine(std::plus<size_t>());
+    overuse_info.total_overuse = total_overuse.combine(std::plus<size_t>());
+    overuse_info.worst_overuse = worst_overuse.combine([](size_t a, size_t b){ return std::max(a, b); });
+#else
+    size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
     for (const RRNodeId& rr_id : rr_graph.nodes()) {
         int overuse = route_ctx.rr_node_route_inf[rr_id].occ() - rr_graph.node_capacity(rr_id);
 
@@ -402,11 +420,11 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
             worst_overuse = std::max(worst_overuse, size_t(overuse));
         }
     }
-
     // Update overuse info
     overuse_info.overused_nodes = overused_nodes;
     overuse_info.total_overuse = total_overuse;
     overuse_info.worst_overuse = worst_overuse;
+#endif
 }
 
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */

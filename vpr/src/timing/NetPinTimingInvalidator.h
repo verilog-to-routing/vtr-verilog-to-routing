@@ -11,9 +11,8 @@
 #    include <tbb/concurrent_unordered_set.h>
 #endif
 
-/** Make NetPinTimingInvalidator a virtual class since it does nothing for the general case of non-incremental
- * timing updates. It should really be templated to not pay the cost for vtable lookups, but this is the
- * best approach without putting a template on every function which uses this machine. */
+/** Adapter code to tell TimingInfo about invalidated connections. Can be no-op in
+ * the case of full timing updates. */
 class NetPinTimingInvalidator {
   public:
     typedef vtr::Range<const tatum::EdgeId*> tedge_range;
@@ -83,19 +82,13 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
      * driving the specified pin.
      * Is concurrently safe. */
     void invalidate_connection(ParentPinId pin, TimingInfo* timing_info) {
-        if (invalidated_pins_.count(pin)) return; //Already invalidated
-
         for (tatum::EdgeId edge : pin_timing_edges(pin)) {
             timing_info->invalidate_delay(edge);
         }
-
-        invalidated_pins_.insert(pin);
     }
 
-    /** Resets invalidation state for this class
-     * Not concurrently safe! */
+    /** Resets invalidation state for this class (no-op) */
     void reset() {
-        invalidated_pins_.clear();
     }
 
   private:
@@ -129,14 +122,6 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
   private:
     std::vector<int> pin_first_edge_; //Indices into timing_edges corresponding
     std::vector<tatum::EdgeId> timing_edges_;
-
-    /** Cache for invalidated pins. Use concurrent set when TBB is turned on, since the
-     * invalidator may be shared between threads */
-#ifdef VPR_USE_TBB
-    tbb::concurrent_unordered_set<ParentPinId> invalidated_pins_;
-#else
-    vtr::vec_id_set<ParentPinId> invalidated_pins_;
-#endif
 };
 
 /** NetPinTimingInvalidator is only a rube goldberg machine when incremental timing analysis
@@ -155,7 +140,8 @@ class NoopNetPinTimingInvalidator : public NetPinTimingInvalidator {
     }
 };
 
-/** Make a NetPinTimingInvalidator depending on update_type. Will return a NoopInvalidator if it's not INCREMENTAL. */
+/** Make a NetPinTimingInvalidator depending on update_type. Will return a NoopInvalidator
+ * if it's not INCREMENTAL or AUTO (adaptive) */
 inline std::unique_ptr<NetPinTimingInvalidator> make_net_pin_timing_invalidator(
     e_timing_update_type update_type,
     const Netlist<>& net_list,
@@ -164,10 +150,10 @@ inline std::unique_ptr<NetPinTimingInvalidator> make_net_pin_timing_invalidator(
     const AtomLookup& atom_lookup,
     const tatum::TimingGraph& timing_graph,
     bool is_flat) {
-    if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
+    if (update_type == e_timing_update_type::FULL) {
         return std::make_unique<NoopNetPinTimingInvalidator>();
     } else {
-        VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
+        VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL || update_type == e_timing_update_type::AUTO);
         return std::make_unique<IncrNetPinTimingInvalidator>(net_list, clb_atom_pin_lookup, atom_nlist, atom_lookup, timing_graph, is_flat);
     }
 }

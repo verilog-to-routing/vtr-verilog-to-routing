@@ -1,6 +1,7 @@
 #ifndef VPR_CONCRETE_TIMING_INFO_H
 #define VPR_CONCRETE_TIMING_INFO_H
 
+#include "tatum/analyzer_factory.hpp"
 #include "vtr_log.h"
 #include "timing_info.h"
 #include "timing_util.h"
@@ -490,8 +491,10 @@ std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr
     auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer;
-    if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
+    if (update_type == e_timing_update_type::FULL) {
         analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    } else if (update_type == e_timing_update_type::AUTO) { /* Create adaptive analyzer */
+        analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::ParallelWalker, tatum::SerialIncrWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
     } else {
         VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
         analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::SerialIncrWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);

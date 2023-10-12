@@ -11,7 +11,7 @@
 namespace tatum {
 
 /**
- * A parallel timing analyzer which traveres the timing graph in a levelized
+ * A parallel timing analyzer which traverses the timing graph in a levelized
  * manner.  However nodes within each level are processed in parallel using
  * Thread Building Blocks (TBB). If TBB is not available it operates serially and is 
  * equivalent to the SerialWalker.

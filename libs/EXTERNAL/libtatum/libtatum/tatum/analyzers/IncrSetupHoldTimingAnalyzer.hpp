@@ -1,4 +1,5 @@
 #pragma once
+#include "tatum/graph_walkers/SerialIncrWalker.hpp"
 #include "tatum/graph_walkers/SerialWalker.hpp"
 #include "tatum/SetupHoldAnalysis.hpp"
 #include "tatum/analyzers/SetupHoldTimingAnalyzer.hpp"

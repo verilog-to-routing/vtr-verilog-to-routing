@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <cmath>
+#include <cstdint>
 
 #include "vtr_assert.h"
 
@@ -161,6 +162,17 @@ bool isclose(T a, T b, T rel_tol, T abs_tol) {
 template<class T>
 bool isclose(T a, T b) {
     return isclose<T>(a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL);
+}
+
+/** Log2, round down.
+ * From https://stackoverflow.com/a/51351885 */
+static inline uint64_t log2_floor(uint64_t x) {
+    return 63U - __builtin_clzl(x);
+}
+
+/** Log2, round up */
+static inline uint64_t log2_ceil(uint64_t x) {
+    return log2_floor(x - 1) + 1;
 }
 
 } // namespace vtr

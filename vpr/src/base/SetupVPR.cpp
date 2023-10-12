@@ -281,6 +281,9 @@ void SetupVPR(const t_options* Options,
     /* Set seed for pseudo-random placement, default seed to 1 */
     vtr::srandom(PlacerOpts->seed);
 
+    /* Make num_workers available to the router */
+    RouterOpts->num_workers = vpr_setup->num_workers;
+
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(PowerOpts->do_power, RouterOpts->flat_routing);

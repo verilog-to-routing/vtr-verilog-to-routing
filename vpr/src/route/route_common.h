@@ -2,6 +2,7 @@
 #pragma once
 #include <vector>
 #include "clustered_netlist.h"
+#include "rr_node_types.h"
 #include "vtr_vector.h"
 #include "heap_type.h"
 #include "rr_node_fwd.h"
@@ -155,7 +156,7 @@ t_heap* prepare_to_add_node_to_heap(
     return hptr;
 }
 
-/* Puts an rr_node on the heap if it is the cheapest path.    */
+/** Puts an rr_node on the heap if it is the cheapest path. */
 template<typename T, typename RouteInf>
 void add_node_to_heap(
     T* heap,
@@ -220,4 +221,40 @@ void push_back_node_with_info(
     hptr->path_data->backward_delay = backward_path_delay;
 
     heap->push_back(hptr);
+}
+
+/** Is \p inode inside this bounding box?
+ * In the context of the parallel router, an inode is inside a bounding box
+ * if its driving side is in the bounding box. If it's not directional,
+ * we take (xlow, ylow) as reference */
+inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    /*
+    int x, y;
+    if(rr_graph.node_direction(inode) == Direction::DEC){
+        x = rr_graph.node_xhigh(inode);
+        y = rr_graph.node_yhigh(inode);
+    } else {
+        x = rr_graph.node_xlow(inode);
+        y = rr_graph.node_ylow(inode);
+    } */
+    int x, y;
+    x = rr_graph.node_xlow(inode);
+    y = rr_graph.node_ylow(inode);
+
+    return x >= bb.xmin && x <= bb.xmax && y >= bb.ymin && y <= bb.ymax;
+}
+
+/** When RCV is enabled, it's necessary to be able to completely ripup high fanout nets
+ * if there is still negative hold slack. Normally the router will prune the illegal
+ * branches of high fanout nets, this will bypass this */
+inline bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) {
+    if (router_opts.routing_budgets_algorithm != YOYO) {
+        return false;
+    } else if (worst_neg_slack != 0) {
+        return true;
+    }
+    return false;
 }
