@@ -340,6 +340,16 @@ static int find_affected_nets_and_update_costs(
     double& bb_delta_c,
     double& timing_delta_c);
 
+static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
+                                        const PlaceDelayModel* delay_model,
+                                        const PlacerCriticalities& criticalities,
+                                        const ClusterNetId& net_id,
+                                        const ClusterPinId& pin_id,
+                                        const int affected_blk_id,
+                                        t_pl_blocks_to_be_moved& blocks_affected,
+                                        double& timing_delta_c,
+                                        int& num_affected_nets);
+
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
 static void update_net_bb(const ClusterNetId net,
@@ -347,6 +357,7 @@ static void update_net_bb(const ClusterNetId net,
                           int iblk,
                           const ClusterBlockId blk,
                           const ClusterPinId blk_pin);
+
 static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
@@ -1778,25 +1789,15 @@ static int find_affected_nets_and_update_costs(
         /* Go through all the pins in the moved block. */
         for (ClusterPinId blk_pin : cluster_ctx.clb_nlist.block_pins(blk)) {
             ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(blk_pin);
-            VTR_ASSERT_SAFE_MSG(net_id,
-                                "Only valid nets should be found in compressed netlist block pins");
-
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-                //TODO: Do we require anyting special here for global nets?
-                //"Global nets are assumed to span the whole chip, and do not effect costs."
-                continue;
-
-            /* Record effected nets */
-            record_affected_net(net_id, num_affected_nets);
-
-            /* Update the net bounding boxes. */
-            update_net_bb(net_id, blocks_affected, iblk, blk, blk_pin);
-
-            if (place_algorithm.is_timing_driven()) {
-                /* Determine the change in connection delay and timing cost. */
-                update_td_delta_costs(delay_model, *criticalities, net_id,
-                                      blk_pin, blocks_affected, timing_delta_c);
-            }
+            update_net_info_on_pin_move(place_algorithm,
+                                        delay_model,
+                                        criticalities,
+                                        net_id,
+                                        blk_pin,
+                                        iblk,
+                                        blocks_affected,
+                                        timing_delta_c,
+                                        num_affected_nets);
         }
     }
 
@@ -1812,6 +1813,40 @@ static int find_affected_nets_and_update_costs(
     }
 
     return num_affected_nets;
+}
+
+static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
+                                        const PlaceDelayModel* delay_model,
+                                        const PlacerCriticalities& criticalities,
+                                        const ClusterNetId& net_id,
+                                        const ClusterPinId& pin_id,
+                                        const int affected_blk_id,
+                                        t_pl_blocks_to_be_moved& blocks_affected,
+                                        double& timing_delta_c,
+                                        int& num_affected_nets) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    VTR_ASSERT_SAFE_MSG(net_id,
+                        "Only valid nets should be found in compressed netlist block pins");
+
+    if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+        //TODO: Do we require anyting special here for global nets?
+        //"Global nets are assumed to span the whole chip, and do not effect costs."
+        return;
+    }
+
+    ClusterBlockId blk_id = blocks_affected.moved_blocks[affected_blk_id].block_num;
+
+    /* Record effected nets */
+    record_affected_net(net_id, num_affected_nets);
+
+    /* Update the net bounding boxes. */
+    update_net_bb(net_id, blocks_affected, affected_blk_id, blk_id, pin_id);
+
+    if (place_algorithm.is_timing_driven()) {
+        /* Determine the change in connection delay and timing cost. */
+        update_td_delta_costs(delay_model, criticalities, net_id,
+                              pin_id, blocks_affected, timing_delta_c);
+    }
 }
 
 ///@brief Record effected nets.
