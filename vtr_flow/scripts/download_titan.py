@@ -73,7 +73,6 @@ def parse_args():
         help="Download the full archive instead of just downloading the blif archive",
     )
 
-
     return parser.parse_args()
 
 
@@ -163,10 +162,14 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
     try:
         if not args.full_archive:
             # Extract the contents of the .tar.gz archive directly into the destination directory
-            with tarfile.open(tar_gz_filename, 'r:gz') as tar:
-                members = [m for m in tar.getmembers() if m.name.startswith(f'titan_release_{args.titan_version}_blif/')]
+            with tarfile.open(tar_gz_filename, "r:gz") as tar:
+                members = [
+                    m
+                    for m in tar.getmembers()
+                    if m.name.startswith(f"titan_release_{args.titan_version}_blif/")
+                ]
                 tar.extractall(tmpdir, members=members)
-            tmp_source_blif_dir = os.path.join(tmpdir, f'titan_release_{args.titan_version}_blif')
+            tmp_source_blif_dir = os.path.join(tmpdir, f"titan_release_{args.titan_version}_blif")
             for root, dirs, files in os.walk(tmp_source_blif_dir):
                 for file in files:
                     source_file = os.path.join(root, file)
