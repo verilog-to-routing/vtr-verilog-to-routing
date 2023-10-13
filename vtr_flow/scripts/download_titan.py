@@ -66,6 +66,14 @@ def parse_args():
         help="Select the device family for which to download the netlists and sdc files. Default: all",
     )
 
+    parser.add_argument(
+        "--full_archive",
+        default=False,
+        action="store_true",
+        help="Download the full archive instead of just downloading the blif archive",
+    )
+
+
     return parser.parse_args()
 
 
@@ -74,11 +82,14 @@ def main():
     args = parse_args()
 
     try:
-        tar_gz_filename = "titan_release_" + args.titan_version + ".tar.gz"
+        if args.full_archive:
+            tar_gz_filename = "titan_release_" + args.titan_version + ".tar.gz"
+        else:
+            tar_gz_filename = "titan_release_" + args.titan_version + "_blif.tar.gz"
 
         tar_gz_url = urllib.parse.urljoin(TITAN_URL_MIRRORS["eecg"], tar_gz_filename)
 
-        if not args.force and os.path.isfile(tar_gz_filename):
+        if not args.force and args.full_archive and os.path.isfile(tar_gz_filename):
             print("Found existing {} (skipping download and extraction)".format(tar_gz_filename))
         else:
             print("Downloading {}".format(tar_gz_url))
@@ -149,29 +160,68 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
 
     # Create a temporary working directory
     tmpdir = tempfile.mkdtemp(suffix="download_titan", dir=os.path.abspath("."))
-    create_titan_blif_subdirs(titan_benchmarks_extract_dir, args)
-
     try:
-        # We use a callback along with extractall() to only walk through the large tar.gz file
-        # once (saving runtime). We then move the files to the correct directories, which should
-        # be a cheap rename operation
+        if not args.full_archive:
+            # Extract the contents of the .tar.gz archive directly into the destination directory
+            with tarfile.open(tar_gz_filename, 'r:gz') as tar:
+                members = [m for m in tar.getmembers() if m.name.startswith(f'titan_release_{args.titan_version}_blif/')]
+                tar.extractall(tmpdir, members=members)
+            tmp_source_blif_dir = os.path.join(tmpdir, f'titan_release_{args.titan_version}_blif')
+            for root, dirs, files in os.walk(tmp_source_blif_dir):
+                for file in files:
+                    source_file = os.path.join(root, file)
+                    relative_path = os.path.relpath(source_file, tmp_source_blif_dir)
+                    destination_file = os.path.join(titan_benchmarks_extract_dir, relative_path)
+                    os.makedirs(os.path.dirname(destination_file), exist_ok=True)
+                    shutil.copy2(source_file, destination_file)
 
-        # Extract matching files into the temporary directory
-        with tarfile.TarFile.open(tar_gz_filename, mode="r|*") as tar_file:
-            tar_file.extractall(path=tmpdir, members=extract_callback(tar_file, args))
+        else:
+            create_titan_blif_subdirs(titan_benchmarks_extract_dir, args)
 
-        # Move the extracted files to the relevant directories, SDC files first (since we
-        # need to look up the BLIF name to make it match)
-        for file_type_prefix in ["*.sdc", "*.blif"]:
-            for dirpath, dirnames, filenames in os.walk(tmpdir):
-                for filename in filenames:
-                    src_file_path = os.path.join(dirpath, filename)
-                    dst_file_path = None
-                    for benchmark_subdir in ["titan_new", "titan23", "other_benchmarks"]:
-                        if compare_versions(args.titan_version, "2") >= 1:
-                            # if it is a 2.0.0 titan release or later use device family in the benchmark directory
-                            device_families = get_device_families(args)
-                            for family in device_families:
+            # We use a callback along with extractall() to only walk through the large tar.gz file
+            # once (saving runtime). We then move the files to the correct directories, which should
+            # be a cheap rename operation
+
+            # Extract matching files into the temporary directory
+            with tarfile.TarFile.open(tar_gz_filename, mode="r|*") as tar_file:
+                tar_file.extractall(path=tmpdir, members=extract_callback(tar_file, args))
+
+            # Move the extracted files to the relevant directories, SDC files first (since we
+            # need to look up the BLIF name to make it match)
+            for file_type_prefix in ["*.sdc", "*.blif"]:
+                for dirpath, dirnames, filenames in os.walk(tmpdir):
+                    for filename in filenames:
+                        src_file_path = os.path.join(dirpath, filename)
+                        dst_file_path = None
+                        for benchmark_subdir in ["titan_new", "titan23", "other_benchmarks"]:
+                            if compare_versions(args.titan_version, "2") >= 1:
+                                # if it is a 2.0.0 titan release or later use device family in the benchmark directory
+                                device_families = get_device_families(args)
+                                for family in device_families:
+                                    if file_type_prefix == "*.sdc":
+                                        dest_file_name = determine_sdc_name(dirpath)
+                                    else:
+                                        dest_file_name = filename
+
+                                    if dest_file_name == "":
+                                        continue
+
+                                    if fnmatch.fnmatch(
+                                        src_file_path,
+                                        f"*/titan_release*/benchmarks/{benchmark_subdir}/*/{family}/{file_type_prefix}",
+                                    ):
+                                        dst_file_path = os.path.join(
+                                            titan_benchmarks_extract_dir,
+                                            benchmark_subdir,
+                                            family,
+                                            dest_file_name,
+                                        )
+
+                            elif fnmatch.fnmatch(
+                                src_file_path,
+                                f"*/titan_release*/benchmarks/{benchmark_subdir}/*/{file_type_prefix}",
+                            ):
+                                # if it is a titan release earlier than device family in not used the benchmark directory as there is only support for SIV family
                                 if file_type_prefix == "*.sdc":
                                     dest_file_name = determine_sdc_name(dirpath)
                                 else:
@@ -180,36 +230,12 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                                 if dest_file_name == "":
                                     continue
 
-                                if fnmatch.fnmatch(
-                                    src_file_path,
-                                    f"*/titan_release*/benchmarks/{benchmark_subdir}/*/{family}/{file_type_prefix}",
-                                ):
-                                    dst_file_path = os.path.join(
-                                        titan_benchmarks_extract_dir,
-                                        benchmark_subdir,
-                                        family,
-                                        dest_file_name,
-                                    )
+                                dst_file_path = os.path.join(
+                                    titan_benchmarks_extract_dir, benchmark_subdir, dest_file_name
+                                )
 
-                        elif fnmatch.fnmatch(
-                            src_file_path,
-                            f"*/titan_release*/benchmarks/{benchmark_subdir}/*/{file_type_prefix}",
-                        ):
-                            # if it is a titan release earlier than device family in not used the benchmark directory as there is only support for SIV family
-                            if file_type_prefix == "*.sdc":
-                                dest_file_name = determine_sdc_name(dirpath)
-                            else:
-                                dest_file_name = filename
-
-                            if dest_file_name == "":
-                                continue
-
-                            dst_file_path = os.path.join(
-                                titan_benchmarks_extract_dir, benchmark_subdir, dest_file_name
-                            )
-
-                    if dst_file_path:
-                        shutil.move(src_file_path, dst_file_path)
+                        if dst_file_path:
+                            shutil.move(src_file_path, dst_file_path)
 
     finally:
         # Clean-up
