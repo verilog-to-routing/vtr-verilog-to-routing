@@ -322,7 +322,7 @@ static void invalidate_affected_connections(
     TimingInfo* timing_info);
 
 static bool driven_by_moved_block(const ClusterNetId net,
-                                  const t_pl_blocks_to_be_moved& blocks_affected);
+                                  const std::vector<t_pl_moved_block>& moved_blocks);
 
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks);
 
@@ -2225,13 +2225,13 @@ static void invalidate_affected_connections(
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const ClusterNetId net,
-                                  const t_pl_blocks_to_be_moved& blocks_affected) {
+                                  const std::vector<t_pl_moved_block>& moved_blocks) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     ClusterBlockId net_driver_block = cluster_ctx.clb_nlist.net_driver_block(
         net);
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-        if (net_driver_block == blocks_affected.moved_blocks[iblk].block_num) {
+    for (const auto& move_blk : moved_blocks) {
+        if (net_driver_block == move_blk.block_num) {
             return true;
         }
     }
