@@ -342,7 +342,7 @@ static int find_affected_nets_and_update_costs(
 
 static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
                                         const PlaceDelayModel* delay_model,
-                                        const PlacerCriticalities& criticalities,
+                                        const PlacerCriticalities* criticalities,
                                         const ClusterNetId& net_id,
                                         const ClusterPinId& pin_id,
                                         const int affected_blk_id,
@@ -1817,7 +1817,7 @@ static int find_affected_nets_and_update_costs(
 
 static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
                                         const PlaceDelayModel* delay_model,
-                                        const PlacerCriticalities& criticalities,
+                                        const PlacerCriticalities* criticalities,
                                         const ClusterNetId& net_id,
                                         const ClusterPinId& pin_id,
                                         const int affected_blk_id,
@@ -1844,7 +1844,7 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
 
     if (place_algorithm.is_timing_driven()) {
         /* Determine the change in connection delay and timing cost. */
-        update_td_delta_costs(delay_model, criticalities, net_id,
+        update_td_delta_costs(delay_model, *criticalities, net_id,
                               pin_id, blocks_affected, timing_delta_c);
     }
 }
