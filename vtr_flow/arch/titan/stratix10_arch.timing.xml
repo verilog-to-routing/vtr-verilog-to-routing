@@ -1,3 +1,4 @@
+<?xml version="1.0" ?>
 <!-- 
  FPGA Architecture Description - Intel Stratix 10
 
@@ -15,7 +16,6 @@
 
  -->
 
-<?xml version="1.0" ?>
 <architecture>
   <models>
     <!-- LAB Primitives -->
