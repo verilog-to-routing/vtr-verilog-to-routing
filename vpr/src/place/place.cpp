@@ -2227,15 +2227,15 @@ static void invalidate_affected_connections(
 static bool driven_by_moved_block(const ClusterNetId net,
                                   const std::vector<t_pl_moved_block>& moved_blocks) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-
+    bool is_driven_by_move_blk;
     ClusterBlockId net_driver_block = cluster_ctx.clb_nlist.net_driver_block(
         net);
-    for (const auto& move_blk : moved_blocks) {
-        if (net_driver_block == move_blk.block_num) {
-            return true;
-        }
-    }
-    return false;
+
+    is_driven_by_move_blk = std::any_of(moved_blocks.begin(), moved_blocks.end(), [&net_driver_block](const auto& move_blk) {
+        return net_driver_block == move_blk.block_num;
+    });
+
+    return is_driven_by_move_blk;
 }
 
 /* Finds the cost from scratch.  Done only when the placement   *
