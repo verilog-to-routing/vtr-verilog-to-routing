@@ -362,6 +362,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
                                   const ClusterPinId pin,
+                                  const std::vector<t_pl_moved_block>& moved_blocks,
                                   t_pl_blocks_to_be_moved& blocks_affected,
                                   double& delta_timing_cost);
 
@@ -1934,7 +1935,8 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
                                   const ClusterPinId pin,
-                                  t_pl_blocks_to_be_moved& blocks_affected,
+                                  const std::vector<t_pl_moved_block>& moved_blocks,
+                                  std::vector<ClusterPinId>& affected_pins,
                                   double& delta_timing_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -1964,14 +1966,14 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
             /* Record this connection in blocks_affected.affected_pins */
             ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net, ipin);
-            blocks_affected.affected_pins.push_back(sink_pin);
+            affected_pins.push_back(sink_pin);
         }
     } else {
         /* This pin is a net sink on a moved block */
         VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
 
         /* Check if this sink's net is driven by a moved block */
-        if (!driven_by_moved_block(net, blocks_affected)) {
+        if (!driven_by_moved_block(net, moved_blocks)) {
             /* Get the sink pin index in the net */
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
@@ -1990,7 +1992,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                  - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
-            blocks_affected.affected_pins.push_back(pin);
+            affected_pins.push_back(pin);
         }
     }
 }
