@@ -1904,18 +1904,24 @@ static e_move_result try_swap(const t_annealing_state* state,
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph) {
     bool cube_bb;
+    const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    if (place_bb_mode == AUTO_BB) {
-        if (inter_layer_connections_limited_to_opin(rr_graph)) {
-            cube_bb = false;
-        } else {
-            cube_bb = true;
-        }
-    } else if (place_bb_mode == CUBE_BB) {
+    if (number_layers == 1) {
         cube_bb = true;
     } else {
-        VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
-        cube_bb = false;
+        VTR_ASSERT(number_layers > 1);
+        if (place_bb_mode == AUTO_BB) {
+            if (inter_layer_connections_limited_to_opin(rr_graph)) {
+                cube_bb = false;
+            } else {
+                cube_bb = true;
+            }
+        } else if (place_bb_mode == CUBE_BB) {
+            cube_bb = true;
+        } else {
+            VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
+            cube_bb = false;
+        }
     }
 
     return cube_bb;
