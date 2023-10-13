@@ -439,7 +439,7 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 }
 
 /* Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
- *   clb: Block in which the the sink pin is located on
+ *   clb: Block in which the sink pin is located on
  *   sink_pb_pin_id: The physical pin index of the sink pin on the block
  *
  *  Returns a tuple containing
@@ -499,6 +499,46 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
     VTR_ASSERT(clb_net_pin_idx >= 0);
 
     return std::tuple<ClusterNetId, int, int>(clb_net_idx, curr_pb_pin_id, clb_net_pin_idx);
+}
+
+std::vector<ClusterPinId> cluster_pins_connected_to_atom_pin(AtomPinId atom_pin) {
+    std::vector<ClusterPinId> cluster_pins;
+    const auto& atom_net_list = g_vpr_ctx.atom().nlist;
+    const auto& atom_look_up = g_vpr_ctx.atom().lookup;
+    const auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
+    AtomBlockId atom_block_id = atom_net_list.pin_block(atom_pin);
+    AtomNetId atom_net_id = atom_net_list.pin_net(atom_pin);
+    ClusterNetId cluster_net_id = atom_look_up.clb_net(atom_net_id);
+    ClusterBlockId cluster_block_id = atom_look_up.atom_clb(atom_block_id);
+    if (cluster_net_id == ClusterNetId::INVALID()) {
+        return cluster_pins;
+    }
+
+    const auto& atom_pb_graph_pin = g_vpr_ctx.atom().lookup.atom_pin_pb_graph_pin(atom_pin);
+    int atom_pb_pin_id = atom_pb_graph_pin->pin_count_in_cluster;
+    std::vector<int> cluster_pb_pin_id;
+    if (atom_pb_graph_pin->port->type == PORTS::IN_PORT) {
+        int cluster_pin_id;
+        int cluster_net_pin_id;
+        std::tie(cluster_net_id, cluster_pin_id, cluster_net_pin_id) =
+            find_pb_route_clb_input_net_pin(cluster_block_id, atom_pb_pin_id);
+        if (cluster_net_id != ClusterNetId::INVALID()) {
+            VTR_ASSERT(cluster_pin_id != -1 && cluster_net_pin_id != -1);
+            cluster_pins.push_back(cluster_net_list.net_pin(cluster_net_id, cluster_net_pin_id));
+        }
+    } else {
+        VTR_ASSERT(atom_pb_graph_pin->port->type == PORTS::OUT_PORT);
+        std::vector<int> connected_sink_pb_pins;
+        connected_sink_pb_pins = find_connected_internal_clb_sink_pins(cluster_block_id, atom_pb_pin_id);
+        for (int sink_pb_pin : connected_sink_pb_pins) {
+            int net_pin_idx = cluster_net_list.block_pin_net_index(cluster_block_id, sink_pb_pin);
+            if (net_pin_idx != OPEN) {
+                cluster_pins.push_back(cluster_net_list.net_pin(cluster_net_id, net_pin_idx));
+            }
+        }
+    }
+
+    return cluster_pins;
 }
 
 bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id) {
