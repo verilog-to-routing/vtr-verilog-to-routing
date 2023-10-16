@@ -686,3 +686,40 @@ void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
                 (double)place_cost_exp);
         }
 }
+
+double wirelength_crossing_count(size_t fanout) {
+    /* Get the expected "crossing count" of a net, based on its number *
+     * of pins.  Extrapolate for very large nets.                      */
+
+    if (fanout > 50) {
+        return 2.7933 + 0.02616 * (fanout - 50);
+    } else {
+        return cross_count[fanout - 1];
+    }
+}
+
+double get_net_bounding_box_cost(ClusterNetId net_id, t_bb* bbptr) {
+    /* Finds the cost due to one net by looking at its coordinate bounding  *
+     * box.                                                                 */
+
+    double ncost, crossing;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    crossing = wirelength_crossing_count(
+        cluster_ctx.clb_nlist.net_pins(net_id).size());
+
+    /* Could insert a check for xmin == xmax.  In that case, assume  *
+     * connection will be made with no bends and hence no x-cost.    *
+     * Same thing for y-cost.                                        */
+
+    /* Cost = wire length along channel * cross_count / average      *
+     * channel capacity.   Do this for x, then y direction and add.  */
+
+    ncost = (bbptr->xmax - bbptr->xmin + 1) * crossing
+            * chanx_place_cost_fac[bbptr->ymax][bbptr->ymin - 1];
+
+    ncost += (bbptr->ymax - bbptr->ymin + 1) * crossing
+             * chany_place_cost_fac[bbptr->xmax][bbptr->xmin - 1];
+
+    return (ncost);
+}

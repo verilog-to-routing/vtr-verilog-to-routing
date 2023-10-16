@@ -270,4 +270,8 @@ t_pl_atom_loc get_atom_loc (AtomBlockId atom);
 
 void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
+double wirelength_crossing_count(size_t fanout);
+
+double get_net_bounding_box_cost(ClusterNetId net_id, t_bb* bb_ptr);
+
 #endif
