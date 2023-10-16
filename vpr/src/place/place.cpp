@@ -336,6 +336,14 @@ static int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
+    t_pl_atom_blocks_to_be_moved& blocks_affected,
+    double& bb_delta_c,
+    double& timing_delta_c);
+
+static int find_affected_nets_and_update_costs(
+    const t_place_algorithm& place_algorithm,
+    const PlaceDelayModel* delay_model,
+    const PlacerCriticalities* criticalities,
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c);
@@ -344,9 +352,11 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
                                         const PlaceDelayModel* delay_model,
                                         const PlacerCriticalities* criticalities,
                                         const ClusterNetId& net_id,
+                                        const ClusterBlockId& blk_id,
                                         const ClusterPinId& pin_id,
-                                        const int affected_blk_id,
-                                        t_pl_blocks_to_be_moved& blocks_affected,
+                                        const std::vector<t_pl_moved_block>& moved_blocks,
+                                        const int moving_block_idx,
+                                        std::vector<ClusterPinId>& affected_pins,
                                         double& timing_delta_c,
                                         int& num_affected_nets);
 
@@ -362,7 +372,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const ClusterNetId net,
                                   const ClusterPinId pin,
                                   const std::vector<t_pl_moved_block>& moved_blocks,
-                                  t_pl_blocks_to_be_moved& blocks_affected,
+                                  std::vector<ClusterPinId>& affected_pins,
                                   double& delta_timing_cost);
 
 static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
@@ -958,7 +968,8 @@ void try_place(const Netlist<>& net_list,
     auto post_quench_timing_stats = timing_ctx.stats;
 
     if (placer_opts.place_re_cluster) {
-        place_re_cluster.re_cluster();
+        place_re_cluster.re_cluster(place_delay_model.get(),
+                                    placer_criticalities.get());
     }
 
     //Final timing analysis
@@ -1747,6 +1758,52 @@ static e_move_result try_swap(const t_annealing_state* state,
     return move_outcome;
 }
 
+static int find_affected_nets_and_update_costs(
+    const t_place_algorithm& place_algorithm,
+    const PlaceDelayModel& delay_model,
+    const PlacerCriticalities* criticalities,
+    t_pl_atom_blocks_to_be_moved& blocks_affected,
+    double& bb_delta_c,
+    double& timing_delta_c) {
+
+    const auto& atom_look_up = g_vpr_ctx.atom().lookup;
+    const auto& atom_nlist = g_vpr_ctx.atom().nlist;
+    const auto& cluster_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    VTR_ASSERT_SAFE(bb_delta_c == 0.);
+    VTR_ASSERT_SAFE(timing_delta_c == 0.);
+
+    int num_affected_nets = 0;
+
+    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+        AtomBlockId atom_blk = blocks_affected.moved_blocks[iblk].block_num;
+
+        for (const AtomPinId& atom_pin: atom_nlist.block_pins(atom_blk)) {
+            auto cluster_pins = cluster_pins_connected_to_atom_pin(atom_pin);
+            for (const auto& cluster_pin : cluster_pins) {
+                ClusterNetId net_id = cluster_nlist.pin_net(cluster_pin);
+                record_affected_net(net_id,
+                                    num_affected_nets);
+
+
+            }
+        }
+    }
+
+    /* Now update the bounding box costs (since the net bounding     *
+     * boxes are up-to-date). The cost is only updated once per net. */
+    for (int inet_affected = 0; inet_affected < num_affected_nets;
+         inet_affected++) {
+        ClusterNetId net_id = ts_nets_to_update[inet_affected];
+
+        proposed_net_cost[net_id] = get_net_cost(net_id,
+                                                 &ts_bb_coord_new[net_id]);
+        bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
+    }
+
+    return num_affected_nets;
+}
+
 /**
  * @brief Find all the nets and pins affected by this swap and update costs.
  *
@@ -1793,9 +1850,11 @@ static int find_affected_nets_and_update_costs(
                                         delay_model,
                                         criticalities,
                                         net_id,
+                                        blk,
                                         blk_pin,
+                                        blocks_affected.moved_blocks,
                                         iblk,
-                                        blocks_affected,
+                                        blocks_affected.affected_pins,
                                         timing_delta_c,
                                         num_affected_nets);
         }
@@ -1819,9 +1878,11 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
                                         const PlaceDelayModel* delay_model,
                                         const PlacerCriticalities* criticalities,
                                         const ClusterNetId& net_id,
+                                        const ClusterBlockId& blk_id,
                                         const ClusterPinId& pin_id,
-                                        const int affected_blk_id,
-                                        t_pl_blocks_to_be_moved& blocks_affected,
+                                        const std::vector<t_pl_moved_block>& moved_blocks,
+                                        const int moving_block_idx,
+                                        std::vector<ClusterPinId>& affected_pins,
                                         double& timing_delta_c,
                                         int& num_affected_nets) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1838,12 +1899,17 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
     record_affected_net(net_id, num_affected_nets);
 
     /* Update the net bounding boxes. */
-    update_net_bb(net_id, blk_id, pin_id, pl_moved_block);
+    update_net_bb(net_id, blk_id, pin_id, moved_blocks[moving_block_idx]);
 
     if (place_algorithm.is_timing_driven()) {
         /* Determine the change in connection delay and timing cost. */
-        update_td_delta_costs(delay_model, *criticalities, net_id,
-                              pin_id, blocks_affected, timing_delta_c);
+        update_td_delta_costs(delay_model,
+                              *criticalities,
+                              net_id,
+                              pin_id,
+                              moved_blocks,
+                              affected_pins,
+                              timing_delta_c);
     }
 }
 
