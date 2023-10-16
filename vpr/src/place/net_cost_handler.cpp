@@ -12,6 +12,16 @@ static void update_net_bb(const ClusterNetId& net,
                           const ClusterPinId& blk_pin,
                           const t_pl_moved_block& pl_moved_block);
 
+static void update_td_delta_costs(const PlaceDelayModel* delay_model,
+                                  const PlacerCriticalities& criticalities,
+                                  const ClusterNetId net,
+                                  const ClusterPinId pin,
+                                  std::vector<ClusterPinId>& affected_pins,
+                                  double& delta_timing_cost,
+                                  bool is_src_moving);
+
+static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
+
 
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
@@ -78,6 +88,115 @@ static void update_net_bb(const ClusterNetId& net,
                   pl_moved_block.new_loc.x + pin_width_offset,
                   pl_moved_block.new_loc.y
                       + pin_height_offset);
+    }
+}
+
+/**
+ * @brief Calculate the new connection delay and timing cost of all the
+ *        sink pins affected by moving a specific pin to a new location.
+ *        Also calculates the total change in the timing cost.
+ *
+ * Assumes that the blocks have been moved to the proposed new locations.
+ * Otherwise, the routine comp_td_single_connection_delay() will not be
+ * able to calculate the most up to date connection delay estimation value.
+ *
+ * If the moved pin is a driver pin, then all the sink connections that are
+ * driven by this driver pin are considered.
+ *
+ * If the moved pin is a sink pin, then it is the only pin considered. But
+ * in some cases, the sink is already accounted for if it is also driven
+ * by a driver pin located on a moved block. Computing it again would double
+ * count its affect on the total timing cost change (delta_timing_cost).
+ *
+ * It is possible for some connections to have unchanged delays. For instance,
+ * if we are using a dx/dy delay model, this could occur if a sink pin moved
+ * to a new position with the same dx/dy from its net's driver pin.
+ *
+ * We skip these connections with unchanged delay values as their delay need
+ * not be updated. Their timing costs also do not require any update, since
+ * the criticalities values are always kept stale/unchanged during an block
+ * swap attempt. (Unchanged Delay * Unchanged Criticality = Unchanged Cost)
+ *
+ * This is also done to minimize the number of timing node/edge invalidations
+ * for incremental static timing analysis (incremental STA).
+ */
+static void update_td_delta_costs(const PlaceDelayModel* delay_model,
+                                  const PlacerCriticalities& criticalities,
+                                  const ClusterNetId net,
+                                  const ClusterPinId pin,
+                                  std::vector<ClusterPinId>& affected_pins,
+                                  double& delta_timing_cost,
+                                  bool is_src_moving) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    const auto& connection_delay = g_placer_ctx.timing().connection_delay;
+    auto& connection_timing_cost = g_placer_ctx.mutable_timing().connection_timing_cost;
+    auto& proposed_connection_delay = g_placer_ctx.mutable_timing().proposed_connection_delay;
+    auto& proposed_connection_timing_cost = g_placer_ctx.mutable_timing().proposed_connection_timing_cost;
+
+    if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
+        /* This pin is a net driver on a moved block. */
+        /* Recompute all point to point connection delays for the net sinks. */
+        for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size();
+             ipin++) {
+            float temp_delay = comp_td_single_connection_delay(delay_model, net,
+                                                               ipin);
+            /* If the delay hasn't changed, do not mark this pin as affected */
+            if (temp_delay == connection_delay[net][ipin]) {
+                continue;
+            }
+
+            /* Calculate proposed delay and cost values */
+            proposed_connection_delay[net][ipin] = temp_delay;
+
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+            delta_timing_cost += proposed_connection_timing_cost[net][ipin]
+                                 - connection_timing_cost[net][ipin];
+
+            /* Record this connection in blocks_affected.affected_pins */
+            ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net, ipin);
+            affected_pins.push_back(sink_pin);
+        }
+    } else {
+        /* This pin is a net sink on a moved block */
+        VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
+
+        /* Check if this sink's net is driven by a moved block */
+        if (!is_src_moving) {
+            /* Get the sink pin index in the net */
+            int ipin = cluster_ctx.clb_nlist.pin_net_index(pin);
+
+            float temp_delay = comp_td_single_connection_delay(delay_model, net,
+                                                               ipin);
+            /* If the delay hasn't changed, do not mark this pin as affected */
+            if (temp_delay == connection_delay[net][ipin]) {
+                return;
+            }
+
+            /* Calculate proposed delay and cost values */
+            proposed_connection_delay[net][ipin] = temp_delay;
+
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+            delta_timing_cost += proposed_connection_timing_cost[net][ipin]
+                                 - connection_timing_cost[net][ipin];
+
+            /* Record this connection in blocks_affected.affected_pins */
+            affected_pins.push_back(pin);
+        }
+    }
+}
+
+///@brief Record effected nets.
+static void record_affected_net(const ClusterNetId net,
+                                int& num_affected_nets) {
+    /* Record effected nets. */
+    if (proposed_net_cost[net] < 0.) {
+        /* Net not marked yet. */
+        ts_nets_to_update[num_affected_nets] = net;
+        num_affected_nets++;
+
+        /* Flag to say we've marked this net. */
+        proposed_net_cost[net] = 1.;
     }
 }
 
