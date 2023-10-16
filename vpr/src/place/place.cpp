@@ -1770,22 +1770,43 @@ static int find_affected_nets_and_update_costs(
 
     const auto& atom_look_up = g_vpr_ctx.atom().lookup;
     const auto& atom_nlist = g_vpr_ctx.atom().nlist;
-    const auto& cluster_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& clb_nlsit = g_vpr_ctx.clustering().clb_nlist;
 
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
 
     int num_affected_nets = 0;
 
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-        AtomBlockId atom_blk = blocks_affected.moved_blocks[iblk].block_num;
+    std::vector<ClusterPinId> affected_pins;
 
-        for (const AtomPinId& atom_pin: atom_nlist.block_pins(atom_blk)) {
+    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+        AtomBlockId atom_blk_id = blocks_affected.moved_blocks[iblk].block_num;
+        ClusterBlockId cluster_blk_id = atom_look_up.atom_clb(atom_blk_id);
+        const auto& atom_old_loc = blocks_affected.moved_blocks[iblk].old_loc;
+        const auto& atom_new_loc = blocks_affected.moved_blocks[iblk].new_loc;
+
+        for (const AtomPinId& atom_pin: atom_nlist.block_pins(atom_blk_id)) {
             auto cluster_pins = cluster_pins_connected_to_atom_pin(atom_pin);
             for (const auto& cluster_pin : cluster_pins) {
-                ClusterNetId net_id = cluster_nlist.pin_net(cluster_pin);
-                record_affected_net(net_id,
-                                    num_affected_nets);
+                bool is_src_moving = false;
+                if (atom_nlist.pin_type(atom_pin) == PinType::SINK) {
+                    AtomNetId net_id = atom_nlist.pin_net(atom_pin);
+                    is_src_moving = driven_by_moved_block(net_id, blocks_affected.moved_blocks);
+                }
+                t_pl_moved_block move_cluster_inf;
+                move_cluster_inf.block_num = cluster_blk_id;
+                move_cluster_inf.old_loc = t_pl_loc(atom_old_loc.x, atom_old_loc.y, atom_old_loc.sub_tile, atom_old_loc.layer);
+                move_cluster_inf.new_loc = t_pl_loc(atom_new_loc.x, atom_new_loc.y, atom_new_loc.sub_tile, atom_new_loc.layer);
+                update_net_info_on_pin_move(place_algorithm,
+                                            delay_model,
+                                            criticalities,
+                                            cluster_blk_id,
+                                            cluster_pin,
+                                            move_cluster_inf,
+                                            affected_pins,
+                                            timing_delta_c,
+                                            num_affected_nets,
+                                            is_src_moving);
 
 
             }
