@@ -1,4 +1,34 @@
 #include "net_cost_handler.h"
+#include "globals.h"
+#include "move_utils.h"
+
+/* Flags for the states of the bounding box.                              *
+ * Stored as char for memory efficiency.                                  */
+#define NOT_UPDATED_YET 'N'
+#define UPDATED_ONCE 'U'
+#define GOT_FROM_SCRATCH 'S'
+
+/* Cost of a net, and a temporary cost of a net used during move assessment. */
+static vtr::vector<ClusterNetId, double> net_cost, proposed_net_cost;
+
+/* [0...cluster_ctx.clb_nlist.nets().size()-1]                                               *
+ * A flag array to indicate whether the specific bounding box has been updated   *
+ * in this particular swap or not. If it has been updated before, the code       *
+ * must use the updated data, instead of the out-of-date data passed into the    *
+ * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET        *
+ * indicates that the net has not been updated before, UPDATED_ONCE indicated    *
+ * that the net has been updated once, if it is going to be updated again, the   *
+ * values from the previous update must be used. GOT_FROM_SCRATCH is only        *
+ * applicable for nets larger than SMALL_NETS and it indicates that the          *
+ * particular bounding box cannot be updated incrementally before, hence the     *
+ * bounding box is got from scratch, so the bounding box would definitely be     *
+ * right, DO NOT update again.                                                   */
+static vtr::vector<ClusterNetId, char> bb_updated_before;
+
+/* The following arrays are used by the try_swap function for speed.   */
+/* [0...cluster_ctx.clb_nlist.nets().size()-1] */
+static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
+static std::vector<ClusterNetId> ts_nets_to_update;
 
 
 static bool driven_by_moved_block(const AtomNetId net,
