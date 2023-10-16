@@ -352,11 +352,10 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
-static void update_net_bb(const ClusterNetId net,
-                          const t_pl_blocks_to_be_moved& blocks_affected,
-                          int iblk,
-                          const ClusterBlockId blk,
-                          const ClusterPinId blk_pin);
+static void update_net_bb(const ClusterNetId& net,
+                          const ClusterBlockId& blk,
+                          const ClusterPinId& blk_pin,
+                          const t_pl_moved_block& pl_moved_block);
 
 static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
@@ -1835,13 +1834,11 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
         return;
     }
 
-    ClusterBlockId blk_id = blocks_affected.moved_blocks[affected_blk_id].block_num;
-
     /* Record effected nets */
     record_affected_net(net_id, num_affected_nets);
 
     /* Update the net bounding boxes. */
-    update_net_bb(net_id, blocks_affected, affected_blk_id, blk_id, pin_id);
+    update_net_bb(net_id, blk_id, pin_id, pl_moved_block);
 
     if (place_algorithm.is_timing_driven()) {
         /* Determine the change in connection delay and timing cost. */
@@ -1870,11 +1867,10 @@ static void record_affected_net(const ClusterNetId net,
  * Do not update the net cost here since it should only
  * be updated once per net, not once per pin.
  */
-static void update_net_bb(const ClusterNetId net,
-                          const t_pl_blocks_to_be_moved& blocks_affected,
-                          int iblk,
-                          const ClusterBlockId blk,
-                          const ClusterPinId blk_pin) {
+static void update_net_bb(const ClusterNetId& net,
+                          const ClusterBlockId& blk,
+                          const ClusterPinId& blk_pin,
+                          const t_pl_moved_block& pl_moved_block) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
@@ -1893,11 +1889,11 @@ static void update_net_bb(const ClusterNetId net,
 
         //Incremental bounding box update
         update_bb(net, &ts_bb_coord_new[net], &ts_bb_edge_new[net],
-                  blocks_affected.moved_blocks[iblk].old_loc.x + pin_width_offset,
-                  blocks_affected.moved_blocks[iblk].old_loc.y
+                  pl_moved_block.old_loc.x + pin_width_offset,
+                  pl_moved_block.old_loc.y
                       + pin_height_offset,
-                  blocks_affected.moved_blocks[iblk].new_loc.x + pin_width_offset,
-                  blocks_affected.moved_blocks[iblk].new_loc.y
+                  pl_moved_block.new_loc.x + pin_width_offset,
+                  pl_moved_block.new_loc.y
                       + pin_height_offset);
     }
 }
