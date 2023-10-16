@@ -351,14 +351,13 @@ static int find_affected_nets_and_update_costs(
 static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
                                         const PlaceDelayModel* delay_model,
                                         const PlacerCriticalities* criticalities,
-                                        const ClusterNetId& net_id,
                                         const ClusterBlockId& blk_id,
                                         const ClusterPinId& pin_id,
-                                        const std::vector<t_pl_moved_block>& moved_blocks,
-                                        const int moving_block_idx,
+                                        const t_pl_moved_block& moving_blk_inf,
                                         std::vector<ClusterPinId>& affected_pins,
                                         double& timing_delta_c,
-                                        int& num_affected_nets);
+                                        int& num_affected_nets,
+                                        bool is_src_moving);
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
@@ -1835,28 +1834,33 @@ static int find_affected_nets_and_update_costs(
     double& timing_delta_c) {
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlsit = g_vpr_ctx.clustering().clb_nlist;
 
     int num_affected_nets = 0;
 
     /* Go through all the blocks moved. */
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+        const auto& moving_block_inf = blocks_affected.moved_blocks[iblk];
+        auto& affected_pins = blocks_affected.affected_pins;
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
         /* Go through all the pins in the moved block. */
-        for (ClusterPinId blk_pin : cluster_ctx.clb_nlist.block_pins(blk)) {
-            ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(blk_pin);
+        for (ClusterPinId blk_pin : clb_nlsit.block_pins(blk)) {
+            bool is_src_moving = false;
+            if (clb_nlsit.pin_type(blk_pin) == PinType::SINK) {
+                ClusterNetId net_id = clb_nlsit.pin_net(blk_pin);
+                is_src_moving = driven_by_moved_block(net_id, blocks_affected.moved_blocks);
+            }
             update_net_info_on_pin_move(place_algorithm,
                                         delay_model,
                                         criticalities,
-                                        net_id,
                                         blk,
                                         blk_pin,
-                                        blocks_affected.moved_blocks,
-                                        iblk,
-                                        blocks_affected.affected_pins,
+                                        moving_block_inf,
+                                        affected_pins,
                                         timing_delta_c,
-                                        num_affected_nets);
+                                        num_affected_nets,
+                                        is_src_moving);
         }
     }
 
@@ -1877,15 +1881,15 @@ static int find_affected_nets_and_update_costs(
 static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
                                         const PlaceDelayModel* delay_model,
                                         const PlacerCriticalities* criticalities,
-                                        const ClusterNetId& net_id,
                                         const ClusterBlockId& blk_id,
                                         const ClusterPinId& pin_id,
-                                        const std::vector<t_pl_moved_block>& moved_blocks,
-                                        const int moving_block_idx,
+                                        const t_pl_moved_block& moving_blk_inf,
                                         std::vector<ClusterPinId>& affected_pins,
                                         double& timing_delta_c,
-                                        int& num_affected_nets) {
+                                        int& num_affected_nets,
+                                        bool is_src_moving) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
     VTR_ASSERT_SAFE_MSG(net_id,
                         "Only valid nets should be found in compressed netlist block pins");
 
@@ -1899,7 +1903,7 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
     record_affected_net(net_id, num_affected_nets);
 
     /* Update the net bounding boxes. */
-    update_net_bb(net_id, blk_id, pin_id, moved_blocks[moving_block_idx]);
+    update_net_bb(net_id, blk_id, pin_id, moving_blk_inf);
 
     if (place_algorithm.is_timing_driven()) {
         /* Determine the change in connection delay and timing cost. */
@@ -1907,9 +1911,9 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
                               *criticalities,
                               net_id,
                               pin_id,
-                              moved_blocks,
                               affected_pins,
-                              timing_delta_c);
+                              timing_delta_c,
+                              is_src_moving);
     }
 }
 
