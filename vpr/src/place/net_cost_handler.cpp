@@ -7,6 +7,11 @@ static bool driven_by_moved_block(const AtomNetId net,
 static bool driven_by_moved_block(const ClusterNetId net,
                                   const std::vector<t_pl_moved_block>& moved_blocks);
 
+static void update_net_bb(const ClusterNetId& net,
+                          const ClusterBlockId& blk,
+                          const ClusterPinId& blk_pin,
+                          const t_pl_moved_block& pl_moved_block);
+
 
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
@@ -37,6 +42,43 @@ static bool driven_by_moved_block(const ClusterNetId net,
     });
 
     return is_driven_by_move_blk;
+}
+
+/**
+ * @brief Update the net bounding boxes.
+ *
+ * Do not update the net cost here since it should only
+ * be updated once per net, not once per pin.
+ */
+static void update_net_bb(const ClusterNetId& net,
+                          const ClusterBlockId& blk,
+                          const ClusterPinId& blk_pin,
+                          const t_pl_moved_block& pl_moved_block) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
+        //For small nets brute-force bounding box update is faster
+
+        if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
+            get_non_updateable_bb(net, &ts_bb_coord_new[net]);
+        }
+    } else {
+        //For large nets, update bounding box incrementally
+        int iblk_pin = tile_pin_index(blk_pin);
+
+        t_physical_tile_type_ptr blk_type = physical_tile_type(blk);
+        int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
+        int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
+
+        //Incremental bounding box update
+        update_bb(net, &ts_bb_coord_new[net], &ts_bb_edge_new[net],
+                  pl_moved_block.old_loc.x + pin_width_offset,
+                  pl_moved_block.old_loc.y
+                      + pin_height_offset,
+                  pl_moved_block.new_loc.x + pin_width_offset,
+                  pl_moved_block.new_loc.y
+                      + pin_height_offset);
+    }
 }
 
 static int find_affected_nets_and_update_costs(
