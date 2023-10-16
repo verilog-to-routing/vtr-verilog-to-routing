@@ -268,4 +268,6 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
 // Array in place_ctx.
 t_pl_atom_loc get_atom_loc (AtomBlockId atom);
 
+void alloc_and_load_for_fast_cost_update(float place_cost_exp);
+
 #endif
