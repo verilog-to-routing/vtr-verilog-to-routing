@@ -3,7 +3,7 @@
 #include "timing_place.h"
 #include "move_transactions.h"
 
-static int find_affected_nets_and_update_costs(
+int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
@@ -11,7 +11,7 @@ static int find_affected_nets_and_update_costs(
     double& bb_delta_c,
     double& timing_delta_c);
 
-static int find_affected_nets_and_update_costs(
+int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
