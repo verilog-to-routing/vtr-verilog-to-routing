@@ -1760,7 +1760,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
 static int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
-    const PlaceDelayModel& delay_model,
+    const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
     t_pl_atom_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
