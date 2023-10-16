@@ -371,9 +371,9 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
                                   const ClusterPinId pin,
-                                  const std::vector<t_pl_moved_block>& moved_blocks,
                                   std::vector<ClusterPinId>& affected_pins,
-                                  double& delta_timing_cost);
+                                  double& delta_timing_cost,
+                                  bool is_src_moving);
 
 static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
@@ -1997,9 +1997,9 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
                                   const ClusterPinId pin,
-                                  const std::vector<t_pl_moved_block>& moved_blocks,
                                   std::vector<ClusterPinId>& affected_pins,
-                                  double& delta_timing_cost) {
+                                  double& delta_timing_cost,
+                                  bool is_src_moving) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     const auto& connection_delay = g_placer_ctx.timing().connection_delay;
@@ -2035,7 +2035,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
         VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
 
         /* Check if this sink's net is driven by a moved block */
-        if (!driven_by_moved_block(net, moved_blocks)) {
+        if (!is_src_moving) {
             /* Get the sink pin index in the net */
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
