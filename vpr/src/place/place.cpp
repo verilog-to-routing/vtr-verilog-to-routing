@@ -970,7 +970,8 @@ void try_place(const Netlist<>& net_list,
     auto post_quench_timing_stats = timing_ctx.stats;
 
     if (placer_opts.place_re_cluster) {
-        place_re_cluster.re_cluster(place_delay_model.get(),
+        place_re_cluster.re_cluster(placer_opts.place_algorithm,
+                                    place_delay_model.get(),
                                     placer_criticalities.get());
     }
 
