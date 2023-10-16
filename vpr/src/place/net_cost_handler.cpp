@@ -22,6 +22,17 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
+static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
+                                        const PlaceDelayModel* delay_model,
+                                        const PlacerCriticalities* criticalities,
+                                        const ClusterBlockId& blk_id,
+                                        const ClusterPinId& pin_id,
+                                        const t_pl_moved_block& moving_blk_inf,
+                                        std::vector<ClusterPinId>& affected_pins,
+                                        double& timing_delta_c,
+                                        int& num_affected_nets,
+                                        bool is_src_moving);
+
 
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
@@ -200,7 +211,46 @@ static void record_affected_net(const ClusterNetId net,
     }
 }
 
-static int find_affected_nets_and_update_costs(
+static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
+                                        const PlaceDelayModel* delay_model,
+                                        const PlacerCriticalities* criticalities,
+                                        const ClusterBlockId& blk_id,
+                                        const ClusterPinId& pin_id,
+                                        const t_pl_moved_block& moving_blk_inf,
+                                        std::vector<ClusterPinId>& affected_pins,
+                                        double& timing_delta_c,
+                                        int& num_affected_nets,
+                                        bool is_src_moving) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
+    VTR_ASSERT_SAFE_MSG(net_id,
+                        "Only valid nets should be found in compressed netlist block pins");
+
+    if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+        //TODO: Do we require anyting special here for global nets?
+        //"Global nets are assumed to span the whole chip, and do not effect costs."
+        return;
+    }
+
+    /* Record effected nets */
+    record_affected_net(net_id, num_affected_nets);
+
+    /* Update the net bounding boxes. */
+    update_net_bb(net_id, blk_id, pin_id, moving_blk_inf);
+
+    if (place_algorithm.is_timing_driven()) {
+        /* Determine the change in connection delay and timing cost. */
+        update_td_delta_costs(delay_model,
+                              *criticalities,
+                              net_id,
+                              pin_id,
+                              affected_pins,
+                              timing_delta_c,
+                              is_src_moving);
+    }
+}
+
+int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
@@ -289,7 +339,7 @@ static int find_affected_nets_and_update_costs(
  *
  * @return The number of affected nets.
  */
-static int find_affected_nets_and_update_costs(
+int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
