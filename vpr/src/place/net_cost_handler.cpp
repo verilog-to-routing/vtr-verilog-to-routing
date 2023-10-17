@@ -765,7 +765,6 @@ int find_affected_nets_and_update_costs(
 
     const auto& atom_look_up = g_vpr_ctx.atom().lookup;
     const auto& atom_nlist = g_vpr_ctx.atom().nlist;
-    const auto& clb_nlsit = g_vpr_ctx.clustering().clb_nlist;
 
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);

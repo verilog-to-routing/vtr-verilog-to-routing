@@ -7,7 +7,6 @@ static std::pair<ClusterBlockId,AtomBlockId> getCriticalAtomBlock();
 e_create_move AtomCriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.move();
 
     ClusterBlockId cluster_blk_id = ClusterBlockId::INVALID();
     AtomBlockId atom_blk_id = AtomBlockId::INVALID();
