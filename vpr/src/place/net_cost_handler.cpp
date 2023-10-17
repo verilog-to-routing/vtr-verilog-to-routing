@@ -14,6 +14,10 @@ using std::min;
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
+/* This defines the error tolerance for floating points variables used in *
+ * cost computation. 0.01 means that there is a 1% error tolerance.       */
+#define ERROR_TOL .01
+
 /* Expected crossing counts for nets with different #'s of pins.  From *
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   *
  * Multiplied to bounding box of a net to better estimate wire length  *
