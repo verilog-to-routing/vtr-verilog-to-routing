@@ -37,4 +37,14 @@ void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                   const PlacerCriticalities* criticalities,
                                   t_placer_costs* costs);
 
+void alloc_and_load_for_fast_cost_update(float place_cost_exp);
+
+void free_fast_cost_update();
+
 void init_net_cost_structs(size_t num_nets);
+
+void free_net_cost_structs();
+
+void init_try_swap_net_cost_structs(size_t num_nets);
+
+void free_try_swap_net_cost_structs();
