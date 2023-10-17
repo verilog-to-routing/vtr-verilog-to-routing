@@ -1286,6 +1286,8 @@ class t_pb_graph_node {
     int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
+    int total_primitive_count; /* total number of this primitive type in the cluster */
+
     /* Interconnect instances for this pb
      * Only used for power
      */

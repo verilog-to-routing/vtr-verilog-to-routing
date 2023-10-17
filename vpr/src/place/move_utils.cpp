@@ -617,7 +617,69 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     return empty_locs;
 }
 
-ClusterBlockId propose_block_to_move(int& logical_blk_type_index, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+void enable_placer_debug(const t_placer_opts& placer_opts,
+                         ClusterBlockId blk_id) {
+    if (!blk_id.is_valid()) {
+        return;
+    }
+
+    int blk_id_num = (int)size_t(blk_id);
+    // Get the nets connected to the block
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type;
+    int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
+    std::vector<ClusterNetId> block_nets(block_num_pins, ClusterNetId::INVALID());
+    for (int ipin = 0; ipin < block_num_pins; ipin++) {
+        block_nets[ipin] = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
+    }
+
+    bool& f_placer_debug = g_vpr_ctx.mutable_placement().f_placer_debug;
+
+    bool active_blk_debug = (placer_opts.placer_debug_block >= -1);
+    bool active_net_debug = (placer_opts.placer_debug_net >= -1);
+
+    f_placer_debug = active_blk_debug || active_net_debug;
+
+    if (!f_placer_debug) {
+        return;
+    }
+
+    bool match_blk = (placer_opts.placer_debug_block == blk_id_num || placer_opts.placer_debug_block == -1);
+
+    bool match_net = false;
+    if (placer_opts.placer_debug_net == -1) {
+        match_net = true;
+    } else {
+        for (const auto& net_id : block_nets) {
+            if (net_id.is_valid()) {
+                int net_id_num = (int)size_t(net_id);
+                if (placer_opts.placer_debug_net == net_id_num) {
+                    match_net = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (active_blk_debug) f_placer_debug &= match_blk;
+    if (active_net_debug) f_placer_debug &= match_net;
+}
+#endif
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
+                                     int& logical_blk_type_index,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from) {
+#else
+ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
+                                     int& logical_blk_type_index,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from) {
+#endif
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -639,6 +701,9 @@ ClusterBlockId propose_block_to_move(int& logical_blk_type_index, bool highly_cr
             b_from = pick_from_block(logical_blk_type_index);
         }
     }
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    enable_placer_debug(placer_opts, b_from);
+#endif
 
     return b_from;
 }
@@ -862,6 +927,10 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     VTR_ASSERT_MSG(grid.get_width_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
 
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range[from_layer_num].xmin, search_range[from_layer_num].ymin, from_layer_num,
+                   search_range[from_layer_num].xmax, search_range[from_layer_num].ymax, from_layer_num,
+                   to.x, to.y, to.layer);
     return true;
 }
 
@@ -952,6 +1021,10 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range.xmin, search_range.ymin, from_layer_num,
+                   search_range.xmax, search_range.ymax, from_layer_num,
+                   to_loc.x, to_loc.y, to_loc.layer);
     return true;
 }
 
@@ -1035,6 +1108,10 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range[from_layer_num].xmin, search_range[from_layer_num].ymin, from_layer_num,
+                   search_range[from_layer_num].xmax, search_range[from_layer_num].ymax, from_layer_num,
+                   to_loc.x, to_loc.y, to_loc.layer);
     return true;
 }
 
@@ -1163,6 +1240,9 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                 legal = true;
             }
         }
+    }
+    if (!legal) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tCouldn't find any legal position in the given search range\n");
     }
     return legal;
 }
@@ -1316,6 +1396,7 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
         intersect_reg = intersection(regions[0], range_reg);
 
         if (intersect_reg.empty()) {
+            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tCouldn't find an intersection between floorplan constraints and search region\n");
             return false;
         } else {
             const auto intersect_coord = intersect_reg.get_region_rect();

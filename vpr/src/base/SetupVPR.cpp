@@ -679,6 +679,9 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_re_cluster = Options.place_re_cluster;
 
     PlacerOpts->seed = Options.Seed;
+
+    PlacerOpts->placer_debug_block = Options.placer_debug_block;
+    PlacerOpts->placer_debug_net = Options.placer_debug_net;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

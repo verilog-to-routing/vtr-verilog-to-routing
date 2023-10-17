@@ -128,7 +128,11 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
  *
  * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
  */
-ClusterBlockId propose_block_to_move(int& logical_blk_type_index, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
+                                     int& logical_blk_type_index,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from);
 
 /**
  * @brief Select a random block to be swapped with another block
@@ -331,5 +335,18 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
                                                       int layer_num);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+/**
+ * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
+ * connected to the block share the same ID as the net ID passed to the placer_debug_net parameter of the command line,
+ * then debugging information should be printed.
+ *
+ * @param placer_opts
+ * @param blk_id The ID of the block that is considered to be moved
+ */
+void enable_placer_debug(const t_placer_opts& placer_opts,
+                         ClusterBlockId blk_id);
+#endif
 
 #endif
