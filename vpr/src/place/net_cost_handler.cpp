@@ -1,6 +1,10 @@
 #include "net_cost_handler.h"
 #include "globals.h"
+#include "placer_globals.h"
 #include "move_utils.h"
+
+using std::max;
+using std::min;
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
@@ -339,7 +343,7 @@ int find_affected_nets_and_update_costs(
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        proposed_net_cost[net_id] = get_net_cost(net_id,
+        proposed_net_cost[net_id] = get_net_bounding_box_cost(net_id,
                                                  &ts_bb_coord_new[net_id]);
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
@@ -414,10 +418,23 @@ int find_affected_nets_and_update_costs(
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        proposed_net_cost[net_id] = get_net_cost(net_id,
+        proposed_net_cost[net_id] = get_net_bounding_box_cost(net_id,
                                                  &ts_bb_coord_new[net_id]);
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
     return num_affected_nets;
+}
+
+
+
+
+void init_net_cost_structs(size_t num_nets) {
+    net_cost.resize(num_nets, -1.);
+    proposed_net_cost.resize(num_nets, -1.);
+    /* Used to store costs for moves not yet made and to indicate when a net's   *
+     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
+     * been recomputed.                                                          */
+    bb_updated_before.resize(num_nets, NOT_UPDATED_YET);
+
 }

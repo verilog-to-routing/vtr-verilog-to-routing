@@ -2,6 +2,12 @@
 #include "place_delay_model.h"
 #include "timing_place.h"
 #include "move_transactions.h"
+#include "place_util.h"
+
+enum e_cost_methods {
+    NORMAL,
+    CHECK
+};
 
 int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
@@ -18,3 +24,6 @@ int find_affected_nets_and_update_costs(
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c);
+
+
+void init_net_cost_structs(size_t num_nets);
