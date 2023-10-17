@@ -19,7 +19,7 @@ e_create_move AtomCriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_m
 
     t_pl_loc from = place_ctx.block_locs[cluster_blk_id].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(cluster_blk_id);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type(from.x, from.y);
+    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_pl_loc to;
