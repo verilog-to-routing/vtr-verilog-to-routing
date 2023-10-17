@@ -2,6 +2,8 @@
 #include "globals.h"
 #include "placer_globals.h"
 #include "move_utils.h"
+#include "place_timing_update.h"
+#include "noc_place_utils.h"
 
 using std::max;
 using std::min;
@@ -66,6 +68,16 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
                                         double& timing_delta_c,
                                         int& num_affected_nets,
                                         bool is_src_moving);
+
+static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
+
+static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
+
+static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_edges);
+
+static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr);
+
+static double recompute_bb_cost();
 
 
 
@@ -282,6 +294,395 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
                               timing_delta_c,
                               is_src_moving);
     }
+}
+
+/* Finds the bounding box of a net and stores its coordinates in the  *
+ * bb_coord_new data structure.  This routine should only be called   *
+ * for small nets, since it does not determine enough information for *
+ * the bounding box to be updated incrementally later.                *
+ * Currently assumes channels on both sides of the CLBs forming the   *
+ * edges of the bounding box can be used.  Essentially, I am assuming *
+ * the pins always lie on the outside of the bounding box.            */
+static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
+    //TODO: account for multiple physical pin instances per logical pin
+
+    int xmax, ymax, xmin, ymin, x, y;
+    int pnum;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+    pnum = net_pin_to_tile_pin_index(net_id, 0);
+
+    x = place_ctx.block_locs[bnum].loc.x
+        + physical_tile_type(bnum)->pin_width_offset[pnum];
+    y = place_ctx.block_locs[bnum].loc.y
+        + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+    xmin = x;
+    ymin = y;
+    xmax = x;
+    ymax = y;
+
+    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+        pnum = tile_pin_index(pin_id);
+        x = place_ctx.block_locs[bnum].loc.x
+            + physical_tile_type(bnum)->pin_width_offset[pnum];
+        y = place_ctx.block_locs[bnum].loc.y
+            + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+        if (x < xmin) {
+            xmin = x;
+        } else if (x > xmax) {
+            xmax = x;
+        }
+
+        if (y < ymin) {
+            ymin = y;
+        } else if (y > ymax) {
+            ymax = y;
+        }
+    }
+
+    /* Now I've found the coordinates of the bounding box.  There are no *
+     * channels beyond device_ctx.grid.width()-2 and                     *
+     * device_ctx.grid.height() - 2, so I want to clip to that.  As well,*
+     * since I'll always include the channel immediately below and the   *
+     * channel immediately to the left of the bounding box, I want to    *
+     * clip to 1 in both directions as well (since minimum channel index *
+     * is 0).  See route_common.cpp for a channel diagram.               */
+
+    bb_coord_new->xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    bb_coord_new->ymin = max(min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new->xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    bb_coord_new->ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+}
+
+static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew) {
+    /* Updates the bounding box of a net by storing its coordinates in    *
+     * the bb_coord_new data structure and the number of blocks on each   *
+     * edge in the bb_edge_new data structure.  This routine should only  *
+     * be called for large nets, since it has some overhead relative to   *
+     * just doing a brute force bounding box calculation.  The bounding   *
+     * box coordinate and edge information for inet must be valid before  *
+     * this routine is called.                                            *
+     * Currently assumes channels on both sides of the CLBs forming the   *
+     * edges of the bounding box can be used.  Essentially, I am assuming *
+     * the pins always lie on the outside of the bounding box.            *
+     * The x and y coordinates are the pin's x and y coordinates.         */
+    /* IO blocks are considered to be one cell in for simplicity.         */
+    //TODO: account for multiple physical pin instances per logical pin
+    const t_bb *curr_bb_edge, *curr_bb_coord;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_move_ctx = g_placer_ctx.move();
+
+    xnew = max(min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    ynew = max(min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    xold = max(min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+    yold = max(min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+
+    /* Check if the net had been updated before. */
+    if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+        /* The net had been updated from scratch, DO NOT update again! */
+        return;
+    } else if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
+        /* The net had NOT been updated before, could use the old values */
+        curr_bb_coord = &place_move_ctx.bb_coords[net_id];
+        curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
+        bb_updated_before[net_id] = UPDATED_ONCE;
+    } else {
+        /* The net had been updated before, must use the new values */
+        curr_bb_coord = bb_coord_new;
+        curr_bb_edge = bb_edge_new;
+    }
+
+    /* Check if I can update the bounding box incrementally. */
+
+    if (xnew < xold) { /* Move to left. */
+
+        /* Update the xmax fields for coordinates and number of edges first. */
+
+        if (xold == curr_bb_coord->xmax) { /* Old position at xmax. */
+            if (curr_bb_edge->xmax == 1) {
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                return;
+            } else {
+                bb_edge_new->xmax = curr_bb_edge->xmax - 1;
+                bb_coord_new->xmax = curr_bb_coord->xmax;
+            }
+        } else { /* Move to left, old postion was not at xmax. */
+            bb_coord_new->xmax = curr_bb_coord->xmax;
+            bb_edge_new->xmax = curr_bb_edge->xmax;
+        }
+
+        /* Now do the xmin fields for coordinates and number of edges. */
+
+        if (xnew < curr_bb_coord->xmin) { /* Moved past xmin */
+            bb_coord_new->xmin = xnew;
+            bb_edge_new->xmin = 1;
+        } else if (xnew == curr_bb_coord->xmin) { /* Moved to xmin */
+            bb_coord_new->xmin = xnew;
+            bb_edge_new->xmin = curr_bb_edge->xmin + 1;
+        } else { /* Xmin unchanged. */
+            bb_coord_new->xmin = curr_bb_coord->xmin;
+            bb_edge_new->xmin = curr_bb_edge->xmin;
+        }
+        /* End of move to left case. */
+
+    } else if (xnew > xold) { /* Move to right. */
+
+        /* Update the xmin fields for coordinates and number of edges first. */
+
+        if (xold == curr_bb_coord->xmin) { /* Old position at xmin. */
+            if (curr_bb_edge->xmin == 1) {
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                return;
+            } else {
+                bb_edge_new->xmin = curr_bb_edge->xmin - 1;
+                bb_coord_new->xmin = curr_bb_coord->xmin;
+            }
+        } else { /* Move to right, old position was not at xmin. */
+            bb_coord_new->xmin = curr_bb_coord->xmin;
+            bb_edge_new->xmin = curr_bb_edge->xmin;
+        }
+
+        /* Now do the xmax fields for coordinates and number of edges. */
+
+        if (xnew > curr_bb_coord->xmax) { /* Moved past xmax. */
+            bb_coord_new->xmax = xnew;
+            bb_edge_new->xmax = 1;
+        } else if (xnew == curr_bb_coord->xmax) { /* Moved to xmax */
+            bb_coord_new->xmax = xnew;
+            bb_edge_new->xmax = curr_bb_edge->xmax + 1;
+        } else { /* Xmax unchanged. */
+            bb_coord_new->xmax = curr_bb_coord->xmax;
+            bb_edge_new->xmax = curr_bb_edge->xmax;
+        }
+        /* End of move to right case. */
+
+    } else { /* xnew == xold -- no x motion. */
+        bb_coord_new->xmin = curr_bb_coord->xmin;
+        bb_coord_new->xmax = curr_bb_coord->xmax;
+        bb_edge_new->xmin = curr_bb_edge->xmin;
+        bb_edge_new->xmax = curr_bb_edge->xmax;
+    }
+
+    /* Now account for the y-direction motion. */
+
+    if (ynew < yold) { /* Move down. */
+
+        /* Update the ymax fields for coordinates and number of edges first. */
+
+        if (yold == curr_bb_coord->ymax) { /* Old position at ymax. */
+            if (curr_bb_edge->ymax == 1) {
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                return;
+            } else {
+                bb_edge_new->ymax = curr_bb_edge->ymax - 1;
+                bb_coord_new->ymax = curr_bb_coord->ymax;
+            }
+        } else { /* Move down, old postion was not at ymax. */
+            bb_coord_new->ymax = curr_bb_coord->ymax;
+            bb_edge_new->ymax = curr_bb_edge->ymax;
+        }
+
+        /* Now do the ymin fields for coordinates and number of edges. */
+
+        if (ynew < curr_bb_coord->ymin) { /* Moved past ymin */
+            bb_coord_new->ymin = ynew;
+            bb_edge_new->ymin = 1;
+        } else if (ynew == curr_bb_coord->ymin) { /* Moved to ymin */
+            bb_coord_new->ymin = ynew;
+            bb_edge_new->ymin = curr_bb_edge->ymin + 1;
+        } else { /* ymin unchanged. */
+            bb_coord_new->ymin = curr_bb_coord->ymin;
+            bb_edge_new->ymin = curr_bb_edge->ymin;
+        }
+        /* End of move down case. */
+
+    } else if (ynew > yold) { /* Moved up. */
+
+        /* Update the ymin fields for coordinates and number of edges first. */
+
+        if (yold == curr_bb_coord->ymin) { /* Old position at ymin. */
+            if (curr_bb_edge->ymin == 1) {
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                return;
+            } else {
+                bb_edge_new->ymin = curr_bb_edge->ymin - 1;
+                bb_coord_new->ymin = curr_bb_coord->ymin;
+            }
+        } else { /* Moved up, old position was not at ymin. */
+            bb_coord_new->ymin = curr_bb_coord->ymin;
+            bb_edge_new->ymin = curr_bb_edge->ymin;
+        }
+
+        /* Now do the ymax fields for coordinates and number of edges. */
+
+        if (ynew > curr_bb_coord->ymax) { /* Moved past ymax. */
+            bb_coord_new->ymax = ynew;
+            bb_edge_new->ymax = 1;
+        } else if (ynew == curr_bb_coord->ymax) { /* Moved to ymax */
+            bb_coord_new->ymax = ynew;
+            bb_edge_new->ymax = curr_bb_edge->ymax + 1;
+        } else { /* ymax unchanged. */
+            bb_coord_new->ymax = curr_bb_coord->ymax;
+            bb_edge_new->ymax = curr_bb_edge->ymax;
+        }
+        /* End of move up case. */
+
+    } else { /* ynew == yold -- no y motion. */
+        bb_coord_new->ymin = curr_bb_coord->ymin;
+        bb_coord_new->ymax = curr_bb_coord->ymax;
+        bb_edge_new->ymin = curr_bb_edge->ymin;
+        bb_edge_new->ymax = curr_bb_edge->ymax;
+    }
+
+    if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
+        bb_updated_before[net_id] = UPDATED_ONCE;
+    }
+}
+
+/* This routine finds the bounding box of each net from scratch (i.e.   *
+ * from only the block location information).  It updates both the       *
+ * coordinate and number of pins on each edge information.  It           *
+ * should only be called when the bounding box information is not valid. */
+static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_edges) {
+    int pnum, x, y, xmin, xmax, ymin, ymax;
+    int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
+
+    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+    pnum = net_pin_to_tile_pin_index(net_id, 0);
+    VTR_ASSERT(pnum >= 0);
+    x = place_ctx.block_locs[bnum].loc.x
+        + physical_tile_type(bnum)->pin_width_offset[pnum];
+    y = place_ctx.block_locs[bnum].loc.y
+        + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+    x = max(min<int>(x, grid.width() - 2), 1);
+    y = max(min<int>(y, grid.height() - 2), 1);
+
+    xmin = x;
+    ymin = y;
+    xmax = x;
+    ymax = y;
+    xmin_edge = 1;
+    ymin_edge = 1;
+    xmax_edge = 1;
+    ymax_edge = 1;
+
+    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+        pnum = tile_pin_index(pin_id);
+        x = place_ctx.block_locs[bnum].loc.x
+            + physical_tile_type(bnum)->pin_width_offset[pnum];
+        y = place_ctx.block_locs[bnum].loc.y
+            + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+        /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
+         * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
+         * I always take all channels impinging on the bounding box to be within   *
+         * that bounding box.  Hence, this "movement" of IO blocks does not affect *
+         * the which channels are included within the bounding box, and it         *
+         * simplifies the code a lot.                                              */
+
+        x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
+        y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
+
+        if (x == xmin) {
+            xmin_edge++;
+        }
+        if (x == xmax) { /* Recall that xmin could equal xmax -- don't use else */
+            xmax_edge++;
+        } else if (x < xmin) {
+            xmin = x;
+            xmin_edge = 1;
+        } else if (x > xmax) {
+            xmax = x;
+            xmax_edge = 1;
+        }
+
+        if (y == ymin) {
+            ymin_edge++;
+        }
+        if (y == ymax) {
+            ymax_edge++;
+        } else if (y < ymin) {
+            ymin = y;
+            ymin_edge = 1;
+        } else if (y > ymax) {
+            ymax = y;
+            ymax_edge = 1;
+        }
+    }
+
+    /* Copy the coordinates and number on edges information into the proper   *
+     * structures.                                                            */
+    coords->xmin = xmin;
+    coords->xmax = xmax;
+    coords->ymin = ymin;
+    coords->ymax = ymax;
+
+    num_on_edges->xmin = xmin_edge;
+    num_on_edges->xmax = xmax_edge;
+    num_on_edges->ymin = ymin_edge;
+    num_on_edges->ymax = ymax_edge;
+}
+
+static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
+    /* WMF: Finds the estimate of wirelength due to one net by looking at   *
+     * its coordinate bounding box.                                         */
+
+    double ncost, crossing;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    crossing = wirelength_crossing_count(
+        cluster_ctx.clb_nlist.net_pins(net_id).size());
+
+    /* Could insert a check for xmin == xmax.  In that case, assume  *
+     * connection will be made with no bends and hence no x-cost.    *
+     * Same thing for y-cost.                                        */
+
+    /* Cost = wire length along channel * cross_count / average      *
+     * channel capacity.   Do this for x, then y direction and add.  */
+
+    ncost = (bbptr->xmax - bbptr->xmin + 1) * crossing;
+
+    ncost += (bbptr->ymax - bbptr->ymin + 1) * crossing;
+
+    return (ncost);
+}
+
+static double recompute_bb_cost() {
+    /* Recomputes the cost to eliminate roundoff that may have accrued.  *
+     * This routine does as little work as possible to compute this new  *
+     * cost.                                                             */
+
+    double cost = 0;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
+            /* Bounding boxes don't have to be recomputed; they're correct. */
+            cost += net_cost[net_id];
+        }
+    }
+
+    return (cost);
 }
 
 int find_affected_nets_and_update_costs(
