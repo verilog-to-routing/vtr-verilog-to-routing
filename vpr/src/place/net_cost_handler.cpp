@@ -827,8 +827,146 @@ int find_affected_nets_and_update_costs(
     return num_affected_nets;
 }
 
+/* Finds the cost from scratch.  Done only when the placement   *
+ * has been radically changed (i.e. after initial placement).   *
+ * Otherwise find the cost change incrementally.  If method     *
+ * check is NORMAL, we find bounding boxes that are updateable  *
+ * for the larger nets.  If method is CHECK, all bounding boxes *
+ * are found via the non_updateable_bb routine, to provide a    *
+ * cost which can be used to check the correctness of the       *
+ * other routine.                                               */
+double comp_bb_cost(e_cost_methods method) {
+    double cost = 0;
+    double expected_wirelength = 0.0;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
+            /* Small nets don't use incremental updating on their bounding boxes, *
+             * so they can use a fast bounding box calculator.                    */
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET
+                && method == NORMAL) {
+                get_bb_from_scratch(net_id, &place_move_ctx.bb_coords[net_id],
+                                    &place_move_ctx.bb_num_on_edges[net_id]);
+            } else {
+                get_non_updateable_bb(net_id,
+                                      &place_move_ctx.bb_coords[net_id]);
+            }
 
+            net_cost[net_id] = get_net_bounding_box_cost(net_id,
+                                                         &place_move_ctx.bb_coords[net_id]);
+            cost += net_cost[net_id];
+            if (method == CHECK)
+                expected_wirelength += get_net_wirelength_estimate(net_id,
+                                                                   &place_move_ctx.bb_coords[net_id]);
+        }
+    }
+
+    if (method == CHECK) {
+        VTR_LOG("\n");
+        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
+                expected_wirelength);
+    }
+    return cost;
+}
+
+void update_move_nets(int num_nets_affected) {
+    /* update net cost functions and reset flags. */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
+
+    for (int inet_affected = 0; inet_affected < num_nets_affected;
+         inet_affected++) {
+        ClusterNetId net_id = ts_nets_to_update[inet_affected];
+
+        place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
+            place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
+
+        net_cost[net_id] = proposed_net_cost[net_id];
+
+        /* negative proposed_net_cost value is acting as a flag. */
+        proposed_net_cost[net_id] = -1;
+        bb_updated_before[net_id] = NOT_UPDATED_YET;
+    }
+}
+
+void reset_move_nets(int num_nets_affected) {
+    /* Reset the net cost function flags first. */
+    for (int inet_affected = 0; inet_affected < num_nets_affected;
+         inet_affected++) {
+        ClusterNetId net_id = ts_nets_to_update[inet_affected];
+        proposed_net_cost[net_id] = -1;
+        bb_updated_before[net_id] = NOT_UPDATED_YET;
+    }
+}
+
+void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
+                                  const t_noc_opts& noc_opts,
+                                  const PlaceDelayModel* delay_model,
+                                  const PlacerCriticalities* criticalities,
+                                  t_placer_costs* costs) {
+    double new_bb_cost = recompute_bb_cost();
+    if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
+        std::string msg = vtr::string_fmt(
+            "in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
+            new_bb_cost, costs->bb_cost);
+        VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+    }
+    costs->bb_cost = new_bb_cost;
+
+    if (placer_opts.place_algorithm.is_timing_driven()) {
+        double new_timing_cost = 0.;
+        comp_td_costs(delay_model, *criticalities, &new_timing_cost);
+        if (fabs(
+                new_timing_cost
+                - costs->timing_cost)
+            > costs->timing_cost * ERROR_TOL) {
+            std::string msg = vtr::string_fmt(
+                "in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
+                new_timing_cost, costs->timing_cost, ERROR_TOL);
+            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+        }
+        costs->timing_cost = new_timing_cost;
+    } else {
+        VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
+
+        costs->cost = new_bb_cost * costs->bb_cost_norm;
+    }
+
+    if (noc_opts.noc) {
+        double new_noc_aggregate_bandwidth_cost = 0.;
+        double new_noc_latency_cost = 0.;
+        recompute_noc_costs(new_noc_aggregate_bandwidth_cost, new_noc_latency_cost);
+
+        if (fabs(
+                new_noc_aggregate_bandwidth_cost
+                - costs->noc_aggregate_bandwidth_cost)
+            > costs->noc_aggregate_bandwidth_cost * ERROR_TOL) {
+            std::string msg = vtr::string_fmt(
+                "in recompute_costs_from_scratch: new_noc_aggregate_bandwidth_cost = %g, old noc_aggregate_bandwidth_cost = %g, ERROR_TOL = %g\n",
+                new_noc_aggregate_bandwidth_cost, costs->noc_aggregate_bandwidth_cost, ERROR_TOL);
+            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+        }
+        costs->noc_aggregate_bandwidth_cost = new_noc_aggregate_bandwidth_cost;
+
+        // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
+        // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
+        if (new_noc_latency_cost > MIN_EXPECTED_NOC_LATENCY_COST) {
+            if (fabs(
+                    new_noc_latency_cost
+                    - costs->noc_latency_cost)
+                > costs->noc_latency_cost * ERROR_TOL) {
+                std::string msg = vtr::string_fmt(
+                    "in recompute_costs_from_scratch: new_noc_latency_cost = %g, old noc_latency_cost = %g, ERROR_TOL = %g\n",
+                    new_noc_latency_cost, costs->noc_latency_cost, ERROR_TOL);
+                VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+            }
+        }
+        costs->noc_latency_cost = new_noc_latency_cost;
+    }
+}
 
 void init_net_cost_structs(size_t num_nets) {
     net_cost.resize(num_nets, -1.);

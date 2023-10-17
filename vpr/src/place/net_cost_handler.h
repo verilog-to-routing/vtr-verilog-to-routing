@@ -25,5 +25,16 @@ int find_affected_nets_and_update_costs(
     double& bb_delta_c,
     double& timing_delta_c);
 
+double comp_bb_cost(e_cost_methods method);
+
+void update_move_nets(int num_nets_affected);
+
+void reset_move_nets(int num_nets_affected);
+
+void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
+                                  const t_noc_opts& noc_opts,
+                                  const PlaceDelayModel* delay_model,
+                                  const PlacerCriticalities* criticalities,
+                                  t_placer_costs* costs);
 
 void init_net_cost_structs(size_t num_nets);
