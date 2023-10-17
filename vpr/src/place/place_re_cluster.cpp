@@ -56,16 +56,16 @@ static bool swap_atoms (const t_place_algorithm& place_algorithm,
                        const PlaceDelayModel* delay_model,
                        PlacerCriticalities* criticalities,
                        t_pl_atom_blocks_to_be_moved& blocks_affected,
-                       AtomBlockId from_atom_blk_id,
-                       AtomBlockId to_atom_blk_id) {
+                       AtomBlockId /* from_atom_blk_id */,
+                       AtomBlockId /* to_atom_blk_id */) {
 
     double delta_c = 0;        //Change in cost due to this swap.
     double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
     double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
 
-    const auto& to_atom_loc = get_atom_loc(to_atom_blk_id);
+//    const auto& to_atom_loc = get_atom_loc(to_atom_blk_id);
 
-    e_create_move create_move = ::create_move(blocks_affected, from_atom_blk_id, to_atom_loc);
+//    e_create_move create_move = ::create_move(blocks_affected, from_atom_blk_id, to_atom_loc);
 
     if (!floorplan_legal(blocks_affected)) {
         return false;
@@ -77,8 +77,8 @@ static bool swap_atoms (const t_place_algorithm& place_algorithm,
         place_algorithm, delay_model, criticalities, blocks_affected,
         bb_delta_c, timing_delta_c);
 
-
-
+    // TODO:dummy return just to remove warnings
+    return (num_nets_affected + delta_c) == 0;
 
 }
 
@@ -94,7 +94,7 @@ static ClusterBlockId random_cluster() {
 
 static AtomBlockId random_atom_in_cluster(ClusterBlockId cluster_blk_id) {
 
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+//    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     const auto& cluster_atoms = g_vpr_ctx.cl_helper().atoms_lookup[cluster_blk_id];
 
