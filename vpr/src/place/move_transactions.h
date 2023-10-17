@@ -10,8 +10,8 @@
  * new_loc: the location the block is moved to                  */
 struct t_pl_moved_block {
     t_pl_moved_block() = default;
-    t_pl_moved_block(ClusterBlockId block_num, const t_pl_loc& old_loc, const t_pl_loc& new_loc)
-        : block_num(block_num), old_loc(old_loc), new_loc(new_loc) {}
+    t_pl_moved_block(ClusterBlockId block_num_, const t_pl_loc& old_loc_, const t_pl_loc& new_loc_)
+        : block_num(block_num_), old_loc(old_loc_), new_loc(new_loc_) {}
     ClusterBlockId block_num = ClusterBlockId::INVALID();
     t_pl_loc old_loc;
     t_pl_loc new_loc;
