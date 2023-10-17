@@ -6,13 +6,25 @@
 
 #include "globals.h"
 #include "move_utils.h"
+#include "net_cost_handler.h"
 
 static ClusterBlockId random_cluster();
 
 static AtomBlockId random_atom_in_cluster(ClusterBlockId cluster_blk_id);
 
-void PlaceReCluster::re_cluster() {
+static bool swap_atoms(const t_place_algorithm& place_algorithm,
+                       const PlaceDelayModel* delay_model,
+                       PlacerCriticalities* criticalities,
+                       t_pl_atom_blocks_to_be_moved& blocks_affected,
+                       AtomBlockId from_atom_blk_id,
+                       AtomBlockId to_atom_blk_id);
+
+void PlaceReCluster::re_cluster(const t_place_algorithm& place_algorithm,
+                                const PlaceDelayModel* delay_model,
+                                PlacerCriticalities* criticalities) {
     const int num_moves = 2 << 20;
+
+    t_pl_atom_blocks_to_be_moved blocks_affected(g_vpr_ctx.atom().nlist.blocks().size());
 
     for (int move_num = 0; move_num < num_moves; ++move_num) {
         ClusterBlockId from_cluster_blk_id;
@@ -32,7 +44,41 @@ void PlaceReCluster::re_cluster() {
                 break;
             }
         }
+
+        if(!swap_atoms(place_algorithm, delay_model, criticalities, blocks_affected, from_atom_blk_id, to_atom_blk_id)) {
+            revert_move_blocks(blocks_affected);
+        }
     }
+
+}
+
+static bool swap_atoms (const t_place_algorithm& place_algorithm,
+                       const PlaceDelayModel* delay_model,
+                       PlacerCriticalities* criticalities,
+                       t_pl_atom_blocks_to_be_moved& blocks_affected,
+                       AtomBlockId from_atom_blk_id,
+                       AtomBlockId to_atom_blk_id) {
+
+    double delta_c = 0;        //Change in cost due to this swap.
+    double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
+    double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
+
+    const auto& to_atom_loc = get_atom_loc(to_atom_blk_id);
+
+    e_create_move create_move = ::create_move(blocks_affected, from_atom_blk_id, to_atom_loc);
+
+    if (!floorplan_legal(blocks_affected)) {
+        return false;
+    }
+
+    apply_move_blocks(blocks_affected);
+
+    int num_nets_affected = find_affected_nets_and_update_costs(
+        place_algorithm, delay_model, criticalities, blocks_affected,
+        bb_delta_c, timing_delta_c);
+
+
+
 
 }
 
