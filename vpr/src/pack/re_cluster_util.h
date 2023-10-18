@@ -134,7 +134,10 @@ void commit_mol_move(const ClusterBlockId& old_clb,
                      bool during_packing,
                      bool new_clb_created);
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> f84a79291df0319f3b0d0d6bf2bc989091c36541
 /**
  * @brief A function that reverts the molecule move if it is illegal
  *
@@ -152,7 +155,10 @@ void revert_mol_move(const ClusterBlockId& old_clb,
 /**
  *
  * @brief A function that checks the legality of a cluster by running the intra-cluster routing
+<<<<<<< HEAD
  *
+=======
+>>>>>>> f84a79291df0319f3b0d0d6bf2bc989091c36541
  */
 bool is_cluster_legal(t_lb_router_data*& router_data);
 
@@ -161,7 +167,10 @@ bool is_cluster_legal(t_lb_router_data*& router_data);
  *
  * @params during_packing: true if this function is called during packing, false if it is called during placement
  * @params new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
+<<<<<<< HEAD
  * @params
+=======
+>>>>>>> f84a79291df0319f3b0d0d6bf2bc989091c36541
  */
 void commit_mol_removal(const t_pack_molecule* molecule,
                         const int& molecule_size,
