@@ -26,4 +26,23 @@ class ClusteredPinAtomPinsLookup {
     vtr::vector<ClusterPinId, std::vector<AtomPinId>> clustered_pin_connected_atom_pins_;
     vtr::vector<AtomPinId, ClusterPinId> atom_pin_connected_cluster_pin_;
 };
+
+/*
+ * This lookup is used to see which atoms are in each cluster block.
+ * Getting the atoms inside of a cluster is an order k lookup.
+ * The data is initialized automatically upon creation of the object.
+ * The class should only be used after the clustered netlist is created.
+ */
+class ClusterAtomsLookup {
+  public:
+    ClusterAtomsLookup();
+    std::vector<AtomBlockId> atoms_in_cluster(ClusterBlockId blk_id);
+
+  public:
+    void init_lookup();
+
+  private:
+    //Store the atom ids of the atoms inside each cluster
+    vtr::vector<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
+};
 #endif

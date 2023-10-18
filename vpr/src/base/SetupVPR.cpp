@@ -584,7 +584,6 @@ void SetupPackerOpts(const t_options& Options,
 
     PackerOpts->timing_update_type = Options.timing_update_type;
     PackerOpts->pack_num_moves = Options.pack_num_moves;
-    PackerOpts->pack_num_threads = Options.pack_num_threads;
     PackerOpts->pack_move_type = Options.pack_move_type;
 }
 

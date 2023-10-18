@@ -162,6 +162,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
     return (is_added);
 }
 
+#if 1
 bool swap_two_molecules(t_pack_molecule* molecule_1,
                         t_pack_molecule* molecule_2,
                         bool during_packing,
@@ -229,7 +230,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         old_1_router_data = nullptr;
         old_2_router_data = nullptr;
 
-        
+
         free(clb_pb_1->name);
         cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
         free(clb_pb_2->name);
@@ -289,3 +290,4 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
 
     return true;
 }
+#endif

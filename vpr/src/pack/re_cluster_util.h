@@ -134,10 +134,6 @@ void commit_mol_move(const ClusterBlockId& old_clb,
                      bool during_packing,
                      bool new_clb_created);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> f84a79291df0319f3b0d0d6bf2bc989091c36541
 /**
  * @brief A function that reverts the molecule move if it is illegal
  *

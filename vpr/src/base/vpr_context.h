@@ -33,10 +33,6 @@
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
 
-//Flag to enable multithreading code for iterative packing (IIP)
-//#define PACK_MULTITHREADED
-
-class SetupTimingInfo;
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -328,14 +324,13 @@ struct ClusteringHelperContext : public Context {
     std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
 
     // Stats keeper for placement information during packing/clustering
-    // The vector size equals to the number of threads used in the IIP (pack_num_threads)
-    std::vector<t_cluster_placement_stats*> cluster_placement_stats;
+    t_cluster_placement_stats* cluster_placement_stats;
 
     // total number of models in the architecture
     int num_models;
 
     int max_cluster_size;
-    std::vector<t_pb_graph_node**> primitives_list;
+    t_pb_graph_node** primitives_list;
 
     bool enable_pin_feasibility_filter;
     int feasible_block_array_size;
@@ -352,31 +347,19 @@ struct ClusteringHelperContext : public Context {
     // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
-
-    // An unordered map of the count of connections between different clb blocks
-    // Only blocks that have connections between each others are added to this hash table
-    // This may be useful for some type of packing moves.
-    // Currently unused, commented out
-    //std::unordered_map<std::pair<ClusterBlockId, ClusterBlockId>, int, pair_hash> clb_conn_counts;
-
-    // Some packing options. Saving them here instead of passing them to every packing function
-    std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
-    std::shared_ptr<SetupTimingInfo> timing_info;
-    t_pack_high_fanout_thresholds high_fanout_thresholds;
-    bool timing_driven;
+    ~ClusteringHelperContext() {
+        delete[] primitives_list;
+    }
 };
 
 /**
  * @brief State relating to packing multithreading
  *
- * This contain data structures to synchronize multithreading of the iterative improvement packing (IIP).
+ * This contain data structures to synchronize multithreading of packing iterative improvement.
  */
 struct PackingMultithreadingContext : public Context {
-    // One lock per cluster
-    vtr::vector<ClusterBlockId, std::mutex*> mu;
-
-    // lock to synchronize atop_pb lookup access
-    std::mutex lookup_mu;
+    vtr::vector<ClusterBlockId, bool> clb_in_flight;
+    vtr::vector<ClusterBlockId, std::mutex> mu;
 };
 
 /**
@@ -635,10 +618,8 @@ class VprContext : public Context {
     const NocContext& noc() const { return noc_; }
     NocContext& mutable_noc() { return noc_; }
 
-#ifdef PACK_MULTITHREADED
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
-#endif
 
   private:
     DeviceContext device_;
@@ -656,9 +637,7 @@ class VprContext : public Context {
     FloorplanningContext constraints_;
     NocContext noc_;
 
-#ifdef PACK_MULTITHREADED
     PackingMultithreadingContext packing_multithreading_;
-#endif
 };
 
 #endif

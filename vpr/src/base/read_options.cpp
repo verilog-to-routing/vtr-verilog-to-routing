@@ -1815,13 +1815,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     pack_grp.add_argument(args.pack_num_moves, "--pack_num_moves")
         .help(
             "The number of moves that can be tried in packing stage")
-        .default_value("0")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument(args.pack_num_threads, "--pack_num_threads")
-        .help(
-            "The number of threads used in the iterative improvement packing (IIP)")
-        .default_value("1")
+        .default_value("100000")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.pack_move_type, "--pack_move_type")

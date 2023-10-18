@@ -149,15 +149,9 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
 
     e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
     pb->mode = mode;
-<<<<<<< HEAD
-    t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[thread_id][type->index]);
-    reset_cluster_placement_stats(cluster_placement_stats);
-    set_mode_cluster_placement_stats(cluster_placement_stats, pb->pb_graph_node, mode);
-=======
     t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[type->index]);
     reset_cluster_placement_stats(cluster_placement_stats);
     set_mode_cluster_placement_stats(pb->pb_graph_node, mode);
->>>>>>> f84a79291df0319f3b0d0d6bf2bc989091c36541
 
     pack_result = try_pack_molecule(cluster_placement_stats,
                                     molecule,
