@@ -7,8 +7,7 @@
 bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              bool during_packing,
                              int verbosity,
-                             t_clustering_data& clustering_data,
-                             int thread_id) {
+                             t_clustering_data& clustering_data) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& device_ctx = g_vpr_ctx.device();
@@ -67,8 +66,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                                            verbosity,
                                            clustering_data,
                                            &router_data,
-                                           temp_cluster_pr,
-                                           thread_id);
+                                           temp_cluster_pr);
 
     //Commit or revert the move
     if (is_created) {
@@ -83,7 +81,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
 
         VTR_LOGV(verbosity > 4, "Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);
     } else {
-        revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data, thread_id);
+        revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data);
         VTR_LOGV(verbosity > 4, "Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", molecule->atom_block_ids[molecule->root]);
     }
 
@@ -103,8 +101,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId& new_clb,
                                   bool during_packing,
                                   int verbosity,
-                                  t_clustering_data& clustering_data,
-                                  int thread_id) {
+                                  t_clustering_data& clustering_data) {
     //define local variables
     bool is_removed, is_added;
     AtomBlockId root_atom_id = molecule->atom_block_ids[molecule->root];
@@ -146,7 +143,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
         commit_mol_move(old_clb, new_clb, during_packing, false);
         VTR_LOGV(verbosity > 4, "Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);
     } else {
-        revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data, thread_id);
+        revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data);
         VTR_LOGV(verbosity > 4, "Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", molecule->atom_block_ids[molecule->root]);
     }
 
@@ -230,7 +227,6 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         old_1_router_data = nullptr;
         old_2_router_data = nullptr;
 
-
         free(clb_pb_1->name);
         cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
         free(clb_pb_2->name);
@@ -241,7 +237,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
 
     mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, clustering_data, old_1_router_data);
     if (!mol_2_success) {
-        remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, false, old_2_router_data);
+        remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, true, old_2_router_data);
         commit_mol_removal(molecule_1, molecule_1_size, clb_2, during_packing, old_2_router_data, clustering_data);
         mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, clustering_data, old_1_router_data);
         mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, clustering_data, old_2_router_data);
@@ -263,21 +259,12 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     //commit the move if succeeded or revert if failed
     VTR_ASSERT(mol_1_success && mol_2_success);
 
-    //Fix block names
-    free(clb_pb_1->name);
-    cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
-    free(clb_pb_2->name);
-    cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
-
-
-
     //If the move is done after packing not during it, some fixes need to be done on the clustered netlist
     if (!during_packing) {
         fix_clustered_netlist(molecule_1, molecule_1_size, clb_1, clb_2);
         fix_clustered_netlist(molecule_2, molecule_2_size, clb_2, clb_1);
     }
 
-    //Free
     free_router_data(old_1_router_data);
     free_router_data(old_2_router_data);
     old_1_router_data = nullptr;

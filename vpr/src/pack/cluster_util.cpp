@@ -6,7 +6,6 @@
 
 #include "vtr_math.h"
 #include "SetupGrid.h"
-#include "string.h"
 
 /**********************************/
 /* Global variables in clustering */
@@ -495,8 +494,9 @@ void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
 }
 
 /*****************************************/
-void alloc_and_init_clustering(const t_packer_opts& packer_opts,
-                               const t_molecule_stats& max_molecule_stats,
+void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
+                               t_cluster_placement_stats** cluster_placement_stats,
+                               t_pb_graph_node*** primitives_list,
                                t_pack_molecule* molecules_head,
                                t_clustering_data& clustering_data,
                                std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
@@ -504,15 +504,6 @@ void alloc_and_init_clustering(const t_packer_opts& packer_opts,
                                int num_molecules) {
     /* Allocates the main data structures used for clustering and properly *
      * initializes them.                                                   */
-
-    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
-    if (packer_opts.pack_num_moves > 0) {
-        helper_ctx.primitives_list.resize(packer_opts.pack_num_threads);
-        helper_ctx.cluster_placement_stats.resize(packer_opts.pack_num_threads);
-    } else {
-        helper_ctx.primitives_list.resize(1);
-        helper_ctx.cluster_placement_stats.resize(1);
-    }
 
     t_molecule_link* next_ptr;
     t_pack_molecule* cur_molecule;
@@ -572,8 +563,7 @@ void alloc_and_init_clustering(const t_packer_opts& packer_opts,
     }
 
     /* alloc and load cluster placement info */
-    for (int thread_id = 0; thread_id < packer_opts.pack_num_threads; thread_id++)
-        helper_ctx.cluster_placement_stats[thread_id] = alloc_and_load_cluster_placement_stats();
+    *cluster_placement_stats = alloc_and_load_cluster_placement_stats();
 
     /* alloc array that will store primitives that a molecule gets placed to,
      * primitive_list is referenced by index, for example a atom block in index 2 of a molecule matches to a primitive in index 2 in primitive_list
@@ -587,12 +577,9 @@ void alloc_and_init_clustering(const t_packer_opts& packer_opts,
         }
         cur_molecule = cur_molecule->next;
     }
-
-    for (int thread_id = 0; thread_id < packer_opts.pack_num_threads; thread_id++) {
-        helper_ctx.primitives_list[thread_id] = new t_pb_graph_node*[max_molecule_size];
-        for (int i = 0; i < max_molecule_size; i++)
-            helper_ctx.primitives_list[thread_id][i] = nullptr;
-    }
+    *primitives_list = new t_pb_graph_node*[max_molecule_size];
+    for (int i = 0; i < max_molecule_size; i++)
+        (*primitives_list)[i] = nullptr;
 }
 
 /*****************************************/
@@ -1091,20 +1078,11 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                          * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
                         cur_pb = atom_ctx.lookup.atom_pb(chain_root_blk_id)->parent_pb;
-                        /* // Elgammal debugging
-                        if(strcmp(atom_ctx.nlist.block_name(chain_root_blk_id).c_str(), "sv_chip2_hierarchy_no_mem.v_fltr_4_left.inst_fltr_compute_h3^ADD~334-0[0]") == 0)
-                            VTR_LOG("rename: %s\n", cur_pb->name);
-                        */
                         while (cur_pb != nullptr) {
                             free(cur_pb->name);
                             cur_pb->name = vtr::strdup(atom_ctx.nlist.block_name(chain_root_blk_id).c_str());
-                            /* // Elgammal debugging
-                            if(cur_pb->is_root() && strcmp(atom_ctx.nlist.block_name(chain_root_blk_id).c_str(), "sv_chip2_hierarchy_no_mem.v_fltr_4_left.inst_fltr_compute_h3^ADD~334-0[0]") == 0)
-                                VTR_LOG("\t %p\n", cur_pb);
-                            */
                             cur_pb = cur_pb->parent_pb;
                         }
-
                         // if this molecule is part of a chain, mark the cluster as having a long chain
                         // molecule. Also check if it's the first molecule in the chain to be packed.
                         // If so, update the chain id for this chain of molecules to make sure all
@@ -1237,7 +1215,6 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
 
         VTR_ASSERT(parent_pb->name == nullptr);
         parent_pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
-        //VTR_LOG("$$ %s\n", parent_pb->name);
         parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
         set_reset_pb_modes(router_data, parent_pb, true);
         const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
@@ -1289,7 +1266,6 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
         /* try pack to location */
         VTR_ASSERT(pb->name == nullptr);
         pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
-        //VTR_LOG("$$$ %s\n", pb->name);
 
         //Update the atom netlist mappings
         atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
@@ -1698,10 +1674,7 @@ void store_cluster_info_and_free(const t_packer_opts& packer_opts,
 
     //print clustering progress incrementally
     //print_pack_status(num_clb, num_molecules, num_molecules_processed, mols_since_last_print, device_ctx.grid.width(), device_ctx.grid.height());
-
-    // If no more iterative improvements to be run after the initial packing, clear the date for the packed cluster now
-    if(packer_opts.pack_num_moves == 0)
-        free_pb_stats_recursive(cur_pb);
+    free_pb_stats_recursive(cur_pb);
 }
 
 /* Free up data structures and requeue used molecules */
@@ -2141,7 +2114,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
             pb->mode = j;
 
             reset_cluster_placement_stats(&cluster_placement_stats[type->index]);
-            set_mode_cluster_placement_stats(&cluster_placement_stats[type->index], pb->pb_graph_node, j);
+            set_mode_cluster_placement_stats(pb->pb_graph_node, j);
 
             //Note that since we are starting a new cluster, we use FULL_EXTERNAL_PIN_UTIL,
             //which allows all cluster pins to be used. This ensures that if we have a large
@@ -2168,7 +2141,6 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                 free(pb->name);
             }
             pb->name = vtr::strdup(root_atom_name.c_str());
-            //VTR_LOG("$$$$ %s\n", pb->name);
             clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, type);
             break;
         } else {
@@ -3058,7 +3030,6 @@ void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* pb_graph
             /* find location of net driver if exist in clb, NULL otherwise */
             // find the driver of the input net connected to the pin being studied
             const auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
-
             // find the id of the atom occupying the input primitive_pb
             const auto prim_blk_id = atom_ctx.lookup.pb_atom(primitive_pb);
             // find the pb block occupied by the driving atom

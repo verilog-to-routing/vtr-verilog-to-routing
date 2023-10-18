@@ -87,8 +87,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                int verbosity,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr,
-                               int thread_id = 0);
+                               PartitionRegion& temp_cluster_pr);
 
 /**
  * @brief A function that packs a molecule into an existing cluster
@@ -107,8 +106,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   std::unordered_set<AtomBlockId>* new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
-                                  t_lb_router_data*& router_data,
-                                  int thread_id = 0);
+                                  t_lb_router_data*& router_data);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed
@@ -145,16 +143,11 @@ void revert_mol_move(const ClusterBlockId& old_clb,
                      t_pack_molecule* molecule,
                      t_lb_router_data*& old_router_data,
                      bool during_packing,
-                     t_clustering_data& clustering_data,
-                     int thread_id = 0);
+                     t_clustering_data& clustering_data);
 
 /**
  *
  * @brief A function that checks the legality of a cluster by running the intra-cluster routing
-<<<<<<< HEAD
- *
-=======
->>>>>>> f84a79291df0319f3b0d0d6bf2bc989091c36541
  */
 bool is_cluster_legal(t_lb_router_data*& router_data);
 
@@ -163,10 +156,6 @@ bool is_cluster_legal(t_lb_router_data*& router_data);
  *
  * @params during_packing: true if this function is called during packing, false if it is called during placement
  * @params new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
-<<<<<<< HEAD
- * @params
-=======
->>>>>>> f84a79291df0319f3b0d0d6bf2bc989091c36541
  */
 void commit_mol_removal(const t_pack_molecule* molecule,
                         const int& molecule_size,

@@ -493,8 +493,6 @@ class t_cluster_placement_stats {
      */
     void free_primitives();
 
-    t_cluster_placement_primitive* get_cluster_placement_primitive_from_pb_graph_node(const t_pb_graph_node* pb_graph_node);
-
   private:
     std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered to pack into
     std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are already tried but current logic block unable to pack to
@@ -956,7 +954,6 @@ struct t_packer_opts {
     e_timing_update_type timing_update_type;
     bool use_attraction_groups;
     int pack_num_moves;
-    int pack_num_threads;
     std::string pack_move_type;
 };
 

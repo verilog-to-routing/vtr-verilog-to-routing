@@ -344,26 +344,3 @@ AtomBlockId GridBlock::block_at_location(const t_pl_atom_loc& loc) const {
         return EMPTY_PRIMITIVE_BLOCK_ID;
     }
 }
-
-t_cluster_placement_primitive* t_cluster_placement_stats::get_cluster_placement_primitive_from_pb_graph_node(const t_pb_graph_node* pb_graph_node) {
-    auto it = valid_primitives[pb_graph_node->cluster_placement_type_index].find(pb_graph_node->cluster_placement_primitive_index);
-    if (it != valid_primitives[pb_graph_node->cluster_placement_type_index].end())
-        return valid_primitives[pb_graph_node->cluster_placement_type_index][pb_graph_node->cluster_placement_primitive_index];
-
-    for (auto itr = tried.find(pb_graph_node->cluster_placement_primitive_index); itr != tried.end(); itr++) {
-        if (itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
-            return itr->second;
-    }
-
-    for (auto itr = invalid.find(pb_graph_node->cluster_placement_primitive_index); itr != invalid.end(); itr++) {
-        if (itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
-            return itr->second;
-    }
-
-    for (auto itr = in_flight.find(pb_graph_node->cluster_placement_primitive_index); itr != in_flight.end(); itr++) {
-        if (itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
-            return itr->second;
-    }
-
-    return nullptr;
-}
