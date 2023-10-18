@@ -529,8 +529,8 @@ static void add_primitive_logical_classes(t_logical_block_type* logical_block) {
             }
             num_added_classes += add_port_logical_classes(logical_block, pb_graph_pins, num_ports, num_pins);
         }
-        logical_block->pb_graph_node_class_range.insert(std::make_pair(pb_graph_node, t_class_range(first_class_num,
-                                                                                                    first_class_num + num_added_classes - 1)));
+        logical_block->primitive_pb_graph_node_class_range.insert(std::make_pair(pb_graph_node, t_class_range(first_class_num,
+                                                                                                              first_class_num + num_added_classes - 1)));
     }
 }
 
