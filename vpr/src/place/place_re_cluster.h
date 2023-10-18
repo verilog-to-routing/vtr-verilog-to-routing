@@ -5,7 +5,6 @@
 #ifndef VTR_PLACE_RE_CLUSTER_H
 #define VTR_PLACE_RE_CLUSTER_H
 
-#include "pack_utils.h"
 #include "timing_place.h"
 
 class PlaceReCluster {

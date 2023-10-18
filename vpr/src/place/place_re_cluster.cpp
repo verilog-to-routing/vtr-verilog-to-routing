@@ -67,9 +67,9 @@ static bool swap_atoms (const t_place_algorithm& place_algorithm,
 
 //    e_create_move create_move = ::create_move(blocks_affected, from_atom_blk_id, to_atom_loc);
 
-    if (!floorplan_legal(blocks_affected)) {
-        return false;
-    }
+//    if (!floorplan_legal(blocks_affected)) {
+//        return false;
+//    }
 
     apply_move_blocks(blocks_affected);
 
