@@ -64,7 +64,6 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
 static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
 static std::vector<ClusterNetId> ts_nets_to_update;
 
-
 static bool driven_by_moved_block(const AtomNetId net,
                                   const std::vector<t_pl_moved_atom_block>& moved_blocks);
 
@@ -110,8 +109,6 @@ static double recompute_bb_cost();
 static double wirelength_crossing_count(size_t fanout);
 
 static double get_net_bounding_box_cost(ClusterNetId net_id, t_bb* bbptr);
-
-
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const AtomNetId net,
@@ -728,7 +725,6 @@ static double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-
 static double get_net_bounding_box_cost(ClusterNetId net_id, t_bb* bbptr) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
@@ -762,7 +758,6 @@ int find_affected_nets_and_update_costs(
     t_pl_atom_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c) {
-
     const auto& atom_look_up = g_vpr_ctx.atom().lookup;
     const auto& atom_nlist = g_vpr_ctx.atom().nlist;
 
@@ -779,7 +774,7 @@ int find_affected_nets_and_update_costs(
         const auto& atom_old_loc = blocks_affected.moved_blocks[iblk].old_loc;
         const auto& atom_new_loc = blocks_affected.moved_blocks[iblk].new_loc;
 
-        for (const AtomPinId& atom_pin: atom_nlist.block_pins(atom_blk_id)) {
+        for (const AtomPinId& atom_pin : atom_nlist.block_pins(atom_blk_id)) {
             auto cluster_pins = cluster_pins_connected_to_atom_pin(atom_pin);
             for (const auto& cluster_pin : cluster_pins) {
                 bool is_src_moving = false;
@@ -801,8 +796,6 @@ int find_affected_nets_and_update_costs(
                                             timing_delta_c,
                                             num_affected_nets,
                                             is_src_moving);
-
-
             }
         }
     }
@@ -814,7 +807,7 @@ int find_affected_nets_and_update_costs(
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
         proposed_net_cost[net_id] = get_net_bounding_box_cost(net_id,
-                                                 &ts_bb_coord_new[net_id]);
+                                                              &ts_bb_coord_new[net_id]);
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
@@ -889,7 +882,7 @@ int find_affected_nets_and_update_costs(
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
         proposed_net_cost[net_id] = get_net_bounding_box_cost(net_id,
-                                                 &ts_bb_coord_new[net_id]);
+                                                              &ts_bb_coord_new[net_id]);
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
@@ -1155,7 +1148,6 @@ void init_net_cost_structs(size_t num_nets) {
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
      * been recomputed.                                                          */
     bb_updated_before.resize(num_nets, NOT_UPDATED_YET);
-
 }
 
 void free_net_cost_structs() {

@@ -540,7 +540,6 @@ bool is_atom_compatible(t_logical_block_type_ptr logical_block, const t_pb_graph
         return true;
     else
         return false;
-
 }
 
 int get_physical_pin_at_sub_tile_location(t_physical_tile_type_ptr physical_tile,

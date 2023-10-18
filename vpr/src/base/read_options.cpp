@@ -2124,7 +2124,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_re_cluster, "--place_re_cluster")
         .help(
-            "Use this option to determine whether reclustering occurs during placement. """
+            "Use this option to determine whether reclustering occurs during placement. "
+            ""
             "When this option is set to 'on,' the placement stage may result in changes to the clustering of certain clusters. "
             "Conversely, if the option is set to 'off,' the clustering determined by the packer will remain unchanged")
         .default_value("off")

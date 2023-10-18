@@ -324,7 +324,7 @@ void t_cluster_placement_stats::free_primitives() {
 
 AtomBlockId GridBlock::block_at_location(const t_pl_atom_loc& loc) const {
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    t_pl_loc cluster_loc (loc.x, loc.y, loc.sub_tile, loc.layer);
+    t_pl_loc cluster_loc(loc.x, loc.y, loc.sub_tile, loc.layer);
     ClusterBlockId cluster_at_loc = block_at_location(cluster_loc);
     if (cluster_at_loc == EMPTY_BLOCK_ID) {
         return EMPTY_PRIMITIVE_BLOCK_ID;

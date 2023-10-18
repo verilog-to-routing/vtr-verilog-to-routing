@@ -520,8 +520,7 @@ std::vector<ClusterPinId> cluster_pins_connected_to_atom_pin(AtomPinId atom_pin)
     if (atom_pb_graph_pin->port->type == PORTS::IN_PORT) {
         int cluster_pin_id;
         int cluster_net_pin_id;
-        std::tie(cluster_net_id, cluster_pin_id, cluster_net_pin_id) =
-            find_pb_route_clb_input_net_pin(cluster_block_id, atom_pb_pin_id);
+        std::tie(cluster_net_id, cluster_pin_id, cluster_net_pin_id) = find_pb_route_clb_input_net_pin(cluster_block_id, atom_pb_pin_id);
         if (cluster_net_id != ClusterNetId::INVALID()) {
             VTR_ASSERT(cluster_pin_id != -1 && cluster_net_pin_id != -1);
             cluster_pins.push_back(cluster_net_list.net_pin(cluster_net_id, cluster_net_pin_id));

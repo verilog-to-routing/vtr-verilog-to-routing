@@ -266,6 +266,6 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
 
 //TODO: The atom loc should be stored in place_ctx -- I am creating this function because I didn't want to create another
 // Array in place_ctx.
-t_pl_atom_loc get_atom_loc (AtomBlockId atom);
+t_pl_atom_loc get_atom_loc(AtomBlockId atom);
 
 #endif

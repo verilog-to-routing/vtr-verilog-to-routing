@@ -2,10 +2,9 @@
 #include "globals.h"
 #include "place_constraints.h"
 
-static std::pair<ClusterBlockId,AtomBlockId> getCriticalAtomBlock();
+static std::pair<ClusterBlockId, AtomBlockId> getCriticalAtomBlock();
 
-e_create_move AtomCriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& /* proposed_action */,
-                                                             float rlim, const t_placer_opts& /* placer_opts */, const PlacerCriticalities* /* criticalities */) {
+e_create_move AtomCriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& /* proposed_action */, float rlim, const t_placer_opts& /* placer_opts */, const PlacerCriticalities* /* criticalities */) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -13,7 +12,7 @@ e_create_move AtomCriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_m
     AtomBlockId atom_blk_id = AtomBlockId::INVALID();
     std::tie(cluster_blk_id, atom_blk_id) = getCriticalAtomBlock();
 
-    if(cluster_blk_id == ClusterBlockId::INVALID() || atom_blk_id == AtomBlockId::INVALID()) {
+    if (cluster_blk_id == ClusterBlockId::INVALID() || atom_blk_id == AtomBlockId::INVALID()) {
         return e_create_move::ABORT; // Not a valid block
     }
 
@@ -38,7 +37,7 @@ e_create_move AtomCriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_m
     return create_move;
 }
 
-static std::pair<ClusterBlockId,AtomBlockId> getCriticalAtomBlock() {
+static std::pair<ClusterBlockId, AtomBlockId> getCriticalAtomBlock() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& cluster_netlist = cluster_ctx.clb_nlist;
     const auto& atom_netlist = g_vpr_ctx.atom().nlist;
@@ -60,5 +59,4 @@ static std::pair<ClusterBlockId,AtomBlockId> getCriticalAtomBlock() {
     AtomBlockId atom_crit_blk = atom_netlist.net_driver_block(atom_crit_net);
 
     return std::make_pair(cluster_crit_blk, atom_crit_blk);
-
 }

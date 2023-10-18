@@ -80,7 +80,6 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
 }
 
 e_block_move_result find_affected_blocks(t_pl_atom_blocks_to_be_moved& atom_blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc) {
-
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
     e_block_move_result outcome = e_block_move_result::VALID;
 
@@ -157,7 +156,6 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
 }
 
 e_block_move_result record_single_block_swap(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc) {
-
     VTR_ASSERT(b_from);
     ClusterBlockId cluster_b_from = g_vpr_ctx.atom().lookup.atom_clb(b_from);
 
@@ -533,7 +531,7 @@ bool is_legal_swap_to_location(AtomBlockId blk, t_pl_atom_loc to) {
     const auto& atom_pb = g_vpr_ctx.atom().lookup.atom_pb(blk);
 
     ClusterBlockId cluster_block = g_vpr_ctx.placement().grid_blocks.block_at_location({to.x, to.y, to.sub_tile, to.layer});
-    t_pl_loc cluster_loc (to.x, to.y, to.sub_tile, to.layer);
+    t_pl_loc cluster_loc(to.x, to.y, to.sub_tile, to.layer);
 
     if (!is_legal_swap_to_location(cluster_block, cluster_loc)) {
         return false;

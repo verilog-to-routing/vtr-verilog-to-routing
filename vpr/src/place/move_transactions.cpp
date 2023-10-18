@@ -73,7 +73,6 @@ void apply_move_blocks(const t_pl_atom_blocks_to_be_moved& blocks_affected) {
             seen_clusters.insert(cluster_blk);
             place_sync_external_block_connections(cluster_blk);
         }
-
     }
 }
 

@@ -1829,7 +1829,6 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     place_move_ctx.bb_coords.resize(num_nets, t_bb());
     place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
 
-
     alloc_and_load_for_fast_cost_update(place_cost_exp);
 
     alloc_and_load_try_swap_structs();
