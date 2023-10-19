@@ -174,6 +174,7 @@ void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
 
     //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
     //array to avoid memory allocation
+    blocks_affected.moved_blocks.clear();
     blocks_affected.num_moved_blocks = 0;
 
     blocks_affected.affected_pins.clear();
