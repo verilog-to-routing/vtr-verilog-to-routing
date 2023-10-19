@@ -678,13 +678,12 @@ static void compute_wireconn_connections(
 
     /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
     if (sb_conn.from_side == ABOVE || sb_conn.from_side == UNDER) {
-        for (e_side from_side : SIDES) {
-            get_switchpoint_wires(grid,
-                                  from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, from_side,
-                                  wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
-                                  &scratchpad->potential_src_wires,
-                                  &scratchpad->scratch_wires);
-        }
+        get_switchpoint_wires(grid,
+                              from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.to_side,
+                              wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
+                              &scratchpad->potential_src_wires,
+                              &scratchpad->scratch_wires);
+
     } else {
         get_switchpoint_wires(grid,
                               from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.from_side,
@@ -693,13 +692,11 @@ static void compute_wireconn_connections(
                               &scratchpad->scratch_wires);
     }
     if (sb_conn.to_side == ABOVE || sb_conn.to_side == UNDER) {
-        for (e_side to_side : SIDES) {
-            get_switchpoint_wires(grid,
-                                  to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, to_side,
-                                  wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
-                                  wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
-                                  &scratchpad->scratch_wires);
-        }
+        get_switchpoint_wires(grid,
+                              to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.from_side,
+                              wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
+                              wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
+                              &scratchpad->scratch_wires);
     } else {
         get_switchpoint_wires(grid,
                               to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
