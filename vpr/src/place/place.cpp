@@ -1302,7 +1302,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tBefore move Place cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tBefore move Place cost %lf, bb_cost %lf, timing cost %lf\n", costs->cost, costs->bb_cost, costs->timing_cost);
 
     e_move_result move_outcome = e_move_result::ABORTED;
 
@@ -1374,8 +1374,8 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values */
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
-                           "\t\tMove bb_delta_c %f, bb_cost_norm %f, timing_tradeoff %f, "
-                           "timing_delta_c %f, timing_cost_norm %f\n",
+                           "\t\tMove bb_delta_c %lf, bb_cost_norm %lf, timing_tradeoff %f, "
+                           "timing_delta_c %lf, timing_cost_norm %lf\n",
                            bb_delta_c,
                            costs->bb_cost_norm,
                            timing_tradeoff,
@@ -1387,8 +1387,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         } else {
             VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
-                           "\t\tMove bb_delta_c %f, bb_cost_norm %f, timing_tradeoff %f, "
-                           "timing_delta_c %f, timing_cost_norm %f\n",
+                           "\t\tMove bb_delta_c %lf, bb_cost_norm %lf\n",
                            bb_delta_c,
                            costs->bb_cost_norm);
             delta_c = bb_delta_c * costs->bb_cost_norm;
@@ -1547,7 +1546,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     // greatly slow the placer, but can debug some issues.
     check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts);
 #endif
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tAfter move Place cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tAfter move Place cost %lf, bb_cost %lf, timing cost %lf\n", costs->cost, costs->bb_cost, costs->timing_cost);
     return move_outcome;
 }
 
@@ -1667,7 +1666,7 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
 
 static e_move_result assess_swap(double delta_c, double t) {
     /* Returns: 1 -> move accepted, 0 -> rejected. */
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %f delta_c is %f\n", t, delta_c);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %lf delta_c is %lf\n", t, delta_c);
     if (delta_c <= 0) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(delta_c < 0)\n");
         return ACCEPTED;
