@@ -419,9 +419,6 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
             if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
                 continue;
             }
-
-            float n_sinks_inv = 1.0f / (float)cluster_ctx.clb_nlist.net_sinks(net_id).size();
-
             for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 /* Ignore if one of the sinks is the block itself*/
                 if (pin_id == sink_pin_id)
@@ -438,9 +435,9 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
                 }
-                acc_x += (float)tile_loc.x * n_sinks_inv;
-                acc_y += (float)tile_loc.y * n_sinks_inv;
-                acc_weight += n_sinks_inv;
+                acc_x += tile_loc.x;
+                acc_y += tile_loc.y;
+                acc_weight++;
             }
         }
 
