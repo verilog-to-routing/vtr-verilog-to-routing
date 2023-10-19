@@ -41,7 +41,9 @@ struct t_pl_moved_atom_block {
  *                graph.                                        */
 struct t_pl_blocks_to_be_moved {
     t_pl_blocks_to_be_moved(size_t max_blocks)
-        : moved_blocks(max_blocks) {}
+    {
+        moved_blocks.reserve(max_blocks);
+    }
 
     int num_moved_blocks = 0;
     std::vector<t_pl_moved_block> moved_blocks;
