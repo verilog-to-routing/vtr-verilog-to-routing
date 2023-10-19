@@ -220,7 +220,9 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
     auto& proposed_connection_delay = g_placer_ctx.mutable_timing().proposed_connection_delay;
     auto& proposed_connection_timing_cost = g_placer_ctx.mutable_timing().proposed_connection_timing_cost;
 
+    std::cout << "update_td_delta_costs: net=" << size_t(net) << " pin=" << size_t(pin) << " is_src_moving=" << is_src_moving << std::endl;
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
+        std::cout << "\tPin type: " << "DRIVER" << std::endl;
         /* This pin is a net driver on a moved block. */
         /* Recompute all point to point connection delays for the net sinks. */
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size();
@@ -229,13 +231,15 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                                                ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
+                std::cout << "\t\ttmp delay is equal to connection delay: " << temp_delay << std::endl;
                 continue;
             }
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
-
+            std::cout << "\t\tproposed connection delay: " << proposed_connection_delay[net][ipin] << " criticality: " <<  criticalities.criticality(net, ipin) << std::endl;
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+            std::cout << "\t\tProposed connection delay: " << proposed_connection_timing_cost[net][ipin]<< " connection delay:" << connection_timing_cost[net][ipin] << std::endl;
             delta_timing_cost += proposed_connection_timing_cost[net][ipin]
                                  - connection_timing_cost[net][ipin];
 
@@ -244,6 +248,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             affected_pins.push_back(sink_pin);
         }
     } else {
+        std::cout << "\tPin type: " << "DRIVER" << std::endl;
         /* This pin is a net sink on a moved block */
         VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
 
@@ -256,18 +261,22 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                                                ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
+                std::cout << "\t\ttmp delay is equal to connection delay: " << temp_delay << std::endl;
                 return;
             }
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
-
+            std::cout << "\t\tproposed connection delay: " << proposed_connection_delay[net][ipin] << " criticality: " <<  criticalities.criticality(net, ipin) << std::endl;
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+            std::cout << "\t\tProposed connection delay: " << proposed_connection_timing_cost[net][ipin]<< " connection delay:" << connection_timing_cost[net][ipin] << std::endl;
             delta_timing_cost += proposed_connection_timing_cost[net][ipin]
                                  - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
             affected_pins.push_back(pin);
+        } else {
+            std::cout << "\t\t Pin's source is moving" << std::endl;
         }
     }
 }
