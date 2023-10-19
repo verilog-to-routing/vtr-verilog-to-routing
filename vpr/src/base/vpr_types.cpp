@@ -322,6 +322,10 @@ void t_cluster_placement_stats::free_primitives() {
     }
 }
 
+/**
+ * @brief Get the atom block id at the given location. Since we currently don't have any array to retrieve this information directly,
+ * we first find the cluster mapped to that location, and then find the atom inside that cluster that is mapped to the given location.
+ */
 AtomBlockId GridBlock::block_at_location(const t_pl_atom_loc& loc) const {
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
     t_pl_loc cluster_loc(loc.x, loc.y, loc.sub_tile, loc.layer);
