@@ -40,8 +40,7 @@ struct t_pl_moved_atom_block {
  *                incrementally invalidate parts of the timing  *
  *                graph.                                        */
 struct t_pl_blocks_to_be_moved {
-    t_pl_blocks_to_be_moved(size_t max_blocks)
-    {
+    t_pl_blocks_to_be_moved(size_t max_blocks) {
         moved_blocks.reserve(max_blocks);
     }
 
