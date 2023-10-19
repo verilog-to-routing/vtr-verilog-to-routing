@@ -1294,12 +1294,10 @@ static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_p
 }
 /* checks whether or not this block drives a pattern connection (e.g. its cout drives another block's cin) */
 static bool drives_pattern_connection(const t_pack_patterns* pack_pattern, AtomBlockId blk_id) {
-
     auto& atom_ctx = g_vpr_ctx.atom();
     auto iconn = pack_pattern->root_block->connections;
 
     while (iconn != NULL) {
-
         t_pb_graph_pin* cur_pin = iconn->from_pin;
         t_model_ports* cur_model_port = cur_pin->port->model_port;
         AtomPortId cur_port = atom_ctx.nlist.find_atom_port(blk_id, cur_model_port);
@@ -1313,7 +1311,6 @@ static bool drives_pattern_connection(const t_pack_patterns* pack_pattern, AtomB
     }
     return false;
 }
-
 
 /* A chain can extend across multiple atom blocks.  Must segment the chain to fit in an atom
  * block by identifying the actual atom that forms the root of the new chain.
