@@ -629,6 +629,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->recompute_crit_iter = Options.RecomputeCritIter;
 
     PlacerOpts->timing_tradeoff = Options.PlaceTimingTradeoff;
+    PlacerOpts->congestion_tradeoff = Options.CongestionTradeoff;
 
     /* Depends on PlacerOpts->place_algorithm */
     PlacerOpts->delay_offset = Options.place_delay_offset;

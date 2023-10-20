@@ -172,6 +172,11 @@ static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828,
                                       2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148, 2.7410, 2.7671,
                                       2.7933};
 
+static vtr::NdMatrix<float, 2> cong_matrix({0, 0});
+static vtr::NdMatrix<float, 2> cong_matrix_new({0, 0});
+
+static float congestion_tradeoff = 0.0;
+
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
                                                                 vtr::fclose);
 
@@ -267,7 +272,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
 static void free_fast_cost_update();
 
-static double comp_bb_cost(e_cost_methods method);
+static double comp_bb_cost(e_cost_methods method, const t_place_algorithm& place_algorithm);
 
 static void update_move_nets(int num_nets_affected);
 static void reset_move_nets(int num_nets_affected);
@@ -336,7 +341,9 @@ static int find_affected_nets_and_update_costs(
     const PlacerCriticalities* criticalities,
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
-    double& timing_delta_c);
+    double& timing_delta_c,
+    double& bb_cong_c,
+    const t_placer_opts& placer_opts);
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
@@ -357,6 +364,9 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
 static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
+static double get_cong_cost(double chan_width);
+static void get_cong_matrix(ClusterNetId net_id, t_bb* bb_ptr);
+static void update_cong_matrix(ClusterNetId net_id, t_bb* bb_ptr_old, t_bb* bb_ptr_new);
 
 static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_edges);
 
@@ -473,6 +483,9 @@ void try_place(const Netlist<>& net_list,
 
     t_placer_costs costs(placer_opts.place_algorithm);
 
+    cong_matrix.resize({device_ctx.grid.width()+5, device_ctx.grid.height() + 5});
+    cong_matrix_new.resize({device_ctx.grid.width()+5, device_ctx.grid.height() + 5});
+
     tatum::TimingPathInfo critical_path;
     float sTNS = NAN;
     float sWNS = NAN;
@@ -578,7 +591,11 @@ void try_place(const Netlist<>& net_list,
     /* Gets initial cost and loads bounding boxes. */
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        costs.bb_cost = comp_bb_cost(NORMAL);
+        costs.bb_cost = comp_bb_cost(NORMAL,placer_opts.place_algorithm);
+
+        if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+            costs.cong_cost = get_cong_cost(placer_opts.congestion_tradeoff);
+        }
 
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
@@ -658,9 +675,12 @@ void try_place(const Netlist<>& net_list,
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
         /* Total cost is the same as wirelength cost normalized*/
-        costs.bb_cost = comp_bb_cost(NORMAL);
-        costs.bb_cost_norm = 1 / costs.bb_cost;
-
+        costs.bb_cost = comp_bb_cost(NORMAL,placer_opts.place_algorithm);
+        costs.bb_cost_norm = 1 / costs.bb_cost;      
+        if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+            costs.cong_cost = get_cong_cost(placer_opts.congestion_tradeoff);
+            costs.cong_cost_norm = 1/ costs.cong_cost;
+        }
         /* Timing cost and normalization factors are not used */
         costs.timing_cost = INVALID_COST;
         costs.timing_cost_norm = INVALID_COST;
@@ -785,11 +805,15 @@ void try_place(const Netlist<>& net_list,
                             device_ctx.grid.get_num_layers());
 
     /* Update the starting temperature for placement annealing to a more appropriate value */
+    if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+        congestion_tradeoff = 0.0;
+    }
     state.t = starting_t(&state, &costs, annealing_sched,
                          place_delay_model.get(), placer_criticalities.get(),
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          *manual_move_generator, pin_timing_invalidator.get(),
                          blocks_affected, placer_opts, noc_opts, move_type_stat);
+    double starting_tempreture = state.t;
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -822,6 +846,8 @@ void try_place(const Netlist<>& net_list,
         //Table header
         VTR_LOG("\n");
         print_place_status_header();
+        bool congest_flag = false;
+        bool while_loop_state = true;
 
         /* Outer loop of the simulated annealing begins */
         do {
@@ -891,8 +917,19 @@ void try_place(const Netlist<>& net_list,
             //                print_clb_placement("first_iteration_clb_placement.echo");
             //            }
             //#endif
-        } while (state.outer_loop_update(stats.success_rate, costs, placer_opts,
-                                         annealing_sched));
+            while_loop_state = state.outer_loop_update(stats.success_rate, costs, placer_opts,
+                                         annealing_sched);
+
+            if(while_loop_state==false && get_cong_cost(placer_opts.congestion_tradeoff)>=20. && congest_flag==false && placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+                // congest_flag = true;
+                congestion_tradeoff += 0.5;
+                state.t = starting_tempreture;
+                state.move_lim = state.move_lim_max;
+                state.rlim = first_rlim;
+                VTR_LOG("starting with congestion_cost from the top\n");
+                while_loop_state = true;
+            }
+        } while (while_loop_state);
         /* Outer loop of the simmulated annealing ends */
     } //skip_anneal ends
 
@@ -1172,8 +1209,8 @@ static void placement_inner_loop(const t_annealing_state* state,
 #ifdef VERBOSE
         VTR_LOG("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d\n",
                 state->t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
-        if (fabs((costs->bb_cost) - comp_bb_cost(CHECK)) > (costs->bb_cost) * ERROR_TOL)
-            VPR_ERROR(VPR_ERROR_PLACE, "bb_cost is %g, comp_bb_cost is %g\n", costs->bb_cost, comp_bb_cost(CHECK));
+        if (fabs((costs->bb_cost) - comp_bb_cost(CHECK,placer_opts.place_algorithm)) > (costs->bb_cost) * ERROR_TOL)
+            VPR_ERROR(VPR_ERROR_PLACE, "bb_cost is %g, comp_bb_cost is %g\n", costs->bb_cost, comp_bb_cost(CHECK,placer_opts.place_algorithm));
             //"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
 #endif
 
@@ -1216,6 +1253,10 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                          const PlacerCriticalities* criticalities,
                                          t_placer_costs* costs) {
     double new_bb_cost = recompute_bb_cost();
+    double new_cong_cost = 0.0;
+    if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+        new_cong_cost = get_cong_cost(placer_opts.congestion_tradeoff);
+    }
     if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
         std::string msg = vtr::string_fmt(
             "in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
@@ -1223,7 +1264,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
         VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
     }
     costs->bb_cost = new_bb_cost;
-
+    costs->cong_cost = new_cong_cost;
     if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
         comp_td_costs(delay_model, *criticalities, &new_timing_cost);
@@ -1374,6 +1415,7 @@ static void update_move_nets(int num_nets_affected) {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& device_ctx = g_vpr_ctx.device();
 
     for (int inet_affected = 0; inet_affected < num_nets_affected;
          inet_affected++) {
@@ -1389,9 +1431,21 @@ static void update_move_nets(int num_nets_affected) {
         proposed_net_cost[net_id] = -1;
         bb_updated_before[net_id] = NOT_UPDATED_YET;
     }
+
+    for(int i=0;i<int(device_ctx.grid.width());i++){
+        for(int j=0;j<int(device_ctx.grid.height());j++){
+            cong_matrix[i][j] = cong_matrix_new[i][j];
+        }
+    }
 }
 
 static void reset_move_nets(int num_nets_affected) {
+    auto& device_ctx = g_vpr_ctx.device();
+    for(int i=0;i<int(device_ctx.grid.width());i++){
+        for(int j=0;j<int(device_ctx.grid.height());j++){
+            cong_matrix_new[i][j] = cong_matrix[i][j];
+        }
+    }
     /* Reset the net cost function flags first. */
     for (int inet_affected = 0; inet_affected < num_nets_affected;
          inet_affected++) {
@@ -1460,6 +1514,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     double delta_c = 0;        //Change in cost due to this swap.
     double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
     double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
+    double cong_delta_c = 0;   //Change in the congestoin cost
 
     // Determine whether we need to force swap two router blocks
     bool router_block_move = false;
@@ -1534,7 +1589,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         //delays and timing costs and store them in proposed_* data structures.
         int num_nets_affected = find_affected_nets_and_update_costs(
             place_algorithm, delay_model, criticalities, blocks_affected,
-            bb_delta_c, timing_delta_c);
+            bb_delta_c, timing_delta_c, cong_delta_c,placer_opts);
 
         //For setup slack analysis, we first do a timing analysis to get the newest
         //slack values resulted from the proposed block moves. If the move turns out
@@ -1579,6 +1634,12 @@ static e_move_result try_swap(const t_annealing_state* state,
             delta_c = (1 - timing_tradeoff) * bb_delta_c * costs->bb_cost_norm
                       + timing_tradeoff * timing_delta_c
                             * costs->timing_cost_norm;
+        } else if (place_algorithm == CONGESTION_AWARE_PLACE) {
+            /* Take delta_c as a combination of timing and wiring cost. In
+             * addition to `timing_tradeoff`, we normalize the cost values */
+            delta_c =congestion_tradeoff*(cong_delta_c * costs->cong_cost_norm)+ ((1 - timing_tradeoff) * bb_delta_c * costs->bb_cost_norm
+                      + timing_tradeoff * timing_delta_c
+                            * costs->timing_cost_norm); 
         } else {
             VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
@@ -1612,6 +1673,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
             costs->bb_cost += bb_delta_c;
+            costs->cong_cost += cong_delta_c;
 
             if (place_algorithm == SLACK_TIMING_PLACE) {
                 /* Update the timing driven cost as usual */
@@ -1622,8 +1684,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                 commit_setup_slacks(setup_slacks);
             }
 
-            if (place_algorithm == CRITICALITY_TIMING_PLACE) {
-                costs->timing_cost += timing_delta_c;
+            if (place_algorithm == CRITICALITY_TIMING_PLACE || place_algorithm == CONGESTION_AWARE_PLACE) {
+                 costs->timing_cost += timing_delta_c;
 
                 /* Invalidates timing of modified connections for incremental *
                  * timing updates. These invalidations are accumulated for a  *
@@ -1690,8 +1752,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                     "The current setup slacks should be identical to the values before the try swap timing info update.");
             }
 
-            if (place_algorithm == CRITICALITY_TIMING_PLACE) {
-                /* Unstage the values stored in proposed_* data structures */
+            if (place_algorithm == CRITICALITY_TIMING_PLACE || place_algorithm == CONGESTION_AWARE_PLACE) {
+                 /* Unstage the values stored in proposed_* data structures */
                 revert_td_cost(blocks_affected);
             }
 
@@ -1709,9 +1771,11 @@ static e_move_result try_swap(const t_annealing_state* state,
                                                 * costs->bb_cost_norm;
         move_outcome_stats.delta_timing_cost_norm = timing_delta_c
                                                     * costs->timing_cost_norm;
+        move_outcome_stats.delta_cong_cost_norm = cong_delta_c * costs->cong_cost_norm;
 
         move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
         move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
+        move_outcome_stats.delta_cong_cost_abs = cong_delta_c;
 
         LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c,
                                (move_outcome ? "ACCEPTED" : "REJECTED"), "");
@@ -1774,7 +1838,11 @@ static int find_affected_nets_and_update_costs(
     const PlacerCriticalities* criticalities,
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
-    double& timing_delta_c) {
+    double& timing_delta_c,
+    double& bb_cong_c,
+    const t_placer_opts& placer_opts) { 
+        
+    auto& place_move_ctx = g_placer_ctx.mutable_move(); 
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1782,6 +1850,11 @@ static int find_affected_nets_and_update_costs(
     int num_affected_nets = 0;
 
     /* Go through all the blocks moved. */
+    double before_cost = 0.0;
+
+    if(place_algorithm == CONGESTION_AWARE_PLACE){
+        before_cost = get_cong_cost(placer_opts.congestion_tradeoff);
+    }
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
@@ -1816,11 +1889,19 @@ static int find_affected_nets_and_update_costs(
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
+        if(place_algorithm == CONGESTION_AWARE_PLACE){
+            update_cong_matrix(net_id,&place_move_ctx.bb_coords[net_id],&ts_bb_coord_new[net_id]);
+        }
+
         proposed_net_cost[net_id] = get_net_cost(net_id,
                                                  &ts_bb_coord_new[net_id]);
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
+ 
+    if(place_algorithm == CONGESTION_AWARE_PLACE){
+        bb_cong_c = get_cong_cost(placer_opts.congestion_tradeoff)-before_cost;
+    }
     return num_affected_nets;
 }
 
@@ -2013,9 +2094,12 @@ static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_
     if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
         // in bounding box mode we only care about wirelength
         total_cost = costs->bb_cost * costs->bb_cost_norm;
-    } else if (placer_opts.place_algorithm.is_timing_driven()) {
+    }   else if (placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
+        // in congestion mode we use one extra term for the congestoin and the rest of the cost is calculated like the timing driven case
+        total_cost =congestion_tradeoff * (costs->cong_cost * costs->cong_cost_norm) + ((1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm));
+    }   else if (placer_opts.place_algorithm.is_timing_driven()) {
         // in timing mode we include both wirelength and timing costs
-        total_cost = (1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm);
+        total_cost =((1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm));
     }
 
     if (noc_opts.noc) {
@@ -2225,11 +2309,19 @@ static bool driven_by_moved_block(const ClusterNetId net,
  * are found via the non_updateable_bb routine, to provide a    *
  * cost which can be used to check the correctness of the       *
  * other routine.                                               */
-static double comp_bb_cost(e_cost_methods method) {
+static double comp_bb_cost(e_cost_methods method, const t_place_algorithm& place_algorithm) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& device_ctx = g_vpr_ctx.device();
+   if(place_algorithm == CONGESTION_AWARE_PLACE){
+        for(int i=0;i<int(device_ctx.grid.width());i++){
+            for(int j=0;j<int(device_ctx.grid.height());j++){
+                cong_matrix[i][j] = 0.0;
+            }
+        }
+    }
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
@@ -2244,6 +2336,10 @@ static double comp_bb_cost(e_cost_methods method) {
                                       &place_move_ctx.bb_coords[net_id]);
             }
 
+            if(place_algorithm == CONGESTION_AWARE_PLACE){
+                get_cong_matrix(net_id,&place_move_ctx.bb_coords[net_id]);
+            }
+
             net_cost[net_id] = get_net_cost(net_id,
                                             &place_move_ctx.bb_coords[net_id]);
             cost += net_cost[net_id];
@@ -2253,6 +2349,22 @@ static double comp_bb_cost(e_cost_methods method) {
         }
     }
 
+    if(place_algorithm == CONGESTION_AWARE_PLACE){
+        for(int i=0;i<int(device_ctx.grid.width());i++){
+            for(int j=0;j<int(device_ctx.grid.height());j++){
+                cong_matrix_new[i][j] = cong_matrix[i][j];
+            }
+        }
+    }
+
+    if(place_algorithm == CONGESTION_AWARE_PLACE){
+        for(int i=0;i<int(device_ctx.grid.width());i++){
+            for(int j=0;j<int(device_ctx.grid.height());j++){
+                VTR_LOG("%4.0f\t", cong_matrix[i][j]);
+            }
+            VTR_LOG("\n");
+        }
+    }
     if (method == CHECK) {
         VTR_LOG("\n");
         VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
@@ -2525,6 +2637,46 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
 
     return (ncost);
 }
+
+static void update_cong_matrix(ClusterNetId net_id, t_bb* bb_ptr_old, t_bb* bb_ptr_new){
+    for(int i=bb_ptr_old->xmin;i<bb_ptr_old->xmax;i++){
+        for(int j=bb_ptr_old->ymin;j<bb_ptr_old->ymax;j++){
+            cong_matrix_new[i][j] -= get_net_wirelength_estimate(net_id,bb_ptr_old)/double((bb_ptr_old->xmax - bb_ptr_old->xmin + 1)*(bb_ptr_old->ymax - bb_ptr_old->ymin + 1));
+        }
+    }
+    for(int i=bb_ptr_new->xmin;i<bb_ptr_new->xmax;i++){
+        for(int j=bb_ptr_new->ymin;j<bb_ptr_new->ymax;j++){
+            cong_matrix_new[i][j] +=  get_net_wirelength_estimate(net_id,bb_ptr_new)/double((bb_ptr_new->xmax - bb_ptr_new->xmin + 1)*(bb_ptr_new->ymax - bb_ptr_new->ymin + 1));
+        }
+    }
+}
+
+
+static void get_cong_matrix(ClusterNetId net_id, t_bb* bbptr) {
+
+    for(int i=bbptr->xmin;i<bbptr->xmax;i++){
+        for(int j=bbptr->ymin;j<bbptr->ymax;j++){
+           cong_matrix[i][j] +=  get_net_wirelength_estimate(net_id,bbptr)/double((bbptr->xmax - bbptr->xmin + 1)*(bbptr->ymax - bbptr->ymin + 1));
+        }
+    }
+}
+
+
+static double get_cong_cost(double chan_width) {
+    auto& device_ctx = g_vpr_ctx.device();
+    double avg = 1e-4;
+    double max_width = chan_width;
+
+    for(int i=0;i<int(device_ctx.grid.width());i++){
+        for(int j=0;j<int(device_ctx.grid.height());j++){
+            if(cong_matrix_new[i][j]>max_width){
+                avg+=cong_matrix_new[i][j]-max_width;
+            }
+        }
+    }
+    return avg;
+}
+
 
 static double get_net_cost(ClusterNetId net_id, t_bb* bbptr) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
@@ -2961,7 +3113,7 @@ static int check_placement_costs(const t_placer_costs& costs,
     double bb_cost_check;
     double timing_cost_check;
 
-    bb_cost_check = comp_bb_cost(CHECK);
+    bb_cost_check = comp_bb_cost(CHECK,place_algorithm);
     if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
         VTR_LOG_ERROR(
             "bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
@@ -3168,13 +3320,13 @@ static void update_screen_debug() {
 
 static void print_place_status_header() {
     VTR_LOG(
-        "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
+        "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------  ---------------\n");
     VTR_LOG(
-        "Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha\n");
+        "Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha  congestion_cost\n");
     VTR_LOG(
-        "      (sec)                                          (ns)       (ns)     (ns)                                                 \n");
+        "      (sec)                                          (ns)       (ns)     (ns)                                                                  \n");
     VTR_LOG(
-        "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
+        "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------  ---------------\n");
 }
 
 static void print_place_status(const t_annealing_state& state,
@@ -3190,11 +3342,11 @@ static void print_place_status(const t_annealing_state& state,
         "%7.1e "
         "%7.3f %10.2f %-10.5g "
         "%7.3f % 10.3g % 8.3f "
-        "%7.3f %7.4f %6.1f %8.2f",
+        "%7.3f %7.4f %6.1f %8.2f %5.3f",
         state.num_temps, elapsed_sec, state.t,
         stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 1e9 * cpd,
         1e9 * sTNS, 1e9 * sWNS, stats.success_rate, stats.std_dev,
-        state.rlim, state.crit_exponent);
+        state.rlim, state.crit_exponent,stats.av_cong_cost);
 
     pretty_print_uint(" ", tot_moves, 9, 3);
 

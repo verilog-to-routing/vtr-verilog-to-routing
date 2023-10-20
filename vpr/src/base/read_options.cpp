@@ -397,6 +397,8 @@ struct ParsePlaceAlgorithm {
             conv_value.set_value(CRITICALITY_TIMING_PLACE);
         } else if (str == "slack_timing") {
             conv_value.set_value(SLACK_TIMING_PLACE);
+        } else if (str == "congestion_aware"){
+            conv_value.set_value(CONGESTION_AWARE_PLACE);
         } else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -418,6 +420,8 @@ struct ParsePlaceAlgorithm {
             conv_value.set_value("bounding_box");
         } else if (val == CRITICALITY_TIMING_PLACE) {
             conv_value.set_value("criticality_timing");
+        } else if (val == CONGESTION_AWARE_PLACE) {
+            conv_value.set_value("congestion_aware");
         } else {
             VTR_ASSERT(val == SLACK_TIMING_PLACE);
             conv_value.set_value("slack_timing");
@@ -426,7 +430,7 @@ struct ParsePlaceAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"bounding_box", "criticality_timing", "slack_timing"};
+        return {"bounding_box", "criticality_timing", "slack_timing","congestion_aware"};
     }
 };
 
@@ -1928,11 +1932,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Controls which placement algorithm is used. Valid options:\n"
             " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
             " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
-            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n"
+            " * congestion_aware: Focuses on improving routability.\n")
         .default_value("criticality_timing")
-        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .choices({"bounding_box", "criticality_timing", "slack_timing", "congestion_aware"})
         .show_in(argparse::ShowIn::HELP_ONLY);
-
+        
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm, "--place_quench_algorithm")
         .help(
             "Controls which placement algorithm is used during placement quench.\n"
@@ -1940,9 +1945,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Valid options:\n"
             " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
             " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
-            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n"
+            " * congestion_aware: Focuses on improving routability.\n")
         .default_value("criticality_timing")
-        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .choices({"bounding_box", "criticality_timing", "slack_timing", "congestion_aware"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
@@ -2153,6 +2159,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Trade-off control between delay and wirelength during placement."
             " 0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.CongestionTradeoff, "--congest_tradeoff")
+
+        .help(
+            "Congestion Trade-off establishes the upper threshold for the congestion matrix,\n"
+            "with an optimal value typically close to the width of the routing channel.\n"
+            "A high value, on the other hand, may cause VPR to disregard congestion-aware\n"
+            "placement and proceed independently.\n")
+        .default_value("1000.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.RecomputeCritIter, "--recompute_crit_iter")
