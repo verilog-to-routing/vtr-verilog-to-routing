@@ -68,6 +68,7 @@ static bool driven_by_moved_block(const AtomNetId net,
                                   const std::vector<t_pl_moved_atom_block>& moved_blocks);
 
 static bool driven_by_moved_block(const ClusterNetId net,
+                                  const int num_blocks,
                                   const std::vector<t_pl_moved_block>& moved_blocks);
 
 static void update_net_bb(const ClusterNetId& net,
@@ -127,15 +128,19 @@ static bool driven_by_moved_block(const AtomNetId net,
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const ClusterNetId net,
+                                  const int num_blocks,
                                   const std::vector<t_pl_moved_block>& moved_blocks) {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    bool is_driven_by_move_blk;
+    bool is_driven_by_move_blk = false;
     ClusterBlockId net_driver_block = clb_nlist.net_driver_block(
         net);
 
-    is_driven_by_move_blk = std::any_of(moved_blocks.begin(), moved_blocks.end(), [&net_driver_block](const auto& move_blk) {
-        return net_driver_block == move_blk.block_num;
-    });
+    for (int block_num = 0; block_num < num_blocks; block_num++) {
+        if (net_driver_block == moved_blocks[block_num].block_num) {
+            is_driven_by_move_blk = true;
+            break;
+        }
+    }
 
     return is_driven_by_move_blk;
 }
@@ -860,7 +865,9 @@ int find_affected_nets_and_update_costs(
             bool is_src_moving = false;
             if (clb_nlsit.pin_type(blk_pin) == PinType::SINK) {
                 ClusterNetId net_id = clb_nlsit.pin_net(blk_pin);
-                is_src_moving = driven_by_moved_block(net_id, blocks_affected.moved_blocks);
+                is_src_moving = driven_by_moved_block(net_id,
+                                                      blocks_affected.num_moved_blocks,
+                                                      blocks_affected.moved_blocks);
             }
             update_net_info_on_pin_move(place_algorithm,
                                         delay_model,
