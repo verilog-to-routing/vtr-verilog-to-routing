@@ -45,13 +45,17 @@ struct t_grid_empty_locs_block_type {
  * the NoC is initialized by routing all the traffic
  * flows and updating the bandwidths used by the links due to the
  * traffic flows.
- *   
+ *
+ *   @param placer_opts Required by the function that set the status of f_placer_debug
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param constraints_file Used to read block locations if any constraints is available.
  *   @param noc_enabled Used to check whether the user turned on the noc
  * optimization during placement.
  */
-void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, const t_noc_opts& noc_opts);
+void initial_placement(const t_placer_opts& placer_opts,
+                       enum e_pad_loc_type pad_loc_type,
+                       const char* constraints_file,
+                       const t_noc_opts& noc_opts);
 
 /**
  * @brief Looks for a valid placement location for block.

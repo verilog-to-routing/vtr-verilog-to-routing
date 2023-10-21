@@ -879,6 +879,38 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 
     **Default:** ``move_block_type``
 
+.. option:: --placer_debug_block <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which block the placer produces detailed debug information for. 
+    
+    If the block being moved has the same ID as the number assigned to this parameter, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the block ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all blocks.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
+.. option:: --placer_debug_net <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which net the placer produces detailed debug information for.
+
+    If a net with the same ID assigned to this parameter is connected to the block that is being moved, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the net ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all nets.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
 
 .. _timing_driven_placer_options:
 

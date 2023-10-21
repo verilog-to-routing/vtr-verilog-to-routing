@@ -1066,7 +1066,7 @@ enum e_agent_algorithm {
  * can be based on (block_type, move_type) pair.
  *
  */
-enum e_agent_space {
+enum class e_agent_space {
     MOVE_TYPE,
     MOVE_BLOCK_TYPE
 };
@@ -1214,6 +1214,9 @@ struct t_placer_opts {
     bool place_constraint_subtile;
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
+
+    int placer_debug_block;
+    int placer_debug_net;
 
     /**
      * @brief Tile types that should be used during delay sampling.
@@ -1806,6 +1809,7 @@ struct t_vpr_setup {
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network
     bool exit_before_pack;                     ///<Exits early before starting packing (useful for collecting statistics without running/loading any stages)
+    unsigned int num_workers;                  ///Maximum number of worker threads (determined from an env var or cmdline option)
 };
 
 class RouteStatus {

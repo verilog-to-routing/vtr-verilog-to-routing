@@ -9,11 +9,17 @@
 
 static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net);
 
-e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(blk_type, false, NULL, NULL);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts,
+                                                  proposed_action.logical_blk_type_index,
+                                                  false,
+                                                  nullptr,
+                                                  nullptr);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
 
@@ -68,8 +74,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
     }
 
-    if ((place_move_ctx.X_coord.size() == 0) || (place_move_ctx.Y_coord.size() == 0))
+    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord and y_coord are empty\n");
         return e_create_move::ABORT;
+    }
 
     //calculate the weighted median region
     std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
@@ -91,10 +99,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         limit_coords.ymax = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
     }
 
-    t_range_limiters range_limiters;
-    range_limiters.original_rlim = rlim;
-    range_limiters.dm_rlim = placer_opts.place_dm_rlim;
-    range_limiters.first_rlim = place_move_ctx.first_rlim;
+    t_range_limiters range_limiters{rlim,
+                                    place_move_ctx.first_rlim,
+                                    placer_opts.place_dm_rlim};
 
     t_pl_loc w_median_point;
     w_median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;

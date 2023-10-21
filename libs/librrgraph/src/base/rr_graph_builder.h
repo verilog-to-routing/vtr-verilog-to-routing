@@ -193,6 +193,12 @@ class RRGraphBuilder {
         node_storage_.set_node_layer(id, layer);
     }
 
+    /** @brief set the ptc twist increment number for TILEABLE rr graphs (for more information see rr_graph_storage.h twist increment comment) */
+    inline void set_node_ptc_twist_incr(RRNodeId id, int twist){
+        node_storage_.set_node_ptc_twist_incr(id, twist);
+    }
+
+
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
     inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
         node_storage_.set_node_pin_num(id, new_pin_num);
@@ -295,6 +301,12 @@ class RRGraphBuilder {
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
+
+    /** @brief This function resize node ptc twist increment; Since it is only used for tileable rr-graph, we don't put it in general resize function*/
+    inline void resize_ptc_twist_incr(size_t size){
+        node_storage_.resize(size);
+    }
+
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);

@@ -18,7 +18,7 @@ bool f_placer_breakpoint_reached = false;
 //Records counts of reasons for aborted moves
 static std::map<std::string, size_t> f_move_abort_reasons;
 
-void log_move_abort(std::string reason) {
+void log_move_abort(const std::string& reason) {
     ++f_move_abort_reasons[reason];
 }
 
@@ -497,34 +497,73 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     return empty_locs;
 }
 
-int convert_agent_to_phys_blk_type(int agent_blk_type_index) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    if (place_ctx.phys_blk_type_to_agent_blk_type_map.count(agent_blk_type_index)) {
-        return place_ctx.phys_blk_type_to_agent_blk_type_map[agent_blk_type_index];
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+void enable_placer_debug(const t_placer_opts& placer_opts,
+                         ClusterBlockId blk_id) {
+    if (!blk_id.is_valid()) {
+        return;
     }
-    //invalid block type
-    return -1;
-}
 
-int convert_phys_to_agent_blk_type(int phys_blk_type_index) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    if (place_ctx.agent_blk_type_to_phys_blk_type_map.count(phys_blk_type_index)) {
-        return place_ctx.agent_blk_type_to_phys_blk_type_map[phys_blk_type_index];
+    int blk_id_num = (int)size_t(blk_id);
+    // Get the nets connected to the block
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_blk_pb_type = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type;
+    int block_num_pins = cluster_blk_pb_type ? cluster_blk_pb_type->num_pins : 0;
+    std::vector<ClusterNetId> block_nets(block_num_pins, ClusterNetId::INVALID());
+    for (int ipin = 0; ipin < block_num_pins; ipin++) {
+        block_nets[ipin] = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
     }
-    //invalid block type
-    return -1;
-}
 
-int get_num_agent_types() {
-    auto& place_ctx = g_vpr_ctx.placement();
-    return place_ctx.phys_blk_type_to_agent_blk_type_map.size();
-}
+    bool& f_placer_debug = g_vpr_ctx.mutable_placement().f_placer_debug;
 
-ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from) {
+    bool active_blk_debug = (placer_opts.placer_debug_block >= -1);
+    bool active_net_debug = (placer_opts.placer_debug_net >= -1);
+
+    f_placer_debug = active_blk_debug || active_net_debug;
+
+    if (!f_placer_debug) {
+        return;
+    }
+
+    bool match_blk = (placer_opts.placer_debug_block == blk_id_num || placer_opts.placer_debug_block == -1);
+
+    bool match_net = false;
+    if (placer_opts.placer_debug_net == -1) {
+        match_net = true;
+    } else {
+        for (const auto& net_id : block_nets) {
+            if (net_id.is_valid()) {
+                int net_id_num = (int)size_t(net_id);
+                if (placer_opts.placer_debug_net == net_id_num) {
+                    match_net = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (active_blk_debug) f_placer_debug &= match_blk;
+    if (active_net_debug) f_placer_debug &= match_net;
+}
+#endif
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
+                                     int& logical_blk_type_index,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from) {
+#else
+ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
+                                     int& logical_blk_type_index,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from) {
+#endif
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
+    if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
             b_from = pick_from_highly_critical_block(*net_from, *pin_from);
         } else {
@@ -533,15 +572,18 @@ ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly
 
         //if a movable block found, set the block type
         if (b_from) {
-            blk_type.index = convert_phys_to_agent_blk_type(cluster_ctx.clb_nlist.block_type(b_from)->index);
+            logical_blk_type_index = cluster_ctx.clb_nlist.block_type(b_from)->index;
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, blk_type);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index);
         } else {
-            b_from = pick_from_block(blk_type);
+            b_from = pick_from_block(logical_blk_type_index);
         }
     }
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    enable_placer_debug(placer_opts, b_from);
+#endif
 
     return b_from;
 }
@@ -583,7 +625,7 @@ ClusterBlockId pick_from_block() {
 
 //Pick a random block with a specific blk_type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
+ClusterBlockId pick_from_block(const int logical_blk_type_index) {
     /* Some blocks may be fixed, and should never be moved from their *
      * initial positions. If we randomly selected such a block try    *
      * another random block.                                          *
@@ -593,11 +635,11 @@ ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     t_logical_block_type blk_type_temp;
-    blk_type_temp.index = convert_agent_to_phys_blk_type(blk_type.index);
-    auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
+    blk_type_temp.index = logical_blk_type_index;
+    const auto& blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
 
     //no blocks with this type is available
-    if (blocks_per_type.size() == 0) {
+    if (blocks_per_type.empty()) {
         return ClusterBlockId::INVALID();
     }
 
@@ -635,7 +677,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     pin_from = -1;
 
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
+    if (place_move_ctx.highly_crit_pins.empty()) {
         return ClusterBlockId::INVALID();
     }
 
@@ -657,7 +699,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 
 //Pick a random highly critical block with a specified block type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type blk_type) {
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, const int logical_blk_type_index) {
     auto& place_move_ctx = g_placer_ctx.move();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -667,7 +709,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     pin_from = -1;
 
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
+    if (place_move_ctx.highly_crit_pins.empty()) {
         return ClusterBlockId::INVALID();
     }
 
@@ -678,7 +720,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     //Check if picked block type matches with the blk_type specified, and it is not fixed
     //blk_type from propose move doesn't account for the EMPTY type
     auto b_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    if (convert_phys_to_agent_blk_type(b_from_type->index) == blk_type.index) {
+    if (b_from_type->index == logical_blk_type_index) {
         if (place_ctx.block_locs[b_from].is_fixed) {
             return ClusterBlockId::INVALID(); //Block is fixed, cannot move
         }
@@ -766,6 +808,10 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     VTR_ASSERT_MSG(grid.get_width_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to.x, to.y, to.layer}) == 0, "Should be at block base location");
 
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range[from_layer_num].xmin, search_range[from_layer_num].ymin, from_layer_num,
+                   search_range[from_layer_num].xmax, search_range[from_layer_num].ymax, from_layer_num,
+                   to.x, to.y, to.layer);
     return true;
 }
 
@@ -857,6 +903,10 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range.xmin, search_range.ymin, from_layer_num,
+                   search_range.xmax, search_range.ymax, from_layer_num,
+                   to_loc.x, to_loc.y, to_loc.layer);
     return true;
 }
 
@@ -941,6 +991,10 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     VTR_ASSERT_MSG(grid.get_width_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid.get_height_offset({to_loc.x, to_loc.y, to_loc.layer}) == 0, "Should be at block base location");
 
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tSearch range %dx%dx%d x %dx%dx%d - Legal position at %d,%d,%d is found\n",
+                   search_range[from_layer_num].xmin, search_range[from_layer_num].ymin, from_layer_num,
+                   search_range[from_layer_num].xmax, search_range[from_layer_num].ymax, from_layer_num,
+                   to_loc.x, to_loc.y, to_loc.layer);
     return true;
 }
 
@@ -956,7 +1010,7 @@ static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = 
     "Manual Move"};
 
 //To convert enum move type to string
-std::string move_type_to_string(e_move_type move) {
+const std::string& move_type_to_string(e_move_type move) {
     return move_type_strings[int(move)];
 }
 
@@ -1084,6 +1138,9 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                 legal = true;
             }
         }
+    }
+    if (!legal) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tCouldn't find any legal position in the given search range\n");
     }
     return legal;
 }
@@ -1237,6 +1294,7 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
         intersect_reg = intersection(regions[0], range_reg);
 
         if (intersect_reg.empty()) {
+            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tCouldn't find an intersection between floorplan constraints and search region\n");
             return false;
         } else {
             const auto intersect_coord = intersect_reg.get_region_rect();

@@ -22,15 +22,7 @@ Connection_based_routing_resources::Connection_based_routing_resources(const Net
      * reached_rt_sinks will also reserve enough space, but instead of
      * indices, it will store the pointers to route tree nodes */
 
-    // can have as many targets as sink pins (total number of pins - SOURCE pin)
-    // supposed to be used as persistent vector growing with push_back and clearing at the start of each net routing iteration
-    auto max_sink_pins_per_net = std::max(get_max_pins_per_net(net_list_) - 1, 0);
-    remaining_targets.reserve(max_sink_pins_per_net);
-    reached_rt_sinks.reserve(max_sink_pins_per_net);
-
     size_t routing_num_nets = net_list_.nets().size();
-    remaining_targets.resize(routing_num_nets);
-    reached_rt_sinks.resize(routing_num_nets);
     lower_bound_connection_delay.resize(routing_num_nets);
     forcible_reroute_connection_flag.resize(routing_num_nets);
 
@@ -114,7 +106,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
             forcible_reroute_connection_flag[net_id][rr_sink_node] = true;
             // note that we don't set forcible_reroute_connection_flag to false when the converse is true
-            // resetting back to false will be done during tree pruning, after the sink has been legally reached
+            // resetting back to false will be done during tree pruning, after the sink has been legally reached [!]
             any_connection_rerouted = true;
 
             profiling::mark_for_forced_reroute();
