@@ -25,7 +25,7 @@ struct t_pl_moved_atom_block {
     t_pl_atom_loc new_loc;
 };
 
-/* Stores the list of blocks to be moved in a swap during       *
+/* Stores the list of cluster blocks to be moved in a swap during       *
  * placement.                                                   *
  * Store the information on the blocks to be moved in a swap during     *
  * placement, in the form of array of structs instead of struct with    *
@@ -52,6 +52,20 @@ struct t_pl_blocks_to_be_moved {
     std::vector<ClusterPinId> affected_pins;
 };
 
+/* Stores the list of atom blocks to be moved in a swap during       *
+ * placement.                                                   *
+ * Store the information on the blocks to be moved in a swap during     *
+ * placement, in the form of array of structs instead of struct with    *
+ * arrays for cache efficiently                                          *
+ *
+ * num_moved_blocks: total number of blocks moved when          *
+ *                   swapping two blocks.                       *
+ * moved blocks: a list of moved blocks data structure with     *
+ *               information on the move.                       *
+ *               [0...max_blocks-1]                       *
+ * affected_pins: pins affected by this move (used to           *
+ *                incrementally invalidate parts of the timing  *
+ *                graph.                                        */
 struct t_pl_atom_blocks_to_be_moved {
     t_pl_atom_blocks_to_be_moved(size_t max_blocks)
         : moved_blocks(max_blocks) {}
