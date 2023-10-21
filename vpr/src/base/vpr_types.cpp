@@ -180,7 +180,7 @@ t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(const std::vector<s
         t_logical_block_type_ptr logic_block_type = infer_logic_block_type(grid);
 
         if (logic_block_type != nullptr) {
-            constexpr float LOGIC_BLOCK_TYPE_HIGH_FANOUT_THRESHOLD = 32;
+            constexpr float LOGIC_BLOCK_TYPE_HIGH_FANOUT_THRESHOLD = 1e9;
 
             set(logic_block_type->name, LOGIC_BLOCK_TYPE_HIGH_FANOUT_THRESHOLD);
         } else {

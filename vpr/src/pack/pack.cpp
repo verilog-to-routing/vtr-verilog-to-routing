@@ -160,6 +160,8 @@ bool try_pack(t_packer_opts* packer_opts,
         allow_high_fanout_connectivity_clustering = true;
     }
 
+    allow_high_fanout_connectivity_clustering = true;
+
     while (true) {
         free_clustering_data(*packer_opts, clustering_data);
 
