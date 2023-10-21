@@ -528,22 +528,30 @@ bool is_legal_swap_to_location(AtomBlockId blk, t_pl_atom_loc to) {
     //Note that we need to explicitly check that the types match, since the device floorplan is not
     //(neccessarily) translationally invariant for an arbitrary macro
 
+    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
     const auto& atom_pb = g_vpr_ctx.atom().lookup.atom_pb(blk);
 
-    ClusterBlockId cluster_block = g_vpr_ctx.placement().grid_blocks.block_at_location({to.x, to.y, to.sub_tile, to.layer});
-    t_pl_loc cluster_loc(to.x, to.y, to.sub_tile, to.layer);
+    ClusterBlockId from_cluster_block = atom_lookup.atom_clb(blk);
+    t_pl_loc to_cluster_loc(to.x, to.y, to.sub_tile, to.layer);
+    ClusterBlockId to_cluster_block = place_ctx.grid_blocks.block_at_location(to_cluster_loc);
 
-    if (!is_legal_swap_to_location(cluster_block, cluster_loc)) {
+
+    // If the clusters cannot be swapped return false
+    if (!is_legal_swap_to_location(from_cluster_block, to_cluster_loc)) {
         return false;
     }
 
+    // Check legality issues specific to atoms
     std::vector<t_logical_block_type_ptr> logical_blocks;
 
-    if (cluster_block.is_valid() && cluster_block != INVALID_BLOCK_ID) {
+    // If there is already a block at the destination, the only logical block there is the logical block of that particular cluster.
+    // If there isn't any, all logical blocks compatible to that sub_tile should be considered.
+    if (to_cluster_block.is_valid() && to_cluster_block != INVALID_BLOCK_ID) {
         const auto& cluster_ctx = g_vpr_ctx.clustering();
-        auto logical_block = cluster_ctx.clb_nlist.block_type(cluster_block);
+        auto logical_block = cluster_ctx.clb_nlist.block_type(to_cluster_block);
         logical_blocks.push_back(logical_block);
-    } else if (cluster_block == EMPTY_BLOCK_ID) {
+    } else if (to_cluster_block == EMPTY_BLOCK_ID) {
         const auto& physical_tile = g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(to.x, to.y, to.layer));
         const auto& sub_tile = physical_tile->sub_tiles[to.sub_tile];
         logical_blocks = sub_tile.equivalent_sites;
