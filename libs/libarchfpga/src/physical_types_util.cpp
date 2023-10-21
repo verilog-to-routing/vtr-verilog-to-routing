@@ -527,6 +527,16 @@ bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_bl
 bool is_atom_compatible(t_logical_block_type_ptr logical_block, const t_pb_graph_node* atom_pb_graph_node, int loc_primitive_num) {
     VTR_ASSERT(loc_primitive_num != OPEN);
     const t_pb_graph_node* loc_pb_graph_node = nullptr;
+
+    // Check whether the atom
+    const t_pb_graph_node* parent_pb_graph_node = atom_pb_graph_node->parent_pb_graph_node;
+    while (parent_pb_graph_node->parent_pb_graph_node != nullptr) {
+        parent_pb_graph_node = parent_pb_graph_node->parent_pb_graph_node;
+    }
+
+    if (logical_block->pb_graph_head != parent_pb_graph_node) {
+        return false;
+    }
     /**
      * Iterate over the data structure that maps primitive_pb_graph_node to their respective class range,
      * and retrieve the primitive_pb_graph_node from that map. If the primitive number assigned to that
