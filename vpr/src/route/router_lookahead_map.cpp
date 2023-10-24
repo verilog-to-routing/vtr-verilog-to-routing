@@ -465,7 +465,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
-        std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
+        std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
                                                                                    from_layer_num,
                                                                                    delta_x,
                                                                                    delta_y,
