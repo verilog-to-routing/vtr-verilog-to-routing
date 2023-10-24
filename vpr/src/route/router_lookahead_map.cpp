@@ -290,7 +290,7 @@ static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type);
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
-static Cost_Entry get_nearby_cost_entry(int layer_num, int x, int y, int segment_index, int chan_index);
+static Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
 /* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
 static void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int* delta_x, int* delta_y);
 static void adjust_rr_position(const RRNodeId rr, int& x, int& y);
@@ -969,14 +969,16 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
     auto& device_ctx = g_vpr_ctx.device();
 
     /* find missing cost entries and fill them in by copying a nearby cost entry */
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); ++layer_num) {
-        for (unsigned ix = 0; ix < device_ctx.grid.width(); ix++) {
-            for (unsigned iy = 0; iy < device_ctx.grid.height(); iy++) {
-                Cost_Entry cost_entry = f_wire_cost_map[layer_num][chan_index][segment_index][ix][iy];
+    for (int from_layer_num = 0; from_layer_num < device_ctx.grid.get_num_layers(); from_layer_num++){
+        for (int to_layer_num = 0; to_layer_num < device_ctx.grid.get_num_layers(); ++to_layer_num) {
+            for (unsigned ix = 0; ix < device_ctx.grid.width(); ix++) {
+                for (unsigned iy = 0; iy < device_ctx.grid.height(); iy++) {
+                    Cost_Entry cost_entry = f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][ix][iy];
 
-                if (std::isnan(cost_entry.delay) && std::isnan(cost_entry.congestion)) {
-                    Cost_Entry copied_entry = get_nearby_cost_entry(layer_num, ix, iy, segment_index, chan_index);
-                    f_wire_cost_map[layer_num][chan_index][segment_index][ix][iy] = copied_entry;
+                    if (std::isnan(cost_entry.delay) && std::isnan(cost_entry.congestion)) {
+                        Cost_Entry copied_entry = get_nearby_cost_entry(from_layer_num, ix, iy, to_layer_num, segment_index, chan_index);
+                        f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][ix][iy] = copied_entry;
+                    }
                 }
             }
         }
@@ -984,7 +986,7 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 }
 
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
-static Cost_Entry get_nearby_cost_entry(int layer_num, int x, int y, int segment_index, int chan_index) {
+static Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index) {
     /* compute the slope from x,y to 0,0 and then move towards 0,0 by one unit to get the coordinates
      * of the cost entry to be copied */
 
@@ -1011,14 +1013,14 @@ static Cost_Entry get_nearby_cost_entry(int layer_num, int x, int y, int segment
     copy_y = std::max(copy_y, 0); //Clip to zero
     copy_x = std::max(copy_x, 0); //Clip to zero
 
-    Cost_Entry copy_entry = f_wire_cost_map[layer_num][chan_index][segment_index][copy_x][copy_y];
+    Cost_Entry copy_entry = f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][copy_x][copy_y];
 
     /* if the entry to be copied is also empty, recurse */
     if (std::isnan(copy_entry.delay) && std::isnan(copy_entry.congestion)) {
         if (copy_x == 0 && copy_y == 0) {
             copy_entry = Cost_Entry(0., 0.); //(0, 0) entry is invalid so set zero to terminate recursion
         } else {
-            copy_entry = get_nearby_cost_entry(layer_num, copy_x, copy_y, segment_index, chan_index);
+            copy_entry = get_nearby_cost_entry(from_layer_num, copy_x, copy_y, to_layer_num, segment_index, chan_index);
         }
     }
 
