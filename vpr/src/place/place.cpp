@@ -633,6 +633,9 @@ void try_place(const Netlist<>& net_list,
 
     cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode,
                          device_ctx.rr_graph);
+    VTR_LOG("\n");
+    VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
+    VTR_LOG("\n");
 
     int move_lim = 1;
     move_lim = (int)(annealing_sched.inner_num
