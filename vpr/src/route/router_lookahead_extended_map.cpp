@@ -419,7 +419,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 
 // compute the cost maps for lookahead
 void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays= util::compute_router_src_opin_lookahead(is_flat_);
 
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 
@@ -615,7 +615,7 @@ void ExtendedMapLookahead::write(const std::string& file) const {
 void ExtendedMapLookahead::read(const std::string& file) {
     cost_map_.read(file);
 
-    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 }
