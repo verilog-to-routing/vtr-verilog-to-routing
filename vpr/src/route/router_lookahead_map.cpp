@@ -187,7 +187,7 @@ class PQ_Entry {
 
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
-typedef vtr::Matrix<Expansion_Cost_Entry> t_routing_cost_map; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+typedef vtr::NdMatrix<Expansion_Cost_Entry, 3> t_routing_cost_map; //[0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
 struct t_dijkstra_data {
     /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
@@ -629,6 +629,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     f_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
                                        2,
                                        segment_inf.size(),
+                                       static_cast<unsigned long>(grid.get_num_layers()),
                                        device_ctx.grid.width(),
                                        device_ctx.grid.height()});
 
@@ -657,11 +658,11 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     int target_y = device_ctx.grid.height() - 2;
 
     //Profile each wire segment type
-    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+    for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
         //if arch file specifies die_number="layer_num" doesn't require inter-cluster
         //programmable routing resources, then we shouldn't profile wire segment types in
         //the current layer
-        if (!device_ctx.inter_cluster_prog_routing_resources[layer_num]) {
+        if (!device_ctx.inter_cluster_prog_routing_resources[from_layer_num]) {
             continue;
         }
         for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
@@ -685,7 +686,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
                     for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
                         /* get the rr node index from which to start routing */
-                        RRNodeId start_node = get_start_node(layer_num, sample_x, sample_y,
+                        RRNodeId start_node = get_start_node(from_layer_num, sample_x, sample_y,
                                                              target_x, target_y, //non-corner upper right
                                                              chan_type, iseg, track_offset);
 
@@ -693,7 +694,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                             continue;
                         }
                         // TODO: Temporary - After testing benchmarks this can be deleted
-                        VTR_ASSERT(rr_graph.node_layer(start_node) == layer_num);
+                        VTR_ASSERT(rr_graph.node_layer(start_node) == from_layer_num);
 
                         sample_nodes[chan_type].push_back(RRNodeId(start_node));
                     }
@@ -711,7 +712,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 for (RRNodeId rr_node : rr_graph.nodes()) {
                     auto rr_type = rr_graph.node_type(rr_node);
                     if (rr_type != chan_type) continue;
-                    if (rr_graph.node_layer(rr_node) != layer_num) continue;
+                    if (rr_graph.node_layer(rr_node) != from_layer_num) continue;
 
                     auto cost_index = rr_graph.node_cost_index(rr_node);
                     VTR_ASSERT(cost_index != RRIndexedDataId(OPEN));
@@ -732,7 +733,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
             //each sample location to profile the routing network from this type
 
             t_dijkstra_data dijkstra_data;
-            t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
+            t_routing_cost_map routing_cost_map({static_cast<unsigned long>(device_ctx.grid.get_num_layers()), device_ctx.grid.width(), device_ctx.grid.height()});
 
             for (e_rr_type chan_type : chan_types) {
                 if (sample_nodes[chan_type].empty()) {
@@ -754,7 +755,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                         }
 
                         run_dijkstra(sample_node,
-                                     layer_num,
+                                     from_layer_num,
                                      sample_x,
                                      sample_y,
                                      routing_cost_map,
@@ -765,7 +766,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
                     /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
                      * cost map */
-                    set_lookahead_map_costs(layer_num, iseg, chan_type, routing_cost_map);
+                    set_lookahead_map_costs(from_layer_num, iseg, chan_type, routing_cost_map);
 
                     /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
                      * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
@@ -773,7 +774,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 }
             }
         }
-        if (false) print_wire_cost_map(layer_num, segment_inf);
+        if (false) print_wire_cost_map(from_layer_num, segment_inf);
     }
 }
 
@@ -863,9 +864,6 @@ static void run_dijkstra(RRNodeId start_node,
             continue;
         }
 
-        if (rr_graph.node_layer(curr_node) != sample_layer_num) {
-            continue;
-        }
 
         //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, curr_node).c_str());
 
@@ -873,6 +871,7 @@ static void run_dijkstra(RRNodeId start_node,
         if (rr_graph.node_type(curr_node) == IPIN) {
             int ipin_x = rr_graph.node_xlow(curr_node);
             int ipin_y = rr_graph.node_ylow(curr_node);
+            int ipin_layer = rr_graph.node_layer(curr_node);
 
             if (ipin_x >= start_x && ipin_y >= start_y) {
                 int delta_x, delta_y;
@@ -880,7 +879,7 @@ static void run_dijkstra(RRNodeId start_node,
                 delta_x = std::abs(delta_x);
                 delta_y = std::abs(delta_y);
 
-                routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
+                routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
             }
         }
 
