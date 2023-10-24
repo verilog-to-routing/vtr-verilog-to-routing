@@ -258,9 +258,10 @@ static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<i
 static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opin_global_cost_map);
 
 static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
-                                                      int layer_num,
+                                                      int from_layer_num,
                                                       int delta_x,
-                                                      int delta_y);
+                                                      int delta_y,
+                                                      int to_layer_num);
 
 // Read the file and fill inter_tile_pin_primitive_pin_delay and tile_min_cost
 static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
@@ -464,19 +465,11 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
-        // Currently, we assume inter-layer connections are only from a block output pin to another layer. Thus, if the from and to layers are different,
-        // We use src_opin_inter_layer_delays.
-        if (from_layer_num == to_layer_num) {
-            std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc],
-                                                                                       from_layer_num,
-                                                                                       delta_x,
-                                                                                       delta_y);
-        } else if (from_layer_num != to_layer_num) {
-            std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
-                                                                                       to_layer_num,
-                                                                                       delta_x,
-                                                                                       delta_y);
-        }
+        std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
+                                                                                   from_layer_num,
+                                                                                   delta_x,
+                                                                                   delta_y,
+                                                                                   to_layer_num);
 
         expected_delay_cost *= params.criticality;
         expected_cong_cost *= (1 - params.criticality);
@@ -541,7 +534,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 }
 
 void MapLookahead::compute_intra_tile() {
@@ -564,7 +557,7 @@ void MapLookahead::read(const std::string& file) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 }
 
 void MapLookahead::read_intra_cluster(const std::string& file) {
@@ -1345,7 +1338,9 @@ static void print_wire_cost_map(int layer_num, const std::vector<t_segment_inf>&
                         chan_index);
             for (size_t iy = 0; iy < device_ctx.grid.height(); iy++) {
                 for (size_t ix = 0; ix < device_ctx.grid.width(); ix++) {
-                    vtr::printf("%2d,%2d: %10.3g\t", ix, iy, f_wire_cost_map[layer_num][chan_index][iseg][ix][iy].delay);
+                    for (int to_layer_num = 0; to_layer_num < device_ctx.grid.get_num_layers(); ++to_layer_num) {
+                        vtr::printf("%2d,%2d,%2d: %10.3g\t", ix, iy, to_layer_num, f_wire_cost_map[layer_num][chan_index][iseg][to_layer_num][ix][iy].delay);
+                    }
                 }
                 vtr::printf("\n");
             }
@@ -1466,30 +1461,33 @@ static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opi
                                           static_cast<unsigned long>(width),
                                           static_cast<unsigned long>(height)});
 
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+    for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         for (int dx = 0; dx < width; dx++) {
             for (int dy = 0; dy < height; dy++) {
                 util::Cost_Entry min_cost(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-                for (int chan_idx = 0; chan_idx < (int)f_wire_cost_map.dim_size(1); chan_idx++) {
-                    for (int seg_idx = 0; seg_idx < (int)f_wire_cost_map.dim_size(2); seg_idx++) {
-                        auto cost = util::Cost_Entry(f_wire_cost_map[layer_num][chan_idx][seg_idx][dx][dy].delay,
-                                                     f_wire_cost_map[layer_num][chan_idx][seg_idx][dx][dy].congestion);
-                        if (cost.delay < min_cost.delay) {
-                            min_cost.delay = cost.delay;
-                            min_cost.congestion = cost.congestion;
+                for(int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+                    for (int chan_idx = 0; chan_idx < (int)f_wire_cost_map.dim_size(1); chan_idx++) {
+                        for (int seg_idx = 0; seg_idx < (int)f_wire_cost_map.dim_size(2); seg_idx++) {
+                            auto cost = util::Cost_Entry(f_wire_cost_map[from_layer_num][chan_idx][seg_idx][to_layer_num][dx][dy].delay,
+                                                         f_wire_cost_map[from_layer_num][chan_idx][seg_idx][to_layer_num][dx][dy].congestion);
+                            if (cost.delay < min_cost.delay) {
+                                min_cost.delay = cost.delay;
+                                min_cost.congestion = cost.congestion;
+                            }
                         }
                     }
                 }
-                internal_opin_global_cost_map[layer_num][dx][dy] = min_cost;
+                internal_opin_global_cost_map[from_layer_num][dx][dy] = min_cost;
             }
         }
     }
 }
 
 static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
-                                                      int layer_num,
+                                                      int from_layer_num,
                                                       int delta_x,
-                                                      int delta_y) {
+                                                      int delta_y,
+                                                      int to_layer_num) {
     float expected_delay_cost = std::numeric_limits<float>::infinity();
     float expected_cong_cost = std::numeric_limits<float>::infinity();
     if (src_opin_delay_map.empty()) {
@@ -1531,9 +1529,10 @@ static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::
                 //delay and congestion cost estimates
                 wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type,
                                                       reachable_wire_inf.wire_seg_index,
-                                                      layer_num,
+                                                      from_layer_num,
                                                       delta_x,
-                                                      delta_y);
+                                                      delta_y,
+                                                      to_layer_num);
             }
 
             float this_delay_cost = reachable_wire_inf.delay + wire_cost_entry.delay;
@@ -1756,7 +1755,7 @@ void read_router_lookahead(const std::string& file) {
 
     auto map = reader.getRoot<VprMapLookahead>();
 
-    ToNdMatrix<5, VprMapCostEntry, Cost_Entry>(&f_wire_cost_map, map.getCostMap(), ToCostEntry);
+    ToNdMatrix<6, VprMapCostEntry, Cost_Entry>(&f_wire_cost_map, map.getCostMap(), ToCostEntry);
 }
 
 void write_router_lookahead(const std::string& file) {
@@ -1765,7 +1764,7 @@ void write_router_lookahead(const std::string& file) {
     auto map = builder.initRoot<VprMapLookahead>();
 
     auto cost_map = map.initCostMap();
-    FromNdMatrix<5, VprMapCostEntry, Cost_Entry>(&cost_map, f_wire_cost_map, FromCostEntry);
+    FromNdMatrix<6, VprMapCostEntry, Cost_Entry>(&cost_map, f_wire_cost_map, FromCostEntry);
 
     writeMessageToFile(file, &builder);
 }
