@@ -30,7 +30,7 @@ class ExtendedMapLookahead : public RouterLookahead {
      * @param criticality_fac criticality of the current connection between 0 (all congestion) and 1 (all timing)
      * @return expected cost to get to the destination
      */
-    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const;
+    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const;
 
     /**
      * @brief Returns the CHAN -> IPIN delay that gets added to the final expected delay
