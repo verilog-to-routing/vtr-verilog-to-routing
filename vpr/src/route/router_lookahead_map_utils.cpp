@@ -30,6 +30,8 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     t_physical_tile_type_ptr physical_tile,
                                     RRNodeId starting_node_id);
 
+static int get_tile_src_opin_max_ptc_from_rr_graph(int itile);
+
 // Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
 // These are used when finding all the delays to get to the IPINs of all the different tile types
 // of the device.
@@ -835,4 +837,61 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
             }
         }
     }
+}
+
+static int get_tile_src_opin_max_ptc_from_rr_graph(int itile) {
+
+
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    const int num_layers = device_ctx.grid.get_num_layers();
+    int max_ptc = OPEN;
+
+    int tile_layer_num = OPEN;
+    for (int layer_num = 0; layer_num < num_layers; layer_num++)
+    {
+        if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], layer_num) > 0) {
+            tile_layer_num = layer_num;
+            break;
+        }
+    }
+
+    if (tile_layer_num == OPEN) {
+        VTR_LOG_WARN("Found no sample locations for %s\n",
+                     device_ctx.physical_tile_types[itile].name);
+        max_ptc = OPEN;
+    } else {
+        for (e_rr_type rr_type : {SOURCE, OPIN}) {
+            t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
+            sample_loc = pick_sample_tile(tile_layer_num, &device_ctx.physical_tile_types[itile], sample_loc);
+
+            if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
+                //No untried instances of the current tile type left
+                VTR_LOG_WARN("Found no sample locations for %s in %s\n",
+                             rr_node_typename[rr_type],
+                             device_ctx.physical_tile_types[itile].name);
+                return OPEN;
+            }
+
+            const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num,
+                                                                                                                          sample_loc.x,
+                                                                                                                          sample_loc.y,
+                                                                                                                          rr_type);
+            for (RRNodeId node_id : rr_nodes_at_loc) {
+                int ptc = rr_graph.node_ptc_num(node_id);
+                // For the time being, we decide to not let the lookahead explore the node inside the clusters
+                if (!is_inter_cluster_node(&device_ctx.physical_tile_types[itile],
+                                           rr_type,
+                                           ptc)) {
+                    continue;
+                }
+
+                if (ptc >= max_ptc) {
+                    max_ptc = ptc;
+                }
+            }
+        }
+    }
+
+    return max_ptc;
 }
