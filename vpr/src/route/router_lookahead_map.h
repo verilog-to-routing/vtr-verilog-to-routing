@@ -57,7 +57,7 @@ class Cost_Entry {
 
 /* provides delay/congestion estimates to travel specified distances
  * in the x/y direction */
-typedef vtr::NdMatrix<Cost_Entry, 5> t_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+typedef vtr::NdMatrix<Cost_Entry, 6> t_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
                                                       //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
 
 void read_router_lookahead(const std::string& file);
