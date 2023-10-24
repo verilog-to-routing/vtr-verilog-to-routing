@@ -314,7 +314,6 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     auto& rr_graph = device_ctx.rr_graph;
 
     int num_layers = device_ctx.grid.get_num_layers();
-    bool is_multi_layer = (num_layers > 1);
 
     t_src_opin_delays src_opin_delays;
     src_opin_delays.resize(num_layers);
@@ -335,9 +334,9 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
 
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+    for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
-            if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], layer_num) == 0) {
+            if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], from_layer_num) == 0) {
                 continue;
             }
             for (e_rr_type rr_type : {SOURCE, OPIN}) {
@@ -348,7 +347,9 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                 while (ptcs_with_no_delays) { //Haven't found wire connected to ptc
                     ptcs_with_no_delays = false;
 
-                    sample_loc = pick_sample_tile(layer_num, &device_ctx.physical_tile_types[itile], sample_loc);
+                    sample_loc = pick_sample_tile(from_layer_num,
+                                                  &device_ctx.physical_tile_types[itile],
+                                                  sample_loc);
 
                     if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
                         //No untried instances of the current tile type left
@@ -370,7 +371,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                             continue;
                         }
 
-                        VTR_ASSERT(ptc < int(src_opin_delays[layer_num][itile].size()));
+                        VTR_ASSERT(ptc < int(src_opin_delays[from_layer_num][itile].size()));
 
                         //Find the wire types which are reachable from inode and record them and
                         //the cost to reach them
@@ -378,12 +379,20 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                                                 node_id,
                                                 src_opin_delays);
 
-                        if (src_opin_delays[layer_num][itile][ptc].empty()) {
-                            VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d)\n",
+                        bool reachable_wire_found = false;
+                        for(int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+                            if (!src_opin_delays[from_layer_num][itile][ptc][to_layer_num].empty()) {
+                                reachable_wire_found = true;
+                                break;
+                            }
+                        }
+                        if (reachable_wire_found) {
+                            VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d,%d)\n",
                                            rr_node_typename[rr_type],
                                            rr_node_arch_name(node_id, is_flat).c_str(),
                                            sample_loc.x,
                                            sample_loc.y,
+                                           sample_loc.layer_num,
                                            is_flat);
 
                             ptcs_with_no_delays = true;
@@ -555,11 +564,11 @@ static void dijkstra_flood_to_wires(int itile,
 
             //Keep costs of the best path to reach each wire type
             if (!src_opin_delays[root_layer_num][itile][ptc][curr_layer_num].count(seg_index)
-                 || curr.delay < src_opin_delays[root_layer_num][itile][ptc][seg_index][curr_layer_num].delay) {
-                src_opin_delays[root_layer_num][itile][ptc][seg_index][curr_layer_num].wire_rr_type = curr_rr_type;
-                src_opin_delays[root_layer_num][itile][ptc][seg_index][curr_layer_num].wire_seg_index = seg_index;
-                src_opin_delays[root_layer_num][itile][ptc][seg_index][curr_layer_num].delay = curr.delay;
-                src_opin_delays[root_layer_num][itile][ptc][seg_index][curr_layer_num].congestion = curr.congestion;
+                 || curr.delay < src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].delay) {
+                src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].wire_rr_type = curr_rr_type;
+                src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].wire_seg_index = seg_index;
+                src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].delay = curr.delay;
+                src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].congestion = curr.congestion;
             }
 
         } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
