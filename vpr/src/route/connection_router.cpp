@@ -5,6 +5,40 @@
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
+static inline bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
+                                    const RRGraphView* rr_graph,
+                                    RRNodeId from_node,
+                                    RRNodeId sink_node) {
+    // ASSUMPTION: Only OPINs can connect to other layers
+
+    int sink_layer = rr_graph->node_layer(sink_node);
+
+    if (rr_graph->node_layer(from_node) == sink_layer || rr_graph->node_type(from_node) == SOURCE) {
+        return true;
+    } else if (rr_graph->node_type(from_node) == CHANX || rr_graph->node_type(from_node) == CHANY || rr_graph->node_type(from_node) == IPIN) {
+        return false;
+    } else {
+        VTR_ASSERT(rr_graph->node_type(from_node) == OPIN);
+        auto edges = rr_nodes.edge_range(from_node);
+
+        //        for (RREdgeId from_edge : edges) {
+        //            RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
+        //            rr_nodes.prefetch_node(to_node);
+        //
+        //            int switch_idx = rr_nodes.edge_switch(from_edge);
+        //            VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
+        //        }
+
+        for (RREdgeId from_edge : edges) {
+            RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
+            if (rr_graph->node_layer(to_node) == sink_layer) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
                                            RRNodeId node_to_add,
                                            RRNodeId target_node) {
@@ -112,9 +146,9 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
         return std::make_tuple(false, nullptr);
     }
 
-    VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as normal net (BB: %d,%d x %d,%d)\n", sink_node,
-                   bounding_box.xmin, bounding_box.ymin,
-                   bounding_box.xmax, bounding_box.ymax);
+    VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as normal net (BB: %d,%d,%d x %d,%d,%d)\n", sink_node,
+                   bounding_box.layer_min, bounding_box.xmin, bounding_box.ymin,
+                   bounding_box.layer_max, bounding_box.xmax, bounding_box.ymax);
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
@@ -152,6 +186,8 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
         full_device_bounding_box.ymin = 0;
         full_device_bounding_box.xmax = grid_.width() - 1;
         full_device_bounding_box.ymax = grid_.height() - 1;
+        full_device_bounding_box.layer_min = 0;
+        full_device_bounding_box.layer_max = grid_.get_num_layers() - 1;
 
         //
         //TODO: potential future optimization
@@ -220,9 +256,9 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
         return std::make_tuple(false, false, t_heap());
     }
 
-    VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as high fanout net (BB: %d,%d x %d,%d)\n", sink_node,
-                   high_fanout_bb.xmin, high_fanout_bb.ymin,
-                   high_fanout_bb.xmax, high_fanout_bb.ymax);
+    VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as high fanout net (BB: %d,%d,%d x %d,%d,%d)\n", sink_node,
+                   high_fanout_bb.layer_min, high_fanout_bb.xmin, high_fanout_bb.ymin,
+                   high_fanout_bb.layer_max, high_fanout_bb.xmax, high_fanout_bb.ymax);
 
     bool retry_with_full_bb = false;
     t_heap* cheapest;
@@ -473,10 +509,12 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
 
     t_bb target_bb;
     if (target_node != RRNodeId::INVALID()) {
-        target_bb.xmin = rr_graph_->node_xlow(target_node);
-        target_bb.ymin = rr_graph_->node_ylow(target_node);
-        target_bb.xmax = rr_graph_->node_xhigh(target_node);
-        target_bb.ymax = rr_graph_->node_yhigh(target_node);
+        target_bb.xmin = rr_graph_->node_xlow(RRNodeId(target_node));
+        target_bb.ymin = rr_graph_->node_ylow(RRNodeId(target_node));
+        target_bb.xmax = rr_graph_->node_xhigh(RRNodeId(target_node));
+        target_bb.ymax = rr_graph_->node_yhigh(RRNodeId(target_node));
+        target_bb.layer_min = rr_graph_->node_layer(RRNodeId(target_node));
+        target_bb.layer_max = rr_graph_->node_layer(RRNodeId(target_node));
     }
 
     // For each node associated with the current heap element, expand all of it's neighbors
@@ -537,6 +575,9 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     int to_ylow = rr_graph_->node_ylow(to_node);
     int to_xhigh = rr_graph_->node_xhigh(to_node);
     int to_yhigh = rr_graph_->node_yhigh(to_node);
+    int to_layer = rr_graph_->node_layer(to_node);
+
+    VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
 
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
@@ -544,15 +585,19 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     if ((to_xhigh < bounding_box.xmin    // Strictly left of BB left-edge
          || to_xlow > bounding_box.xmax  // Strictly right of BB right-edge
          || to_yhigh < bounding_box.ymin // Strictly below BB bottom-edge
-         || to_ylow > bounding_box.ymax) // Strictly above BB top-edge
+         || to_ylow > bounding_box.ymax
+         || to_layer < bounding_box.layer_min
+         || to_layer > bounding_box.layer_max) // Strictly above BB top-edge
         && !rcv_path_manager.is_enabled()) {
         VTR_LOGV_DEBUG(router_debug_,
                        "      Pruned expansion of node %d edge %zu -> %d"
-                       " (to node location %d,%dx%d,%d outside of expanded"
-                       " net bounding box %d,%dx%d,%d)\n",
+                       " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
+                       " net bounding box %d,%d,%d x %d,%d,%d)\n",
                        from_node, size_t(from_edge), size_t(to_node),
-                       to_xlow, to_ylow, to_xhigh, to_yhigh,
-                       bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
+                       to_xlow, to_ylow, to_layer,
+                       to_xhigh, to_yhigh, to_layer,
+                       bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
+                       bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
         return; /* Node is outside (expanded) bounding box. */
     }
 
@@ -568,14 +613,18 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
             if (to_xlow < target_bb.xmin
                 || to_ylow < target_bb.ymin
                 || to_xhigh > target_bb.xmax
-                || to_yhigh > target_bb.ymax) {
+                || to_yhigh > target_bb.ymax
+                || to_layer < target_bb.layer_min
+                || to_layer > target_bb.layer_max) {
                 VTR_LOGV_DEBUG(router_debug_,
                                "      Pruned expansion of node %d edge %zu -> %d"
-                               " (to node is IPIN at %d,%dx%d,%d which does not"
-                               " lead to target block %d,%dx%d,%d)\n",
+                               " (to node is IPIN at %d,%d,%d x %d,%d,%d which does not"
+                               " lead to target block %d,%d,%d x %d,%d,%d)\n",
                                from_node, size_t(from_edge), size_t(to_node),
-                               to_xlow, to_ylow, to_xhigh, to_yhigh,
-                               target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
+                               to_xlow, to_ylow, to_layer,
+                               to_xhigh, to_yhigh, to_layer,
+                               target_bb.xmin, target_bb.ymin, target_bb.layer_min,
+                               target_bb.xmax, target_bb.ymax, target_bb.layer_max);
                 return;
             }
         }
@@ -929,6 +978,9 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
+        if (target_node.is_valid() && !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node))) {
+            return;
+        }
         add_route_tree_node_to_heap(rt_node,
                                     target_node,
                                     cost_params,
@@ -1021,6 +1073,9 @@ static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb) {
     bb.xmax += HIGH_FANOUT_BB_FAC;
     bb.ymax += HIGH_FANOUT_BB_FAC;
 
+    bb.layer_min = highfanout_bb.layer_min;
+    bb.layer_max = highfanout_bb.layer_max;
+
     return bb;
 }
 
@@ -1054,6 +1109,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     highfanout_bb.xmax = rr_graph_->node_xhigh(target_node);
     highfanout_bb.ymin = rr_graph_->node_ylow(target_node);
     highfanout_bb.ymax = rr_graph_->node_yhigh(target_node);
+    highfanout_bb.layer_min = rr_graph_->node_layer(target_node);
+    highfanout_bb.layer_max = rr_graph_->node_layer(target_node);
 
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
@@ -1077,6 +1134,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                         continue;
                 }
 
+                if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), target_node)) {
+                    continue;
+                }
                 // Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, true);
 
@@ -1085,6 +1145,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(rr_node_to_add));
                 highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(rr_node_to_add));
                 highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(rr_node_to_add));
+                highfanout_bb.layer_min = std::min<int>(highfanout_bb.layer_min, rr_graph_->node_layer(rr_node_to_add));
+                highfanout_bb.layer_max = std::max<int>(highfanout_bb.layer_max, rr_graph_->node_layer(rr_node_to_add));
                 if (is_flat_) {
                     if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                         chan_nodes_added++;

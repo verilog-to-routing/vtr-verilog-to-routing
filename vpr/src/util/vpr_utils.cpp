@@ -2508,3 +2508,21 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
         }
     }
 }
+
+float get_min_cross_layer_delay(const std::vector<t_arch_switch_inf>& arch_switch_inf,
+                                const std::vector<t_segment_inf>& segment_inf,
+                                const int wire_to_ipin_arch_sw_id) {
+    float min_delay = std::numeric_limits<float>::max();
+
+    if (wire_to_ipin_arch_sw_id != OPEN) {
+        min_delay = std::min(min_delay, arch_switch_inf[wire_to_ipin_arch_sw_id].Tdel());
+    }
+    for (const auto& seg_inf : segment_inf) {
+        int cross_layer_sw_arch_id = seg_inf.arch_opin_between_dice_switch;
+        if (cross_layer_sw_arch_id != OPEN) {
+            min_delay = std::min(min_delay, arch_switch_inf[cross_layer_sw_arch_id].Tdel());
+        }
+    }
+
+    return min_delay;
+}

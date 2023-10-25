@@ -64,7 +64,7 @@ static std::pair<float, int> run_dijkstra(RRNodeId start_node,
                                           std::vector<util::Search_Path>* paths,
                                           util::RoutingCosts* routing_costs);
 
-std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const {
+std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -108,7 +108,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
         float expected_delay_cost = std::numeric_limits<float>::infinity();
         float expected_cong_cost = std::numeric_limits<float>::infinity();
 
-        for (const auto& kv : this->src_opin_delays[from_layer_num][tile_index][from_ptc]) {
+        for (const auto& kv : this->src_opin_delays[from_layer_num][tile_index][from_ptc][to_layer_num]) {
             const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
             util::Cost_Entry cost_entry;
@@ -194,13 +194,15 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     int to_x = rr_graph.node_xlow(to_node);
     int to_y = rr_graph.node_ylow(to_node);
 
+    int to_layer_num = rr_graph.node_layer(to_node);
+
     int dx, dy;
     dx = to_x - from_x;
     dy = to_y - from_y;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == SOURCE || from_type == OPIN) {
-        return this->get_src_opin_cost(from_node, dx, dy, params);
+        return this->get_src_opin_cost(from_node, dx, dy, to_layer_num, params);
     } else if (from_type == IPIN) {
         return std::make_pair(0., 0.);
     }
@@ -419,7 +421,8 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 
 // compute the cost maps for lookahead
 void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays= util::compute_router_src_opin_lookahead(is_flat_);
+
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
@@ -615,6 +618,7 @@ void ExtendedMapLookahead::read(const std::string& file) {
     cost_map_.read(file);
 
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 }
 void ExtendedMapLookahead::write(const std::string& file) const {

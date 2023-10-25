@@ -23,7 +23,11 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           is_flat)
     , is_flat_(is_flat) {}
 
-bool RouterDelayProfiler::calculate_delay(RRNodeId source_node, RRNodeId sink_node, const t_router_opts& router_opts, float* net_delay) {
+bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
+                                          RRNodeId sink_node,
+                                          const t_router_opts& router_opts,
+                                          float* net_delay,
+                                          int layer_num) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -54,6 +58,13 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node, RRNodeId sink_no
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
+    if (layer_num == OPEN) {
+        bounding_box.layer_min = 0;
+        bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
+    } else {
+        bounding_box.layer_min = layer_num;
+        bounding_box.layer_max = layer_num;
+    }
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
@@ -81,7 +92,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node, RRNodeId sink_no
         true);
 
     if (found_path) {
-        VTR_ASSERT(RRNodeId(cheapest.index) == sink_node);
+        VTR_ASSERT(cheapest.index == sink_node);
 
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
         std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, is_flat_);
@@ -111,13 +122,15 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
 
     vtr::vector<RRNodeId, float> path_delays_to(device_ctx.rr_graph.num_nodes(), std::numeric_limits<float>::quiet_NaN());
 
-    RouteTree tree((RRNodeId(src_rr_node)));
+    RouteTree tree(src_rr_node);
 
     t_bb bounding_box;
     bounding_box.xmin = 0;
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
+    bounding_box.layer_min = 0;
+    bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;

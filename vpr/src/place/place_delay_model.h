@@ -29,6 +29,7 @@ class PlaceDelayModel;
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
+                                                               const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                                                t_chan_width_dist chan_width_dist,
                                                                const t_placer_opts& place_opts,
                                                                const t_router_opts& router_opts,
@@ -62,7 +63,7 @@ class PlaceDelayModel {
      *
      * Either compute or read methods must be invoked before invoking delay.
      */
-    virtual float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const = 0;
+    virtual float delay(const t_physical_tile_loc& from_loc, int from_pin, const t_physical_tile_loc& to_loc, int to_pin) const = 0;
 
     ///@brief Dumps the delay model to an echo file.
     virtual void dump_echo(std::string filename) const = 0;
@@ -85,10 +86,15 @@ class PlaceDelayModel {
 ///@brief A simple delay model based on the distance (delta) between block locations.
 class DeltaDelayModel : public PlaceDelayModel {
   public:
-    DeltaDelayModel(bool is_flat)
-        : is_flat_(is_flat) {}
-    DeltaDelayModel(vtr::NdMatrix<float, 3> delta_delays, bool is_flat)
+    DeltaDelayModel(float min_cross_layer_delay,
+                    bool is_flat)
+        : cross_layer_delay_(min_cross_layer_delay)
+        , is_flat_(is_flat) {}
+    DeltaDelayModel(float min_cross_layer_delay,
+                    vtr::NdMatrix<float, 3> delta_delays,
+                    bool is_flat)
         : delays_(std::move(delta_delays))
+        , cross_layer_delay_(min_cross_layer_delay)
         , is_flat_(is_flat) {}
 
     void compute(
@@ -96,7 +102,7 @@ class DeltaDelayModel : public PlaceDelayModel {
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
-    float delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/, int layer_num) const override;
+    float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
@@ -107,13 +113,16 @@ class DeltaDelayModel : public PlaceDelayModel {
 
   private:
     vtr::NdMatrix<float, 3> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
+    float cross_layer_delay_;
     bool is_flat_;
 };
 
 class OverrideDelayModel : public PlaceDelayModel {
   public:
-    OverrideDelayModel(bool is_flat)
-        : is_flat_(is_flat) {}
+    OverrideDelayModel(float min_cross_layer_delay,
+                       bool is_flat)
+        : cross_layer_delay_(min_cross_layer_delay)
+        , is_flat_(is_flat) {}
     void compute(
         RouterDelayProfiler& route_profiler,
         const t_placer_opts& placer_opts,
@@ -121,7 +130,7 @@ class OverrideDelayModel : public PlaceDelayModel {
         int longest_length) override;
     // returns delay from the specified (x,y) to the specified (x,y) with both endpoints on layer_num and the
     // specified from and to pins
-    float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin, int layer_num) const override;
+    float delay(const t_physical_tile_loc& from_loc, int from_pin, const t_physical_tile_loc& to_loc, int to_pin) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
@@ -135,6 +144,7 @@ class OverrideDelayModel : public PlaceDelayModel {
 
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
+    float cross_layer_delay_;
     bool is_flat_;
 
     void compute_override_delay_model(RouterDelayProfiler& router,

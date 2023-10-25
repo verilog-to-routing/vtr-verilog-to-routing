@@ -271,8 +271,8 @@ struct t_reachable_wire_inf {
 // SOURCE/OPIN of a given tile type.
 //
 // When querying this data structure, the minimum cost is computed for each delay/congestion pair, and returned
-// as the lookahead expected cost.
-typedef std::vector<std::vector<std::vector<std::map<int, t_reachable_wire_inf>>>> t_src_opin_delays;
+// as the lookahead expected cost. [opin/src layer_num][tile_index][opin/src ptc_number][to_layer_num] -> pair<seg_index, t_reachable_wire_inf>
+typedef std::vector<std::vector<std::vector<std::vector<std::map<int, t_reachable_wire_inf>>>>> t_src_opin_delays;
 
 //[from pin ptc num][target src ptc num]->cost
 typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_delays;
@@ -289,6 +289,7 @@ typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_d
 typedef std::vector<std::vector<std::vector<t_reachable_wire_inf>>> t_chan_ipins_delays;
 
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat);
+
 t_chan_ipins_delays compute_router_chan_ipin_lookahead();
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,

@@ -278,10 +278,9 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
  * @param num_layers
  * @return A compressed search range for each layer
  */
-std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                          const std::vector<t_physical_tile_loc>& compressed_locs,
-                                                          float rlim,
-                                                          int num_layers);
+t_bb get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                             const t_physical_tile_loc& compressed_locs,
+                                             float rlim);
 
 /**
  * @brief This function calculates the search range based on the given rlim value and the number of columns/rows
@@ -297,11 +296,10 @@ std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_blo
  * @param num_layers
  * @return
  */
-std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                           const std::vector<t_physical_tile_loc>& from_compressed_loc,
-                                                           const std::vector<t_physical_tile_loc>& target_compressed_loc,
-                                                           float rlim,
-                                                           int num_layers);
+t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                              const t_physical_tile_loc& from_compressed_loc,
+                                              const t_physical_tile_loc& target_compressed_loc,
+                                              float rlim);
 
 /*
  * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords
@@ -327,6 +325,15 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
                                                       int layer_num);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
+
+int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc);
+
+int get_random_layer(t_logical_block_type_ptr logical_block);
+
+t_bb union_2d_bb(const std::vector<t_2D_bb>& tbb_vec);
+
+std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
+                                       const std::vector<t_2D_bb>& bb_vec);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 /**
