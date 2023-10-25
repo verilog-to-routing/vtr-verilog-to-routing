@@ -1011,9 +1011,30 @@ NetResultFlags timing_driven_route_net(ConnectionRouter& router,
         }
     }
 
+    bool net_src_layre = rr_graph.node_layer(tree.root().inode);
     // compare the criticality of different sink nodes
     sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
-        return pin_criticality[a] > pin_criticality[b];
+        if (router_opts.limited_inter_layer_connectivity) {
+            int a_target_pin = remaining_targets[a];
+            int b_target_pin = remaining_targets[b];
+            RRNodeId a_sink_rr = route_ctx.net_rr_terminals[net_id][a_target_pin];
+            RRNodeId b_sink_rr = route_ctx.net_rr_terminals[net_id][b_target_pin];
+            bool a_src_same_layer = rr_graph.node_layer(a_sink_rr) == net_src_layre;
+            bool b_src_same_layer = rr_graph.node_layer(b_sink_rr) == net_src_layre;
+
+            if (a_src_same_layer && b_src_same_layer) {
+                return pin_criticality[a] > pin_criticality[b];
+            } else if (a_src_same_layer) {
+                return false;
+            } else if (b_src_same_layer) {
+                return true;
+            } else {
+                VTR_ASSERT(!a_src_same_layer && !b_src_same_layer);
+                return pin_criticality[a] > pin_criticality[b];
+            }
+        } else {
+            return pin_criticality[a] > pin_criticality[b];
+        }
     });
 
     /* Update base costs according to fanout and criticality rules */
