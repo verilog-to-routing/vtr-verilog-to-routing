@@ -201,6 +201,7 @@ struct t_options {
     argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
     argparse::ArgValue<bool> flat_routing;
     argparse::ArgValue<bool> has_choking_spot;
+    argparse::ArgValue<bool> limited_inter_layer_connectivity;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;

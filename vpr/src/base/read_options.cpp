@@ -2456,6 +2456,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.limited_inter_layer_connectivity, "--limited_inter_layer_connectivity")
+        .help(
+            ""
+            "This option is used for 3D FPGAs. If there are limited number of inter-layers connections between layer, e.g., only a part of OPINs have connections"
+            "to the other layer, this option should be set to true. This would help the router engine to prioritize routing of cross-layer connections.")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
