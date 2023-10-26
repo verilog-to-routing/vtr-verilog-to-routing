@@ -73,7 +73,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 continue;
         } else {
             t_bb union_bb;
-            if (is_multi_layer) {
+            if (!g_vpr_ctx.placement().cube_bb) {
                 union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
             }
 
@@ -281,7 +281,7 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
 
     t_bb union_bb_edge;
     t_bb union_bb;
-    if (is_multi_layer) {
+    if (!g_vpr_ctx.placement().cube_bb) {
         std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
                                                              place_move_ctx.layer_bb_coords[net_id]);
     }
