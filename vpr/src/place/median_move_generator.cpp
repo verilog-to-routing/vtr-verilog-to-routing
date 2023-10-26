@@ -28,8 +28,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    const int num_layers = device_ctx.grid.get_num_layers();
-    bool is_multi_layer = (num_layers > 1);
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     int from_layer = from.layer;
@@ -50,7 +48,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     //reused to save allocation time
     place_move_ctx.X_coord.clear();
     place_move_ctx.Y_coord.clear();
-    std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself
     bool skip_net;
@@ -72,12 +69,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             if (skip_net)
                 continue;
         } else {
-            t_bb union_bb;
-            if (is_multi_layer) {
-                union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
-            }
-
-            const auto& net_bb_coords = is_multi_layer ? union_bb : place_move_ctx.bb_coords[net_id];
+            const auto& net_bb_coords = place_move_ctx.bb_coords[net_id];
             //use the incremental update of the bb
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
@@ -263,23 +255,16 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
 
-    bool is_multi_layer = (device_ctx.grid.get_num_layers() > 1);
+
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
-    t_bb union_bb_edge;
-    t_bb union_bb;
-    if (is_multi_layer) {
-        std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
-                                                             place_move_ctx.layer_bb_coords[net_id]);
-    }
-
     /* The net had NOT been updated before, could use the old values */
-    const t_bb& curr_bb_edge = is_multi_layer ? union_bb_edge : place_move_ctx.bb_num_on_edges[net_id];
-    const t_bb& curr_bb_coord = is_multi_layer ? union_bb : place_move_ctx.bb_coords[net_id];
+    const t_bb& curr_bb_edge = place_move_ctx.bb_num_on_edges[net_id];
+    const t_bb& curr_bb_coord = place_move_ctx.bb_coords[net_id];
 
     /* Check if I can update the bounding box incrementally. */
 

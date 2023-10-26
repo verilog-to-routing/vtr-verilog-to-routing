@@ -581,7 +581,7 @@ void try_place(const Netlist<>& net_list,
 
     bool cube_bb;
 
-    int num_layers = device_ctx.grid.get_num_layers();
+
 
     t_placer_costs costs(placer_opts.place_algorithm);
 
