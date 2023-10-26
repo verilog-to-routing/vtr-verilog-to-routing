@@ -456,7 +456,8 @@ static double get_net_layer_cost(ClusterNetId /* net_id */,
 
 static void get_bb_from_scratch(ClusterNetId net_id,
                                 t_bb& coords,
-                                t_bb& num_on_edges);
+                                t_bb& num_on_edges,
+                                std::vector<int>& num_sink_pin_layer);
 
 static void get_layer_bb_from_scratch(ClusterNetId net_id,
                                       std::vector<t_2D_bb>& num_on_edges,
@@ -2504,7 +2505,8 @@ static double comp_bb_cost(e_cost_methods method) {
                 && method == NORMAL) {
                 get_bb_from_scratch(net_id,
                                     place_move_ctx.bb_coords[net_id],
-                                    place_move_ctx.bb_num_on_edges[net_id]);
+                                    place_move_ctx.bb_num_on_edges[net_id],
+                                    place_move_ctx.num_sink_pin_layer[net_id]);
             } else {
                 get_non_updateable_bb(net_id, place_move_ctx.bb_coords[net_id]);
             }
@@ -2736,8 +2738,11 @@ static void free_try_swap_structs() {
  * from only the block location information).  It updates both the       *
  * coordinate and number of pins on each edge information.  It           *
  * should only be called when the bounding box information is not valid. */
-static void get_bb_from_scratch(ClusterNetId net_id, t_bb& coords, t_bb& num_on_edges) {
-    int pnum, x, y, xmin, xmax, ymin, ymax;
+static void get_bb_from_scratch(ClusterNetId net_id,
+                                t_bb& coords,
+                                t_bb& num_on_edges,
+                                std::vector<int>& num_sink_pin_layer) {
+    int pnum, x, y, pin_layer, xmin, xmax, ymin, ymax;
     int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2765,6 +2770,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb& coords, t_bb& num_on_
     xmax_edge = 1;
     ymax_edge = 1;
 
+    std::fill(num_sink_pin_layer.begin(), num_sink_pin_layer.end(), 0);
+
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         pnum = tile_pin_index(pin_id);
@@ -2772,6 +2779,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb& coords, t_bb& num_on_
             + physical_tile_type(bnum)->pin_width_offset[pnum];
         y = place_ctx.block_locs[bnum].loc.y
             + physical_tile_type(bnum)->pin_height_offset[pnum];
+        pin_layer = place_ctx.block_locs[bnum].loc.layer;
 
         /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
          * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
@@ -2808,6 +2816,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb& coords, t_bb& num_on_
             ymax = y;
             ymax_edge = 1;
         }
+
+        num_sink_pin_layer[pin_layer]++;
     }
 
     /* Copy the coordinates and number on edges information into the proper   *
@@ -3254,7 +3264,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.x == curr_bb_coord->xmax) { /* Old position at xmax. */
             if (curr_bb_edge->xmax == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer);
                 bb_updated_before[net_id] = GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -3286,7 +3296,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.x == curr_bb_coord->xmin) { /* Old position at xmin. */
             if (curr_bb_edge->xmin == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer);
                 bb_updated_before[net_id] = GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -3327,7 +3337,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.y == curr_bb_coord->ymax) { /* Old position at ymax. */
             if (curr_bb_edge->ymax == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer);
                 bb_updated_before[net_id] = GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -3359,7 +3369,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.y == curr_bb_coord->ymin) { /* Old position at ymin. */
             if (curr_bb_edge->ymin == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new);
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer);
                 bb_updated_before[net_id] = GOT_FROM_SCRATCH;
                 return;
             } else {
