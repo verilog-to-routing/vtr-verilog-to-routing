@@ -302,12 +302,14 @@ static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts);
+                        const t_noc_opts& noc_opts,
+                        const bool cube_bb);
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm);
+                                 const t_place_algorithm& place_algorithm,
+                                 const bool cube_bb);
 
 static int check_placement_consistency();
 static int check_block_placement_consistency();
@@ -811,8 +813,12 @@ void try_place(const Netlist<>& net_list,
     costs.cost = get_total_cost(&costs, placer_opts, noc_opts);
 
     //Sanity check that initial placement is legal
-    check_place(costs, place_delay_model.get(), placer_criticalities.get(),
-                placer_opts.place_algorithm, noc_opts);
+    check_place(costs,
+                place_delay_model.get(),
+                placer_criticalities.get(),
+                placer_opts.place_algorithm,
+                noc_opts,
+                cube_bb);
 
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
@@ -1114,8 +1120,12 @@ void try_place(const Netlist<>& net_list,
         place_sync_external_block_connections(block_id);
     }
 
-    check_place(costs, place_delay_model.get(), placer_criticalities.get(),
-                placer_opts.place_algorithm, noc_opts);
+    check_place(costs,
+                place_delay_model.get(),
+                placer_criticalities.get(),
+                placer_opts.place_algorithm,
+                noc_opts,
+                cube_bb);
 
     //Some stats
     VTR_LOG("\n");
@@ -1899,7 +1909,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #if 0
     // Check that each accepted swap yields a valid placement. This will
     // greatly slow the placer, but can debug some issues.
-    check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts);
+    check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts, cube_bb);
 #endif
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tAfter move Place cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
     return move_outcome;
@@ -3842,7 +3852,8 @@ static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts) {
+                        const t_noc_opts& noc_opts,
+                        bool const cube_bb) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
      * every block, blocks are in legal spots, etc.  Also recomputes   *
@@ -3853,7 +3864,8 @@ static void check_place(const t_placer_costs& costs,
 
     error += check_placement_consistency();
     error += check_placement_costs(costs, delay_model, criticalities,
-                                   place_algorithm);
+                                   place_algorithm,
+                                   cube_bb);
     error += check_placement_floorplanning();
 
     // check the NoC costs during placement if the user is using the NoC supported flow
@@ -3876,17 +3888,18 @@ static void check_place(const t_placer_costs& costs,
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm) {
+                                 const t_place_algorithm& place_algorithm,
+                                 const bool cube_bb) {
     int error = 0;
     double bb_cost_check;
     double timing_cost_check;
 
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    if (num_layers == 1) {
+    if (cube_bb) {
         bb_cost_check = comp_bb_cost(CHECK);
     } else {
-        VTR_ASSERT_SAFE(num_layers > 1);
+        VTR_ASSERT_SAFE(!cube_bb);
         bb_cost_check = comp_layer_bb_cost(CHECK);
     }
 
