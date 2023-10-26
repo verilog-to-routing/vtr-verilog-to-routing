@@ -277,7 +277,9 @@ static double comp_bb_cost(e_cost_methods method);
 
 static double comp_layer_bb_cost(e_cost_methods method);
 
-static void update_move_nets(int num_nets_affected);
+static void update_move_nets(int num_nets_affected,
+                             const bool cube_bb);
+
 static void reset_move_nets(int num_nets_affected);
 
 static e_move_result try_swap(const t_annealing_state* state,
@@ -1530,18 +1532,18 @@ static float starting_t(const t_annealing_state* state,
     return init_temp;
 }
 
-static void update_move_nets(int num_nets_affected) {
+static void update_move_nets(int num_nets_affected,
+                             const bool cube_bb) {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     for (int inet_affected = 0; inet_affected < num_nets_affected;
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        if (num_layers == 1) {
+        if (cube_bb) {
             place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
         } else {
             place_move_ctx.layer_bb_coords[net_id] = layer_ts_bb_coord_new[net_id];
@@ -1549,7 +1551,7 @@ static void update_move_nets(int num_nets_affected) {
         }
 
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
-            if (num_layers == 1) {
+            if (cube_bb) {
                 place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
             } else {
                 place_move_ctx.layer_bb_num_on_edges[net_id] = layer_ts_bb_edge_new[net_id];
@@ -1811,7 +1813,8 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             /* Update net cost functions and reset flags. */
-            update_move_nets(num_nets_affected);
+            update_move_nets(num_nets_affected,
+                             cube_bb);
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
@@ -2628,11 +2631,11 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     net_cost.resize(num_nets, -1.);
     proposed_net_cost.resize(num_nets, -1.);
 
-    if (num_layers == 1) {
+    if (cube_bb) {
         place_move_ctx.bb_coords.resize(num_nets, t_bb());
         place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT(num_layers > 1);
+        VTR_ASSERT(!cube_bb);
         place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.num_sink_pin_layer.resize(num_nets, std::vector<int>(num_layers, 0));
