@@ -1549,8 +1549,8 @@ static void update_move_nets(int num_nets_affected,
             place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
         } else {
             place_move_ctx.layer_bb_coords[net_id] = layer_ts_bb_coord_new[net_id];
-            place_move_ctx.num_sink_pin_layer[net_id] = ts_layer_sink_pin_count[net_id];
         }
+        place_move_ctx.num_sink_pin_layer[net_id] = ts_layer_sink_pin_count[net_id];
 
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
             if (cube_bb) {
@@ -2717,8 +2717,8 @@ static void alloc_and_load_try_swap_structs(const bool cube_bb) {
         VTR_ASSERT(!cube_bb);
         layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        ts_layer_sink_pin_count.resize(num_nets, std::vector<int>(num_layers, OPEN));
     }
+    ts_layer_sink_pin_count.resize(num_nets, std::vector<int>(num_layers, OPEN));
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
