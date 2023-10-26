@@ -697,10 +697,10 @@ void try_place(const Netlist<>& net_list,
     /* Gets initial cost and loads bounding boxes. */
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        if (num_layers == 1) {
+        if (cube_bb) {
             costs.bb_cost = comp_bb_cost(NORMAL);
         } else {
-            VTR_ASSERT_SAFE(num_layers > 1);
+            VTR_ASSERT_SAFE(!cube_bb);
             costs.bb_cost = comp_layer_bb_cost(NORMAL);
         }
 
@@ -782,7 +782,12 @@ void try_place(const Netlist<>& net_list,
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
         /* Total cost is the same as wirelength cost normalized*/
-        costs.bb_cost = comp_bb_cost(NORMAL);
+        if (cube_bb) {
+            costs.bb_cost = comp_bb_cost(NORMAL);
+        } else {
+            VTR_ASSERT_SAFE(!cube_bb);
+            costs.bb_cost = comp_layer_bb_cost(NORMAL);
+        }
         costs.bb_cost_norm = 1 / costs.bb_cost;
 
         /* Timing cost and normalization factors are not used */
