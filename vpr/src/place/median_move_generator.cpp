@@ -73,11 +73,12 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 continue;
         } else {
             t_bb union_bb;
-            if (!g_vpr_ctx.placement().cube_bb) {
+            const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
+            if (!cube_bb) {
                 union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
             }
 
-            const auto& net_bb_coords = is_multi_layer ? union_bb : place_move_ctx.bb_coords[net_id];
+            const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id]: union_bb;
             //use the incremental update of the bb
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
@@ -281,14 +282,15 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
 
     t_bb union_bb_edge;
     t_bb union_bb;
-    if (!g_vpr_ctx.placement().cube_bb) {
+    const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
+    if (!cube_bb) {
         std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
                                                              place_move_ctx.layer_bb_coords[net_id]);
     }
 
     /* The net had NOT been updated before, could use the old values */
-    const t_bb& curr_bb_edge = is_multi_layer ? union_bb_edge : place_move_ctx.bb_num_on_edges[net_id];
-    const t_bb& curr_bb_coord = is_multi_layer ? union_bb : place_move_ctx.bb_coords[net_id];
+    const t_bb& curr_bb_edge = cube_bb ? place_move_ctx.bb_num_on_edges[net_id]: union_bb_edge;
+    const t_bb& curr_bb_coord = cube_bb ? place_move_ctx.bb_coords[net_id]: union_bb;
 
     /* Check if I can update the bounding box incrementally. */
 
