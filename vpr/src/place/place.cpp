@@ -352,7 +352,8 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks);
 static e_move_result assess_swap(double delta_c, double t);
 
 static void get_non_updateable_bb(ClusterNetId net_id,
-                                  t_bb& bb_coord_new);
+                                  t_bb& bb_coord_new,
+                                  std::vector<int>& num_sink_pin_layer);
 
 static void get_non_updateable_layer_bb(ClusterNetId net_id,
                                         std::vector<t_2D_bb>& bb_coord_new,
@@ -2064,7 +2065,9 @@ static void update_net_bb(const ClusterNetId net,
         //For small nets brute-force bounding box update is faster
 
         if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
-            get_non_updateable_bb(net, ts_bb_coord_new[net]);
+            get_non_updateable_bb(net,
+                                  ts_bb_coord_new[net],
+                                  ts_layer_sink_pin_count[net]);
         }
     } else {
         //For large nets, update bounding box incrementally
@@ -2501,7 +2504,9 @@ static double comp_bb_cost(e_cost_methods method) {
                                     place_move_ctx.bb_num_on_edges[net_id],
                                     place_move_ctx.num_sink_pin_layer[net_id]);
             } else {
-                get_non_updateable_bb(net_id, place_move_ctx.bb_coords[net_id]);
+                get_non_updateable_bb(net_id,
+                                      place_move_ctx.bb_coords[net_id],
+                                      place_move_ctx.num_sink_pin_layer[net_id]);
             }
 
             net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
@@ -3078,10 +3083,11 @@ static double get_net_layer_cost(ClusterNetId /* net_id */,
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
 static void get_non_updateable_bb(ClusterNetId net_id,
-                                  t_bb& bb_coord_new) {
+                                  t_bb& bb_coord_new,
+                                  std::vector<int>& num_sink_pin_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
-    int xmax, ymax, xmin, ymin, x, y;
+    int xmax, ymax, xmin, ymin, x, y, layer;
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -3101,6 +3107,8 @@ static void get_non_updateable_bb(ClusterNetId net_id,
     xmax = x;
     ymax = y;
 
+    std::fill(num_sink_pin_layer.begin(), num_sink_pin_layer.end(), 0);
+
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         pnum = tile_pin_index(pin_id);
@@ -3108,6 +3116,7 @@ static void get_non_updateable_bb(ClusterNetId net_id,
             + physical_tile_type(bnum)->pin_width_offset[pnum];
         y = place_ctx.block_locs[bnum].loc.y
             + physical_tile_type(bnum)->pin_height_offset[pnum];
+        layer = place_ctx.block_locs[bnum].loc.layer;
 
         if (x < xmin) {
             xmin = x;
@@ -3120,6 +3129,8 @@ static void get_non_updateable_bb(ClusterNetId net_id,
         } else if (y > ymax) {
             ymax = y;
         }
+
+        num_sink_pin_layer[layer]++;
     }
 
     /* Now I've found the coordinates of the bounding box.  There are no *
