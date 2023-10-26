@@ -276,7 +276,6 @@ static RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(RRNodeId start_node,
-                         int sample_layer_num,
                          int start_x,
                          int start_y,
                          t_routing_cost_map& routing_cost_map,
@@ -746,7 +745,6 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                         }
 
                         run_dijkstra(sample_node,
-                                     from_layer_num,
                                      sample_x,
                                      sample_y,
                                      routing_cost_map,
@@ -814,7 +812,6 @@ static RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(RRNodeId start_node,
-                         int sample_layer_num,
                          int start_x,
                          int start_y,
                          t_routing_cost_map& routing_cost_map,

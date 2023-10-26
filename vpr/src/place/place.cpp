@@ -579,7 +579,7 @@ void try_place(const Netlist<>& net_list,
 
     bool cube_bb;
 
-    int num_layers = device_ctx.grid.get_num_layers();
+
 
     t_placer_costs costs(placer_opts.place_algorithm);
 
@@ -3899,7 +3899,7 @@ static int check_placement_costs(const t_placer_costs& costs,
     double bb_cost_check;
     double timing_cost_check;
 
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
 
     if (cube_bb) {
         bb_cost_check = comp_bb_cost(CHECK);
