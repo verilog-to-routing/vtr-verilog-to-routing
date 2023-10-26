@@ -361,7 +361,7 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
 static void update_bb(ClusterNetId net_id,
                       t_bb& bb_edge_new,
                       t_bb& bb_coord_new,
-                      std::vector<int>& num_sink_pin_layer,
+                      std::vector<int>& num_sink_pin_layer_new,
                       t_physical_tile_loc pin_old_loc,
                       t_physical_tile_loc pin_new_loc,
                       bool src_pin);
@@ -3225,7 +3225,7 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
 static void update_bb(ClusterNetId net_id,
                       t_bb& bb_edge_new,
                       t_bb& bb_coord_new,
-                      std::vector<int>& num_sink_pin_layer,
+                      std::vector<int>& num_sink_pin_layer_new,
                       t_physical_tile_loc pin_old_loc,
                       t_physical_tile_loc pin_new_loc,
                       bool src_pin) {
@@ -3244,8 +3244,12 @@ static void update_bb(ClusterNetId net_id,
     //TODO: account for multiple physical pin instances per logical pin
     const t_bb *curr_bb_edge, *curr_bb_coord;
 
+    const std::vector<int>* curr_num_sink_pin_layer;
+
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
+
+    const int num_layers = device_ctx.grid.get_num_layers();
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -3260,11 +3264,13 @@ static void update_bb(ClusterNetId net_id,
         /* The net had NOT been updated before, could use the old values */
         curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
         curr_bb_coord = &place_move_ctx.bb_coords[net_id];
+        curr_num_sink_pin_layer = &place_move_ctx.num_sink_pin_layer[net_id];
         bb_updated_before[net_id] = UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */
         curr_bb_coord = &bb_coord_new;
         curr_bb_edge = &bb_edge_new;
+        curr_num_sink_pin_layer = &num_sink_pin_layer_new;
     }
 
     /* Check if I can update the bounding box incrementally. */
@@ -3275,7 +3281,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.x == curr_bb_coord->xmax) { /* Old position at xmax. */
             if (curr_bb_edge->xmax == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer);
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                 bb_updated_before[net_id] = GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -3307,7 +3313,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.x == curr_bb_coord->xmin) { /* Old position at xmin. */
             if (curr_bb_edge->xmin == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer);
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                 bb_updated_before[net_id] = GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -3348,7 +3354,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.y == curr_bb_coord->ymax) { /* Old position at ymax. */
             if (curr_bb_edge->ymax == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer);
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                 bb_updated_before[net_id] = GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -3380,7 +3386,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.y == curr_bb_coord->ymin) { /* Old position at ymin. */
             if (curr_bb_edge->ymin == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer);
+                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                 bb_updated_before[net_id] = GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -3414,12 +3420,15 @@ static void update_bb(ClusterNetId net_id,
     }
 
     /* Now account for the layer motion. */
-    if (device_ctx.grid.get_num_layers() > 1) {
+    if (num_layers > 1) {
         /* We need to update it only if multiple layers are available */
+        num_sink_pin_layer_new = (*curr_num_sink_pin_layer);
         if (!src_pin) {
             /* if src pin is being moved, we don't need to update this data structure */
-            num_sink_pin_layer[pin_old_loc.layer_num]--;
-            num_sink_pin_layer[pin_new_loc.layer_num]++;
+            if (pin_old_loc.layer_num != pin_new_loc.layer_num) {
+                num_sink_pin_layer_new[pin_old_loc.layer_num] = (*curr_num_sink_pin_layer)[pin_old_loc.layer_num] - 1;
+                num_sink_pin_layer_new[pin_new_loc.layer_num] = (*curr_num_sink_pin_layer)[pin_new_loc.layer_num] + 1;
+            }
         }
     }
 
