@@ -261,9 +261,10 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
-                                             int num_directs);
+                                             int num_directs,
+                                             const bool cube_bb);
 
-static void alloc_and_load_try_swap_structs();
+static void alloc_and_load_try_swap_structs(const bool cube_bb);
 static void free_try_swap_structs();
 
 static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
@@ -654,7 +655,7 @@ void try_place(const Netlist<>& net_list,
 
     init_chan(width_fac, chan_width_dist, graph_directionality);
 
-    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
+    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs, cube_bb);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -2552,7 +2553,8 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
-                                             int num_directs) {
+                                             int num_directs,
+                                             const bool cube_bb) {
     int max_pins_per_clb;
     unsigned int ipin;
 
@@ -2628,7 +2630,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     alloc_and_load_for_fast_cost_update(place_cost_exp);
 
-    alloc_and_load_try_swap_structs();
+    alloc_and_load_try_swap_structs(cube_bb);
 
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
@@ -2676,7 +2678,7 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
     }
 }
 
-static void alloc_and_load_try_swap_structs() {
+static void alloc_and_load_try_swap_structs(const bool cube_bb) {
     /* Allocate the local bb_coordinate storage, etc. only once. */
     /* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2685,11 +2687,11 @@ static void alloc_and_load_try_swap_structs() {
 
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    if (num_layers == 1) {
+    if (cube_bb) {
         ts_bb_edge_new.resize(num_nets, t_bb());
         ts_bb_coord_new.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT(num_layers > 1);
+        VTR_ASSERT(!cube_bb);
         layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         ts_layer_sink_pin_count.resize(num_nets, std::vector<int>(num_layers, OPEN));
