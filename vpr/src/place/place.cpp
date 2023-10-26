@@ -261,8 +261,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
-                                             int num_directs,
-                                             const bool cube_bb);
+                                             int num_directs);
 
 static void alloc_and_load_try_swap_structs(const bool cube_bb);
 static void free_try_swap_structs();
@@ -303,14 +302,12 @@ static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts,
-                        const bool cube_bb);
+                        const t_noc_opts& noc_opts);
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm,
-                                 const bool cube_bb);
+                                 const t_place_algorithm& place_algorithm);
 
 static int check_placement_consistency();
 static int check_block_placement_consistency();
@@ -579,7 +576,6 @@ void try_place(const Netlist<>& net_list,
     float first_crit_exponent, first_rlim, first_t;
     int first_move_lim;
 
-    int num_layers = device_ctx.grid.get_num_layers();
 
     t_placer_costs costs(placer_opts.place_algorithm);
 
@@ -636,7 +632,7 @@ void try_place(const Netlist<>& net_list,
 
     g_vpr_ctx.mutable_placement().cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode,
                                                        device_ctx.rr_graph);
-    const auto& cube_bb = g_vpr_ctx.mutable_placement().cube_bb;
+    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
 
     VTR_LOG("\n");
     VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
@@ -659,7 +655,7 @@ void try_place(const Netlist<>& net_list,
 
     init_chan(width_fac, chan_width_dist, graph_directionality);
 
-    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs, cube_bb);
+    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -823,8 +819,7 @@ void try_place(const Netlist<>& net_list,
                 place_delay_model.get(),
                 placer_criticalities.get(),
                 placer_opts.place_algorithm,
-                noc_opts,
-                cube_bb);
+                noc_opts);
 
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
@@ -872,7 +867,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0,
                                                0);
         VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), false);
+        print_place(nullptr, nullptr, filename.c_str());
     }
 
     first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
@@ -1107,7 +1102,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
                                                state.num_temps + 1, 0);
         VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), false);
+        print_place(nullptr, nullptr, filename.c_str());
     }
 
     // TODO:
@@ -1128,8 +1123,7 @@ void try_place(const Netlist<>& net_list,
                 place_delay_model.get(),
                 placer_criticalities.get(),
                 placer_opts.place_algorithm,
-                noc_opts,
-                cube_bb);
+                noc_opts);
 
     //Some stats
     VTR_LOG("\n");
@@ -1808,7 +1802,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             /* Update net cost functions and reset flags. */
             update_move_nets(num_nets_affected,
-                             cube_bb);
+                             g_vpr_ctx.placement().cube_bb);
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
@@ -1911,7 +1905,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #if 0
     // Check that each accepted swap yields a valid placement. This will
     // greatly slow the placer, but can debug some issues.
-    check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts, cube_bb);
+    check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts);
 #endif
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tAfter move Place cost %f, bb_cost %f, timing cost %f\n", costs->cost, costs->bb_cost, costs->timing_cost);
     return move_outcome;
@@ -2574,14 +2568,15 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
-                                             int num_directs,
-                                             const bool cube_bb) {
+                                             int num_directs) {
     int max_pins_per_clb;
     unsigned int ipin;
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    const auto& cube_bb = place_ctx.cube_bb;
 
     auto& p_timing_ctx = g_placer_ctx.mutable_timing();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
@@ -3890,8 +3885,7 @@ static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts,
-                        bool const cube_bb) {
+                        const t_noc_opts& noc_opts) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
      * every block, blocks are in legal spots, etc.  Also recomputes   *
@@ -3902,8 +3896,7 @@ static void check_place(const t_placer_costs& costs,
 
     error += check_placement_consistency();
     error += check_placement_costs(costs, delay_model, criticalities,
-                                   place_algorithm,
-                                   cube_bb);
+                                   place_algorithm);
     error += check_placement_floorplanning();
 
     // check the NoC costs during placement if the user is using the NoC supported flow
@@ -3926,13 +3919,12 @@ static void check_place(const t_placer_costs& costs,
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm,
-                                 const bool cube_bb) {
+                                 const t_place_algorithm& place_algorithm) {
     int error = 0;
     double bb_cost_check;
     double timing_cost_check;
 
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
 
     if (cube_bb) {
         bb_cost_check = comp_bb_cost(CHECK);
