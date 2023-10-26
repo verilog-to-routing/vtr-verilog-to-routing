@@ -409,6 +409,11 @@ struct PlacementContext : public Context {
      * placer_debug_net or placer_debug_block parameters in the command line.
      */
     bool f_placer_debug = false;
+
+    /**
+     * Indicate whether the bounding box used in placement is a cube or per-layer
+     */
+    bool cube_bb = false;
 };
 
 /**
