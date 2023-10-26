@@ -113,15 +113,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.X_coord.push_back(coords.xmax);
         place_move_ctx.Y_coord.push_back(coords.ymin);
         place_move_ctx.Y_coord.push_back(coords.ymax);
-        if (is_multi_layer) {
-            for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
-            }
-            if(cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
-                VTR_ASSERT(layer_blk_cnt[from_layer] > 0);
-                layer_blk_cnt[from_layer]--;
-            }
-        }
     }
 
     if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {

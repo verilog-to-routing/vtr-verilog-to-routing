@@ -261,9 +261,10 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
-                                             int num_directs);
+                                             int num_directs,
+                                             bool cube_bb);
 
-static void alloc_and_load_try_swap_structs();
+static void alloc_and_load_try_swap_structs(bool cube_bb);
 static void free_try_swap_structs();
 
 static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
@@ -276,7 +277,9 @@ static double comp_bb_cost(e_cost_methods method);
 
 static double comp_layer_bb_cost(e_cost_methods method);
 
-static void update_move_nets(int num_nets_affected);
+static void update_move_nets(int num_nets_affected,
+                             bool cube_bb);
+
 static void reset_move_nets(int num_nets_affected);
 
 static e_move_result try_swap(const t_annealing_state* state,
@@ -301,12 +304,14 @@ static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts);
+                        const t_noc_opts& noc_opts,
+                        bool cube_bb);
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm);
+                                 const t_place_algorithm& place_algorithm,
+                                 bool cube_bb);
 
 static int check_placement_consistency();
 static int check_block_placement_consistency();
@@ -654,7 +659,7 @@ void try_place(const Netlist<>& net_list,
 
     init_chan(width_fac, chan_width_dist, graph_directionality);
 
-    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
+    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs, cube_bb);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -699,10 +704,10 @@ void try_place(const Netlist<>& net_list,
     /* Gets initial cost and loads bounding boxes. */
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        if (num_layers == 1) {
+        if (cube_bb) {
             costs.bb_cost = comp_bb_cost(NORMAL);
         } else {
-            VTR_ASSERT_SAFE(num_layers > 1);
+            VTR_ASSERT_SAFE(!cube_bb);
             costs.bb_cost = comp_layer_bb_cost(NORMAL);
         }
 
@@ -784,7 +789,12 @@ void try_place(const Netlist<>& net_list,
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
         /* Total cost is the same as wirelength cost normalized*/
-        costs.bb_cost = comp_bb_cost(NORMAL);
+        if (cube_bb) {
+            costs.bb_cost = comp_bb_cost(NORMAL);
+        } else {
+            VTR_ASSERT_SAFE(!cube_bb);
+            costs.bb_cost = comp_layer_bb_cost(NORMAL);
+        }
         costs.bb_cost_norm = 1 / costs.bb_cost;
 
         /* Timing cost and normalization factors are not used */
@@ -811,7 +821,7 @@ void try_place(const Netlist<>& net_list,
 
     //Sanity check that initial placement is legal
     check_place(costs, place_delay_model.get(), placer_criticalities.get(),
-                placer_opts.place_algorithm, noc_opts);
+                placer_opts.place_algorithm, noc_opts, cube_bb);
 
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
@@ -1114,7 +1124,7 @@ void try_place(const Netlist<>& net_list,
     }
 
     check_place(costs, place_delay_model.get(), placer_criticalities.get(),
-                placer_opts.place_algorithm, noc_opts);
+                placer_opts.place_algorithm, noc_opts, cube_bb);
 
     //Some stats
     VTR_LOG("\n");
@@ -1514,18 +1524,19 @@ static float starting_t(const t_annealing_state* state,
     return init_temp;
 }
 
-static void update_move_nets(int num_nets_affected) {
+static void update_move_nets(int num_nets_affected,
+                             bool cube_bb) {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
 
     for (int inet_affected = 0; inet_affected < num_nets_affected;
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        if (num_layers == 1) {
+        if (cube_bb) {
             place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
         } else {
             place_move_ctx.layer_bb_coords[net_id] = layer_ts_bb_coord_new[net_id];
@@ -1533,7 +1544,7 @@ static void update_move_nets(int num_nets_affected) {
         }
 
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
-            if (num_layers == 1) {
+            if (cube_bb) {
                 place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
             } else {
                 place_move_ctx.layer_bb_num_on_edges[net_id] = layer_ts_bb_edge_new[net_id];
@@ -1795,7 +1806,8 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             /* Update net cost functions and reset flags. */
-            update_move_nets(num_nets_affected);
+            update_move_nets(num_nets_affected,
+                             cube_bb);
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
@@ -2552,7 +2564,8 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
-                                             int num_directs) {
+                                             int num_directs,
+                                             bool cube_bb) {
     int max_pins_per_clb;
     unsigned int ipin;
 
@@ -2611,11 +2624,11 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     net_cost.resize(num_nets, -1.);
     proposed_net_cost.resize(num_nets, -1.);
 
-    if (num_layers == 1) {
+    if (cube_bb) {
         place_move_ctx.bb_coords.resize(num_nets, t_bb());
         place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT(num_layers > 1);
+        VTR_ASSERT(!cube_bb);
         place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.num_sink_pin_layer.resize(num_nets, std::vector<int>(num_layers, 0));
@@ -2628,7 +2641,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     alloc_and_load_for_fast_cost_update(place_cost_exp);
 
-    alloc_and_load_try_swap_structs();
+    alloc_and_load_try_swap_structs(cube_bb);
 
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
@@ -2676,7 +2689,7 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
     }
 }
 
-static void alloc_and_load_try_swap_structs() {
+static void alloc_and_load_try_swap_structs(bool cube_bb) {
     /* Allocate the local bb_coordinate storage, etc. only once. */
     /* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2685,11 +2698,11 @@ static void alloc_and_load_try_swap_structs() {
 
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    if (num_layers == 1) {
+    if (cube_bb) {
         ts_bb_edge_new.resize(num_nets, t_bb());
         ts_bb_coord_new.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT(num_layers > 1);
+        VTR_ASSERT(!cube_bb);
         layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         ts_layer_sink_pin_count.resize(num_nets, std::vector<int>(num_layers, OPEN));
@@ -3840,7 +3853,8 @@ static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts) {
+                        const t_noc_opts& noc_opts,
+                        bool cube_bb) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
      * every block, blocks are in legal spots, etc.  Also recomputes   *
@@ -3851,7 +3865,8 @@ static void check_place(const t_placer_costs& costs,
 
     error += check_placement_consistency();
     error += check_placement_costs(costs, delay_model, criticalities,
-                                   place_algorithm);
+                                   place_algorithm,
+                                   cube_bb);
     error += check_placement_floorplanning();
 
     // check the NoC costs during placement if the user is using the NoC supported flow
@@ -3874,17 +3889,18 @@ static void check_place(const t_placer_costs& costs,
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm) {
+                                 const t_place_algorithm& place_algorithm,
+                                 bool cube_bb) {
     int error = 0;
     double bb_cost_check;
     double timing_cost_check;
 
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    
 
-    if (num_layers == 1) {
+    if (cube_bb) {
         bb_cost_check = comp_bb_cost(CHECK);
     } else {
-        VTR_ASSERT_SAFE(num_layers > 1);
+        VTR_ASSERT_SAFE(!cube_bb);
         bb_cost_check = comp_layer_bb_cost(CHECK);
     }
 
