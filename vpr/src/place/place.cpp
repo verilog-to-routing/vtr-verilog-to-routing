@@ -363,6 +363,7 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
 static void update_bb(ClusterNetId net_id,
                       t_bb& bb_edge_new,
                       t_bb& bb_coord_new,
+                      std::vector<int>& num_sink_pin_layer,
                       t_physical_tile_loc pin_old_loc,
                       t_physical_tile_loc pin_new_loc);
 
@@ -2094,6 +2095,7 @@ static void update_net_bb(const ClusterNetId net,
         update_bb(net,
                   ts_bb_edge_new[net],
                   ts_bb_coord_new[net],
+                  ts_layer_sink_pin_count[net],
                   pin_old_loc,
                   pin_new_loc);
     }
@@ -2640,8 +2642,9 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         VTR_ASSERT(!cube_bb);
         place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        place_move_ctx.num_sink_pin_layer.resize(num_nets, std::vector<int>(num_layers, 0));
     }
+
+    place_move_ctx.num_sink_pin_layer.resize(num_nets, std::vector<int>(num_layers, 0));
 
     /* Used to store costs for moves not yet made and to indicate when a net's   *
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
@@ -3216,6 +3219,7 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
 static void update_bb(ClusterNetId net_id,
                       t_bb& bb_edge_new,
                       t_bb& bb_coord_new,
+                      std::vector<int>& num_sink_pin_layer,
                       t_physical_tile_loc pin_old_loc,
                       t_physical_tile_loc pin_new_loc) {
     /* Updates the bounding box of a net by storing its coordinates in    *
