@@ -492,7 +492,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         VTR_ASSERT(from_seg_index >= 0);
 
-
         /* now get the expected cost from our lookahead map */
         Cost_Entry cost_entry = get_wire_cost_entry(from_type,
                                                     from_seg_index,
@@ -852,7 +851,6 @@ static void run_dijkstra(RRNodeId start_node,
             continue;
         }
 
-
         //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, curr_node).c_str());
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
@@ -936,8 +934,7 @@ static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_
             for (unsigned iy = 0; iy < routing_cost_map.dim_size(2); iy++) {
                 Expansion_Cost_Entry& expansion_cost_entry = routing_cost_map[to_layer][ix][iy];
 
-                f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][ix][iy] =
-                    expansion_cost_entry.get_representative_cost_entry(REPRESENTATIVE_ENTRY_METHOD);
+                f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][ix][iy] = expansion_cost_entry.get_representative_cost_entry(REPRESENTATIVE_ENTRY_METHOD);
             }
         }
     }
@@ -953,7 +950,7 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
     auto& device_ctx = g_vpr_ctx.device();
 
     /* find missing cost entries and fill them in by copying a nearby cost entry */
-    for (int from_layer_num = 0; from_layer_num < device_ctx.grid.get_num_layers(); from_layer_num++){
+    for (int from_layer_num = 0; from_layer_num < device_ctx.grid.get_num_layers(); from_layer_num++) {
         for (int to_layer_num = 0; to_layer_num < device_ctx.grid.get_num_layers(); ++to_layer_num) {
             for (unsigned ix = 0; ix < device_ctx.grid.width(); ix++) {
                 for (unsigned iy = 0; iy < device_ctx.grid.height(); iy++) {
@@ -1462,7 +1459,7 @@ static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opi
         for (int dx = 0; dx < width; dx++) {
             for (int dy = 0; dy < height; dy++) {
                 util::Cost_Entry min_cost(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-                for(int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+                for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
                     for (int chan_idx = 0; chan_idx < (int)f_wire_cost_map.dim_size(1); chan_idx++) {
                         for (int seg_idx = 0; seg_idx < (int)f_wire_cost_map.dim_size(2); seg_idx++) {
                             auto cost = util::Cost_Entry(f_wire_cost_map[from_layer_num][chan_idx][seg_idx][to_layer_num][dx][dy].delay,

@@ -380,7 +380,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                                                 src_opin_delays);
 
                         bool reachable_wire_found = false;
-                        for(int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+                        for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
                             if (!src_opin_delays[from_layer_num][itile][ptc][to_layer_num].empty()) {
                                 reachable_wire_found = true;
                                 break;
@@ -564,7 +564,7 @@ static void dijkstra_flood_to_wires(int itile,
 
             //Keep costs of the best path to reach each wire type
             if (!src_opin_delays[root_layer_num][itile][ptc][curr_layer_num].count(seg_index)
-                 || curr.delay < src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].delay) {
+                || curr.delay < src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].delay) {
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].wire_rr_type = curr_rr_type;
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].wire_seg_index = seg_index;
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].delay = curr.delay;
@@ -709,16 +709,13 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 }
 
 static int get_tile_src_opin_max_ptc_from_rr_graph(int itile) {
-
-
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const int num_layers = device_ctx.grid.get_num_layers();
     int max_ptc = OPEN;
 
     int tile_layer_num = OPEN;
-    for (int layer_num = 0; layer_num < num_layers; layer_num++)
-    {
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], layer_num) > 0) {
             tile_layer_num = layer_num;
             break;

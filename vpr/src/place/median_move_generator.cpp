@@ -78,7 +78,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
             }
 
-            const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id]: union_bb;
+            const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
@@ -118,7 +118,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             for (int layer_num = 0; layer_num < num_layers; layer_num++) {
                 layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
             }
-            if(cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
+            if (cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
                 VTR_ASSERT(layer_blk_cnt[from_layer] > 0);
                 layer_blk_cnt[from_layer]--;
             }
@@ -273,8 +273,6 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
 
-    
-
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
@@ -289,8 +287,8 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     }
 
     /* The net had NOT been updated before, could use the old values */
-    const t_bb& curr_bb_edge = cube_bb ? place_move_ctx.bb_num_on_edges[net_id]: union_bb_edge;
-    const t_bb& curr_bb_coord = cube_bb ? place_move_ctx.bb_coords[net_id]: union_bb;
+    const t_bb& curr_bb_edge = cube_bb ? place_move_ctx.bb_num_on_edges[net_id] : union_bb_edge;
+    const t_bb& curr_bb_coord = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
 
     /* Check if I can update the bounding box incrementally. */
 

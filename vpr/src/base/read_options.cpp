@@ -2061,7 +2061,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .choices({"auto_bb", "cube_bb", "per_layer_bb"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-
     place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
         .help(
             "Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement."
