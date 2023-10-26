@@ -364,7 +364,8 @@ static void update_bb(ClusterNetId net_id,
                       t_bb& bb_coord_new,
                       std::vector<int>& num_sink_pin_layer,
                       t_physical_tile_loc pin_old_loc,
-                      t_physical_tile_loc pin_new_loc);
+                      t_physical_tile_loc pin_new_loc,
+                      bool src_pin);
 
 static void update_layer_bb(ClusterNetId net_id,
                             std::vector<t_2D_bb>& bb_edge_new,
@@ -2072,6 +2073,7 @@ static void update_net_bb(const ClusterNetId net,
     } else {
         //For large nets, update bounding box incrementally
         int iblk_pin = tile_pin_index(blk_pin);
+        bool src_pin = cluster_ctx.clb_nlist.pin_type(blk_pin) == PinType::DRIVER;
 
         t_physical_tile_type_ptr blk_type = physical_tile_type(blk);
         int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
@@ -2091,7 +2093,8 @@ static void update_net_bb(const ClusterNetId net,
                   ts_bb_coord_new[net],
                   ts_layer_sink_pin_count[net],
                   pin_old_loc,
-                  pin_new_loc);
+                  pin_new_loc,
+                  src_pin);
     }
 }
 
@@ -3223,7 +3226,8 @@ static void update_bb(ClusterNetId net_id,
                       t_bb& bb_coord_new,
                       std::vector<int>& num_sink_pin_layer,
                       t_physical_tile_loc pin_old_loc,
-                      t_physical_tile_loc pin_new_loc) {
+                      t_physical_tile_loc pin_new_loc,
+                      bool src_pin) {
     /* Updates the bounding box of a net by storing its coordinates in    *
      * the bb_coord_new data structure and the number of blocks on each   *
      * edge in the bb_edge_new data structure.  This routine should only  *
@@ -3406,6 +3410,16 @@ static void update_bb(ClusterNetId net_id,
         bb_coord_new.ymax = curr_bb_coord->ymax;
         bb_edge_new.ymin = curr_bb_edge->ymin;
         bb_edge_new.ymax = curr_bb_edge->ymax;
+    }
+
+    /* Now account for the layer motion. */
+    if (device_ctx.grid.get_num_layers() > 1) {
+        /* We need to update it only if multiple layers are available */
+        if (!src_pin) {
+            /* if src pin is being moved, we don't need to update this data structure */
+            num_sink_pin_layer[pin_old_loc.layer_num]--;
+            num_sink_pin_layer[pin_new_loc.layer_num]++;
+        }
     }
 
     if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
