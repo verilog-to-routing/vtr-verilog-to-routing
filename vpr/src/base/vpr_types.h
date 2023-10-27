@@ -619,10 +619,11 @@ struct t_2D_bb {
 
 /**
  * @brief An offset between placement locations (t_pl_loc)
- *
+ * @note In the case of comparing the offset, the layer offset should be equal
  * x: x-offset
  * y: y-offset
- * z: z-offset
+ * sub_tile: sub_tile-offset
+ * layer: layer-offset
  */
 struct t_pl_offset {
     t_pl_offset() = default;
