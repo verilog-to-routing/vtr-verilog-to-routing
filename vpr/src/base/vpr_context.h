@@ -391,13 +391,6 @@ struct PlacementContext : public Context {
     t_compressed_block_grids compressed_block_grids;
 
     /**
-     * @brief SHA256 digest of the .init.place file
-     *
-     * Used for unique identification and consistency checking
-     */
-    std::string initial_placement_id;
-
-    /**
      * @brief SHA256 digest of the .place file
      *
      * Used for unique identification and consistency checking

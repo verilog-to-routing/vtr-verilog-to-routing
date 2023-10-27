@@ -666,8 +666,7 @@ void try_place(const Netlist<>& net_list,
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr,
                     nullptr,
-                    (placer_opts.write_initial_place_file + ".init.place").c_str(),
-                    true);
+                    (placer_opts.write_initial_place_file + ".init.place").c_str());
     }
 
 #ifdef ENABLE_ANALYTIC_PLACE
@@ -1331,7 +1330,7 @@ static void placement_inner_loop(const t_annealing_state* state,
             VTR_LOG(
                 "Saving placement to file at temperature move %d / %d: %s\n",
                 inner_iter, state->move_lim, filename.c_str());
-            print_place(nullptr, nullptr, filename.c_str(), false);
+            print_place(nullptr, nullptr, filename.c_str());
             ++inner_placement_save_count;
         }
     }

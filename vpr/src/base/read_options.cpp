@@ -1605,7 +1605,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
-        .help("Writes out the initial placement of blocks to the specified file")
+        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
         .metavar("INITIAL_PLACE_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
