@@ -2633,7 +2633,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         place_move_ctx.bb_coords.resize(num_nets, t_bb());
         place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT(!cube_bb);
+        VTR_ASSERT_SAFE(!cube_bb);
         place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
     }
@@ -2708,7 +2708,7 @@ static void alloc_and_load_try_swap_structs(const bool cube_bb) {
         ts_bb_edge_new.resize(num_nets, t_bb());
         ts_bb_coord_new.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT(!cube_bb);
+        VTR_ASSERT_SAFE(!cube_bb);
         layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
     }
