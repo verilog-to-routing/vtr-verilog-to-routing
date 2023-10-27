@@ -38,8 +38,9 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
     /* Calculate the centroid location*/
     calculate_centroid_loc(b_from, false, centroid, nullptr);
+    VTR_ASSERT_SAFE(centroid.layer >= 0);
 
-    to.layer = (centroid.layer < 0) ? from.layer : centroid.layer;
+    to.layer = centroid.layer;
     /* Find a location near the weighted centroid_loc */
     if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
