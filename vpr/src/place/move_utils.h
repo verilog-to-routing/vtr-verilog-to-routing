@@ -275,7 +275,6 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
  * @param compressed_block_grid
  * @param compressed_locs
  * @param rlim
- * @param num_layers
  * @return A compressed search range for each layer
  */
 t_bb get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
@@ -293,7 +292,6 @@ t_bb get_compressed_grid_target_search_range(const t_compressed_block_grid& comp
  * @param from_compressed_loc
  * @param target_compressed_loc
  * @param rlim
- * @param num_layers
  * @return
  */
 t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
@@ -326,6 +324,15 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
 
 std::string e_move_result_to_string(e_move_result move_outcome);
 
+/**
+ * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accomodate "logical_block".
+ * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
+ * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
+ *
+ * @param logical_block
+ * @param loc
+ * @return
+ */
 int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc);
 
 int get_random_layer(t_logical_block_type_ptr logical_block);

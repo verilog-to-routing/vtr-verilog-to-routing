@@ -254,6 +254,12 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
 void print_clb_placement(const char* fname);
 #endif
 
+/**
+ * @brief determine the type of the bounding box used by the placer to predict the wirelength
+ *
+ * @param place_bb_mode The bounding box mode passed by the CLI
+ * @param rr_graph The routing resource graph
+ */
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph);
 
@@ -1916,19 +1922,24 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     bool cube_bb;
     const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
 
+    // If the FPGA has only layer, then we can only use cube bounding box
     if (number_layers == 1) {
         cube_bb = true;
     } else {
         VTR_ASSERT(number_layers > 1);
         if (place_bb_mode == AUTO_BB) {
+            // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
+            // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
             if (inter_layer_connections_limited_to_opin(rr_graph)) {
                 cube_bb = false;
             } else {
                 cube_bb = true;
             }
         } else if (place_bb_mode == CUBE_BB) {
+            // The user has specifically asked for CUBE_BB
             cube_bb = true;
         } else {
+            // The user has specifically asked for PER_LAYER_BB
             VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
             cube_bb = false;
         }

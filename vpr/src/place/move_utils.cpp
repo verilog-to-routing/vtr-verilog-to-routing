@@ -1333,6 +1333,8 @@ int get_random_layer(t_logical_block_type_ptr logical_block) {
 t_bb union_2d_bb(const std::vector<t_2D_bb>& bb_vec) {
     t_bb merged_bb;
 
+    // Not all 2d_bbs are valid. Thus, if one of the coordinates in the 2D_bb is not valid (equal to OPEN),
+    // we need to skip it.
     for (const auto& layer_bb : bb_vec) {
         if (layer_bb.xmin == OPEN) {
             VTR_ASSERT_SAFE(layer_bb.xmax == OPEN);

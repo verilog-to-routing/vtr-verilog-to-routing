@@ -295,7 +295,9 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
                                                              place_move_ctx.layer_bb_coords[net_id]);
     }
 
-    /* The net had NOT been updated before, could use the old values */
+    /* In this move, we use a 3D bounding box. Thus, if per-layer BB is used by placer, we need to take a union of BBs and use that for the rest of
+     * operations in this move
+     */
     const t_bb& curr_bb_edge = cube_bb ? place_move_ctx.bb_num_on_edges[net_id]: union_bb_edge;
     const t_bb& curr_bb_coord = cube_bb ? place_move_ctx.bb_coords[net_id]: union_bb;
 
