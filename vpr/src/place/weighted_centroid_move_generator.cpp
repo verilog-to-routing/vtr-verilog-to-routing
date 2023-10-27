@@ -34,7 +34,6 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
                                     placer_opts.place_dm_rlim};
 
     t_pl_loc to, centroid;
-    to.layer = from.layer;
 
     /* Calculate the weighted centroid */
     calculate_centroid_loc(b_from, true, centroid, criticalities);

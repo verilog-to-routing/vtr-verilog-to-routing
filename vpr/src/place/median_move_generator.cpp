@@ -39,7 +39,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     /* Calculate the median region */
     t_pl_loc to;
-    to.layer = from_layer;
 
     t_bb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
     t_bb limit_coords;
@@ -118,7 +117,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             for (int layer_num = 0; layer_num < num_layers; layer_num++) {
                 layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
             }
-            if(cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
+            // If the pin under consideration is of type sink, it shouldn't be added to layer_blk_cnt since the block
+            // is moving
+            if(cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::SINK) {
                 VTR_ASSERT_SAFE(layer_blk_cnt[from_layer] > 0);
                 layer_blk_cnt[from_layer]--;
             }
@@ -149,10 +150,16 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
-    // TODO: When placer is updated to support moving blocks between dice, this needs to be changed. Currently, we only move blocks within a die.
-    median_point.layer = from.layer;
+
+    // Before calling find_to_loc_centroid a valid layer should be assigned to "to" location. If there are multiple layers, the layer
+    // with highest number of sinks will be used. Otherwise, the same layer as "from" loc is assigned.
     if (is_multi_layer) {
-        to.layer = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
+        int layer_num = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
+        median_point.layer = layer_num;
+        to.layer = layer_num;
+    } else {
+        median_point.layer = from.layer;
+        to.layer = from.layer;
     }
     if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
