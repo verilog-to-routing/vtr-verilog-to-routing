@@ -2841,9 +2841,9 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     num_on_edges.ymax = ymax_edge;
 }
 
-/* This routine finds the bounding box of each net from scratch (i.e.   *
- * from only the block location information).  It updates both the       *
- * coordinate and number of pins on each edge information.  It           *
+/* This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e.   *
+ * from only the block location information).  It updates the       *
+ * coordinate, number of pins on each edge information, and the number of sinks on each layer.  It           *
  * should only be called when the bounding box information is not valid. */
 static void get_layer_bb_from_scratch(ClusterNetId net_id,
                                       std::vector<t_2D_bb>& num_on_edges,
@@ -2851,9 +2851,6 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
                                       std::vector<int>& layer_pin_sink_count) {
     auto& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
-    num_on_edges.resize(num_layers, t_2D_bb());
-    coords.resize(num_layers, t_2D_bb());
-    layer_pin_sink_count.resize(num_layers, 0);
     std::vector<int> xmin(num_layers, OPEN);
     std::vector<int> xmax(num_layers, OPEN);
     std::vector<int> ymin(num_layers, OPEN);
