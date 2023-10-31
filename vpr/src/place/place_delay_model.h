@@ -144,6 +144,7 @@ class OverrideDelayModel : public PlaceDelayModel {
 
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
+    /* Minimum delay of cross-layer connections */
     float cross_layer_delay_;
     bool is_flat_;
 
