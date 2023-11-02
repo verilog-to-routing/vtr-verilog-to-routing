@@ -1124,7 +1124,7 @@ lbool Solver::search(int nof_conflicts)
             return l_False;
           }
             // Perform clause database reduction !
-            if(conflicts>=curRestart* nbclausesbeforereduce) 
+            if(conflicts>=curRestart* nbclausesbeforereduce && learnts.size()>0) 
               {
                   
                 assert(learnts.size()>0);

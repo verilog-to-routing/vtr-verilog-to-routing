@@ -3161,6 +3161,119 @@ void Gia_ManPrintArray( Gia_Man_t * p )
     printf( "};\n" );
 
 }
+
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Gia_GetMValue( int i, int nIns, int Mint, unsigned Truth )
+{
+    assert( i >= 0 && i < 16 );
+    if ( i < nIns )
+        return (Mint >> i) & 1;
+    if ( i == nIns )
+    {
+        if ( Mint < (1 << nIns) )
+            return (Truth >> Mint) & 1;
+        else 
+            return ((Truth >> (Mint-(1 << nIns))) & 1) == 0;
+    }
+    else
+        return 1;
+}
+void Gia_ManTestProblem()
+{
+    unsigned Truth = 0xFE;
+    int i, j, k, c, nIns = 3, nAux = 3;
+    int nTotal = nIns + 1 + nAux;
+    int nPairs = nTotal * (nTotal - 1) / 2;
+    int nMints = (1 << (nIns+1));
+    int M[64][100] = {{0}};
+    float Value[64] = {0};
+    float Solution[100] = {0};
+    assert( nMints <= 64 );
+    assert( nPairs <= 100 );
+    // 7 nodes: 3 inputs + 1 output + 3 aux 
+    // 7*6/2 = 21 pairs
+    // 16 minterms
+    for ( k = 0; k < nMints; k++ )
+    {
+        for ( i = c = 0; i < nTotal; i++ )
+        for ( j = i+1; j < nTotal; j++ )    
+        {
+            int iVal = Gia_GetMValue( i, nIns, k, Truth );
+            int jVal = Gia_GetMValue( j, nIns, k, Truth );
+            M[k][c++] = iVal == jVal ? 1 : -1;
+        }
+        Value[k] = k < (1 << nIns) ? -1 : 1;
+        assert( c == nPairs ); 
+    }
+
+    for ( k = 0; k < nMints; k++ )
+    {
+        for ( c = 0; c < nPairs; c++ )
+           printf( "%2d ", M[k][c] );
+        printf( "%3f\n", Value[k] );
+    }
+
+    // solve
+    float Delta = 0.02;
+    for ( i = 0; i < 100; i++ )
+    {
+        float Error = 0;
+        for ( k = 0; k < nMints; k++ )
+            Error += Value[k] > 0 ? Value[k] : -Value[k];
+        printf( "Round %3d : Error = %5f    ", i, Error );
+        for ( c = 0; c < nPairs; c++ )
+            printf( "%2f ", Solution[c] );
+        printf( "\n" );
+
+        //if ( Error < 1 )
+        //   Delta /= 10;
+
+        for ( c = 0; c < nPairs; c++ )
+        {
+            int Count = 0;
+            for ( k = 0; k < nMints; k++ )
+               if ( (M[k][c] > 0 && Value[k] > 0) || (M[k][c] < 0 && Value[k] < 0) )
+                   Count++;
+               else
+                   Count--;
+            if ( Count == 0 )
+               continue;
+            printf( "Count = %3d  ", Count );
+            if ( Count > 0 )
+            {
+                printf( "Increasing %d by %f\n", c, Delta );
+                Solution[c] += Delta;
+                for ( k = 0; k < nMints; k++ )
+                    if ( M[k][c] > 0 )
+                        Value[k] -= Delta;
+                    else
+                        Value[k] -= Delta;
+            }
+            else
+            {
+                printf( "Reducing %d by %f\n", c, Delta );
+                Solution[c] -= Delta;
+                for ( k = 0; k < nMints; k++ )
+                    if ( M[k][c] > 0 )
+                        Value[k] += Delta;
+                    else
+                        Value[k] += Delta;
+            }            
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////

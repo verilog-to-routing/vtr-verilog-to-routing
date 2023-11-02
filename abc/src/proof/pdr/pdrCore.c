@@ -1149,7 +1149,7 @@ int Pdr_ManSolveInt( Pdr_Man_t * p )
                 {
                     if ( p->pPars->fVerbose )
                         Pdr_ManPrintProgress( p, 1, Abc_Clock() - clkStart );
-                    if ( p->timeToStop && Abc_Clock() > p->timeToStop )
+                    if ( p->timeToStop && Abc_Clock() > p->timeToStop && !p->pPars->fSilent )
                         Abc_Print( 1, "Reached timeout (%d seconds) in frame %d.\n",  p->pPars->nTimeOut, iFrame );
                     else if ( p->pPars->nTimeOutGap && p->pPars->timeLastSolved && Abc_Clock() > p->pPars->timeLastSolved + p->pPars->nTimeOutGap * CLOCKS_PER_SEC )
                         Abc_Print( 1, "Reached gap timeout (%d seconds) in frame %d.\n",  p->pPars->nTimeOutGap, iFrame );
@@ -1173,7 +1173,7 @@ int Pdr_ManSolveInt( Pdr_Man_t * p )
                     {
                         if ( p->pPars->fVerbose )
                             Pdr_ManPrintProgress( p, 1, Abc_Clock() - clkStart );
-                        if ( p->timeToStop && Abc_Clock() > p->timeToStop )
+                        if ( p->timeToStop && Abc_Clock() > p->timeToStop && !p->pPars->fSilent )
                             Abc_Print( 1, "Reached timeout (%d seconds) in frame %d.\n",  p->pPars->nTimeOut, iFrame );
                         else if ( p->pPars->nTimeOutGap && p->pPars->timeLastSolved && Abc_Clock() > p->pPars->timeLastSolved + p->pPars->nTimeOutGap * CLOCKS_PER_SEC )
                             Abc_Print( 1, "Reached gap timeout (%d seconds) in frame %d.\n",  p->pPars->nTimeOutGap, iFrame );

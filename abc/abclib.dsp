@@ -5627,6 +5627,10 @@ SOURCE=.\src\proof\cec\cecPat.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\proof\cec\cecProve.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\proof\cec\cecSat.c
 # End Source File
 # Begin Source File

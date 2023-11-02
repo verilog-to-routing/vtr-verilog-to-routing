@@ -44,7 +44,7 @@ ABC_NAMESPACE_IMPL_START
 
 #ifndef ABC_USE_PTHREADS
 
-void Cmd_RunStarter( char * pFileName, char * pBinary, char * pCommand, int nCores ) {}
+void Cmd_RunStarter( char * pFileName, char * pBinary, char * pCommand, int nCores, int fVerbose ) {}
 
 #else // pthreads are used
 
@@ -104,7 +104,7 @@ void * Abc_RunThread( void * pCommand )
   SeeAlso     []
 
 ***********************************************************************/
-void Cmd_RunStarter( char * pFileName, char * pBinary, char * pCommand, int nCores )
+void Cmd_RunStarter( char * pFileName, char * pBinary, char * pCommand, int nCores, int fVerbose )
 {
     FILE * pFile, * pFileTemp;
     pthread_t * pThreadIds;
@@ -204,8 +204,10 @@ void Cmd_RunStarter( char * pFileName, char * pBinary, char * pCommand, int nCor
         }
         else
             BufferCopy = Abc_UtilStrsav( Buffer );
-        fprintf( stdout, "Calling:  %s\n", (char *)BufferCopy );  
-        fflush( stdout );
+        if ( fVerbose ) {
+            fprintf( stdout, "Calling:  %s\n", (char *)BufferCopy );  
+            fflush( stdout );
+        }
 
         // wait till there is an empty thread
         while ( 1 )

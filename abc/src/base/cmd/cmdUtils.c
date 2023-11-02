@@ -833,6 +833,70 @@ void Gia_ManKissatCall( Abc_Frame_t * pAbc, char * pFileName, char * pArgs, int 
 }
 
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+                
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Cmd_GenScript( char ** pComms, int nComms, int nParts )
+{
+    static char pScript[1000]; int c;
+    pScript[0] = 0;
+    for ( c = 0; c < nParts; c++ ) {
+        strcat( pScript, pComms[rand() % nComms] );
+        strcat( pScript, "; " );
+    }
+    strcat( pScript, "print_stats" );    
+    return pScript;
+}
+void Cmd_CommandSGen( Abc_Frame_t * pAbc, int nParts, int nIters, int fVerbose )
+{
+    Abc_Ntk_t * pCopy = Abc_NtkDup( Abc_FrameReadNtk(pAbc) );
+    Abc_Ntk_t * pBest = Abc_NtkDup( Abc_FrameReadNtk(pAbc) );
+    Abc_Ntk_t * pCur = NULL;  int i;
+    char * pComms[6] = { "balance", "rewrite", "rewrite -z", "refactor", "refactor -z", "resub" };
+    srand( time(NULL) );
+    for ( i = 0; i < nIters; i++ )
+    {
+        char * pScript = Cmd_GenScript( pComms, 6, nParts );
+        Abc_FrameSetCurrentNetwork( pAbc, Abc_NtkDup(pCopy) );
+        if ( Abc_FrameIsBatchMode() )
+        {
+            if ( Cmd_CommandExecute(pAbc, pScript) )
+            {
+                Abc_Print( 1, "Something did not work out with the command \"%s\".\n", pScript );
+                return;
+            }
+        }
+        else
+        {
+            Abc_FrameSetBatchMode( 1 );
+            if ( Cmd_CommandExecute(pAbc, pScript) )
+            {
+                Abc_Print( 1, "Something did not work out with the command \"%s\".\n", pScript );
+                Abc_FrameSetBatchMode( 0 );
+                return;
+            }
+            Abc_FrameSetBatchMode( 0 );
+        }
+        pCur = Abc_FrameReadNtk(pAbc);
+        if ( Abc_NtkNodeNum(pCur) < Abc_NtkNodeNum(pBest) ) {
+            Abc_Obj_t * pObj; int k;
+            Abc_NtkForEachObj( pBest, pObj, k )
+                pObj->fMarkA = pObj->fMarkB = pObj->fMarkC = 0;
+            Abc_NtkDelete( pBest );
+            pBest = Abc_NtkDup( pCur );
+        }
+    }
+    Abc_FrameSetCurrentNetwork( pAbc, pBest );
+    Abc_NtkDelete( pCopy );
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

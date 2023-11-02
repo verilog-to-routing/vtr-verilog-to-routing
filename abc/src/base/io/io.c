@@ -52,6 +52,7 @@ static int IoCommandReadInit    ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadPla     ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadPlaMo   ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadTruth   ( Abc_Frame_t * pAbc, int argc, char **argv );
+static int IoCommandReadCnf     ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadVerilog ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadStatus  ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadGig     ( Abc_Frame_t * pAbc, int argc, char **argv );
@@ -124,6 +125,7 @@ void Io_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "I/O", "read_pla",      IoCommandReadPla,      1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_plamo",    IoCommandReadPlaMo,    1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_truth",    IoCommandReadTruth,    1 );
+    Cmd_CommandAdd( pAbc, "I/O", "read_cnf",      IoCommandReadCnf,      1 );    
     Cmd_CommandAdd( pAbc, "I/O", "read_verilog",  IoCommandReadVerilog,  1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_status",   IoCommandReadStatus,   0 );
     Cmd_CommandAdd( pAbc, "I/O", "&read_gig",     IoCommandReadGig,      0 );
@@ -1205,6 +1207,80 @@ usage:
     fprintf( pAbc->Err, "\t-f     : toggles reading truth table(s) from file [default = %s]\n",      fFile? "yes": "no" );
     fprintf( pAbc->Err, "\t-h     : prints the command summary\n" );
     fprintf( pAbc->Err, "\ttruth  : truth table with most significant bit first (e.g. 1000 for AND(a,b))\n" );
+    fprintf( pAbc->Err, "\tfile   : file name with the truth table\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int IoCommandReadCnf( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern Vec_Ptr_t * Io_FileReadCnf( char * pFileName, int fMulti );
+    FILE * pFile;
+    Abc_Ntk_t * pNtk;
+    Vec_Ptr_t * vSops;
+    int fMulti = 0;
+    int c;
+
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "mh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+            case 'm':
+                fMulti ^= 1;
+                break;            
+            case 'h':
+                goto usage;
+            default:
+                goto usage;
+        }
+    }
+
+    if ( argc != globalUtilOptind + 1 )
+        goto usage;
+
+    pFile = fopen( argv[globalUtilOptind], "rb" );
+    if ( pFile == NULL )
+    {
+        printf( "The file \"%s\" cannot be found.\n", argv[globalUtilOptind] );
+        return 1;
+    }
+    else 
+        fclose( pFile );
+    vSops = Io_FileReadCnf( argv[globalUtilOptind], fMulti );
+    if ( Vec_PtrSize(vSops) == 0 )
+    {
+        Vec_PtrFreeFree( vSops );
+        fprintf( pAbc->Err, "Reading CNF file has failed.\n" );
+        return 1;
+    }
+    pNtk = Abc_NtkCreateWithNodes( vSops );
+    Vec_PtrFreeFree( vSops );
+    if ( pNtk == NULL )
+    {
+        fprintf( pAbc->Err, "Deriving the network has failed.\n" );
+        return 1;
+    }
+    // replace the current network
+    Abc_FrameReplaceCurrentNetwork( pAbc, pNtk );
+    Abc_FrameClearVerifStatus( pAbc );
+    return 0;
+
+usage:
+    fprintf( pAbc->Err, "usage: read_cnf [-mh] <file>\n" );
+    fprintf( pAbc->Err, "\t         creates network with one node\n" );
+    fprintf( pAbc->Err, "\t-m     : toggles generating multi-output network [default = %s]\n", fMulti?  "yes":"no" );    
+    fprintf( pAbc->Err, "\t-h     : prints the command summary\n" );
     fprintf( pAbc->Err, "\tfile   : file name with the truth table\n" );
     return 1;
 }

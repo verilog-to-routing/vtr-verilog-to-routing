@@ -107,7 +107,7 @@ extern ABC_DLL int    Abc_FrameReadProbStatus( Abc_Frame_t * pAbc );
 extern ABC_DLL void * Abc_FrameReadCex( Abc_Frame_t * pAbc );    
 
 // procedure to set retiming data
-extern ABC_DLL void   Abc_FrameSetRetimingData( Abc_Frame_t * pAbc, int * pRst, int * pSet, int * pEna );
+extern ABC_DLL void   Abc_FrameSetRetimingData( Abc_Frame_t * pAbc, int * pRst, int * pSet, int * pEna, int nRegs );
 
 // procedure to return sequential equivalences
 extern ABC_DLL int *  Abc_FrameReadMiniAigEquivClasses( Abc_Frame_t * pAbc );
