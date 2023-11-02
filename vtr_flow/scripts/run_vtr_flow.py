@@ -524,11 +524,9 @@ def vtr_command_main(arg_list, prog=None):
     error_status = "Error"
 
     assert args.temp_dir
-    
     temp_dir = Path(args.temp_dir)
     if not str(temp_dir).startswith("/"):
         temp_dir = Path(os.getcwd() + "/" + args.temp_dir)
-    
     # Specify how command should be run
     command_runner = vtr.CommandRunner(
         track_memory=args.track_memory_usage,
@@ -548,11 +546,11 @@ def vtr_command_main(arg_list, prog=None):
         vpr_args = process_unknown_args(unknown_args)
         vpr_args = process_vpr_args(args, prog, temp_dir, vpr_args)
         if args.sdc_file:
-            sdc_file_copy = get_sdc_file(args.sdc_file, prog, temp_dir)
+            sdc_file_copy = get_sdc_file(args.sdc_file, temp_dir)
             vpr_args["sdc_file"] = Path(sdc_file_copy).name
         if args.read_vpr_constraints:
             vpr_constraint_file_copy = get_read_vpr_constraints(
-                args.read_vpr_constraints, prog, temp_dir
+                args.read_vpr_constraints, temp_dir
             )
             vpr_args["read_vpr_constraints"] = Path(vpr_constraint_file_copy).name
 
@@ -767,7 +765,7 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     return vpr_args
 
 
-def get_sdc_file(sdc_file, prog, temp_dir):
+def get_sdc_file(sdc_file, temp_dir):
     """
     takes in the sdc_file and returns a path to that file if it exists.
     """
@@ -779,7 +777,7 @@ def get_sdc_file(sdc_file, prog, temp_dir):
     return str(vtr.verify_file(sdc_file_copy, "sdc file"))
 
 
-def get_read_vpr_constraints(read_vpr_constraints, prog, temp_dir):
+def get_read_vpr_constraints(read_vpr_constraints, temp_dir):
     """
     takes in the read_vpr_constraints and returns a path to that file if it exists.
     """
