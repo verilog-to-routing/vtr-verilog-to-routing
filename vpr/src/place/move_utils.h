@@ -337,8 +337,21 @@ int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc)
 
 int get_random_layer(t_logical_block_type_ptr logical_block);
 
+/**
+ * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. set the layer min and max
+ * based on the layers that have a valid BB.
+ * @param tbb_vec
+ * @return 3D bounding box
+ */
 t_bb union_2d_bb(const std::vector<t_2D_bb>& tbb_vec);
 
+/**
+ * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. Create the "num_edge" in a similar way. This data structure
+ * stores how many blocks are on each edge of the BB. set the layer min and max based on the layers that have a valid BB.
+ * @param num_edge_vec
+ * @param bb_vec
+ * @return num_edge, 3D bb
+ */
 std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                                        const std::vector<t_2D_bb>& bb_vec);
 
