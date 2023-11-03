@@ -280,8 +280,6 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
 
-    bool is_multi_layer = (device_ctx.grid.get_num_layers() > 1);
-
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
