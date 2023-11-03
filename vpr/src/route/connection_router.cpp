@@ -8,26 +8,18 @@
 static inline bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
                                     const RRGraphView* rr_graph,
                                     RRNodeId from_node,
-                                    RRNodeId sink_node) {
-    // ASSUMPTION: Only OPINs can connect to other layers
+                                    RRNodeId sink_node,
+                                    bool is_inter_layer_opin_connection) {
 
     int sink_layer = rr_graph->node_layer(sink_node);
 
-    if (rr_graph->node_layer(from_node) == sink_layer || rr_graph->node_type(from_node) == SOURCE) {
+    if (rr_graph->node_layer(from_node) == sink_layer || rr_graph->node_type(from_node) == SOURCE || !is_inter_layer_opin_connection) {
         return true;
     } else if (rr_graph->node_type(from_node) == CHANX || rr_graph->node_type(from_node) == CHANY || rr_graph->node_type(from_node) == IPIN) {
         return false;
     } else {
-        VTR_ASSERT(rr_graph->node_type(from_node) == OPIN);
+        VTR_ASSERT(rr_graph->node_type(from_node) == OPIN && is_inter_layer_opin_connection);
         auto edges = rr_nodes.edge_range(from_node);
-
-        //        for (RREdgeId from_edge : edges) {
-        //            RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
-        //            rr_nodes.prefetch_node(to_node);
-        //
-        //            int switch_idx = rr_nodes.edge_switch(from_edge);
-        //            VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
-        //        }
 
         for (RREdgeId from_edge : edges) {
             RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
@@ -978,7 +970,7 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
-        if (target_node.is_valid() && !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node))) {
+        if (target_node.is_valid() && !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node), only_opin_inter_layer)) {
             return;
         }
         add_route_tree_node_to_heap(rt_node,
@@ -1134,7 +1126,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                         continue;
                 }
 
-                if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), target_node)) {
+                if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), target_node, only_opin_inter_layer)) {
                     continue;
                 }
                 // Put the node onto the heap
