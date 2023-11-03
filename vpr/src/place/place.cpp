@@ -3161,10 +3161,7 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
     auto& device_ctx = g_vpr_ctx.device();
     int num_layers = device_ctx.grid.get_num_layers();
     num_sink_layer = std::vector<int>(num_layers, 0);
-    std::vector<int> xmin(num_layers, OPEN);
-    std::vector<int> ymin(num_layers, OPEN);
-    std::vector<int> xmax(num_layers, OPEN);
-    std::vector<int> ymax(num_layers, OPEN);
+
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -3178,12 +3175,10 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
     int src_y = place_ctx.block_locs[bnum].loc.y
                 + physical_tile_type(bnum)->pin_height_offset[pnum];
 
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        xmin[layer_num] = src_x;
-        ymin[layer_num] = src_y;
-        xmax[layer_num] = src_x;
-        ymax[layer_num] = src_y;
-    }
+    std::vector<int> xmin(num_layers, src_x);
+    std::vector<int> ymin(num_layers, src_y);
+    std::vector<int> xmax(num_layers, src_x);
+    std::vector<int> ymax(num_layers, src_y);
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
