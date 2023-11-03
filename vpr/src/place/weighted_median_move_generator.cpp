@@ -120,6 +120,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     w_median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     w_median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
 
+    // If multiple layers are available, we would choose the median layer, otherwise the same layer (layer #0) as the from_loc would be chosen
+    //#TODO: Since we are now only considering 2 layers, the layer with maximum number of sinks should be chosen. we need to update it to get the true median
     if (is_multi_layer) {
         int layer_num = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
         w_median_point.layer = layer_num;

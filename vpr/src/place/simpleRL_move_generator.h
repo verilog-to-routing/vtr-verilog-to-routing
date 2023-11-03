@@ -8,7 +8,6 @@
 #include "uniform_move_generator.h"
 #include "critical_uniform_move_generator.h"
 #include "centroid_move_generator.h"
-#include "uniform_inter_layer_move_generator.h"
 
 /**
  * @brief KArmedBanditAgent is the base class for RL agents that target the k-armed bandit problems
