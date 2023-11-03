@@ -5,7 +5,7 @@
 #include "placer_globals.h"
 #include "move_utils.h"
 
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int layer);
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew);
 
 static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
@@ -86,7 +86,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             yold = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-            int block_layer = place_ctx.block_locs[bnum].loc.layer;
 
             //To calulate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
@@ -102,7 +101,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 ynew = net_bb_coords.ymin;
             }
 
-            if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew, block_layer)) {
+            if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew)) {
                 get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
                 if (skip_net)
                     continue;
@@ -274,7 +273,7 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
  * the pins always lie on the outside of the bounding box.            *
  * The x and y coordinates are the pin's x and y coordinates.         */
 /* IO blocks are considered to be one cell in for simplicity.         */
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int /* layer */) {
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew) {
     //TODO: account for multiple physical pin instances per logical pin
 
     auto& device_ctx = g_vpr_ctx.device();
