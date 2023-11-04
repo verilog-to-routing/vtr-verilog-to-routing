@@ -58,6 +58,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
+    // If layer num is not specified, it means the BB should cover all layers
     if (layer_num == OPEN) {
         bounding_box.layer_min = 0;
         bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
