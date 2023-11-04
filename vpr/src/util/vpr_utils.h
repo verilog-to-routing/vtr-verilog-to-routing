@@ -311,6 +311,14 @@ t_arch_switch_inf create_internal_arch_sw(float delay);
 
 void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
 
+/**
+ * @brief Iterate over all inter-layer switch types and return the minimum delay of it.
+ * useful four router lookahead to to have some estimate of the cost of crossing a layer
+ * @param arch_switch_inf
+ * @param segment_inf
+ * @param wire_to_ipin_arch_sw_id
+ * @return
+ */
 float get_min_cross_layer_delay(const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                 const std::vector<t_segment_inf>& segment_inf,
                                 const int wire_to_ipin_arch_sw_id);
