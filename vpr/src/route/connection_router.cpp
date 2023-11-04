@@ -5,6 +5,16 @@
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
+/**
+ * @brief This function is relevant when the architecture is 3D. If inter-layer connections are only from OPINs (determine by is_inter_layer_opin_connection),
+ * then nodes (other that OPINs) which are on the other layer than sink's layer, don't need to be pushed back to the heap.
+ * @param rr_nodes
+ * @param rr_graph
+ * @param from_node
+ * @param sink_node
+ * @param is_inter_layer_opin_connection It is true if the architecture is 3D and inter-layer connections are only from OPINs.
+ * @return
+ */
 static bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
                              const RRGraphView* rr_graph,
                              RRNodeId from_node,
