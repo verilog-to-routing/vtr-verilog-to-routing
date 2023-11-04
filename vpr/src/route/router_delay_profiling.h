@@ -21,7 +21,7 @@ class RouterDelayProfiler {
      * case the rr_graph is disconnected and you can give up.
      * @param source_node
      * @param sink_node
-     * @param router_opts 
+     * @param router_opts
      * @param net_delay
      * @param layer_num
      * @return
