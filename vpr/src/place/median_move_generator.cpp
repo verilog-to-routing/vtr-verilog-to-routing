@@ -77,7 +77,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
             }
 
-            const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id]: union_bb;
+            const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
@@ -118,7 +118,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             }
             // If the pin under consideration is of type sink, it shouldn't be added to layer_blk_cnt since the block
             // is moving
-            if(cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::SINK) {
+            if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::SINK) {
                 VTR_ASSERT_SAFE(layer_blk_cnt[from_layer] > 0);
                 layer_blk_cnt[from_layer]--;
             }
@@ -295,8 +295,8 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     /* In this move, we use a 3D bounding box. Thus, if per-layer BB is used by placer, we need to take a union of BBs and use that for the rest of
      * operations in this move
      */
-    const t_bb& curr_bb_edge = cube_bb ? place_move_ctx.bb_num_on_edges[net_id]: union_bb_edge;
-    const t_bb& curr_bb_coord = cube_bb ? place_move_ctx.bb_coords[net_id]: union_bb;
+    const t_bb& curr_bb_edge = cube_bb ? place_move_ctx.bb_num_on_edges[net_id] : union_bb_edge;
+    const t_bb& curr_bb_coord = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
 
     /* Check if I can update the bounding box incrementally. */
 

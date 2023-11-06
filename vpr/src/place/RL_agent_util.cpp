@@ -2,7 +2,6 @@
 #include "manual_move_generator.h"
 
 void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, const t_placer_opts& placer_opts, int move_lim) {
-
     if (placer_opts.RL_agent_placement == false) {
         if (placer_opts.place_algorithm.is_timing_driven()) {
             VTR_LOG("Using static probabilities for choosing each move type\n");

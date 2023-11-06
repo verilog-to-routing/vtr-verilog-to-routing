@@ -582,7 +582,6 @@ void try_place(const Netlist<>& net_list,
     float first_crit_exponent, first_rlim, first_t;
     int first_move_lim;
 
-
     t_placer_costs costs(placer_opts.place_algorithm);
 
     tatum::TimingPathInfo critical_path;
@@ -1533,7 +1532,6 @@ static void update_move_nets(int num_nets_affected,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-
     for (int inet_affected = 0; inet_affected < num_nets_affected;
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
@@ -1946,7 +1944,6 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     }
 
     return cube_bb;
-
 }
 
 /**

@@ -82,7 +82,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                 layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
             }
             // If the pin under consideration if of type sink, it is counted in place_move_ctx.num_sink_pin_layer, and we don't want to consider the moving pins
-            if(cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
+            if (cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
                 VTR_ASSERT(layer_blk_cnt[from.layer] > 0);
                 layer_blk_cnt[from.layer]--;
             }
