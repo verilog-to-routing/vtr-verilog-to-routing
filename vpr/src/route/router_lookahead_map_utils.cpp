@@ -570,6 +570,7 @@ static void dijkstra_flood_to_wires(int itile,
                 || curr.delay < src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].delay) {
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].wire_rr_type = curr_rr_type;
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].wire_seg_index = seg_index;
+                src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].layer_number = curr_layer_num;
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].delay = curr.delay;
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].congestion = curr.congestion;
             }

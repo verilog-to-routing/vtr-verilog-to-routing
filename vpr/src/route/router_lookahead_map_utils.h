@@ -254,6 +254,7 @@ void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
 struct t_reachable_wire_inf {
     e_rr_type wire_rr_type;
     int wire_seg_index;
+    int layer_number;
 
     //Costs to reach the wire type from the current node
     float congestion;
