@@ -1008,6 +1008,11 @@ static Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to
     if (std::isnan(copy_entry.delay) && std::isnan(copy_entry.congestion)) {
         if (copy_x == 0 && copy_y == 0) {
             copy_entry = Cost_Entry(0., 0.); //(0, 0) entry is invalid so set zero to terminate recursion
+            if (from_layer_num == to_layer_num) {
+                copy_entry = Cost_Entry(0., 0.);
+            } else {
+                copy_entry = Cost_Entry(std::numeric_limits<float>::max() / 1e12, std::numeric_limits<float>::max() / 1e12);
+            }
         } else {
             copy_entry = get_nearby_cost_entry(from_layer_num, copy_x, copy_y, to_layer_num, segment_index, chan_index);
         }
