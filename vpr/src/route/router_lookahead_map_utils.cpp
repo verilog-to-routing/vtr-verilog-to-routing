@@ -319,9 +319,12 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     src_opin_delays.resize(num_layers);
     std::vector<int> tile_max_ptc(device_ctx.physical_tile_types.size(), OPEN);
 
+    // Get the maximum OPIN ptc for each tile type to reserve src_opin_delays
     for (int itile = 0; itile < (int)device_ctx.physical_tile_types.size(); itile++) {
         tile_max_ptc[itile] = get_tile_src_opin_max_ptc_from_rr_graph(itile);
     }
+
+    // Resize src_opin_delays to accomodate enough ptc and layer
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         src_opin_delays[layer_num].resize(device_ctx.physical_tile_types.size());
         for (int itile = 0; itile < (int)device_ctx.physical_tile_types.size(); itile++) {
