@@ -1536,7 +1536,7 @@ static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::
                 //delay and congestion cost estimates
                 wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type,
                                                       reachable_wire_inf.wire_seg_index,
-                                                      from_layer_num,
+                                                      reachable_wire_inf.layer_number,
                                                       delta_x,
                                                       delta_y,
                                                       to_layer_num);
