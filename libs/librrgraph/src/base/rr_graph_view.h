@@ -242,7 +242,8 @@ class RRGraphView {
         std::string start_y;                                           //start y-coordinate
         std::string end_x;                                             //end x-coordinate
         std::string end_y;                                             //end y-coordinate
-        std::string layer_num_str;                                     //layer number
+        std::string start_layer_num;                                     //layer number
+        std::string end_layer_num;                                     //layer number
         std::string arrow;                                             //direction arrow
         std::string coordinate_string = node_type_string(node);        //write the component's type as a routing resource node
         coordinate_string += ":" + std::to_string(size_t(node)) + " "; //add the index of the routing resource node
@@ -259,12 +260,12 @@ class RRGraphView {
             // and the end to the lower coordinate
             start_x =  " (" + std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
             start_y = std::to_string(node_yhigh(node)) + ",";
-            layer_num_str = std::to_string(node_layer(node)) + ")";
+            start_layer_num = std::to_string(node_layer(node)) + ")";
         } else if (node_type(node) == SOURCE || node_type(node) == SINK) {
             // For SOURCE and SINK the starting and ending coordinate are identical, so just use start
             start_x = " (" + std::to_string(node_xhigh(node)) + ",";
             start_y = std::to_string(node_yhigh(node)) + ",";
-            layer_num_str = std::to_string(node_layer(node)) + ")";
+            start_layer_num = std::to_string(node_layer(node)) + ")";
         } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
@@ -278,26 +279,28 @@ class RRGraphView {
 
                 start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
                 start_y = std::to_string(node_yhigh(node)) + ",";
+                start_layer_num = std::to_string(node_layer(node));
                 end_x = " (" + std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
                 end_y = std::to_string(node_ylow(node)) + ",";
-                layer_num_str = std::to_string(node_layer(node)) + ")";
+                end_layer_num = std::to_string(node_layer(node)) + ")";
             }
 
             else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
                 start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
                 start_y = std::to_string(node_ylow(node)) + ",";
+                start_layer_num = std::to_string(node_layer(node));
                 end_x = " (" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
                 end_y = std::to_string(node_yhigh(node)) + ",";
-                layer_num_str = std::to_string(node_layer(node)) + ")"; //layer number
+                end_layer_num = std::to_string(node_layer(node)) + ")"; //layer number
                 if (node_direction(node) == Direction::BIDIR) {
                     arrow = "<->"; //indicate that signal can travel both direction
                 }
             }
         }
 
-        coordinate_string +=  start_x + start_y + layer_num_str; //Write the starting coordinates
+        coordinate_string +=  start_x + start_y + start_layer_num; //Write the starting coordinates
         coordinate_string += arrow;             //Indicate the direction
-        coordinate_string += end_x + end_y + layer_num_str;     //Write the end coordinates
+        coordinate_string += end_x + end_y + end_layer_num;     //Write the end coordinates
         return coordinate_string;
     }
 
