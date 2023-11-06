@@ -34,11 +34,12 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                     placer_opts.place_dm_rlim};
 
     t_pl_loc to, centroid;
-    to.layer = from.layer;
 
     /* Calculate the centroid location*/
     calculate_centroid_loc(b_from, false, centroid, nullptr);
 
+    // Centroid location is not necessarily a valid location, and the downstream location expect a valid
+    // layer for "to" location. So if the layer is not valid, we set it to the same layer as from loc.
     to.layer = (centroid.layer < 0) ? from.layer : centroid.layer;
     /* Find a location near the weighted centroid_loc */
     if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from)) {

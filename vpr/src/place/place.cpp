@@ -254,6 +254,12 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
 void print_clb_placement(const char* fname);
 #endif
 
+/**
+ * @brief determine the type of the bounding box used by the placer to predict the wirelength
+ *
+ * @param place_bb_mode The bounding box mode passed by the CLI
+ * @param rr_graph The routing resource graph
+ */
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph);
 
@@ -296,8 +302,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
-                              bool manual_move_enabled,
-                              const bool cube_bb);
+                              bool manual_move_enabled);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
@@ -327,8 +332,7 @@ static float starting_t(const t_annealing_state* state,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
                         const t_noc_opts& noc_opts,
-                        MoveTypeStat& move_type_stat,
-                        const bool cube_bb);
+                        MoveTypeStat& move_type_stat);
 
 static int count_connections();
 
@@ -418,7 +422,6 @@ static int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
-    const bool cube_bb,
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c);
@@ -501,8 +504,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
                                  MoveTypeStat& move_type_stat,
-                                 float timing_bb_factor,
-                                 const bool cube_bb);
+                                 float timing_bb_factor);
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                          const t_noc_opts& noc_opts,
@@ -670,8 +672,7 @@ void try_place(const Netlist<>& net_list,
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr,
                     nullptr,
-                    (placer_opts.write_initial_place_file + ".init.place").c_str(),
-                    true);
+                    (placer_opts.write_initial_place_file + ".init.place").c_str());
     }
 
 #ifdef ENABLE_ANALYTIC_PLACE
@@ -871,7 +872,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0,
                                                0);
         VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), false);
+        print_place(nullptr, nullptr, filename.c_str());
     }
 
     first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
@@ -927,7 +928,7 @@ void try_place(const Netlist<>& net_list,
                          place_delay_model.get(), placer_criticalities.get(),
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          *manual_move_generator, pin_timing_invalidator.get(),
-                         blocks_affected, placer_opts, noc_opts, move_type_stat, cube_bb);
+                         blocks_affected, placer_opts, noc_opts, move_type_stat);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -998,8 +999,7 @@ void try_place(const Netlist<>& net_list,
                                  *current_move_generator, *manual_move_generator,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
-                                 timing_bb_factor,
-                                 cube_bb);
+                                 timing_bb_factor);
 
             //move the update used move_generator to its original variable
             update_move_generator(move_generator, move_generator2, agent_state,
@@ -1064,8 +1064,7 @@ void try_place(const Netlist<>& net_list,
                              *current_move_generator, *manual_move_generator,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
-                             timing_bb_factor,
-                             cube_bb);
+                             timing_bb_factor);
 
         //move the update used move_generator to its original variable
         update_move_generator(move_generator, move_generator2, agent_state,
@@ -1108,7 +1107,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
                                                state.num_temps + 1, 0);
         VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), false);
+        print_place(nullptr, nullptr, filename.c_str());
     }
 
     // TODO:
@@ -1261,8 +1260,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
                                  MoveTypeStat& move_type_stat,
-                                 float timing_bb_factor,
-                                 const bool cube_bb) {
+                                 float timing_bb_factor) {
     int inner_crit_iter_count, inner_iter;
 
     int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
@@ -1279,7 +1277,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, place_algorithm,
-                                             timing_bb_factor, manual_move_enabled, cube_bb);
+                                             timing_bb_factor, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1346,7 +1344,7 @@ static void placement_inner_loop(const t_annealing_state* state,
             VTR_LOG(
                 "Saving placement to file at temperature move %d / %d: %s\n",
                 inner_iter, state->move_lim, filename.c_str());
-            print_place(nullptr, nullptr, filename.c_str(), false);
+            print_place(nullptr, nullptr, filename.c_str());
             ++inner_placement_save_count;
         }
     }
@@ -1450,8 +1448,7 @@ static float starting_t(const t_annealing_state* state,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
                         const t_noc_opts& noc_opts,
-                        MoveTypeStat& move_type_stat,
-                        const bool cube_bb) {
+                        MoveTypeStat& move_type_stat) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1484,7 +1481,7 @@ static float starting_t(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, placer_opts.place_algorithm,
-                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, cube_bb);
+                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
@@ -1603,8 +1600,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
-                              bool manual_move_enabled,
-                              const bool cube_bb) {
+                              bool manual_move_enabled) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1705,7 +1701,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         //Also find all the pins affected by the swap, and calculates new connection
         //delays and timing costs and store them in proposed_* data structures.
         int num_nets_affected = find_affected_nets_and_update_costs(
-            place_algorithm, delay_model, criticalities, cube_bb, blocks_affected,
+            place_algorithm, delay_model, criticalities, blocks_affected,
             bb_delta_c, timing_delta_c);
 
         //For setup slack analysis, we first do a timing analysis to get the newest
@@ -1810,7 +1806,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             /* Update net cost functions and reset flags. */
             update_move_nets(num_nets_affected,
-                             cube_bb);
+                             g_vpr_ctx.placement().cube_bb);
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
@@ -1924,19 +1920,24 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     bool cube_bb;
     const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
 
+    // If the FPGA has only layer, then we can only use cube bounding box
     if (number_layers == 1) {
         cube_bb = true;
     } else {
         VTR_ASSERT(number_layers > 1);
         if (place_bb_mode == AUTO_BB) {
+            // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
+            // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
             if (inter_layer_connections_limited_to_opin(rr_graph)) {
                 cube_bb = false;
             } else {
                 cube_bb = true;
             }
         } else if (place_bb_mode == CUBE_BB) {
+            // The user has specifically asked for CUBE_BB
             cube_bb = true;
         } else {
+            // The user has specifically asked for PER_LAYER_BB
             VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
             cube_bb = false;
         }
@@ -1971,7 +1972,6 @@ static int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
-    const bool cube_bb,
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c) {
@@ -1980,6 +1980,8 @@ static int find_affected_nets_and_update_costs(
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int num_affected_nets = 0;
+
+    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
 
     /* Go through all the blocks moved. */
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
@@ -2639,7 +2641,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         place_move_ctx.bb_coords.resize(num_nets, t_bb());
         place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT(!cube_bb);
+        VTR_ASSERT_SAFE(!cube_bb);
         place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
     }
@@ -2714,7 +2716,7 @@ static void alloc_and_load_try_swap_structs(const bool cube_bb) {
         ts_bb_edge_new.resize(num_nets, t_bb());
         ts_bb_coord_new.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT(!cube_bb);
+        VTR_ASSERT_SAFE(!cube_bb);
         layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
     }
@@ -2836,9 +2838,9 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     num_on_edges.ymax = ymax_edge;
 }
 
-/* This routine finds the bounding box of each net from scratch (i.e.   *
- * from only the block location information).  It updates both the       *
- * coordinate and number of pins on each edge information.  It           *
+/* This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e.   *
+ * from only the block location information).  It updates the       *
+ * coordinate, number of pins on each edge information, and the number of sinks on each layer.  It           *
  * should only be called when the bounding box information is not valid. */
 static void get_layer_bb_from_scratch(ClusterNetId net_id,
                                       std::vector<t_2D_bb>& num_on_edges,
@@ -2846,9 +2848,6 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
                                       std::vector<int>& layer_pin_sink_count) {
     auto& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
-    num_on_edges.resize(num_layers, t_2D_bb());
-    coords.resize(num_layers, t_2D_bb());
-    layer_pin_sink_count.resize(num_layers, 0);
     std::vector<int> xmin(num_layers, OPEN);
     std::vector<int> xmax(num_layers, OPEN);
     std::vector<int> ymin(num_layers, OPEN);
@@ -3159,10 +3158,7 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
     auto& device_ctx = g_vpr_ctx.device();
     int num_layers = device_ctx.grid.get_num_layers();
     num_sink_layer = std::vector<int>(num_layers, 0);
-    std::vector<int> xmin(num_layers, OPEN);
-    std::vector<int> ymin(num_layers, OPEN);
-    std::vector<int> xmax(num_layers, OPEN);
-    std::vector<int> ymax(num_layers, OPEN);
+
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -3176,12 +3172,10 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
     int src_y = place_ctx.block_locs[bnum].loc.y
                 + physical_tile_type(bnum)->pin_height_offset[pnum];
 
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        xmin[layer_num] = src_x;
-        ymin[layer_num] = src_y;
-        xmax[layer_num] = src_x;
-        ymax[layer_num] = src_y;
-    }
+    std::vector<int> xmin(num_layers, src_x);
+    std::vector<int> ymin(num_layers, src_y);
+    std::vector<int> xmax(num_layers, src_x);
+    std::vector<int> ymax(num_layers, src_y);
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
@@ -3214,11 +3208,18 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-        bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-        bb_coord_new[layer_num].xmax = max(min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-        bb_coord_new[layer_num].ymax = max(min<int>(ymax[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
         bb_coord_new[layer_num].layer_num = layer_num;
+        if (num_sink_layer[layer_num] == 0) {
+            bb_coord_new[layer_num].xmin = OPEN;
+            bb_coord_new[layer_num].ymin = OPEN;
+            bb_coord_new[layer_num].xmax = OPEN;
+            bb_coord_new[layer_num].ymax = OPEN;
+        } else {
+            bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+            bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+            bb_coord_new[layer_num].xmax = max(min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+            bb_coord_new[layer_num].ymax = max(min<int>(ymax[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+        }
     }
 }
 

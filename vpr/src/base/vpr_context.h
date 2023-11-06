@@ -391,13 +391,6 @@ struct PlacementContext : public Context {
     t_compressed_block_grids compressed_block_grids;
 
     /**
-     * @brief SHA256 digest of the .init.place file
-     *
-     * Used for unique identification and consistency checking
-     */
-    std::string initial_placement_id;
-
-    /**
      * @brief SHA256 digest of the .place file
      *
      * Used for unique identification and consistency checking
@@ -411,7 +404,8 @@ struct PlacementContext : public Context {
     bool f_placer_debug = false;
 
     /**
-     * Indicate whether the bounding box used in placement is a cube or per-layer
+     * Set this variable to ture if the type of the bounding box used in placement is of the type cube. If it is false,
+     * it would mean that per-layer bounding box is used. For the 2D architecture, the cube bounding box would be used.
      */
     bool cube_bb = false;
 };

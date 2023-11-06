@@ -257,6 +257,14 @@ static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<i
  */
 static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opin_global_cost_map);
 
+/**
+ * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink
+ * @param src_opin_delay_map
+ * @param layer_num
+ * @param delta_x
+ * @param delta_y
+ * @return (delay, congestion)
+ */
 static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
                                                       int from_layer_num,
                                                       int delta_x,

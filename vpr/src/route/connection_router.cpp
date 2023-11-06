@@ -5,92 +5,31 @@
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
-static inline bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
-                                    const RRGraphView* rr_graph,
-                                    RRNodeId from_node,
-                                    RRNodeId sink_node) {
-    // ASSUMPTION: Only OPINs can connect to other layers
+/**
+ * @brief This function is relevant when the architecture is 3D. If inter-layer connections are only from OPINs (determine by is_inter_layer_opin_connection),
+ * then nodes (other that OPINs) which are on the other layer than sink's layer, don't need to be pushed back to the heap.
+ * @param rr_nodes
+ * @param rr_graph
+ * @param from_node
+ * @param sink_node
+ * @param is_inter_layer_opin_connection It is true if the architecture is 3D and inter-layer connections are only from OPINs.
+ * @return
+ */
+static bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
+                             const RRGraphView* rr_graph,
+                             RRNodeId from_node,
+                             RRNodeId sink_node,
+                             bool is_inter_layer_opin_connection);
 
-    int sink_layer = rr_graph->node_layer(sink_node);
+static bool relevant_node_to_target(const RRGraphView* rr_graph,
+                                    RRNodeId node_to_add,
+                                    RRNodeId target_node);
 
-    if (rr_graph->node_layer(from_node) == sink_layer || rr_graph->node_type(from_node) == SOURCE) {
-        return true;
-    } else if (rr_graph->node_type(from_node) == CHANX || rr_graph->node_type(from_node) == CHANY || rr_graph->node_type(from_node) == IPIN) {
-        return false;
-    } else {
-        VTR_ASSERT(rr_graph->node_type(from_node) == OPIN);
-        auto edges = rr_nodes.edge_range(from_node);
-
-        //        for (RREdgeId from_edge : edges) {
-        //            RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
-        //            rr_nodes.prefetch_node(to_node);
-        //
-        //            int switch_idx = rr_nodes.edge_switch(from_edge);
-        //            VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
-        //        }
-
-        for (RREdgeId from_edge : edges) {
-            RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
-            if (rr_graph->node_layer(to_node) == sink_layer) {
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
-static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
-                                           RRNodeId node_to_add,
-                                           RRNodeId target_node) {
-    VTR_ASSERT(rr_graph->node_type(target_node) == t_rr_type::SINK);
-    auto node_to_add_type = rr_graph->node_type(node_to_add);
-    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY || node_to_add_type == SINK) {
-        return true;
-    } else if (node_in_same_physical_tile(node_to_add, target_node)) {
-        VTR_ASSERT(node_to_add_type == IPIN);
-        return true;
-    }
-    return false;
-}
-
-inline void update_router_stats(const DeviceContext& device_ctx,
+static void update_router_stats(const DeviceContext& device_ctx,
                                 const RRGraphView* rr_graph,
                                 RouterStats* router_stats,
                                 RRNodeId rr_node_id,
-                                bool is_push) {
-    if (is_push) {
-        router_stats->heap_pushes++;
-    } else {
-        router_stats->heap_pops++;
-    }
-
-    auto node_type = rr_graph->node_type(rr_node_id);
-    VTR_ASSERT(node_type != NUM_RR_TYPES);
-    t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph->node_xlow(rr_node_id),
-                                                                                rr_graph->node_ylow(rr_node_id),
-                                                                                rr_graph->node_layer(rr_node_id)});
-
-    if (is_inter_cluster_node(physical_type,
-                              node_type,
-                              rr_graph->node_ptc_num(rr_node_id))) {
-        if (is_push) {
-            router_stats->inter_cluster_node_pushes++;
-            router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
-        } else {
-            router_stats->inter_cluster_node_pops++;
-            router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
-        }
-
-    } else {
-        if (is_push) {
-            router_stats->intra_cluster_node_pushes++;
-            router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
-        } else {
-            router_stats->intra_cluster_node_pops++;
-            router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
-        }
-    }
-}
+                                bool is_push);
 
 /** return tuple <found_path, retry_with_full_bb, cheapest> */
 template<typename Heap>
@@ -978,7 +917,7 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
-        if (target_node.is_valid() && !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node))) {
+        if (target_node.is_valid() && !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node), only_opin_inter_layer)) {
             return;
         }
         add_route_tree_node_to_heap(rt_node,
@@ -1134,7 +1073,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                         continue;
                 }
 
-                if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), target_node)) {
+                if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), target_node, only_opin_inter_layer)) {
                     continue;
                 }
                 // Put the node onto the heap
@@ -1181,6 +1120,84 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     }
 
     return bounding_box;
+}
+
+static inline bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
+                                    const RRGraphView* rr_graph,
+                                    RRNodeId from_node,
+                                    RRNodeId sink_node,
+                                    bool is_inter_layer_opin_connection) {
+    int sink_layer = rr_graph->node_layer(sink_node);
+
+    if (rr_graph->node_layer(from_node) == sink_layer || rr_graph->node_type(from_node) == SOURCE || !is_inter_layer_opin_connection) {
+        return true;
+    } else if (rr_graph->node_type(from_node) == CHANX || rr_graph->node_type(from_node) == CHANY || rr_graph->node_type(from_node) == IPIN) {
+        return false;
+    } else {
+        VTR_ASSERT(rr_graph->node_type(from_node) == OPIN && is_inter_layer_opin_connection);
+        auto edges = rr_nodes.edge_range(from_node);
+
+        for (RREdgeId from_edge : edges) {
+            RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
+            if (rr_graph->node_layer(to_node) == sink_layer) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
+                                           RRNodeId node_to_add,
+                                           RRNodeId target_node) {
+    VTR_ASSERT(rr_graph->node_type(target_node) == t_rr_type::SINK);
+    auto node_to_add_type = rr_graph->node_type(node_to_add);
+    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY || node_to_add_type == SINK) {
+        return true;
+    } else if (node_in_same_physical_tile(node_to_add, target_node)) {
+        VTR_ASSERT(node_to_add_type == IPIN);
+        return true;
+    }
+    return false;
+}
+
+static inline void update_router_stats(const DeviceContext& device_ctx,
+                                       const RRGraphView* rr_graph,
+                                       RouterStats* router_stats,
+                                       RRNodeId rr_node_id,
+                                       bool is_push) {
+    if (is_push) {
+        router_stats->heap_pushes++;
+    } else {
+        router_stats->heap_pops++;
+    }
+
+    auto node_type = rr_graph->node_type(rr_node_id);
+    VTR_ASSERT(node_type != NUM_RR_TYPES);
+    t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph->node_xlow(rr_node_id),
+                                                                                rr_graph->node_ylow(rr_node_id),
+                                                                                rr_graph->node_layer(rr_node_id)});
+
+    if (is_inter_cluster_node(physical_type,
+                              node_type,
+                              rr_graph->node_ptc_num(rr_node_id))) {
+        if (is_push) {
+            router_stats->inter_cluster_node_pushes++;
+            router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
+        } else {
+            router_stats->inter_cluster_node_pops++;
+            router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
+        }
+
+    } else {
+        if (is_push) {
+            router_stats->intra_cluster_node_pushes++;
+            router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
+        } else {
+            router_stats->intra_cluster_node_pops++;
+            router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
+        }
+    }
 }
 
 std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type heap_type,

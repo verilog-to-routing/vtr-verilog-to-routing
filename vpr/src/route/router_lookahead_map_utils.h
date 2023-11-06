@@ -288,6 +288,11 @@ typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_d
 // and the tile's IPIN. If there are many connections to the same IPIN, the one with the minimum delay is selected.
 typedef std::vector<std::vector<std::vector<t_reachable_wire_inf>>> t_chan_ipins_delays;
 
+/**
+ * @brief For each tile, iterate over its OPINs and store which segment types are accessible from each OPIN
+ * @param is_flat
+ * @return
+ */
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat);
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead();

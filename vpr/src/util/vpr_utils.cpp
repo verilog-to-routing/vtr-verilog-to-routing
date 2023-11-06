@@ -2514,9 +2514,13 @@ float get_min_cross_layer_delay(const std::vector<t_arch_switch_inf>& arch_switc
                                 const int wire_to_ipin_arch_sw_id) {
     float min_delay = std::numeric_limits<float>::max();
 
+    // Check whether the inter-layer switch type for connection block is defined. If it is,
+    // get the delay of it.
     if (wire_to_ipin_arch_sw_id != OPEN) {
-        min_delay = std::min(min_delay, arch_switch_inf[wire_to_ipin_arch_sw_id].Tdel());
+        min_delay = arch_switch_inf[wire_to_ipin_arch_sw_id].Tdel();
     }
+
+    // Iterate over inter-layer switch types of segments to find the minimum delay
     for (const auto& seg_inf : segment_inf) {
         int cross_layer_sw_arch_id = seg_inf.arch_opin_between_dice_switch;
         if (cross_layer_sw_arch_id != OPEN) {

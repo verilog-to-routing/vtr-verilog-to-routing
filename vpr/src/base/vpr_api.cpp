@@ -755,7 +755,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
 
     print_place(filename_opts.NetFile.c_str(),
                 cluster_ctx.clb_nlist.netlist_id().c_str(),
-                filename_opts.PlaceFile.c_str(), false);
+                filename_opts.PlaceFile.c_str());
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {

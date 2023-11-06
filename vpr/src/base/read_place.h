@@ -19,7 +19,6 @@ void read_constraints(const char* constraints_file);
 
 void print_place(const char* net_file,
                  const char* net_id,
-                 const char* place_file,
-                 bool is_initial_place);
+                 const char* place_file);
 
 #endif
