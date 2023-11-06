@@ -710,13 +710,14 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
 static int get_tile_src_opin_max_ptc_from_rr_graph(int itile) {
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& physical_tile = device_ctx.physical_tile_types[itile];
     const auto& rr_graph = device_ctx.rr_graph;
     const int num_layers = device_ctx.grid.get_num_layers();
     int max_ptc = OPEN;
 
     int tile_layer_num = OPEN;
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], layer_num) > 0) {
+        if (device_ctx.grid.num_instances(&physical_tile, layer_num) > 0) {
             tile_layer_num = layer_num;
             break;
         }
@@ -724,18 +725,18 @@ static int get_tile_src_opin_max_ptc_from_rr_graph(int itile) {
 
     if (tile_layer_num == OPEN) {
         VTR_LOG_WARN("Found no sample locations for %s\n",
-                     device_ctx.physical_tile_types[itile].name);
+                     physical_tile.name);
         max_ptc = OPEN;
     } else {
         for (e_rr_type rr_type : {SOURCE, OPIN}) {
             t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
-            sample_loc = pick_sample_tile(tile_layer_num, &device_ctx.physical_tile_types[itile], sample_loc);
+            sample_loc = pick_sample_tile(tile_layer_num, &physical_tile, sample_loc);
 
             if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
                 //No untried instances of the current tile type left
                 VTR_LOG_WARN("Found no sample locations for %s in %s\n",
                              rr_node_typename[rr_type],
-                             device_ctx.physical_tile_types[itile].name);
+                             physical_tile.name);
                 return OPEN;
             }
 
@@ -746,7 +747,7 @@ static int get_tile_src_opin_max_ptc_from_rr_graph(int itile) {
             for (RRNodeId node_id : rr_nodes_at_loc) {
                 int ptc = rr_graph.node_ptc_num(node_id);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                if (!is_inter_cluster_node(&device_ctx.physical_tile_types[itile],
+                if (!is_inter_cluster_node(&physical_tile,
                                            rr_type,
                                            ptc)) {
                     continue;
