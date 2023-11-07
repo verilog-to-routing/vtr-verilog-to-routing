@@ -1494,7 +1494,6 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       const int detailed_routing_stage,
                       AttractionInfo& attraction_groups,
                       vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
-                      bool allow_high_fanout_connectivity_clustering,
                       bool allow_unrelated_clustering,
                       const int& high_fanout_threshold,
                       const std::unordered_set<AtomNetId>& is_clock,
@@ -1507,8 +1506,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_molecule_link* unclustered_list_head,
                       const int& unclustered_list_head_size,
                       std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
-                      std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                      bool noc_enabled) {
+                      std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
@@ -1556,7 +1554,6 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
 
         next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                  attraction_groups,
-                                                 allow_high_fanout_connectivity_clustering,
                                                  allow_unrelated_clustering,
                                                  packer_opts.prioritize_transitive_connectivity,
                                                  packer_opts.transitive_fanout_threshold,
@@ -1602,8 +1599,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                          high_fanout_threshold,
                          *timing_info,
                          attraction_groups,
-                         net_output_feeds_driving_block_input,
-                         noc_enabled);
+                         net_output_feeds_driving_block_input);
     cluster_stats.num_unrelated_clustering_attempts = 0;
 
     if (packer_opts.timing_driven) {
@@ -1611,7 +1607,6 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
     }
     next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                              attraction_groups,
-                                             allow_high_fanout_connectivity_clustering,
                                              allow_unrelated_clustering,
                                              packer_opts.prioritize_transitive_connectivity,
                                              packer_opts.transitive_fanout_threshold,
@@ -1765,8 +1760,7 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
                                   const SetupTimingInfo& timing_info,
                                   const std::unordered_set<AtomNetId>& is_global,
                                   const int high_fanout_net_threshold,
-                                  std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
-                                  bool noc_enabled) {
+                                  std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
     /* Updates the marked data structures, and if gain_flag is GAIN,  *
      * the gain when an atom block is added to a cluster.  The        *
      * sharinggain is the number of inputs that a atom block shares with   *
@@ -1783,10 +1777,7 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
         /* Optimization: It can be too runtime costly for marking all sinks for
          * a high fanout-net that probably has no hope of ever getting packed,
          * thus ignore those high fanout nets */
-        /* There are VCC and GND nets in the netlist. These nets have a high fanout,
-         * but their sinks do not necessarily have a logical relation with each other.
-         * Therefore, we exclude constant nets when evaluating high fanout connectivity. */
-        if (!is_global.count(net_id) && (!noc_enabled || !atom_ctx.nlist.net_is_constant(net_id))) {
+        if (!is_global.count(net_id)) {
             /* If no low/medium fanout nets, we may need to consider
              * high fan-out nets for packing, so select one and store it */
             AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
@@ -1922,8 +1913,7 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const int high_fanout_net_threshold,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
-                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
-                          bool noc_enabled) {
+                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
     /* Routine that is called each time a new molecule is added to the cluster.
      * Makes calls to update cluster stats such as the gain map for atoms, used pins, and clock structures,
      * in order to reflect the new content of the cluster.
@@ -1980,8 +1970,7 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                                              timing_info,
                                              is_global,
                                              high_fanout_net_threshold,
-                                             net_output_feeds_driving_block_input,
-                                             noc_enabled);
+                                             net_output_feeds_driving_block_input);
             } else {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                                              timing_driven,
@@ -1989,8 +1978,7 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                                              timing_info,
                                              is_global,
                                              high_fanout_net_threshold,
-                                             net_output_feeds_driving_block_input,
-                                             noc_enabled);
+                                             net_output_feeds_driving_block_input);
             }
         }
 
@@ -2003,8 +1991,7 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                                          timing_info,
                                          is_global,
                                          high_fanout_net_threshold,
-                                         net_output_feeds_driving_block_input,
-                                         noc_enabled);
+                                         net_output_feeds_driving_block_input);
         }
 
         /* Finally Clocks */
@@ -2016,16 +2003,14 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                                              timing_info,
                                              is_global,
                                              high_fanout_net_threshold,
-                                             net_output_feeds_driving_block_input,
-                                             noc_enabled);
+                                             net_output_feeds_driving_block_input);
             } else {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
                                              timing_driven, connection_driven, INPUT,
                                              timing_info,
                                              is_global,
                                              high_fanout_net_threshold,
-                                             net_output_feeds_driving_block_input,
-                                             noc_enabled);
+                                             net_output_feeds_driving_block_input);
             }
         }
 
@@ -2216,7 +2201,6 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                            const ClusterBlockId cluster_index,
                                            bool prioritize_transitive_connectivity,
-                                           bool allow_high_fanout_connectivity_clustering,
                                            int transitive_fanout_threshold,
                                            const int feasible_block_array_size,
                                            std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
@@ -2243,12 +2227,12 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         }
 
         // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
-        if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net && allow_high_fanout_connectivity_clustering) {
+        if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, feasible_block_array_size, attraction_groups);
         }
     } else { //Reverse order
         // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
-        if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net && allow_high_fanout_connectivity_clustering) {
+        if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, feasible_block_array_size, attraction_groups);
         }
 
@@ -2521,7 +2505,6 @@ bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, t_clust
 /*****************************************/
 t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           AttractionInfo& attraction_groups,
-                                          const bool allow_high_fanout_connectivity_clustering,
                                           const bool allow_unrelated_clustering,
                                           const bool prioritize_transitive_connectivity,
                                           const int transitive_fanout_threshold,
@@ -2545,7 +2528,7 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
 
     auto best_molecule = get_highest_gain_molecule(cur_pb, attraction_groups,
                                                    NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets,
-                                                   cluster_index, prioritize_transitive_connectivity, allow_high_fanout_connectivity_clustering,
+                                                   cluster_index, prioritize_transitive_connectivity,
                                                    transitive_fanout_threshold, feasible_block_array_size, primitive_candidate_block_types);
 
     /* If no blocks have any gain to the current cluster, the code above      *

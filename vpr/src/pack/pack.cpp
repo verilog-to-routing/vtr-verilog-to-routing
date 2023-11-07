@@ -37,28 +37,13 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
  */
 static int count_models(const t_model* user_models);
 
-/**
- * @brief Tries to find nets with high fanout that are used as control signals.
- * This function first identifies the clock net with maximum fanout. Then, finds
- * all non-clock nets that have at least as many as 60 percent of the number of sinks
- * driven by the clock with the maximum fanout. These nets should not be used to find
- * candidate atoms based on high fanout connectivity to fill a cluster as they are
- * unlikely to represent any logical relation between their sinks.
- *
- * @param clocks A set containing all clock nets
- * @return std::unordered_set<AtomNetId> A set containing all nets that are
- * likely to be global control nets (e.g. reset, clock enable).
- */
-static std::unordered_set<AtomNetId> find_likely_global_ctrl_nets(const std::unordered_set<AtomNetId>& clocks);
-
 bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,
               const t_arch* arch,
               const t_model* user_models,
               const t_model* library_models,
               float interc_delay,
-              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-              bool noc_enabled) {
+              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
@@ -74,7 +59,6 @@ bool try_pack(t_packer_opts* packer_opts,
     helper_ctx.num_models += count_models(library_models);
 
     is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
-    //    is_global = find_likely_global_ctrl_nets(is_clock);
     is_global.insert(is_clock.begin(), is_clock.end());
 
     size_t num_p_inputs = 0;
@@ -143,24 +127,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
     int pack_iteration = 1;
     bool floorplan_regions_overfull = false;
-    bool allow_high_fanout_connectivity_clustering;
-
-    /* If the design contains NoC routers, don't use high fanout connectivity
-     * to find candidate atoms for growing the current cluster. In NoC-based designs,
-     * modules connected to different routers may not have any shared net except for
-     * clock and other global signals. By not using high fanout connectivity,
-     * atoms belonging to different modules become less likely to be clustered together.
-     * This allows the placement engine to place clustered blocks closer to their
-     * corresponding NoC router, reducing WL as a result. Otherwise, blocks containing
-     * atoms from two different modules would be stretched between two routers.
-     */
-    if (noc_enabled) {
-        allow_high_fanout_connectivity_clustering = false;
-    } else {
-        allow_high_fanout_connectivity_clustering = true;
-    }
-
-    allow_high_fanout_connectivity_clustering = true;
 
     while (true) {
         free_clustering_data(*packer_opts, clustering_data);
@@ -173,14 +139,12 @@ bool try_pack(t_packer_opts* packer_opts,
             is_clock,
             is_global,
             expected_lowest_cost_pb_gnode,
-            allow_high_fanout_connectivity_clustering,
             allow_unrelated_clustering,
             balance_block_type_util,
             lb_type_rr_graphs,
             attraction_groups,
             floorplan_regions_overfull,
-            clustering_data,
-            noc_enabled);
+            clustering_data);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
@@ -193,19 +157,7 @@ bool try_pack(t_packer_opts* packer_opts,
 
         if (fits_on_device && !floorplan_regions_overfull) {
             break; //Done
-            /*
-             * If NoC is enabled and the first packing attempt has failed, we don't care whether a floorplan constraint couldn't be satisfied
-             * or the clustered netlist does not fit into the target FPGA device. Enabling high fanout connectivity clustering
-             * can help with both, so we enable it.
-             */
-        } else if (noc_enabled && pack_iteration == 1) {
-            VTR_ASSERT(allow_high_fanout_connectivity_clustering == false);
-            allow_high_fanout_connectivity_clustering = true;
-            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s allow_high_fanout_connectivity_clustering=%s\n",
-                    (allow_unrelated_clustering ? "true" : "false"),
-                    (balance_block_type_util ? "true" : "false"),
-                    (allow_high_fanout_connectivity_clustering ? "true" : "false"));
-        } else if (!floorplan_not_fitting && ((noc_enabled && pack_iteration == 2) || (!noc_enabled && pack_iteration == 1))) {
+        } else if (pack_iteration == 1 && !floorplan_not_fitting) {
             //1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
             //
             //Turn it on to increase packing density
@@ -217,10 +169,9 @@ bool try_pack(t_packer_opts* packer_opts,
                 VTR_ASSERT(balance_block_type_util == false);
                 balance_block_type_util = true;
             }
-            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s allow_high_fanout_connectivity_clustering=%s\n",
+            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
                     (allow_unrelated_clustering ? "true" : "false"),
-                    (balance_block_type_util ? "true" : "false"),
-                    (allow_high_fanout_connectivity_clustering ? "true" : "false"));
+                    (balance_block_type_util ? "true" : "false"));
             /*
              * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
              * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
@@ -231,21 +182,21 @@ bool try_pack(t_packer_opts* packer_opts,
              * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
              * until the last iteration, when we create attraction groups for every partition, if needed.
              */
-        } else if (floorplan_not_fitting && ((!noc_enabled && pack_iteration == 1) || (noc_enabled && pack_iteration == 2))) {
+        } else if (pack_iteration == 1 && floorplan_not_fitting) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
             attraction_groups.create_att_groups_for_overfull_regions();
             attraction_groups.set_att_group_pulls(1);
 
-        } else if (floorplan_not_fitting && ((!noc_enabled && pack_iteration >= 2 && pack_iteration < 5) || (noc_enabled && pack_iteration >= 3 && pack_iteration < 6))) {
-            if ((!noc_enabled && pack_iteration == 2) || (noc_enabled && pack_iteration == 3)) {
+        } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
+            if (pack_iteration == 2) {
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 attraction_groups.create_att_groups_for_overfull_regions();
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
-            } else if ((!noc_enabled && pack_iteration == 3) || (noc_enabled && pack_iteration == 4)) {
+            } else if (pack_iteration == 3)  {
                 attraction_groups.create_att_groups_for_all_regions();
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
-            } else if ((!noc_enabled && pack_iteration == 4) || (noc_enabled && pack_iteration == 5)) {
+            } else if (pack_iteration == 4)  {
                 attraction_groups.create_att_groups_for_all_regions();
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
@@ -378,35 +329,6 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
     }
 
     return (is_clock);
-}
-
-std::unordered_set<AtomNetId> find_likely_global_ctrl_nets(const std::unordered_set<AtomNetId>& clocks) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    std::unordered_set<AtomNetId> likely_reset;
-
-    if (clocks.empty()) {
-        return likely_reset;
-    }
-
-    size_t max_clk_sinks = 0;
-
-    for (auto clk_net_id : clocks) {
-        size_t n_sinks = atom_ctx.nlist.net_sinks(clk_net_id).size();
-        max_clk_sinks = std::max(max_clk_sinks, n_sinks);
-    }
-
-    constexpr float high_fanout_reset_sinks_ratio = 0.6;
-    for (auto net_id : atom_ctx.nlist.nets()) {
-        size_t n_sinks = atom_ctx.nlist.net_sinks(net_id).size();
-        bool is_net_clock = clocks.count(net_id);
-
-        if (n_sinks > high_fanout_reset_sinks_ratio * max_clk_sinks && !is_net_clock) {
-            likely_reset.insert(net_id);
-        }
-    }
-
-    return likely_reset;
 }
 
 static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
