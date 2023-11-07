@@ -2646,6 +2646,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
     }
 
+    place_move_ctx.num_sink_pin_layer.resize(num_nets);
     std::for_each(place_move_ctx.num_sink_pin_layer.begin(), place_move_ctx.num_sink_pin_layer.end(), [](auto& arr) {
         std::fill(arr.begin(), arr.end(), 0);
     });
@@ -2722,6 +2723,7 @@ static void alloc_and_load_try_swap_structs(const bool cube_bb) {
         layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
     }
+    ts_layer_sink_pin_count.resize(num_nets);
     std::for_each(ts_layer_sink_pin_count.begin(), ts_layer_sink_pin_count.end(), [](auto& arr) {
         std::fill(arr.begin(), arr.end(), 0);
     });
