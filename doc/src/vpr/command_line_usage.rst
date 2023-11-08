@@ -784,7 +784,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     **Default:** ``0.0``
 
 .. _dusty_sa_options:
-Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>`_.
+Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>`.
 
 .. option:: --alpha_min <float>
 
