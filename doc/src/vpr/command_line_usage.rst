@@ -938,6 +938,13 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:** ``0``
 
+.. option:: --quench_recompute_divider <int>
+
+    Controls how many times the placer performs a timing analysis to update its criticality estimates during a quench. 
+    If unspecified, uses the value from --inner_loop_recompute_divider.
+
+    **Default:** ``0``
+
 .. option:: --td_place_exp_first <float>
 
     Controls how critical a connection is considered as a function of its slack, at the start of the anneal.
