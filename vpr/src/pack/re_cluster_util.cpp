@@ -115,6 +115,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 }
 
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
+                               int molecule_size,
                                const t_logical_block_type_ptr& type,
                                const int mode,
                                const int feasible_block_array_size,
@@ -185,6 +186,16 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
         } else {
             cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route = alloc_and_load_pb_route((*router_data)->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node);
         }
+        if (helper_ctx.atoms_lookup.size() < cluster_ctx.clb_nlist.blocks().size() + 1) {
+            helper_ctx.atoms_lookup.resize(cluster_ctx.clb_nlist.blocks().size() + 1);
+        }
+        for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
+            auto blk_id = molecule->atom_block_ids[i_atom];
+            if (blk_id) {
+                helper_ctx.atoms_lookup[clb_index].insert(blk_id);
+            }
+        }
+        update_cluster_pb_stats(molecule, molecule_size, clb_index, true);
     } else {
         free_pb(pb);
         delete pb;

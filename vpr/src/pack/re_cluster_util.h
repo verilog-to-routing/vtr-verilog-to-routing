@@ -78,6 +78,7 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
  * @param temp_cluster_pr: returns the partition region of the new cluster.
  */
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
+                               int molecule_size,
                                const t_logical_block_type_ptr& type,
                                const int mode,
                                const int feasible_block_array_size,

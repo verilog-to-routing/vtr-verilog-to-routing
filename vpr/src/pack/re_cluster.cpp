@@ -57,6 +57,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
     //Create new cluster of the same type and mode.
     ClusterBlockId new_clb(helper_ctx.total_clb_num);
     is_created = start_new_cluster_for_mol(molecule,
+                                           molecule_size,
                                            block_type,
                                            block_mode,
                                            helper_ctx.feasible_block_array_size,
