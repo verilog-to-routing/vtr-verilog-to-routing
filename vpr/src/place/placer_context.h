@@ -104,7 +104,7 @@ struct PlacerMoveContext : public Context {
     vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_coords;
 
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
-    vtr::vector<ClusterNetId, std::array<int, MAX_NUM_LAYERS>> num_sink_pin_layer;
+    vtr::Matrix<int> num_sink_pin_layer;
 
     // The first range limit calculated by the anneal
     float first_rlim;

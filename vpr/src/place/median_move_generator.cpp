@@ -114,7 +114,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.Y_coord.push_back(coords.ymax);
         if (is_multi_layer) {
             for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
+                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num];
             }
             // If the pin under consideration is of type sink, it shouldn't be added to layer_blk_cnt since the block
             // is moving
