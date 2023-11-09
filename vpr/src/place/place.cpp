@@ -2648,7 +2648,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     place_move_ctx.num_sink_pin_layer.resize(num_nets);
     std::for_each(place_move_ctx.num_sink_pin_layer.begin(), place_move_ctx.num_sink_pin_layer.end(), [](auto& arr) {
-        std::fill(arr.begin(), arr.end(), 0);
+        std::fill(arr.begin(), arr.end(), OPEN);
     });
 
     /* Used to store costs for moves not yet made and to indicate when a net's   *
@@ -2725,7 +2725,7 @@ static void alloc_and_load_try_swap_structs(const bool cube_bb) {
     }
     ts_layer_sink_pin_count.resize(num_nets);
     std::for_each(ts_layer_sink_pin_count.begin(), ts_layer_sink_pin_count.end(), [](auto& arr) {
-        std::fill(arr.begin(), arr.end(), 0);
+        std::fill(arr.begin(), arr.end(), OPEN);
     });
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
 
