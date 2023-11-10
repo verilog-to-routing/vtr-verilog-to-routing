@@ -1908,8 +1908,10 @@ t_bb calc_current_bb(const RouteTree& tree) {
     t_bb bb;
     bb.xmin = grid.width() - 1;
     bb.ymin = grid.height() - 1;
+    bb.layer_min = grid.get_num_layers() - 1;
     bb.xmax = 0;
     bb.ymax = 0;
+    bb.layer_max = 0;
 
     for (auto& rt_node : tree.all_nodes()) {
         //The router interprets RR nodes which cross the boundary as being
@@ -1918,8 +1920,10 @@ t_bb calc_current_bb(const RouteTree& tree) {
         //and xlow/ylow for xmax/ymax calculations
         bb.xmin = std::min<int>(bb.xmin, rr_graph.node_xhigh(rt_node.inode));
         bb.ymin = std::min<int>(bb.ymin, rr_graph.node_yhigh(rt_node.inode));
+        bb.layer_min = std::min<int>(bb.layer_min, rr_graph.node_layer(rt_node.inode));
         bb.xmax = std::max<int>(bb.xmax, rr_graph.node_xlow(rt_node.inode));
         bb.ymax = std::max<int>(bb.ymax, rr_graph.node_ylow(rt_node.inode));
+        bb.layer_max = std::max<int>(bb.layer_max, rr_graph.node_layer(rt_node.inode));
     }
 
     VTR_ASSERT(bb.xmin <= bb.xmax);

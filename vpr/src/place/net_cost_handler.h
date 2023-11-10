@@ -27,7 +27,10 @@ int find_affected_nets_and_update_costs(
 
 double comp_bb_cost(e_cost_methods method);
 
-void update_move_nets(int num_nets_affected);
+double comp_layer_bb_cost(e_cost_methods method);
+
+void update_move_nets(int num_nets_affected,
+                      const bool cube_bb);
 
 void reset_move_nets(int num_nets_affected);
 
@@ -45,6 +48,6 @@ void init_net_cost_structs(size_t num_nets);
 
 void free_net_cost_structs();
 
-void init_try_swap_net_cost_structs(size_t num_nets);
+void init_try_swap_net_cost_structs(size_t num_nets, bool cube_bb);
 
 void free_try_swap_net_cost_structs();

@@ -198,13 +198,22 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
 void print_clb_placement(const char* fname);
 #endif
 
+/**
+ * @brief determine the type of the bounding box used by the placer to predict the wirelength
+ *
+ * @param place_bb_mode The bounding box mode passed by the CLI
+ * @param rr_graph The routing resource graph
+ */
+static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
+                       const RRGraphView& rr_graph);
+
 static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
                                              int num_directs);
 
-static void alloc_and_load_try_swap_structs();
+static void alloc_and_load_try_swap_structs(const bool cube_bb);
 static void free_try_swap_structs();
 
 static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
@@ -241,7 +250,20 @@ static int check_placement_consistency();
 static int check_block_placement_consistency();
 static int check_macro_placement_consistency();
 
-static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, NetPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts, MoveTypeStat& move_type_stat);
+static float starting_t(const t_annealing_state* state,
+                        t_placer_costs* costs,
+                        t_annealing_sched annealing_sched,
+                        const PlaceDelayModel* delay_model,
+                        PlacerCriticalities* criticalities,
+                        PlacerSetupSlacks* setup_slacks,
+                        SetupTimingInfo* timing_info,
+                        MoveGenerator& move_generator,
+                        ManualMoveGenerator& manual_move_generator,
+                        NetPinTimingInvalidator* pin_timing_invalidator,
+                        t_pl_blocks_to_be_moved& blocks_affected,
+                        const t_placer_opts& placer_opts,
+                        const t_noc_opts& noc_opts,
+                        MoveTypeStat& move_type_stat);
 
 static int count_connections();
 
@@ -404,6 +426,7 @@ void try_place(const Netlist<>& net_list,
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(net_list,
+                                                          device_ctx.arch_switch_inf,
                                                           chan_width_dist,
                                                           placer_opts,
                                                           router_opts,
@@ -418,6 +441,14 @@ void try_place(const Netlist<>& net_list,
                 getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
         }
     }
+
+    g_vpr_ctx.mutable_placement().cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode,
+                                                       device_ctx.rr_graph);
+    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
+
+    VTR_LOG("\n");
+    VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
+    VTR_LOG("\n");
 
     int move_lim = 1;
     move_lim = (int)(annealing_sched.inner_num
@@ -444,6 +475,12 @@ void try_place(const Netlist<>& net_list,
                       placer_opts.pad_loc_type,
                       placer_opts.constraints_file.c_str(),
                       noc_opts.noc);
+
+    if (!placer_opts.write_initial_place_file.empty()) {
+        print_place(nullptr,
+                    nullptr,
+                    (placer_opts.write_initial_place_file + ".init.place").c_str());
+    }
 
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
@@ -474,7 +511,12 @@ void try_place(const Netlist<>& net_list,
     /* Gets initial cost and loads bounding boxes. */
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        costs.bb_cost = comp_bb_cost(NORMAL);
+        if (cube_bb) {
+            costs.bb_cost = comp_bb_cost(NORMAL);
+        } else {
+            VTR_ASSERT_SAFE(!cube_bb);
+            costs.bb_cost = comp_layer_bb_cost(NORMAL);
+        }
 
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
@@ -554,7 +596,12 @@ void try_place(const Netlist<>& net_list,
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
         /* Total cost is the same as wirelength cost normalized*/
-        costs.bb_cost = comp_bb_cost(NORMAL);
+        if (cube_bb) {
+            costs.bb_cost = comp_bb_cost(NORMAL);
+        } else {
+            VTR_ASSERT_SAFE(!cube_bb);
+            costs.bb_cost = comp_layer_bb_cost(NORMAL);
+        }
         costs.bb_cost_norm = 1 / costs.bb_cost;
 
         /* Timing cost and normalization factors are not used */
@@ -580,8 +627,11 @@ void try_place(const Netlist<>& net_list,
     costs.cost = get_total_cost(&costs, placer_opts, noc_opts);
 
     //Sanity check that initial placement is legal
-    check_place(costs, place_delay_model.get(), placer_criticalities.get(),
-                placer_opts.place_algorithm, noc_opts);
+    check_place(costs,
+                place_delay_model.get(),
+                placer_criticalities.get(),
+                placer_opts.place_algorithm,
+                noc_opts);
 
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
@@ -887,8 +937,11 @@ void try_place(const Netlist<>& net_list,
         place_sync_external_block_connections(block_id);
     }
 
-    check_place(costs, place_delay_model.get(), placer_criticalities.get(),
-                placer_opts.place_algorithm, noc_opts);
+    check_place(costs,
+                place_delay_model.get(),
+                placer_criticalities.get(),
+                placer_opts.place_algorithm,
+                noc_opts);
 
     //Some stats
     VTR_LOG("\n");
@@ -1036,7 +1089,8 @@ static void placement_inner_loop(const t_annealing_state* state,
         e_move_result swap_result = try_swap(state, costs, move_generator,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
-                                             placer_opts, noc_opts, move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
+                                             placer_opts, noc_opts, move_type_stat, place_algorithm,
+                                             timing_bb_factor, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1071,13 +1125,6 @@ static void placement_inner_loop(const t_annealing_state* state,
             }
             inner_crit_iter_count++;
         }
-#ifdef VERBOSE
-        VTR_LOG("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d\n",
-                state->t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
-        if (fabs((costs->bb_cost) - comp_bb_cost(CHECK)) > (costs->bb_cost) * ERROR_TOL)
-            VPR_ERROR(VPR_ERROR_PLACE, "bb_cost is %g, comp_bb_cost is %g\n", costs->bb_cost, comp_bb_cost(CHECK));
-            //"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
-#endif
 
         /* Lines below prevent too much round-off error from accumulating
          * in the cost over many iterations (due to incremental updates).
@@ -1128,7 +1175,20 @@ static int count_connections() {
 }
 
 ///@brief Find the starting temperature for the annealing loop.
-static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, NetPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts, MoveTypeStat& move_type_stat) {
+static float starting_t(const t_annealing_state* state,
+                        t_placer_costs* costs,
+                        t_annealing_sched annealing_sched,
+                        const PlaceDelayModel* delay_model,
+                        PlacerCriticalities* criticalities,
+                        PlacerSetupSlacks* setup_slacks,
+                        SetupTimingInfo* timing_info,
+                        MoveGenerator& move_generator,
+                        ManualMoveGenerator& manual_move_generator,
+                        NetPinTimingInvalidator* pin_timing_invalidator,
+                        t_pl_blocks_to_be_moved& blocks_affected,
+                        const t_placer_opts& placer_opts,
+                        const t_noc_opts& noc_opts,
+                        MoveTypeStat& move_type_stat) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1441,7 +1501,8 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             /* Update net cost functions and reset flags. */
-            update_move_nets(num_nets_affected);
+            update_move_nets(num_nets_affected,
+                             g_vpr_ctx.placement().cube_bb);
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
@@ -1548,6 +1609,37 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tAfter move Place cost %e, bb_cost %e, timing cost %e\n", costs->cost, costs->bb_cost, costs->timing_cost);
     return move_outcome;
+}
+
+static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
+                       const RRGraphView& rr_graph) {
+    bool cube_bb;
+    const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
+
+    // If the FPGA has only layer, then we can only use cube bounding box
+    if (number_layers == 1) {
+        cube_bb = true;
+    } else {
+        VTR_ASSERT(number_layers > 1);
+        if (place_bb_mode == AUTO_BB) {
+            // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
+            // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
+            if (inter_layer_connections_limited_to_opin(rr_graph)) {
+                cube_bb = false;
+            } else {
+                cube_bb = true;
+            }
+        } else if (place_bb_mode == CUBE_BB) {
+            // The user has specifically asked for CUBE_BB
+            cube_bb = true;
+        } else {
+            // The user has specifically asked for PER_LAYER_BB
+            VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
+            cube_bb = false;
+        }
+    }
+
+    return cube_bb;
 }
 
 /**
@@ -1777,10 +1869,14 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
+    const auto& cube_bb = place_ctx.cube_bb;
+
     auto& p_timing_ctx = g_placer_ctx.mutable_timing();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
+
+    const int num_layers = device_ctx.grid.get_num_layers();
 
     init_placement_context();
 
@@ -1825,12 +1921,24 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     init_net_cost_structs(num_nets);
 
-    place_move_ctx.bb_coords.resize(num_nets, t_bb());
-    place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
+    if (cube_bb) {
+        place_move_ctx.bb_coords.resize(num_nets, t_bb());
+        place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
+    } else {
+        VTR_ASSERT_SAFE(!cube_bb);
+        place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+    }
+
+    place_move_ctx.num_sink_pin_layer.resize({num_nets, size_t(num_layers)});
+    for (size_t flat_idx = 0; flat_idx < place_move_ctx.num_sink_pin_layer.size(); flat_idx++) {
+        auto& elem = place_move_ctx.num_sink_pin_layer.get(flat_idx);
+        elem = OPEN;
+    }
 
     alloc_and_load_for_fast_cost_update(place_cost_exp);
 
-    alloc_and_load_try_swap_structs();
+    alloc_and_load_try_swap_structs(cube_bb);
 
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
@@ -1861,6 +1969,12 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
 
     vtr::release_memory(place_move_ctx.bb_coords);
     vtr::release_memory(place_move_ctx.bb_num_on_edges);
+    vtr::release_memory(place_move_ctx.bb_coords);
+
+    vtr::release_memory(place_move_ctx.layer_bb_num_on_edges);
+    vtr::release_memory(place_move_ctx.layer_bb_coords);
+
+    place_move_ctx.num_sink_pin_layer.clear();
 
     free_fast_cost_update();
 
@@ -1871,14 +1985,14 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
     }
 }
 
-static void alloc_and_load_try_swap_structs() {
+static void alloc_and_load_try_swap_structs(const bool cube_bb) {
     /* Allocate the local bb_coordinate storage, etc. only once. */
     /* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
-    init_try_swap_net_cost_structs(num_nets);
+    init_try_swap_net_cost_structs(num_nets, cube_bb);
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     place_ctx.compressed_block_grids = create_compressed_block_grids();
@@ -1934,7 +2048,15 @@ static int check_placement_costs(const t_placer_costs& costs,
     double bb_cost_check;
     double timing_cost_check;
 
-    bb_cost_check = comp_bb_cost(CHECK);
+    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
+
+    if (cube_bb) {
+        bb_cost_check = comp_bb_cost(CHECK);
+    } else {
+        VTR_ASSERT_SAFE(!cube_bb);
+        bb_cost_check = comp_layer_bb_cost(CHECK);
+    }
+
     if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
         VTR_LOG_ERROR(
             "bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
@@ -2232,7 +2354,7 @@ static void print_placement_swaps_stats(const t_annealing_state& state) {
             num_swap_accepted, 100 * accept_rate);
     VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits,
             num_swap_rejected, 100 * reject_rate);
-    VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits,
+    VTR_LOG("\tSwaps aborted: %*d (%4.1f %%)\n", num_swap_print_digits,
             num_swap_aborted, 100 * abort_rate);
 }
 

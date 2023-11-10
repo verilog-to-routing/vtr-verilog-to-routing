@@ -65,6 +65,14 @@
 
 //#define VERBOSE //Prints additional intermediate data
 
+/*
+ * We need to define the maximum number of layers to address a specific issue.
+ * For certain data structures, such as `num_sink_pin_layer` in the placer context, dynamically allocating
+ * memory based on the number of layers can lead to a performance hit due to additional pointer chasing and
+ * cache locality concerns. Defining a constant variable helps optimize the memory allocation process.
+ */
+constexpr int MAX_NUM_LAYERS = 2;
+
 /**
  * @brief For update_screen. Denotes importance of update.
  *
@@ -572,48 +580,79 @@ struct t_net_power {
 };
 
 /**
- * @brief Stores the bounding box of a net in terms of the minimum and
- *        maximum coordinates of the blocks forming the net, clipped to
- *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1)
+ * @brief Stores a 3D bounding box in terms of the minimum and
+ *        maximum coordinates: x, y, layer
  */
 struct t_bb {
     t_bb() = default;
-    t_bb(int xmin_, int xmax_, int ymin_, int ymax_)
+    t_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_min_, int layer_max_)
         : xmin(xmin_)
         , xmax(xmax_)
         , ymin(ymin_)
-        , ymax(ymax_) {
+        , ymax(ymax_)
+        , layer_min(layer_min_)
+        , layer_max(layer_max_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
+        VTR_ASSERT(layer_max_ >= layer_min_);
     }
     int xmin = OPEN;
     int xmax = OPEN;
     int ymin = OPEN;
     int ymax = OPEN;
+    int layer_min = OPEN;
+    int layer_max = OPEN;
+};
+
+/**
+ * @brief Stores a 2D bounding box in terms of the minimum and maximum x and y
+ * @note layer_num indicates the layer that the bounding box is on.
+ */
+struct t_2D_bb {
+    t_2D_bb() = default;
+    t_2D_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
+        : xmin(xmin_)
+        , xmax(xmax_)
+        , ymin(ymin_)
+        , ymax(ymax_)
+        , layer_num(layer_num_) {
+        VTR_ASSERT(xmax_ >= xmin_);
+        VTR_ASSERT(ymax_ >= ymin_);
+        VTR_ASSERT(layer_num_ >= 0);
+    }
+    int xmin = OPEN;
+    int xmax = OPEN;
+    int ymin = OPEN;
+    int ymax = OPEN;
+    int layer_num = OPEN;
 };
 
 /**
  * @brief An offset between placement locations (t_pl_loc)
- *
+ * @note In the case of comparing the offset, the layer offset should be equal
  * x: x-offset
  * y: y-offset
- * z: z-offset
+ * sub_tile: sub_tile-offset
+ * layer: layer-offset
  */
 struct t_pl_offset {
     t_pl_offset() = default;
-    t_pl_offset(int xoffset, int yoffset, int sub_tile_offset)
+    t_pl_offset(int xoffset, int yoffset, int sub_tile_offset, int layer_offset)
         : x(xoffset)
         , y(yoffset)
-        , sub_tile(sub_tile_offset) {}
+        , sub_tile(sub_tile_offset)
+        , layer(layer_offset) {}
 
     int x = 0;
     int y = 0;
     int sub_tile = 0;
+    int layer = 0;
 
     t_pl_offset& operator+=(const t_pl_offset& rhs) {
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
+        layer += rhs.layer;
         return *this;
     }
 
@@ -621,6 +660,7 @@ struct t_pl_offset {
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
+        layer -= rhs.layer;
         return *this;
     }
 
@@ -635,18 +675,19 @@ struct t_pl_offset {
     }
 
     friend t_pl_offset operator-(const t_pl_offset& other) {
-        return t_pl_offset(-other.x, -other.y, -other.sub_tile);
+        return t_pl_offset(-other.x, -other.y, -other.sub_tile, -other.layer);
     }
     friend t_pl_offset operator+(const t_pl_offset& other) {
-        return t_pl_offset(+other.x, +other.y, +other.sub_tile);
+        return t_pl_offset(+other.x, +other.y, +other.sub_tile, +other.layer);
     }
 
     friend bool operator<(const t_pl_offset& lhs, const t_pl_offset& rhs) {
+        VTR_ASSERT(lhs.layer == rhs.layer);
         return std::tie(lhs.x, lhs.y, lhs.sub_tile) < std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator==(const t_pl_offset& lhs, const t_pl_offset& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.x, rhs.y, rhs.sub_tile);
+        return std::tie(lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
     }
 
     friend bool operator!=(const t_pl_offset& lhs, const t_pl_offset& rhs) {
@@ -661,6 +702,7 @@ struct hash<t_pl_offset> {
         std::size_t seed = std::hash<int>{}(v.x);
         vtr::hash_combine(seed, v.y);
         vtr::hash_combine(seed, v.sub_tile);
+        vtr::hash_combine(seed, v.layer);
         return seed;
     }
 };
@@ -690,7 +732,7 @@ struct t_pl_loc {
     int layer = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
-        VTR_ASSERT(this->layer != OPEN);
+        layer += rhs.layer;
         x += rhs.x;
         y += rhs.y;
         sub_tile += rhs.sub_tile;
@@ -698,7 +740,7 @@ struct t_pl_loc {
     }
 
     t_pl_loc& operator-=(const t_pl_offset& rhs) {
-        VTR_ASSERT(this->layer != OPEN);
+        layer -= rhs.layer;
         x -= rhs.x;
         y -= rhs.y;
         sub_tile -= rhs.sub_tile;
@@ -722,8 +764,10 @@ struct t_pl_loc {
     }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        VTR_ASSERT(lhs.layer == rhs.layer);
-        return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile};
+        return {lhs.x - rhs.x,
+                lhs.y - rhs.y,
+                lhs.sub_tile - rhs.sub_tile,
+                lhs.layer - rhs.layer};
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
@@ -747,6 +791,7 @@ struct hash<t_pl_loc> {
         std::size_t seed = std::hash<int>{}(v.x);
         vtr::hash_combine(seed, v.y);
         vtr::hash_combine(seed, v.sub_tile);
+        vtr::hash_combine(seed, v.layer);
         return seed;
     }
 };
@@ -1012,6 +1057,12 @@ enum e_place_algorithm {
     SLACK_TIMING_PLACE
 };
 
+enum e_place_bounding_box_mode {
+    AUTO_BB,
+    CUBE_BB,
+    PER_LAYER_BB
+};
+
 /**
  * @brief Provides a wrapper around enum e_place_algorithm.
  *
@@ -1147,6 +1198,9 @@ enum class e_place_delta_delay_algorithm {
  *   @param constraints_file
  *              File that specifies locations of locked down (constrained)
  *              blocks for placement. Empty string means no constraints file.
+ *   @param write_initial_place_file
+ *              Write the initial placement into this file. Empty string means
+ *              the initial placement is not written.
  *   @param pad_loc_file
  *              File to read pad locations from if pad_loc_type is USER.
  *   @param place_freq
@@ -1189,6 +1243,7 @@ struct t_placer_opts {
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;
+    std::string write_initial_place_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
@@ -1224,6 +1279,7 @@ struct t_placer_opts {
     bool place_agent_multistate;
     bool place_checkpointing;
     int place_high_fanout_net;
+    e_place_bounding_box_mode place_bounding_box_mode;
     e_agent_algorithm place_agent_algorithm;
     float place_agent_epsilon;
     float place_agent_gamma;

@@ -19,7 +19,8 @@
 #include "route_common.h"
 #include "route_timing.h"
 
-static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_delays& src_opin_delays);
+static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_delays& src_opin_delays, util::t_src_opin_inter_layer_delays& src_opin_inter_layer_delays, bool is_multi_layer);
+
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays);
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev);
@@ -305,21 +306,32 @@ template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                                              std::vector<PQ_Entry_Base_Cost>,
                                                              std::greater<PQ_Entry_Base_Cost>>* pq);
 
-t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
+std::pair<t_src_opin_delays, t_src_opin_inter_layer_delays> compute_router_src_opin_lookahead(bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
-    t_src_opin_delays src_opin_delays;
+    int num_layers = device_ctx.grid.get_num_layers();
+    bool is_multi_layer = (num_layers > 1);
 
-    src_opin_delays.resize(device_ctx.grid.get_num_layers());
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    t_src_opin_delays src_opin_delays;
+    src_opin_delays.resize(num_layers);
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         src_opin_delays[layer_num].resize(device_ctx.physical_tile_types.size());
+    }
+
+    t_src_opin_inter_layer_delays src_opin_inter_layer_delays;
+    if (is_multi_layer) {
+        src_opin_inter_layer_delays.resize(num_layers);
+        for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+            int num_physical_tiles = (int)device_ctx.physical_tile_types.size();
+            src_opin_inter_layer_delays[layer_num].resize(num_physical_tiles);
+        }
     }
 
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
             if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], layer_num) == 0) {
                 continue;
@@ -356,11 +368,22 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
 
                         if (ptc >= int(src_opin_delays[layer_num][itile].size())) {
                             src_opin_delays[layer_num][itile].resize(ptc + 1); //Inefficient but functional...
+                            if (is_multi_layer) {
+                                size_t old_size = src_opin_inter_layer_delays[layer_num][itile].size();
+                                src_opin_inter_layer_delays[layer_num][itile].resize(ptc + 1);
+                                for (size_t i = old_size; i < src_opin_inter_layer_delays[layer_num][itile].size(); ++i) {
+                                    src_opin_inter_layer_delays[layer_num][itile][i].resize(num_layers);
+                                }
+                            }
                         }
 
                         //Find the wire types which are reachable from inode and record them and
                         //the cost to reach them
-                        dijkstra_flood_to_wires(itile, node_id, src_opin_delays);
+                        dijkstra_flood_to_wires(itile,
+                                                node_id,
+                                                src_opin_delays,
+                                                src_opin_inter_layer_delays,
+                                                is_multi_layer);
 
                         if (src_opin_delays[layer_num][itile][ptc].empty()) {
                             VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d)\n",
@@ -383,7 +406,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
         }
     }
 
-    return src_opin_delays;
+    return std::make_pair(src_opin_delays, src_opin_inter_layer_delays);
 }
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
@@ -466,7 +489,11 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 
 } // namespace util
 
-static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_delays& src_opin_delays) {
+static void dijkstra_flood_to_wires(int itile,
+                                    RRNodeId node,
+                                    util::t_src_opin_delays& src_opin_delays,
+                                    util::t_src_opin_inter_layer_delays& src_opin_inter_layer_delays,
+                                    bool is_multi_layer) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -516,6 +543,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
         pq.pop();
 
         e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
+        int curr_layer_num = rr_graph.node_layer(curr.node);
         if (curr_rr_type == CHANX || curr_rr_type == CHANY || curr_rr_type == SINK) {
             //We stop expansion at any CHANX/CHANY/SINK
             int seg_index;
@@ -535,12 +563,20 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
             }
 
             //Keep costs of the best path to reach each wire type
-            if (!src_opin_delays[node_layer_num][itile][ptc].count(seg_index)
-                || curr.delay < src_opin_delays[node_layer_num][itile][ptc][seg_index].delay) {
+            if ((!src_opin_delays[node_layer_num][itile][ptc].count(seg_index)
+                 || curr.delay < src_opin_delays[node_layer_num][itile][ptc][seg_index].delay)
+                && curr_layer_num == node_layer_num) {
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].wire_rr_type = curr_rr_type;
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].wire_seg_index = seg_index;
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].delay = curr.delay;
                 src_opin_delays[node_layer_num][itile][ptc][seg_index].congestion = curr.congestion;
+            } else if (is_multi_layer && (!src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num].count(seg_index) || curr.delay < src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].delay)
+                       && curr_layer_num != node_layer_num) {
+                // Store a CHANX/Y node or a SINK node on another layer that is reachable by the current node.
+                src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].wire_rr_type = curr_rr_type;
+                src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].wire_seg_index = seg_index;
+                src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].delay = curr.delay;
+                src_opin_inter_layer_delays[node_layer_num][itile][ptc][curr_layer_num][seg_index].congestion = curr.congestion;
             }
 
         } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
@@ -561,11 +597,6 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
                                            rr_graph.node_type(next_node),
                                            rr_graph.node_ptc_num(next_node))) {
                     // Don't go inside the clusters
-                    continue;
-                }
-
-                if (rr_graph.node_layer(curr.node) != node_layer_num) {
-                    //Don't change the layer
                     continue;
                 }
 
