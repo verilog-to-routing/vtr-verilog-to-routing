@@ -451,8 +451,14 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
     /* Record effected nets */
     record_affected_net(net_id, num_affected_nets);
 
+    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
+
     /* Update the net bounding boxes. */
-    update_net_bb(net_id, blk_id, pin_id, moving_blk_inf);
+    if (cube_bb) {
+        update_net_bb(net_id, blk_id, pin_id, moving_blk_inf);
+    } else {
+        update_net_layer_bb(net_id, blocks_affected, iblk, blk, blk_pin);
+    }
 
     if (place_algorithm.is_timing_driven()) {
         /* Determine the change in connection delay and timing cost. */
@@ -1656,7 +1662,7 @@ int find_affected_nets_and_update_costs(
     double& timing_delta_c) {
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     int num_affected_nets = 0;
 
@@ -1669,31 +1675,24 @@ int find_affected_nets_and_update_costs(
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
         /* Go through all the pins in the moved block. */
-        for (ClusterPinId blk_pin : cluster_ctx.clb_nlist.block_pins(blk)) {
-            ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(blk_pin);
-            VTR_ASSERT_SAFE_MSG(net_id,
-                                "Only valid nets should be found in compressed netlist block pins");
-
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-                //TODO: Do we require anyting special here for global nets?
-                //"Global nets are assumed to span the whole chip, and do not effect costs."
-                continue;
-
-            /* Record effected nets */
-            record_affected_net(net_id, num_affected_nets);
-
-            /* Update the net bounding boxes. */
-            if (cube_bb) {
-                update_net_bb(net_id, blk, blk_pin, moving_block_inf);
-            } else {
-                update_net_layer_bb(net_id, blocks_affected, iblk, blk, blk_pin);
+        for (ClusterPinId blk_pin : clb_nlist.block_pins(blk)) {
+            bool is_src_moving = false;
+            if (clb_nlist.pin_type(blk_pin) == PinType::SINK) {
+                ClusterNetId net_id = clb_nlist.pin_net(blk_pin);
+                is_src_moving = driven_by_moved_block(net_id,
+                                                      blocks_affected.num_moved_blocks,
+                                                      blocks_affected.moved_blocks);
             }
-
-            if (place_algorithm.is_timing_driven()) {
-                /* Determine the change in connection delay and timing cost. */
-                update_td_delta_costs(delay_model, *criticalities, net_id,
-                                      blk_pin, blocks_affected, timing_delta_c);
-            }
+            update_net_info_on_pin_move(place_algorithm,
+                                        delay_model,
+                                        criticalities,
+                                        blk,
+                                        blk_pin,
+                                        moving_block_inf,
+                                        affected_pins,
+                                        timing_delta_c,
+                                        num_affected_nets,
+                                        is_src_moving);
         }
     }
 
