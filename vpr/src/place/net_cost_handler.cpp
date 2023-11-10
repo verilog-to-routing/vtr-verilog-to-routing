@@ -1719,7 +1719,7 @@ int find_affected_nets_and_update_costs(
  * are found via the non_updateable_bb routine, to provide a    *
  * cost which can be used to check the correctness of the       *
  * other routine.                                               */
-static double comp_bb_cost(e_cost_methods method) {
+double comp_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
