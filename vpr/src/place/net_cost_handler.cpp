@@ -78,11 +78,10 @@ static void update_net_bb(const ClusterNetId& net,
                           const ClusterPinId& blk_pin,
                           const t_pl_moved_block& pl_moved_block);
 
-static void update_net_layer_bb(const ClusterNetId net,
-                                const t_pl_blocks_to_be_moved& blocks_affected,
-                                int iblk,
-                                const ClusterBlockId blk,
-                                const ClusterPinId blk_pin);
+static void update_net_layer_bb(const ClusterNetId& net,
+                                const ClusterBlockId& blk,
+                                const ClusterPinId& blk_pin,
+                                const t_pl_moved_block& pl_moved_block);
 
 static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
@@ -275,11 +274,10 @@ static void update_net_bb(const ClusterNetId& net,
     }
 }
 
-static void update_net_layer_bb(const ClusterNetId net,
-                                const t_pl_blocks_to_be_moved& blocks_affected,
-                                int iblk,
-                                const ClusterBlockId blk,
-                                const ClusterPinId blk_pin) {
+static void update_net_layer_bb(const ClusterNetId& net,
+                                const ClusterBlockId& blk,
+                                const ClusterPinId& blk_pin,
+                                const t_pl_moved_block& pl_moved_block) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
@@ -293,28 +291,24 @@ static void update_net_layer_bb(const ClusterNetId net,
     } else {
         //For large nets, update bounding box incrementally
         int iblk_pin = tile_pin_index(blk_pin);
+        bool src_pin = cluster_ctx.clb_nlist.pin_type(blk_pin) == PinType::DRIVER;
 
         t_physical_tile_type_ptr blk_type = physical_tile_type(blk);
         int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
         int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
 
         //Incremental bounding box update
-        t_physical_tile_loc pin_old_loc(
-            blocks_affected.moved_blocks[iblk].old_loc.x + pin_width_offset,
-            blocks_affected.moved_blocks[iblk].old_loc.y + pin_height_offset,
-            blocks_affected.moved_blocks[iblk].old_loc.layer);
-        t_physical_tile_loc pin_new_loc(
-            blocks_affected.moved_blocks[iblk].new_loc.x + pin_width_offset,
-            blocks_affected.moved_blocks[iblk].new_loc.y + pin_height_offset,
-            blocks_affected.moved_blocks[iblk].new_loc.layer);
-        auto pin_dir = get_pin_type_from_pin_physical_num(blk_type, iblk_pin);
         update_layer_bb(net,
                         layer_ts_bb_edge_new[net],
                         layer_ts_bb_coord_new[net],
                         ts_layer_sink_pin_count[size_t(net)],
-                        pin_old_loc,
-                        pin_new_loc,
-                        pin_dir == e_pin_type::DRIVER);
+                        {pl_moved_block.old_loc.x + pin_width_offset,
+                         pl_moved_block.old_loc.y + pin_height_offset,
+                         pl_moved_block.old_loc.layer},
+                        {pl_moved_block.new_loc.x + pin_width_offset,
+                         pl_moved_block.new_loc.y + pin_height_offset,
+                         pl_moved_block.new_loc.layer},
+                        src_pin);
     }
 }
 
@@ -457,7 +451,7 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
     if (cube_bb) {
         update_net_bb(net_id, blk_id, pin_id, moving_blk_inf);
     } else {
-        update_net_layer_bb(net_id, blocks_affected, iblk, blk, blk_pin);
+        update_net_layer_bb(net_id, blk_id, pin_id, moving_blk_inf);
     }
 
     if (place_algorithm.is_timing_driven()) {
