@@ -8063,6 +8063,7 @@
             </pb_type>
 
             <interconnect>
+              <!-- Enable Input: From MLAB block to MLAB cells enable input -->
               <direct input="mlab_wrapper.ena0" name="ena0" output="mlab_cell[0].ena0"/>
               <direct input="mlab_wrapper.ena0" name="ena1" output="mlab_cell[1].ena0"/>
               <direct input="mlab_wrapper.ena0" name="ena2" output="mlab_cell[2].ena0"/>
@@ -8073,6 +8074,8 @@
               <direct input="mlab_wrapper.ena0" name="ena7" output="mlab_cell[7].ena0"/>
               <direct input="mlab_wrapper.ena0" name="ena8" output="mlab_cell[8].ena0"/>
               <direct input="mlab_wrapper.ena0" name="ena9" output="mlab_cell[9].ena0"/>
+
+              <!-- Clear Input: From MLAB block to MLAB cells clear input -->
               <direct input="mlab_wrapper.clr" name="clr0" output="mlab_cell[0].clr"/>
               <direct input="mlab_wrapper.clr" name="clr1" output="mlab_cell[1].clr"/>
               <direct input="mlab_wrapper.clr" name="clr2" output="mlab_cell[2].clr"/>
@@ -8083,6 +8086,8 @@
               <direct input="mlab_wrapper.clr" name="clr7" output="mlab_cell[7].clr"/>
               <direct input="mlab_wrapper.clr" name="clr8" output="mlab_cell[8].clr"/>
               <direct input="mlab_wrapper.clr" name="clr9" output="mlab_cell[9].clr"/>
+
+              <!-- Write Address: Input write address to the MLAB cells -->
               <direct input="mlab_wrapper.portaaddr" name="portaaddr0" output="mlab_cell[0].portaaddr"/>
               <direct input="mlab_wrapper.portaaddr" name="portaaddr1" output="mlab_cell[1].portaaddr"/>
               <direct input="mlab_wrapper.portaaddr" name="portaaddr2" output="mlab_cell[2].portaaddr"/>
@@ -8093,6 +8098,8 @@
               <direct input="mlab_wrapper.portaaddr" name="portaaddr7" output="mlab_cell[7].portaaddr"/>
               <direct input="mlab_wrapper.portaaddr" name="portaaddr8" output="mlab_cell[8].portaaddr"/>
               <direct input="mlab_wrapper.portaaddr" name="portaaddr9" output="mlab_cell[9].portaaddr"/>
+
+              <!-- Byte Enable Mask: Input byte enable mask to the MLAB cells -->
               <direct input="mlab_wrapper.portabyteenamasks[1:0]" name="portabytenamasks0" output="mlab_cell[0].portabyteenamasks"/>
               <direct input="mlab_wrapper.portabyteenamasks[3:2]" name="portabytenamasks1" output="mlab_cell[1].portabyteenamasks"/>
               <direct input="mlab_wrapper.portabyteenamasks[5:4]" name="portabytenamasks2" output="mlab_cell[2].portabyteenamasks"/>
@@ -8103,6 +8110,8 @@
               <direct input="mlab_wrapper.portabyteenamasks[15:14]" name="portabytenamasks7" output="mlab_cell[7].portabyteenamasks"/>
               <direct input="mlab_wrapper.portabyteenamasks[17:16]" name="portabytenamasks8" output="mlab_cell[8].portabyteenamasks"/>
               <direct input="mlab_wrapper.portabyteenamasks[19:18]" name="portabytenamasks9" output="mlab_cell[9].portabyteenamasks"/>
+
+              <!-- Write Data: Input data to the MLAB cells -->
               <direct input="mlab_wrapper.portadatain[1:0]" name="portadatain0" output="mlab_cell[0].portadatain"/>
               <direct input="mlab_wrapper.portadatain[3:2]" name="portadatain1" output="mlab_cell[1].portadatain"/>
               <direct input="mlab_wrapper.portadatain[5:4]" name="portadatain2" output="mlab_cell[2].portadatain"/>
@@ -8113,6 +8122,8 @@
               <direct input="mlab_wrapper.portadatain[15:14]" name="portadatain7" output="mlab_cell[7].portadatain"/>
               <direct input="mlab_wrapper.portadatain[17:16]" name="portadatain8" output="mlab_cell[8].portadatain"/>
               <direct input="mlab_wrapper.portadatain[19:18]" name="portadatain9" output="mlab_cell[9].portadatain"/>
+
+              <!-- Read Address: Input read address to the MLAB cells -->
               <direct input="mlab_wrapper.portbaddr" name="portbaddr0" output="mlab_cell[0].portbaddr"/>
               <direct input="mlab_wrapper.portbaddr" name="portbaddr1" output="mlab_cell[1].portbaddr"/>
               <direct input="mlab_wrapper.portbaddr" name="portbaddr2" output="mlab_cell[2].portbaddr"/>
@@ -8123,6 +8134,8 @@
               <direct input="mlab_wrapper.portbaddr" name="portbaddr7" output="mlab_cell[7].portbaddr"/>
               <direct input="mlab_wrapper.portbaddr" name="portbaddr8" output="mlab_cell[8].portbaddr"/>
               <direct input="mlab_wrapper.portbaddr" name="portbaddr9" output="mlab_cell[9].portbaddr"/>
+
+              <!-- Read data: Output data from MLAB cells to the MLAB output -->
               <direct input="mlab_cell[0].portbdataout" name="portbdataout0" output="mlab_wrapper.portbdataout[1:0]"/>
               <direct input="mlab_cell[1].portbdataout" name="portbdataout1" output="mlab_wrapper.portbdataout[3:2]"/>
               <direct input="mlab_cell[2].portbdataout" name="portbdataout2" output="mlab_wrapper.portbdataout[5:4]"/>
@@ -8133,6 +8146,8 @@
               <direct input="mlab_cell[7].portbdataout" name="portbdataout7" output="mlab_wrapper.portbdataout[15:14]"/>
               <direct input="mlab_cell[8].portbdataout" name="portbdataout8" output="mlab_wrapper.portbdataout[17:16]"/>
               <direct input="mlab_cell[9].portbdataout" name="portbdataout9" output="mlab_wrapper.portbdataout[19:18]"/>
+
+              <!-- MLAB cell clocks -->
               <direct input="mlab_wrapper.clk0" name="clk0" output="mlab_cell[0].clk0"/>
               <direct input="mlab_wrapper.clk0" name="clk1" output="mlab_cell[1].clk0"/>
               <direct input="mlab_wrapper.clk0" name="clk2" output="mlab_cell[2].clk0"/>
@@ -8164,6 +8179,8 @@
       <input name="core_in" num_pins="10"/>
       <output name="core_out" num_pins="36"/>
       <clock name="clk" num_pins="1"/>
+
+       <!-- the input pad is used is connected to rzqin pin -->
       <pb_type blif_model=".input" name="inpad" num_pb="1">
         <output name="inpad" num_pins="1"/>
       </pb_type>
@@ -8256,13 +8273,25 @@
 
       <interconnect>
         <direct input="OCT.clk" name="clk_to_oct_block" output="oct_block.clkusr"/>
+
+        <!-- the rzqin pin is connected to an external resistor -->
         <direct input="inpad.inpad" name="rzqin_in" output="oct_block.rzqin"/>
+     
+        <!-- oct_block inputs coming from the core logic -->
         <complete input="OCT.core_in" name="core_to_oct_block" output="oct_block.enserusr oct_block.nclrusr oct_block.clkenusr oct_block.ser_data_dq_from_core oct_block.ser_data_ca_from_core oct_block.test_clkusr_en_n oct_block.oct_scanin"/>
+        
+        <!-- oct_logic inputs coming from the core logic -->
         <complete input="OCT.core_in" name="core_to_oct_logic" output="oct_logic.s2pload oct_logic.scan_in oct_logic.scan_shift_in"/>
+        
+        <!-- oct_logic serdata coming from serdataout of the oct block -->
         <direct input="oct_block.serdataout" name="serdata_path" output="oct_logic.serdata">
           <pack_pattern in_port="oct_block.serdataout" name="OCT" out_port="oct_logic.serdata"/>
         </direct>
+        
+        <!-- oct_block outputs going to the core logic -->
         <complete input="oct_block.clkusr_dft_out oct_block.oct_scanout oct_block.compout_rdn oct_block.compout_rup oct_block.ser_data_dq_to_core oct_block.ser_data_ca_to_core" name="oct_block_to_core" output="OCT.core_out"/>
+        
+        <!-- oct_logic outputs going to the core logic -->
         <complete input="oct_logic.scan_out oct_logic.seriesterminationcontrol oct_logic.parallelterminationcontrol" name="oct_logic_to_core" output="OCT.core_out"/>
       </interconnect>
     </pb_type>
@@ -8296,9 +8325,9 @@
         </pb_type>
 
         <pb_type blif_model=".subckt fourteennm_io_obuf" name="obuf" num_pb="1">
-          <input name="i" num_pins="1"/>
-          <input name="oe" num_pins="1"/>
-          <input name="dynamicterminationcontrol" num_pins="1"/>
+          <input name="i" num_pins="1"/> <!-- can be driven by the core logic through obuf_i port of the parent pb_type or by the dataout port of the ddio_out -->
+          <input name="oe" num_pins="1"/> <!-- output enable port driven by the q output of the OE flip flop or the core logic -->
+          <input name="dynamicterminationcontrol" num_pins="1"/> <!-- the following three ports driven by the corresponding ports in the parent pb_type -->
           <input name="seriesterminationcontrol" num_pins="16"/>
           <input name="parallelterminationcontrol" num_pins="16"/>
           <output name="o" num_pins="1"/>
@@ -8453,24 +8482,49 @@
         </pb_type>
 
         <interconnect>
+          <!-- inputs coming from the FPGA core and going to OE flip flop -->
+          <!-- <complete input="io_cell.data_in" name="core_to_ff" output="oe_ff.clrn oe_ff.sclr oe_ff.ena oe_ff.d"/> -->
+          <!-- <direct input="io_cell.clk" name="ff_clk" num_pins="1" output="oe_ff.clk"/> -->
+
+          <!-- inputs coming from the FPGA core and going to ddio out primitive -->
           <complete input="io_cell.data_in" name="core_to_ddio_out" num_pins="1" output="ddio_out.areset ddio_out.sreset ddio_out.ena ddio_out.clkhi ddio_out.clklo ddio_out.muxsel ddio_out.datainlo ddio_out.datainhi"/>
           <direct input="io_cell.clk" name="ddio_out_clk" num_pins="1" output="ddio_out.clk"/>
+          
+          <!-- inputs coming from the FPGA core and going to the output buffer -->
           <complete input="io_cell.data_in" name="core_to_obuf" output="obuf.dynamicterminationcontrol obuf.seriesterminationcontrol obuf.parallelterminationcontrol"/>
+          <!-- the i port of the output buffer can be driven by the output of the ddio out module or the core logic or the o output of the pseudo diff out-->
           <complete input="io_cell.data_in ddio_out.dataout pseudo_diff_out.o" name="i_obuff" num_pins="1" output="obuf.i"/>
+          <!-- the oe port of the output buffer can be driven by the output of the oe flip flop or the core logic or the oeout output of the pseudo diff out-->
           <complete input="io_cell.data_in pseudo_diff_out.oeout" name="oe_obuff" num_pins="1" output="obuf.oe"/>
+          
+          <!-- inputs coming from the FPGA core and going to the input buffer -->
           <complete input="io_cell.data_in" name="core_to_ibuff" output="ibuf.ibar ibuf.dynamicterminationcontrol ibuf.seriesterminationcontrol ibuf.parallelterminationcontrol"/>
+          <!-- the output of the padin will directly drive the input buffer  -->
           <direct input="pad.recieve_off_chip" name="pad_receive" num_pins="1" output="ibuf.i">
             <pack_pattern in_port="pad.recieve_off_chip" name="pad_to_ibuf" out_port="ibuf.i"/>
           </direct>
+
+
+          <!-- inputs coming from the FPGA core and going to pseudo diff out primitive -->
           <complete input="io_cell.data_in" name="core_to_pseudo_diff_out" num_pins="1" output="pseudo_diff_out.ibar pseudo_diff_out.oebin pseudo_diff_out.dtcin pseudo_diff_out.dtcbarin"/>
+          <!-- the i port of the  pseudo diff out can be driven by the output of the ddio out module or the core logic -->
           <complete input="io_cell.data_in ddio_out.dataout" name="i_pseudo_diff" num_pins="1" output=" pseudo_diff_out.i"/>
+          <!-- the oein port of the pseudo diff out can be driven by the output of the oe flip flop or the core logic -->
           <complete input="io_cell.data_in" name="oe_pseudo_diff" num_pins="1" output="pseudo_diff_out.oein"/>
+          
+          <!-- inputs coming from the FPGA core and going to ddio in primitive -->
           <complete input="io_cell.data_in" name="core_to_ddio_in" num_pins="1" output="ddio_in.clkn ddio_in.areset ddio_in.sreset ddio_in.ena"/>
           <direct input="io_cell.clk" name="ddioi_clk" num_pins="1" output="ddio_in.clk"/>
+          
+          <!-- the data port of theddio in is driven by the output of the input buffer or by FPGA global routing -->
           <complete input="ibuf.o io_cell.data_in" name="ddioi_datain" num_pins="1" output="ddio_in.datain"/>
+
+          <!-- the pad out can be driven by the output ports of the output buffer or by FPGA core  -->
           <complete input="io_cell.data_in obuf.o obuf.obar" name="pad_drive" num_pins="1" output="pad.drive_off_chip">
             <pack_pattern in_port="obuf.o" name="obuf_to_pad" out_port="pad.drive_off_chip"/>
           </complete>
+
+          <!-- the outputs of the io_cell block going to the core -->
           <direct input="pseudo_diff_out.obar" name="io_cell_obar" num_pins="1" output="io_cell.data_out[0]"/>
           <direct input="pseudo_diff_out.oebout" name="io_cell_oeout" num_pins="1" output="io_cell.data_out[1]"/>
           <direct input="pseudo_diff_out.dtc" name="io_cell_dtc" num_pins="1" output="io_cell.data_out[2]"/>
@@ -8501,6 +8555,33 @@
           <output name="chainout" num_pins="64"/>
           <output name="scanout" num_pins="27"/>
           <output name="dftout" num_pins="1"/>
+
+          <!-- 
+            We model several different operation modes of the fourteennm_mac primitive:
+                  independent multiplier 
+                  multiplier adder sum 
+                  18x19 multiplication summed with 36-bit input 
+                  systolic fir 
+                  27x27 independent multiplier 
+                  single 18x18 multiplier
+
+              As well as several operation modes of the fourteennm_fp_mac primitive:
+                  multiplication
+                  multiply accumulate
+                  multiply add
+                  adder or subtract
+                  vector one mode
+                  vector two mode
+
+            We also model 4 variations of each operation mode to capture timing differences based on whether the inputs and/or outputs are 
+            registered or combinational.
+
+            This is itself an approximation of the actual Stratix 10 architecture, which can support multiple levels of internal registers
+            inside each DSP block.  To model this would be extremely verbose and time consuming. The approximation mentioned above is a 
+            reasonable compromise, since it captures the key timing characteristics of the fourteennm_mac or fourteennm_fp_mac from an external perspective (which is
+            what most pack/place/route CAD tools would care about).  
+          -->
+
           <mode name="m18x18_full.input_type{reg}.output_type{comb}">
             <pb_type blif_model=".subckt fourteennm_mac.opmode{m18x18_full}.input_type{reg}.output_type{comb}" name="mac18x18_full" num_pb="1">
               <input name="clr" num_pins="2"/>
