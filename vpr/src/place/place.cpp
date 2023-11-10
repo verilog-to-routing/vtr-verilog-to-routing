@@ -1543,8 +1543,7 @@ static void update_move_nets(int num_nets_affected,
         }
 
         for (int layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
-            place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num] =
-                ts_layer_sink_pin_count[size_t(net_id)][layer_num];
+            place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num] = ts_layer_sink_pin_count[size_t(net_id)][layer_num];
         }
 
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
@@ -3274,9 +3273,7 @@ static void update_bb(ClusterNetId net_id,
         return;
     }
 
-    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_updated_before[net_id] == NOT_UPDATED_YET) ?
-                                                                                                        place_move_ctx.num_sink_pin_layer[size_t(net_id)] :
-                                                                                                        num_sink_pin_layer_new;
+    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_updated_before[net_id] == NOT_UPDATED_YET) ? place_move_ctx.num_sink_pin_layer[size_t(net_id)] : num_sink_pin_layer_new;
 
     if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
@@ -3491,9 +3488,7 @@ static void update_layer_bb(ClusterNetId net_id,
         return;
     }
 
-    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_updated_before[net_id] == NOT_UPDATED_YET) ?
-                                                                                                                place_move_ctx.num_sink_pin_layer[size_t(net_id)] :
-                                                                                                                bb_pin_sink_count_new;
+    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_updated_before[net_id] == NOT_UPDATED_YET) ? place_move_ctx.num_sink_pin_layer[size_t(net_id)] : bb_pin_sink_count_new;
 
     if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
