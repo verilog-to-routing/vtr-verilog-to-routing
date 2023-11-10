@@ -784,7 +784,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     **Default:** ``0.0``
 
 .. _dusty_sa_options:
-Setting any of the following options selects `Dusty's annealing schedule <dusty_sa.rst>`_.
+Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>` .
 
 .. option:: --alpha_min <float>
 
@@ -935,6 +935,13 @@ The following options are only valid when the placement engine is in timing-driv
 .. option:: --inner_loop_recompute_divider <int>
 
     Controls how many times the placer performs a timing analysis to update its criticality estimates while at a single temperature.
+
+    **Default:** ``0``
+
+.. option:: --quench_recompute_divider <int>
+
+    Controls how many times the placer performs a timing analysis to update its criticality estimates during a quench. 
+    If unspecified, uses the value from --inner_loop_recompute_divider.
 
     **Default:** ``0``
 
