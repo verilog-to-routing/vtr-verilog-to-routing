@@ -3229,17 +3229,10 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
      * is 0).  See route_common.cpp for a channel diagram.               */
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         bb_coord_new[layer_num].layer_num = layer_num;
-        if (num_sink_layer[layer_num] == 0) {
-            bb_coord_new[layer_num].xmin = OPEN;
-            bb_coord_new[layer_num].ymin = OPEN;
-            bb_coord_new[layer_num].xmax = OPEN;
-            bb_coord_new[layer_num].ymax = OPEN;
-        } else {
-            bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-            bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-            bb_coord_new[layer_num].xmax = max(min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-            bb_coord_new[layer_num].ymax = max(min<int>(ymax[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-        }
+        bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+        bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+        bb_coord_new[layer_num].xmax = max(min<int>(xmax[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
+        bb_coord_new[layer_num].ymax = max(min<int>(ymax[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     }
 }
 
