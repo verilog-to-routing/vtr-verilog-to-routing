@@ -73,11 +73,10 @@ static bool driven_by_moved_block(const ClusterNetId net,
                                   const int num_blocks,
                                   const std::vector<t_pl_moved_block>& moved_blocks);
 
-static void update_net_bb(const ClusterNetId net,
-                          const t_pl_blocks_to_be_moved& blocks_affected,
-                          int iblk,
-                          const ClusterBlockId blk,
-                          const ClusterPinId blk_pin);
+static void update_net_bb(const ClusterNetId& net,
+                          const ClusterBlockId& blk,
+                          const ClusterPinId& blk_pin,
+                          const t_pl_moved_block& pl_moved_block);
 
 static void update_net_layer_bb(const ClusterNetId net,
                                 const t_pl_blocks_to_be_moved& blocks_affected,
@@ -238,11 +237,10 @@ static bool driven_by_moved_block(const ClusterNetId net,
  * Do not update the net cost here since it should only
  * be updated once per net, not once per pin.
  */
-static void update_net_bb(const ClusterNetId net,
-                          const t_pl_blocks_to_be_moved& blocks_affected,
-                          int iblk,
-                          const ClusterBlockId blk,
-                          const ClusterPinId blk_pin) {
+static void update_net_bb(const ClusterNetId& net,
+                          const ClusterBlockId& blk,
+                          const ClusterPinId& blk_pin,
+                          const t_pl_moved_block& pl_moved_block) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
@@ -263,20 +261,16 @@ static void update_net_bb(const ClusterNetId net,
         int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
 
         //Incremental bounding box update
-        t_physical_tile_loc pin_old_loc(
-            blocks_affected.moved_blocks[iblk].old_loc.x + pin_width_offset,
-            blocks_affected.moved_blocks[iblk].old_loc.y + pin_height_offset,
-            blocks_affected.moved_blocks[iblk].old_loc.layer);
-        t_physical_tile_loc pin_new_loc(
-            blocks_affected.moved_blocks[iblk].new_loc.x + pin_width_offset,
-            blocks_affected.moved_blocks[iblk].new_loc.y + pin_height_offset,
-            blocks_affected.moved_blocks[iblk].new_loc.layer);
         update_bb(net,
                   ts_bb_edge_new[net],
                   ts_bb_coord_new[net],
                   ts_layer_sink_pin_count[size_t(net)],
-                  pin_old_loc,
-                  pin_new_loc,
+                  {pl_moved_block.old_loc.x + pin_width_offset,
+                  pl_moved_block.old_loc.y + pin_height_offset,
+                  pl_moved_block.old_loc.layer},
+                  {pl_moved_block.new_loc.x + pin_width_offset,
+                  pl_moved_block.new_loc.y + pin_height_offset,
+                  pl_moved_block.new_loc.layer},
                   src_pin);
     }
 }
@@ -1670,6 +1664,8 @@ int find_affected_nets_and_update_costs(
 
     /* Go through all the blocks moved. */
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+        const auto& moving_block_inf = blocks_affected.moved_blocks[iblk];
+        auto& affected_pins = blocks_affected.affected_pins;
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
         /* Go through all the pins in the moved block. */
@@ -1688,7 +1684,7 @@ int find_affected_nets_and_update_costs(
 
             /* Update the net bounding boxes. */
             if (cube_bb) {
-                update_net_bb(net_id, blocks_affected, iblk, blk, blk_pin);
+                update_net_bb(net_id, blk, blk_pin, moving_block_inf);
             } else {
                 update_net_layer_bb(net_id, blocks_affected, iblk, blk, blk_pin);
             }
