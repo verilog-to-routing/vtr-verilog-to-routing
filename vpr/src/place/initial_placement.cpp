@@ -493,7 +493,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro, PartitionRegion& 
     //try to find a near location that meet these requirements
     bool neighbor_legal_loc = false;
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, true);
+        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
@@ -1311,7 +1311,7 @@ static void initial_noc_placement(const t_noc_opts& noc_opts) {
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
 
-    RouterPlacementCheckpoint checkpoint;
+    NoCPlacementCheckpoint checkpoint;
 
     // Generate and evaluate router moves
     for (int i_move = 0; i_move < N_MOVES; i_move++) {
