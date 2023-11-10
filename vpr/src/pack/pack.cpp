@@ -3,7 +3,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <fstream>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sstream>
 
 #include "vtr_assert.h"
@@ -30,9 +30,9 @@
 static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
 
 /**
- * @brief Counts the total number of models
+ * @brief Counts the total number of logic models that the architecture can implement.
  *
- * @param user_models A linked list of models
+ * @param user_models A linked list of logic models.
  * @return int The total number of models in the linked list
  */
 static int count_models(const t_model* user_models);

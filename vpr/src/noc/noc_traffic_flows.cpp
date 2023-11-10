@@ -89,28 +89,6 @@ void NocTrafficFlows::finished_noc_traffic_flows_setup(void) {
     int number_of_traffic_flows = noc_traffic_flows.size();
     traffic_flow_routes.resize(number_of_traffic_flows);
 
-    const int num_flows = get_number_of_traffic_flows();
-    double bandwidth_sum = 0.0;
-    double inverse_latency_sum = 0.0;
-
-    // Iterate over all flows and calculate bandwidth and inverse latency sums
-    for (const auto& flow_id : noc_traffic_flows_ids) {
-        const auto& flow = get_single_noc_traffic_flow(flow_id);
-        bandwidth_sum += flow.traffic_flow_bandwidth;
-        inverse_latency_sum += 1.0 / flow.max_traffic_flow_latency;
-    }
-
-    double bandwidth_norm_factor = bandwidth_sum / num_flows;
-    double inverse_latency_norm_factor = inverse_latency_sum / num_flows;
-
-    // Iterate over all flows and assign their scores
-    for (const auto& flow_id : noc_traffic_flows_ids) {
-        auto& flow = noc_traffic_flows[flow_id];
-        double normalized_bandwidth = flow.traffic_flow_bandwidth / bandwidth_norm_factor;
-        double normalized_inverse_latency = 1.0 / (flow.max_traffic_flow_latency * inverse_latency_norm_factor);
-        flow.score = flow.traffic_flow_priority * normalized_bandwidth * normalized_inverse_latency;
-    }
-
     return;
 }
 

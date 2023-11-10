@@ -216,11 +216,11 @@ class t_ext_pin_util_targets {
 class t_pack_high_fanout_thresholds {
   public:
     t_pack_high_fanout_thresholds() = default;
-    t_pack_high_fanout_thresholds(int threshold);
-    t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
+    explicit t_pack_high_fanout_thresholds(int threshold);
+    explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    ///@brief Returns the high fanout threshold of the specified block
+    ///@brief Returns the high fanout threshold of the specifi  ed block
     int get_threshold(const std::string& block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types

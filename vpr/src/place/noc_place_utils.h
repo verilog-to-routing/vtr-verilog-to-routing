@@ -271,6 +271,17 @@ void recompute_noc_costs(double& new_noc_aggregate_bandwidth_cost, double& new_n
 void update_noc_normalization_factors(t_placer_costs& costs);
 
 /**
+ * @brief Calculates total NoC cost.
+ *
+ *  @param costs Contains latency and aggregate bandwidth costs
+ *  along with their corresponding normalization factors.
+ *  @param noc_opts Contains NoC placement weighting factor.
+ *
+ * @return Calculated total NoC cost.
+ */
+double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts);
+
+/**
  * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
  * and initializes local variables that keep track of the traffic flow 
  * aggregate bandwidths cost.
@@ -424,8 +435,6 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  */
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim);
 
-e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_affected);
-
 /**
  * @brief Writes out the locations of the router cluster blocks in the
  * final placement. This file contains only NoC routers and the 
@@ -442,5 +451,5 @@ e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_
  * information.
  * 
  */
-void write_noc_placement_file(std::string file_name);
+void write_noc_placement_file(const std::string& file_name);
 #endif

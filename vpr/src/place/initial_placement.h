@@ -2,6 +2,13 @@
 #define VPR_INITIAL_PLACEMENT_H
 
 #include "vpr_types.h"
+#include "place_macro.h"
+#include "partition_region.h"
+
+/* The maximum number of tries when trying to place a macro at a    *
+ * random location before trying exhaustive placement - find the first     *
+ * legal position and place it during initial placement.                  */
+constexpr int MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY = 8;
 
 /**
  * @brief Used to assign each block a score for how difficult it is to place. 
@@ -39,6 +46,58 @@ struct t_grid_empty_locs_block_type {
 };
 
 /**
+ * @brief  tries to place a macro at a random location
+ *
+ *   @param pl_macro The macro to be placed.
+ *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
+ *   constrained.
+ *   @param block_type Logical block type of the macro blocks.
+ *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
+ *
+ * @return true if the macro gets placed, false if not.
+ */
+bool try_place_macro_randomly(const t_pl_macro& pl_macro,
+                              const PartitionRegion& pr,
+                              t_logical_block_type_ptr block_type,
+                              enum e_pad_loc_type pad_loc_type);
+
+/**
+ * @brief Looks for a valid placement location for macro exhaustively once the maximum number of random locations have been tried.
+ *
+ *   @param pl_macro The macro to be placed.
+ *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
+ *   constrained.
+ *   @param block_type Logical block type of the macro blocks.
+ *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
+ *
+ * @return true if the macro gets placed, false if not.
+ */
+bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
+                                  const PartitionRegion& pr,
+                                  t_logical_block_type_ptr block_type,
+                                  enum e_pad_loc_type pad_loc_type);
+
+/**
+ * @brief Places the macro if the head position passed in is legal, and all the resulting
+ * member positions are legal
+ *
+ *   @param pl_macro The macro to be placed.
+ *   @param head_pos The location of the macro head member.
+ *
+ * @return true if macro was placed, false if not.
+ */
+bool try_place_macro(const t_pl_macro& pl_macro, t_pl_loc head_pos);
+
+/**
+ * @brief Checks whether the block is already placed
+ *
+ *   @param blk_id block id of the block to be checked
+ *
+ * @return true if the block was placed, false if not.
+ */
+bool is_block_placed(ClusterBlockId blk_id);
+
+/**
  * @brief Tries to find an initial placement location for each block considering floorplanning constraints
  * and throws an error out if it fails after max number of attempts.
  * If the noc optimization is enabled then after initial placement
@@ -46,14 +105,13 @@ struct t_grid_empty_locs_block_type {
  * flows and updating the bandwidths used by the links due to the
  * traffic flows.
  *
- *   @param placer_opts Required by the function that set the status of f_placer_debug
- *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
+ *   @param placer_opts Required by the function that set the status of f_placer_debug.
+ *   Also used to access pad_loc_type to see if a block needs to be marked fixed.
  *   @param constraints_file Used to read block locations if any constraints is available.
  *   @param noc_enabled Used to check whether the user turned on the noc
  * optimization during placement.
  */
 void initial_placement(const t_placer_opts& placer_opts,
-                       enum e_pad_loc_type pad_loc_type,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts);
 

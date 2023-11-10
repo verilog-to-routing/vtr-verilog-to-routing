@@ -9,6 +9,18 @@ static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, p
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
+/**
+ * @brief Randomly select a moveable NoC router cluster blocks
+ *
+ * @param b_from The cluster block ID of the selected NoC router
+ * @param from The current location of the selected NoC router
+ * @param cluster_from_type Block type of the selected block
+ * @return bool True if a block was selected successfully.
+ * False if there are no NoC routers in the netlist or the
+ * selected NoC router is fixed/
+ */
+static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from, t_logical_block_type_ptr& cluster_from_type);
+
 void initial_noc_routing(void) {
     // need to get placement information about where the router cluster blocks are placed on the device
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -247,6 +259,12 @@ void update_noc_normalization_factors(t_placer_costs& costs) {
     costs.noc_latency_cost_norm = std::min(1 / costs.noc_latency_cost, MAX_INV_NOC_LATENCY_COST);
 
     return;
+}
+
+double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts) {
+    double noc_cost;
+    noc_cost = (noc_opts.noc_placement_weighting) * ((costs.noc_aggregate_bandwidth_cost * costs.noc_aggregate_bandwidth_cost_norm) + (costs.noc_latency_cost * costs.noc_latency_cost_norm));
+    return noc_cost;
 }
 
 double comp_noc_aggregate_bandwidth_cost(void) {
@@ -532,140 +550,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
     return create_move;
 }
 
-e_create_move propose_router_swap_flow_centroid(t_pl_blocks_to_be_moved& blocks_affected) {
-    auto& noc_ctx = g_vpr_ctx.noc();
-    auto& place_ctx = g_vpr_ctx.placement();
-    const auto& grid = g_vpr_ctx.device().grid;
-
-    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
-    // block ID for the randomly selected router cluster
-    ClusterBlockId b_from;
-    // current location of the randomly selected router cluster
-    t_pl_loc from;
-    // logical block type of the randomly selected router cluster
-    t_logical_block_type_ptr cluster_from_type;
-    bool random_select_success = false;
-
-    // Randomly select a router cluster
-    random_select_success = select_random_router_cluster(b_from, from, cluster_from_type);
-
-    const auto& compressed_noc_grid = g_vpr_ctx.placement().compressed_block_grids[cluster_from_type->index];
-
-    // If a random router cluster could not be selected, no move can be proposed
-    if (!random_select_success) {
-        return e_create_move::ABORT;
-    }
-
-    // Get all the traffic flow associated with the selected router cluster
-    const std::vector<NocTrafficFlowId>* associated_flows = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(b_from);
-
-    // There are no associated flows for this router. Centroid location cannot be calculated.
-    if (associated_flows == nullptr) {
-        return e_create_move::ABORT;
-    }
-
-    double acc_x = 0.0;
-    double acc_y = 0.0;
-    double acc_weight = 0.0;
-
-    // iterate over all the flows associated with the given router
-    for (auto flow_id : *associated_flows) {
-        auto& flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(flow_id);
-        ClusterBlockId source_blk_id = flow.source_router_cluster_id;
-        ClusterBlockId sink_blk_id = flow.sink_router_cluster_id;
-
-        if (b_from == source_blk_id) {
-            acc_x += flow.score * place_ctx.block_locs[sink_blk_id].loc.x;
-            acc_y += flow.score * place_ctx.block_locs[sink_blk_id].loc.y;
-            acc_weight += flow.score;
-        } else if (b_from == sink_blk_id) {
-            acc_x += flow.score * place_ctx.block_locs[source_blk_id].loc.x;
-            acc_y += flow.score * place_ctx.block_locs[source_blk_id].loc.y;
-            acc_weight += flow.score;
-        } else {
-            VTR_ASSERT(false);
-        }
-    }
-
-    t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
-
-    if (acc_weight > 0.0) {
-        centroid_loc.x = (int)round(acc_x / acc_weight);
-        centroid_loc.y = (int)round(acc_y / acc_weight);
-        // NoC routers are not swapped across layers
-        // TODO: Is a 3d NoC feasible? If so, calculate the target layer
-        centroid_loc.layer = from.layer;
-    } else {
-        return e_create_move::ABORT;
-    }
-
-    t_physical_tile_loc phy_centroid_loc{centroid_loc.x, centroid_loc.y, centroid_loc.y};
-
-    if (!is_loc_on_chip(phy_centroid_loc)) {
-        return e_create_move::ABORT;
-    }
-
-    const auto& physical_type = grid.get_physical_type({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
-
-    // If the calculated centroid does not have a compatible type, find a compatible location nearby
-    if (!is_tile_compatible(physical_type, cluster_from_type)) {
-        //Determine centroid location in the compressed space of the current block
-        auto compressed_centroid_loc = get_compressed_loc_approx(compressed_noc_grid,
-                                                                 {centroid_loc.x, centroid_loc.y, 0, centroid_loc.layer},
-                                                                 num_layers);
-        int cx_centroid = compressed_centroid_loc[0].x;
-        int cy_centroid = compressed_centroid_loc[0].y;
-
-        const int r_lim = 1;
-        int r_lim_x = std::min<int>(compressed_noc_grid.compressed_to_grid_x.size(), r_lim);
-        int r_lim_y = std::min<int>(compressed_noc_grid.compressed_to_grid_y.size(), r_lim);
-
-        //Determine the valid compressed grid location ranges
-        int min_cx, max_cx, delta_cx;
-        int min_cy, max_cy;
-
-        min_cx = std::max(0, cx_centroid - r_lim_x);
-        max_cx = std::min<int>(compressed_noc_grid.compressed_to_grid_x.size() - 1, cx_centroid + r_lim_x);
-
-        min_cy = std::max(0, cy_centroid - r_lim_y);
-        max_cy = std::min<int>(compressed_noc_grid.compressed_to_grid_y.size() - 1, cy_centroid + r_lim_y);
-
-        delta_cx = max_cx - min_cx;
-
-        auto compressed_from_loc = get_compressed_loc_approx(compressed_noc_grid,
-                                                             {from.x, from.y, 0, from.layer},
-                                                             num_layers);
-
-        t_physical_tile_loc compressed_to_loc;
-
-        bool legal = find_compatible_compressed_loc_in_range(cluster_from_type,
-                                                             delta_cx,
-                                                             compressed_from_loc[0],
-                                                             {min_cx, max_cx, min_cy, max_cy},
-                                                             compressed_to_loc,
-                                                             false,
-                                                             compressed_from_loc[0].layer_num,
-                                                             false);
-
-        if (!legal) {
-            return e_create_move::ABORT;
-        }
-
-        compressed_grid_to_loc(cluster_from_type, compressed_to_loc, centroid_loc);
-    }
-
-    e_create_move create_move = ::create_move(blocks_affected, b_from, centroid_loc);
-
-    //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) {
-        return e_create_move::ABORT;
-    }
-
-    return create_move;
-}
-
-void write_noc_placement_file(std::string file_name) {
+void write_noc_placement_file(const std::string& file_name) {
     // we need the clustered netlist to get the names of all the NoC router cluster blocks
     auto& cluster_ctx = g_vpr_ctx.clustering();
     // we need to the placement context to determine the final placed locations of the NoC router cluster blocks

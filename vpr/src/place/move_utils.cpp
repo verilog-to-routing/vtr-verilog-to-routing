@@ -1031,6 +1031,29 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
     to_loc = t_pl_loc(grid_loc.x, grid_loc.y, sub_tile, grid_loc.layer_num);
 }
 
+bool has_empty_compatible_subtile(t_logical_block_type_ptr type, const t_physical_tile_loc& to_loc)
+{
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
+    bool legal = false;
+
+    t_pl_loc to_uncompressed_loc;
+    compressed_grid_to_loc(type, to_loc, to_uncompressed_loc);
+    const t_physical_tile_loc to_phy_uncompressed_loc{to_uncompressed_loc.x, to_uncompressed_loc.y, to_uncompressed_loc.layer};
+    const auto& phy_type = device_ctx.grid.get_physical_type(to_phy_uncompressed_loc);
+    const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
+    for (const auto& sub_tile : compatible_sub_tiles) {
+        if (place_ctx.grid_blocks.is_sub_tile_empty(to_phy_uncompressed_loc, sub_tile)) {
+            legal = true;
+            break;
+        }
+    }
+
+    return legal;
+}
+
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
                                              const t_physical_tile_loc& from_loc,
@@ -1038,9 +1061,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num,
-                                             bool check_empty) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
+                                             bool search_for_empty) {
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -1122,18 +1143,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
 
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
                 continue;             //Same from/to location -- try again for new y-position
-            } else if (check_empty) { // Check if the location has at least one empty sub-tile
-                t_pl_loc to_uncompressed_loc;
-                compressed_grid_to_loc(type, to_loc, to_uncompressed_loc);
-                const t_physical_tile_loc to_phy_uncompressed_loc{to_uncompressed_loc.x, to_uncompressed_loc.y, to_uncompressed_loc.layer};
-                const auto& phy_type = device_ctx.grid.get_physical_type(to_phy_uncompressed_loc);
-                const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
-                for (const auto& sub_tile : compatible_sub_tiles) {
-                    if (place_ctx.grid_blocks.is_sub_tile_empty(to_phy_uncompressed_loc, sub_tile)) {
-                        legal = true;
-                        break;
-                    }
-                }
+            } else if (search_for_empty) { // Check if the location has at least one empty sub-tile
+                legal = has_empty_compatible_subtile(type, to_loc);
             } else {
                 legal = true;
             }

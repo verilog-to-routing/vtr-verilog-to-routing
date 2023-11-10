@@ -5,14 +5,13 @@
 #include "globals.h"
 #include "read_place.h"
 #include "initial_placement.h"
+#include "initial_noc_placment.h"
 #include "vpr_utils.h"
 #include "place_util.h"
 #include "place_constraints.h"
 #include "move_utils.h"
 #include "region.h"
 #include "directed_moves_util.h"
-#include "noc_place_utils.h"
-#include "noc_place_checkpoint.h"
 
 #include "echo_files.h"
 
@@ -36,13 +35,8 @@ constexpr int INVALID_X = -1;
 // The amount of weight that will added to each tile which is outside of the floorplanning constraints
 #define SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR 100
 
-/* The maximum number of tries when trying to place a macro at a    *
- * random location before trying exhaustive placement - find the first     *
- * legal position and place it during initial placement.                  */
-#define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 8
-
 /**
- * @brief Set choosen grid locations to EMPTY block id before each placement iteration
+ * @brief Set chosen grid locations to EMPTY block id before each placement iteration
  *   
  *   @param unplaced_blk_types_index Block types that their grid locations must be cleared.
  * 
@@ -53,57 +47,15 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
  * @brief Initializes the grid to empty. It also initialized the location for
  * all blocks to unplaced.
  */
-static void initialize_grid_locs();
-
-/**
- * @brief Calculates total NoC cost.
- *
- *   @param costs Contains latency and aggregate bandwidth costs
- *   along with their corresponding normalization factors.
- *   @param noc_opts Contains NoC placement weighting factor.
- *
- * @return Calculated total NoC cost.
- */
-static double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts);
-
-/**
- * @brief Evaluates whether a NoC router swap should be accepted or not.
- *
- *   @param delta_cost Specifies how much the total cost would change if
- *   the proposed swap is accepted.
- *   @param prob The probability by which a router swap that increases
- *   the cost is accepted.
- *
- * @return true if the proposed swap is accepted, false if not.
- */
-static bool assess_noc_swap(double delta_cost, double prob);
-
-/**
- * @brief Randomly places NoC routers, then runs a quick simulated annealing
- * to minimize NoC costs.
- *
- *   @param noc_opts NoC-related options. Used to calculate NoC-related costs.
- */
-static void initial_noc_placement(const t_noc_opts& noc_opts);
-
-/**
- * @brief Places the macro if the head position passed in is legal, and all the resulting
- * member positions are legal
- *   
- *   @param pl_macro The macro to be placed.
- *   @param head_pos The location of the macro head member.
- * 
- * @return true if macro was placed, false if not.
- */
-static bool try_place_macro(const t_pl_macro& pl_macro, t_pl_loc head_pos);
+static void clear_all_grid_locs();
 
 /**
  * @brief Control routine for placing a macro.
  * First iteration of place_marco performs the following steps to place a macro:
  *  1) try_centroid_placement : tries to find a location based on the macro's logical connections.
- *  2) try_random_placement : if no smart location found in the centroid placement, the function tries
+ *  2) try_place_macro_randomly : if no smart location found in the centroid placement, the function tries
  *  to place it randomly for the max number of tries.
- *  3) try_exhaustive_placement : if neither placement alogrithms work, the function will find a location 
+ *  3) try_place_macro_exhaustively : if neither placement alogrithms work, the function will find a location
  *  for the macro by exhaustively searching all available locations.  
  * If first iteration failed, next iteration calls dense placement for specific block types.
  *  
@@ -202,11 +154,11 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
  *
  *   @param centroid_loc Calculated location in try_centroid_placement function for the block.
  *   @param block_type Logical block type of the macro blocks.
- *   @param check_empty If set, the function tries to find an empty location.
+ *   @param search_for_empty If set, the function tries to find an empty location.
  *
  * @return true if the function can find any location near the centroid one, false otherwise.
  */
-static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type, bool check_empty);
+static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type, bool search_for_empty);
 
 /**
  * @brief  tries to place a macro at a centroid location of its placed connections.
@@ -221,32 +173,6 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
  * @return true if the macro gets placed, false if not.
  */
 static bool try_centroid_placement(const t_pl_macro& pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores);
-
-/**
- * @brief  tries to place a macro at a random location
- *
- *   @param pl_macro The macro to be placed.
- *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
- *   constrained.
- *   @param block_type Logical block type of the macro blocks.
- *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
- *
- * @return true if the macro gets placed, false if not.
- */
-static bool try_random_placement(const t_pl_macro& pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
-
-/**
- * @brief Looks for a valid placement location for macro exhaustively once the maximum number of random locations have been tried.
- *
- *   @param pl_macro The macro to be placed.
- *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
- *   constrained.
- *   @param block_type Logical block type of the macro blocks.
- *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
- *
- * @return true if the macro gets placed, false if not.
- */
-static bool try_exhaustive_placement(const t_pl_macro& pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
 
 /**
  * @brief Looks for a valid placement location for macro in second iteration, tries to place as many macros as possible in one column 
@@ -299,7 +225,7 @@ static void check_initial_placement_legality() {
     }
 }
 
-static bool is_block_placed(ClusterBlockId blk_id) {
+bool is_block_placed(ClusterBlockId blk_id) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     return (place_ctx.block_locs[blk_id].loc.x != INVALID_X);
@@ -332,7 +258,7 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
     return legal;
 }
 
-static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type, bool check_empty) {
+static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type, bool search_for_empty) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int centroid_loc_layer_num = centroid_loc.layer;
@@ -367,7 +293,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
                                                          to_compressed_loc,
                                                          false,
                                                          centroid_loc_layer_num,
-                                                         check_empty);
+                                                         search_for_empty);
 
     if (!legal) {
         return false;
@@ -640,7 +566,7 @@ static inline void fix_IO_block_types(const t_pl_macro& pl_macro, t_pl_loc loc, 
     }
 }
 
-static bool try_random_placement(const t_pl_macro& pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
+bool try_place_macro_randomly(const t_pl_macro& pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     t_pl_loc loc;
 
@@ -707,7 +633,7 @@ static bool try_random_placement(const t_pl_macro& pl_macro, const PartitionRegi
     return legal;
 }
 
-static bool try_exhaustive_placement(const t_pl_macro& pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
+bool try_place_macro_exhaustively(const t_pl_macro& pl_macro, const PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -819,7 +745,7 @@ static bool try_dense_placement(const t_pl_macro& pl_macro, PartitionRegion& pr,
     return legal;
 }
 
-static bool try_place_macro(const t_pl_macro& pl_macro, t_pl_loc head_pos) {
+bool try_place_macro(const t_pl_macro& pl_macro, t_pl_loc head_pos) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     VTR_LOGV_DEBUG(place_ctx.f_placer_debug, "\t\t\t\tTry to place the macro at %dx%dx%dx%d\n",
@@ -907,7 +833,7 @@ static bool place_macro(int macros_max_num_tries, const t_pl_macro& pl_macro, en
     // If macro is not placed yet, try to place the macro randomly for the max number of random tries
     for (int itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry random place iter: %d\n", itry);
-        macro_placed = try_random_placement(pl_macro, pr, block_type, pad_loc_type);
+        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, pad_loc_type);
     } // Finished all tries
 
     if (!macro_placed) {
@@ -919,7 +845,7 @@ static bool place_macro(int macros_max_num_tries, const t_pl_macro& pl_macro, en
 
         // Exhaustive placement of carry macros
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry exhaustive placement\n");
-        macro_placed = try_exhaustive_placement(pl_macro, pr, block_type, pad_loc_type);
+        macro_placed = try_place_macro_exhaustively(pl_macro, pr, block_type, pad_loc_type);
     }
     return macro_placed;
 }
@@ -1113,7 +1039,7 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
     }
 }
 
-static void initialize_grid_locs() {
+static void clear_all_grid_locs() {
     auto& device_ctx = g_vpr_ctx.device();
 
     std::unordered_set<int> blk_types_to_be_cleared;
@@ -1167,195 +1093,7 @@ bool place_one_block(const ClusterBlockId& blk_id,
     return placed_macro;
 }
 
-static double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts) {
-    double noc_cost = 0.0;
-    noc_cost = (noc_opts.noc_placement_weighting) * ((costs.noc_aggregate_bandwidth_cost * costs.noc_aggregate_bandwidth_cost_norm) + (costs.noc_latency_cost * costs.noc_latency_cost_norm));
-    return noc_cost;
-}
-
-static bool assess_noc_swap(double delta_cost, double prob) {
-    if (delta_cost <= 0.0) {
-        return true;
-    }
-
-    if (prob == 0.0) {
-        return false;
-    }
-
-    float random_num = vtr::frand();
-    if (random_num < prob) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-static void initial_noc_placement(const t_noc_opts& noc_opts) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& noc_ctx = g_vpr_ctx.noc();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-
-    // Get all the router clusters and figure out how many of them exist
-    const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
-    const int num_router_clusters = router_blk_ids.size();
-
-    // Holds all the routers that are not fixed into a specific location by constraints
-    std::vector<ClusterBlockId> unfixed_routers;
-
-    for (auto router_blk_id : router_blk_ids) {
-        // The block is fixed and was placed in mark_fixed_blocks()
-        if (is_block_placed((router_blk_id))) {
-            continue;
-        }
-
-        if (is_cluster_constrained(router_blk_id)) {
-            auto block_type = cluster_ctx.clb_nlist.block_type(router_blk_id);
-            const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[router_blk_id];
-
-            // Create a macro with a single member
-            t_pl_macro_member macro_member;
-            macro_member.blk_index = router_blk_id;
-            macro_member.offset = t_pl_offset(0, 0, 0);
-            t_pl_macro pl_macro;
-            pl_macro.members.push_back(macro_member);
-
-            bool macro_placed = false;
-            for (int i_try = 0; i_try < MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY && !macro_placed; i_try++) {
-                macro_placed = try_random_placement(pl_macro, pr, block_type, FREE);
-            }
-
-            if (!macro_placed) {
-                macro_placed = try_exhaustive_placement(pl_macro, pr, block_type, FREE);
-            }
-
-            if (!macro_placed) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Could not place a router cluster within its constrained region");
-            }
-
-        } else {
-            unfixed_routers.push_back(router_blk_id);
-        }
-    }
-
-    // Make a copy of NoC physical routers because we want to change its order
-    vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
-
-    // Shuffle NoC physical routers
-    vtr::RandState rand_state = vtr::irand(1024);
-    vtr::shuffle(noc_phy_routers.begin(), noc_phy_routers.end(), rand_state);
-
-    // Get the logical block type for router
-    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
-
-    // Get the compressed grid for NoC
-    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
-
-    // Iterate over shuffled physical routers to place logical routers
-    // Since physical routers are shuffled, router placement would be random
-    for (const auto& phy_router : noc_phy_routers) {
-        t_physical_tile_loc router_phy_loc = phy_router.get_router_physical_location();
-
-        // Find a compatible sub-tile
-        const auto& phy_type = device_ctx.grid.get_physical_type(router_phy_loc);
-        const auto& compatible_sub_tiles = compressed_noc_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
-        int sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
-
-        t_pl_loc loc(router_phy_loc, sub_tile);
-
-        if (place_ctx.grid_blocks.is_sub_tile_empty(router_phy_loc, sub_tile)) {
-            // Pick one of the unplaced routers
-            auto logical_router_bid = unfixed_routers.back();
-            unfixed_routers.pop_back();
-
-            // Create a macro with a single member
-            t_pl_macro_member macro_member;
-            macro_member.blk_index = logical_router_bid;
-            macro_member.offset = t_pl_offset(0, 0, 0);
-            t_pl_macro pl_macro;
-            pl_macro.members.push_back(macro_member);
-
-            bool legal = try_place_macro(pl_macro, loc);
-            if (!legal) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Could not place a router cluster into an empty physical router.");
-            }
-
-            // When all router clusters are placed, stop iterating over remaining physical routers
-            if (unfixed_routers.empty()) {
-                break;
-            }
-        }
-    } // end for of random router placement
-
-    // populate internal data structures to maintain route, bandwidth usage, and latencies
-    initial_noc_routing();
-
-    // Only NoC related costs are considered
-    t_placer_costs costs;
-
-    costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
-    costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
-    update_noc_normalization_factors(costs);
-    costs.cost = calculate_noc_cost(costs, noc_opts);
-
-    // Maximum distance in each direction that a router can travel in a move
-    const float max_r_lim = ceilf(sqrtf((float)noc_phy_routers.size()));
-
-    // At most, two routers are swapped
-    t_pl_blocks_to_be_moved blocks_affected(2);
-
-    // Total number of moves
-    const int N_MOVES = num_router_clusters * 35 * 1000;
-
-    const double starting_prob = 0.5;
-    const double prob_step = starting_prob / N_MOVES;
-
-    NoCPlacementCheckpoint checkpoint;
-
-    // Generate and evaluate router moves
-    for (int i_move = 0; i_move < N_MOVES; i_move++) {
-        e_create_move create_move_outcome = e_create_move::ABORT;
-        clear_move_blocks(blocks_affected);
-        // Shrink the range limit over time
-        float r_lim_decayed = 1.0f + (N_MOVES - i_move) * (max_r_lim / N_MOVES);
-        create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
-
-        if (create_move_outcome != e_create_move::ABORT) {
-            apply_move_blocks(blocks_affected);
-
-            double noc_aggregate_bandwidth_delta_c = 0.0;
-            double noc_latency_delta_c = 0.0;
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
-            double delta_cost = (noc_opts.noc_placement_weighting) * (noc_latency_delta_c * costs.noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs.noc_aggregate_bandwidth_cost_norm);
-
-            double prob = starting_prob - i_move * prob_step;
-            bool move_accepted = assess_noc_swap(delta_cost, prob);
-
-            if (move_accepted) {
-                costs.cost += delta_cost;
-                commit_move_blocks(blocks_affected);
-                commit_noc_costs();
-                costs.noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
-                costs.noc_latency_cost += noc_latency_delta_c;
-                if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
-                    checkpoint.save_checkpoint(costs.cost);
-                }
-            } else { // The proposed move is rejected
-                revert_move_blocks(blocks_affected);
-                revert_noc_traffic_flow_routes(blocks_affected);
-            }
-        }
-    }
-
-    if (checkpoint.get_cost() < costs.cost) {
-        checkpoint.restore_checkpoint(noc_opts, costs);
-    }
-}
-
-
 void initial_placement(const t_placer_opts& placer_opts,
-                       enum e_pad_loc_type pad_loc_type,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
@@ -1363,7 +1101,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     /* Initialize the grid blocks to empty.
      * Initialize all the blocks to unplaced.
      */
-    initialize_grid_locs();
+    clear_all_grid_locs();
 
     /* Go through cluster blocks to calculate the tightest placement
      * floorplan constraint for each constrained block
@@ -1376,14 +1114,14 @@ void initial_placement(const t_placer_opts& placer_opts,
 
     if (noc_opts.noc) {
         // NoC routers are placed before other blocks
-        initial_noc_placement(noc_opts);
+        initial_noc_placement(noc_opts, placer_opts.seed);
     }
 
     //Assign scores to blocks and placement macros according to how difficult they are to place
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
 
     //Place all blocks
-    place_all_blocks(placer_opts, block_scores, pad_loc_type, constraints_file);
+    place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file);
 
     //if any blocks remain unplaced, print an error
     check_initial_placement_legality();

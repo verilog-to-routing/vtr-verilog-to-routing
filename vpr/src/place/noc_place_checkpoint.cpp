@@ -2,7 +2,7 @@
 #include "noc_place_checkpoint.h"
 #include "noc_place_utils.h"
 
-RouterPlacementCheckpoint::RouterPlacementCheckpoint()
+NoCPlacementCheckpoint::NoCPlacementCheckpoint()
     : valid_(false)
     , cost_(std::numeric_limits<double>::infinity()) {
     const auto& noc_ctx = g_vpr_ctx.noc();
@@ -12,12 +12,13 @@ RouterPlacementCheckpoint::RouterPlacementCheckpoint()
 
     router_locations_.clear();
 
+    // Initializes checkpoint locations to invalid
     for (const auto& router_bid : router_bids) {
         router_locations_[router_bid] = t_pl_loc(OPEN, OPEN, OPEN, OPEN);
     }
 }
 
-void RouterPlacementCheckpoint::save_checkpoint(double cost) {
+void NoCPlacementCheckpoint::save_checkpoint(double cost) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& place_ctx = g_vpr_ctx.placement();
 
@@ -31,7 +32,7 @@ void RouterPlacementCheckpoint::save_checkpoint(double cost) {
     cost_ = cost;
 }
 
-void RouterPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t_placer_costs& costs) {
+void NoCPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t_placer_costs& costs) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -46,7 +47,7 @@ void RouterPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t
         place_ctx.grid_blocks.set_usage(phy_loc, 0);
         auto tile = device_ctx.grid.get_physical_type(phy_loc);
 
-        for (auto sub_tile : tile->sub_tiles) {
+        for (const auto& sub_tile : tile->sub_tiles) {
             auto capacity = sub_tile.capacity;
 
             for (int k = 0; k < capacity.total(); k++) {
@@ -70,10 +71,10 @@ void RouterPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t
     reinitialize_noc_routing(noc_opts, costs);
 }
 
-bool RouterPlacementCheckpoint::is_valid() const {
+bool NoCPlacementCheckpoint::is_valid() const {
     return valid_;
 }
 
-double RouterPlacementCheckpoint::get_cost() const {
+double NoCPlacementCheckpoint::get_cost() const {
     return cost_;
 }
