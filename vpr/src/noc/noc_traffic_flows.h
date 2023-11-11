@@ -74,8 +74,7 @@ struct t_noc_traffic_flow {
         , sink_router_cluster_id(sink_router_id)
         , traffic_flow_bandwidth(flow_bandwidth)
         , max_traffic_flow_latency(max_flow_latency)
-        , traffic_flow_priority(flow_priority)
-    {}
+        , traffic_flow_priority(flow_priority) {}
 };
 
 class NocTrafficFlows {

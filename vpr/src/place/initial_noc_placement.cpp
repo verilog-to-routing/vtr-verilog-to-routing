@@ -32,7 +32,7 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id);
  *   NoC routers.
  *   @param seed Used for shuffling NoC routers.
  */
-static void place_noc_routers_randomly (std::vector<ClusterBlockId>& unfixed_routers, int seed);
+static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers, int seed);
 
 /**
  * @brief Runs a simulated annealing optimizer for NoC routers.
@@ -58,8 +58,7 @@ static bool accept_noc_swap(double delta_cost, double prob) {
     }
 }
 
-static void place_constrained_noc_router(ClusterBlockId router_blk_id)
-{
+static void place_constrained_noc_router(ClusterBlockId router_blk_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
@@ -87,8 +86,7 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id)
     }
 }
 
-static void place_noc_routers_randomly (std::vector<ClusterBlockId>& unfixed_routers, int seed)
-{
+static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers, int seed) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& noc_ctx = g_vpr_ctx.noc();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -153,8 +151,7 @@ static void place_noc_routers_randomly (std::vector<ClusterBlockId>& unfixed_rou
     } // end for of random router placement
 }
 
-static void noc_routers_anneal(const t_noc_opts& noc_opts)
-{
+static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // Only NoC related costs are considered
@@ -267,7 +264,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     }
 
     // Place unconstrained NoC routers randomly
-    place_noc_routers_randomly(unfixed_routers,seed);
+    place_noc_routers_randomly(unfixed_routers, seed);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();

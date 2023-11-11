@@ -26,9 +26,9 @@
  */
 class NoCPlacementCheckpoint {
   public:
-   /**
-    * @brief Default constructor initializes private member variables.
-    */
+    /**
+     * @brief Default constructor initializes private member variables.
+     */
     NoCPlacementCheckpoint();
     NoCPlacementCheckpoint(const NoCPlacementCheckpoint& other) = delete;
     NoCPlacementCheckpoint& operator=(const NoCPlacementCheckpoint& other) = delete;

@@ -192,11 +192,11 @@ bool try_pack(t_packer_opts* packer_opts,
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 attraction_groups.create_att_groups_for_overfull_regions();
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
-            } else if (pack_iteration == 3)  {
+            } else if (pack_iteration == 3) {
                 attraction_groups.create_att_groups_for_all_regions();
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
-            } else if (pack_iteration == 4)  {
+            } else if (pack_iteration == 4) {
                 attraction_groups.create_att_groups_for_all_regions();
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
