@@ -57,8 +57,6 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
     blocks_affected.moved_blocks[imoved_blk].block_num = blk;
     blocks_affected.moved_blocks[imoved_blk].old_loc = from;
     blocks_affected.moved_blocks[imoved_blk].new_loc = to;
-    VTR_ASSERT_SAFE(imoved_blk == int(blocks_affected.moved_blocks.size()));
-    blocks_affected.moved_blocks.emplace_back(blk, from, to);
     blocks_affected.num_moved_blocks++;
 
     return e_block_move_result::VALID;
