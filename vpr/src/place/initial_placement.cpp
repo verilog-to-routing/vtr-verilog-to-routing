@@ -609,7 +609,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro, const PartitionRegion&
                                                     to_compressed_loc,
                                                     false,
                                                     reg_coord.layer_num,
-                                                    true);
+                                                    false);
     if (!legal) {
         //No valid position found
         return false;
