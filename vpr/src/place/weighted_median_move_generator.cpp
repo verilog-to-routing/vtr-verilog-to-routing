@@ -27,6 +27,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    bool is_multi_layer = (num_layers > 1);
+
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
@@ -42,6 +45,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //reused to save allocation time
     place_move_ctx.X_coord.clear();
     place_move_ctx.Y_coord.clear();
+    std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
     bool skip_net;
@@ -72,6 +76,17 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
         place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
         place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
+        // If multile layers are available, I need to keep track of how many sinks are in each layer.
+        if (is_multi_layer) {
+            for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num];
+            }
+            // If the pin under consideration if of type sink, it is counted in place_move_ctx.num_sink_pin_layer, and we don't want to consider the moving pins
+            if (cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
+                VTR_ASSERT(layer_blk_cnt[from.layer] > 0);
+                layer_blk_cnt[from.layer]--;
+            }
+        }
     }
 
     if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {
@@ -106,8 +121,17 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_pl_loc w_median_point;
     w_median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     w_median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
-    // TODO: Currently, we don't move blocks between different types of layers
-    w_median_point.layer = from.layer;
+
+    // If multiple layers are available, we would choose the median layer, otherwise the same layer (layer #0) as the from_loc would be chosen
+    //#TODO: Since we are now only considering 2 layers, the layer with maximum number of sinks should be chosen. we need to update it to get the true median
+    if (is_multi_layer) {
+        int layer_num = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
+        w_median_point.layer = layer_num;
+        to.layer = layer_num;
+    } else {
+        w_median_point.layer = from.layer;
+        to.layer = from.layer;
+    }
     if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }

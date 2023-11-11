@@ -307,11 +307,10 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     int first_rlim = 15;
 
     auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                                compressed_centroid_loc,
-                                                                first_rlim,
-                                                                num_layers);
+                                                                compressed_centroid_loc[centroid_loc_layer_num],
+                                                                first_rlim);
 
-    int delta_cx = search_range[centroid_loc_layer_num].xmax - search_range[centroid_loc_layer_num].xmin;
+    int delta_cx = search_range.xmax - search_range.xmin;
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
     int cx_from = OPEN;
@@ -323,7 +322,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
     bool legal = find_compatible_compressed_loc_in_range(block_type,
                                                          delta_cx,
                                                          {cx_from, cy_from, layer_from},
-                                                         search_range[centroid_loc_layer_num],
+                                                         search_range,
                                                          to_compressed_loc,
                                                          false,
                                                          centroid_loc_layer_num);
@@ -426,9 +425,8 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
         centroid.y = acc_y / acc_weight;
         if (find_layer) {
             auto max_element = std::max_element(layer_count.begin(), layer_count.end());
-            VTR_ASSERT(*max_element != 0);
-            auto index = std::distance(layer_count.begin(), max_element);
-            centroid.layer = static_cast<int>(index);
+            VTR_ASSERT((*max_element) != 0);
+            centroid.layer = (int)std::distance(layer_count.begin(), max_element);
         } else {
             centroid.layer = head_layer_num;
         }
@@ -634,11 +632,13 @@ static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_log
     t_physical_tile_loc to_compressed_loc;
 
     bool legal;
+
     legal = find_compatible_compressed_loc_in_range(block_type,
                                                     delta_cx,
                                                     {cx_from, cy_from, reg_coord.layer_num},
                                                     {min_compressed_loc.x, max_compressed_loc.x,
-                                                     min_compressed_loc.y, max_compressed_loc.y},
+                                                     min_compressed_loc.y, max_compressed_loc.y,
+                                                     reg_coord.layer_num, reg_coord.layer_num},
                                                     to_compressed_loc,
                                                     false,
                                                     reg_coord.layer_num);
@@ -1097,7 +1097,7 @@ bool place_one_block(const ClusterBlockId& blk_id,
         //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
         //This is done so that the initial placement flow can be the same whether the block belongs to a macro or not
         t_pl_macro_member macro_member;
-        t_pl_offset block_offset(0, 0, 0);
+        t_pl_offset block_offset(0, 0, 0, 0);
 
         macro_member.blk_index = blk_id;
         macro_member.offset = block_offset;

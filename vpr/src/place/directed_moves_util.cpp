@@ -25,6 +25,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
+    float acc_layer = 0;
     float weight = 1;
 
     int from_block_layer_num = g_vpr_ctx.placement().block_locs[b_from].loc.layer;
@@ -65,6 +66,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
 
                 acc_x += tile_loc.x * weight;
                 acc_y += tile_loc.y * weight;
+                acc_layer += tile_loc.layer_num * weight;
                 acc_weight += weight;
             }
         }
@@ -84,6 +86,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
 
             acc_x += tile_loc.x * weight;
             acc_y += tile_loc.y * weight;
+            acc_layer += tile_loc.layer_num * weight;
             acc_weight += weight;
         }
     }
@@ -91,8 +94,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
     //Calculate the centroid location
     centroid.x = acc_x / acc_weight;
     centroid.y = acc_y / acc_weight;
-    // TODO: For now, we don't move the centroid to a different layer
-    centroid.layer = from_block_layer_num;
+    centroid.layer = acc_layer / acc_weight;
 }
 
 static std::map<std::string, e_reward_function> available_reward_function = {
