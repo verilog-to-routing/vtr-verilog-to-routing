@@ -49,7 +49,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
 
@@ -93,7 +93,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -123,7 +123,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -138,7 +138,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -157,7 +157,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -227,7 +227,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -282,7 +282,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
 
@@ -310,7 +310,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: 3.10.10
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           submodules: 'true'
       - run: ./.github/scripts/install_dependencies.sh
@@ -335,7 +335,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -360,7 +360,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -395,7 +395,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -431,7 +431,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
