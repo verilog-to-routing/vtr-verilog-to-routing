@@ -9,6 +9,7 @@
 #ifndef RTL_UTILS_H
 #define RTL_UTILS_H
 
+#include <cstdint>
 #include <string>
 #include <iostream>
 #include <string.h>

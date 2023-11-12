@@ -48,4 +48,12 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
 int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node);
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node);
 
+/**
+ * @brief This function checks whether all inter-die connections are form OPINs. Return "true"
+ * if that is the case. Can be used for multiple purposes. For example, to determine which type of bounding
+ * box to be used to estimate the wire-length of a net.
+ * @param rr_graph
+ * @return
+ */
+bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
 #endif

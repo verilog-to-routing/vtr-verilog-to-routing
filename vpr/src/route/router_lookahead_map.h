@@ -8,9 +8,7 @@
 
 class MapLookahead : public RouterLookahead {
   public:
-    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
-        : det_routing_arch_(det_routing_arch)
-        , is_flat_(is_flat) {}
+    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat);
 
   private:
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
@@ -21,6 +19,9 @@ class MapLookahead : public RouterLookahead {
     std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
     // Lookup table to store the minimum cost for each dx and dy
     vtr::NdMatrix<util::Cost_Entry, 3> distance_based_min_cost; // [layer_num][dx][dy] -> cost
+    // [tile_index][from_layer_num][to_layer_num] -> pair<seg_index, t_reachable_wire_inf>
+    util::t_src_opin_inter_layer_delays src_opin_inter_layer_delays;
+
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
 
