@@ -68,6 +68,8 @@ struct Vec_Wec_t_
     for ( i = LevelStart-1; (i >= LevelStop) && (((vVec) = Vec_WecEntry(vGlob, i)), 1); i-- )
 #define Vec_WecForEachLevelTwo( vGlob1, vGlob2, vVec1, vVec2, i )                          \
     for ( i = 0; (i < Vec_WecSize(vGlob1)) && (((vVec1) = Vec_WecEntry(vGlob1, i)), 1) && (((vVec2) = Vec_WecEntry(vGlob2, i)), 1); i++ )
+#define Vec_WecForEachLevelDouble( vGlob, vVec1, vVec2, i )                                \
+    for ( i = 0; (i < Vec_WecSize(vGlob)) && (((vVec1) = Vec_WecEntry(vGlob, i)), 1) && (((vVec2) = Vec_WecEntry(vGlob, i+1)), 1); i += 2 )
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -129,7 +131,7 @@ static inline void Vec_WecGrow( Vec_Wec_t * p, int nCapMin )
     if ( p->nCap >= nCapMin )
         return;
     p->pArray = ABC_REALLOC( Vec_Int_t, p->pArray, nCapMin ); 
-    memset( p->pArray + p->nCap, 0, sizeof(Vec_Int_t) * (nCapMin - p->nCap) );
+    memset( p->pArray + p->nCap, 0, sizeof(Vec_Int_t) * (size_t)(nCapMin - p->nCap) );
     p->nCap   = nCapMin;
 }
 static inline void Vec_WecInit( Vec_Wec_t * p, int nSize )
@@ -247,6 +249,9 @@ static inline int Vec_WecSizeUsedLimits( Vec_Wec_t * p, int iStart, int iStop )
 ***********************************************************************/
 static inline void Vec_WecShrink( Vec_Wec_t * p, int nSizeNew )
 {
+    Vec_Int_t * vVec; int i;
+    Vec_WecForEachLevelStart( p, vVec, i, nSizeNew )
+        Vec_IntShrink( vVec, 0 );
     assert( p->nSize >= nSizeNew );
     p->nSize = nSizeNew;
 }
@@ -270,6 +275,13 @@ static inline void Vec_WecClear( Vec_Wec_t * p )
         Vec_IntClear( vVec );
     p->nSize = 0;
 }
+static inline void Vec_WecClearLevels( Vec_Wec_t * p )
+{
+    Vec_Int_t * vVec;
+    int i;
+    Vec_WecForEachLevel( p, vVec, i )
+        Vec_IntClear( vVec );
+}
 
 /**Function*************************************************************
 
@@ -290,6 +302,15 @@ static inline void Vec_WecPush( Vec_Wec_t * p, int Level, int Entry )
         p->nSize = Level + 1;
     }
     Vec_IntPush( Vec_WecEntry(p, Level), Entry );
+}
+static inline void Vec_WecPushTwo( Vec_Wec_t * p, int Level, int Entry1, int Entry2 )
+{
+    if ( p->nSize < Level + 1 )
+    {
+        Vec_WecGrow( p, Abc_MaxInt(2*p->nSize, Level + 1) );
+        p->nSize = Level + 1;
+    }
+    Vec_IntPushTwo( Vec_WecEntry(p, Level), Entry1, Entry2 );
 }
 static inline Vec_Int_t * Vec_WecPushLevel( Vec_Wec_t * p )
 {
@@ -339,7 +360,7 @@ static inline double Vec_WecMemory( Vec_Wec_t * p )
     if ( p == NULL )  return 0.0;
     Mem = sizeof(Vec_Int_t) * Vec_WecCap(p);
     for ( i = 0; i < p->nSize; i++ )
-        Mem += sizeof(int) * Vec_IntCap( Vec_WecEntry(p, i) );
+        Mem += sizeof(int) * (size_t)Vec_IntCap( Vec_WecEntry(p, i) );
     return Mem;
 }
 
@@ -417,7 +438,7 @@ static inline Vec_Wec_t * Vec_WecDup( Vec_Wec_t * p )
     Vec_Wec_t * vNew;
     Vec_Int_t * vVec;
     int i, k, Entry;
-    vNew = Vec_WecAlloc( Vec_WecSize(p) );
+    vNew = Vec_WecStart( Vec_WecSize(p) );
     Vec_WecForEachLevel( p, vVec, i )
         Vec_IntForEachEntry( vVec, Entry, k )
             Vec_WecPush( vNew, i, Entry );
@@ -454,10 +475,10 @@ static int Vec_WecSortCompare2( Vec_Int_t * p1, Vec_Int_t * p2 )
 static inline void Vec_WecSort( Vec_Wec_t * p, int fReverse )
 {
     if ( fReverse ) 
-        qsort( (void *)p->pArray, p->nSize, sizeof(Vec_Int_t), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Vec_Int_t), 
                 (int (*)(const void *, const void *)) Vec_WecSortCompare2 );
     else
-        qsort( (void *)p->pArray, p->nSize, sizeof(Vec_Int_t), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Vec_Int_t), 
                 (int (*)(const void *, const void *)) Vec_WecSortCompare1 );
 }
 
@@ -492,10 +513,10 @@ static int Vec_WecSortCompare4( Vec_Int_t * p1, Vec_Int_t * p2 )
 static inline void Vec_WecSortByFirstInt( Vec_Wec_t * p, int fReverse )
 {
     if ( fReverse ) 
-        qsort( (void *)p->pArray, p->nSize, sizeof(Vec_Int_t), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Vec_Int_t), 
                 (int (*)(const void *, const void *)) Vec_WecSortCompare4 );
     else
-        qsort( (void *)p->pArray, p->nSize, sizeof(Vec_Int_t), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Vec_Int_t), 
                 (int (*)(const void *, const void *)) Vec_WecSortCompare3 );
 }
 
@@ -529,11 +550,34 @@ static int Vec_WecSortCompare6( Vec_Int_t * p1, Vec_Int_t * p2 )
 static inline void Vec_WecSortByLastInt( Vec_Wec_t * p, int fReverse )
 {
     if ( fReverse ) 
-        qsort( (void *)p->pArray, p->nSize, sizeof(Vec_Int_t), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Vec_Int_t), 
                 (int (*)(const void *, const void *)) Vec_WecSortCompare6 );
     else
-        qsort( (void *)p->pArray, p->nSize, sizeof(Vec_Int_t), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Vec_Int_t), 
                 (int (*)(const void *, const void *)) Vec_WecSortCompare5 );
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline void Vec_WecKeepLevels( Vec_Wec_t * p, int Limit )
+{
+    Vec_Int_t * vLevel; int i, k = 0;
+    Vec_WecForEachLevel( p, vLevel, i )
+        if ( Vec_IntSize(vLevel) > Limit )
+        {
+            ABC_SWAP( Vec_Int_t, Vec_WecArray(p)[i], Vec_WecArray(p)[k] );
+            k++;
+        }
+    Vec_WecShrink( p, k );
 }
 
 /**Function*************************************************************
@@ -619,6 +663,25 @@ static inline int Vec_WecCountNonTrivial( Vec_Wec_t * p, int * pnUsed )
         (*pnUsed) += Vec_IntSize(vClass);
     }
     return nClasses;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline int Vec_WecMaxLevelSize( Vec_Wec_t * p )
+{
+    Vec_Int_t * vTemp; int i, Res = 0;
+    Vec_WecForEachLevel( p, vTemp, i )
+        Res = Abc_MaxInt( Res, Vec_IntSize(vTemp) );
+    return Res;
 }
 
 /**Function*************************************************************
@@ -725,6 +788,83 @@ static inline void Vec_WecRemoveEmpty( Vec_Wec_t * vCubes )
         Vec_IntZero( Vec_WecEntry(vCubes, i) );
     Vec_WecShrink( vCubes, k );
 //    Vec_WecSortByFirstInt( vCubes, 0 );
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [File interface.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline void Vec_WecDumpBin( char * pFileName, Vec_Wec_t * p, int fVerbose )
+{
+    Vec_Int_t * vLevel;
+    int i, nSize, RetValue;
+    FILE * pFile = fopen( pFileName, "wb" );
+    if ( pFile == NULL )
+    {
+        printf( "Cannot open file \"%s\" for writing.\n", pFileName );
+        return;
+    }
+    nSize = Vec_WecSize(p);
+    RetValue = fwrite( &nSize, 1, sizeof(int), pFile );
+    Vec_WecForEachLevel( p, vLevel, i )
+    {
+        nSize = Vec_IntSize(vLevel);
+        RetValue += fwrite( &nSize, 1, sizeof(int), pFile );
+        RetValue += fwrite( Vec_IntArray(vLevel), 1, sizeof(int)*nSize, pFile );
+    }
+    fclose( pFile );
+    if ( RetValue != (int)sizeof(int)*(Vec_WecSizeSize(p)+Vec_WecSize(p)+1) )
+        printf( "Error writing data into file.\n" );
+    if ( fVerbose )
+        printf( "Written %d integer arrays into file \"%s\".\n", Vec_WecSize(p), pFileName );
+}
+static inline Vec_Wec_t * Vec_WecReadBin( char * pFileName, int fVerbose )
+{
+    Vec_Wec_t * p = NULL; Vec_Int_t * vLevel; int i, nSize, RetValue;
+    FILE * pFile = fopen( pFileName, "rb" );
+    if ( pFile == NULL )
+    {
+        printf( "Cannot open file \"%s\" for reading.\n", pFileName );
+        return NULL;
+    }
+    fseek( pFile, 0, SEEK_END );
+    nSize = ftell( pFile );
+    if ( nSize == 0 )
+    {
+        printf( "The input file is empty.\n" );
+        fclose( pFile );
+        return NULL;
+    }
+    if ( nSize % sizeof(int) > 0 )
+    {
+        printf( "Cannot read file with integers because it is not aligned at 4 bytes (remainder = %d).\n", (int)(nSize % sizeof(int)) );
+        fclose( pFile );
+        return NULL;
+    }
+    rewind( pFile );
+    RetValue = fread( &nSize, 1, sizeof(int), pFile );
+    assert( RetValue == 4 );
+    p = Vec_WecStart( nSize );
+    Vec_WecForEachLevel( p, vLevel, i )
+    {
+        RetValue = fread( &nSize, 1, sizeof(int), pFile );
+        assert( RetValue == 4 );
+        Vec_IntFill( vLevel, nSize, 0 );
+        RetValue = fread( Vec_IntArray(vLevel), 1, sizeof(int)*nSize, pFile );
+        assert( RetValue == 4*nSize );
+    }
+    fclose( pFile );
+    if ( fVerbose )
+        printf( "Read %d integer arrays from file \"%s\".\n", Vec_WecSize(p), pFileName );
+    return p;
 }
 
 

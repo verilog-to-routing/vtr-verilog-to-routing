@@ -83,6 +83,7 @@ extern int               bmcg_sat_solver_eliminate( bmcg_sat_solver* s, int turn
 extern int               bmcg_sat_solver_var_is_elim( bmcg_sat_solver* s, int v );
 extern void              bmcg_sat_solver_var_set_frozen( bmcg_sat_solver* s, int v, int freeze );
 extern int               bmcg_sat_solver_elim_varnum(bmcg_sat_solver* s);
+extern int *             bmcg_sat_solver_read_cex( bmcg_sat_solver* s );
 extern int               bmcg_sat_solver_read_cex_varvalue( bmcg_sat_solver* s, int );
 extern void              bmcg_sat_solver_set_stop( bmcg_sat_solver* s, int * pstop );
 extern abctime           bmcg_sat_solver_set_runtime_limit( bmcg_sat_solver* s, abctime Limit );
@@ -93,11 +94,18 @@ extern int               bmcg_sat_solver_learntnum( bmcg_sat_solver* s );
 extern int               bmcg_sat_solver_conflictnum( bmcg_sat_solver* s );
 extern int               bmcg_sat_solver_minimize_assumptions( bmcg_sat_solver * s, int * plits, int nlits, int pivot );
 extern int               bmcg_sat_solver_add_and( bmcg_sat_solver * s, int iVar, int iVar0, int iVar1, int fCompl0, int fCompl1, int fCompl );
+extern int               bmcg_sat_solver_add_xor( bmcg_sat_solver * s, int iVarA, int iVarB, int iVarC, int fCompl );
 extern int               bmcg_sat_solver_quantify( bmcg_sat_solver * s[], Gia_Man_t * p, int iLit, int fHash, int(*pFuncCiToKeep)(void *, int), void * pData, Vec_Int_t * vDLits );
 extern int               bmcg_sat_solver_equiv_overlap_check( bmcg_sat_solver * s, Gia_Man_t * p, int iLit0, int iLit1, int fEquiv );
 extern Vec_Str_t *       bmcg_sat_solver_sop( Gia_Man_t * p, int CubeLimit );
+extern int               bmcg_sat_solver_jftr( bmcg_sat_solver * s );
+extern void              bmcg_sat_solver_set_jftr( bmcg_sat_solver * s, int jftr );
+extern void              bmcg_sat_solver_set_var_fanin_lit( bmcg_sat_solver * s, int var, int lit0, int lit1 );
+extern void              bmcg_sat_solver_start_new_round( bmcg_sat_solver * s );
+extern void              bmcg_sat_solver_mark_cone( bmcg_sat_solver * s, int var );
 
-extern void              Glucose_SolveCnf( char * pFilename, Glucose_Pars * pPars );
+
+extern void              Glucose_SolveCnf( char * pFilename, Glucose_Pars * pPars, int fDumpCnf );
 extern int               Glucose_SolveAig( Gia_Man_t * p, Glucose_Pars * pPars );
 
 ABC_NAMESPACE_HEADER_END

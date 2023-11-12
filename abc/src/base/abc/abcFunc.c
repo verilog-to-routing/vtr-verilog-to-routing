@@ -356,7 +356,7 @@ char * Abc_ConvertBddToSop( Mem_Flex_t * pMan, DdManager * dd, DdNode * bFuncOn,
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkBddToSop( Abc_Ntk_t * pNtk, int fMode, int nCubeLimit )
+int Abc_NtkBddToSop( Abc_Ntk_t * pNtk, int fMode, int nCubeLimit, int fCubeSort )
 {
     Vec_Int_t * vGuide;
     Vec_Str_t * vCube;
@@ -445,6 +445,7 @@ int Abc_NtkBddToSop( Abc_Ntk_t * pNtk, int fMode, int nCubeLimit )
     Extra_StopManager( dd );
 
     // reorder fanins and cubes to make SOPs more human-readable
+    if ( fCubeSort )
     Abc_NtkSortSops( pNtk );
     return 1;
 }
@@ -788,7 +789,7 @@ DdNode * Abc_ConvertAigToBdd( DdManager * dd, Hop_Obj_t * pRoot )
 #else
 
 int  Abc_NtkSopToBdd( Abc_Ntk_t * pNtk ) { return 1; }
-int  Abc_NtkBddToSop( Abc_Ntk_t * pNtk, int fMode, int nCubeLimit ) { return 1; }
+int  Abc_NtkBddToSop( Abc_Ntk_t * pNtk, int fMode, int nCubeLimit, int fCubeSort ) { return 1; }
 void Abc_NodeBddToCnf( Abc_Obj_t * pNode, Mem_Flex_t * pMmMan, Vec_Str_t * vCube, int fAllPrimes, char ** ppSop0, char ** ppSop1 ) {}
 void Abc_NtkLogicMakeDirectSops( Abc_Ntk_t * pNtk ) {}
 int  Abc_NtkAigToBdd( Abc_Ntk_t * pNtk ) { return 1; }
@@ -1178,17 +1179,17 @@ int Abc_NtkToSop( Abc_Ntk_t * pNtk, int fMode, int nCubeLimit )
             return 1;
         if ( !Abc_NtkSopToBdd(pNtk) )
             return 0;
-        return Abc_NtkBddToSop(pNtk, fMode, nCubeLimit);
+        return Abc_NtkBddToSop(pNtk, fMode, nCubeLimit, 1);
     }
     if ( Abc_NtkHasMapping(pNtk) )
         return Abc_NtkMapToSop(pNtk);
     if ( Abc_NtkHasBdd(pNtk) )
-        return Abc_NtkBddToSop(pNtk, fMode, nCubeLimit);
+        return Abc_NtkBddToSop(pNtk, fMode, nCubeLimit, 1);
     if ( Abc_NtkHasAig(pNtk) )
     {
         if ( !Abc_NtkAigToBdd(pNtk) )
             return 0;
-        return Abc_NtkBddToSop(pNtk, fMode, nCubeLimit);
+        return Abc_NtkBddToSop(pNtk, fMode, nCubeLimit, 1);
     }
     assert( 0 );
     return 0;
@@ -1253,7 +1254,7 @@ int Abc_NtkToAig( Abc_Ntk_t * pNtk )
     }
     if ( Abc_NtkHasBdd(pNtk) )
     {
-        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY) )
+        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY, 1) )
             return 0;
         return Abc_NtkSopToAig(pNtk);
     }
@@ -1263,6 +1264,42 @@ int Abc_NtkToAig( Abc_Ntk_t * pNtk )
     return 0;
 }
 
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_ObjFaninSort( Abc_Obj_t * pObj )
+{
+    Vec_Int_t * vFanins = Abc_ObjFaninVec( pObj );
+    char * pCube, * pSop = (char*)pObj->pData;
+    int i, j, nVars = Abc_SopGetVarNum( pSop );
+    assert( nVars == Vec_IntSize(vFanins) );
+    for ( i = 0;   i < Vec_IntSize(vFanins); i++ )
+    for ( j = i+1; j < Vec_IntSize(vFanins); j++ )
+    {
+        if ( Vec_IntEntry(vFanins, i) < Vec_IntEntry(vFanins, j) )
+            continue;
+        ABC_SWAP( int, Vec_IntArray(vFanins)[i], Vec_IntArray(vFanins)[j] );
+        for ( pCube = pSop; *pCube; pCube += nVars + 3 ) {
+            ABC_SWAP( char, pCube[i], pCube[j] );
+        }
+    }
+}
+void Abc_NtkFaninSort( Abc_Ntk_t * pNtk )
+{
+    Abc_Obj_t * pObj; int i;
+    assert( Abc_NtkIsSopLogic(pNtk) );
+    Abc_NtkForEachNode( pNtk, pObj, i )
+        Abc_ObjFaninSort( pObj );
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

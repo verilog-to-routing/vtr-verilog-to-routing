@@ -519,7 +519,7 @@ void populateAigPointerUnitGF( Aig_Man_t *pAigNew, ltlNode *topASTNode, Vec_Ptr_
             return;
         case GLOBALLY:
             nextNode = topASTNode->left;
-            assert( nextNode->type = EVENTUALLY );
+            assert( nextNode->type == EVENTUALLY );
             nextToNextNode = nextNode->left;
             if( nextToNextNode->type == BOOL )
             {

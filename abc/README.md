@@ -1,9 +1,22 @@
-[![Build Status](https://travis-ci.org/berkeley-abc/abc.svg?branch=master)](https://travis-ci.org/berkeley-abc/abc)
-[![Build status](https://ci.appveyor.com/api/projects/status/7q8gopidgvyos00d?svg=true)](https://ci.appveyor.com/project/berkeley-abc/abc)
+[![.github/workflows/build-posix.yml](https://github.com/berkeley-abc/abc/actions/workflows/build-posix.yml/badge.svg)](https://github.com/berkeley-abc/abc/actions/workflows/build-posix.yml)
+[![.github/workflows/build-windows.yml](https://github.com/berkeley-abc/abc/actions/workflows/build-windows.yml/badge.svg)](https://github.com/berkeley-abc/abc/actions/workflows/build-windows.yml)
+[![.github/workflows/build-posix-cmake.yml](https://github.com/berkeley-abc/abc/actions/workflows/build-posix-cmake.yml/badge.svg)](https://github.com/berkeley-abc/abc/actions/workflows/build-posix-cmake.yml)
 
 # ABC: System for Sequential Logic Synthesis and Formal Verification
 
-ABC is always changing but the current snapshot is believed to be stable. 
+ABC is always changing but the current snapshot is believed to be stable.
+
+## ABC fork with new features
+
+Here is a [fork](https://github.com/yongshiwo/abc.git) of ABC containing Agdmap, a novel technology mapper for LUT-based FPGAs.  Agdmap is based on a technology mapping algorithm with adaptive gate decomposition [1]. It is a cut enumeration based mapping algorithm with bin packing for simultaneous wide gate decomposition, which is a patent pending technology.
+
+The mapper is developed and maintained by Longfei Fan and Prof. Chang Wu at Fudan University in Shanghai, China.  The experimental results presented in [1] indicate that Agdmap can substantially improve area (by 10% or more) when compared against the best LUT mapping solutions in ABC, such as command "if".
+
+The source code is provided for research and evaluation only. For commercial usage, please contact Prof. Chang Wu at wuchang@fudan.edu.cn.
+
+References:
+
+[1] L. Fan and C. Wu, "FPGA technology mapping with adaptive gate decompostion", ACM/SIGDA FPGA International Symposium on FPGAs, 2023. 
 
 ## Compiling:
 
@@ -18,7 +31,7 @@ APIs of ABC compiled as a static library.
 
 To build the demo program
 
- * Copy demo.cc and libabc.a to the working directory
+ * Copy demo.c and libabc.a to the working directory
  * Run `gcc -Wall -g -c demo.c -o demo.o`
  * Run `g++ -g -o demo demo.o libabc.a -lm -ldl -lreadline -lpthread`
 

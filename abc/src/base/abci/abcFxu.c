@@ -88,7 +88,7 @@ int Abc_NtkFastExtract( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
     if ( Abc_NtkIsSopLogic(pNtk) )
     { // to make sure the SOPs are SCC-free
 //        Abc_NtkSopToBdd(pNtk);
-//        Abc_NtkBddToSop(pNtk);
+//        Abc_NtkBddToSop(pNtk, 1);
     }
     // get the network in the SOP form
     if ( !Abc_NtkToSop(pNtk, -1, ABC_INFINITY) )

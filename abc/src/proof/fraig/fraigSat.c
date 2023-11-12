@@ -358,8 +358,8 @@ p->timeTrav += Abc_Clock() - clk;
 //    printf( "The number of MUXes detected = %d (%5.2f %% of logic).  ", nMuxes, 300.0*nMuxes/(p->vNodes->nSize - p->vInputs->nSize) );
 //    ABC_PRT( "Time", Abc_Clock() - clk );
 
-if ( fVerbose )
-    printf( "%d(%d) - ", Fraig_CountPis(p,p->vVarsInt), Msat_IntVecReadSize(p->vVarsInt) );
+    if ( fVerbose )
+        printf( "%d(%d) - ", Fraig_CountPis(p,p->vVarsInt), Msat_IntVecReadSize(p->vVarsInt) );
 
 
     // prepare variable activity
@@ -548,7 +548,7 @@ p->time3 += Abc_Clock() - clk;
   SeeAlso     []
 
 ***********************************************************************/
-int Fraig_NodeIsImplication( Fraig_Man_t * p, Fraig_Node_t * pOld, Fraig_Node_t * pNew, int nBTLimit )
+int Fraig_NodeIsImplification( Fraig_Man_t * p, Fraig_Node_t * pOld, Fraig_Node_t * pNew, int nBTLimit )
 {
     int RetValue, RetValue1, i, fComp;
     abctime clk;
@@ -574,8 +574,8 @@ clk = Abc_Clock();
 //    Fraig_PrepareCones( p, pOld, pNew );
 p->timeTrav += Abc_Clock() - clk;
 
-if ( fVerbose )
-    printf( "%d(%d) - ", Fraig_CountPis(p,p->vVarsInt), Msat_IntVecReadSize(p->vVarsInt) );
+    if ( fVerbose )
+        printf( "%d(%d) - ", Fraig_CountPis(p,p->vVarsInt), Msat_IntVecReadSize(p->vVarsInt) );
 
 
     // get the complemented attribute

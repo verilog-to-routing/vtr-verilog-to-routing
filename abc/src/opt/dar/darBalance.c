@@ -59,7 +59,7 @@ void Dar_BalanceUniqify( Aig_Obj_t * pObj, Vec_Ptr_t * vNodes, int fExor )
     Aig_Obj_t * pTemp, * pTempNext;
     int i, k;
     // sort the nodes by their literal
-    Vec_PtrSort( vNodes, (int (*)())Dar_ObjCompareLits );
+    Vec_PtrSort( vNodes, (int (*)(const void *, const void *))Dar_ObjCompareLits );
     // remove duplicates
     k = 0;
     Vec_PtrForEachEntry( Aig_Obj_t *, vNodes, pTemp, i )
@@ -402,7 +402,7 @@ Aig_Obj_t * Dar_BalanceBuildSuper( Aig_Man_t * p, Vec_Ptr_t * vSuper, Aig_Type_t
     int LeftBound;
     assert( vSuper->nSize > 1 );
     // sort the new nodes by level in the decreasing order
-    Vec_PtrSort( vSuper, (int (*)(void))Aig_NodeCompareLevelsDecrease );
+    Vec_PtrSort( vSuper, (int (*)(const void *, const void *))Aig_NodeCompareLevelsDecrease );
     // balance the nodes
     while ( vSuper->nSize > 1 )
     {
@@ -415,7 +415,7 @@ Aig_Obj_t * Dar_BalanceBuildSuper( Aig_Man_t * p, Vec_Ptr_t * vSuper, Aig_Type_t
         pObj2 = (Aig_Obj_t *)Vec_PtrPop(vSuper);
         Dar_BalancePushUniqueOrderByLevel( vSuper, Aig_Oper(p, pObj1, pObj2, Type), Type == AIG_OBJ_EXOR );
     }
-    return (Aig_Obj_t *)Vec_PtrEntry(vSuper, 0);
+    return vSuper->nSize ? (Aig_Obj_t *)Vec_PtrEntry(vSuper, 0) : Aig_ManConst0(p);
 }
 
 
@@ -462,7 +462,7 @@ Aig_Obj_t * Dar_BalanceBuildSuperTop( Aig_Man_t * p, Vec_Ptr_t * vSuper, Aig_Typ
     int i, nBaseSizeAll, nBaseSize;
     assert( vSuper->nSize > 1 );
     // sort the new nodes by level in the decreasing order
-    Vec_PtrSort( vSuper, (int (*)(void))Aig_NodeCompareLevelsDecrease );
+    Vec_PtrSort( vSuper, (int (*)(const void *, const void *))Aig_NodeCompareLevelsDecrease );
     // add one LUT at a time
     while ( Vec_PtrSize(vSuper) > 1 )
     {

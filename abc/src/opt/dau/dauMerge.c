@@ -48,7 +48,7 @@ typedef struct Dau_Sto_t_ Dau_Sto_t;
 struct Dau_Sto_t_
 {
     int      iVarUsed;                          // counter of used variables
-    char     pOutput[DAU_MAX_STR];              // storage for reduced function
+    char     pOutput[2*DAU_MAX_STR+10];         // storage for reduced function
     char *   pPosOutput;                        // place in the output
     char     pStore[DAU_MAX_VAR][DAU_MAX_STR];  // storage for definitions
     char *   pPosStore[DAU_MAX_VAR];            // place in the store
@@ -589,7 +589,7 @@ char * Dau_DsdMerge( char * pDsd0i, int * pPerm0, char * pDsd1i, int * pPerm1, i
     int fVerbose = 0;
     int fCheck = 0;
     static int Counter = 0;
-    static char pRes[DAU_MAX_STR];
+    static char pRes[2*DAU_MAX_STR+10];
     char pDsd0[DAU_MAX_STR];
     char pDsd1[DAU_MAX_STR];
     int pMatches0[DAU_MAX_STR];

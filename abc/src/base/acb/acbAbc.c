@@ -167,6 +167,7 @@ Acb_Ntk_t * Acb_NtkFromNdr( char * pFileName, void * pModule, Abc_Nam_t * pNames
     Acb_Man_t * pMan = Acb_ManAlloc( pFileName, 1, Abc_NamRef(pNames), NULL, NULL, NULL );
     int k, NameId = Abc_NamStrFindOrAdd( pMan->pStrs, pMan->pName, NULL );
     int Mod = 2, Obj, Type, nArray, * pArray, ObjId;
+    int Token0 = Abc_NamStrFind( pMan->pStrs, "1\'b0" );
     Acb_Ntk_t * pNtk = Acb_NtkAlloc( pMan, NameId, Ndr_DataCiNum(p, Mod), Ndr_DataCoNum(p, Mod), Ndr_DataObjNum(p, Mod) );
     Vec_Int_t * vMap = Vec_IntStart( nNameIdMax );
     Acb_NtkCleanObjWeights( pNtk );
@@ -177,7 +178,7 @@ Acb_Ntk_t * Acb_NtkFromNdr( char * pFileName, void * pModule, Abc_Nam_t * pNames
         ObjId  = Acb_ObjAlloc( pNtk, ABC_OPER_CI, 0, 0 );
         Vec_IntWriteEntry( vMap, NameId, ObjId );
         Acb_ObjSetName( pNtk, ObjId, NameId );
-        Acb_ObjSetWeight( pNtk, ObjId, vWeights ? Vec_IntEntry(vWeights, NameId) : 0 );
+        Acb_ObjSetWeight( pNtk, ObjId, vWeights ? Vec_IntEntry(vWeights, NameId) : 1 );
     }
     Ndr_ModForEachTarget( p, Mod, Obj )
     {
@@ -198,18 +199,30 @@ Acb_Ntk_t * Acb_NtkFromNdr( char * pFileName, void * pModule, Abc_Nam_t * pNames
     }
     Ndr_ModForEachNode( p, Mod, Obj )
     {
-        NameId = Ndr_ObjReadBody( p, Obj, NDR_OUTPUT );
+        int NameId = Ndr_ObjReadBody( p, Obj, NDR_OUTPUT );
+        char * pName = Abc_NamStr( pMan->pStrs, NameId );
         ObjId  = Vec_IntEntry( vMap, NameId );
         nArray = Ndr_ObjReadArray( p, Obj, NDR_INPUT, &pArray );
         for ( k = 0; k < nArray; k++ )
+        {
+            if ( Vec_IntEntry(vMap, pArray[k]) == 0 )
+                printf( "Cannot find fanin %d of node \"%s\".\n", k, pName );
             Acb_ObjAddFanin( pNtk, ObjId, Vec_IntEntry(vMap, pArray[k]) );
-        Acb_ObjSetWeight( pNtk, ObjId, vWeights ? Vec_IntEntry(vWeights, NameId) : 0 );
+        }
+        Acb_ObjSetWeight( pNtk, ObjId, vWeights ? Vec_IntEntry(vWeights, NameId) : 1 );
     }
     Ndr_ModForEachPo( p, Mod, Obj )
     {
+        int NameId = Ndr_ObjReadBody( p, Obj, NDR_OUTPUT );
+        char * pName = Abc_NamStr( pMan->pStrs, NameId );
         nArray = Ndr_ObjReadArray( p, Obj, NDR_INPUT, &pArray );
         assert( nArray == 1 );
         ObjId  = Acb_ObjAlloc( pNtk, ABC_OPER_CO, 1, 0 );
+        if ( Vec_IntEntry(vMap, pArray[0]) == 0 )
+        {
+            printf( "Adding constant 0 driver to non-driven PO \"%s\".\n", pName );
+            Vec_IntWriteEntry( vMap, pArray[0], Token0 );
+        }
         Acb_ObjAddFanin( pNtk, ObjId, Vec_IntEntry(vMap, pArray[0]) );
         Acb_ObjSetName( pNtk, ObjId, pArray[0] );
     }

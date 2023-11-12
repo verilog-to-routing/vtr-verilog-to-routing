@@ -50,6 +50,7 @@ extern int           Mem_FixedReadMaxEntriesUsed( Mem_Fixed_t * p );
 // flexible-size-block memory manager
 extern Mem_Flex_t *  Mem_FlexStart();
 extern void          Mem_FlexStop( Mem_Flex_t * p, int fVerbose );
+extern void          Mem_FlexStop2( Mem_Flex_t * p );
 extern char *        Mem_FlexEntryFetch( Mem_Flex_t * p, int nBytes );
 extern void          Mem_FlexRestart( Mem_Flex_t * p );
 extern int           Mem_FlexReadMemUsage( Mem_Flex_t * p );

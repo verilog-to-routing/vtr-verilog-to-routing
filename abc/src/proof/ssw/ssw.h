@@ -42,6 +42,7 @@ struct Ssw_Pars_t_
 {
     int              nPartSize;     // size of the partition
     int              nOverSize;     // size of the overlap between partitions
+    int              nProcs;        // the number of processors
     int              nFramesK;      // the induction depth
     int              nFramesAddSim; // the number of additional frames to simulate
     int              fConstrs;      // treat the last nConstrs POs as seq constraints
@@ -55,6 +56,7 @@ struct Ssw_Pars_t_
     int              nResimDelta;   // the number of nodes to resimulate
     int              nStepsMax;     // (scorr only) the max number of induction steps
     int              TimeLimit;     // time out in seconds
+    int              nLimitMax;     // the limit on the number of iterations
     int              fPolarFlip;    // uses polarity adjustment
     int              fLatchCorr;    // perform register correspondence
     int              fConstCorr;    // perform constant correspondence

@@ -21,6 +21,7 @@
 #include <math.h>
 
 #include "extra.h"
+#include "misc/vec/vec.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -1289,7 +1290,7 @@ void Extra_TruthExpand( int nVars, int nWords, unsigned * puTruth, unsigned uPha
         { 0x00000000,0x00000000,0xFFFFFFFF,0xFFFFFFFF,0x00000000,0x00000000,0xFFFFFFFF,0xFFFFFFFF }, 
         { 0x00000000,0x00000000,0x00000000,0x00000000,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF } 
     };
-    static char Cases[256] = {
+    static signed char Cases[256] = {
          0, // 00000000
          0, // 00000001
          1, // 00000010
@@ -2493,7 +2494,7 @@ void Extra_NpnTest()
     // read functions
     pFuncs = Extra_NpnRead( "C:\\_projects\\abc\\_TEST\\allan\\lib6var5M.txt", nFuncs );
 //    pFuncs = Extra_NpnRead( "C:\\_projects\\abc\\_TEST\\allan\\lib6var5M_out_Total_minimal.txt", nFuncs );
-    qsort( (void *)pFuncs, nFuncs, sizeof(word), (int(*)(const void *,const void *))CompareWords );
+    qsort( (void *)pFuncs, (size_t)nFuncs, sizeof(word), (int(*)(const void *,const void *))CompareWords );
 
     // count unique
     k = 1;
@@ -2517,7 +2518,7 @@ void Extra_NpnTest()
     printf( "Finished deriving minimum form\n" );
 /*
     // sort them by value
-    qsort( (void *)pFuncs, nFuncs, sizeof(word), (int(*)(const void *,const void *))CompareWords );
+    qsort( (void *)pFuncs, (size_t)nFuncs, sizeof(word), (int(*)(const void *,const void *))CompareWords );
     // count unique
     nUnique = nFuncs;
     for ( i = 1; i < nFuncs; i++ )
@@ -2569,6 +2570,162 @@ void Extra_NtkPowerTest()
         Extra_NtkPrintBin( (word *)&t, 64 );
         printf( "\n" );
     }
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Tranposing bit matrix.]
+
+  Description [Borrowed from "Hacker's Delight", by Henry S. Warren Jr.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline void Extra_Transpose64Simple( word A[64], word B[64] )
+{
+    int i, k;
+    for ( i = 0; i < 64; i++ )
+        B[i] = 0;
+    for ( i = 0; i < 64; i++ )
+    for ( k = 0; k < 64; k++ )
+        if ( (A[i] >> k) & 1 )
+            B[k] |= ((word)1 << (63-i));
+}
+static inline void Extra_BitMatrixTransposeSimple( Vec_Wrd_t * vSimsIn, int nWordsIn, Vec_Wrd_t * vSimsOut, int nWordsOut )
+{
+    int i, k;
+    assert( Vec_WrdSize(vSimsIn) == nWordsIn * nWordsOut * 64 );
+    assert( Vec_WrdSize(vSimsIn) == Vec_WrdSize(vSimsOut) );
+    assert( Vec_WrdSize(vSimsIn)  % nWordsIn  == 0 );
+    assert( Vec_WrdSize(vSimsOut) % nWordsOut == 0 );
+    Vec_WrdFill( vSimsOut, Vec_WrdSize(vSimsOut), 0 );
+    for ( i = 0; i < 64*nWordsOut; i++ )
+    for ( k = 0; k < 64*nWordsIn;  k++ )
+        if ( Abc_InfoHasBit( (unsigned *)Vec_WrdEntryP(vSimsIn,  i*nWordsIn),  k ) )
+             Abc_InfoSetBit( (unsigned *)Vec_WrdEntryP(vSimsOut, k*nWordsOut), i );
+}
+void Extra_Transpose32( unsigned a[32] ) 
+{
+    int j, k;
+    unsigned long m, t;
+    for ( j = 16, m = 0x0000FFFF; j; j >>= 1, m ^= m << j ) 
+    {
+        for ( k = 0; k < 32; k = ((k | j) + 1) & ~j ) 
+        {
+            t = (a[k] ^ (a[k|j] >> j)) & m;
+            a[k] ^= t;
+            a[k|j] ^= (t << j);
+        }
+    }
+}
+void Extra_Transpose64( word A[64] )
+{
+    int j, k;
+    word t, m = 0x00000000FFFFFFFF;
+    for ( j = 32; j != 0; j = j >> 1, m = m ^ (m << j) )
+    {
+        for ( k = 0; k < 64; k = (k + j + 1) & ~j )
+        {
+            t = (A[k] ^ (A[k+j] >> j)) & m;
+            A[k] = A[k] ^ t;
+            A[k+j] = A[k+j] ^ (t << j);
+        }
+    }
+}
+void Extra_Transpose64p( word * A[64] )
+{
+    int j, k;
+    word t, m = 0x00000000FFFFFFFF;
+    for ( j = 32; j != 0; j = j >> 1, m = m ^ (m << j) )
+    {
+        for ( k = 0; k < 64; k = (k + j + 1) & ~j )
+        {
+            t = (A[k][0] ^ (A[k+j][0] >> j)) & m;
+            A[k][0] = A[k][0] ^ t;
+            A[k+j][0] = A[k+j][0] ^ (t << j);
+        }
+    }
+}
+void Extra_BitMatrixTransposeP( Vec_Wrd_t * vSimsIn, int nWordsIn, Vec_Wrd_t * vSimsOut, int nWordsOut )
+{    
+    word * pM[64];  int i, y, x;
+    assert( Vec_WrdSize(vSimsIn) == Vec_WrdSize(vSimsOut) );
+    assert( Vec_WrdSize(vSimsIn) == 64 * nWordsIn * nWordsOut );
+    for ( x = 0; x < nWordsOut; x++ )
+    for ( y = 0; y < nWordsIn;  y++ )
+    {
+        for ( i = 0; i < 64; i++ )
+        {
+            pM[i]    = Vec_WrdEntryP( vSimsOut, (64*y+63-i)*nWordsOut + x );
+            pM[i][0] = Vec_WrdEntry ( vSimsIn,  (64*x+63-i)*nWordsIn  + y );
+        }
+        Extra_Transpose64p( pM );
+    }
+}
+void Extra_BitMatrixTransposePP( Vec_Ptr_t * vSimsIn, int nWordsIn, Vec_Wrd_t * vSimsOut, int nWordsOut )
+{    
+    word * pM[64];  int i, y, x;
+    assert( Vec_PtrSize(vSimsIn)  == 64 * nWordsOut );
+    assert( Vec_WrdSize(vSimsOut) == 64 * nWordsOut * nWordsIn  );
+    for ( x = 0; x < nWordsOut; x++ )
+    for ( y = 0; y < nWordsIn;  y++ )
+    {
+        for ( i = 0; i < 64; i++ )
+        {
+            pM[i]    = Vec_WrdEntryP( vSimsOut, (64*y+63-i)*nWordsOut + x );
+            pM[i][0] = ((word *)Vec_PtrEntry( vSimsIn, 64*x+63-i ))[y];
+        }
+        Extra_Transpose64p( pM );
+    }
+}
+void Extra_BitMatrixShow( Vec_Wrd_t * vSims, int nWords )
+{
+    int i, k, nBits = Vec_WrdSize(vSims)  / nWords;
+    for ( i = 0; i < nBits; i++ )
+    {
+        if ( i%64 == 0 )
+            Abc_Print( 1, "\n" );
+        for ( k = 0; k < nWords; k++ )
+        {
+            Extra_PrintBinary2( stdout, (unsigned *)Vec_WrdEntryP(vSims, i*nWords+k), 64 );
+            Abc_Print( 1, " " );
+        }
+        Abc_Print( 1, "\n" );
+    }
+    Abc_Print( 1, "\n" );
+}
+void Extra_BitMatrixTransposeTest()
+{   
+    abctime clk = Abc_Clock();
+
+    int nWordsIn  = 100;
+    int nWordsOut = 200;
+    int nItems = 64 * nWordsIn * nWordsOut;
+
+    Vec_Wrd_t * vSimsIn   = Vec_WrdStartRandom( nItems );
+    Vec_Wrd_t * vSimsOut  = Vec_WrdStart( nItems );
+    Vec_Wrd_t * vSimsOut2 = Vec_WrdStart( nItems );
+
+    Extra_BitMatrixTransposeP     ( vSimsIn, nWordsIn, vSimsOut,  nWordsOut );
+    Extra_BitMatrixTransposeSimple( vSimsIn, nWordsIn, vSimsOut2, nWordsOut );
+
+    if ( memcmp( Vec_WrdArray(vSimsOut), Vec_WrdArray(vSimsOut2), sizeof(word)*Vec_WrdSize(vSimsOut) ) )
+        printf( "Verification failed.\n" );
+    else
+        printf( "Verification succeeded.\n" );
+
+    //Extra_BitMatrixShow( vSimsIn,   nWordsIn );
+    //Extra_BitMatrixShow( vSimsOut,  nWordsOut );
+    //Extra_BitMatrixShow( vSimsOut2, nWordsOut );
+
+    Vec_WrdFree( vSimsIn );
+    Vec_WrdFree( vSimsOut );
+    Vec_WrdFree( vSimsOut2 );
+
+    Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
 }
 
 ////////////////////////////////////////////////////////////////////////

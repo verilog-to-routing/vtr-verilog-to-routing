@@ -147,9 +147,12 @@ void Super_Precompute( Mio_Library_t * pLibGen, int nVarsMax, int nLevels, int n
         return;
     }
     vStr = Super_PrecomputeStr( pLibGen, nVarsMax, nLevels, nGatesMax, tDelayMax, tAreaMax, TimeLimit, fSkipInv, fVerbose );
-    fwrite( Vec_StrArray(vStr), 1, Vec_StrSize(vStr), pFile );
+    if ( vStr ) 
+    {
+        fwrite( Vec_StrArray(vStr), 1, Vec_StrSize(vStr), pFile );
+        Vec_StrFree( vStr );
+    }
     fclose( pFile );
-    Vec_StrFree( vStr );
     // report the result of writing
     if ( fVerbose )
     {
@@ -368,7 +371,7 @@ Super_Man_t * Super_Compute( Super_Man_t * pMan, Mio_Gate_t ** ppGates, int nGat
         printf( "Sorting array of %d supergates...\r", pMan->nGates );
         fflush( stdout );
     }
-    qsort( (void *)pMan->pGates, pMan->nGates, sizeof(Super_Gate_t *), 
+    qsort( (void *)pMan->pGates, (size_t)pMan->nGates, sizeof(Super_Gate_t *), 
             (int (*)(const void *, const void *)) Super_DelayCompare );
     assert( Super_DelayCompare( pMan->pGates, pMan->pGates + pMan->nGates - 1 ) <= 0 );
     if ( pMan->nGates > 10000 )
@@ -424,7 +427,7 @@ Super_Man_t * Super_Compute( Super_Man_t * pMan, Mio_Gate_t ** ppGates, int nGat
         // all the gates beyond this point can be skipped because their area can be only larger
         if ( nGatesLimit > 10000 )
             printf( "Sorting array of %d supergates...\r", nGatesLimit );
-        qsort( (void *)ppGatesLimit, nGatesLimit, sizeof(Super_Gate_t *), 
+        qsort( (void *)ppGatesLimit, (size_t)nGatesLimit, sizeof(Super_Gate_t *), 
                 (int (*)(const void *, const void *)) Super_AreaCompare );
         assert( Super_AreaCompare( ppGatesLimit, ppGatesLimit + nGatesLimit - 1 ) <= 0 );
         if ( nGatesLimit > 10000 )
@@ -1021,7 +1024,7 @@ Vec_Str_t * Super_Write( Super_Man_t * pMan )
 
 clk = Abc_Clock();
     // sort the supergates by truth table
-    qsort( (void *)pMan->pGates, pMan->nGates, sizeof(Super_Gate_t *), 
+    qsort( (void *)pMan->pGates, (size_t)pMan->nGates, sizeof(Super_Gate_t *), 
             (int (*)(const void *, const void *)) Super_WriteCompare );
     assert( Super_WriteCompare( pMan->pGates, pMan->pGates + pMan->nGates - 1 ) <= 0 );
 if ( pMan->fVerbose )

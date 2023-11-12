@@ -220,10 +220,10 @@ static inline int vec_flt_desc_compare(const void* p1, const void* p2)
 static inline void vec_flt_sort(vec_flt_t* p, int ascending)
 {
     if (ascending)
-        qsort((void *) p->data, p->size, sizeof(float),
+        qsort((void *) p->data, (size_t)p->size, sizeof(float),
               (int (*)(const void*, const void*)) vec_flt_asc_compare);
     else
-        qsort((void *) p->data, p->size, sizeof(float),
+        qsort((void *) p->data, (size_t)p->size, sizeof(float),
               (int (*)(const void*, const void*)) vec_flt_desc_compare);
 }
 
