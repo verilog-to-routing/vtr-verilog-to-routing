@@ -117,6 +117,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const e_switch_block_type& sb_subtype,
                           const int& subFs,
                           const bool& opin2all_sides,
+                          const bool& concat_wire,
                           const bool& wire_opposite_side) {
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
@@ -147,7 +148,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
             /* adapt the switch_block_conn for the GSB nodes */
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
             sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
-                                                   sb_type, Fs, sb_subtype, subFs, wire_opposite_side,
+                                                   sb_type, Fs, sb_subtype, subFs, concat_wire, wire_opposite_side,
                                                    segment_inf);
 
             /* Build edges for a GSB */

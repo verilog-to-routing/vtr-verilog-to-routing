@@ -346,7 +346,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
                     continue;
                 }
                 /* Bypass those from_side is opposite to to_side if required */
-                if ((true == wire_opposite_side)
+                if (!wire_opposite_side
                     && (to_side_manager.get_opposite() == from_side)) {
                     continue;
                 }
@@ -441,6 +441,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const int& Fs,
                                                const e_switch_block_type& sb_subtype,
                                                const int& subFs,
+                                               const bool& concat_wire,
                                                const bool& wire_opposite_side,
                                                const std::vector<t_segment_inf>& segment_inf) {
     t_track2track_map track2track_map; /* [0..gsb_side][0..chan_width][track_indices] */
@@ -513,7 +514,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
     /* For Group 1: we build connections between end_tracks and start_tracks*/
     build_gsb_one_group_track_to_track_map(rr_graph, rr_gsb,
                                            sb_type, Fs,
-                                           true, /* End tracks should always to wired to start tracks */
+                                           concat_wire, /* End tracks should always to wired to start tracks */
                                            end_tracks, start_tracks,
                                            track2track_map);
 

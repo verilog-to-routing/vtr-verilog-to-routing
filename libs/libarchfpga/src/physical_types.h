@@ -2142,6 +2142,8 @@ struct t_arch {
     bool shrink_boundary;
     bool through_channel;
     bool opin2all_sides;
+    bool concat_wire;
+    bool concat_pass_wire;
 
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;
