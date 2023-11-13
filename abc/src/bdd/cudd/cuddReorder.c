@@ -480,7 +480,7 @@ cuddDynamicAllocNode(
 
     node = table->nextFree;
     table->nextFree = node->next;
-    node->Id = 0;
+    //node->Id = 0;
     return (node);
 
 } /* end of cuddDynamicAllocNode */
@@ -541,7 +541,7 @@ cuddSifting(
         var[i] = i;
     }
 
-    qsort((void *)var,size,sizeof(int),(DD_QSFP)ddUniqueCompare);
+    qsort((void *)var,(size_t)size,sizeof(int),(DD_QSFP)ddUniqueCompare);
 
     /* Now sift. */
     for (i = 0; i < ddMin(table->siftMaxVar,size); i++) {

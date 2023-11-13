@@ -276,7 +276,7 @@ if (TEST_VPR_USES_IPO)
 endif()
 
 add_test(NAME test_vpr
-    COMMAND test_vpr --use-colour=yes
+    COMMAND test_vpr --colour-mode ansi
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
     )
 

@@ -82,7 +82,7 @@ void spreadDensityX(int numBins, float maxMovement) {
   }
   
   // spread X
-  qsort(allCells, moveableCells, sizeof(ConcreteCell*), cellSortByY);
+  qsort(allCells, (size_t)moveableCells, sizeof(ConcreteCell*), cellSortByY);
 
   y = 0;
 
@@ -96,7 +96,7 @@ void spreadDensityX(int numBins, float maxMovement) {
     // have we filled up a y-bin?
     if (yCumArea >= totalArea*(y+1)/numBins && yBinArea > 0) {
       memcpy(binCells, &(allCells[yBinStart]), sizeof(ConcreteCell*)*yBinCount);
-      qsort(binCells, yBinCount, sizeof(ConcreteCell*), cellSortByX);
+      qsort(binCells, (size_t)yBinCount, sizeof(ConcreteCell*), cellSortByX);
 
 #if defined(DEBUG)
       printf("y-bin %d count=%d area=%f\n",y,yBinCount, yBinArea);
@@ -217,7 +217,7 @@ void spreadDensityY(int numBins, float maxMovement) {
     // have we filled up an x-bin?
     if (xCumArea >= totalArea*(x+1)/numBins && xBinArea > 0) {
       memcpy(binCells, &(allCells[xBinStart]), sizeof(ConcreteCell*)*xBinCount);
-      qsort(binCells, xBinCount, sizeof(ConcreteCell*), cellSortByY);
+      qsort(binCells, (size_t)xBinCount, sizeof(ConcreteCell*), cellSortByY);
 
       // printf("x-bin %d count=%d area=%f\n",y,yBinCount, yBinArea);
 

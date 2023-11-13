@@ -619,7 +619,7 @@ int Abc_NtkSweep( Abc_Ntk_t * pNtk, int fVerbose )
     nNodesOld = Abc_NtkNodeNum(pNtk);
     Abc_NtkCleanup( pNtk, 0 );
     // prepare nodes for sweeping
-    Abc_NtkRemoveDupFanins(pNtk);
+    //Abc_NtkRemoveDupFanins(pNtk);
     Abc_NtkMinimumBase(pNtk);
     // collect sweepable nodes
     vNodes = Vec_PtrAlloc( 100 );
@@ -649,7 +649,7 @@ int Abc_NtkSweep( Abc_Ntk_t * pNtk, int fVerbose )
                 Abc_NodeComplementInput( pFanout, pNode );
             Abc_ObjPatchFanin( pFanout, pNode, pDriver );
         }
-        Abc_NodeRemoveDupFanins( pFanout );
+        //Abc_NodeRemoveDupFanins( pFanout );
         Abc_NodeMinimumBase( pFanout );
         // check if the fanout should be added
         if ( Abc_ObjFaninNum(pFanout) < 2 )
@@ -888,7 +888,7 @@ int Abc_NtkReplaceAutonomousLogic( Abc_Ntk_t * pNtk )
             Vec_PtrPush( vNodes, pFanin );
         }
     }
-    Vec_PtrUniqify( vNodes, (int (*)(void))Abc_ObjPointerCompare );
+    Vec_PtrUniqify( vNodes, (int (*)(const void *, const void *))Abc_ObjPointerCompare );
     // replace these nodes by the PIs
     Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
     {

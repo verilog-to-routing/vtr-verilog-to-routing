@@ -19,6 +19,7 @@
 ***********************************************************************/
 
 #include "kit.h"
+#include "misc/extra/extra.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -371,6 +372,34 @@ Kit_Graph_t * Kit_TruthToGraph( unsigned * pTruth, int nVars, Vec_Int_t * vMemor
 
 /**Function*************************************************************
 
+  Synopsis    [Derives the factored form from the truth table.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Kit_Graph_t * Kit_TruthToGraph2( unsigned * pTruth0, unsigned * pTruth1, int nVars, Vec_Int_t * vMemory )
+{
+    Kit_Graph_t * pGraph;
+    int RetValue;
+    // derive SOP
+    RetValue = Kit_TruthIsop2( pTruth0, pTruth1, nVars, vMemory, 0, 0 ); // tried 1 and found not useful in "renode"
+    if ( RetValue == -1 )
+        return NULL;
+    if ( Vec_IntSize(vMemory) > (1<<16) )
+        return NULL;
+//    printf( "Isop size = %d.\n", Vec_IntSize(vMemory) );
+    assert( RetValue == 0 || RetValue == 1 );
+    // derive factored form
+    pGraph = Kit_SopFactor( vMemory, RetValue, nVars, vMemory );
+    return pGraph;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Derives the maximum depth from the leaf to the root.]
 
   Description []
@@ -392,6 +421,105 @@ int Kit_GraphLeafDepth_rec( Kit_Graph_t * pGraph, Kit_Node_t * pNode, Kit_Node_t
     Depth = KIT_MAX( Depth0, Depth1 );
     Depth = (Depth == -100) ? -100 : Depth + 1;
     return Depth;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Derives logic level of the node.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Kit_GraphLevelNum_rec( Kit_Graph_t * pGraph, Kit_Node_t * pNode )
+{
+    int Depth0, Depth1;
+    if ( Kit_GraphNodeIsVar(pGraph, pNode) )
+        return 0;
+    Depth0 = Kit_GraphLevelNum_rec( pGraph, Kit_GraphNodeFanin0(pGraph, pNode) );
+    Depth1 = Kit_GraphLevelNum_rec( pGraph, Kit_GraphNodeFanin1(pGraph, pNode) );
+    return 1 + KIT_MAX( Depth0, Depth1 );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Returns FF nodes and levels.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Kit_TruthStats( unsigned * pTruth, int nVars, Vec_Int_t * vMemory )
+{
+    Kit_Graph_t * pGraph = Kit_TruthToGraph( pTruth, nVars, vMemory );
+    int nNodes  = Kit_GraphNodeNum( pGraph );
+    int nLevels = Kit_GraphLevelNum_rec( pGraph, Kit_GraphNodeLast(pGraph) );
+    Kit_GraphFree( pGraph );
+    return (nLevels << 16) | nNodes;
+}
+int * Kit_TruthStatsArray( unsigned * pArray, int nVars, int nFuncs )
+{
+    int f, * pRes = ABC_CALLOC( int, nFuncs );
+    int nInts = Abc_TruthWordNum( nVars );
+    Vec_Int_t * vMemory = Vec_IntAlloc( 1 << 16 );
+    for ( f = 0; f < nFuncs; f++ )
+        pRes[f] = Kit_TruthStats( pArray + f*nInts, nVars, vMemory );
+    Vec_IntFree( vMemory );
+    return pRes;
+}
+int Kit_TruthFindVarNum( char * pFileName )
+{
+    int i;
+    for ( i = 0; i < (int)strlen(pFileName); i++ )
+        if ( pFileName[i] >= '0' && pFileName[i] <= '9' )
+            return atoi(pFileName+i);
+    return -1;
+}
+int * Kit_TruthTest( char * pFileName )
+{
+    abctime clk   = Abc_Clock(); int i;
+    int nFileSize = Extra_FileSize( pFileName );
+    int nVars     = Kit_TruthFindVarNum( pFileName );
+    int nFuncs    = nFileSize / 4 / Abc_TruthWordNum(nVars);
+    unsigned * pA = (unsigned *)Extra_FileReadContents( pFileName );
+    int * pResult = Kit_TruthStatsArray( pA, nVars, nFuncs );
+    printf( "Finished proceessing %d functions with %d variables. ", nFuncs, nVars );
+    Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
+    ABC_FREE( pA );
+    for ( i = 0; i < 5; i++ )
+        printf( "Function %3d :  AND2 = %3d  Lev = %3d\n", i, pResult[i] & 0xFFFF, pResult[i] >> 16 );
+    return pResult;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Derives the factored form from the truth table.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Kit_TruthLitNum( unsigned * pTruth, int nVars, Vec_Int_t * vMemory )
+{
+    Kit_Graph_t * pGraph;
+    int RetValue, nLits;
+    RetValue = Kit_TruthIsop( pTruth, nVars, vMemory, 1 ); 
+    if ( RetValue == -1 || Vec_IntSize(vMemory) > (1<<16) )
+        return -1;
+    assert( RetValue == 0 || RetValue == 1 );
+    pGraph = Kit_SopFactor( vMemory, RetValue, nVars, vMemory );
+    nLits = 1 + Kit_GraphNodeNum( pGraph );
+    Kit_GraphFree( pGraph );
+    return nLits;
 }
 
 ////////////////////////////////////////////////////////////////////////

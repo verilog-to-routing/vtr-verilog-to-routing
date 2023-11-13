@@ -21,6 +21,7 @@
 #include "acecInt.h"
 #include "misc/vec/vecWec.h"
 #include "misc/extra/extra.h"
+#include "misc/util/utilTruth.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -207,6 +208,82 @@ void Acec_DetectBoothTest( Gia_Man_t * p )
     }
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Gia_ManResubTest4()
+{
+    Vec_Int_t * vRes = Vec_IntAlloc( 100 );
+    unsigned T = 0xF335ACC0;
+    int a, b, c;
+    int i, k, f, y;
+    int Count = 0;
+    for ( a = 0; a < 2; a++ )
+    {
+        unsigned A = s_Truths5[a];
+        for ( b = 0; b < 3; b++ )
+        {
+            unsigned B = s_Truths5[2+b];
+            for ( c = 0; c < 3; c++ ) if ( c != b )
+            {
+                unsigned C = s_Truths5[2+c];
+                Vec_IntPush( vRes, A & B &  C );
+                Vec_IntPush( vRes, A & B & ~C );
+            }
+        }
+    }
+    printf( "Size = %d.\n", Vec_IntSize(vRes) );
+    for ( i = 0; i < (1 << Vec_IntSize(vRes)); i++ )
+    {
+        unsigned F[7] = {0};
+        unsigned Y[3] = {0};
+        if ( Abc_TtCountOnes( (word)i ) >= 8 )
+            continue;
+        for ( f = k = 0; k < Vec_IntSize(vRes); k++ )
+            if ( ((i >> k) & 1) )
+                F[f++] = Vec_IntEntry(vRes, k);
+        {
+            unsigned S1 = (F[0] & F[1]) | (F[0] & F[2]) | (F[1] & F[2]);
+            unsigned C1 = F[0] ^ F[1] ^ F[2];
+            unsigned S2 = (F[3] & F[4]) | (F[3] & F[5]) | (F[4] & F[5]);
+            unsigned C2 = F[3] ^ F[4] ^ F[5];
+            unsigned S3 = (F[6] & S1) | (F[6] & S2) | (S1 & S2);
+            unsigned C3 = F[6] ^ S1 ^ S2;
+            unsigned S4 = (C1 & C2) | (C1 & C3) | (C2 & C3);
+            unsigned C4 = C1 ^ C2 ^ C3;
+            Y[0] = S3;
+            Y[1] = S4;
+            Y[2] = C4;
+        }
+        for ( y = 0; y < 3; y++ )
+            if ( Y[y] == T )
+                printf( "Found!\n" );
+        Count++;
+    }
+    printf( "Tried = %d.\n", Count );
+    Vec_IntFree( vRes );
+}
+void Gia_ManResubTest5()
+{
+    unsigned T = 0xF335ACC0;
+    int i;
+    for ( i = 0; i < 4; i++ )
+    {
+        unsigned x = i%2 ? Abc_Tt5Cofactor1(T, 0) : Abc_Tt5Cofactor0(T, 0);
+        unsigned y = i/2 ? Abc_Tt5Cofactor1(x, 1) : Abc_Tt5Cofactor0(x, 1);
+        word F = y;
+        F |= F << 32;
+        //Dau_DsdPrintFromTruth2( &F, 6 ); printf( "\n" );
+    }
+}
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////

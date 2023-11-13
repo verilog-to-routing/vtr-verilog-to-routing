@@ -19,6 +19,9 @@ class ExtendedMapLookahead : public RouterLookahead {
     ///<Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
 
+    ///< Lookup table from SOURCE/OPIN to CHANX/CHANY of the another layer
+    util::t_src_opin_inter_layer_delays src_opin_inter_layer_delays;
+
     ///<Look-up table from CHANX/CHANY to SINK/IPIN of various types
     util::t_chan_ipins_delays chan_ipins_delays;
 

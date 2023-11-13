@@ -65,7 +65,7 @@ void Gluco::printUsageAndExit (int argc, char** argv, bool verbose)
     if (usage != NULL)
         fprintf(stderr, usage, argv[0]);
 
-        sort(Option::getOptionList(), Option::OptionLt());
+    sort(Option::getOptionList(), Option::OptionLt());
 
     const char* prev_cat  = NULL;
     const char* prev_type = NULL;

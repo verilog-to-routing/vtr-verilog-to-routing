@@ -269,7 +269,7 @@ int Ifn_NtkParseInt_rec( char * pStr, Ifn_Ntk_t * p, char ** ppFinal, int * piNo
             pFanins[nFanins++] = *piNode - 1;
         }
         else
-            return Ifn_ErrorMessage( "Substring \"%s\" contans unrecognized symbol \'%c\'.\n", pStr, pStr[0] );
+            return Ifn_ErrorMessage( "Substring \"%s\" contains unrecognized symbol \'%c\'.\n", pStr, pStr[0] );
     }
     assert( pStr == pLim );
     pObj = p->Nodes + (*piNode)++;
@@ -400,7 +400,7 @@ int Ifn_NtkParseInt2( char * pStr, Ifn_Ntk_t * p )
         else if ( pStr[k+2] == '{' )
             p->Nodes[i].Type = IFN_DSD_PRIME, Next = '}';
         else 
-            return Ifn_ErrorMessage( "Cannot find openning operation symbol in the definition of signal \'%c\'.\n", 'a' + i );
+            return Ifn_ErrorMessage( "Cannot find opening operation symbol in the definition of signal \'%c\'.\n", 'a' + i );
         for ( n = k + 3; pStr[n]; n++ )
             if ( pStr[n] == Next )
                 break;
@@ -622,10 +622,10 @@ sat_solver * Ifn_ManSatBuild( Ifn_Ntk_t * p, Vec_Int_t ** pvPiVars, Vec_Int_t **
     sat_solver * pSat = NULL;
     *pvPiVars = *pvPoVars = NULL;
     p1 = Ifn_ManStrFindModel( p );
-//    Gia_AigerWrite( p1, "satbuild.aig", 0, 0 );
+//    Gia_AigerWrite( p1, "satbuild.aig", 0, 0, 0 );
     p2 = Ifn_ManStrFindCofactors( p->nInps, p1 );
     Gia_ManStop( p1 );
-//    Gia_AigerWrite( p2, "satbuild2.aig", 0, 0 );
+//    Gia_AigerWrite( p2, "satbuild2.aig", 0, 0, 0 );
     pSat = Ifn_ManStrFindSolver( p2, pvPiVars, pvPoVars );
     Gia_ManStop( p2 );
     return pSat;

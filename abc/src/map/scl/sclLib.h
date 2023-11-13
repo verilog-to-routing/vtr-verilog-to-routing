@@ -59,6 +59,13 @@ typedef enum      // -- timing sense, positive-, negative- or non-unate
     sc_ts_Non,
 } SC_TSense;
 
+typedef struct SC_DontUse_ SC_DontUse;
+struct SC_DontUse_
+{
+    int        size;
+    char **    dont_use_list;
+};
+
 typedef struct SC_Pair_         SC_Pair;
 struct SC_Pair_ 
 {
@@ -734,13 +741,14 @@ static inline void Scl_LibHandleInputDriver2( SC_Cell * pCell, SC_PairI * pLoadI
 }
 
 /*=== sclLiberty.c ===============================================================*/
-extern SC_Lib *      Abc_SclReadLiberty( char * pFileName, int fVerbose, int fVeryVerbose );
+extern SC_Lib *      Abc_SclReadLiberty( char * pFileName, int fVerbose, int fVeryVerbose, SC_DontUse dont_use );
 /*=== sclLibScl.c ===============================================================*/
 extern SC_Lib *      Abc_SclReadFromGenlib( void * pLib );
 extern SC_Lib *      Abc_SclReadFromStr( Vec_Str_t * vOut );
 extern SC_Lib *      Abc_SclReadFromFile( char * pFileName );
 extern void          Abc_SclWriteScl( char * pFileName, SC_Lib * p );
 extern void          Abc_SclWriteLiberty( char * pFileName, SC_Lib * p );
+extern SC_Lib *      Abc_SclMergeLibraries( SC_Lib * pLib1, SC_Lib * pLib2 );
 /*=== sclLibUtil.c ===============================================================*/
 extern void          Abc_SclHashCells( SC_Lib * p );
 extern int           Abc_SclCellFind( SC_Lib * p, char * pName );

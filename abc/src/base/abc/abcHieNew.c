@@ -558,7 +558,7 @@ void Au_ManPrintBoxInfo( Au_Ntk_t * pNtk )
     vMods->nSize--;
     vMods->pArray++;
     // sort models by name
-    Vec_PtrSort( vMods, (int(*)())Au_NtkCompareNames );
+    Vec_PtrSort( vMods, (int(*)(const void *, const void *))Au_NtkCompareNames );
     // swap the first model
     Num = Vec_PtrFind( vMods, pNtk );
     assert( Num >= 0 && Num < Vec_PtrSize(vMods) );
@@ -643,7 +643,7 @@ void Au_ManPrintBoxInfoSorted( Au_Ntk_t * pNtk )
     vMods->pArray--;
     vMods->nSize++;
 
-    Vec_PtrSort( vModsNew, (int(*)())Au_NtkCompareSign );
+    Vec_PtrSort( vModsNew, (int(*)(const void *, const void *))Au_NtkCompareSign );
     Vec_PtrForEachEntryStart( Au_Ntk_t *, vModsNew, pModel, i, 1 )
     {
         printf( "MODULE  " );

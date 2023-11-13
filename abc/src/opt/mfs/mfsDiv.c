@@ -282,7 +282,7 @@ Vec_Ptr_t * Abc_MfsComputeDivisors( Mfs_Man_t * p, Abc_Obj_t * pNode, int nLevDi
     p->nMaxDivs += (Vec_PtrSize(vDivs) >= p->pPars->nWinMax);
 
     // sort the divisors by level in the increasing order
-    Vec_PtrSort( vDivs, (int (*)(void))Abc_NodeCompareLevelsIncrease );
+    Vec_PtrSort( vDivs, (int (*)(const void *, const void *))Abc_NodeCompareLevelsIncrease );
 
     // add the fanins of the node
     Abc_ObjForEachFanin( pNode, pFanin, k )

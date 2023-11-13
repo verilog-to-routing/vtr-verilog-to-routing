@@ -501,10 +501,10 @@ int Fraig_NodeVecCompareRefCounts( Fraig_Node_t ** pp1, Fraig_Node_t ** pp2 )
 void Fraig_NodeVecSortByLevel( Fraig_NodeVec_t * p, int fIncreasing )
 {
     if ( fIncreasing )
-        qsort( (void *)p->pArray, p->nSize, sizeof(Fraig_Node_t *), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Fraig_Node_t *), 
                 (int (*)(const void *, const void *)) Fraig_NodeVecCompareLevelsIncreasing );
     else 
-        qsort( (void *)p->pArray, p->nSize, sizeof(Fraig_Node_t *), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Fraig_Node_t *), 
                 (int (*)(const void *, const void *)) Fraig_NodeVecCompareLevelsDecreasing );
 }
 
@@ -521,7 +521,7 @@ void Fraig_NodeVecSortByLevel( Fraig_NodeVec_t * p, int fIncreasing )
 ***********************************************************************/
 void Fraig_NodeVecSortByNumber( Fraig_NodeVec_t * p )
 {
-    qsort( (void *)p->pArray, p->nSize, sizeof(Fraig_Node_t *), 
+    qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Fraig_Node_t *), 
             (int (*)(const void *, const void *)) Fraig_NodeVecCompareNumbers );
 }
 
@@ -538,7 +538,7 @@ void Fraig_NodeVecSortByNumber( Fraig_NodeVec_t * p )
 ***********************************************************************/
 void Fraig_NodeVecSortByRefCount( Fraig_NodeVec_t * p )
 {
-    qsort( (void *)p->pArray, p->nSize, sizeof(Fraig_Node_t *), 
+    qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Fraig_Node_t *), 
             (int (*)(const void *, const void *)) Fraig_NodeVecCompareRefCounts );
 }
 

@@ -106,7 +106,7 @@ struct _reo_man
     int         fVerbose;        // the verbosity level
     int         fVerify;         // the flag toggling verification
     int         fRemapUp;        // the flag to enable remapping   
-    int         nIters;          // the number of interations of sifting to perform
+    int         nIters;          // the number of iterations of sifting to perform
 
     // parameters given by the user when reordering is called
     DdManager * dd;              // the CUDD BDD manager

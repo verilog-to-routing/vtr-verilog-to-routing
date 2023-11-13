@@ -306,7 +306,7 @@ Map_Node_t * Map_NodeVecReadEntry( Map_NodeVec_t * p, int i )
 ***********************************************************************/
 void Map_NodeVecSortByLevel( Map_NodeVec_t * p )
 {
-    qsort( (void *)p->pArray, p->nSize, sizeof(Map_Node_t *), 
+    qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Map_Node_t *), 
             (int (*)(const void *, const void *)) Map_NodeVecCompareLevels );
 }
 

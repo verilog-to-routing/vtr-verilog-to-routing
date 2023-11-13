@@ -66,7 +66,7 @@ void Abc_NtkOrderFaninsById( Abc_Ntk_t * pNtk )
         Vec_IntSelectSortCost( pOrder, nVars, &pNode->vFanins );
         // copy the cover
         Vec_StrGrow( vStore, Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1 );
-        memcpy( Vec_StrArray(vStore), pSop, Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1 );
+        memcpy( Vec_StrArray(vStore), pSop, (size_t)(Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1) );
         pSopNew = pCubeNew = pSop;
         pSop = Vec_StrArray(vStore);
         // generate permuted one
@@ -168,7 +168,7 @@ void Abc_NtkOrderFaninsBySortingColumns( Abc_Ntk_t * pNtk )
         pOrder = Vec_IntArray(vOrder);
         // copy the cover
         Vec_StrGrow( vStore, Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1 );
-        memcpy( Vec_StrArray(vStore), pSop, Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1 );
+        memcpy( Vec_StrArray(vStore), pSop, (size_t)(Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1) );
         pSopNew = pCubeNew = pSop;
         pSop = Vec_StrArray(vStore);
         // generate permuted one
@@ -272,7 +272,7 @@ void Abc_NtkOrderFaninsByLitCount( Abc_Ntk_t * pNtk )
 */
         // copy the cover
         Vec_StrGrow( vStore, Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1 );
-        memcpy( Vec_StrArray(vStore), pSop, Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1 );
+        memcpy( Vec_StrArray(vStore), pSop, (size_t)(Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1) );
         pSopNew = pCubeNew = pSop;
         pSop = Vec_StrArray(vStore);
         // generate permuted one
@@ -353,7 +353,7 @@ void Abc_NtkOrderFaninsByLitCountAndCubeCount( Abc_Ntk_t * pNtk )
         Vec_IntSelectSortCost( pOrder, nVars, vCounts );
         // copy the cover
         Vec_StrGrow( vStore, Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1 );
-        memcpy( Vec_StrArray(vStore), pSop, Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1 );
+        memcpy( Vec_StrArray(vStore), pSop, (size_t)(Abc_SopGetCubeNum(pSop) * (nVars + 3) + 1) );
         pSopNew = pCubeNew = pSop;
         pSop = Vec_StrArray(vStore);
         // generate permuted one
@@ -476,19 +476,19 @@ void Abc_NodeSortCubes( Abc_Obj_t * pNode, Vec_Ptr_t * vCubes, Vec_Str_t * vStor
         Vec_PtrPush( vCubes, pCube );
     }
     if ( fWeight )
-        Vec_PtrSort( vCubes, (int (*)())Abc_NodeCompareCubes2 );
+        Vec_PtrSort( vCubes, (int (*)(const void *, const void *))Abc_NodeCompareCubes2 );
     else
-        Vec_PtrSort( vCubes, (int (*)())Abc_NodeCompareCubes1 );
+        Vec_PtrSort( vCubes, (int (*)(const void *, const void *))Abc_NodeCompareCubes1 );
     Vec_StrGrow( vStore, Vec_PtrSize(vCubes) * (nVars + 3) );
     pPivot = Vec_StrArray( vStore );
     Vec_PtrForEachEntry( char *, vCubes, pCube, i )
     {
         assert( pCube[nVars] == 0 );
         pCube[nVars] = ' ';
-        memcpy( pPivot, pCube, nVars + 3 );
+        memcpy( pPivot, pCube, (size_t)(nVars + 3) );
         pPivot += nVars + 3;
     }
-    memcpy( pSop, Vec_StrArray(vStore), Vec_PtrSize(vCubes) * (nVars + 3) );
+    memcpy( pSop, Vec_StrArray(vStore), (size_t)(Vec_PtrSize(vCubes) * (nVars + 3)) );
 }
 void Abc_NtkSortCubes( Abc_Ntk_t * pNtk, int fWeight )
 {
@@ -550,7 +550,7 @@ static inline int Abc_CubeContain( char * pCube1, char * pCube2, int nVars )
             fCont12 = 0;
         else
             return 0;
-        if ( !fCont21 && !fCont21 )
+        if ( !fCont12 && !fCont21 )
             return 0;
     }
     assert( fCont21 || fCont12 );
@@ -581,7 +581,7 @@ int Abc_NodeMakeSCCFree( Abc_Obj_t * pNode )
     {
         if ( pCube[0] == 'z' )
             continue;
-        memcpy( pSopNew, pCube, nVars + 3 );
+        memcpy( pSopNew, pCube, (size_t)(nVars + 3) );
         pSopNew += nVars + 3;
     }
     *pSopNew = 0;

@@ -79,6 +79,7 @@ void Pdr_ManSetDefaultParams( Pdr_Par_t * pPars )
     pPars->nFailOuts      =       0;  // the number of disproved outputs
     pPars->nDropOuts      =       0;  // the number of timed out outputs
     pPars->timeLastSolved =       0;  // last one solved
+    pPars->pInvFileName   =    NULL;  // invariant file name
 }
 
 /**Function*************************************************************
@@ -156,7 +157,7 @@ int Pdr_ManPushClauses( Pdr_Man_t * p )
     assert( p->iUseFrame > 0 );
     Vec_VecForEachLevelStartStop( p->vClauses, vArrayK, k, iStartFrame, kMax )
     {
-        Vec_PtrSort( vArrayK, (int (*)(void))Pdr_SetCompare );
+        Vec_PtrSort( vArrayK, (int (*)(const void *, const void *))Pdr_SetCompare );
         vArrayK1 = Vec_VecEntry( p->vClauses, k+1 );
         Vec_PtrForEachEntry( Pdr_Set_t *, vArrayK, pCubeK, j )
         {
@@ -215,7 +216,7 @@ int Pdr_ManPushClauses( Pdr_Man_t * p )
 
     // clean up the last one
     vArrayK = Vec_VecEntry( p->vClauses, kMax );
-    Vec_PtrSort( vArrayK, (int (*)(void))Pdr_SetCompare );
+    Vec_PtrSort( vArrayK, (int (*)(const void *, const void *))Pdr_SetCompare );
     Vec_PtrForEachEntry( Pdr_Set_t *, vArrayK, pCubeK, j )
     {
         // remove cubes in the same frame that are contained by pCubeK
@@ -1148,7 +1149,7 @@ int Pdr_ManSolveInt( Pdr_Man_t * p )
                 {
                     if ( p->pPars->fVerbose )
                         Pdr_ManPrintProgress( p, 1, Abc_Clock() - clkStart );
-                    if ( p->timeToStop && Abc_Clock() > p->timeToStop )
+                    if ( p->timeToStop && Abc_Clock() > p->timeToStop && !p->pPars->fSilent )
                         Abc_Print( 1, "Reached timeout (%d seconds) in frame %d.\n",  p->pPars->nTimeOut, iFrame );
                     else if ( p->pPars->nTimeOutGap && p->pPars->timeLastSolved && Abc_Clock() > p->pPars->timeLastSolved + p->pPars->nTimeOutGap * CLOCKS_PER_SEC )
                         Abc_Print( 1, "Reached gap timeout (%d seconds) in frame %d.\n",  p->pPars->nTimeOutGap, iFrame );
@@ -1172,7 +1173,7 @@ int Pdr_ManSolveInt( Pdr_Man_t * p )
                     {
                         if ( p->pPars->fVerbose )
                             Pdr_ManPrintProgress( p, 1, Abc_Clock() - clkStart );
-                        if ( p->timeToStop && Abc_Clock() > p->timeToStop )
+                        if ( p->timeToStop && Abc_Clock() > p->timeToStop && !p->pPars->fSilent )
                             Abc_Print( 1, "Reached timeout (%d seconds) in frame %d.\n",  p->pPars->nTimeOut, iFrame );
                         else if ( p->pPars->nTimeOutGap && p->pPars->timeLastSolved && Abc_Clock() > p->pPars->timeLastSolved + p->pPars->nTimeOutGap * CLOCKS_PER_SEC )
                             Abc_Print( 1, "Reached gap timeout (%d seconds) in frame %d.\n",  p->pPars->nTimeOutGap, iFrame );
@@ -1424,9 +1425,10 @@ int Pdr_ManSolve( Aig_Man_t * pAig, Pdr_Par_t * pPars )
     }
     if ( p->pPars->fDumpInv )
     {
-        char * pFileName = Extra_FileNameGenericAppend(p->pAig->pName, "_inv.pla");
+        char * pFileName = pPars->pInvFileName ? pPars->pInvFileName : Extra_FileNameGenericAppend(p->pAig->pName, "_inv.pla");
         Abc_FrameSetInv( Pdr_ManDeriveInfinityClauses( p, RetValue!=1 ) );
         Pdr_ManDumpClauses( p, pFileName, RetValue==1 );
+        printf( "Dumped inductive invariant in file \"%s\".\n", pFileName );
     }
     else if ( RetValue == 1 )
         Abc_FrameSetInv( Pdr_ManDeriveInfinityClauses( p, RetValue!=1 ) );

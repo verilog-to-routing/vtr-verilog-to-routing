@@ -288,7 +288,7 @@ int Fpga_NodeVecCompareLevels( Fpga_Node_t ** pp1, Fpga_Node_t ** pp2 )
 ***********************************************************************/
 void Fpga_NodeVecSortByLevel( Fpga_NodeVec_t * p )
 {
-    qsort( (void *)p->pArray, p->nSize, sizeof(Fpga_Node_t *), 
+    qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Fpga_Node_t *), 
             (int (*)(const void *, const void *)) Fpga_NodeVecCompareLevels );
 }
 
@@ -325,7 +325,7 @@ int Fpga_NodeVecCompareArrivals( Fpga_Node_t ** ppS1, Fpga_Node_t ** ppS2 )
 ***********************************************************************/
 void Fpga_SortNodesByArrivalTimes( Fpga_NodeVec_t * p )
 {
-    qsort( (void *)p->pArray, p->nSize, sizeof(Fpga_Node_t *), 
+    qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(Fpga_Node_t *), 
             (int (*)(const void *, const void *)) Fpga_NodeVecCompareArrivals );
 //    assert( Fpga_CompareNodesByLevel( p->pArray, p->pArray + p->nSize - 1 ) <= 0 );
 }

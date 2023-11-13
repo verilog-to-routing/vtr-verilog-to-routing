@@ -21,13 +21,18 @@
 #include "gia.h"
 #include "misc/vec/vecSet.h"
 
+#ifdef _MSC_VER
+#define unlink _unlink
+#else
+#include <unistd.h>
+#endif
+
 #ifdef ABC_USE_PTHREADS
 
 #ifdef _WIN32
 #include "../lib/pthread.h"
 #else
 #include <pthread.h>
-#include <unistd.h>
 #endif
 
 #endif

@@ -246,6 +246,7 @@ float Gia_ManDelayTraceLut( Gia_Man_t * p )
 
     // initialize the arrival times
     Gia_ManTimeStart( p );
+    Gia_ManLevelNum( p );
 
     // propagate arrival times
     if ( p->pManTime )

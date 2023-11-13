@@ -266,6 +266,21 @@ Cudd_bddBooleanDiff(
 } /* end of Cudd_bddBooleanDiff */
 
 
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup2 that can
+              be casted to DD_CTFP.
+
+******************************************************************************/
+static DdNode *
+Cudd_bddVarIsDependent_dummy(DdManager *dd, DdNode *f, DdNode *var)
+{
+  assert(0);
+  return 0;
+}
+#endif
+
 /**Function********************************************************************
 
   Synopsis    [Checks whether a variable is dependent on others in a
@@ -305,7 +320,11 @@ Cudd_bddVarIsDependent(
         return(0);
     }
 
+#ifdef USE_CASH_DUMMY
+    cacheOp = (DD_CTFP) Cudd_bddVarIsDependent_dummy;
+#else
     cacheOp = (DD_CTFP) Cudd_bddVarIsDependent;
+#endif
     res = cuddCacheLookup2(dd,cacheOp,f,var);
     if (res != NULL) {
         return(res != zero);
