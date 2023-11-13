@@ -719,18 +719,15 @@ bool is_binary_param(const std::string& param) {
 }
 
 bool is_real_param(const std::string& param) {
-    const std::string chars = "012345678.";
-
     /* Must be non-empty */
     if (param.empty()) {
         return false;
     }
 
-    /* The string mustn't contain any other chars that the expected ones */
-    for (size_t i = 0; i < param.length(); ++i) {
-        if (chars.find(param[i]) == std::string::npos) {
-            return false;
-        }
+    /* The string must match the regular expression */
+    static const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
+    if (!std::regex_match(param, real_number_expr)) {
+        return false;
     }
 
     /* This is a real number param */

@@ -1397,6 +1397,8 @@ struct t_router_opts {
     enum e_route_type route_type;
     int fixed_channel_width;
     int min_channel_width_hint; ///<Hint to binary search of what the minimum channel width is
+    bool trim_empty_channels;
+    bool trim_obs_channels;
     enum e_router_algorithm router_algorithm;
     enum e_base_cost_type base_cost_type;
     float astar_fac;
@@ -1470,6 +1472,7 @@ struct t_analysis_opts {
     std::string write_timing_summary;
 
     e_timing_update_type timing_update_type;
+    bool skip_sync_clustering_and_routing_results = false;
 };
 
 // used to store NoC specific options, when supplied as an input by the user
@@ -1529,6 +1532,20 @@ struct t_det_routing_arch {
     int Fs;
     enum e_switch_block_type switch_block_type;
     std::vector<t_switchblock_inf> switchblocks;
+
+    /* Xifan Tang: subtype of switch blocks.
+     * Sub type and Fs are applied to pass tracks
+     */
+    int subFs;
+    enum e_switch_block_type switch_block_subtype;
+
+    /* Xifan Tang: tileable routing */
+    bool tileable;
+    bool shrink_boundary;
+    bool through_channel;
+    bool opin2all_sides;
+    bool concat_wire;
+    bool concat_pass_wire;
 
     short global_route_switch;
     short delayless_switch;
