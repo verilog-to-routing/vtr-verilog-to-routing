@@ -1088,7 +1088,6 @@ static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
                                              const enum e_side& opin_side,
                                              const size_t& opin_node_id,
                                              const enum e_side& chan_side,
-                                             const size_t& opin_node_id,
                                              const std::vector<int>& Fc,
                                              const size_t& offset,
                                              const std::vector<t_segment_inf>& segment_inf,
@@ -1333,13 +1332,13 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             if (opin2all_sides) {
                 for (size_t track_side = 0; side < rr_gsb.get_num_sides(); ++side) {
                     SideManager track_side_mgr(track_side);
-                    build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, track_side_mgr.get_side(), inode, opin_Fc_out,
+                    build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, track_side_mgr.get_side(), opin_Fc_out,
                                                      /* Give an offset for the first track that this ipin will connect to */
                                                      offset[side_manager.to_size_t()],
                                                      segment_inf, opin2track_map);
                 }
             } else {
-                build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_Fc_out,
+                build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_side, opin_Fc_out,
                                                  /* Give an offset for the first track that this ipin will connect to */
                                                  offset[side_manager.to_size_t()],
                                                  segment_inf, opin2track_map);
