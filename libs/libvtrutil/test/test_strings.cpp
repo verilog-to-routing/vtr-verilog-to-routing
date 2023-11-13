@@ -63,7 +63,7 @@ TEST_CASE("String view", "[vtr_string_view/string_view]") {
     REQUIRE(f == b);
 }
 
-TEST_CASE("Basic string internment", "[vtr_string_interning/string_internment") {
+TEST_CASE("Basic string internment", "[vtr_string_interning/string_internment]") {
     vtr::string_internment internment;
 
     vtr::interned_string a = internment.intern_string(vtr::string_view("test"));
@@ -134,7 +134,7 @@ static void test_internment_retreval(const vtr::string_internment* internment, v
     REQUIRE(copy == expect);
 }
 
-TEST_CASE("Split string internment", "[vtr_string_interning/string_internment") {
+TEST_CASE("Split string internment", "[vtr_string_interning/string_internment]") {
     vtr::string_internment internment;
 
     size_t unique_strings = 0;
