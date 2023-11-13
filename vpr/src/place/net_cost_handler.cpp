@@ -194,7 +194,7 @@ static double recompute_bb_cost();
 
 static double wirelength_crossing_count(size_t fanout);
 
-static double get_net_bounding_box_cost(ClusterNetId net_id, t_bb* bbptr);
+static double get_net_bounding_box_cost(ClusterNetId net_id, const t_bb& bb);
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const AtomNetId net,
@@ -1536,7 +1536,7 @@ static double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-static double get_net_bounding_box_cost(ClusterNetId net_id, t_bb* bbptr) {
+static double get_net_bounding_box_cost(ClusterNetId net_id, const t_bb& bb) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
 
@@ -1553,11 +1553,11 @@ static double get_net_bounding_box_cost(ClusterNetId net_id, t_bb* bbptr) {
     /* Cost = wire length along channel * cross_count / average      *
      * channel capacity.   Do this for x, then y direction and add.  */
 
-    ncost = (bbptr->xmax - bbptr->xmin + 1) * crossing
-            * chanx_place_cost_fac[bbptr->ymax][bbptr->ymin - 1];
+    ncost = (bb.xmax - bb.xmin + 1) * crossing
+            * chanx_place_cost_fac[bb.ymax][bb.ymin - 1];
 
-    ncost += (bbptr->ymax - bbptr->ymin + 1) * crossing
-             * chany_place_cost_fac[bbptr->xmax][bbptr->xmin - 1];
+    ncost += (bb.ymax - bb.ymin + 1) * crossing
+             * chany_place_cost_fac[bb.xmax][bb.xmin - 1];
 
     return (ncost);
 }
@@ -1618,7 +1618,7 @@ int find_affected_nets_and_update_costs(
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
         proposed_net_cost[net_id] = get_net_bounding_box_cost(net_id,
-                                                              &ts_bb_coord_new[net_id]);
+                                                              ts_bb_coord_new[net_id]);
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
