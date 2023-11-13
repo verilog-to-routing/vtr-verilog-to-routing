@@ -1965,6 +1965,7 @@ struct t_arch {
     bool tileable;
     bool shrink_boundary;
     bool through_channel;
+    bool opin2all_sides;
 
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;

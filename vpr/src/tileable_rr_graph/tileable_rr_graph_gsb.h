@@ -66,7 +66,8 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
                                             const RRGSB& rr_gsb,
                                             const DeviceGrid& grids,
                                             const std::vector<t_segment_inf>& segment_inf,
-                                            const std::vector<vtr::Matrix<int>>& Fc_out);
+                                            const std::vector<vtr::Matrix<int>>& Fc_out,
+                                            const bool& opin2all_sides);
 
 void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           RRGraphBuilder& rr_graph_builder,

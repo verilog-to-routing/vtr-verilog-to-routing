@@ -1271,7 +1271,8 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
                                             const RRGSB& rr_gsb,
                                             const DeviceGrid& grids,
                                             const std::vector<t_segment_inf>& segment_inf,
-                                            const std::vector<vtr::Matrix<int>>& Fc_out) {
+                                            const std::vector<vtr::Matrix<int>>& Fc_out,
+                                            const bool& opin2all_sides) {
     t_pin2track_map opin2track_map;
     /* Resize the matrix */
     opin2track_map.resize(rr_gsb.get_num_sides());
@@ -1321,10 +1322,19 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             VTR_ASSERT(opin_Fc_out.size() == segment_inf.size());
 
             /* Build track2ipin_map for this IPIN */
-            build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_Fc_out,
-                                             /* Give an offset for the first track that this ipin will connect to */
-                                             offset[side_manager.to_size_t()],
-                                             segment_inf, opin2track_map);
+            if (opin2all_sides) {
+                for (e_side track_side : SIDES) {
+                    build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, track_side, inode, opin_Fc_out,
+                                                     /* Give an offset for the first track that this ipin will connect to */
+                                                     offset[side_manager.to_size_t()],
+                                                     segment_inf, opin2track_map);
+                }
+            } else {
+              build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_Fc_out,
+                                               /* Give an offset for the first track that this ipin will connect to */
+                                               offset[side_manager.to_size_t()],
+                                               segment_inf, opin2track_map);
+            }
             /* update offset: aim to rotate starting tracks by 1*/
             offset[side_manager.to_size_t()] += 1;
         }
