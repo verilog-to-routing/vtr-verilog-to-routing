@@ -1331,7 +1331,7 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             /* Build track2ipin_map for this IPIN */
             opin2track_map[side][inode].resize(rr_gsb.get_num_sides());
             if (opin2all_sides) {
-                for (size_t track_side = 0; side < rr_gsb.get_num_sides(); ++side) {
+                for (size_t track_side = 0; track_side < rr_gsb.get_num_sides(); ++track_side) {
                     SideManager track_side_mgr(track_side);
                     build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, track_side_mgr.get_side(), opin_Fc_out,
                                                      /* Give an offset for the first track that this ipin will connect to */
