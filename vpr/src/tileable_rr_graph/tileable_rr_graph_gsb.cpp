@@ -938,11 +938,16 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         for (size_t inode = 0; inode < rr_gsb.get_num_opin_nodes(gsb_side); ++inode) {
             const RRNodeId& opin_node = rr_gsb.get_opin_node(gsb_side, inode);
 
-            /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
-            /* add edges to the opin_node */
-            for (const RRNodeId& track_node : opin2track_map[gsb_side][inode]) {
-                rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node], false);
-                edge_count++;
+            for (size_t to_side = 0; to_side < rr_gsb.get_num_sides(); ++to_side) {
+                SideManager to_side_mgr(to_side);
+                enum e_side gsb_to_side = to_side_mgr.get_side();
+
+                /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
+                /* add edges to the opin_node */
+                for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][gsb_to_side]) {
+                    rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node], false);
+                    edge_count++;
+                }
             }
         }
 
@@ -1082,6 +1087,381 @@ static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
                                              const RRGSB& rr_gsb,
                                              const enum e_side& opin_side,
                                              const size_t& opin_node_id,
+                                             const enum e_side& chan_side,
+                                             const size_t& opin_node_id,
+                                             const std::vector<int>& Fc,
+                                             const size_t& offset,
+                                             const std::vector<t_segment_inf>& segment_inf,
+                                             t_pin2track_map& opin2track_map) {
+    /* Get a list of segment_ids*/
+    std::vector<RRSegmentId> seg_list = rr_gsb.get_chan_segment_ids(opin_side);
+    size_t chan_width = rr_gsb.get_chan_width(chan_side);
+    SideManager opin_side_manager(opin_side);
+    SideManager chan_side_manager(chan_side);
+
+    for (size_t iseg = 0; iseg < seg_list.size(); ++iseg) {
+        /* Get a list of node that have the segment id */
+        std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(chan_side, seg_list[iseg]);
+        /* Refine the track_list: keep those will have connection blocks in the GSB */
+        std::vector<size_t> actual_track_list;
+        for (size_t inode = 0; inode < track_list.size(); ++inode) {
+            /* Check if tracks allow connection blocks in the GSB*/
+            if (false == is_gsb_in_track_sb_population(rr_graph, rr_gsb, chan_side, track_list[inode], segment_inf)) {
+                continue; /* Bypass condition */
+            }
+            if (TRACK_START != determine_track_status_of_gsb(rr_graph, rr_gsb, chan_side, track_list[inode])) {
+                continue; /* Bypass condition */
+            }
+            /* Push the node to actual_track_list  */
+            actual_track_list.push_back(track_list[inode]);
+        }
+
+        /* Go the next segment if offset is zero or actual_track_list is empty */
+        if (0 == actual_track_list.size()) {
+            continue;
+        }
+
+        /* Scale Fc  */
+        int actual_Fc = std::ceil((float)Fc[iseg] * (float)actual_track_list.size() / (float)chan_width);
+        /* Minimum Fc should be 1 : ensure we will drive 1 routing track */
+        actual_Fc = std::max(1, actual_Fc);
+        /* Compute the step between two connection from this IPIN to tracks:
+         * step = W' / Fc', W' and Fc' are the adapted W and Fc from actual_track_list and Fc_in
+         */
+        size_t track_step = std::floor((float)actual_track_list.size() / (float)actual_Fc);
+        /* Track step mush be a multiple of 2!!!*/
+        /* Make sure step should be at least 1 */
+        track_step = std::max(1, (int)track_step);
+        /* Adapt offset to the range of actual_track_list */
+        size_t actual_offset = offset % actual_track_list.size();
+
+        /* No need to rotate if offset is zero */
+        if (0 < actual_offset) {
+            /* rotate the track list by an offset */
+            std::rotate(actual_track_list.begin(), actual_track_list.begin() + actual_offset, actual_track_list.end());
+        }
+
+        /* Assign tracks  */
+        int track_cnt = 0;
+        /* Keep assigning until we meet the Fc requirement */
+        for (size_t itrack = 0; itrack < actual_track_list.size(); itrack = itrack + track_step) {
+            /* Update pin2track map */
+            size_t opin_side_index = opin_side_manager.to_size_t();
+            /* itrack may exceed the size of actual_track_list, adapt it */
+            size_t actual_itrack = itrack % actual_track_list.size();
+            size_t track_index = actual_track_list[actual_itrack];
+            const RRNodeId& track_rr_node_index = rr_gsb.get_chan_node(chan_side, track_index);
+            opin2track_map[opin_side_index][opin_node_id][chan_side_manager.to_size_t()].push_back(track_rr_node_index);
+            /* update track counter */
+            track_cnt++;
+            /* Stop when we have enough Fc: this may lead to some tracks have zero drivers.
+             * So I comment it. And we just make sure its track_cnt >= actual_Fc
+             * if (actual_Fc == track_cnt) {
+             * break;
+             * }
+             */
+        }
+
+        /* Ensure the number of tracks is similar to Fc */
+        /* Give a warning if Fc is < track_cnt */
+        /*
+         * if (actual_Fc != track_cnt) {
+         * vpr_printf(TIO_MESSAGE_INFO,
+         * "OPIN Node(%lu) will have a different Fc(=%lu) than specified(=%lu)!\n",
+         * opin_node_id, track_cnt, actual_Fc);
+         * }
+         */
+    }
+}
+
+/************************************************************************
+ * Build the track_to_ipin_map[gsb_side][0..chan_width-1][ipin_indices]
+ * based on the existing routing resources in the General Switch Block (GSB)
+ * This function supports both X-directional and Y-directional tracks
+ * The mapping is done in the following steps:
+ * 1. Build ipin_to_track_map[gsb_side][0..num_ipin_nodes-1][track_indices]
+ *    For each IPIN, we ensure at least one connection to the tracks.
+ *    Then, we assign IPINs to tracks evenly while satisfying the actual_Fc
+ * 2. Convert the ipin_to_track_map to track_to_ipin_map
+ ***********************************************************************/
+t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
+                                            const RRGSB& rr_gsb,
+                                            const DeviceGrid& grids,
+                                            const std::vector<t_segment_inf>& segment_inf,
+                                            const std::vector<vtr::Matrix<int>>& Fc_in) {
+    t_track2pin_map track2ipin_map;
+    /* Resize the matrix */
+    track2ipin_map.resize(rr_gsb.get_num_sides());
+
+    /* offset counter: it aims to balance the track-to-IPIN for each connection block */
+    size_t offset_size = 0;
+    std::vector<size_t> offset;
+    for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
+        SideManager side_manager(side);
+        enum e_side ipin_side = side_manager.get_side();
+        /* Get the chan_side */
+        enum e_side chan_side = rr_gsb.get_cb_chan_side(ipin_side);
+        SideManager chan_side_manager(chan_side);
+        /* resize offset to the maximum chan_side*/
+        offset_size = std::max(offset_size, chan_side_manager.to_size_t() + 1);
+    }
+    /* Initial offset */
+    offset.resize(offset_size);
+    offset.assign(offset.size(), 0);
+
+    /* Walk through each side */
+    for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
+        SideManager side_manager(side);
+        enum e_side ipin_side = side_manager.get_side();
+        /* Get the chan_side */
+        enum e_side chan_side = rr_gsb.get_cb_chan_side(ipin_side);
+        SideManager chan_side_manager(chan_side);
+        /* This track2pin mapping is for Connection Blocks, so we only care two sides! */
+        /* Get channel width and resize the matrix */
+        size_t chan_width = rr_gsb.get_chan_width(chan_side);
+        track2ipin_map[chan_side_manager.to_size_t()].resize(chan_width);
+        /* Find the ipin/opin nodes */
+        for (size_t inode = 0; inode < rr_gsb.get_num_ipin_nodes(ipin_side); ++inode) {
+            const RRNodeId& ipin_node = rr_gsb.get_ipin_node(ipin_side, inode);
+            t_physical_tile_loc ipin_node_phy_tile_loc(rr_graph.node_xlow(ipin_node), rr_graph.node_ylow(ipin_node), 0);
+            /* Skip EMPTY type */
+            if (true == is_empty_type(grids.get_physical_type(ipin_node_phy_tile_loc))) {
+                continue;
+            }
+
+            int grid_type_index = grids.get_physical_type(ipin_node_phy_tile_loc)->index;
+            /* Get Fc of the ipin */
+            /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
+            bool skip_conn2track = true;
+            std::vector<int> ipin_Fc_out;
+            for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+                int ipin_Fc = Fc_in[grid_type_index][rr_graph.node_pin_num(ipin_node)][iseg];
+                ipin_Fc_out.push_back(ipin_Fc);
+                if (0 != ipin_Fc) {
+                    skip_conn2track = false;
+                    continue;
+                }
+            }
+
+            if (true == skip_conn2track) {
+                continue;
+            }
+
+            //VTR_ASSERT(ipin_Fc_out.size() == segment_inf.size());
+
+            /* Build track2ipin_map for this IPIN */
+            build_gsb_one_ipin_track2pin_map(rr_graph, rr_gsb, ipin_side, inode, ipin_Fc_out,
+                                             /* Give an offset for the first track that this ipin will connect to */
+                                             offset[chan_side_manager.to_size_t()],
+                                             segment_inf, track2ipin_map);
+            /* update offset */
+            offset[chan_side_manager.to_size_t()] += 2;
+            //printf("offset[%lu]=%lu\n", chan_side_manager.to_size_t(), offset[chan_side_manager.to_size_t()]);
+        }
+    }
+
+    return track2ipin_map;
+}
+
+/************************************************************************
+ * Build the opin_to_track_map[gsb_side][0..num_opin_nodes-1][track_indices]
+ * based on the existing routing resources in the General Switch Block (GSB)
+ * This function supports both X-directional and Y-directional tracks
+ * The mapping is done in the following steps:
+ * 1. Build a list of routing tracks whose starting points locate at this GSB
+ *    (xlow - gsb_x == 0)
+ * 2. Divide the routing tracks by segment types, so that we can balance
+ *    the connections between OPINs and different types of routing tracks.
+ * 3. Scale the Fc of each pin to the actual number of routing tracks
+ *    actual_Fc = (int) Fc * num_tracks / chan_width
+ ***********************************************************************/
+t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
+                                            const RRGSB& rr_gsb,
+                                            const DeviceGrid& grids,
+                                            const std::vector<t_segment_inf>& segment_inf,
+                                            const std::vector<vtr::Matrix<int>>& Fc_out,
+                                            const bool& opin2all_sides) {
+    t_pin2track_map opin2track_map;
+    /* Resize the matrix */
+    opin2track_map.resize(rr_gsb.get_num_sides());
+
+    /* offset counter: it aims to balance the OPIN-to-track for each switch block */
+    std::vector<size_t> offset;
+    /* Get the chan_side: which is the same as the opin side  */
+    offset.resize(rr_gsb.get_num_sides());
+    /* Initial offset */
+    offset.assign(offset.size(), 0);
+
+    /* Walk through each side */
+    for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
+        SideManager side_manager(side);
+        enum e_side opin_side = side_manager.get_side();
+        /* Get the chan_side */
+        /* This track2pin mapping is for Connection Blocks, so we only care two sides! */
+        /* Get channel width and resize the matrix */
+        size_t num_opin_nodes = rr_gsb.get_num_opin_nodes(opin_side);
+        opin2track_map[side].resize(num_opin_nodes);
+        /* Find the ipin/opin nodes */
+        for (size_t inode = 0; inode < num_opin_nodes; ++inode) {
+            const RRNodeId& opin_node = rr_gsb.get_opin_node(opin_side, inode);
+            t_physical_tile_loc opin_node_phy_tile_loc(rr_graph.node_xlow(opin_node), rr_graph.node_ylow(opin_node), 0);
+            /* Skip EMPTY type */
+            if (true == is_empty_type(grids.get_physical_type(opin_node_phy_tile_loc))) {
+                continue;
+            }
+            int grid_type_index = grids.get_physical_type(opin_node_phy_tile_loc)->index;
+
+            /* Get Fc of the ipin */
+            /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
+            bool skip_conn2track = true;
+            std::vector<int> opin_Fc_out;
+            for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+                int opin_Fc = Fc_out[grid_type_index][rr_graph.node_pin_num(opin_node)][iseg];
+                opin_Fc_out.push_back(opin_Fc);
+                if (0 != opin_Fc) {
+                    skip_conn2track = false;
+                    continue;
+                }
+            }
+
+            if (true == skip_conn2track) {
+                continue;
+            }
+            VTR_ASSERT(opin_Fc_out.size() == segment_inf.size());
+
+            /* Build track2ipin_map for this IPIN */
+            if (opin2all_sides) {
+                for (size_t track_side = 0; side < rr_gsb.get_num_sides(); ++side) {
+                    SideManager track_side_mgr(track_side);
+                    build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, track_side_mgr.get_side(), inode, opin_Fc_out,
+                                                     /* Give an offset for the first track that this ipin will connect to */
+                                                     offset[side_manager.to_size_t()],
+                                                     segment_inf, opin2track_map);
+                }
+            } else {
+                build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_Fc_out,
+                                                 /* Give an offset for the first track that this ipin will connect to */
+                                                 offset[side_manager.to_size_t()],
+                                                 segment_inf, opin2track_map);
+            }
+            /* update offset: aim to rotate starting tracks by 1*/
+            offset[side_manager.to_size_t()] += 1;
+        }
+
+        /* Check:
+         * 1. We want to ensure that each OPIN will drive at least one track
+         * 2. We want to ensure that each track will be driven by at least 1 OPIN */
+    }
+
+    return opin2track_map;
+}
+
+/************************************************************************
+ * Add all direct clb-pin-to-clb-pin edges to given opin
+ ***********************************************************************/
+void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
+                                          RRGraphBuilder& rr_graph_builder,
+                                          const DeviceGrid& grids,
+                                          const size_t& layer,
+                                          const vtr::Point<size_t>& from_grid_coordinate,
+                                          const RRSwitchId& delayless_switch,
+                                          const std::vector<t_direct_inf>& directs,
+                                          const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
+    VTR_ASSERT(directs.size() == clb_to_clb_directs.size());
+
+    t_physical_tile_type_ptr grid_type = grids.get_physical_type(t_physical_tile_loc(from_grid_coordinate.x(), from_grid_coordinate.y(), layer));
+
+    /* Iterate through all direct connections */
+    for (size_t i = 0; i < directs.size(); ++i) {
+        /* Bypass unmatched direct clb-to-clb connections */
+        if (grid_type != clb_to_clb_directs[i].from_clb_type) {
+            continue;
+        }
+
+        /* This opin is specified to connect directly to an ipin,
+         * now compute which ipin to connect to
+         */
+        vtr::Point<size_t> to_grid_coordinate(from_grid_coordinate.x() + directs[i].x_offset,
+                                              from_grid_coordinate.y() + directs[i].y_offset);
+
+        /* Bypass unmatched direct clb-to-clb connections */
+        t_physical_tile_type_ptr to_grid_type = grids.get_physical_type(t_physical_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer));
+        /* Check if to_grid if the same grid */
+        if (to_grid_type != clb_to_clb_directs[i].to_clb_type) {
+            continue;
+        }
+
+        bool swap;
+        int max_index, min_index;
+        /* Compute index of opin with regards to given pins */
+        if (clb_to_clb_directs[i].from_clb_pin_start_index
+            > clb_to_clb_directs[i].from_clb_pin_end_index) {
+            swap = true;
+            max_index = clb_to_clb_directs[i].from_clb_pin_start_index;
+            min_index = clb_to_clb_directs[i].from_clb_pin_end_index;
+        } else {
+            swap = false;
+            min_index = clb_to_clb_directs[i].from_clb_pin_start_index;
+            max_index = clb_to_clb_directs[i].from_clb_pin_end_index;
+        }
+
+        /* get every opin in the range */
+        for (int opin = min_index; opin <= max_index; ++opin) {
+            int offset = opin - min_index;
+
+            if ((to_grid_coordinate.x() < grids.width() - 1)
+                && (to_grid_coordinate.y() < grids.height() - 1)) {
+                int ipin = OPEN;
+                if (clb_to_clb_directs[i].to_clb_pin_start_index
+                    > clb_to_clb_directs[i].to_clb_pin_end_index) {
+                    if (true == swap) {
+                        ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                    } else {
+                        ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                    }
+                } else {
+                    if (true == swap) {
+                        ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
+                    } else {
+                        ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+                    }
+                }
+
+                /* Get the pin index in the rr_graph */
+                t_physical_tile_loc from_tile_loc(from_grid_coordinate.x(), from_grid_coordinate.y(), layer);
+                int from_grid_width_ofs = grids.get_width_offset(from_tile_loc);
+                int from_grid_height_ofs = grids.get_height_offset(from_tile_loc);
+                t_physical_tile_loc to_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer);
+                int to_grid_width_ofs = grids.get_width_offset(to_tile_loc);
+                int to_grid_height_ofs = grids.get_height_offset(to_tile_loc);
+
+                /* Find the side of grid pins, the pin location should be unique!
+                 * Pin location is required by searching a node in rr_graph
+                 */
+                std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x(), from_grid_coordinate.y(), opin);
+                VTR_ASSERT(1 == opin_grid_side.size());
+
+                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x(), to_grid_coordinate.y(), ipin);
+                VTR_ASSERT(1 == ipin_grid_side.size());
+
+                RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
+                                                                         from_grid_coordinate.x() - from_grid_width_ofs,
+                                                                         from_grid_coordinate.y() - from_grid_height_ofs,
+                                                                         OPIN, opin, opin_grid_side[0]);
+                RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(layer,
+                                                                         to_grid_coordinate.x() - to_grid_width_ofs,
+                                                                         to_grid_coordinate.y() - to_grid_height_ofs,
+                                                                         IPIN, ipin, ipin_grid_side[0]);
+
+                /* add edges to the opin_node */
+                VTR_ASSERT(opin_node_id && ipin_node_id);
+                rr_graph_builder.create_edge(opin_node_id, ipin_node_id, delayless_switch, false);
+            }
+        }
+    }
+    /* Build actual edges */
+    rr_graph_builder.build_edges(true);
+}
                                              const std::vector<int>& Fc,
                                              const size_t& offset,
                                              const std::vector<t_segment_inf>& segment_inf,
@@ -1323,16 +1703,17 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             VTR_ASSERT(opin_Fc_out.size() == segment_inf.size());
 
             /* Build track2ipin_map for this IPIN */
+            opin2track_map[side][inode].resize(rr_gsb.get_num_sides());
             if (opin2all_sides) {
                 for (size_t track_side = 0; side < rr_gsb.get_num_sides(); ++side) {
                     SideManager track_side_mgr(track_side);
-                    build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, track_side_mgr.get_side(), inode, opin_Fc_out,
+                    build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, track_side_mgr.get_side(), opin_Fc_out,
                                                      /* Give an offset for the first track that this ipin will connect to */
                                                      offset[side_manager.to_size_t()],
                                                      segment_inf, opin2track_map);
                 }
             } else {
-                build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_Fc_out,
+                build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_side, opin_Fc_out,
                                                  /* Give an offset for the first track that this ipin will connect to */
                                                  offset[side_manager.to_size_t()],
                                                  segment_inf, opin2track_map);
