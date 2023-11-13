@@ -178,16 +178,16 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
                                       std::vector<t_2D_bb>& coords,
                                       vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
-static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr);
+static double get_net_cost(ClusterNetId net_id, const t_bb& bb);
 
 static double get_net_layer_cost(ClusterNetId /* net_id */,
-                                 const std::vector<t_2D_bb>& bbptr,
+                                 const std::vector<t_2D_bb>& bb,
                                  const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
-static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bbptr);
+static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb);
 
 static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
-                                                const std::vector<t_2D_bb>& bbptr,
+                                                const std::vector<t_2D_bb>& bb,
                                                 const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
 static double recompute_bb_cost();
@@ -1390,7 +1390,7 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
     }
 }
 
-static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
+static double get_net_cost(ClusterNetId net_id, const t_bb& bb) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
 
@@ -1407,17 +1407,17 @@ static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
     /* Cost = wire length along channel * cross_count / average      *
      * channel capacity.   Do this for x, then y direction and add.  */
 
-    ncost = (bbptr.xmax - bbptr.xmin + 1) * crossing
-            * chanx_place_cost_fac[bbptr.ymax][bbptr.ymin - 1];
+    ncost = (bb.xmax - bb.xmin + 1) * crossing
+            * chanx_place_cost_fac[bb.ymax][bb.ymin - 1];
 
-    ncost += (bbptr.ymax - bbptr.ymin + 1) * crossing
-             * chany_place_cost_fac[bbptr.xmax][bbptr.xmin - 1];
+    ncost += (bb.ymax - bb.ymin + 1) * crossing
+             * chany_place_cost_fac[bb.xmax][bb.xmin - 1];
 
     return (ncost);
 }
 
 static double get_net_layer_cost(ClusterNetId /* net_id */,
-                                 const std::vector<t_2D_bb>& bbptr,
+                                 const std::vector<t_2D_bb>& bb,
                                  const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
@@ -1440,17 +1440,17 @@ static double get_net_layer_cost(ClusterNetId /* net_id */,
         /* Cost = wire length along channel * cross_count / average      *
          * channel capacity.   Do this for x, then y direction and add.  */
 
-        ncost += (bbptr[layer_num].xmax - bbptr[layer_num].xmin + 1) * crossing
-                 * chanx_place_cost_fac[bbptr[layer_num].ymax][bbptr[layer_num].ymin - 1];
+        ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * crossing
+                 * chanx_place_cost_fac[bb[layer_num].ymax][bb[layer_num].ymin - 1];
 
-        ncost += (bbptr[layer_num].ymax - bbptr[layer_num].ymin + 1) * crossing
-                 * chany_place_cost_fac[bbptr[layer_num].xmax][bbptr[layer_num].xmin - 1];
+        ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * crossing
+                 * chany_place_cost_fac[bb[layer_num].xmax][bb[layer_num].xmin - 1];
     }
 
     return (ncost);
 }
 
-static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bbptr) {
+static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
      * its coordinate bounding box.                                         */
 
@@ -1467,15 +1467,15 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bbptr
     /* Cost = wire length along channel * cross_count / average      *
      * channel capacity.   Do this for x, then y direction and add.  */
 
-    ncost = (bbptr.xmax - bbptr.xmin + 1) * crossing;
+    ncost = (bb.xmax - bb.xmin + 1) * crossing;
 
-    ncost += (bbptr.ymax - bbptr.ymin + 1) * crossing;
+    ncost += (bb.ymax - bb.ymin + 1) * crossing;
 
     return (ncost);
 }
 
 static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
-                                                const std::vector<t_2D_bb>& bbptr,
+                                                const std::vector<t_2D_bb>& bb,
                                                 const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
      * its coordinate bounding box.                                         */
@@ -1498,9 +1498,9 @@ static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
         /* Cost = wire length along channel * cross_count / average      *
          * channel capacity.   Do this for x, then y direction and add.  */
 
-        ncost += (bbptr[layer_num].xmax - bbptr[layer_num].xmin + 1) * crossing;
+        ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * crossing;
 
-        ncost += (bbptr[layer_num].ymax - bbptr[layer_num].ymin + 1) * crossing;
+        ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * crossing;
     }
 
     return (ncost);
