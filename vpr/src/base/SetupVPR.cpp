@@ -433,6 +433,7 @@ static void SetupRoutingArch(const t_arch& Arch,
     RoutingArch->tileable = Arch.tileable;
     RoutingArch->shrink_boundary = Arch.shrink_boundary;
     RoutingArch->through_channel = Arch.through_channel;
+    RoutingArch->opin2all_sides = Arch.opin2all_sides;
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {

@@ -1363,6 +1363,7 @@ struct t_det_routing_arch {
     bool tileable;
     bool shrink_boundary;
     bool through_channel;
+    bool opin2all_sides;
 
     short global_route_switch;
     short delayless_switch;
