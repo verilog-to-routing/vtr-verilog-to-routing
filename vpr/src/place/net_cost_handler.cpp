@@ -60,10 +60,24 @@ static vtr::vector<ClusterNetId, double> net_cost, proposed_net_cost;
 static vtr::vector<ClusterNetId, char> bb_updated_before;
 
 /* The following arrays are used by the try_swap function for speed.   */
-/* [0...cluster_ctx.clb_nlist.nets().size()-1] */
+
+/**
+ * The wire length estimation is based on the bounding box of the net. In the case of the 2D architecture,
+ * we use a 3D BB with the z-dimension (layer) set to 1. In the case of 3D architecture, there 2 types of bounding box:
+ * 3D and per-layer. The type is determined at the beginning of the placement and stored in the placement context.
+ *
+ *
+ * If the bonding box is of the type 3D, ts_bb_coord_new and ts_bb_edge_new are used. Otherwise, layer_ts_bb_edge_new and
+ * layer_ts_bb_coord_new are used.
+ */
+
+/* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
 static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
+/* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers] -> 2D bonding box on a layer*/
 static vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_edge_new, layer_ts_bb_coord_new;
+/* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers] -> number of sink pins on a layer*/
 static vtr::Matrix<int> ts_layer_sink_pin_count;
+/* [0...num_afftected_nets] -> net_id of the affected nets */
 static std::vector<ClusterNetId> ts_nets_to_update;
 
 static bool driven_by_moved_block(const AtomNetId net,
