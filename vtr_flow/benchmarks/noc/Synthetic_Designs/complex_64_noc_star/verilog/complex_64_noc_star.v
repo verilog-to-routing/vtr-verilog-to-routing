@@ -476,7 +476,6 @@ wire [noc_dw - 1: 0] si_data_out_64;
 wire si_valid_out_64;
 
 //traffic processor data - middle routers
-<<<<<<< HEAD
 wire [noc_dw - 1: 0] tp_data_out_2 /* synthesis keep */;
 wire tp_valid_out_2 /* synthesis keep */; 
 
