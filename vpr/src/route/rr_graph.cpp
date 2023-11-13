@@ -837,7 +837,7 @@ void create_rr_graph(const t_graph_type graph_type,
                                                &det_routing_arch->wire_to_rr_ipin_switch,
                                                det_routing_arch->shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
                                                router_opts.trim_obs_channels || det_routing_arch->through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
-                                               det_routing_arch->opin2all_sides,                                  /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
+                                               det_routing_arch->opin2all_sides,                                   /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
                                                false,                                                              /* Do not allow passing tracks to be wired to the same routing channels */
                                                Warnings);
             }
