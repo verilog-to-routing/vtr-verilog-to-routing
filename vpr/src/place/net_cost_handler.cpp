@@ -118,13 +118,13 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
                                         int& num_affected_nets,
                                         bool is_src_moving);
 
-static void get_non_updateable_bb(ClusterNetId net_id,
+static void get_non_updatable_bb(ClusterNetId net_id,
                                   t_bb& bb_coord_new,
                                   vtr::NdMatrixProxy<int, 1> num_sink_pin_layer);
 
-static void get_non_updateable_layer_bb(ClusterNetId net_id,
-                                        std::vector<t_2D_bb>& bb_coord_new,
-                                        vtr::NdMatrixProxy<int, 1> num_sink_layer);
+static void get_non_updatable_layer_bb(ClusterNetId net_id,
+                                       std::vector<t_2D_bb>& bb_coord_new,
+                                       vtr::NdMatrixProxy<int, 1> num_sink_layer);
 
 static void update_bb(ClusterNetId net_id,
                       t_bb& bb_edge_new,
@@ -260,9 +260,9 @@ static void update_net_bb(const ClusterNetId& net,
         //For small nets brute-force bounding box update is faster
 
         if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
-            get_non_updateable_bb(net,
-                                  ts_bb_coord_new[net],
-                                  ts_layer_sink_pin_count[size_t(net)]);
+            get_non_updatable_bb(net,
+                                 ts_bb_coord_new[net],
+                                 ts_layer_sink_pin_count[size_t(net)]);
         }
     } else {
         //For large nets, update bounding box incrementally
@@ -298,9 +298,9 @@ static void update_net_layer_bb(const ClusterNetId& net,
         //For small nets brute-force bounding box update is faster
 
         if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
-            get_non_updateable_layer_bb(net,
-                                        layer_ts_bb_coord_new[net],
-                                        ts_layer_sink_pin_count[size_t(net)]);
+            get_non_updatable_layer_bb(net,
+                                       layer_ts_bb_coord_new[net],
+                                       ts_layer_sink_pin_count[size_t(net)]);
         }
     } else {
         //For large nets, update bounding box incrementally
@@ -487,9 +487,9 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_non_updateable_bb(ClusterNetId net_id,
-                                  t_bb& bb_coord_new,
-                                  vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
+static void get_non_updatable_bb(ClusterNetId net_id,
+                                 t_bb& bb_coord_new,
+                                 vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
     int xmax, ymax, xmin, ymin, x, y, layer;
@@ -554,9 +554,9 @@ static void get_non_updateable_bb(ClusterNetId net_id,
     bb_coord_new.ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 }
 
-static void get_non_updateable_layer_bb(ClusterNetId net_id,
-                                        std::vector<t_2D_bb>& bb_coord_new,
-                                        vtr::NdMatrixProxy<int, 1> num_sink_layer) {
+static void get_non_updatable_layer_bb(ClusterNetId net_id,
+                                       std::vector<t_2D_bb>& bb_coord_new,
+                                       vtr::NdMatrixProxy<int, 1> num_sink_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1750,9 +1750,9 @@ double comp_bb_cost(e_cost_methods method) {
                                     place_move_ctx.bb_num_on_edges[net_id],
                                     place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             } else {
-                get_non_updateable_bb(net_id,
-                                      place_move_ctx.bb_coords[net_id],
-                                      place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+                get_non_updatable_bb(net_id,
+                                     place_move_ctx.bb_coords[net_id],
+                                     place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
 
             net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
@@ -1787,9 +1787,9 @@ double comp_layer_bb_cost(e_cost_methods method) {
                                           place_move_ctx.layer_bb_coords[net_id],
                                           place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             } else {
-                get_non_updateable_layer_bb(net_id,
-                                            place_move_ctx.layer_bb_coords[net_id],
-                                            place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+                get_non_updatable_layer_bb(net_id,
+                                           place_move_ctx.layer_bb_coords[net_id],
+                                           place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
 
             net_cost[net_id] = get_net_layer_cost(net_id,
