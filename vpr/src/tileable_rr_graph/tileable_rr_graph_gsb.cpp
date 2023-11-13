@@ -1329,6 +1329,7 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             VTR_ASSERT(opin_Fc_out.size() == segment_inf.size());
 
             /* Build track2ipin_map for this IPIN */
+            opin2track_map[side][inode].resize(rr_gsb.get_num_sides());
             if (opin2all_sides) {
                 for (size_t track_side = 0; side < rr_gsb.get_num_sides(); ++side) {
                     SideManager track_side_mgr(track_side);
