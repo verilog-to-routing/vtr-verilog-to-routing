@@ -60,14 +60,14 @@ extern void  Abc_PlaceUpdate( Vec_Ptr_t * vAddedCells, Vec_Ptr_t * vUpdatedNets 
 ***********************************************************************/
 int Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerbose, int fVeryVerbose, int fPlaceEnable )
 {
-    extern void           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
+    extern int           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
     ProgressBar * pProgress;
     Cut_Man_t * pManCut;
     Rwr_Man_t * pManRwr;
     Abc_Obj_t * pNode;
 //    Vec_Ptr_t * vAddedCells = NULL, * vUpdatedNets = NULL;
     Dec_Graph_t * pGraph;
-    int i, nNodes, nGain, fCompl;
+    int i, nNodes, nGain, fCompl, RetValue = 1;
     abctime clk, clkStart = Abc_Clock();
 
     assert( Abc_NtkIsStrash(pNtk) );
@@ -138,7 +138,11 @@ Rwr_ManAddTimeCuts( pManRwr, Abc_Clock() - clk );
         // complement the FF if needed
         if ( fCompl ) Dec_GraphComplement( pGraph );
 clk = Abc_Clock();
-        Dec_GraphUpdateNetwork( pNode, pGraph, fUpdateLevel, nGain );
+        if ( !Dec_GraphUpdateNetwork( pNode, pGraph, fUpdateLevel, nGain ) )
+        {
+            RetValue = -1;
+            break;
+        }
 Rwr_ManAddTimeUpdate( pManRwr, Abc_Clock() - clk );
         if ( fCompl ) Dec_GraphComplement( pGraph );
 
@@ -175,17 +179,20 @@ Rwr_ManAddTimeTotal( pManRwr, Abc_Clock() - clkStart );
     }
 //    Abc_AigCheckFaninOrder( pNtk->pManFunc );
     // fix the levels
-    if ( fUpdateLevel )
-        Abc_NtkStopReverseLevels( pNtk );
-    else
-        Abc_NtkLevel( pNtk );
-    // check
-    if ( !Abc_NtkCheck( pNtk ) )
+    if ( RetValue >= 0 )
     {
-        printf( "Abc_NtkRewrite: The network check has failed.\n" );
-        return 0;
+        if ( fUpdateLevel )
+            Abc_NtkStopReverseLevels( pNtk );
+        else
+            Abc_NtkLevel( pNtk );
+        // check
+        if ( !Abc_NtkCheck( pNtk ) )
+        {
+            printf( "Abc_NtkRewrite: The network check has failed.\n" );
+            return 0;
+        }
     }
-    return 1;
+    return RetValue;
 }
 
 

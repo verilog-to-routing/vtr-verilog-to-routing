@@ -76,7 +76,7 @@ static inline int      Agi_ObjIsRo( Agi_Man_t * p, int i )                 { ret
 static inline int      Agi_ObjIsPo( Agi_Man_t * p, int i )                 { return (p->pObjs[i] & AGI_PI) == AGI_PO;                } 
 static inline int      Agi_ObjIsRi( Agi_Man_t * p, int i )                 { return (p->pObjs[i] & AGI_PI) == AGI_RI;                } 
 static inline int      Agi_ObjIsCi( Agi_Man_t * p, int i )                 { return (p->pObjs[i] & AGI_RO) == AGI_RO;                } 
-static inline int      Agi_ObjIsCo( Agi_Man_t * p, int i )                 { return (p->pObjs[i] & AGI_RO) == AGI_PO;                } 
+static inline int      Agi_ObjIsCo( Agi_Man_t * p, int i )                 { return (p->pObjs[i] & AGI_PO) == AGI_PO;                } 
 static inline int      Agi_ObjIsNode( Agi_Man_t * p, int i )               { return p->pObjs[i] < AGI_C0;                            } 
 static inline int      Agi_ObjIsBuf( Agi_Man_t * p, int i )                { return Agi_ObjLit0(p, i) == Agi_ObjLit1(p, i);          } 
 static inline int      Agi_ObjIsAnd( Agi_Man_t * p, int i )                { return Agi_ObjIsNode(p, i) && Agi_ObjLit0(p, i) < Agi_ObjLit1(p, i);  } 

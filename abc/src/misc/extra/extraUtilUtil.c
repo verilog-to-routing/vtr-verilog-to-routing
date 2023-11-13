@@ -97,8 +97,8 @@ void Extra_UtilGetoptReset()
 ***********************************************************************/
 int Extra_UtilGetopt( int argc, char *argv[], const char *optstring )
 {
-    register int c;
-    register const char *place;
+    int c;
+    const char *place;
 
     globalUtilOptarg = NULL;
 
@@ -280,7 +280,7 @@ char * Extra_UtilFileSearch(char *file, char *path, char *mode)
 
     save_path = path = Extra_UtilStrsav(path);
     quit = 0;
-    do {
+    for (;;) {
     cp = strchr(path, ':');
     if (cp != 0) {
         *cp = '\0';
@@ -304,8 +304,12 @@ char * Extra_UtilFileSearch(char *file, char *path, char *mode)
         return filename;
     }
     ABC_FREE(filename);
-    path = ++cp;
-    } while (! quit); 
+    if (quit) {
+        break;
+    } else {
+       path = ++cp;
+    }
+    }
 
     ABC_FREE(save_path);
     return 0;
@@ -390,9 +394,17 @@ ABC_NAMESPACE_IMPL_START
 
 double Extra_CpuTimeDouble()
 {
+/*    
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);
     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; 
+*/
+  struct timespec ts;
+  if ( clock_gettime(CLOCK_MONOTONIC, &ts) < 0 ) 
+      return (double)-1;
+  double res = ((double) ts.tv_sec);
+  res += ((double) ts.tv_nsec) / 1000000000;
+  return res;    
 }
 #endif
 

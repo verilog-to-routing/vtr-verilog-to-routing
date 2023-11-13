@@ -314,7 +314,7 @@ void Res_SimSetDerivedBytes( Res_Sim_t * p, int fUseWalk )
             if ( i == p->nTruePis )
                 break;
             pInfo = (unsigned char *)Vec_PtrEntry( p->vPats, pObj->Id );
-            memset( pInfo + nPats, 0, p->nBytesIn - nPats );
+            memset( pInfo + nPats, 0, (size_t)(p->nBytesIn - nPats) );
         }
     }
 /*

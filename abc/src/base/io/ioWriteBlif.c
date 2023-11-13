@@ -948,7 +948,7 @@ void Io_NtkWriteNodeInt( FILE * pFile, Abc_Obj_t * pNode, Vec_Int_t * vCover )
                     fprintf( pFile, " %s_cascade", Abc_ObjName(Abc_ObjFanout0(pNode)) );
                 else
                     fprintf( pFile, " %s", Abc_ObjName(Abc_ObjFanin(pNode,pVars[c][i])) );
-                fprintf( pFile, " %s%s\n", Abc_ObjName(Abc_ObjFanout0(pNode)), c? "" : "_cascade" );
+            fprintf( pFile, " %s%s\n", Abc_ObjName(Abc_ObjFanout0(pNode)), c? "" : "_cascade" );
 
             // write SOP
             pSop = Io_NtkDeriveSop( (Mem_Flex_t *)Abc_ObjNtk(pNode)->pManFunc, 

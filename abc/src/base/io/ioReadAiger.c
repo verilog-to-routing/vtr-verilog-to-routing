@@ -153,7 +153,7 @@ static char * Ioa_ReadLoadFileBz2Aig( char * pFileName, int * pFileSize )
         p = pContents = ABC_ALLOC( char, nFileSize + 10 );
         buf = bufHead;
         do {
-            memcpy(p+nBytes,buf->buf,buf->nBuf);
+            memcpy(p+nBytes,buf->buf,(size_t)buf->nBuf);
             nBytes += buf->nBuf;
 //        } while((buf = buf->next));
             pNext = buf->next;
@@ -480,6 +480,7 @@ Abc_Ntk_t * Io_ReadAiger( char * pFileName, int fCheck )
     if ( pCur < pContents + nFileSize && *pCur != 'c' )
     {
         int Counter = 0;
+        int fNodeNames = 0;
         while ( pCur < pContents + nFileSize && *pCur != 'c' )
         {
             // get the terminal type
@@ -490,6 +491,12 @@ Abc_Ntk_t * Io_ReadAiger( char * pFileName, int fCheck )
                 vTerms = pNtkNew->vBoxes;
             else if ( *pCur == 'o' || *pCur == 'b' || *pCur == 'c' || *pCur == 'j' || *pCur == 'f' )
                 vTerms = pNtkNew->vPos;
+            else if ( *pCur == 'n' )
+            {
+                fNodeNames++;
+                while ( *pCur++ != '\n' );
+                continue;
+            }
             else
             {
 //                fprintf( stdout, "Wrong terminal type.\n" );
@@ -543,6 +550,8 @@ Abc_Ntk_t * Io_ReadAiger( char * pFileName, int fCheck )
         }
 //        if ( Counter )
 //            printf( "Io_ReadAiger(): Added %d default names for nameless I/O/register objects.\n", Counter );
+        if ( fNodeNames )
+            printf( "Io_ReadAiger(): The names of internal nodes are not supported. Ignoring %d node names.\n", fNodeNames );
     }
     else
     {

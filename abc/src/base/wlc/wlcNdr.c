@@ -69,6 +69,9 @@ int Ndr_TypeNdr2Wlc( int Type )
     if ( Type == ABC_OPER_LOGIC_AND )     return WLC_OBJ_LOGIC_AND;     // 28: logic AND
     if ( Type == ABC_OPER_LOGIC_OR )      return WLC_OBJ_LOGIC_OR;      // 29: logic OR
     if ( Type == ABC_OPER_LOGIC_XOR )     return WLC_OBJ_LOGIC_XOR;     // 30: logic XOR
+    if ( Type == ABC_OPER_SEL_NMUX )      return WLC_OBJ_MUX;           // 08: multiplexer
+    if ( Type == ABC_OPER_SEL_SEL )       return WLC_OBJ_SEL;           // 57: selector
+    if ( Type == ABC_OPER_SEL_DEC )       return WLC_OBJ_DEC;           // 58: decoder
     if ( Type == ABC_OPER_COMP_EQU )      return WLC_OBJ_COMP_EQU;      // 31: compare equal
     if ( Type == ABC_OPER_COMP_NOTEQU )   return WLC_OBJ_COMP_NOTEQU;   // 32: compare not equal
     if ( Type == ABC_OPER_COMP_LESS )     return WLC_OBJ_COMP_LESS;     // 33: compare less
@@ -91,6 +94,13 @@ int Ndr_TypeNdr2Wlc( int Type )
     if ( Type == ABC_OPER_ARI_MIN )       return WLC_OBJ_ARI_MINUS;     // 50: arithmetic minus
     if ( Type == ABC_OPER_ARI_SQRT )      return WLC_OBJ_ARI_SQRT;      // 51: integer square root
     if ( Type == ABC_OPER_ARI_SQUARE )    return WLC_OBJ_ARI_SQUARE;    // 52: integer square
+    if ( Type == ABC_OPER_ARI_ADDSUB )    return WLC_OBJ_ARI_ADDSUB;    // 56: adder-subtractor
+    if ( Type == ABC_OPER_ARI_SMUL )      return WLC_OBJ_ARI_MULTI;     // 45: signed multiplier
+    if ( Type == ABC_OPER_DFF )           return WLC_OBJ_FO;            // 03: flop
+    if ( Type == ABC_OPER_DFFRSE )        return WLC_OBJ_FF;            // 05: flop
+    if ( Type == ABC_OPER_RAMR )          return WLC_OBJ_READ;          // 54: read port
+    if ( Type == ABC_OPER_RAMW )          return WLC_OBJ_WRITE;         // 55: write port
+    if ( Type == ABC_OPER_LUT )           return WLC_OBJ_LUT;           // 59: LUT
     return -1;
 }
 int Ndr_TypeWlc2Ndr( int Type )
@@ -120,6 +130,8 @@ int Ndr_TypeWlc2Ndr( int Type )
     if ( Type == WLC_OBJ_LOGIC_AND )      return ABC_OPER_LOGIC_AND;    // 28: logic AND
     if ( Type == WLC_OBJ_LOGIC_OR )       return ABC_OPER_LOGIC_OR;     // 29: logic OR
     if ( Type == WLC_OBJ_LOGIC_XOR )      return ABC_OPER_LOGIC_XOR;    // 30: logic XOR
+    if ( Type == WLC_OBJ_SEL )            return ABC_OPER_SEL_SEL;      // 57: selector
+    if ( Type == WLC_OBJ_DEC )            return ABC_OPER_SEL_DEC;      // 58: decoder
     if ( Type == WLC_OBJ_COMP_EQU )       return ABC_OPER_COMP_EQU;     // 31: compare equal
     if ( Type == WLC_OBJ_COMP_NOTEQU )    return ABC_OPER_COMP_NOTEQU;  // 32: compare not equal
     if ( Type == WLC_OBJ_COMP_LESS )      return ABC_OPER_COMP_LESS;    // 33: compare less
@@ -142,6 +154,13 @@ int Ndr_TypeWlc2Ndr( int Type )
     if ( Type == WLC_OBJ_ARI_MINUS )      return ABC_OPER_ARI_MIN;      // 50: arithmetic minus
     if ( Type == WLC_OBJ_ARI_SQRT )       return ABC_OPER_ARI_SQRT;     // 51: integer square root
     if ( Type == WLC_OBJ_ARI_SQUARE )     return ABC_OPER_ARI_SQUARE;   // 52: integer square
+    if ( Type == WLC_OBJ_ARI_ADDSUB )     return ABC_OPER_ARI_ADDSUB;   // 56: adder-subtractor
+    if ( Type == WLC_OBJ_ARI_MULTI )      return ABC_OPER_ARI_SMUL;     // 45: signed multiplier
+    if ( Type == WLC_OBJ_FO )             return ABC_OPER_DFFRSE;       // 03: flop
+    if ( Type == WLC_OBJ_FF )             return ABC_OPER_DFFRSE;       // 05: flop
+    if ( Type == WLC_OBJ_READ )           return ABC_OPER_RAMR;         // 54: read port
+    if ( Type == WLC_OBJ_WRITE )          return ABC_OPER_RAMW;         // 55: write port
+    if ( Type == WLC_OBJ_LUT )            return ABC_OPER_LUT;          // 59: LUT
     return -1;
 }
 
@@ -159,8 +178,8 @@ int Ndr_TypeWlc2Ndr( int Type )
 ***********************************************************************/
 char * Ndr_ObjWriteConstant( unsigned * pBits, int nBits )
 {
-    static char Buffer[1000]; int i, Len;
-    assert( nBits + 10 < 1000 );
+    static char Buffer[10000]; int i, Len;
+    assert( nBits + 10 < 10000 );
     sprintf( Buffer, "%d\'b", nBits );
     Len = strlen(Buffer);
     for ( i = nBits-1; i >= 0; i-- )
@@ -171,7 +190,7 @@ char * Ndr_ObjWriteConstant( unsigned * pBits, int nBits )
 void * Wlc_NtkToNdr( Wlc_Ntk_t * pNtk )
 {
     Wlc_Obj_t * pObj; 
-    int i, k, iFanin, iOutId;
+    int i, k, iFanin, iOutId, Type;
     // create a new module
     void * pDesign = Ndr_Create( 1 );
     int ModId = Ndr_AddModule( pDesign, 1 );
@@ -188,14 +207,27 @@ void * Wlc_NtkToNdr( Wlc_Ntk_t * pNtk )
     Wlc_NtkForEachObj( pNtk, pObj, iOutId ) 
     {
         char * pFunction = NULL;
-        if ( Wlc_ObjIsPi(pObj) )
+        if ( Wlc_ObjIsPi(pObj) || pObj->Type == 0 )
             continue;
         Vec_IntClear( vFanins );
         Wlc_ObjForEachFanin( pObj, iFanin, k )
             Vec_IntPush( vFanins, iFanin );
         if ( pObj->Type == WLC_OBJ_CONST )
             pFunction = Ndr_ObjWriteConstant( (unsigned *)Wlc_ObjFanins(pObj), Wlc_ObjRange(pObj) );
-        Ndr_AddObject( pDesign, ModId, Ndr_TypeWlc2Ndr(pObj->Type), 0,   
+        if ( pObj->Type == WLC_OBJ_MUX && Wlc_ObjRange(Wlc_ObjFanin0(pNtk, pObj)) > 1 )
+            Type = ABC_OPER_SEL_NMUX;
+        else if ( pObj->Type == WLC_OBJ_FO )
+        {
+            Wlc_Obj_t * pFi = Wlc_ObjFo2Fi( pNtk, pObj );
+            assert( Vec_IntSize(vFanins) == 0 );
+            Vec_IntPush( vFanins, Wlc_ObjId(pNtk, pFi) );
+            Vec_IntFillExtra( vFanins, 7, 0 );
+            Type = ABC_OPER_DFFRSE;
+        }
+        else
+            Type = Ndr_TypeWlc2Ndr(pObj->Type);
+        assert( Type > 0 );
+        Ndr_AddObject( pDesign, ModId, Type, 0,   
             pObj->End, pObj->Beg, pObj->Signed,   
             Vec_IntSize(vFanins), Vec_IntArray(vFanins), 1, &iOutId,  pFunction  ); 
     }
@@ -231,7 +263,7 @@ void Wlc_NtkToNdrTest( Wlc_Ntk_t * pNtk )
         ppNames[i] = Wlc_ObjName(pNtk, i);
 
     // verify by writing Verilog
-    Ndr_WriteVerilog( NULL, pDesign, ppNames );
+    Ndr_WriteVerilog( NULL, pDesign, ppNames, 0 );
     Ndr_Write( "test.ndr", pDesign );
 
     // cleanup
@@ -323,9 +355,10 @@ void Wlc_NtkCheckIntegrity( void * pData )
     }
     Ndr_ModForEachObj( p, Mod, Obj )
     {
+        int Type = Ndr_ObjReadBody( p, Obj, NDR_OPERTYPE );
         int i, * pArray, nArray  = Ndr_ObjReadArray( p, Obj, NDR_INPUT, &pArray );
         for ( i = 0; i < nArray; i++ )
-            if ( Vec_IntGetEntry(vMap, pArray[i]) == 0 )
+            if ( Vec_IntGetEntry(vMap, pArray[i]) == 0 && !(Type == ABC_OPER_DFFRSE && (i >= 5 && i <= 7)) )
                 printf( "Input name %d appearing as fanin %d of obj %d is not used as output name in any object.\n", pArray[i], i, Obj );
     }
     Vec_IntFree( vMap );
@@ -334,9 +367,12 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
 {
     Ndr_Data_t * p = (Ndr_Data_t *)pData;  
     Wlc_Obj_t * pObj; Vec_Int_t * vName2Obj, * vFanins = Vec_IntAlloc( 100 );
-    int Mod = 2, i, k, Obj, * pArray, nDigits, fFound, NameId, NameIdMax;
+    int Mod = 2, i, k, Obj, * pArray, fFound, NameId, NameIdMax;
+    unsigned char nDigits;
+    Vec_Wrd_t * vTruths = NULL; int nTruths[2] = {0};
     Wlc_Ntk_t * pTemp, * pNtk = Wlc_NtkAlloc( "top", Ndr_DataObjNum(p, Mod)+1 );
     Wlc_NtkCheckIntegrity( pData );
+    Vec_IntClear( &pNtk->vFfs );
     //pNtk->pSpec = Abc_UtilStrsav( pFileName );
     // construct network and save name IDs
     Wlc_NtkCleanNameId( pNtk );
@@ -357,6 +393,38 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
         int NameId  = Ndr_ObjReadBody( p, Obj, NDR_OUTPUT );
         Vec_IntClear( vFanins );
         Vec_IntAppend( vFanins, vTemp );
+        if ( Type == ABC_OPER_DFF )
+        {
+            // save init state
+            if ( pNtk->vInits == NULL )
+                pNtk->vInits = Vec_IntAlloc( 100 );
+            if ( Vec_IntSize(vFanins) == 2 )
+                Vec_IntPush( pNtk->vInits, Vec_IntPop(vFanins) );
+            else // assume const0 if init is not given
+                Vec_IntPush( pNtk->vInits, -(End-Beg+1) );
+            // save flop output
+            pObj = Wlc_NtkObj(pNtk, iObj);
+            assert( Wlc_ObjType(pObj) == WLC_OBJ_FO );
+            Wlc_ObjSetNameId( pNtk, iObj, NameId );
+            Vec_IntPush( &pNtk->vFfs, NameId );
+            // save flop input
+            assert( Vec_IntSize(vFanins) == 1 );
+            Vec_IntPush( &pNtk->vFfs, Vec_IntEntry(vFanins, 0) );
+            continue;
+        }
+        if ( Type == ABC_OPER_DFFRSE )
+            Vec_IntPush( &pNtk->vFfs2, iObj );
+        if ( Type == ABC_OPER_LUT )
+        {
+            word * pTruth;
+            if ( vTruths == NULL )
+                vTruths = Vec_WrdStart( 1000 );
+            if ( NameId >= Vec_WrdSize(vTruths) )
+                Vec_WrdFillExtra( vTruths, 2*NameId, 0 );
+            pTruth = (word *)Ndr_ObjReadBodyP(p, Obj, NDR_FUNCTION);
+            Vec_WrdWriteEntry( vTruths, NameId, pTruth ? *pTruth : 0 );
+            nTruths[ pTruth != NULL ]++;
+        }
         if ( Type == ABC_OPER_SLICE )
             Vec_IntPushTwo( vFanins, End, Beg );
         else if ( Type == ABC_OPER_CONST )
@@ -365,7 +433,16 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
             ABC_SWAP( int, Vec_IntEntryP(vFanins, 1)[0], Vec_IntEntryP(vFanins, 2)[0] );
         Wlc_ObjAddFanins( pNtk, Wlc_NtkObj(pNtk, iObj), vFanins );
         Wlc_ObjSetNameId( pNtk, iObj, NameId );
+        if ( Type == ABC_OPER_ARI_SMUL )
+        {
+            pObj = Wlc_NtkObj(pNtk, iObj);
+            assert( Wlc_ObjFaninNum(pObj) == 2 );
+            Wlc_ObjFanin0(pNtk, pObj)->Signed = 1;
+            Wlc_ObjFanin1(pNtk, pObj)->Signed = 1;
+        }
     }
+    if ( nTruths[0] )
+        printf( "Warning! The number of LUTs without function is %d (out of %d).\n", nTruths[0], nTruths[0]+nTruths[1] );
     // mark primary outputs
     Ndr_ModForEachPo( p, Mod, Obj )
     {
@@ -388,21 +465,63 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
         for ( k = 0; k < Wlc_ObjFaninNum(pObj); k++ )
             pFanins[k] = Vec_IntEntry(vName2Obj, pFanins[k]);
     }
+    if ( pNtk->vInits )
+    {
+        Vec_IntForEachEntry( &pNtk->vFfs, NameId, i )
+            Vec_IntWriteEntry( &pNtk->vFfs, i, Vec_IntEntry(vName2Obj, NameId) );
+        Vec_IntForEachEntry( pNtk->vInits, NameId, i )
+            if ( NameId > 0 )
+                Vec_IntWriteEntry( pNtk->vInits, i, Vec_IntEntry(vName2Obj, NameId) );
+        // move FO/FI to be part of CI/CO
+        assert( (Vec_IntSize(&pNtk->vFfs) & 1) == 0 );
+        assert( Vec_IntSize(&pNtk->vFfs) == 2 * Vec_IntSize(pNtk->vInits) );
+        Wlc_NtkForEachFf( pNtk, pObj, i )
+            if ( i & 1 )
+                Wlc_ObjSetCo( pNtk, pObj, 1 );
+            //else
+            //    Wlc_ObjSetCi( pNtk, pObj );
+        Vec_IntClear( &pNtk->vFfs );
+        // convert init values into binary string
+        //Vec_IntPrint( &p->pNtk->vInits );
+        pNtk->pInits = Wlc_PrsConvertInitValues( pNtk );
+        //printf( "%s", p->pNtk->pInits );
+    }
     Vec_IntFree(vName2Obj);
     // create fake object names
     NameIdMax = Vec_IntFindMax(&pNtk->vNameIds);
-    nDigits = Abc_Base10Log( NameIdMax+1 );
+    nDigits = (unsigned char)Abc_Base10Log( NameIdMax+1 );
     pNtk->pManName = Abc_NamStart( NameIdMax+1, 10 );
     for ( i = 1; i <= NameIdMax; i++ )
     {
-        char pName[20]; sprintf( pName, "n%0*d", nDigits, i );
+        char pName[1000]; sprintf( pName, "s%0*d", nDigits, i );
         NameId = Abc_NamStrFindOrAdd( pNtk->pManName, pName, &fFound );
         assert( !fFound && i == NameId );
     }
+    //Ndr_NtkPrintNodes( pNtk );
+    //Wlc_WriteVer( pNtk, "temp_ndr.v", 0, 0 );
     // derive topological order
     pNtk = Wlc_NtkDupDfs( pTemp = pNtk, 0, 1 );
     Wlc_NtkFree( pTemp );
+    // copy truth tables
+    if ( vTruths )
+    {
+        pNtk->vLutTruths = Vec_WrdStart( Wlc_NtkObjNumMax(pNtk) );
+        Wlc_NtkForEachObj( pNtk, pObj, i )
+        {
+            int iObj   = Wlc_ObjId(pNtk, pObj);
+            int NameId = Wlc_ObjNameId(pNtk, iObj);
+            word Truth;
+            if ( pObj->Type != WLC_OBJ_LUT || NameId == 0 )
+                continue;
+            Truth = Vec_WrdEntry(vTruths, NameId);
+            assert( sizeof(void *) == 8 || Wlc_ObjFaninNum(pObj) < 6 );
+            Vec_WrdWriteEntry( pNtk->vLutTruths, iObj, Truth );
+        }
+        Vec_WrdFreeP( &vTruths );
+    }
     //Ndr_NtkPrintNodes( pNtk );
+    pNtk->fMemPorts = 1;          // the network contains memory ports
+    pNtk->fEasyFfs = 1;           // the network contains simple flops
     return pNtk;
 }
 
@@ -417,13 +536,27 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
   SeeAlso     []
 
 ***********************************************************************/
+void Ndr_DumpNdr( void * pDesign )
+{
+    int i;
+    char ** pNames = ABC_CALLOC( char *, 10000 );
+    for ( i = 0; i < 10000; i++ )
+    {
+        char Buffer[100];
+        sprintf( Buffer, "s%d", i );
+        pNames[i] = Abc_UtilStrsav( Buffer );
+    }
+    Ndr_WriteVerilog( "temp.v", pDesign, pNames, 0 );
+}
 Wlc_Ntk_t * Wlc_ReadNdr( char * pFileName )
 {
     void * pData = Ndr_Read( pFileName );
     Wlc_Ntk_t * pNtk = Wlc_NtkFromNdr( pData );
+    //Ndr_DumpNdr( pData );
     //char * ppNames[10] = { NULL, "a", "b", "c", "d", "e", "f", "g", "h", "i" };
-    //Ndr_WriteVerilog( NULL, pData, ppNames );
-    Ndr_Delete( pData );
+    //Ndr_WriteVerilog( NULL, pData, ppNames, 0 );
+    //Ndr_Delete( pData );
+    Abc_FrameInputNdr( Abc_FrameGetGlobalFrame(), pData );
     return pNtk;
 }
 void Wlc_ReadNdrTest()

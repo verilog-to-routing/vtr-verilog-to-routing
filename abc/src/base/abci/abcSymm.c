@@ -20,6 +20,8 @@
 
 #include "base/abc/abc.h"
 #include "opt/sim/sim.h"
+#include "opt/dau/dau.h"
+#include "misc/util/utilTruth.h"
 
 #ifdef ABC_USE_CUDD
 #include "bdd/extrab/extraBdd.h"
@@ -99,7 +101,7 @@ void Abc_NtkSymmetriesUsingBdds( Abc_Ntk_t * pNtk, int fNaive, int fReorder, int
 
     // compute the global functions
 clk = Abc_Clock();
-    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, fReorder, fVerbose );
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, fReorder, 0, fVerbose );
     printf( "Shared BDD size = %d nodes.\n", Abc_NtkSizeOfGlobalBdds(pNtk) ); 
     Cudd_AutodynDisable( dd );
     if ( !fGarbCollect )
@@ -236,6 +238,110 @@ void Ntk_NetworkSymmsPrint( Abc_Ntk_t * pNtk, Extra_SymmInfo_t * pSymms )
 void Abc_NtkSymmetries( Abc_Ntk_t * pNtk, int fUseBdds, int fNaive, int fReorder, int fVerbose ) {}
 
 #endif
+
+/**Function*************************************************************
+
+  Synopsis    [Try different permutations.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Ntk_SymTryRandomFlips( word * pFun, word * pNpn, int nVars )
+{
+    int Rand[16] = { 17290, 20203, 19027, 12035, 14687, 10920, 10413, 261, 2072, 16899, 4480, 6192, 3978, 8343, 745, 1370 };
+    int i, nWords = Abc_TtWordNum(nVars);
+    word * pFunT = ABC_CALLOC( word, nWords );
+    Abc_TtCopy( pFunT, pFun, nWords, 0 );
+    for ( i = 0; i < 16; i++ )
+        Abc_TtFlip( pFunT, nWords, Rand[i] % (nVars-1) );
+    assert( Abc_TtCompareRev(pNpn, pFunT, nWords) != 1 );
+    ABC_FREE( pFunT );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Find canonical form of symmetric function.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Ntk_SymFunDeriveNpn( word * pFun, int nVars, int * pComp )
+{
+    int i, nWords = Abc_TtWordNum(nVars);
+    word * pFunB = ABC_CALLOC( word, nWords );
+    Abc_TtCopy( pFunB, pFun, nWords, 1 );
+    if ( Abc_TtCompareRev(pFunB, pFun, nWords) == 1 )
+        Abc_TtCopy( pFunB, pFun, nWords, 0 );
+    for ( i = 0; i < (1 << nVars); i++ )
+    {
+        Abc_TtFlip( pFun, nWords, pComp[i] );
+        if ( Abc_TtCompareRev(pFunB, pFun, nWords) == 1 )
+            Abc_TtCopy( pFunB, pFun, nWords, 0 );
+        Abc_TtNot( pFun, nWords );
+        if ( Abc_TtCompareRev(pFunB, pFun, nWords) == 1 )
+            Abc_TtCopy( pFunB, pFun, nWords, 0 );
+    }
+    //Ntk_SymTryRandomFlips( pFun, pFunB, nVars );
+    Abc_TtCopy( pFun, pFunB, nWords, 0 );
+    ABC_FREE( pFunB );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Generating NPN classes of all symmetric function of N variables.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Ntk_SymFunGenerate( int nVars, int fVerbose )
+{
+    int k, m, Class;
+    int * pComp = Extra_GreyCodeSchedule( nVars );
+    Vec_Mem_t * vTtMem = Vec_MemAlloc( Abc_Truth6WordNum(nVars), 12 );
+    Vec_MemHashAlloc( vTtMem, 10000 );
+    assert( !(nVars < 1 || nVars > 16) );
+    printf( "Generating truth tables of all symmetric functions of %d variables.\n", nVars );
+    for ( m = 0; m < (1 << (nVars+1)); m++ )
+    {
+        word * pFun;
+        char Ones[100] = {0};
+        for ( k = 0; k <= nVars; k++ )
+            Ones[k] = '0' + ((m >> k) & 1);
+        if ( fVerbose )
+            printf( "%s : ", Ones );
+        pFun = Abc_TtSymFunGenerate( Ones, nVars );
+        if ( nVars < 6 )
+            pFun[0] = Abc_Tt6Stretch( pFun[0], nVars );
+        if ( fVerbose )
+            Extra_PrintHex( stdout, (unsigned *)pFun, nVars );
+        Ntk_SymFunDeriveNpn( pFun, nVars, pComp );
+        Class = Vec_MemHashInsert( vTtMem, pFun );
+        if ( fVerbose )
+        {
+            printf( " : NPN " );
+            Extra_PrintHex( stdout, (unsigned *)pFun, nVars );
+            printf( "  Class %3d", Class );
+            printf( "\n" );
+        }
+        ABC_FREE( pFun );
+    }
+    printf( "The number of different NPN classes is %d.\n", Vec_MemEntryNum(vTtMem) );
+    Vec_MemHashFree( vTtMem );
+    Vec_MemFreeP( &vTtMem );
+    ABC_FREE( pComp );
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

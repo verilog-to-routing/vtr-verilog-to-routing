@@ -100,6 +100,131 @@ int Kit_TruthToGia( Gia_Man_t * pMan, unsigned * pTruth, int nVars, Vec_Int_t * 
     Kit_GraphFree( pGraph );
     return iLit;
 }
+int Kit_TruthToGia2( Gia_Man_t * pMan, unsigned * pTruth0, unsigned * pTruth1, int nVars, Vec_Int_t * vMemory, Vec_Int_t * vLeaves, int fHash )
+{
+    int iLit;
+    Kit_Graph_t * pGraph;
+    // transform truth table into the decomposition tree
+    if ( vMemory == NULL )
+    {
+        vMemory = Vec_IntAlloc( 0 );
+        pGraph = Kit_TruthToGraph2( pTruth0, pTruth1, nVars, vMemory );
+        Vec_IntFree( vMemory );
+    }
+    else
+        pGraph = Kit_TruthToGraph2( pTruth0, pTruth1, nVars, vMemory );
+    if ( pGraph == NULL )
+    {
+        printf( "Kit_TruthToGia2(): Converting truth table to AIG has failed for function:\n" );
+        Kit_DsdPrintFromTruth( pTruth0, nVars ); printf( "\n" );
+        Kit_DsdPrintFromTruth( pTruth1, nVars ); printf( "\n" );
+    }
+    // derive the AIG for the decomposition tree
+    iLit = Kit_GraphToGia( pMan, pGraph, vLeaves, fHash );
+    Kit_GraphFree( pGraph );
+    return iLit;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Transforms the decomposition graph into the AIG.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Kit_IsopNodeNum( unsigned * pTruth0, unsigned * pTruth1, int nVars, Vec_Int_t * vMemory )
+{
+    Kit_Graph_t * pGraph;
+    int nNodes;
+    // transform truth table into the decomposition tree
+    if ( vMemory == NULL )
+    {
+        vMemory = Vec_IntAlloc( 0 );
+        pGraph = Kit_TruthToGraph2( pTruth0, pTruth1, nVars, vMemory );
+        Vec_IntFree( vMemory );
+    }
+    else
+        pGraph = Kit_TruthToGraph2( pTruth0, pTruth1, nVars, vMemory );
+    if ( pGraph == NULL )
+    {
+        printf( "Kit_TruthToGia2(): Converting truth table to AIG has failed for function:\n" );
+        Kit_DsdPrintFromTruth( pTruth0, nVars ); printf( "\n" );
+        Kit_DsdPrintFromTruth( pTruth1, nVars ); printf( "\n" );
+    }
+    // derive the AIG for the decomposition tree
+    nNodes = Kit_GraphNodeNum( pGraph );
+    Kit_GraphFree( pGraph );
+    return nNodes;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Transforms the decomposition graph into the AIG.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Kit_IsopResubInt( Kit_Graph_t * pGraph, Vec_Int_t * vRes )
+{
+    int nVars = Kit_GraphLeaveNum(pGraph);
+    assert( nVars >= 0 && nVars <= pGraph->nSize );
+    if ( Kit_GraphIsConst(pGraph) )
+        Vec_IntPush( vRes, Kit_GraphIsConst1(pGraph) );
+    else if ( Kit_GraphIsVar(pGraph) )
+        Vec_IntPush( vRes, 4 + Abc_Var2Lit(Kit_GraphVarInt(pGraph), Kit_GraphIsComplement(pGraph)) );
+    else
+    {
+        Kit_Node_t * pNode = NULL; int i;
+        Kit_GraphForEachNode( pGraph, pNode, i )
+        {
+            Kit_Node_t * pFan0 = Kit_GraphNodeFanin0( pGraph, pNode );
+            Kit_Node_t * pFan1 = Kit_GraphNodeFanin1( pGraph, pNode );
+            int iLit0 = Abc_Var2Lit( Kit_GraphNodeInt(pGraph, pFan0), pNode->eEdge0.fCompl );
+            int iLit1 = Abc_Var2Lit( Kit_GraphNodeInt(pGraph, pFan1), pNode->eEdge1.fCompl );
+            if ( iLit0 > iLit1 )
+                iLit0 ^= iLit1, iLit1 ^= iLit0, iLit0 ^= iLit1;
+            Vec_IntPushTwo( vRes, 4 + iLit0, 4 + iLit1 );
+        }
+        assert( pNode == Kit_GraphNode(pGraph, pGraph->eRoot.Node) );
+        Vec_IntPush( vRes, 4 + Abc_Var2Lit(Kit_GraphNodeInt(pGraph, pNode), Kit_GraphIsComplement(pGraph)) );
+    }
+}
+Vec_Int_t * Kit_IsopResub( unsigned * pTruth0, unsigned * pTruth1, int nVars, Vec_Int_t * vMemory )
+{
+    Vec_Int_t * vRes = NULL;
+    Kit_Graph_t * pGraph;
+    int nNodes;
+    // transform truth table into the decomposition tree
+    if ( vMemory == NULL )
+    {
+        vMemory = Vec_IntAlloc( 0 );
+        pGraph = Kit_TruthToGraph2( pTruth0, pTruth1, nVars, vMemory );
+        Vec_IntFree( vMemory );
+    }
+    else
+        pGraph = Kit_TruthToGraph2( pTruth0, pTruth1, nVars, vMemory );
+    if ( pGraph == NULL )
+    {
+        printf( "Kit_TruthToGia2(): Converting truth table to AIG has failed for function:\n" );
+        Kit_DsdPrintFromTruth( pTruth0, nVars ); printf( "\n" );
+        Kit_DsdPrintFromTruth( pTruth1, nVars ); printf( "\n" );
+    }
+    // derive the AIG for the decomposition tree
+    nNodes = Kit_GraphNodeNum( pGraph );
+    vRes = Vec_IntAlloc( 2*nNodes + 1 );
+    Kit_IsopResubInt( pGraph, vRes );
+    assert( Vec_IntSize(vRes) == 2*nNodes + 1 );
+    Kit_GraphFree( pGraph );
+    return vRes;
+}
 
 /**Function*************************************************************
 

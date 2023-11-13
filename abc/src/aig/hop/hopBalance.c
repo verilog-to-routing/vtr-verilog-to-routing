@@ -246,7 +246,7 @@ Hop_Obj_t * Hop_NodeBalanceBuildSuper( Hop_Man_t * p, Vec_Ptr_t * vSuper, Hop_Ty
     int LeftBound;
     assert( vSuper->nSize > 1 );
     // sort the new nodes by level in the decreasing order
-    Vec_PtrSort( vSuper, (int (*)(void))Hop_NodeCompareLevelsDecrease );
+    Vec_PtrSort( vSuper, (int (*)(const void *, const void *))Hop_NodeCompareLevelsDecrease );
     // balance the nodes
     while ( vSuper->nSize > 1 )
     {

@@ -908,7 +908,7 @@ void Pf_ManPrintStats( Pf_Man_t * p, char * pTitle )
     if ( !p->pPars->fVerbose )
         return;
     printf( "%s :  ", pTitle );
-    printf( "Delay =%8.2f  ",  p->pPars->MapDelay );
+    printf( "Delay =%8.2f  ",  (float)p->pPars->MapDelay );
     printf( "Area =%12.2f  ",  p->pPars->MapArea );
     printf( "Gate =%6d  ",    (int)p->pPars->Area );
     printf( "Inv =%6d  ",     (int)p->nInvs );

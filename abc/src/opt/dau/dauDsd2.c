@@ -524,9 +524,9 @@ word Dua_DsdRangeVars( word * pTruth, int nVars, int iVar, int jVar, int fPerfor
             pCof0 = pCof1 = NULL;
             for ( Mint = 0; Mint < nMints; Mint++, iWord += nWordsF )
             {
-                if ( !pCof0 || !memcmp(pCof0, pTruth + iWord, nBytes) )
+                if ( !pCof0 || !memcmp(pCof0, pTruth + iWord, (size_t)nBytes) )
                     pCof0 = pTruth + iWord;
-                else if ( !pCof1 || !memcmp(pCof1, pTruth + iWord, nBytes) )
+                else if ( !pCof1 || !memcmp(pCof1, pTruth + iWord, (size_t)nBytes) )
                 {
                     pCof1 = pTruth + iWord;
                     MaskOne |= ((word)1) << Mint;
@@ -541,8 +541,8 @@ word Dua_DsdRangeVars( word * pTruth, int nVars, int iVar, int jVar, int fPerfor
             if ( fPerform )
             {
                 assert( pCof0 && pCof1 );
-                memcpy( pTruth + (2 * Part + 0) * nWordsF, pCof0, nBytes );
-                memcpy( pTruth + (2 * Part + 1) * nWordsF, pCof1, nBytes );
+                memcpy( pTruth + (2 * Part + 0) * nWordsF, pCof0, (size_t)nBytes );
+                memcpy( pTruth + (2 * Part + 1) * nWordsF, pCof1, (size_t)nBytes );
             }
         }
     }

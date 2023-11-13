@@ -140,6 +140,9 @@ void Abc_SclTimeNtkPrint( SC_Man * p, int fShowAll, int fPrintPath )
     Abc_Obj_t * pObj, * pPivot = Abc_SclFindCriticalCo( p, &fRise ); 
     float maxDelay = Abc_SclObjTimeOne( p, pPivot, fRise );
     p->ReportDelay = maxDelay;
+    // used for Floyds cycle detection algorithm
+    unsigned int tortoiseIndex = 0;
+    int tortoiseStep = 0;
 
 #ifdef WIN32
     printf( "WireLoad = \"%s\"  ", p->pWLoadUsed ? p->pWLoadUsed->pName : "none" );
@@ -221,10 +224,18 @@ void Abc_SclTimeNtkPrint( SC_Man * p, int fShowAll, int fPrintPath )
             Vec_PtrPush( vPath, pPivot );
             pObj = Abc_ObjFanin0(pPivot);
             while ( pObj )//&& Abc_ObjIsNode(pObj) )
-            {
+            {   
                 Vec_PtrPush( vPath, pObj );
                 pPrev = pObj;
                 pObj = Abc_SclFindMostCriticalFanin( p, &fRise, pObj );
+
+                // move the tortoise at half the speed (trailing)
+                tortoiseStep = (tortoiseStep + 1) % 2;
+                tortoiseIndex += tortoiseStep;
+                // if they see the same element, we are in a loop
+                if(vPath->pArray[tortoiseIndex] == pObj) {
+                    break;
+                }
             }
             Vec_PtrForEachEntryReverse( Abc_Obj_t *, vPath, pObj, i )
             {
@@ -912,4 +923,5 @@ void Abc_SclPrintBuffers( SC_Lib * pLib, Abc_Ntk_t * pNtk, int fVerbose )
 
 
 ABC_NAMESPACE_IMPL_END
+
 

@@ -54,8 +54,9 @@ Lpk_Man_t * Lpk_ManStart( Lpk_Par_t * pPars )
     p->nCutsMax = LPK_CUTS_MAX;
     p->vTtElems = Vec_PtrAllocTruthTables( pPars->nVarsMax );
     p->vTtNodes = Vec_PtrAllocSimInfo( 1024, Abc_TruthWordNum(pPars->nVarsMax) );
-    p->vCover = Vec_IntAlloc( 1 << 12 );
-    p->vLeaves = Vec_PtrAlloc( 32 );
+    p->vCover   = Vec_IntAlloc( 1 << 12 );
+    p->vLeaves  = Vec_PtrAlloc( 32 );
+    p->vTemp    = Vec_PtrAlloc( 32 );
     for ( i = 0; i < 8; i++ )
         p->vSets[i] = Vec_IntAlloc(100);
     p->pDsdMan = Kit_DsdManAlloc( pPars->nVarsMax, 64 );
@@ -112,6 +113,7 @@ void Lpk_ManStop( Lpk_Man_t * p )
     if ( p->vVisited )
         Vec_VecFree( p->vVisited );
     Vec_PtrFree( p->vLeaves );
+    Vec_PtrFree( p->vTemp );
     Vec_IntFree( p->vCover );
     Vec_PtrFree( p->vTtElems );
     Vec_PtrFree( p->vTtNodes );

@@ -152,7 +152,7 @@ Fxu_Matrix * Fxu_CreateMatrix( Fxu_Data_t * pData )
         for ( v = 0; v < nFanins; v++ )
             pOrder[v] = v;
         // reorder the fanins
-        qsort( (void *)pOrder, nFanins, sizeof(int),(int (*)(const void *, const void *))Fxu_CreateMatrixLitCompare);
+        qsort( (void *)pOrder, (size_t)nFanins, sizeof(int),(int (*)(const void *, const void *))Fxu_CreateMatrixLitCompare);
         assert( s_pLits[ pOrder[0] ] < s_pLits[ pOrder[nFanins-1] ] );
         // create the corresponding cubes in the matrix
         pCubeFirst = NULL;

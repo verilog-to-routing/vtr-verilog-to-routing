@@ -781,6 +781,8 @@ void Abc_NtkVerifyReportError( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int * pMode
         Abc_NtkForEachCi( pNtk1, pNode, i )
             pNode->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)i;
         // print the model
+        if ( Vec_PtrSize(vNodes) )
+        {
         pNode = (Abc_Obj_t *)Vec_PtrEntry( vNodes, 0 );
         if ( Abc_ObjIsCi(pNode) )
         {
@@ -789,6 +791,7 @@ void Abc_NtkVerifyReportError( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int * pMode
                 assert( Abc_ObjIsCi(pNode) );
                 printf( " %s=%d", Abc_ObjName(pNode), pModel[(int)(ABC_PTRINT_T)pNode->pCopy] );
             }
+        }
         }
         printf( "\n" );
         Vec_PtrFree( vNodes );

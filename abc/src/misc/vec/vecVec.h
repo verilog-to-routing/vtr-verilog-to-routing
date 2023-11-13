@@ -554,10 +554,10 @@ static int Vec_VecSortCompare2( Vec_Ptr_t ** pp1, Vec_Ptr_t ** pp2 )
 static inline void Vec_VecSort( Vec_Vec_t * p, int fReverse )
 {
     if ( fReverse ) 
-        qsort( (void *)p->pArray, p->nSize, sizeof(void *), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(void *), 
                 (int (*)(const void *, const void *)) Vec_VecSortCompare2 );
     else
-        qsort( (void *)p->pArray, p->nSize, sizeof(void *), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(void *), 
                 (int (*)(const void *, const void *)) Vec_VecSortCompare1 );
 }
 
@@ -603,10 +603,10 @@ static int Vec_VecSortCompare4( Vec_Int_t ** pp1, Vec_Int_t ** pp2 )
 static inline void Vec_VecSortByFirstInt( Vec_Vec_t * p, int fReverse )
 {
     if ( fReverse ) 
-        qsort( (void *)p->pArray, p->nSize, sizeof(void *), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(void *), 
                 (int (*)(const void *, const void *)) Vec_VecSortCompare4 );
     else
-        qsort( (void *)p->pArray, p->nSize, sizeof(void *), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(void *), 
                 (int (*)(const void *, const void *)) Vec_VecSortCompare3 );
 }
 

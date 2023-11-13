@@ -383,7 +383,7 @@ extern void                Fraig_NodeSimulate( Fraig_Node_t * pNode, int iWordSt
 /*=== fraigPrime.c =============================================================*/
 extern int                 s_FraigPrimes[FRAIG_MAX_PRIMES];
 /*=== fraigSat.c ===============================================================*/
-extern int                 Fraig_NodeIsImplication( Fraig_Man_t * p, Fraig_Node_t * pOld, Fraig_Node_t * pNew, int nBTLimit );
+extern int                 Fraig_NodeIsImplification( Fraig_Man_t * p, Fraig_Node_t * pOld, Fraig_Node_t * pNew, int nBTLimit );
 /*=== fraigTable.c =============================================================*/
 extern Fraig_HashTable_t * Fraig_HashTableCreate( int nSize );
 extern void                Fraig_HashTableFree( Fraig_HashTable_t * p );

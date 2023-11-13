@@ -306,9 +306,15 @@ class OccLists
     }
 
     void  clear(bool free = true){
-        occs   .clear(free);
-        dirty  .clear(free);
-        dirties.clear(free);
+        if(free){
+            occs   .clear(free);
+            dirty  .clear(free);
+            dirties.clear(free);
+        } else {
+            occs   .shrink_(occs   .size());
+            dirty  .shrink_(dirty  .size());
+            dirties.shrink_(dirties.size());
+        }
     }
 };
 

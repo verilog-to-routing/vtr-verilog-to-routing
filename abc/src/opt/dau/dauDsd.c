@@ -237,7 +237,7 @@ void Dau_DsdNormalize_rec( char * pStr, char ** p, int * pMatches )
         for ( i = 0; i < nMarks; i++ )
             pStore = Dau_DsdNormalizeCopy( pStore, pStr, pMarks, pPerm[i] );
         assert( pStore - pBuffer == *p - pOld );
-        memcpy( pOld, pBuffer, pStore - pBuffer );
+        memcpy( pOld, pBuffer, (size_t)(pStore - pBuffer) );
         return;
     }
     if ( **p == '<' || **p == '{' ) // mux
@@ -1972,6 +1972,14 @@ void Dau_DsdPrintFromTruth( word * pTruth, int nVarsInit )
     Abc_TtCopy( pTemp, pTruth, Abc_TtWordNum(nVarsInit), 0 );
     Dau_DsdDecompose( pTemp, nVarsInit, 0, 1, pRes );
     fprintf( stdout, "%s\n", pRes );
+}
+void Dau_DsdPrintFromTruth2( word * pTruth, int nVarsInit )
+{
+    char pRes[DAU_MAX_STR];
+    word pTemp[DAU_MAX_WORD];
+    Abc_TtCopy( pTemp, pTruth, Abc_TtWordNum(nVarsInit), 0 );
+    Dau_DsdDecompose( pTemp, nVarsInit, 0, 1, pRes );
+    fprintf( stdout, "%s", pRes );
 }
 
 void Dau_DsdTest44()
