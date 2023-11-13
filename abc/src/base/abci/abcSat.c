@@ -22,6 +22,8 @@
 #include "base/main/main.h"
 #include "base/cmd/cmd.h"
 #include "sat/bsat/satSolver.h"
+#include "aig/gia/gia.h"
+#include "aig/gia/giaAig.h"
 
 #ifdef ABC_USE_CUDD
 #include "bdd/extrab/extraBdd.h"
@@ -142,6 +144,36 @@ sat_solver_store_free( pSat );
     sat_solver_delete( pSat );
     return RetValue;
 }
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int * Abc_NtkSolveGiaMiter( Gia_Man_t * p )
+{
+    extern Abc_Ntk_t * Abc_NtkFromAigPhase( Aig_Man_t * pMan );
+    int RetValue = 0;
+    int * pResult = NULL;
+    Abc_Ntk_t * pNtk;
+    Aig_Man_t * pMan;
+    pMan = Gia_ManToAig( p, 0 );
+    pNtk = Abc_NtkFromAigPhase( pMan );
+    pNtk->pName = Extra_UtilStrsav(p->pName);
+    Aig_ManStop( pMan );
+    RetValue = Abc_NtkMiterSat( pNtk, 1000000, 0, 0, NULL, NULL );
+    if ( RetValue == 0 ) // sat
+        pResult = pNtk->pModel, pNtk->pModel = NULL;
+    Abc_NtkDelete( pNtk );
+    return pResult;
+}
+
 
 /**Function*************************************************************
 

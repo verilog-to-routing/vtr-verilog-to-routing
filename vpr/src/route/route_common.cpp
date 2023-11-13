@@ -843,6 +843,8 @@ vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
         full_device_bounding_box.ymin = 0;
         full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
         full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+        full_device_bounding_box.layer_min = 0;
+        full_device_bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
     }
 
     auto nets = net_list.nets();
@@ -913,6 +915,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     int ymin = rr_graph.node_ylow(driver_rr);
     int xmax = rr_graph.node_xhigh(driver_rr);
     int ymax = rr_graph.node_yhigh(driver_rr);
+    int layer_min = rr_graph.node_layer(driver_rr);
+    int layer_max = rr_graph.node_layer(driver_rr);
 
     auto net_sinks = net_list.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
@@ -922,10 +926,15 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
+        VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
+        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
+
         xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
         xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
         ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
         ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_rr));
+        layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
+        layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
 
     /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
@@ -941,6 +950,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     bb.xmax = std::min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
     bb.ymin = std::max<int>(ymin - bb_factor, 0);
     bb.ymax = std::min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+    bb.layer_min = layer_min;
+    bb.layer_max = layer_max;
 
     return bb;
 }

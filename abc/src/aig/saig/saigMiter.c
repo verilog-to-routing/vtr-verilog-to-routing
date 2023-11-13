@@ -946,7 +946,7 @@ int Saig_ManDemiter( Aig_Man_t * p, Aig_Man_t ** ppAig0, Aig_Man_t ** ppAig1 )
 
         if ( (pFlop0->fMarkA && pFlop0->fMarkB) || (pFlop1->fMarkA && pFlop1->fMarkB) || 
              (pFlop0->fMarkA && pFlop1->fMarkA) || (pFlop0->fMarkB && pFlop1->fMarkB)  )
-            printf( "Ouput pair %4d: Difficult case...\n", i/2 );
+            printf( "Output pair %4d: Difficult case...\n", i/2 );
 
         if ( pFlop0->fMarkB )
         {

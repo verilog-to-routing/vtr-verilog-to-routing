@@ -47,6 +47,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , router_debug_(false) {
         heap_.init_heap(grid);
         heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
+        only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
@@ -285,6 +286,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const ConnectionParameters* conn_params_;
     HeapImplementation heap_;
     bool router_debug_;
+
+    bool only_opin_inter_layer;
 
     // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of the heap types
     PathManager rcv_path_manager;

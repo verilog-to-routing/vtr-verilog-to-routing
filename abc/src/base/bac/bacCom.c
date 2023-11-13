@@ -651,7 +651,7 @@ int Bac_CommandCec( Abc_Frame_t * pAbc, int argc, char ** argv )
         if ( fDumpMiter )
         {
             Abc_Print( 0, "The verification miter is written into file \"%s\".\n", "cec_miter.aig" );
-            Gia_AigerWrite( pMiter, "cec_miter.aig", 0, 0 );
+            Gia_AigerWrite( pMiter, "cec_miter.aig", 0, 0, 0 );
         }
         pAbc->Status = Cec_ManVerify( pMiter, pPars );
         //Abc_FrameReplaceCex( pAbc, &pAbc->pGia->pCexComb );

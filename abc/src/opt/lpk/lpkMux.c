@@ -243,6 +243,40 @@ If_Obj_t * Lpk_MapSuppRedDec_rec( Lpk_Man_t * p, unsigned * pTruth, int nVars, I
     return pObjNew;
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Evaluates 4-LUT decompositions of larger functions.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Lpk_TryDec( word * pTruth, int nVars )
+{
+    extern word If_Dec6Perform( word t, int fDerive );
+    extern void If_Dec6Verify( word t, word z );
+    //int nWords = Abc_Truth6WordNum( nVars );
+    assert( nVars == 8 );
+    printf( "%d", If_Dec6Perform(pTruth[0], 1) > 0 );
+    printf( "%d", If_Dec6Perform(pTruth[1], 1) > 0 );
+    printf( "%d", If_Dec6Perform(pTruth[2], 1) > 0 );
+    printf( "%d", If_Dec6Perform(pTruth[3], 1) > 0 );
+    printf( "\n" );
+}
+void Lpk_TryDecTest()
+{
+    word t0 = ABC_CONST(0x4f1ead396f247a04);
+    word t1 = ABC_CONST(0x10bdb210c006eab5);
+    word t2 = ABC_CONST(0x68ab4bfa8acb7a13);
+    word t3 = ABC_CONST(0xb14ede67096c6eed);
+    word Truth[4] = {t0, t1, t2, t3};
+    Lpk_TryDec( Truth, 8 );
+
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////

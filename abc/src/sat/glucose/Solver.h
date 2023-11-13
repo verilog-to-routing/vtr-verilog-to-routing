@@ -64,6 +64,12 @@ public:
     vec<int> user_vec;
     vec<Lit> user_lits;
 
+    // circuit-based solving
+    int jftr;
+    void sat_solver_set_var_fanin_lit(int, int, int);  
+    void sat_solver_start_new_round();  
+    void sat_solver_mark_cone(int);  
+
     // Problem specification:
     //
     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
@@ -116,6 +122,7 @@ public:
     int     nLearnts   ()      const;       // The current number of learnt clauses.
     int     nVars      ()      const;       // The current number of variables.
     int     nFreeVars  ()      const;
+    int *   getCex     ()      const;
 
     // Incremental mode
     void setIncrementalMode();
@@ -418,6 +425,7 @@ inline int      Solver::nClauses      ()      const   { return clauses.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return vardata.size(); }
 inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
+inline int *    Solver::getCex        ()      const   { return NULL; }
 inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
 inline void     Solver::setDecisionVar(Var v, bool b) 
 { 
@@ -454,6 +462,10 @@ inline void     Solver::toDimacs      (const char* file, Lit p, Lit q){ vec<Lit>
 inline void     Solver::toDimacs      (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
 
 inline void     Solver::addVar(Var v) { while (v >= nVars()) newVar(); }
+
+inline void     Solver::sat_solver_set_var_fanin_lit(int var, int lit0, int lit1) {}  
+inline void     Solver::sat_solver_start_new_round()  {}  
+inline void     Solver::sat_solver_mark_cone(int var) {}  
 
 //=================================================================================================
 // Debug etc:

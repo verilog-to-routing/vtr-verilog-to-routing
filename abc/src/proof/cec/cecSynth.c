@@ -309,7 +309,7 @@ int Cec_SequentialSynthesisPart( Gia_Man_t * p, Cec_ParSeq_t * pPars )
         {
             pTemp = Gia_ManRegCreatePart( p, vPart, &nCountPis, &nCountRegs, NULL );
             sprintf( Buffer, "part%03d.aig", i );
-            Gia_AigerWrite( pTemp, Buffer, 0, 0 );
+            Gia_AigerWrite( pTemp, Buffer, 0, 0, 0 );
             Abc_Print( 1, "part%03d.aig : Reg = %4d. PI = %4d. (True = %4d. Regs = %4d.) And = %5d.\n", 
                 i, Vec_IntSize(vPart), Gia_ManCiNum(pTemp)-Vec_IntSize(vPart), nCountPis, nCountRegs, Gia_ManAndNum(pTemp) );
             Gia_ManStop( pTemp );

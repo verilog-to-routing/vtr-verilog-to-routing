@@ -105,7 +105,7 @@ static inline Vec_Bit_t * Vec_BitStart( int nSize )
     nSize = (nSize >> 5) + ((nSize & 31) > 0);
     p = Vec_BitAlloc( nSize * 32 );
     p->nSize = nSize * 32;
-    memset( p->pArray, 0, sizeof(int) * nSize );
+    memset( p->pArray, 0, sizeof(int) * (size_t)nSize );
     return p;
 }
 
@@ -126,7 +126,7 @@ static inline Vec_Bit_t * Vec_BitStartFull( int nSize )
     nSize = (nSize >> 5) + ((nSize & 31) > 0);
     p = Vec_BitAlloc( nSize * 32 );
     p->nSize = nSize * 32;
-    memset( p->pArray, 0xff, sizeof(int) * nSize );
+    memset( p->pArray, 0xff, sizeof(int) * (size_t)nSize );
     return p;
 }
 
@@ -149,7 +149,7 @@ static inline Vec_Bit_t * Vec_BitDup( Vec_Bit_t * pVec )
     p->nSize  = pVec->nSize;
     p->nCap   = pVec->nSize;
     p->pArray = p->nCap? ABC_ALLOC( int, p->nCap >> 5 ) : NULL;
-    memcpy( p->pArray, pVec->pArray, sizeof(int) * (p->nCap >> 5) );
+    memcpy( p->pArray, pVec->pArray, sizeof(int) * (size_t)(p->nCap >> 5) );
     return p;
 }
 

@@ -44,10 +44,10 @@ ABC_NAMESPACE_HEADER_START
 typedef enum { 
     WLC_OBJ_NONE = 0,      // 00: unknown
     WLC_OBJ_PI,            // 01: primary input 
-    WLC_OBJ_PO,            // 02: primary output (unused)
+    WLC_OBJ_PO,            // 02: primary output
     WLC_OBJ_FO,            // 03: flop output
     WLC_OBJ_FI,            // 04: flop input (unused)
-    WLC_OBJ_FF,            // 05: flop (unused)
+    WLC_OBJ_FF,            // 05: flop
     WLC_OBJ_CONST,         // 06: constant
     WLC_OBJ_BUF,           // 07: buffer
     WLC_OBJ_MUX,           // 08: multiplexer
@@ -61,7 +61,7 @@ typedef enum {
     WLC_OBJ_BIT_AND,       // 16: bitwise AND
     WLC_OBJ_BIT_OR,        // 17: bitwise OR
     WLC_OBJ_BIT_XOR,       // 18: bitwise XOR
-    WLC_OBJ_BIT_NAND,      // 19: bitwise AND
+    WLC_OBJ_BIT_NAND,      // 19: bitwise NAND
     WLC_OBJ_BIT_NOR,       // 20: bitwise OR
     WLC_OBJ_BIT_NXOR,      // 21: bitwise NXOR
     WLC_OBJ_BIT_SELECT,    // 22: bit selection
@@ -98,7 +98,11 @@ typedef enum {
     WLC_OBJ_TABLE,         // 53: bit table
     WLC_OBJ_READ,          // 54: read port
     WLC_OBJ_WRITE,         // 55: write port
-    WLC_OBJ_NUMBER         // 56: unused
+    WLC_OBJ_ARI_ADDSUB,    // 56: adder-subtractor
+    WLC_OBJ_SEL,           // 57: positionally encoded selector
+    WLC_OBJ_DEC,           // 58: decoder
+    WLC_OBJ_LUT,           // 59: lookup table
+    WLC_OBJ_NUMBER         // 59: unused
 } Wlc_ObjType_t;
 // when adding new types, remember to update table Wlc_Names in "wlcNtk.c"
 
@@ -117,6 +121,7 @@ struct Wlc_Obj_t_ // 24 bytes
     unsigned               Type    :  6;       // node type
     unsigned               Signed  :  1;       // signed
     unsigned               Mark    :  1;       // user mark
+    unsigned               Mark2   :  1;       // user mark
     unsigned               fIsPo   :  1;       // this is PO
     unsigned               fIsFi   :  1;       // this is FI
     unsigned               fXConst :  1;       // this is X-valued constant
@@ -137,11 +142,16 @@ struct Wlc_Ntk_t_
     Vec_Int_t              vCis;               // combinational inputs
     Vec_Int_t              vCos;               // combinational outputs
     Vec_Int_t              vFfs;               // flops
+    Vec_Int_t              vFfs2;              // flops
+    Vec_Int_t *            vArsts;             // async resets
     Vec_Int_t *            vInits;             // initial values
     char *                 pInits;             // initial values
     int                    nObjs[WLC_OBJ_NUMBER]; // counter of objects of each type
     int                    nAnds[WLC_OBJ_NUMBER]; // counter of AND gates after blasting
     int                    fSmtLib;            // the network comes from an SMT-LIB file
+    int                    fAsyncRst;          // the network has asynchronous reset
+    int                    fMemPorts;          // the network contains memory ports
+    int                    fEasyFfs;           // the network contains simple flops
     int                    nAssert;            // the number of asserts
     // memory for objects
     Wlc_Obj_t *            pObjs;
@@ -150,6 +160,7 @@ struct Wlc_Ntk_t_
     Mem_Flex_t *           pMemFanin;
     Mem_Flex_t *           pMemTable;
     Vec_Ptr_t *            vTables;
+    Vec_Wrd_t *            vLutTruths;
     // object names
     Abc_Nam_t *            pManName;           // object names
     Vec_Int_t              vNameIds;           // object name IDs
@@ -161,6 +172,7 @@ struct Wlc_Ntk_t_
     Vec_Int_t              vBits;              // object mapping into AIG nodes
     Vec_Int_t              vLevels;            // object levels
     Vec_Int_t              vRefs;              // object reference counters
+    Vec_Int_t              vPoPairs;           // pairs of primary outputs
 };
 
 typedef struct Wlc_Par_t_ Wlc_Par_t;
@@ -203,9 +215,14 @@ struct Wlc_BstPar_t_
     int                    fAddOutputs;
     int                    fMulti;
     int                    fBooth;
+    int                    fNonRest;
+    int                    fCla;
+    int                    fDivBy0;
     int                    fNoCleanup;
     int                    fCreateMiter;
+    int                    fCreateWordMiter;
     int                    fDecMuxes;
+    int                    fSaveFfNames;
     int                    fVerbose;
     Vec_Int_t *            vBoxIds;
 };
@@ -221,7 +238,10 @@ static inline void Wlc_BstParDefault( Wlc_BstPar_t * pPar )
     pPar->fAddOutputs  =  0;
     pPar->fMulti       =  0;
     pPar->fBooth       =  0;
+    pPar->fCla         =  0;
+    pPar->fDivBy0      =  0;
     pPar->fCreateMiter =  0;
+    pPar->fCreateWordMiter =  0;
     pPar->fDecMuxes    =  0;
     pPar->fVerbose     =  0;
 }
@@ -267,11 +287,17 @@ static inline Wlc_Obj_t *  Wlc_NtkPo( Wlc_Ntk_t * p, int i )                    
 static inline Wlc_Obj_t *  Wlc_NtkCi( Wlc_Ntk_t * p, int i )                        { return Wlc_NtkObj( p, Vec_IntEntry(&p->vCis, i) );                       }
 static inline Wlc_Obj_t *  Wlc_NtkCo( Wlc_Ntk_t * p, int i )                        { return Wlc_NtkObj( p, Vec_IntEntry(&p->vCos, i) );                       }
 static inline Wlc_Obj_t *  Wlc_NtkFf( Wlc_Ntk_t * p, int i )                        { return Wlc_NtkObj( p, Vec_IntEntry(&p->vFfs, i) );                       }
+static inline Wlc_Obj_t *  Wlc_NtkFf2( Wlc_Ntk_t * p, int i )                       { return Wlc_NtkObj( p, Vec_IntEntry(&p->vFfs2, i) );                      }
 
 static inline int          Wlc_ObjIsPi( Wlc_Obj_t * p )                             { return p->Type == WLC_OBJ_PI;                                            }
 static inline int          Wlc_ObjIsPo( Wlc_Obj_t * p )                             { return p->fIsPo;                                                         }
 static inline int          Wlc_ObjIsCi( Wlc_Obj_t * p )                             { return p->Type == WLC_OBJ_PI || p->Type == WLC_OBJ_FO;                   }
 static inline int          Wlc_ObjIsCo( Wlc_Obj_t * p )                             { return p->fIsPo || p->fIsFi;                                             }
+static inline int          Wlc_ObjIsRead( Wlc_Obj_t * p )                           { return p->Type == WLC_OBJ_READ;                                          }
+static inline int          Wlc_ObjIsWrite( Wlc_Obj_t * p )                          { return p->Type == WLC_OBJ_WRITE;                                         }
+static inline int          Wlc_ObjIsMux( Wlc_Obj_t * p )                            { return p->Type == WLC_OBJ_MUX;                                           }
+static inline int          Wlc_ObjIsBuf( Wlc_Obj_t * p )                            { return p->Type == WLC_OBJ_BUF;                                           }
+static inline int          Wlc_ObjIsFf( Wlc_Ntk_t * p, int i )                      { return Wlc_NtkObj(p, i)->Type == WLC_OBJ_FF;                             }
 
 static inline int          Wlc_ObjId( Wlc_Ntk_t * p, Wlc_Obj_t * pObj )             { return pObj - p->pObjs;                                                  }
 static inline int          Wlc_ObjCiId( Wlc_Obj_t * p )                             { assert( Wlc_ObjIsCi(p) ); return p->Fanins[1];                           }
@@ -342,6 +368,8 @@ static inline Wlc_Obj_t *  Wlc_ObjCo2PoFo( Wlc_Ntk_t * p, int iCoId )           
     for ( i = 0; (i < Wlc_NtkCoNum(p)) && (((pCo) = Wlc_NtkCo(p, i)), 1); i++ )
 #define Wlc_NtkForEachFf( p, pFf, i )                                               \
     for ( i = 0; (i < Vec_IntSize(&p->vFfs)) && (((pFf) = Wlc_NtkFf(p, i)), 1); i++ )
+#define Wlc_NtkForEachFf2( p, pFf, i )                                              \
+    for ( i = 0; (i < Vec_IntSize(&p->vFfs2)) && (((pFf) = Wlc_NtkFf2(p, i)), 1); i++ )
 
 #define Wlc_ObjForEachFanin( pObj, iFanin, i )                                      \
     for ( i = 0; (i < Wlc_ObjFaninNum(pObj)) && (((iFanin) = Wlc_ObjFaninId(pObj, i)), 1); i++ )
@@ -364,6 +392,12 @@ extern int            Wlc_NtkAbsCore2( Wlc_Ntk_t * p, Wlc_Par_t * pPars );
 extern Gia_Man_t *    Wlc_NtkBitBlast( Wlc_Ntk_t * p, Wlc_BstPar_t * pPars );
 /*=== wlcCom.c ========================================================*/
 extern void           Wlc_SetNtk( Abc_Frame_t * pAbc, Wlc_Ntk_t * pNtk );
+/*=== wlcMem.c ========================================================*/
+extern Vec_Int_t *    Wlc_NtkCollectMemory( Wlc_Ntk_t * p, int fClean );
+extern void           Wlc_NtkPrintMemory( Wlc_Ntk_t * p );
+extern Wlc_Ntk_t *    Wlc_NtkMemAbstractTest( Wlc_Ntk_t * p );
+extern int            Wlc_NtkMemAbstract( Wlc_Ntk_t * p, int nIterMax, int fDumpAbs, int fPdrVerbose, int fVerbose );
+extern Wlc_Ntk_t *    Wlc_NtkAbstractMem( Wlc_Ntk_t * p, int nFrames, int fVerbose );
 /*=== wlcNdr.c ========================================================*/
 extern Wlc_Ntk_t *    Wlc_ReadNdr( char * pFileName );
 extern void           Wlc_WriteNdr( Wlc_Ntk_t * pNtk, char * pFileName );
@@ -380,14 +414,17 @@ extern void           Wlc_ObjSetCo( Wlc_Ntk_t * p, Wlc_Obj_t * pObj, int fFlopIn
 extern char *         Wlc_ObjName( Wlc_Ntk_t * p, int iObj );
 extern void           Wlc_ObjUpdateType( Wlc_Ntk_t * p, Wlc_Obj_t * pObj, int Type );
 extern void           Wlc_ObjAddFanins( Wlc_Ntk_t * p, Wlc_Obj_t * pObj, Vec_Int_t * vFanins );
+extern int            Wlc_ObjDup( Wlc_Ntk_t * pNew, Wlc_Ntk_t * p, int iObj, Vec_Int_t * vFanins );
 extern void           Wlc_NtkFree( Wlc_Ntk_t * p );
 extern int            Wlc_NtkCreateLevels( Wlc_Ntk_t * p );
 extern int            Wlc_NtkCreateLevelsRev( Wlc_Ntk_t * p );
+extern int            Wlc_NtkRemapLevels( Wlc_Ntk_t * p, Vec_Int_t * vObjs, int nLevels );
 extern int            Wlc_NtkCountRealPis( Wlc_Ntk_t * p );
 extern void           Wlc_NtkPrintNode( Wlc_Ntk_t * p, Wlc_Obj_t * pObj );
 extern void           Wlc_NtkPrintNodeArray( Wlc_Ntk_t * p, Vec_Int_t * vArray );
 extern void           Wlc_NtkPrintNodes( Wlc_Ntk_t * p, int Type );
 extern void           Wlc_NtkPrintStats( Wlc_Ntk_t * p, int fDistrib, int fTwoSides, int fVerbose );
+extern void           Wlc_NtkPrintObjects( Wlc_Ntk_t * p );
 extern void           Wlc_NtkTransferNames( Wlc_Ntk_t * pNew, Wlc_Ntk_t * p );
 extern char *         Wlc_NtkNewName( Wlc_Ntk_t * p, int iCoId, int fSeq );
 extern Wlc_Ntk_t *    Wlc_NtkDupDfs( Wlc_Ntk_t * p, int fMarked, int fSeq );
@@ -410,6 +447,7 @@ extern void           Wlc_NtkDeleteSim( Vec_Ptr_t * p );
 /*=== wlcStdin.c ========================================================*/
 extern int            Wlc_StdinProcessSmt( Abc_Frame_t * pAbc, char * pCmd );
 /*=== wlcReadVer.c ========================================================*/
+extern char *         Wlc_PrsConvertInitValues( Wlc_Ntk_t * p );
 extern Wlc_Ntk_t *    Wlc_ReadVer( char * pFileName, char * pStr );
 /*=== wlcUif.c ========================================================*/
 extern Vec_Int_t *    Wlc_NtkCollectAddMult( Wlc_Ntk_t * p, Wlc_BstPar_t * pPar, int * pCountA, int * CountM );

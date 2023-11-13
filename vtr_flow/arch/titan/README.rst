@@ -2,7 +2,7 @@ Titan Benchmarks
 --------------------------------------------------
 This folder contains architecture files for use with Titan.
 
-The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks are distributed
+The `Titan <http://www.eecg.utoronto.ca/~vaughn/titan/>` benchmarks are distributed
 separately from VTR due to their large size.
 
 To integrate them into VTR run:
@@ -15,17 +15,16 @@ This will download and extract the benchmark netlists to:
 
     <vtr>/vtr_flow/benchmarks/titan_blif/
 
-and
-
-    <vtr>/vtr_flow/benchmarks/titan_other_blif/
-
-where 'titan_blif' contains the main Titan23 benchmarks, and 'titan_other_blif' contains smaller 
-titan-like benchmarks which are useful for testing (but should not be used for architecture and 
-CAD evaluation).
 
 
 Directory Structure
 --------------------------------------------------
+
+stratix10_arch.timing.xml:
+    A detailed capture of Intel's Stratix 10 FPGA architecture, with 
+    small architectural adjustments to ensure compatibility with VPR. It 
+    incorporates a timing model that has been fine-tuned to match the 
+    Stratix 10 timing model integrated into Intel's Quartus Prime CAD tools.
 
 stratixiv_arch.timing.xml:
     An enhanced capture of Altera's Stratix IV FPGA architecture. It makes some 

@@ -356,7 +356,7 @@ cuddSymmSifting(
         var[i] = i;
     }
 
-    qsort((void *)var,size,sizeof(int),(DD_QSFP)ddSymmUniqueCompare);
+    qsort((void *)var,(size_t)size,sizeof(int),(DD_QSFP)ddSymmUniqueCompare);
 
     /* Initialize the symmetry of each subtable to itself. */
     for (i = lower; i <= upper; i++) {
@@ -480,7 +480,7 @@ cuddSymmSiftingConv(
         var[i] = i;
     }
 
-    qsort((void *)var,size,sizeof(int),(DD_QSFP)ddSymmUniqueCompare);
+    qsort((void *)var,(size_t)size,sizeof(int),(DD_QSFP)ddSymmUniqueCompare);
 
     /* Initialize the symmetry of each subtable to itself
     ** for first pass of converging symmetric sifting.
@@ -535,7 +535,7 @@ cuddSymmSiftingConv(
             var[classes] = i;
         }
 
-        qsort((void *)var,classes,sizeof(int),(DD_QSFP)ddSymmUniqueCompare);
+        qsort((void *)var,(size_t)classes,sizeof(int),(DD_QSFP)ddSymmUniqueCompare);
 
         /* Now sift. */
         for (i = 0; i < ddMin(table->siftMaxVar,classes); i++) {

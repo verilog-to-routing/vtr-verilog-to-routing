@@ -860,7 +860,7 @@ unsigned * Dss_ObjHashLookup( Dss_Man_t * p, int Type, Vec_Int_t * vFaninLits, w
         if ( (int)pObj->Type == Type && 
              (int)pObj->nFans == Vec_IntSize(vFaninLits) && 
              !memcmp(pObj->pFans, Vec_IntArray(vFaninLits), sizeof(int)*pObj->nFans) &&
-             (pTruth == NULL || !memcmp(Dss_ObjTruth(pObj), pTruth, Abc_TtByteNum(pObj->nFans))) ) // equal
+             (pTruth == NULL || !memcmp(Dss_ObjTruth(pObj), pTruth, (size_t)Abc_TtByteNum(pObj->nFans))) ) // equal
             return pSpot;
     }
     return pSpot;
@@ -1551,7 +1551,7 @@ int Dss_ManMerge( Dss_Man_t * p, int * iDsd, int * nFans, int ** pFans, unsigned
     Counter++;
     if ( DAU_MAX_VAR < nKLutSize )
     {
-        printf( "Paramater DAU_MAX_VAR (%d) smaller than LUT size (%d).\n", DAU_MAX_VAR, nKLutSize );
+        printf( "Parameter DAU_MAX_VAR (%d) smaller than LUT size (%d).\n", DAU_MAX_VAR, nKLutSize );
         return -1;
     }
     assert( iDsd[0] <= iDsd[1] );
@@ -1703,7 +1703,7 @@ int Mpm_FuncCompute( Dss_Man_t * p, int iDsd0, int iDsd1, Vec_Str_t * vShared, i
     assert( iDsd0 <= iDsd1 );
     if ( DAU_MAX_VAR < *pnLeaves )
     {
-        printf( "Paramater DAU_MAX_VAR (%d) smaller than LUT size (%d).\n", DAU_MAX_VAR, *pnLeaves );
+        printf( "Parameter DAU_MAX_VAR (%d) smaller than LUT size (%d).\n", DAU_MAX_VAR, *pnLeaves );
         return -1;
     }
     if ( fVerbose )

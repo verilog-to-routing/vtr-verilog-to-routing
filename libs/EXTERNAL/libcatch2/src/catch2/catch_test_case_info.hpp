@@ -14,7 +14,7 @@
 #include <catch2/internal/catch_test_registry.hpp>
 #include <catch2/internal/catch_unique_ptr.hpp>
 
-
+#include <cstdint>
 #include <string>
 #include <vector>
 

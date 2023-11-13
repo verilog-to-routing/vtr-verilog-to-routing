@@ -1653,9 +1653,12 @@ Vec_Int_t * Cbs2_ManSolveMiterNc( Gia_Man_t * pAig, int nConfs, Vec_Str_t ** pvS
     p->timeTotal = Abc_Clock() - clkTotal;
     if ( fVerbose )
         Cbs2_ManSatPrintStats( p );
+    if ( fVerbose )
+    {
 //    printf( "RecCalls = %8d.  RecClause = %8d.  RecNonChro = %8d.\n", p->nRecCall, p->nRecClause, p->nRecNonChro );
     printf( "Prop1 = %d.  Prop2 = %d.  Prop3 = %d.  ClaConf = %d.   FailJ = %d.  FailC = %d.   ", p->nPropCalls[0], p->nPropCalls[1], p->nPropCalls[2], p->nClauseConf, p->nFails[0], p->nFails[1] );
     Abc_PrintTime( 1, "JFront", p->timeJFront );
+    }
 
     Cbs2_ManStop( p );
     *pvStatus = vStatus;

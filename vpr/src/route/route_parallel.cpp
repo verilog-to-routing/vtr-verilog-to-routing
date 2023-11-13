@@ -985,7 +985,9 @@ RouteIterResults route_partition_tree(tbb::task_group& g,
                 0,
                 (int)(device_ctx.grid.width() - 1),
                 0,
-                (int)(device_ctx.grid.height() - 1)};
+                (int)(device_ctx.grid.height() - 1),
+                0,
+                (int)(device_ctx.grid.get_num_layers() - 1)};
             tree.root().nets.push_back(net_id);
         }
     }

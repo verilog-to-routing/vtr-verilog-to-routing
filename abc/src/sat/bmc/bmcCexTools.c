@@ -173,7 +173,7 @@ void Bmc_CexPerformUnrollingTest( Gia_Man_t * p, Abc_Cex_t * pCex )
     abctime clk = Abc_Clock();
     pNew = Bmc_CexPerformUnrolling( p, pCex );
     Gia_ManPrintStats( pNew, NULL );
-    Gia_AigerWrite( pNew, "unroll.aig", 0, 0 );
+    Gia_AigerWrite( pNew, "unroll.aig", 0, 0, 0 );
 //Bmc_CexDumpAogStats( pNew, Abc_Clock() - clk );
     Gia_ManStop( pNew );
     printf( "CE-induced network is written into file \"unroll.aig\".\n" );
@@ -285,7 +285,7 @@ void Bmc_CexBuildNetworkTest( Gia_Man_t * p, Abc_Cex_t * pCex )
     abctime clk = Abc_Clock();
     pNew = Bmc_CexBuildNetwork( p, pCex );
     Gia_ManPrintStats( pNew, NULL );
-    Gia_AigerWrite( pNew, "unate.aig", 0, 0 );
+    Gia_AigerWrite( pNew, "unate.aig", 0, 0, 0 );
 //Bmc_CexDumpAogStats( pNew, Abc_Clock() - clk );
     Gia_ManStop( pNew );
     printf( "CE-induced network is written into file \"unate.aig\".\n" );
@@ -842,6 +842,112 @@ void Bmc_CexTest( Gia_Man_t * p, Abc_Cex_t * pCex, int fVerbose )
 //    Bmc_CexBuildNetworkTest( p, pCex );
 //    Bmc_CexPerformUnrollingTest( p, pCex );
 }
+
+
+
+/**Function*************************************************************
+
+  Synopsis    [Count the number of care bits.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Gia_ManCountCareBits( Gia_Man_t * p, Vec_Wec_t * vPats )
+{
+    Gia_Obj_t * pObj;
+    int i, k, fCompl0, fCompl1;
+    word Counter = 0;
+    Vec_Int_t * vPat;
+    Vec_WecForEachLevel( vPats, vPat, i )
+    {
+        int Count = 0;
+        assert( Vec_IntSize(vPat) == Gia_ManCiNum(p) );
+
+        // propagate forward
+        Gia_ManConst0(p)->fMark0 = 0;
+        Gia_ManConst0(p)->fMark1 = 0;
+        Gia_ManForEachCi( p, pObj, k )
+        {
+            pObj->fMark0 = Vec_IntEntry(vPat, k);
+            pObj->fMark1 = 0;
+        }
+        Gia_ManForEachAnd( p, pObj, k )
+        {
+            fCompl0 = Gia_ObjFanin0(pObj)->fMark0 ^ Gia_ObjFaninC0(pObj);
+            fCompl1 = Gia_ObjFanin1(pObj)->fMark0 ^ Gia_ObjFaninC1(pObj);
+            pObj->fMark0 = fCompl0 & fCompl1;
+            pObj->fMark1 = 0;
+        }
+        Gia_ManForEachCo( p, pObj, k )
+        {
+            pObj->fMark0 = Gia_ObjFanin0(pObj)->fMark0 ^ Gia_ObjFaninC0(pObj);
+            Gia_ObjFanin0(pObj)->fMark1 = 1;
+        }
+        // propagate backward
+        Gia_ManForEachAndReverse( p, pObj, k )
+        {
+            if ( !pObj->fMark1 )
+                continue;
+            if ( pObj->fMark0 == 0 )
+            {
+                fCompl0 = Gia_ObjFanin0(pObj)->fMark0 ^ Gia_ObjFaninC0(pObj);
+                fCompl1 = Gia_ObjFanin1(pObj)->fMark0 ^ Gia_ObjFaninC1(pObj);
+                assert( fCompl0 == 0 || fCompl1 == 0 );
+                if ( fCompl1 == 0 )
+                    Gia_ObjFanin1(pObj)->fMark1 = 1;
+                else if ( fCompl0 == 0 )
+                    Gia_ObjFanin0(pObj)->fMark1 = 1;
+                
+            }
+            else
+            {
+                Gia_ObjFanin0(pObj)->fMark1 = 1;
+                Gia_ObjFanin1(pObj)->fMark1 = 1;
+            }
+        }
+        Gia_ManForEachAnd( p, pObj, k )
+            Count += pObj->fMark1;
+        Counter += Count;
+
+        //printf( "%3d = %8d\n", i, Count );
+    }
+    Counter /= Vec_WecSize(vPats);
+    printf( "Stats over %d patterns: Average care-nodes = %d (%6.2f %%)\n", Vec_WecSize(vPats), (int)Counter, 100.0*(int)Counter/Gia_ManAndNum(p) );
+}
+
+unsigned char * Mnist_ReadImages1_()
+{
+    int Size = 60000 * 28 * 28 + 16;
+    unsigned char * pData = (unsigned char *)malloc( Size );
+    FILE * pFile = fopen( "train-images.idx3-ubyte", "rb" );
+    int RetValue = fread( pData, 1, Size, pFile );
+    assert( RetValue == Size );
+    fclose( pFile );
+    return pData;
+}
+Vec_Wec_t * Mnist_ReadImages_( int nPats )
+{
+    Vec_Wec_t * vPats = Vec_WecStart( nPats );
+    unsigned char * pL1 = Mnist_ReadImages1_();
+    int i, k, x;
+    for ( i = 0; i < nPats; i++ )
+        for ( x = 0; x < 784; x++ )
+            for ( k = 0; k < 8; k++ )
+                Vec_WecPush( vPats, i, (pL1[16 + i * 784 + x] >> k) & 1 );
+    free( pL1 );
+    return vPats;
+}
+void Gia_ManCountCareBitsTest( Gia_Man_t * p )
+{
+    Vec_Wec_t * vPats = Mnist_ReadImages_( 100 );
+    Gia_ManCountCareBits( p, vPats );
+    Vec_WecFree( vPats );
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

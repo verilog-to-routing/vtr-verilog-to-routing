@@ -19,6 +19,9 @@
 ***********************************************************************/
 
 #include "base/abc/abc.h"
+#include "base/io/ioAbc.h"
+#include "sat/cnf/cnf.h"
+#include "sat/bsat/satStore.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -860,7 +863,7 @@ void Abc_NtkAddFrame( Abc_Ntk_t * pNtkFrames, Abc_Ntk_t * pNtk, int iFrame )
 {
     int fVerbose = 0;
     int NodeBef = Abc_NtkNodeNum(pNtkFrames);
-    char Buffer[10];
+    char Buffer[16];
     Abc_Obj_t * pNode, * pLatch;
     int i;
     // create the prefix to be added to the node names
@@ -1005,7 +1008,7 @@ Abc_Ntk_t * Abc_NtkFrames2( Abc_Ntk_t * pNtk, int nFrames, int fInitial, AddFram
 void Abc_NtkAddFrame2( Abc_Ntk_t * pNtkFrames, Abc_Ntk_t * pNtk, int iFrame, Vec_Ptr_t * vNodes, AddFrameMapping addFrameMapping, void* arg )
 {
 /*
-    char Buffer[10];
+    char Buffer[16];
     Abc_Obj_t * pNode, * pNodeNew, * pLatch;
     Abc_Obj_t * pConst1, * pConst1New;
     int i;
@@ -1185,6 +1188,218 @@ int Abc_NtkCombinePos( Abc_Ntk_t * pNtk, int fAnd, int fXor )
         return 0;
     }
     return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Miter construction for two networks.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Ptr_t * Abc_NtkTryNewMiter( char * pFileName0, char * pFileName1 )
+{
+    extern void * Cnf_DataWriteIntoSolver2( Cnf_Dat_t * p, int nFrames, int fInit );
+    int i, nVars, * pVars, iCiVarBeg, iCoVarBeg = 1, nBTLimit = 100000;
+    sat_solver * pSat  = NULL;
+    Cnf_Dat_t * pCnf   = NULL;
+    Vec_Ptr_t * vCexes = NULL;
+    Abc_Ntk_t * pNtk1  = Io_Read( pFileName0, IO_FILE_VERILOG, 1, 0 );
+    Abc_Ntk_t * pNtk2  = Io_Read( pFileName1, IO_FILE_VERILOG, 1, 0 );
+    Abc_Ntk_t * pNtk1_ = Abc_NtkStrash( pNtk1, 1, 1, 0 );
+    Abc_Ntk_t * pNtk2_ = Abc_NtkStrash( pNtk2, 1, 1, 0 );
+    Abc_Ntk_t * pMiter = Abc_NtkMiter( pNtk1_, pNtk2_, 1, 0, 0, 1 );
+    Gia_Man_t * pGia = Abc_NtkClpGia( pMiter );
+    assert( Abc_NtkCiNum(pNtk1) == Abc_NtkCiNum(pNtk2) );
+    assert( Abc_NtkCoNum(pNtk1) == Abc_NtkCoNum(pNtk2) );
+    Abc_NtkDelete( pNtk1 );
+    Abc_NtkDelete( pNtk2 );
+    Abc_NtkDelete( pNtk1_ );
+    Abc_NtkDelete( pNtk2_ );
+    Abc_NtkDelete( pMiter );
+    vCexes = Vec_PtrStart( Gia_ManPoNum(pGia) );
+    pCnf = (Cnf_Dat_t *)Mf_ManGenerateCnf( pGia, 8, 0, 0, 0, 0 );
+    nVars = Gia_ManPiNum(pGia);
+    iCiVarBeg = pCnf->nVars - nVars;
+    pVars = ABC_ALLOC( int, nVars );
+    for ( i = 0; i < nVars; i++ )
+        pVars[i] = iCiVarBeg + i;
+    pSat = (sat_solver *)Cnf_DataWriteIntoSolver(pCnf, 1, 0);
+    Cnf_DataFree( pCnf );
+    for ( i = 0; i < Gia_ManPoNum(pGia); i++ )
+    {
+        int Lit = Abc_Var2Lit( iCoVarBeg + i, 0 );
+        int status = sat_solver_solve( pSat, &Lit, &Lit + 1, nBTLimit, 0, 0, 0 );
+        assert( status != l_Undef );
+        if ( status == l_False )
+            continue;
+        Vec_PtrWriteEntry( vCexes, i, Sat_SolverGetModel(pSat, pVars, nVars) );
+        printf( "Output %3d (out of %3d) is SAT.\n", i, Gia_ManPoNum(pGia) );
+    }
+    Gia_ManStop( pGia );
+    sat_solver_delete( pSat );
+    ABC_FREE( pVars );
+    return vCexes;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Read node names.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Ptr_t * Abc_NtkReadNodeNames( Abc_Ntk_t * pNtk, char * pFileName )
+{
+    char Buffer[1000];
+    Vec_Ptr_t * vNodes = NULL;
+    FILE * pFile = fopen( pFileName, "rb" );
+    if ( pFile == NULL )
+    {
+        printf( "Cannot open node list \"%s\".\n", pFileName );
+        return NULL;
+    }
+    vNodes = Vec_PtrAlloc( 100 );
+    while ( fgets(Buffer, 1000, pFile) != NULL ) 
+    {
+        char * pToken = strtok( Buffer, " \n\r\t" );
+        while ( pToken )
+        {
+            Abc_Obj_t * pObj = Abc_NtkFindNode( pNtk, pToken );
+            if ( pObj == NULL )
+            {
+                printf( "Cannot find node \"%s\".\n", pToken );
+                Vec_PtrFree( vNodes );
+                fclose( pFile );
+                return NULL;
+            }
+            Vec_PtrPush( vNodes, pObj );
+            pToken = strtok( NULL, " \n\r\t" );
+        }
+    }
+    fclose( pFile );
+    return vNodes;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Deriving specialized miter.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Abc_Obj_t * Abc_NtkSpecialMuxTree_rec( Abc_Ntk_t * pNew, Abc_Obj_t ** pCtrl, int nCtrl, Abc_Obj_t ** pData, int Shift )
+{
+    Abc_Obj_t * pLit0, * pLit1;
+    if ( nCtrl == 0 )
+        return pData[Shift];
+    pLit0 = Abc_NtkSpecialMuxTree_rec( pNew, pCtrl, nCtrl-1, pData, Shift );
+    pLit1 = Abc_NtkSpecialMuxTree_rec( pNew, pCtrl, nCtrl-1, pData, Shift + (1<<(nCtrl-1)) );
+    return Abc_NtkCreateNodeMux( pNew, pCtrl[nCtrl-1], pLit1, pLit0 );
+}
+Abc_Ntk_t * Abc_NtkSpecialMiter( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes )
+{
+    Abc_Ntk_t * pNtkNew;
+    Abc_Obj_t * pObj, * pFanin, * pObjNew, * pPoNew; char * pName; 
+    Vec_Int_t * vFirsts = Vec_IntAlloc( Vec_PtrSize(vNodes) );
+    Vec_Ptr_t * vNames  = Vec_PtrAlloc( 100 );
+    Vec_Ptr_t * vFanins = Vec_PtrAlloc( 100 );
+    Vec_Ptr_t * vDatas  = Vec_PtrAlloc( 100 );
+    Vec_Ptr_t * vDfs    = Abc_NtkDfs( pNtk, 1 );
+    Vec_Ptr_t * vCopies = Vec_PtrStart( Abc_NtkObjNumMax(pNtk) );
+    int i, k, Index, First, nNewPis = 0;
+    // count the number of additional inputs
+    Abc_NtkCleanCopy( pNtk );
+    Abc_NtkCleanMarkA( pNtk );
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
+    {
+        char Buffer[1000];
+        assert( Abc_ObjIsNode(pObj) );
+        pObj->fMarkA = 1;
+        Vec_IntPush( vFirsts, nNewPis );
+        nNewPis += 1 << Abc_ObjFaninNum(pObj);
+        for ( k = 0; k < (1 << Abc_ObjFaninNum(pObj)); k++ )
+        {
+            sprintf( Buffer, "pi_%s_%d", Abc_ObjName(pObj), k );
+            Vec_PtrPush( vNames, Abc_UtilStrsav(Buffer) );
+        }
+    }
+    // create new network with the additional PIs
+    pNtkNew = Abc_NtkAlloc( pNtk->ntkType, pNtk->ntkFunc, 1 );
+    pNtkNew->pName = Extra_UtilStrsav( "miter" );
+    Vec_PtrForEachEntry( char *, vNames, pName, i )
+        Abc_ObjAssignName( Abc_NtkCreatePi(pNtkNew), pName, NULL );
+    // duplicate PIs
+    Abc_NtkForEachCi( pNtk, pObj, i )
+        pObj->pCopy = Abc_NtkDupObj( pNtkNew, pObj, 1 );
+    // copy nodes
+    Vec_PtrForEachEntry( Abc_Obj_t *, vDfs, pObj, i )
+    {
+        if ( !pObj->fMarkA )
+        {
+            Abc_NtkDupObj( pNtkNew, pObj, 1 );
+            Abc_ObjForEachFanin( pObj, pFanin, k )
+                Abc_ObjAddFanin( pObj->pCopy, pFanin->pCopy );
+            Vec_PtrWriteEntry( vCopies, pObj->Id, pObj->pCopy );
+            continue;
+        }
+        Vec_PtrClear( vFanins );
+        Abc_ObjForEachFanin( pObj, pFanin, k )
+            Vec_PtrPush( vFanins, pFanin->pCopy );
+        Index = Vec_PtrFind( vNodes, pObj );
+        assert( Index >= 0 );
+        First = Vec_IntEntry( vFirsts, Index );
+        Vec_PtrClear( vDatas );
+        for ( k = 0; k < (1 << Abc_ObjFaninNum(pObj)); k++ )
+            Vec_PtrPush( vDatas, Abc_NtkCi(pNtkNew, First + k) );
+        pObj->pCopy = Abc_NtkSpecialMuxTree_rec( pNtkNew, 
+            (Abc_Obj_t **)Vec_PtrArray(vFanins), Vec_PtrSize(vFanins), 
+            (Abc_Obj_t **)Vec_PtrArray(vDatas),  0 ); 
+        Vec_PtrWriteEntry( vCopies, pObj->Id, pObj->pCopy );
+    }
+    Vec_PtrForEachEntry( Abc_Obj_t *, vDfs, pObj, i )
+    {
+        pObj->fMarkA = 0;
+        Abc_NtkDupObj( pNtkNew, pObj, 0 );
+        Abc_ObjAssignName( pObj->pCopy, Abc_ObjName(pObj), "_copy" );
+        Abc_ObjForEachFanin( pObj, pFanin, k )
+            Abc_ObjAddFanin( pObj->pCopy, pFanin->pCopy );
+    }
+    // create miter
+    Vec_PtrClear( vDatas );
+    Abc_NtkForEachCo( pNtk, pObj, i )
+    {
+        Vec_PtrClear( vFanins );
+        Vec_PtrPush( vFanins, Abc_ObjFanin0(pObj)->pCopy );
+        Vec_PtrPush( vFanins, (Abc_Obj_t *)Vec_PtrEntry(vCopies, Abc_ObjId(Abc_ObjFanin0(pObj))) );
+        Vec_PtrPush( vDatas, Abc_NtkCreateNodeExor(pNtkNew, vFanins) );
+    }
+    if ( Vec_PtrSize(vDatas) > 1 )
+        pObjNew = Abc_NtkCreateNodeOr( pNtkNew, vDatas );
+    else
+        pObjNew = (Abc_Obj_t *)Vec_PtrEntry(vDatas, 0);
+    Abc_ObjAddFanin( (pPoNew = Abc_NtkCreatePo(pNtkNew)), pObjNew );
+    Abc_ObjAssignName( pPoNew, "miter_output", NULL );
+    // cleanup
+    Vec_IntFree( vFirsts );
+    Vec_PtrFreeFree( vNames );
+    Vec_PtrFree( vFanins );
+    Vec_PtrFree( vDatas );
+    Vec_PtrFree( vDfs );
+    Vec_PtrFree( vCopies );
+    return pNtkNew;
 }
 
 ////////////////////////////////////////////////////////////////////////
