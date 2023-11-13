@@ -1756,6 +1756,8 @@ int find_affected_nets_and_update_costs(
 
     std::vector<ClusterPinId> affected_pins;
 
+    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
+
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
         AtomBlockId atom_blk_id = blocks_affected.moved_blocks[iblk].block_num;
         ClusterBlockId cluster_blk_id = atom_look_up.atom_clb(atom_blk_id);
@@ -1794,8 +1796,15 @@ int find_affected_nets_and_update_costs(
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        proposed_net_cost[net_id] = get_net_cost(net_id,
-                                                 ts_bb_coord_new[net_id]);
+        if (cube_bb) {
+            proposed_net_cost[net_id] = get_net_cost(net_id,
+                                                     ts_bb_coord_new[net_id]);
+        } else {
+            proposed_net_cost[net_id] = get_net_layer_cost(net_id,
+                                                           layer_ts_bb_coord_new[net_id],
+                                                           ts_layer_sink_pin_count[size_t(net_id)]);
+        }
+
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
