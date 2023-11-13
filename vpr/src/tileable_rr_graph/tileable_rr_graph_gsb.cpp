@@ -940,11 +940,10 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
 
             for (size_t to_side = 0; to_side < rr_gsb.get_num_sides(); ++to_side) {
                 SideManager to_side_mgr(to_side);
-                enum e_side gsb_to_side = to_side_mgr.get_side();
 
                 /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
                 /* add edges to the opin_node */
-                for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][gsb_to_side]) {
+                for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side_mgr.to_size_t()]) {
                     rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node], false);
                     edge_count++;
                 }
