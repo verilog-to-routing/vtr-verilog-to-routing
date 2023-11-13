@@ -873,7 +873,7 @@ if ( s_Show )
                         for ( m = 0; m < pLR->nDecs; m++ )
                             if ( pLR->pDecs[m] != pLastDiffL )
                                  pCommon[nCommon++] = pLR->pDecs[m];
-                        assert( nCommon = pLR->nDecs-1 );
+                        assert( nCommon == pLR->nDecs-1 );
                     }
                 }
                 else

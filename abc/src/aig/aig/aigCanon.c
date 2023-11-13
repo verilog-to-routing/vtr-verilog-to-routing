@@ -631,7 +631,7 @@ void Aig_RManRecord( unsigned * pTruth, int nVarsInit )
     // compute the number of words
     nWords = Abc_TruthWordNum( nVars );
     // copy the function
-    memcpy( s_pRMan->pTruthInit, Kit_DsdObjTruth(pObj), 4*nWords );
+    memcpy( s_pRMan->pTruthInit, Kit_DsdObjTruth(pObj), (size_t)(4*nWords) );
     Kit_DsdNtkFree( pNtk );
     // canonicize the output
     if ( s_pRMan->pTruthInit[0] & 1 )

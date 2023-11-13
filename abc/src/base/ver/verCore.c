@@ -1086,7 +1086,7 @@ int Ver_ParseInitial( Ver_Man_t * pMan, Abc_Ntk_t * pNtk )
 ***********************************************************************/
 int Ver_ParseAssign( Ver_Man_t * pMan, Abc_Ntk_t * pNtk )
 {
-    char Buffer[1000], Buffer2[1000];
+    char Buffer[1000], Buffer2[2000];
     Ver_Stream_t * p = pMan->pReader;
     Abc_Obj_t * pNode, * pNet;
     char * pWord, * pName, * pEquation;
@@ -1329,6 +1329,7 @@ int Ver_ParseAssign( Ver_Man_t * pMan, Abc_Ntk_t * pNtk )
 ***********************************************************************/
 int Ver_ParseGateStandard( Ver_Man_t * pMan, Abc_Ntk_t * pNtk, Ver_GateType_t GateType )
 {
+    extern void Ver_StreamMove( Ver_Stream_t * p );
     Ver_Stream_t * p = pMan->pReader;
     Abc_Obj_t * pNet, * pNode;
     char * pWord, Symbol;
@@ -1336,6 +1337,7 @@ int Ver_ParseGateStandard( Ver_Man_t * pMan, Abc_Ntk_t * pNtk, Ver_GateType_t Ga
     // convert from the blackbox into the network with local functions representated by AIGs
     if ( !Ver_ParseConvertNetwork( pMan, pNtk, pMan->fMapped ) )
         return 0;
+    Ver_StreamMove( p );
 
     // this is gate name - throw it away
     if ( Ver_StreamPopChar(p) != '(' )

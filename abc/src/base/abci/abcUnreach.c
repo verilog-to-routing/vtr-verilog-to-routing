@@ -67,7 +67,7 @@ int Abc_NtkExtractSequentialDcs( Abc_Ntk_t * pNtk, int fVerbose )
     }
 
     // compute the global BDDs of the latches
-    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, 1, fVerbose );    
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, 1, 0, fVerbose );    
     if ( dd == NULL )
         return 0;
     if ( fVerbose )
@@ -342,7 +342,7 @@ Abc_Ntk_t * Abc_NtkConstructExdc( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bUn
     Abc_NtkLogicMakeSimpleCos( pNtkNew, 0 );
 
     // transform the network to the SOP representation
-    if ( !Abc_NtkBddToSop( pNtkNew, -1, ABC_INFINITY ) )
+    if ( !Abc_NtkBddToSop( pNtkNew, -1, ABC_INFINITY, 1 ) )
     {
         printf( "Abc_NtkConstructExdc(): Converting to SOPs has failed.\n" );
         return NULL;

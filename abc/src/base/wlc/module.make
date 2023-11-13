@@ -6,6 +6,7 @@ SRC +=    src/base/wlc/wlcAbs.c \
     src/base/wlc/wlcCom.c \
     src/base/wlc/wlcGraft.c \
     src/base/wlc/wlcJson.c \
+    src/base/wlc/wlcMem.c \
     src/base/wlc/wlcNdr.c \
     src/base/wlc/wlcNtk.c \
     src/base/wlc/wlcReadSmt.c \

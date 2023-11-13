@@ -535,7 +535,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
 
     // now choose a compatible block to swap with
     t_pl_loc to;
-
+    to.layer = from.layer;
     if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from)) {
         return e_create_move::ABORT;
     }

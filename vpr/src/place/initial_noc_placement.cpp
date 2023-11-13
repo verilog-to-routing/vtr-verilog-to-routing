@@ -68,7 +68,7 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id) {
     // Create a macro with a single member
     t_pl_macro_member macro_member;
     macro_member.blk_index = router_blk_id;
-    macro_member.offset = t_pl_offset(0, 0, 0);
+    macro_member.offset = t_pl_offset(0, 0, 0, 0);
     t_pl_macro pl_macro;
     pl_macro.members.push_back(macro_member);
 
@@ -134,7 +134,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
             // Create a macro with a single member
             t_pl_macro_member macro_member;
             macro_member.blk_index = logical_router_bid;
-            macro_member.offset = t_pl_offset(0, 0, 0);
+            macro_member.offset = t_pl_offset(0, 0, 0, 0);
             t_pl_macro pl_macro;
             pl_macro.members.push_back(macro_member);
 

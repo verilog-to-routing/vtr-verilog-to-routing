@@ -13,7 +13,7 @@ Abc_Ntk_t * Abc_NtkDarFold2( Abc_Ntk_t * pNtk, int fCompl, int fVerbose , int);
 Abc_Ntk_t * Abc_NtkDarUnfold2( Abc_Ntk_t * pNtk, int nFrames, int nConfs, int nProps, int fStruct, int fOldAlgo, int fVerbose )
 {
     Abc_Ntk_t * pNtkAig;
-    Aig_Man_t * pMan, * pTemp;
+    Aig_Man_t * pMan, * pTemp = NULL;
     int typeII_cnt = 0;
     assert( Abc_NtkIsStrash(pNtk) );
     pMan = Abc_NtkToDar( pNtk, 0, 1 );

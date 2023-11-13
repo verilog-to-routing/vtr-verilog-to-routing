@@ -265,10 +265,13 @@ void Cec_ManSimClassCreate( Gia_Man_t * p, Vec_Int_t * vClass )
   SeeAlso     []
 
 ***********************************************************************/
-int Cec_ManSimClassRefineOne( Cec_ManSim_t * p, int i )
+static int s_Count = 0;
+
+int Cec_ManSimClassRefineOne_rec( Cec_ManSim_t * p, int i )
 {
     unsigned * pSim0, * pSim1;
     int Ent;
+    s_Count++;
     Vec_IntClear( p->vClassOld );
     Vec_IntClear( p->vClassNew );
     Vec_IntPush( p->vClassOld, i );
@@ -290,8 +293,21 @@ int Cec_ManSimClassRefineOne( Cec_ManSim_t * p, int i )
     Cec_ManSimClassCreate( p->pAig, p->vClassOld );
     Cec_ManSimClassCreate( p->pAig, p->vClassNew );
     if ( Vec_IntSize(p->vClassNew) > 1 )
-        return 1 + Cec_ManSimClassRefineOne( p, Vec_IntEntry(p->vClassNew,0) );
+        return 1 + Cec_ManSimClassRefineOne_rec( p, Vec_IntEntry(p->vClassNew,0) );
     return 1;
+}
+int Cec_ManSimClassRefineOne_( Cec_ManSim_t * p, int i )
+{
+    int Res;
+    s_Count = 0;
+    Res = Cec_ManSimClassRefineOne_rec( p, i );
+    if ( s_Count > 10 )
+    printf( "%d ", s_Count );
+    return Res;
+}
+int Cec_ManSimClassRefineOne( Cec_ManSim_t * p, int i )
+{
+    return Cec_ManSimClassRefineOne_rec( p, i );
 }
 
 /**Function*************************************************************
@@ -878,19 +894,34 @@ int Cec_ManSimClassesPrepare( Cec_ManSim_t * p, int LevelMax )
             if ( pObj->Value )
                 Gia_ObjSetRepr( p->pAig, Gia_ObjId(p->pAig, pObj), 0 );
     // perform simulation
-    p->nWords = 1;
-    do {
+    if ( p->pAig->nSimWords )
+    {
+        p->nWords = 2*p->pAig->nSimWords;
+        assert( Vec_WrdSize(p->pAig->vSimsPi) == Gia_ManCiNum(p->pAig) * p->pAig->nSimWords ); 
+        //Cec_ManSimCreateInfo( p, p->vCiSimInfo, p->vCoSimInfo );
+        for ( i = 0; i < Gia_ManCiNum(p->pAig); i++ )
+            memmove( Vec_PtrEntry(p->vCiSimInfo, i), Vec_WrdEntryP(p->pAig->vSimsPi, i*p->pAig->nSimWords), sizeof(word)*p->pAig->nSimWords );
+        if ( Cec_ManSimSimulateRound( p, p->vCiSimInfo, p->vCoSimInfo ) )
+            return 1;
         if ( p->pPars->fVerbose )
             Gia_ManEquivPrintClasses( p->pAig, 0, Cec_MemUsage(p) );
-        for ( i = 0; i < 4; i++ )
-        {
-            Cec_ManSimCreateInfo( p, p->vCiSimInfo, p->vCoSimInfo );
-            if ( Cec_ManSimSimulateRound( p, p->vCiSimInfo, p->vCoSimInfo ) )
-                return 1;
-        }
-        p->nWords = 2 * p->nWords + 1;
     }
-    while ( p->nWords <= p->pPars->nWords );
+    else
+    {
+        p->nWords = 1;
+        do {
+            if ( p->pPars->fVerbose )
+                Gia_ManEquivPrintClasses( p->pAig, 0, Cec_MemUsage(p) );
+            for ( i = 0; i < 4; i++ )
+            {
+                Cec_ManSimCreateInfo( p, p->vCiSimInfo, p->vCoSimInfo );
+                if ( Cec_ManSimSimulateRound( p, p->vCiSimInfo, p->vCoSimInfo ) )
+                    return 1;
+            }
+            p->nWords = 2 * p->nWords + 1;
+        }
+        while ( p->nWords <= p->pPars->nWords );
+    }
     return 0;
 }
 

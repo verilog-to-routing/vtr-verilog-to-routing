@@ -239,11 +239,11 @@ ABC_NAMESPACE_HEADER_START
 #  ifdef SMALL_MEDIUM /* MSDOS small or medium model */
 #    define zmemcpy _fmemcpy
 #    define zmemcmp _fmemcmp
-#    define zmemzero(dest, len) _fmemset(dest, 0, len)
+#    define zmemzero(dest, len) _fmemset(dest, 0, (size_t)len)
 #  else
 #    define zmemcpy memcpy
 #    define zmemcmp memcmp
-#    define zmemzero(dest, len) memset(dest, 0, len)
+#    define zmemzero(dest, len) memset(dest, 0, (size_t)len)
 #  endif
 #else
    void ZLIB_INTERNAL zmemcpy OF((Bytef* dest, const Bytef* source, uInt len));

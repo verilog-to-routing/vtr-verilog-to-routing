@@ -141,7 +141,13 @@ class NocStorage {
      * 
      */
     int device_grid_width;
-    int num_layer_blocks;
+    /**
+     * @brief Internal reference to the number of blocks at each layer (width * height). This is necessary
+     * to compute a unique key for a given grid location which we can then use
+     * to get the corresponding physical (hard) router at the given grid
+     * location using 'grid_location_to_router_id'.
+     */
+    int layer_num_grid_locs;
 
     // prevent "copying" of this object
     NocStorage(const NocStorage&) = delete;

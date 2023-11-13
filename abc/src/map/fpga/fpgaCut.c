@@ -1112,7 +1112,7 @@ Fpga_Cut_t * Fpga_CutSortCuts( Fpga_Man_t * pMan, Fpga_CutTable_t * p, Fpga_Cut_
     nCuts = Fpga_CutList2Array( p->pCuts1, pList );
     assert( nCuts <= FPGA_CUTS_MAX_COMPUTE );
     // sort the cuts
-    qsort( (void *)p->pCuts1, nCuts, sizeof(void *), 
+    qsort( (void *)p->pCuts1, (size_t)nCuts, sizeof(void *), 
             (int (*)(const void *, const void *)) Fpga_CutSortCutsCompare );
     // move them back into the list
     if ( nCuts > FPGA_CUTS_MAX_USE - 1 )

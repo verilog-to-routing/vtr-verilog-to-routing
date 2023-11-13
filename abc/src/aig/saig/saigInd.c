@@ -383,9 +383,9 @@ nextrun:
         else if ( status == l_Undef )
             printf( "Conflict limit (%d) was reached during iteration %d.\n", nConfMax, f+1 );
         else if ( fUnique || fUniqueAll )
-            printf( "Completed %d interations and added %d uniqueness constraints.\n", f+1, nConstrs );
+            printf( "Completed %d iterations and added %d uniqueness constraints.\n", f+1, nConstrs );
         else
-            printf( "Completed %d interations.\n", f+1 );
+            printf( "Completed %d iterations.\n", f+1 );
     }
     // cleanup
     sat_solver_delete( pSat );

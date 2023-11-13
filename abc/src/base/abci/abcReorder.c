@@ -84,7 +84,7 @@ void Abc_NtkBddReorder( Abc_Ntk_t * pNtk, int fVerbose )
     reo_man * p;
     Abc_Obj_t * pNode;
     int i;
-    Abc_NtkRemoveDupFanins( pNtk );
+    //Abc_NtkRemoveDupFanins( pNtk );
     Abc_NtkMinimumBase( pNtk );
     p = Extra_ReorderInit( Abc_NtkGetFaninMax(pNtk), 100 );
     Abc_NtkForEachNode( pNtk, pNode, i )

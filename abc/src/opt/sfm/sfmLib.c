@@ -107,10 +107,10 @@ void Sfm_DecCreateCnf( Vec_Int_t * vGateSizes, Vec_Wrd_t * vGateFuncs, Vec_Wec_t
     vCover = Vec_IntAlloc( 100 );
     Vec_WrdForEachEntry( vGateFuncs, uTruth, i )
     {
-        nCubes = Sfm_TruthToCnf( uTruth, Vec_IntEntry(vGateSizes, i), vCover, vCnf );
+        nCubes = Sfm_TruthToCnf( uTruth, NULL, Vec_IntEntry(vGateSizes, i), vCover, vCnf );
         vCnfBase = (Vec_Str_t *)Vec_WecEntry( vGateCnfs, i );
         Vec_StrGrow( vCnfBase, Vec_StrSize(vCnf) );
-        memcpy( Vec_StrArray(vCnfBase), Vec_StrArray(vCnf), Vec_StrSize(vCnf) );
+        memcpy( Vec_StrArray(vCnfBase), Vec_StrArray(vCnf), (size_t)Vec_StrSize(vCnf) );
         vCnfBase->nSize = Vec_StrSize(vCnf);
     }
     Vec_IntFree( vCover );
