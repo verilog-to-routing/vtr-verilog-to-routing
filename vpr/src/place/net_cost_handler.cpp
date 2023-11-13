@@ -399,6 +399,11 @@ static double recompute_bb_cost();
  */
 static double wirelength_crossing_count(size_t fanout);
 
+/**
+ * @breif Calculate the wire-length cost of nets affected by moving the blocks and set bb_delta_c to the total cost change.
+ */
+static void set_bb_delta_cost(const int num_affected_nets, double& bb_delta_c);
+
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const AtomNetId net,
                                   const std::vector<t_pl_moved_atom_block>& moved_blocks) {
@@ -1739,6 +1744,25 @@ static double wirelength_crossing_count(size_t fanout) {
     }
 }
 
+static void set_bb_delta_cost(const int num_affected_nets, double& bb_delta_c) {
+    for (int inet_affected = 0; inet_affected < num_affected_nets;
+         inet_affected++) {
+        ClusterNetId net_id = ts_nets_to_update[inet_affected];
+        const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
+
+        if (cube_bb) {
+            proposed_net_cost[net_id] = get_net_cost(net_id,
+                                                     ts_bb_coord_new[net_id]);
+        } else {
+            proposed_net_cost[net_id] = get_net_layer_cost(net_id,
+                                                           layer_ts_bb_coord_new[net_id],
+                                                           ts_layer_sink_pin_count[size_t(net_id)]);
+        }
+
+        bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
+    }
+}
+
 int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
@@ -1755,8 +1779,6 @@ int find_affected_nets_and_update_costs(
     int num_affected_nets = 0;
 
     std::vector<ClusterPinId> affected_pins;
-
-    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
 
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
         AtomBlockId atom_blk_id = blocks_affected.moved_blocks[iblk].block_num;
@@ -1792,21 +1814,8 @@ int find_affected_nets_and_update_costs(
 
     /* Now update the bounding box costs (since the net bounding     *
      * boxes are up-to-date). The cost is only updated once per net. */
-    for (int inet_affected = 0; inet_affected < num_affected_nets;
-         inet_affected++) {
-        ClusterNetId net_id = ts_nets_to_update[inet_affected];
+    set_bb_delta_cost(num_affected_nets, bb_delta_c);
 
-        if (cube_bb) {
-            proposed_net_cost[net_id] = get_net_cost(net_id,
-                                                     ts_bb_coord_new[net_id]);
-        } else {
-            proposed_net_cost[net_id] = get_net_layer_cost(net_id,
-                                                           layer_ts_bb_coord_new[net_id],
-                                                           ts_layer_sink_pin_count[size_t(net_id)]);
-        }
-
-        bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
-    }
 
     return num_affected_nets;
 }
@@ -1878,21 +1887,7 @@ int find_affected_nets_and_update_costs(
 
     /* Now update the bounding box costs (since the net bounding     *
      * boxes are up-to-date). The cost is only updated once per net. */
-    for (int inet_affected = 0; inet_affected < num_affected_nets;
-         inet_affected++) {
-        ClusterNetId net_id = ts_nets_to_update[inet_affected];
-
-        if (cube_bb) {
-            proposed_net_cost[net_id] = get_net_cost(net_id,
-                                                     ts_bb_coord_new[net_id]);
-        } else {
-            proposed_net_cost[net_id] = get_net_layer_cost(net_id,
-                                                           layer_ts_bb_coord_new[net_id],
-                                                           ts_layer_sink_pin_count[size_t(net_id)]);
-        }
-
-        bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
-    }
+    set_bb_delta_cost(num_affected_nets, bb_delta_c);
 
     return num_affected_nets;
 }
