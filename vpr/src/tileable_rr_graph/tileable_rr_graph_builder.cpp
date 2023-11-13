@@ -87,6 +87,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const bool& shrink_boundary,
                                     const bool& through_channel,
                                     const bool& opin2all_sides,
+                                    const bool& concat_wire,
                                     const bool& wire_opposite_side,
                                     int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build tileable routing resource graph");
@@ -255,7 +256,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          segment_inf, segment_inf_x, segment_inf_y,
                          Fc_in, Fc_out,
                          sb_type, Fs, sb_subtype, subFs,
-                         opin2all_sides,
+                         opin2all_sides, concat_wire,
                          wire_opposite_side);
 
     /************************************************************************

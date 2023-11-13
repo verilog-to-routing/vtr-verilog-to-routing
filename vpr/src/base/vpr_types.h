@@ -1544,6 +1544,8 @@ struct t_det_routing_arch {
     bool shrink_boundary;
     bool through_channel;
     bool opin2all_sides;
+    bool concat_wire;
+    bool concat_pass_wire;
 
     short global_route_switch;
     short delayless_switch;
