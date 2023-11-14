@@ -164,16 +164,16 @@ static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
  * @param num_affected_nets
  * @param is_src_moving
  */
-static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
-                                        const PlaceDelayModel* delay_model,
-                                        const PlacerCriticalities* criticalities,
-                                        const ClusterBlockId& blk_id,
-                                        const ClusterPinId& pin_id,
-                                        const t_pl_moved_block& moving_blk_inf,
-                                        std::vector<ClusterPinId>& affected_pins,
-                                        double& timing_delta_c,
-                                        int& num_affected_nets,
-                                        bool is_src_moving);
+static inline void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
+                                               const PlaceDelayModel* delay_model,
+                                               const PlacerCriticalities* criticalities,
+                                               const ClusterBlockId& blk_id,
+                                               const ClusterPinId& pin_id,
+                                               const t_pl_moved_block& moving_blk_inf,
+                                               std::vector<ClusterPinId>& affected_pins,
+                                               double& timing_delta_c,
+                                               int& num_affected_nets,
+                                               bool is_src_moving);
 
 /**
  * @brief Calculate the 3D bounding box of "net_id" from scratch (based on the block locations stored in place_ctx) and
@@ -629,16 +629,16 @@ static void record_affected_net(const ClusterNetId net,
     }
 }
 
-static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
-                                        const PlaceDelayModel* delay_model,
-                                        const PlacerCriticalities* criticalities,
-                                        const ClusterBlockId& blk_id,
-                                        const ClusterPinId& pin_id,
-                                        const t_pl_moved_block& moving_blk_inf,
-                                        std::vector<ClusterPinId>& affected_pins,
-                                        double& timing_delta_c,
-                                        int& num_affected_nets,
-                                        bool is_src_moving) {
+static inline void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
+                                               const PlaceDelayModel* delay_model,
+                                               const PlacerCriticalities* criticalities,
+                                               const ClusterBlockId& blk_id,
+                                               const ClusterPinId& pin_id,
+                                               const t_pl_moved_block& moving_blk_inf,
+                                               std::vector<ClusterPinId>& affected_pins,
+                                               double& timing_delta_c,
+                                               int& num_affected_nets,
+                                               bool is_src_moving) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
     VTR_ASSERT_SAFE_MSG(net_id,
