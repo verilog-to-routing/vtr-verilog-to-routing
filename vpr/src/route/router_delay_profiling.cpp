@@ -1,7 +1,7 @@
 #include "router_delay_profiling.h"
 #include "globals.h"
 #include "route_common.h"
-#include "route_timing.h"
+#include "route_net.h"
 #include "route_export.h"
 #include "route_tree.h"
 #include "rr_graph.h"
@@ -89,8 +89,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         cost_params,
         bounding_box,
         router_stats,
-        conn_params,
-        true);
+        conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);

@@ -33,7 +33,7 @@
 #include "router_delay_profiling.h"
 #include "route_tree.h"
 #include "route_common.h"
-#include "route_timing.h"
+#include "route_net.h"
 #include "route_export.h"
 #include "rr_graph.h"
 #include "rr_graph2.h"
@@ -124,8 +124,7 @@ static void do_one_route(const Netlist<>& net_list,
                                                                                                     cost_params,
                                                                                                     bounding_box,
                                                                                                     router_stats,
-                                                                                                    conn_params,
-                                                                                                    true);
+                                                                                                    conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
