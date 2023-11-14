@@ -3,6 +3,12 @@
 
 ## Setting up Your Environment
 
+If you cloned the repository you will need to set up the git submodules (if you downloaded and extracted a release, you can skip this step):
+
+.. code-block:: bash
+
+    > git submodule init
+    > git submodule update
 
 VTR requires several system packages.  From the top-level directory, run the following script to install the required packages on a modern Debian or Ubuntu system:
 
