@@ -63,7 +63,8 @@ void Server::addSendTasks(const std::vector<Task>& tasks)
 
 void Server::startListening()
 {
-    int server_socket, client_socket;
+    int server_socket;
+    int client_socket = -1;
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
@@ -104,15 +105,21 @@ void Server::startListening()
         exit(EXIT_FAILURE);
     }
 
+    bool connectionProblemDetected = false;
+
     // Event loop
     while(!m_isStopped.load()) {
         //std::cout << "~~~ th=" << std::this_thread::get_id() << " loop_000" << " is stopped=" << m_isStopped.load() << std::endl;
-        int flags = fcntl(client_socket, F_GETFL, 0);
-        fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
-        client_socket = accept(server_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+        
+        if (connectionProblemDetected || client_socket < 0) {
+            int flags = fcntl(client_socket, F_GETFL, 0);
+            fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
+            client_socket = accept(server_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+        }
 
         //std::cout << "~~~ th=" << std::this_thread::get_id() << " loop_111" << std::endl;
         if (client_socket >= 0) {
+            connectionProblemDetected = false;
             // Handle sending
             {
                 std::unique_lock<std::mutex> lock(m_sendTasksMutex);
@@ -142,20 +149,20 @@ void Server::startListening()
             FD_SET(client_socket, &readfds);
 
             // Wait until data is available or timeout
-            int result = select(client_socket + 1, &readfds, NULL, NULL, &tv);
+            int selectResult = select(client_socket + 1, &readfds, NULL, NULL, &tv);
 
-            if (result == -1) {
+            if (selectResult == -1) {
                 std::cerr << "Error in select()\n";
-            } else if (result == 0) {
+            } else if (selectResult == 0) {
                 std::cout << "Timeout occurred! No data available.\n";
             } else {
                 if (FD_ISSET(client_socket, &readfds)) {
                     // Data is available; proceed with recv
                     char buffer[1024];
 
-                    std::cout << "before receive" << std::endl;
+                    //std::cout << "before receive" << std::endl;
                     ssize_t bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
-                    std::cout << "after receive" << std::endl;
+                    //std::cout << "after receive" << std::endl;
                     if (bytes_received > 0) {
                         // Process received data
                         std::string message(buffer, bytes_received);
@@ -171,18 +178,25 @@ void Server::startListening()
                         }
                     } else if (bytes_received == 0) {
                         std::cout << "Connection closed\n";
+                        connectionProblemDetected = true;
                     } else {
                         std::cerr << "Error in recv()\n";
+                        connectionProblemDetected = true;
                     }
                 }
             }
 
-            // Close the client socket
-            close(client_socket);
+            if (connectionProblemDetected && (client_socket >= 0)) {
+                close(client_socket);
+            }
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(COMM_LOOP_INTERVAL_MS));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(COMM_LOOP_INTERVAL_MS));
         //std::cout << "~~~ th=" << std::this_thread::get_id() << " loop_222" << std::endl << std::endl;
+    }
+
+    if (client_socket >= 0) {
+        close(client_socket);
     }
 
     close(server_socket);
