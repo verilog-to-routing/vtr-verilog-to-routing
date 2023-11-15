@@ -23,6 +23,10 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
+void on_window_destroy() {
+    g_vpr_ctx.server().stop();
+}
+
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -42,6 +46,8 @@ void basic_button_setup(ezgl::application* app) {
     //combo box for search type, created in main.ui
     GObject* search_type = (GObject*)app->get_object("SearchType");
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+
+    g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), NULL);
 }
 
 /*
@@ -176,6 +182,9 @@ void hide_crit_path_routing(ezgl::application* app, bool hide) {
         gtk_combo_box_text_remove(toggle_crit_path, 4);
         gtk_combo_box_text_remove(toggle_crit_path, 3);
     } else {
+        gtk_combo_box_text_remove(toggle_crit_path, 4); // to make sure we don't double items
+        gtk_combo_box_text_remove(toggle_crit_path, 3); // to make sure we don't double items
+
         gtk_combo_box_text_insert_text(toggle_crit_path, 3, "Crit Path Routing");
         gtk_combo_box_text_insert_text(toggle_crit_path, 4, "Crit Path Routing Delays");
     }

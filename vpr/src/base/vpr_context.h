@@ -33,6 +33,14 @@
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
 
+#include "server.h"
+#include "taskresolver.h"
+#include "tatum/report/TimingPath.hpp"
+#include <memory>
+
+class SetupHoldTimingInfo;
+
+
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -639,6 +647,18 @@ class VprContext : public Context {
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
 
+    const Server& server() const { return server_; }
+    Server& server() { return server_; }
+
+    const TaskResolver& task_resolver() const { return task_resolver_; }
+    TaskResolver& task_resolver() { return task_resolver_; }
+
+    std::vector<tatum::TimingPath> crit_paths;
+    int critical_path_num = 1; 
+    std::string path_type = "setup";
+    int crit_path_index = 0;
+    std::shared_ptr<SetupHoldTimingInfo> hold_timing_info;
+
   private:
     DeviceContext device_;
 
@@ -656,6 +676,10 @@ class VprContext : public Context {
     NocContext noc_;
 
     PackingMultithreadingContext packing_multithreading_;
+
+    Server server_;
+    TaskResolver task_resolver_;
+
 };
 
 #endif

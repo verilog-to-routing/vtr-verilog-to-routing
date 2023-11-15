@@ -1280,6 +1280,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
+    stage_grp.add_argument<bool, ParseOnOff>(args.server, "--server")
+        .help("Run server mode")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+        
     stage_grp.epilog(
         "If none of the stage options are specified, all stages are run.\n"
         "Analysis is always run after routing, unless the implementation\n"
@@ -1376,6 +1381,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     gen_grp.add_argument<bool, ParseOnOff>(args.show_version, "--version")
         .help("Show version information then exit")
         .action(argparse::Action::VERSION);
+
+    gen_grp.add_argument<bool, ParseOnOff>(args.show_resource_usage_only_mode, "--show_resource_usage")
+        .help("Show resource usage then exit");
 
     gen_grp.add_argument<std::string>(args.device_layout, "--device")
         .help(

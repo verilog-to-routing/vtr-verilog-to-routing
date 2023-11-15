@@ -63,6 +63,9 @@
 #include "ui_setup.h"
 #include "buttons.h"
 
+#include "server.h"
+#include "taskresolver.h"
+
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
 #endif
@@ -172,6 +175,40 @@ ezgl::point2d point_1(0, 0);
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
+// Define a callback function that will be called by the timer
+gboolean redraw_callback(gpointer data) {
+    // shortcuts
+    ezgl::application* app = static_cast<ezgl::application*>(data);
+    Server& server = g_vpr_ctx.server();
+    TaskResolver& task_resolver = g_vpr_ctx.task_resolver();
+    //
+
+    bool isRunning = !server.isStopped();
+    if (isRunning) {
+        if (!server.isStarted()) {
+            server.start();
+        }
+
+        std::vector<Task> tasksBuff;
+
+        server.takeRecievedTasks(tasksBuff);
+        task_resolver.addTasks(tasksBuff);
+
+        task_resolver.update(app);
+
+        tasksBuff.clear();
+        task_resolver.takeFinished(tasksBuff);
+
+        server.addSendTasks(tasksBuff);
+
+        // Call the redraw method of the application
+        app->refresh_drawing();
+    }
+
+    // Return TRUE to keep the timer running, or FALSE to stop it
+    return isRunning;
+}
+
 #endif // NO_GRAPHICS
 
 /********************** Subroutine definitions ******************************/
@@ -181,7 +218,8 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
-                         bool is_flat) {
+                         bool is_flat,
+                         bool server) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -196,6 +234,10 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
     draw_state->is_flat = is_flat;
+
+    if (server) {
+        guint timer_id = g_timeout_add(200, redraw_callback, &application);
+    }
 
 #else
     //Suppress unused parameter warnings

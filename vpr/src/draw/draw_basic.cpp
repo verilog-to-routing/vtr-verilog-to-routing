@@ -37,6 +37,8 @@
 #include "route_export.h"
 #include "tatum/report/TimingPathCollector.hpp"
 
+#include "pathhelper.h"
+
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
 #endif
@@ -939,8 +941,6 @@ void draw_routing_util(ezgl::renderer* g) {
  * b) during routing, critical path is shown by both flylines and routed net connections.
  */
 void draw_crit_path(ezgl::renderer* g) {
-    tatum::TimingPathCollector path_collector;
-
     t_draw_state* draw_state = get_draw_state_vars();
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -952,11 +952,16 @@ void draw_crit_path(ezgl::renderer* g) {
         return; //No timing to draw
     }
 
-    //Get the worst timing path
-    auto paths = path_collector.collect_worst_setup_timing_paths(
-        *timing_ctx.graph,
-        *(draw_state->setup_timing_info->setup_analyzer()), 1);
-    tatum::TimingPath path = paths[0];
+    calcCritPath(g_vpr_ctx.critical_path_num, g_vpr_ctx.path_type);
+
+    const auto& paths = g_vpr_ctx.crit_paths; // shortcut
+
+    // check index inside the range
+    if (g_vpr_ctx.crit_path_index >= paths.size()) {
+        g_vpr_ctx.crit_path_index = -1;
+        return;
+    }
+    tatum::TimingPath path = paths[g_vpr_ctx.crit_path_index];
 
     //Walk through the timing path drawing each edge
     tatum::NodeId prev_node;

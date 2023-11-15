@@ -57,6 +57,7 @@ struct t_options {
     /* General options */
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
+    argparse::ArgValue<bool> show_resource_usage_only_mode;
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
@@ -73,6 +74,7 @@ struct t_options {
     argparse::ArgValue<std::string> suppress_warnings;
     argparse::ArgValue<bool> allow_dangling_combinational_nodes;
     argparse::ArgValue<bool> terminate_if_timing_fails;
+    argparse::ArgValue<bool> server;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;

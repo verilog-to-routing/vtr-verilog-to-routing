@@ -298,6 +298,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->GraphPause,
              &vpr_setup->SaveGraphics,
              &vpr_setup->GraphicsCommands,
+             &vpr_setup->server,
              &vpr_setup->PowerOpts,
              vpr_setup);
 
@@ -363,6 +364,53 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     auto& device_ctx = g_vpr_ctx.mutable_device();
     helper_ctx.lb_type_rr_graphs = vpr_setup->PackerRRGraph;
     device_ctx.pad_loc_type = vpr_setup->PlacerOpts.pad_loc_type;
+}
+
+void vpr_show_resource_usage(const t_vpr_setup& vpr_setup, const t_arch& Arch)
+{
+    vtr::ScopedStartFinishTimer timer("Build Device Grid");
+    /* Read in netlist file for placement and routing */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    device_ctx.arch = &Arch;
+
+    /*
+     *Load the device grid
+     */
+
+    //Record the resource requirement
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+
+    //Build the device
+    for (const auto& l: Arch.grid_layouts) {
+        std::string device_layout_variant = l.name;
+
+        float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
+        device_ctx.grid = create_device_grid(device_layout_variant, Arch.grid_layouts, num_type_instances, target_device_utilization);
+
+        /*
+        *Report on the device
+        */
+        size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
+        VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
+
+        std::string title("\nResource usage for device layout " + device_layout_variant + "...\n"); 
+        VTR_LOG(title.c_str());
+        for (const auto& type : device_ctx.logical_block_types) {
+            if (is_empty_type(&type)) continue;
+
+            VTR_LOG("\tArchitecture\n");
+            for (const auto equivalent_tile : type.equivalent_tiles) {
+                auto num_instances = 0;
+                //get the number of equivalent tile across all layers
+                num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
+
+                VTR_LOG("\t\t%d\tblocks of type: %s\n",
+                        num_instances, equivalent_tile->name);
+            }
+        }
+    }
 }
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
@@ -805,7 +853,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         net_delay = make_net_pins_matrix<float>(net_list);
 
         //Initialize the delay calculator
-        std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
+        std::shared_ptr<SetupHoldTimingInfo>& timing_info = g_vpr_ctx.hold_timing_info; // shortcut
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
@@ -1051,7 +1099,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, is_flat);
+                        vpr_setup.GraphicsCommands, is_flat, vpr_setup.server);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }
@@ -1274,6 +1322,7 @@ void vpr_setup_vpr(t_options* Options,
                    int* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
+                   bool* server,
                    t_power_opts* PowerOpts,
                    t_vpr_setup* vpr_setup) {
     SetupVPR(Options,
@@ -1298,6 +1347,7 @@ void vpr_setup_vpr(t_options* Options,
              GraphPause,
              SaveGraphics,
              GraphicsCommands,
+             server,
              PowerOpts,
              vpr_setup);
 }
@@ -1420,7 +1470,8 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, vpr_setup.RouterOpts.flat_routing);
-        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
+        g_vpr_ctx.hold_timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
+        auto& timing_info = g_vpr_ctx.hold_timing_info; // shortcut
         timing_info->update();
 
         if (isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
