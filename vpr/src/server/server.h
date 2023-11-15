@@ -39,7 +39,7 @@ private:
     std::string m_pathsStr;
     std::atomic<bool> m_isStarted;
     std::atomic<bool> m_isStopped;
-    // std::atomic<bool> m_isCleaned;
+
     std::thread m_thread;
     std::mutex m_pathsMutex;
 
