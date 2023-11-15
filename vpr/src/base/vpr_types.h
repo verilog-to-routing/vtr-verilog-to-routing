@@ -962,6 +962,9 @@ struct t_packer_opts {
     bool use_attraction_groups;
     int pack_num_moves;
     std::string pack_move_type;
+    bool use_partitioning_in_pack;
+    std::string partitioner_path;
+    int number_of_molecules_in_partition;
 };
 
 /**

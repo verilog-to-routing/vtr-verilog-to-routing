@@ -7,6 +7,26 @@
 #include "vtr_math.h"
 #include "SetupGrid.h"
 
+// #include "vtr_assert.h"
+// #include "vtr_log.h"
+// #include "vtr_digest.h"
+// #include "vtr_memory.h"
+
+// #include "vpr_types.h"
+// #include "vpr_error.h"
+
+// #include "pugixml.hpp"
+
+#include "globals.h"
+#include "atom_netlist.h"
+#include "pack_types.h"
+#include "pb_type_graph.h"
+#include "output_clustering.h"
+#include "read_xml_arch_file.h"
+#include "vpr_utils.h"
+#include "pack.h"
+
+
 /**********************************/
 /* Global variables in clustering */
 /**********************************/
@@ -267,6 +287,16 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
 
     VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
 }
+
+bool check_if_xml_mode_conflict(const t_packer_opts& packer_opts,
+                                 const t_arch* arch,
+                                 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing) {
+
+    bool legal = check_output_clustering(intra_lb_routing, arch->architecture_id, packer_opts.output_file.c_str());
+
+    return legal;
+}
+
 
 void get_max_cluster_size_and_pb_depth(int& max_cluster_size,
                                        int& max_pb_depth) {
@@ -1639,7 +1669,9 @@ t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& pac
     router_data->saved_lb_nets = nullptr;
 
     //Pick a new seed
-    next_seed = get_highest_gain_seed_molecule(&seedindex, seed_atoms);
+    if(!packer_opts.use_partitioning_in_pack){
+        next_seed = get_highest_gain_seed_molecule(&seedindex, seed_atoms);
+    }
 
     if (packer_opts.timing_driven) {
         if (num_blocks_hill_added > 0) {
