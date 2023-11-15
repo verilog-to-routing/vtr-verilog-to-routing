@@ -25,6 +25,7 @@
 #include <vector>
 #include <queue>
 #include <ctime>
+#include "connection_router_interface.h"
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
@@ -39,7 +40,6 @@
 #include "rr_graph2.h"
 #include "rr_graph.h"
 #include "route_common.h"
-#include "route_timing.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"

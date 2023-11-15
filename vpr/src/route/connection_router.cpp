@@ -39,14 +39,13 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
     const t_conn_cost_params cost_params,
     t_bb bounding_box,
     RouterStats& router_stats,
-    const ConnectionParameters& conn_params,
-    bool can_grow_bb) {
+    const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
     bool retry = false;
     t_heap* cheapest;
-    std::tie(retry, cheapest) = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box, can_grow_bb);
+    std::tie(retry, cheapest) = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
     if (cheapest != nullptr) {
         rcv_path_manager.update_route_tree_set(cheapest->path_data);
@@ -70,8 +69,7 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
     const RouteTreeNode& rt_root,
     RRNodeId sink_node,
     const t_conn_cost_params cost_params,
-    t_bb bounding_box,
-    bool can_grow_bb) {
+    t_bb bounding_box) {
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
 
@@ -100,60 +98,16 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
         if (bounding_box.xmin == 0
             && bounding_box.ymin == 0
             && bounding_box.xmax == (int)(grid_.width() - 1)
-            && bounding_box.ymax == (int)(grid_.height() - 1)) {
+            && bounding_box.ymax == (int)(grid_.height() - 1)
+            && bounding_box.layer_min == 0
+            && bounding_box.layer_max == (int)(grid_.get_num_layers() - 1)) {
             VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
             return std::make_tuple(false, nullptr);
         }
 
-        // If we cannot grow the bounding box, leave unrouted and bubble up a signal
-        // to retry this net with a full-device bounding box. If we are already at full device extents,
-        // just fail
-        if (!can_grow_bb) {
-            VTR_LOG_WARN("No routing path for connection to sink_rr %d, leaving unrouted to retry on next iteration\n", sink_node);
-            return std::make_tuple(true, nullptr);
-        }
-
-        // Otherwise, try again with full-device bounding box.
-        //
-        // Note that the additional run-time overhead of re-trying only occurs
-        // when we were otherwise going to give up -- the typical case (route
-        // found with the bounding box) remains fast and never re-tries .
-        VTR_LOG_WARN("No routing path for connection to sink_rr %d, retrying with full device bounding box\n", sink_node);
-
-        t_bb full_device_bounding_box;
-        full_device_bounding_box.xmin = 0;
-        full_device_bounding_box.ymin = 0;
-        full_device_bounding_box.xmax = grid_.width() - 1;
-        full_device_bounding_box.ymax = grid_.height() - 1;
-        full_device_bounding_box.layer_min = 0;
-        full_device_bounding_box.layer_max = grid_.get_num_layers() - 1;
-
-        //
-        //TODO: potential future optimization
-        //      We have already explored the RR nodes accessible within the regular
-        //      BB (which are stored in modified_rr_node_inf), and so already know
-        //      their cost from the source. Instead of re-starting the path search
-        //      from scratch (i.e. from the previous route tree as we do below), we
-        //      could just re-add all the explored nodes to the heap and continue
-        //      expanding.
-        //
-
-        //Reset any previously recorded node costs so that when we call
-        //add_route_tree_to_heap() the nodes in the route tree actually
-        //make it back into the heap.
-        reset_path_costs();
-        modified_rr_node_inf_.clear();
-        heap_.empty_heap();
-
-        //Re-initialize the heap since it was emptied by the previous call to
-        //timing_driven_route_connection_from_heap()
-        add_route_tree_to_heap(rt_root, sink_node, cost_params, false);
-        heap_.build_heap(); // via sifting down everything
-
-        //Try finding the path again with the relaxed bounding box
-        cheapest = timing_driven_route_connection_from_heap(sink_node,
-                                                            cost_params,
-                                                            full_device_bounding_box);
+        // Otherwise, leave unrouted and bubble up a signal to retry this net with a full-device bounding box
+        VTR_LOG_WARN("No routing path for connection to sink_rr %d, leaving unrouted to retry later\n", sink_node);
+        return std::make_tuple(true, nullptr);
     }
 
     if (cheapest == nullptr) {
@@ -177,8 +131,7 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
     t_bb net_bounding_box,
     const SpatialRouteTreeLookup& spatial_rt_lookup,
     RouterStats& router_stats,
-    const ConnectionParameters& conn_params,
-    bool can_grow_bb) {
+    const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
@@ -218,8 +171,7 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
         std::tie(retry_with_full_bb, cheapest) = timing_driven_route_connection_common_setup(rt_root,
                                                                                              sink_node,
                                                                                              cost_params,
-                                                                                             net_bounding_box,
-                                                                                             can_grow_bb);
+                                                                                             net_bounding_box);
     }
 
     if (cheapest == nullptr) {
@@ -1003,19 +955,26 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     }
 }
 
-static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb) {
-    t_bb bb = highfanout_bb;
+/* Expand bb by inode's extents and clip against net_bb */
+inline void expand_highfanout_bounding_box(t_bb& bb, const t_bb& net_bb, RRNodeId inode, const RRGraphView* rr_graph) {
+    bb.xmin = std::max<int>(net_bb.xmin, std::min<int>(bb.xmin, rr_graph->node_xlow(inode)));
+    bb.ymin = std::max<int>(net_bb.ymin, std::min<int>(bb.ymin, rr_graph->node_ylow(inode)));
+    bb.xmax = std::min<int>(net_bb.xmax, std::max<int>(bb.xmax, rr_graph->node_xhigh(inode)));
+    bb.ymax = std::min<int>(net_bb.ymax, std::max<int>(bb.ymax, rr_graph->node_yhigh(inode)));
+    bb.layer_min = std::min<int>(bb.layer_min, rr_graph->node_layer(inode));
+    bb.layer_max = std::max<int>(bb.layer_max, rr_graph->node_layer(inode));
+}
 
+/* Expand bb by HIGH_FANOUT_BB_FAC and clip against net_bb */
+inline void adjust_highfanout_bounding_box(t_bb& bb, const t_bb& net_bb) {
     constexpr int HIGH_FANOUT_BB_FAC = 3;
-    bb.xmin -= HIGH_FANOUT_BB_FAC;
-    bb.ymin -= HIGH_FANOUT_BB_FAC;
-    bb.xmax += HIGH_FANOUT_BB_FAC;
-    bb.ymax += HIGH_FANOUT_BB_FAC;
 
-    bb.layer_min = highfanout_bb.layer_min;
-    bb.layer_max = highfanout_bb.layer_max;
-
-    return bb;
+    bb.xmin = std::max<int>(net_bb.xmin, bb.xmin - HIGH_FANOUT_BB_FAC);
+    bb.ymin = std::max<int>(net_bb.ymin, bb.ymin - HIGH_FANOUT_BB_FAC);
+    bb.xmax = std::min<int>(net_bb.xmax, bb.xmax + HIGH_FANOUT_BB_FAC);
+    bb.ymax = std::min<int>(net_bb.ymax, bb.ymax + HIGH_FANOUT_BB_FAC);
+    bb.layer_min = std::min<int>(net_bb.layer_min, bb.layer_min);
+    bb.layer_max = std::min<int>(net_bb.layer_min, bb.layer_max);
 }
 
 template<typename Heap>
@@ -1079,13 +1038,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 // Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, true);
 
-                // Update Bounding Box
-                highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_graph_->node_xlow(rr_node_to_add));
-                highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(rr_node_to_add));
-                highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(rr_node_to_add));
-                highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(rr_node_to_add));
-                highfanout_bb.layer_min = std::min<int>(highfanout_bb.layer_min, rr_graph_->node_layer(rr_node_to_add));
-                highfanout_bb.layer_max = std::max<int>(highfanout_bb.layer_max, rr_graph_->node_layer(rr_node_to_add));
+                // Expand HF BB to include the node (clip by original BB)
+                expand_highfanout_bounding_box(highfanout_bb, net_bounding_box, rr_node_to_add, rr_graph_);
+
                 if (is_flat_) {
                     if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                         chan_nodes_added++;
@@ -1111,15 +1066,14 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
         if (done) break;
     }
 
-    t_bb bounding_box = net_bounding_box;
     if (nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
         add_route_tree_to_heap(rt_root, target_node, cost_params, true);
+        return net_bounding_box;
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing
-        bounding_box = adjust_highfanout_bounding_box(highfanout_bb);
+        adjust_highfanout_bounding_box(highfanout_bb, net_bounding_box);
+        return highfanout_bb;
     }
-
-    return bounding_box;
 }
 
 static inline bool has_path_to_sink(const t_rr_graph_view& rr_nodes,

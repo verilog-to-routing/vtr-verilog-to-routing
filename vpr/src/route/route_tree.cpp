@@ -1,7 +1,9 @@
 #include "route_tree.h"
+
+#include "connection_based_routing.h"
 #include "globals.h"
 #include "netlist_fwd.h"
-#include "route_timing.h"
+#include "route_debug.h"
 #include "rr_graph_fwd.h"
 #include "vtr_math.h"
 
