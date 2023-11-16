@@ -755,7 +755,7 @@ ddGroupSifting(
         }
     }
 
-    qsort((void *)var,classes,sizeof(int),
+    qsort((void *)var,(size_t)classes,sizeof(int),
           (DD_QSFP) ddUniqueCompareGroup);
 
     if (lazyFlag) {

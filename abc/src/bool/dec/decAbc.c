@@ -237,20 +237,21 @@ int Dec_GraphToNetworkCount( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int NodeMa
   SeeAlso     []
 
 ***********************************************************************/
-void Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain )
+int Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain )
 {
     extern Abc_Obj_t *    Dec_GraphToNetwork( Abc_Ntk_t * pNtk, Dec_Graph_t * pGraph );
     Abc_Obj_t * pRootNew;
     Abc_Ntk_t * pNtk = pRoot->pNtk;
-    int nNodesNew, nNodesOld;
+    int nNodesNew, nNodesOld, RetValue;
     nNodesOld = Abc_NtkNodeNum(pNtk);
     // create the new structure of nodes
     pRootNew = Dec_GraphToNetwork( pNtk, pGraph );
     // remove the old nodes
-    Abc_AigReplace( (Abc_Aig_t *)pNtk->pManFunc, pRoot, pRootNew, fUpdateLevel );
+    RetValue = Abc_AigReplace( (Abc_Aig_t *)pNtk->pManFunc, pRoot, pRootNew, fUpdateLevel );
     // compare the gains
     nNodesNew = Abc_NtkNodeNum(pNtk);
     //assert( nGain <= nNodesOld - nNodesNew );
+    return RetValue;
 }
 
 

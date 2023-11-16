@@ -633,9 +633,11 @@ def create_job(
             prev_run_dir = get_existing_run_dir(find_task_dir(config, args.alt_tasks_dir), prev_run)
             prev_work_path = Path(prev_run_dir) / work_dir / param_string
             prev_file = prev_work_path / "{}.{}".format(Path(circuit).stem, extension)
-            if not prev_file.exists():
-                raise FileNotFoundError("use_previous: file %s not found" % str(prev_file))
-            current_cmd += [option, str(prev_file)]
+            if option == "REPLACE_BLIF":
+                current_cmd[0] = str(prev_file)
+                current_cmd += ["-start", "vpr"]
+            else:
+                current_cmd += [option, str(prev_file)]
 
     if param_string != "common":
         current_cmd += param.split(" ")

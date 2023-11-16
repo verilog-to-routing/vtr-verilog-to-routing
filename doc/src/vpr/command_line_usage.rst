@@ -381,6 +381,9 @@ Use the options below to override this default naming behaviour.
 .. option:: --write_placement_delay_lookup <file>
 
     Writes the placement delay lookup to the specified file.
+.. option:: --write_initial_place_file <file>
+
+    Writes out the the placement chosen by the initial placement algorithm to the specified file
 
 .. option:: --outfile_prefix <string>
 
@@ -768,6 +771,19 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     The algorithm options have identical functionality as the ones used by the option ``--place_algorithm``. If specified, it overrides the option ``--place_algorithm`` during placement quench.
 
     **Default:**  ``criticality_timing``
+
+.. option:: --place_bounding_box_mode {auto_bb | cube_bb | per_layer_bb}
+
+    Specifies the type of the wirelength estimator used during placement. For single layer architectures, cube_bb (a 3D bounding box) is always used (and is the same as per_layer_bb).
+    For 3D architectures, cube_bb is appropriate if you can cross between layers at switch blocks, while if you can only cross between layers at output pins per_layer_bb (one bouding box per layer) is more accurate and appropriate.
+
+    ``auto_bb``: The bounding box type is determined automatically based on the cross-layer connections.
+
+    ``cube_bb``: ``cube_bb`` bounding box is used to estimate the wirelength.
+
+    ``per_layer_bb``: ``per_layer_bb`` bounding box is used to estimate the wirelength
+
+    **Default:** ``auto_bb``
 
 .. option:: --place_chan_width <int>
 

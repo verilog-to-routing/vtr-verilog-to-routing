@@ -105,7 +105,7 @@ static void Abc_NtkManRstPrintStats( Abc_ManRst_t * p );
 ***********************************************************************/
 int Abc_NtkRestructure( Abc_Ntk_t * pNtk, int nCutMax, int fUpdateLevel, int fUseZeros, int fVerbose )
 {
-    extern void           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
+    extern int           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
     ProgressBar * pProgress;
     Abc_ManRst_t * pManRst;
     Cut_Man_t * pManCut;

@@ -1010,7 +1010,7 @@ Abc_Ntk_t * Abc_NtkBddDec( Abc_Ntk_t * pNtk, int fVerbose )
     int i;
     assert( Abc_NtkIsStrash(pNtk) );
     assert( Abc_NtkCoNum(pNtk) <= BDD_FUNC_MAX );
-    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, nBddSizeMax, fDropInternal, fReorder, fVerbose );
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, nBddSizeMax, fDropInternal, fReorder, 0, fVerbose );
     if ( dd == NULL )
     {
         Abc_Print( -1, "Construction of global BDDs has failed.\n" );

@@ -47,7 +47,7 @@ Amap_Cut_t * Amap_ManDupCut( Amap_Man_t * p, Amap_Cut_t * pCut )
     Amap_Cut_t * pNew;
     int nBytes = sizeof(Amap_Cut_t) + sizeof(int) * pCut->nFans;
     pNew = (Amap_Cut_t *)Aig_MmFlexEntryFetch( p->pMemCutBest, nBytes );
-    memcpy( pNew, pCut, nBytes );
+    memcpy( pNew, pCut, (size_t)nBytes );
     return pNew;
 }
 
@@ -299,6 +299,63 @@ static inline float Amap_CutAreaDeref( Amap_Man_t * p, Amap_Mat_t * pM )
   SeeAlso     []
 
 ***********************************************************************/
+static inline float Amap_CutAreaRef2( Amap_Man_t * p, Amap_Mat_t * pM, Vec_Ptr_t * vTemp, int Limit )
+{
+    Amap_Obj_t * pFanin;
+    int i, fCompl;
+    float Area = Amap_LibGate( p->pLib, pM->pSet->iGate )->dArea;
+    if ( Limit == 0 ) return Area;
+    Amap_MatchForEachFaninCompl( p, pM, pFanin, fCompl, i )
+    {
+        Vec_PtrPush( vTemp, pFanin->nFouts + fCompl );
+        assert( Amap_ObjRefsTotal(pFanin) >= 0 );
+        if ( (int)pFanin->fPolar != fCompl && pFanin->nFouts[fCompl] == 0 )
+            Area += p->fAreaInv;
+        if ( pFanin->nFouts[fCompl]++ + pFanin->nFouts[!fCompl] == 0 && Amap_ObjIsNode(pFanin) )
+            Area += Amap_CutAreaRef2( p, &pFanin->Best, vTemp, Limit-1 );
+    }
+    return Area;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Derives area of the match for a non-referenced node.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline float Amap_CutAreaDerefed2( Amap_Man_t * p, Amap_Obj_t * pNode, Amap_Mat_t * pM )
+{
+    int nRecurLevels = 8;
+    int fComplNew, i, * pInt;
+    float aResult;
+    Vec_PtrClear( p->vTempP );
+    aResult = Amap_CutAreaRef2( p, pM, p->vTempP, nRecurLevels );
+    //Amap_CutAreaDeref( p, pM );
+    Vec_PtrForEachEntry( int *, p->vTempP, pInt, i )
+        (*pInt)--;
+    // if node is needed in another polarity, add inverter
+    fComplNew = pM->pCut->fInv ^ pM->pSet->fInv;
+    if ( pNode->nFouts[fComplNew] == 0 && pNode->nFouts[!fComplNew] > 0 )
+        aResult += p->fAreaInv;
+    return aResult;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Counts area while referencing the match.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
 static inline float Amap_CutAreaRef( Amap_Man_t * p, Amap_Mat_t * pM )
 {
     Amap_Obj_t * pFanin;
@@ -444,7 +501,8 @@ static inline void Amap_ManMatchGetExacts( Amap_Man_t * p, Amap_Obj_t * pNode, A
     }
     pM->AveFan /= pGate->nPins;
     pM->Delay += 1.0;
-    pM->Area = Amap_CutAreaDerefed( p, pNode, pM );
+    //pM->Area = Amap_CutAreaDerefed( p, pNode, pM );
+    pM->Area = Amap_CutAreaDerefed2( p, pNode, pM );
 }
 
 /**Function*************************************************************

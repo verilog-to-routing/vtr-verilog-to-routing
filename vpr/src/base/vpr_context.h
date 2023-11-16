@@ -394,6 +394,12 @@ struct PlacementContext : public Context {
      * placer_debug_net or placer_debug_block parameters in the command line.
      */
     bool f_placer_debug = false;
+
+    /**
+     * Set this variable to ture if the type of the bounding box used in placement is of the type cube. If it is false,
+     * it would mean that per-layer bounding box is used. For the 2D architecture, the cube bounding box would be used.
+     */
+    bool cube_bb = false;
 };
 
 /**

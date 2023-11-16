@@ -97,7 +97,7 @@ int Ivy_ManCheck( Ivy_Man_t * p )
             pObj2 = Ivy_TableLookup( p, pObj );
             if ( pObj2 != pObj )
                 printf( "Ivy_ManCheck: Latch with ID \"%d\" is not in the structural hashing table.\n", pObj->Id );
-                continue;
+            continue;
         }
         // consider the AND node
         if ( !Ivy_ObjFanin0(pObj) || !Ivy_ObjFanin1(pObj) )

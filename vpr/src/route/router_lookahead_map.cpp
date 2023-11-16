@@ -25,6 +25,7 @@
 #include <vector>
 #include <queue>
 #include <ctime>
+#include "connection_router_interface.h"
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
@@ -39,7 +40,6 @@
 #include "rr_graph2.h"
 #include "rr_graph.h"
 #include "route_common.h"
-#include "route_timing.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
@@ -255,6 +255,19 @@ static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<i
  */
 static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opin_global_cost_map);
 
+/**
+ * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink
+ * @param src_opin_delay_map
+ * @param layer_num
+ * @param delta_x
+ * @param delta_y
+ * @return (delay, congestion)
+ */
+static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
+                                                      int layer_num,
+                                                      int delta_x,
+                                                      int delta_y);
+
 // Read the file and fill inter_tile_pin_primitive_pin_delay and tile_min_cost
 static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
                                                 const std::string& file);
@@ -295,6 +308,10 @@ static void print_wire_cost_map(int layer_num, const std::vector<t_segment_inf>&
 static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 
 /******** Interface class member function definitions ********/
+MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
+    : det_routing_arch_(det_routing_arch)
+    , is_flat_(is_flat) {}
+
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -430,6 +447,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
     int delta_x, delta_y;
     int from_layer_num = rr_graph.node_layer(from_node);
+    int to_layer_num = rr_graph.node_layer(to_node);
     get_xy_deltas(from_node, to_node, &delta_x, &delta_y);
     delta_x = abs(delta_x);
     delta_y = abs(delta_y);
@@ -444,65 +462,30 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
         //delay to reach the sink.
 
-        t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
-                                                                                rr_graph.node_ylow(from_node),
-                                                                                from_layer_num});
+        t_physical_tile_type_ptr from_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
+                                                                                     rr_graph.node_ylow(from_node),
+                                                                                     from_layer_num});
 
-        auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
+        auto from_tile_index = std::distance(&device_ctx.physical_tile_types[0], from_tile_type);
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
-        if (this->src_opin_delays[from_layer_num][tile_index][from_ptc].empty()) {
-            //During lookahead profiling we were unable to find any wires which connected
-            //to this PTC.
-            //
-            //This can sometimes occur at very low channel widths (e.g. during min W search on
-            //small designs) where W discretization combined with fraction Fc may cause some
-            //pins/sources to be left disconnected.
-            //
-            //Such RR graphs are of course unroutable, but that should be determined by the
-            //router. So just return an arbitrary value here rather than error.
-
-            //We choose to return the largest (non-infinite) value possible, but scaled
-            //down by a large factor to maintain some dynaimc range in case this value ends
-            //up being processed (e.g. by the timing analyzer).
-            //
-            //The cost estimate should still be *extremely* large compared to a typical delay, and
-            //so should ensure that the router de-prioritizes exploring this path, but does not
-            //forbid the router from trying.
-            expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
-            expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
-        } else {
-            //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
-            //and then add the estimates from those wire types for the distance of interest.
-            //If there are multiple options we use the minimum value.
-            for (const auto& kv : this->src_opin_delays[from_layer_num][tile_index][from_ptc]) {
-                const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
-
-                Cost_Entry wire_cost_entry;
-                if (reachable_wire_inf.wire_rr_type == SINK) {
-                    //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
-                    //In the lookahead, we treat such connections as 'special' wire types
-                    //with no delay/congestion cost
-                    wire_cost_entry.delay = 0;
-                    wire_cost_entry.congestion = 0;
-                } else {
-                    //For an actual accessible wire, we query the wire look-up to get it's
-                    //delay and congestion cost estimates
-                    wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type,
-                                                          reachable_wire_inf.wire_seg_index,
-                                                          from_layer_num,
-                                                          delta_x,
-                                                          delta_y);
-                }
-
-                float this_delay_cost = (params.criticality) * (reachable_wire_inf.delay + wire_cost_entry.delay);
-                float this_cong_cost = (1. - params.criticality) * (reachable_wire_inf.congestion + wire_cost_entry.congestion);
-
-                expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
-                expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
-            }
+        // Currently, we assume inter-layer connections are only from a block output pin to another layer. Thus, if the from and to layers are different,
+        // We use src_opin_inter_layer_delays.
+        if (from_layer_num == to_layer_num) {
+            std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc],
+                                                                                       from_layer_num,
+                                                                                       delta_x,
+                                                                                       delta_y);
+        } else if (from_layer_num != to_layer_num) {
+            std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_inter_layer_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
+                                                                                       to_layer_num,
+                                                                                       delta_x,
+                                                                                       delta_y);
         }
+
+        expected_delay_cost *= params.criticality;
+        expected_cong_cost *= (1 - params.criticality);
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
@@ -516,7 +499,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                 .c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
-        VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
         auto from_cost_index = rr_graph.node_cost_index(from_node);
@@ -524,29 +506,34 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         VTR_ASSERT(from_seg_index >= 0);
 
-        /* now get the expected cost from our lookahead map */
-        Cost_Entry cost_entry = get_wire_cost_entry(from_type,
-                                                    from_seg_index,
-                                                    from_layer_num,
-                                                    delta_x,
-                                                    delta_y);
+        // Since we assume that inter-layer connections are only from a block output pin to another layer, if the from node
+        // is of type CHANX/CHANY, and the sink node is on the other layer, there will no path from that node to the sink
+        if (from_layer_num != to_layer_num) {
+            expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
+            expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
+        } else {
+            /* now get the expected cost from our lookahead map */
+            Cost_Entry cost_entry = get_wire_cost_entry(from_type,
+                                                        from_seg_index,
+                                                        from_layer_num,
+                                                        delta_x,
+                                                        delta_y);
+            expected_delay_cost = cost_entry.delay;
+            expected_cong_cost = cost_entry.congestion;
 
-        float expected_delay = cost_entry.delay;
-        float expected_cong = cost_entry.congestion;
-
-        expected_delay_cost = params.criticality * expected_delay;
-        expected_cong_cost = (1.0 - params.criticality) * expected_cong;
-
-        VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
-                            vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(from_node, is_flat_).c_str(),
-                                            describe_rr_node(rr_graph,
-                                                             device_ctx.grid,
-                                                             device_ctx.rr_indexed_data,
-                                                             from_node,
-                                                             is_flat_)
-                                                .c_str())
-                                .c_str());
+            VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
+                                vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
+                                                rr_node_arch_name(from_node, is_flat_).c_str(),
+                                                describe_rr_node(rr_graph,
+                                                                 device_ctx.grid,
+                                                                 device_ctx.rr_indexed_data,
+                                                                 from_node,
+                                                                 is_flat_)
+                                                    .c_str())
+                                    .c_str());
+        }
+        expected_delay_cost *= params.criticality;
+        expected_cong_cost *= (1 - params.criticality);
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
@@ -565,7 +552,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
 }
 
 void MapLookahead::compute_intra_tile() {
@@ -588,7 +575,7 @@ void MapLookahead::read(const std::string& file) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    std::tie(this->src_opin_delays, this->src_opin_inter_layer_delays) = util::compute_router_src_opin_lookahead(is_flat_);
 }
 
 void MapLookahead::read_intra_cluster(const std::string& file) {
@@ -1503,6 +1490,67 @@ static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opi
     }
 }
 
+static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
+                                                      int layer_num,
+                                                      int delta_x,
+                                                      int delta_y) {
+    float expected_delay_cost = std::numeric_limits<float>::infinity();
+    float expected_cong_cost = std::numeric_limits<float>::infinity();
+    if (src_opin_delay_map.empty()) {
+        //During lookahead profiling we were unable to find any wires which connected
+        //to this PTC.
+        //
+        //This can sometimes occur at very low channel widths (e.g. during min W search on
+        //small designs) where W discretization combined with fraction Fc may cause some
+        //pins/sources to be left disconnected.
+        //
+        //Such RR graphs are of course unroutable, but that should be determined by the
+        //router. So just return an arbitrary value here rather than error.
+
+        //We choose to return the largest (non-infinite) value possible, but scaled
+        //down by a large factor to maintain some dynaimc range in case this value ends
+        //up being processed (e.g. by the timing analyzer).
+        //
+        //The cost estimate should still be *extremely* large compared to a typical delay, and
+        //so should ensure that the router de-prioritizes exploring this path, but does not
+        //forbid the router from trying.
+        expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
+        expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
+    } else {
+        //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
+        //and then add the estimates from those wire types for the distance of interest.
+        //If there are multiple options we use the minimum value.
+        for (const auto& kv : src_opin_delay_map) {
+            const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
+
+            Cost_Entry wire_cost_entry;
+            if (reachable_wire_inf.wire_rr_type == SINK) {
+                //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
+                //In the lookahead, we treat such connections as 'special' wire types
+                //with no delay/congestion cost
+                wire_cost_entry.delay = 0;
+                wire_cost_entry.congestion = 0;
+            } else {
+                //For an actual accessible wire, we query the wire look-up to get it's
+                //delay and congestion cost estimates
+                wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type,
+                                                      reachable_wire_inf.wire_seg_index,
+                                                      layer_num,
+                                                      delta_x,
+                                                      delta_y);
+            }
+
+            float this_delay_cost = reachable_wire_inf.delay + wire_cost_entry.delay;
+            float this_cong_cost = reachable_wire_inf.congestion + wire_cost_entry.congestion;
+
+            expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
+            expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
+        }
+    }
+
+    return std::make_pair(expected_delay_cost, expected_cong_cost);
+}
+
 //
 // When writing capnp targetted serialization, always allow compilation when
 // VTR_ENABLE_CAPNPROTO=OFF.  Generally this means throwing an exception
@@ -1518,7 +1566,7 @@ void read_router_lookahead(const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read " DISABLE_ERROR);
 }
 
-void DeltaDelayModel::write(const std::string& /*file*/) const {
+void write_router_lookahead(const std::string& file) {
     VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write " DISABLE_ERROR);
 }
 

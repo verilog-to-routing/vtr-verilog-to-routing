@@ -57,6 +57,7 @@ Amap_Man_t * Amap_ManStart( int nNodes )
     p->vCuts0  = Vec_PtrAlloc( 100 );
     p->vCuts1  = Vec_PtrAlloc( 100 );
     p->vCuts2  = Vec_PtrAlloc( 100 );
+    p->vTempP  = Vec_PtrAlloc( 100 );
     // prepare the memory manager
     p->pMemObj = Aig_MmFixedStart( sizeof(Amap_Obj_t), nNodes );
     p->pMemCuts = Aig_MmFlexStart();
@@ -84,6 +85,7 @@ void Amap_ManStop( Amap_Man_t * p )
     Vec_PtrFree( p->vCuts0 );
     Vec_PtrFree( p->vCuts1 );
     Vec_PtrFree( p->vCuts2 );
+    Vec_PtrFree( p->vTempP );
     Vec_IntFree( p->vTemp );
     Aig_MmFixedStop( p->pMemObj, 0 );
     Aig_MmFlexStop( p->pMemCuts, 0 );

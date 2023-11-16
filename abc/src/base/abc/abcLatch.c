@@ -148,7 +148,7 @@ int Abc_NtkRemoveSelfFeedLatches( Abc_Ntk_t * pNtk )
 void Abc_NtkLatchPipe( Abc_Ntk_t * pNtk, int nLatches )
 {
     Vec_Ptr_t * vNodes;
-    Abc_Obj_t * pObj, * pLatch, * pFanin, * pFanout;
+    Abc_Obj_t * pObj, * pFanin, * pFanout;
     int i, k, nTotal, nDigits;
     if ( nLatches < 1 )
         return;
@@ -157,18 +157,9 @@ void Abc_NtkLatchPipe( Abc_Ntk_t * pNtk, int nLatches )
     vNodes = Vec_PtrAlloc( 100 );
     Abc_NtkForEachPi( pNtk, pObj, i )
     {
-        // remember current fanins of the PI
         Abc_NodeCollectFanouts( pObj, vNodes );
-        // create the latches
-        for ( pFanin = pObj, k = 0; k < nLatches; k++, pFanin = pLatch )
-        {
-            pLatch = Abc_NtkCreateLatch( pNtk );
-            Abc_ObjAddFanin( pLatch, pFanin );
-            Abc_LatchSetInitDc( pLatch );
-            // create the name of the new latch
-            Abc_ObjAssignName( pLatch, Abc_ObjNameDummy("LL", i*nLatches + k, nDigits), NULL );
-        }
-        // patch the PI fanouts
+        for ( pFanin = pObj, k = 0; k < nLatches; k++ )
+            pFanin = Abc_NtkAddLatch( pNtk, pFanin, ABC_INIT_ZERO );
         Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pFanout, k )
             Abc_ObjPatchFanin( pFanout, pObj, pFanin );
     }
@@ -435,7 +426,7 @@ Abc_Ntk_t * Abc_NtkConvertOnehot( Abc_Ntk_t * pNtk )
         return Abc_NtkDup( pNtk );
     if ( nFlops > 16 )
     {
-        printf( "Cannot reencode %d flops because it will lead to 2^%d states.\n", nFlops, nFlops );
+        printf( "Cannot re-encode %d flops because it will lead to 2^%d states.\n", nFlops, nFlops );
         return NULL;
     }
     // check if there are latches with DC values

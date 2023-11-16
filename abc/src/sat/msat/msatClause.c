@@ -522,7 +522,7 @@ void Msat_ClausePrintSymbols( Msat_Clause_t * pC )
 //        if ( pC->fLearned )
 //            printf( "Act = %.4f  ", Msat_ClauseReadActivity(pC) );
         for ( i = 0; i < (int)pC->nSize; i++ )
-            printf(" "L_LIT, L_lit(pC->pData[i]));
+            printf(" " L_LIT, L_lit(pC->pData[i]));
     }
     printf( "\n" );
 }

@@ -894,7 +894,7 @@ void Gia_ManFindCaninicalOrder( Gia_Man_t * p, Vec_Int_t * vCis, Vec_Int_t * vAn
     Vec_PtrClear( vTemp );
     Gia_ManForEachPi( p, pObj, i )
         Vec_PtrPush( vTemp, pObj );
-    Vec_PtrSort( vTemp, (int (*)(void))Gia_ObjCompareByValue );
+    Vec_PtrSort( vTemp, (int (*)(const void *, const void *))Gia_ObjCompareByValue );
     // create the result
     Vec_PtrForEachEntry( Gia_Obj_t *, vTemp, pObj, i )
         Vec_IntPush( vCis, Gia_ObjId(p, pObj) );
@@ -917,7 +917,7 @@ void Gia_ManFindCaninicalOrder( Gia_Man_t * p, Vec_Int_t * vCis, Vec_Int_t * vAn
             pObj->Value = Abc_Var2Lit( Gia_ObjFanin0(pObj)->Value, Gia_ObjFaninC0(pObj) );
             Vec_PtrPush( vTemp, pObj );
         }
-        Vec_PtrSort( vTemp, (int (*)(void))Gia_ObjCompareByValue );
+        Vec_PtrSort( vTemp, (int (*)(const void *, const void *))Gia_ObjCompareByValue );
         Vec_PtrForEachEntry( Gia_Obj_t *, vTemp, pObj, i )
             Vec_IntPush( vCos, Gia_ObjId(p, pObj) );
     }
@@ -926,7 +926,7 @@ void Gia_ManFindCaninicalOrder( Gia_Man_t * p, Vec_Int_t * vCis, Vec_Int_t * vAn
     Vec_PtrClear( vTemp );
     Gia_ManForEachRo( p, pObj, i )
         Vec_PtrPush( vTemp, pObj );
-    Vec_PtrSort( vTemp, (int (*)(void))Gia_ObjCompareByValue );
+    Vec_PtrSort( vTemp, (int (*)(const void *, const void *))Gia_ObjCompareByValue );
     // create the result
     Vec_PtrForEachEntry( Gia_Obj_t *, vTemp, pObj, i )
     {
@@ -1293,7 +1293,7 @@ void Gia_IsoTest( Gia_Man_t * p, Abc_Cex_t * pCex, int fVerbose )
     // create AIG with two primary outputs (original and permuted)
     pPerm = Gia_ManDupPerm( p, vPiPerm );
     pDouble = Gia_ManDupAppendNew( p, pPerm );
-//Gia_AigerWrite( pDouble, "test.aig", 0, 0 );
+//Gia_AigerWrite( pDouble, "test.aig", 0, 0, 0 );
 
     // analyze the two-output miter
     pAig = Gia_ManIsoReduce( pDouble, &vPosEquivs, &vPisPerm, 0, 0, 0, 0 );

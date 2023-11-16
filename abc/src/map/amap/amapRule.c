@@ -396,7 +396,7 @@ if ( pLib->fVerbose )
                 pSet2->iGate = pGate->Id;
                 pSet2->fInv  = Abc_LitIsCompl(iNod);
                 pSet2->nIns  = pGate->nPins;
-                memcpy( pSet2->Ins, pSet->Ins, pGate->nPins );
+                memcpy( pSet2->Ins, pSet->Ins, (size_t)pGate->nPins );
                 // update inputs
                 pSet2->Ins[iThis] = Abc_Var2Lit( Abc_Lit2Var(pSet->Ins[iThat]), Abc_LitIsCompl(pSet->Ins[iThis]) );
                 pSet2->Ins[iThat] = Abc_Var2Lit( Abc_Lit2Var(pSet->Ins[iThis]), Abc_LitIsCompl(pSet->Ins[iThat]) );

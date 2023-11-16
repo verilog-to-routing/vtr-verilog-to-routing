@@ -223,8 +223,8 @@ void Acec_ManCollectInsOuts( Gia_Man_t * p, Vec_Int_t * vAdds, Vec_Int_t * vBoxe
     Vec_IntForEachEntryDouble( vResOuts, iObj, Rank, k )
         Vec_IntWriteEntry( vResOuts, k+1, 1 + RankMax - Rank );
     // sort by rank
-    qsort( Vec_IntArray(vResIns),  Vec_IntSize(vResIns)/2,  8, (int (*)(const void *, const void *))Acec_ManCompareTwo );
-    qsort( Vec_IntArray(vResOuts), Vec_IntSize(vResOuts)/2, 8, (int (*)(const void *, const void *))Acec_ManCompareTwo );
+    qsort( Vec_IntArray(vResIns),  (size_t)(Vec_IntSize(vResIns)/2),  8, (int (*)(const void *, const void *))Acec_ManCompareTwo );
+    qsort( Vec_IntArray(vResOuts), (size_t)(Vec_IntSize(vResOuts)/2), 8, (int (*)(const void *, const void *))Acec_ManCompareTwo );
 }
 void Acec_ManCollectBoxSets_rec( Gia_Man_t * p, int Carry, int iRank, Vec_Int_t * vAdds, Vec_Int_t * vCarryMap, Vec_Int_t * vBoxes, Vec_Int_t * vBoxRanks )
 {

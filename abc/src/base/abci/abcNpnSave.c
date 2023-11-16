@@ -564,7 +564,7 @@ void Npn_ManWrite( Npn_Man_t * p, char * pFileName )
     for ( i = 0; i < p->nBins; i++ )
         for ( pEntry = Npn_ManObj(p, p->pBins[i]); pEntry; pEntry = Npn_ManObj(p, pEntry->iNext) )
             Vec_PtrPush( vEntries, pEntry );
-    Vec_PtrSort( vEntries, (int (*)())Npn_ManCompareEntries );
+    Vec_PtrSort( vEntries, (int (*)(const void *, const void *))Npn_ManCompareEntries );
     Vec_PtrForEachEntry( Npn_Obj_t *, vEntries, pEntry, i )
     {
         Extra_PrintHexadecimal( pFile, (unsigned *)&pEntry->uTruth, 6 );

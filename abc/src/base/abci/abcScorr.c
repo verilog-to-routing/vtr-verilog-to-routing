@@ -444,6 +444,36 @@ Abc_Ntk_t * Abc_NtkTestScorr( char * pFileNameIn, char * pFileNameOut, int nStep
     return pResult;
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Gia_Man_t * Cec_ManScorrCorrespondence( Gia_Man_t * p, Cec_ParCor_t * pCorPars )
+{
+    Gia_Man_t * pRes = NULL;
+    Aig_Man_t * pOld, * pNew;
+    Ssw_Pars_t SswPars, * pSswPars = &SswPars;
+    Ssw_ManSetDefaultParams( pSswPars );
+    pSswPars->nBTLimit   = pCorPars->nBTLimit;
+    pSswPars->nFramesK   = pCorPars->nFrames;
+    pSswPars->fLatchCorr = pCorPars->fLatchCorr;
+    pSswPars->fVerbose   = pCorPars->fVerbose;
+    pOld = Gia_ManToAigSimple( p );
+    pNew = Ssw_SignalCorrespondence( pOld, pSswPars );
+    pRes = Gia_ManFromAigSimple( pNew );
+    Gia_ManReprFromAigRepr( pOld, p );
+    Aig_ManStop( pOld );
+    Aig_ManStop( pNew );
+    return pRes;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

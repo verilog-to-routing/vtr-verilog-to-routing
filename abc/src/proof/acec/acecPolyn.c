@@ -139,7 +139,7 @@ void Pln_ManPrintFinal( Pln_Man_t * p, int fVerbose, int fVeryVerbose )
         Vec_IntPushTwo( vPairs, iConst, iMono );
     }
     // sort triples
-    qsort( Vec_IntArray(vPairs), Vec_IntSize(vPairs)/4, 16, (int (*)(const void *, const void *))Pln_ManCompare3 );
+    qsort( Vec_IntArray(vPairs), (size_t)(Vec_IntSize(vPairs)/4), 16, (int (*)(const void *, const void *))Pln_ManCompare3 );
     // print
     if ( fVerbose )
     Vec_IntForEachEntryDouble( vPairs, iConst, iMono, i )

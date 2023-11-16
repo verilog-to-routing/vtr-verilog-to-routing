@@ -520,6 +520,22 @@ Cudd_bddXnor(
 } /* end of Cudd_bddXnor */
 
 
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup2 that can
+              be casted to DD_CTFP.
+
+******************************************************************************/
+static DdNode *
+Cudd_bddLeq_dummy(DdManager * dd, DdNode * f,  DdNode * g)
+{
+  assert(0);
+  return 0;
+}
+#endif
+
+
 /**Function********************************************************************
 
   Synopsis    [Determines whether f is less than or equal to g.]
@@ -573,7 +589,11 @@ Cudd_bddLeq(
     /* Here neither f nor g is constant. */
 
     /* Check cache. */
+#ifdef USE_CASH_DUMMY
+    tmp = cuddCacheLookup2(dd,(DD_CTFP)Cudd_bddLeq_dummy,f,g);
+#else
     tmp = cuddCacheLookup2(dd,(DD_CTFP)Cudd_bddLeq,f,g);
+#endif
     if (tmp != NULL) {
         return(tmp == one);
     }
@@ -605,7 +625,11 @@ Cudd_bddLeq(
     res = Cudd_bddLeq(dd,fvn,gvn) && Cudd_bddLeq(dd,fv,gv);
 
     /* Store result in cache and return. */
+#ifdef USE_CASH_DUMMY
+    cuddCacheInsert2(dd,(DD_CTFP)Cudd_bddLeq_dummy,f,g,(res ? one : zero));
+#else
     cuddCacheInsert2(dd,(DD_CTFP)Cudd_bddLeq,f,g,(res ? one : zero));
+#endif
     return(res);
 
 } /* end of Cudd_bddLeq */
@@ -1179,8 +1203,8 @@ bddVarToCanonical(
   unsigned int * topgp,
   unsigned int * tophp)
 {
-    register DdNode             *F, *G, *H, *r, *f, *g, *h;
-    register unsigned int       topf, topg, toph;
+    DdNode             *F, *G, *H, *r, *f, *g, *h;
+    unsigned int       topf, topg, toph;
     DdNode                      *one = dd->one;
     int                         comple, change;
 
@@ -1281,7 +1305,7 @@ bddVarToCanonicalSimple(
   unsigned int * topgp,
   unsigned int * tophp)
 {
-    register DdNode             *r, *f, *g, *h;
+    DdNode             *r, *f, *g, *h;
     int                         comple, change;
 
     f = *fp;

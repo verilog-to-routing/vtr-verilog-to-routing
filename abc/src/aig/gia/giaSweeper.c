@@ -439,7 +439,7 @@ void Gia_SweeperLogicDump( Gia_Man_t * p, Vec_Int_t * vProbeIds, int fDumpConds,
         Gia_ManStop( pGiaCond );
         printf( " and conditions" );
     }
-    Gia_AigerWrite( pGiaOuts, pFileName, 0, 0 );
+    Gia_AigerWrite( pGiaOuts, pFileName, 0, 0, 0 );
     Gia_ManStop( pGiaOuts );
     printf( " into file \"%s\".\n", pFileName );
 }

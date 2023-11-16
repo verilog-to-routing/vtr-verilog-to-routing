@@ -158,6 +158,97 @@ void Gia_Iso3Test( Gia_Man_t * p )
     Vec_IntFreeP( &vSign );
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Wec_t * Gia_Iso4Gia( Gia_Man_t * p )
+{
+    Vec_Wec_t * vLevs = Gia_ManLevelizeR( p );
+    Vec_Int_t * vLevel; int l;
+    Abc_Random( 1 );
+    Vec_WecForEachLevel( vLevs, vLevel, l )
+    {
+        Gia_Obj_t * pObj;  int i;
+        int RandC[2] = { Abc_Random(0), Abc_Random(0) };
+        if ( l == 0 )
+        {
+            Gia_ManForEachObjVec( vLevel, p, pObj, i )
+            {
+                assert( Gia_ObjIsCo(pObj) );
+                pObj->Value = Abc_Random(0);
+                Gia_ObjFanin0(pObj)->Value += pObj->Value + RandC[Gia_ObjFaninC0(pObj)];
+            }
+        }
+        else 
+        {
+            Gia_ManForEachObjVec( vLevel, p, pObj, i ) if ( Gia_ObjIsAnd(pObj) )
+            {
+                Gia_ObjFanin0(pObj)->Value += pObj->Value + RandC[Gia_ObjFaninC0(pObj)];
+                Gia_ObjFanin1(pObj)->Value += pObj->Value + RandC[Gia_ObjFaninC1(pObj)];
+            }
+        }
+    }
+    return vLevs;
+}
+void Gia_Iso4Test( Gia_Man_t * p )
+{
+    Vec_Wec_t * vLevs = Gia_Iso4Gia( p );
+    Vec_Int_t * vLevel; int l;
+    Vec_WecForEachLevel( vLevs, vLevel, l )
+    {
+        Gia_Obj_t * pObj;  int i;
+        printf( "Level %d\n", l );
+        Gia_ManForEachObjVec( vLevel, p, pObj, i )
+            printf( "Obj = %5d.  Value = %08x.\n", Gia_ObjId(p, pObj), pObj->Value );
+    }
+    Vec_WecFree( vLevs );
+}
+Vec_Int_t * Gia_IsoCollectData( Gia_Man_t * p, Vec_Int_t * vObjs )
+{
+    Gia_Obj_t * pObj;  int i;
+    Vec_Int_t * vData = Vec_IntAlloc( Vec_IntSize(vObjs) );
+    Gia_ManForEachObjVec( vObjs, p, pObj, i )
+        Vec_IntPush( vData, pObj->Value );
+    return vData;
+}
+void Gia_IsoCompareVecs( Gia_Man_t * pGia0, Vec_Wec_t * vLevs0, Gia_Man_t * pGia1, Vec_Wec_t * vLevs1 )
+{
+    int i, Common, nLevels = Abc_MinInt( Vec_WecSize(vLevs0), Vec_WecSize(vLevs1) );
+    Gia_ManPrintStats( pGia0, NULL );
+    Gia_ManPrintStats( pGia1, NULL );
+    printf( "Printing %d shared levels:\n", nLevels );
+    for ( i = 0; i < nLevels; i++ )
+    {
+        Vec_Int_t * vLev0 = Vec_WecEntry(vLevs0, i);
+        Vec_Int_t * vLev1 = Vec_WecEntry(vLevs1, i);
+        Vec_Int_t * vData0 = Gia_IsoCollectData( pGia0, vLev0 );
+        Vec_Int_t * vData1 = Gia_IsoCollectData( pGia1, vLev1 );
+        Vec_IntSort( vData0, 0 );
+        Vec_IntSort( vData1, 0 );
+        Common = Vec_IntTwoCountCommon( vData0, vData1 );
+        printf( "Level = %3d. One = %6d. Two = %6d.  Common = %6d.\n", 
+            i, Vec_IntSize(vData0)-Common, Vec_IntSize(vData1)-Common, Common );
+        Vec_IntFree( vData0 );
+        Vec_IntFree( vData1 );        
+    }
+}
+void Gia_Iso4TestTwo( Gia_Man_t * pGia0, Gia_Man_t * pGia1 )
+{
+    Vec_Wec_t * vLevs0 = Gia_Iso4Gia( pGia0 );
+    Vec_Wec_t * vLevs1 = Gia_Iso4Gia( pGia1 );
+    Gia_IsoCompareVecs( pGia0, vLevs0, pGia1, vLevs1 );
+    Vec_WecFree( vLevs0 );
+    Vec_WecFree( vLevs1 );
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////

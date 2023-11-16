@@ -189,7 +189,7 @@ int WriteResultIntoFile( char * pFileName )
     pFile = fopen( pFileName, "w" );
     if ( pFile == NULL )
     {
-        fprintf( pFile, "\n\nCannot open the output file\n" );
+        fprintf( stderr, "\n\nCannot open the output file\n" );
         return 1;
     }
 

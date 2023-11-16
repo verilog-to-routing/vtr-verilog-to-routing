@@ -9,10 +9,11 @@
 #ifndef RTL_UTILS_H
 #define RTL_UTILS_H
 
+#include <cstdint>
 #include <string>
 #include <iostream>
-
 #include <string.h>
+#include <stdint.h>
 
 #ifndef FILE_NAME
 #    define FILE_NAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)

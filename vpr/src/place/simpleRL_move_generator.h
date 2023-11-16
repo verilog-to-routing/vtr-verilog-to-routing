@@ -211,6 +211,8 @@ class SimpleRLMoveGenerator : public MoveGenerator {
      *
      *   @param agent std::unique_ptr to the agent. Only EpsilonGreedyAgent and SoftmaxAgent types are accepted
      *   by the constructor. If other types are passed, a compile error would be thrown.
+     *
+     *   @param is_multi_layer A boolean value to indicate whether the placement is multi-layer or not
      */
     template<class T,
              class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>

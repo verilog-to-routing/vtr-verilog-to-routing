@@ -197,7 +197,7 @@ void Extra_UnateInfoPrint( Extra_UnateInfo_t * p )
     char * pBuffer;
     int i;
     pBuffer = ABC_ALLOC( char, p->nVarsMax+1 );
-    memset( pBuffer, ' ', p->nVarsMax );
+    memset( pBuffer, ' ', (size_t)p->nVarsMax );
     pBuffer[p->nVarsMax] = 0;
     for ( i = 0; i < p->nVars; i++ )
         if ( p->pVars[i].Neg )

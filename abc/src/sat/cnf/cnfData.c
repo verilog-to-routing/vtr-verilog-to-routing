@@ -4737,7 +4737,7 @@ int Aig_ManDeriveCnfTest2()
         Counter += CountCur;
         pNums[uTruth] = CountCur;
         pSops[uTruth] = ALLOC( char, CountCur );
-        memcpy( pSops[uTruth], Sop, CountCur );
+        memcpy( pSops[uTruth], Sop, (size_t)CountCur );
         pLines[nLines++] = Counter;
     }
     fclose( pFile );

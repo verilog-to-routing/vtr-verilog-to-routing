@@ -430,6 +430,41 @@ struct ParsePlaceAlgorithm {
     }
 };
 
+struct ParsePlaceBoundingBox {
+    ConvertedValue<e_place_bounding_box_mode> from_str(std::string str) {
+        ConvertedValue<e_place_bounding_box_mode> conv_value;
+        if (str == "auto_bb") {
+            conv_value.set_value(AUTO_BB);
+        } else if (str == "cube_bb") {
+            conv_value.set_value(CUBE_BB);
+        } else if (str == "per_layer_bb") {
+            conv_value.set_value(PER_LAYER_BB);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_place_bounding_box_mode val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == AUTO_BB) {
+            conv_value.set_value("auto_bb");
+        } else if (val == CUBE_BB) {
+            conv_value.set_value("cube_bb");
+        } else {
+            VTR_ASSERT(val == PER_LAYER_BB);
+            conv_value.set_value("per_layer_bb");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"auto_bb", "cube_bb", "per_layer_bb"};
+    }
+};
+
 struct ParsePlaceAgentAlgorithm {
     ConvertedValue<e_agent_algorithm> from_str(std::string str) {
         ConvertedValue<e_agent_algorithm> conv_value;
@@ -1569,6 +1604,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
+        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
+        .metavar("INITIAL_PLACE_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_vpr_constraints_file, "--read_vpr_constraints")
         .help("Reads the floorplanning constraints that packing and placement must respect from the specified XML file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2005,6 +2045,20 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Sets the assumed high fanout net during placement. "
             "Any net with higher fanout would be ignored while calculating some of the directed moves: Median and WeightedMedian")
         .default_value("10")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_place_bounding_box_mode, ParsePlaceBoundingBox>(args.place_bounding_box_mode, "--place_bounding_box_mode")
+        .help(
+            "Specifies the type of bounding box to be used in 3D architectures.\n"
+            "\n"
+            "MODE options:\n"
+            "  auto_bb     : Automatically determine the appropriate bounding box based on the connections between layers.\n"
+            "  cube_bb            : Use 3D bounding boxes.\n"
+            "  per_layer_bb     : Use per-layer bounding boxes.\n"
+            "\n"
+            "Choose one of the available modes to define the behavior of bounding boxes in your 3D architecture. The default mode is 'automatic'.")
+        .default_value("auto_bb")
+        .choices({"auto_bb", "cube_bb", "per_layer_bb"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
@@ -2932,8 +2986,6 @@ void set_conditional_defaults(t_options& args) {
      */
     //Base cost type
     if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
-        VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN || args.RouterAlgorithm == PARALLEL);
-
         if (args.RouteType == DETAILED) {
             if (args.timing_analysis) {
                 args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);

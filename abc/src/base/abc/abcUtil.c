@@ -2139,7 +2139,7 @@ void Abc_NtkCompareCones( Abc_Ntk_t * pNtk )
         pSupps[i] = Vec_PtrSize(vSupp);
         Vec_PtrFree( vSupp );
     }
-    qsort( (void *)pPerms, Abc_NtkCoNum(pNtk), sizeof(int), (int (*)(const void *, const void *)) Abc_NtkCompareConesCompare );
+    qsort( (void *)pPerms, (size_t)Abc_NtkCoNum(pNtk), sizeof(int), (int (*)(const void *, const void *)) Abc_NtkCompareConesCompare );
 
     // consider COs in this order
     Iter = 0;
@@ -3122,7 +3122,10 @@ Vec_Wec_t * Abc_SopSynthesize( Vec_Ptr_t * vSops )
     Abc_Obj_t * pObj, * pFanin;
     int i, k, iNode = 0;
     Abc_FrameReplaceCurrentNetwork( Abc_FrameReadGlobalFrame(), pNtk );
-    Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "fx; strash; balance; dc2; map -a" );
+    //Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "fx; strash; balance; dc2; map -a" );
+    Abc_FrameSetBatchMode( 1 );
+    Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "st; collapse; sop; fx; strash; &get; &ps; &deepsyn -I 4 -J 50 -T 5 -S 111 -t; &ps; &put; map -a" );
+    Abc_FrameSetBatchMode( 0 );
     pNtkNew = Abc_FrameReadNtk( Abc_FrameReadGlobalFrame() );
     vRes = Vec_WecStart( Abc_NtkPiNum(pNtkNew) + Abc_NtkNodeNum(pNtkNew) + Abc_NtkPoNum(pNtkNew) );
     Abc_NtkForEachPi( pNtkNew, pObj, i )
@@ -3141,15 +3144,17 @@ Vec_Wec_t * Abc_SopSynthesize( Vec_Ptr_t * vSops )
     assert( Vec_WecSize(vRes) == iNode );
     return vRes;
 }
-Vec_Wec_t * Abc_GiaSynthesize( Vec_Ptr_t * vGias )
+Vec_Wec_t * Abc_GiaSynthesize( Vec_Ptr_t * vGias, Gia_Man_t * pMulti )
 {
     Vec_Wec_t * vRes = NULL;
-    Abc_Ntk_t * pNtk = Abc_NtkCreateFromGias( "top", vGias );
+    Abc_Ntk_t * pNtk = Abc_NtkCreateFromGias( "top", vGias, pMulti );
     Abc_Ntk_t * pNtkNew;
     Abc_Obj_t * pObj, * pFanin;
     int i, k, iNode = 0;
     Abc_FrameReplaceCurrentNetwork( Abc_FrameReadGlobalFrame(), pNtk );
-    Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "compress2rs; dch; map -a;  strash; compress2rs; dch; map -a;  strash; compress2rs; dch; map -a" );
+    Abc_FrameSetBatchMode( 1 );
+    Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "clp; sop; fx; strash; compress2rs; dch; map -a;  strash; compress2rs; dch; map -a" );
+    Abc_FrameSetBatchMode( 0 );
     pNtkNew = Abc_FrameReadNtk( Abc_FrameReadGlobalFrame() );
     vRes = Vec_WecStart( Abc_NtkPiNum(pNtkNew) + Abc_NtkNodeNum(pNtkNew) + Abc_NtkPoNum(pNtkNew) );
     Abc_NtkForEachPi( pNtkNew, pObj, i )
@@ -3173,7 +3178,7 @@ Gia_Man_t * Abc_GiaSynthesizeInter( Gia_Man_t * p )
     Abc_Ntk_t * pNtkNew, * pNtk;
     Vec_Ptr_t * vGias = Vec_PtrAlloc( 1 );
     Vec_PtrPush( vGias, p );
-    pNtk = Abc_NtkCreateFromGias( "top", vGias );
+    pNtk = Abc_NtkCreateFromGias( "top", vGias, NULL );
     Vec_PtrFree( vGias );
     Abc_FrameReplaceCurrentNetwork( Abc_FrameReadGlobalFrame(), pNtk );
     Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "balance; collapse; muxes; strash; dc2" );
@@ -3253,11 +3258,98 @@ Gia_Man_t * Abc_SopSynthesizeOne( char * pSop, int fClp )
     pNtk = Abc_NtkCreateFromSops( "top", vSops );
     Vec_PtrFree( vSops );
     Abc_FrameReplaceCurrentNetwork( Abc_FrameReadGlobalFrame(), pNtk );
+    Abc_FrameSetBatchMode( 1 );
     if ( fClp ) 
     Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "clp; sop" );
     Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "fx; strash; balance; dc2" );
+    Abc_FrameSetBatchMode( 0 );
     pNtkNew = Abc_FrameReadNtk( Abc_FrameReadGlobalFrame() );
     return Abc_NtkStrashToGia( pNtkNew );
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static int s_ArraySize = 145;
+static int s_ArrayData[290] = {
+    0, 0,
+    0, 0,  0, 0,  0, 0,  0, 0,  0, 0,  0, 0,  0, 0,  0, 0,
+    10, 6,  14, 12,  10, 2,  22, 20,  2, 24,  16, 4,  28, 18,  16, 10,  8, 4,  34, 32,  30, 36,  38, 26,  16, 6,  36, 20,  44, 42,  46, 40,  42, 44,  14, 6,  52, 34,  32, 54,  56, 50,  58, 48,  32, 24,  20, 2,  12, 6,  66, 34,  68, 64,  62, 70,  28, 68,  74, 72,  76, 58,  70, 62,  80, 78,  68, 28,  84, 74,  4, 2,  88, 20,  64, 90,  92, 86,  66, 32,  18, 96,  98, 56,  100, 94,  52, 36,  104, 38,  90, 42,  36, 2,  108, 110,  112, 106,  114, 100,  102, 116,  118, 82,  116, 60,  120, 122,  124, 60,  118, 60,  102, 82,  128, 130,  132, 82,  134, 126,  82, 116,  122, 138,  122, 118,  142, 140,  60, 102,  130, 146,  130, 118,  150, 148,  152, 144,  154, 136,  18, 156,  144, 126,  68, 160,  32, 136,  164, 162,  166, 158,  28, 160,  70, 126,  90, 144,  174, 172,  176, 170,  152, 134,  36, 180,  2, 134,  184, 182,  186, 178,  188, 168,  64, 144,  164, 158,  194, 192,  96, 156,  44, 154,  200, 170,  202, 198,  204, 176,  206, 196,  204, 168,  62, 126,  212, 186,  24, 134,  108, 152,  218, 192,  220, 216,  222, 214,  224, 210,  220, 194,  110, 152,  30, 180,  232, 230,  184, 172,  236, 234,  238, 228,  234, 182,  242, 220,  244, 168,  42, 154,  248, 202,  54, 136,  252, 164,  254, 214,  256, 250,  218, 194,  252, 198,  262, 242,  264, 260,  232, 220,  268, 262,  270, 168,
+    191, 191,  209, 209,  226, 226,  240, 240,  246, 246,  259, 259,  267, 267,  272, 272,
+};
+int Abc_NtkHasConstNode()
+{
+    int i;
+    for ( i = 1; i < s_ArraySize; i++ )
+        if ( s_ArrayData[2*i] || s_ArrayData[2*i+1] )
+            break;
+    for ( ; i < s_ArraySize; i++ )
+        if ( s_ArrayData[2*i] < 2 && s_ArrayData[2*i+1] < 2 )
+            return 1;
+    return 0;
+}
+Abc_Ntk_t * Abc_NtkFromArray()
+{
+    Vec_Ptr_t * vNodes  = Vec_PtrAlloc( s_ArraySize ); int i, nPos = 0; 
+    Abc_Ntk_t * pNtkNew = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
+    Abc_Obj_t * pObjNew = Abc_NtkHasConstNode() ? Abc_NtkCreateNode(pNtkNew) : NULL; 
+    if ( pObjNew ) pObjNew->pData = Abc_SopCreateConst0((Mem_Flex_t *)pNtkNew->pManFunc);
+    Vec_PtrPush( vNodes, pObjNew );
+    for ( i = 1; i < s_ArraySize; i++ )
+        if ( !s_ArrayData[2*i] && !s_ArrayData[2*i+1] )
+            Vec_PtrPush( vNodes, Abc_NtkCreatePi(pNtkNew) );
+        else
+            break;
+    for ( ; i < s_ArraySize; i++ )
+    {
+        char * pSop = NULL;
+        if ( s_ArrayData[2*i] > s_ArrayData[2*i+1] )
+            pSop = Abc_SopCreateXor( (Mem_Flex_t *)pNtkNew->pManFunc, 2 );
+        else if ( s_ArrayData[2*i] < s_ArrayData[2*i+1] )
+            pSop = Abc_SopCreateAnd( (Mem_Flex_t *)pNtkNew->pManFunc, 2, NULL );
+        else
+            break;
+        pObjNew = Abc_NtkCreateNode( pNtkNew );
+        Abc_ObjAddFanin( pObjNew, (Abc_Obj_t *)Vec_PtrEntry(vNodes, Abc_Lit2Var(s_ArrayData[2*i]))   );
+        Abc_ObjAddFanin( pObjNew, (Abc_Obj_t *)Vec_PtrEntry(vNodes, Abc_Lit2Var(s_ArrayData[2*i+1])) );
+        if ( Abc_LitIsCompl(s_ArrayData[2*i])   )  Abc_SopComplementVar( pSop, 0 );
+        if ( Abc_LitIsCompl(s_ArrayData[2*i+1]) )  Abc_SopComplementVar( pSop, 1 );
+        pObjNew->pData = pSop;
+        Vec_PtrPush( vNodes, pObjNew );
+    }
+    for ( ; i < s_ArraySize; i++ )
+    {
+        char * pSop = NULL;
+        assert( s_ArrayData[2*i] == s_ArrayData[2*i+1] );
+        pObjNew = Abc_NtkCreateNode( pNtkNew );
+        Abc_ObjAddFanin( pObjNew, (Abc_Obj_t *)Vec_PtrEntry(vNodes, Abc_Lit2Var(s_ArrayData[2*i]))   );
+        if ( Abc_LitIsCompl(s_ArrayData[2*i]) )
+            pSop = Abc_SopCreateInv( (Mem_Flex_t *)pNtkNew->pManFunc );
+        else
+            pSop = Abc_SopCreateBuf( (Mem_Flex_t *)pNtkNew->pManFunc );
+        pObjNew->pData = pSop;
+        Vec_PtrPush( vNodes, pObjNew );
+        nPos++;
+    }
+    for ( i = 0; i < nPos; i++ )
+        Abc_ObjAddFanin( Abc_NtkCreatePo(pNtkNew), (Abc_Obj_t *)Vec_PtrEntry(vNodes, s_ArraySize-nPos+i) );
+    Vec_PtrFree( vNodes );
+    pNtkNew->pName = Extra_UtilStrsav("test");
+    Abc_NtkAddDummyPiNames( pNtkNew );
+    Abc_NtkAddDummyPoNames( pNtkNew );
+    Abc_NtkAddDummyBoxNames( pNtkNew );
+    if ( !Abc_NtkCheck( pNtkNew ) )
+        Abc_Print( 1, "Abc_NtkFromArray(): Network check has failed.\n" );
+    return pNtkNew;
 }
 
 ////////////////////////////////////////////////////////////////////////
