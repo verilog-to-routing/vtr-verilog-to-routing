@@ -226,7 +226,7 @@
   <!-- ODIN II specific config ends -->
   <layout>
     <!-- Physical descriptions begin -->
-    <auto_layout name="coffe_7nm" width="328" height="288">
+    <auto_layout aspect_ratio="1.0">
       <layer die="0">
         <perimeter type="io" priority="101"/>
       
@@ -264,6 +264,234 @@
         
       </layer>
     </auto_layout>
+    <fixed_layout name="sector_1_1" width="41" height="36">
+      <layer die="0">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+
+        <!-- PW -->
+        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+        
+        <!-- GND -->
+        <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
+
+      </layer>
+      <layer die="1">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+        
+      </layer>
+    </fixed_layout>
+    <fixed_layout name="sector_2_1" width="82" height="36">
+      <layer die="0">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+
+        <!-- PW -->
+        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+        
+        <!-- GND -->
+        <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
+
+      </layer>
+      <layer die="1">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+        
+      </layer>
+    </fixed_layout>
+    <fixed_layout name="sector_2_2" width="82" height="72">
+      <layer die="0">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+
+        <!-- PW -->
+        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+        
+        <!-- GND -->
+        <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
+
+      </layer>
+      <layer die="1">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+        
+      </layer>
+    </fixed_layout>
+    <fixed_layout name="sector_4_2" width="164" height="72">
+      <layer die="0">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+
+        <!-- PW -->
+        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+        
+        <!-- GND -->
+        <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
+
+      </layer>
+      <layer die="1">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+        
+      </layer>
+    </fixed_layout>
+    <fixed_layout name="sector_4_4" width="164" height="144">
+      <layer die="0">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+
+        <!-- PW -->
+        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+        
+        <!-- GND -->
+        <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
+
+      </layer>
+      <layer die="1">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+        
+      </layer>
+    </fixed_layout>
+    <fixed_layout name="sector_5_5" width="205" height="180">
+      <layer die="0">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+
+        <!-- PW -->
+        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+        
+        <!-- GND -->
+        <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
+
+      </layer>
+      <layer die="1">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+        
+      </layer>
+    </fixed_layout>
   </layout>
   <device>
     <sizing R_minW_nmos="13090" R_minW_pmos="19086.83"/>
