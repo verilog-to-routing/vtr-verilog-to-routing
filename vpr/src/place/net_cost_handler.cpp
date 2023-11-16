@@ -1855,8 +1855,6 @@ int find_affected_nets_and_update_costs(
 
     int num_affected_nets = 0;
 
-    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
-
     /* Go through all the blocks moved. */
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
         const auto& moving_block_inf = blocks_affected.moved_blocks[iblk];
