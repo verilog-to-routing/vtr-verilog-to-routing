@@ -226,7 +226,7 @@
   <!-- ODIN II specific config ends -->
   <layout>
     <!-- Physical descriptions begin -->
-    <fixed_layout name="coffe_7nm" width="328" height="288">
+    <auto_layout name="coffe_7nm" width="328" height="288">
       <layer die="0">
         <perimeter type="io" priority="101"/>
       
@@ -263,7 +263,7 @@
         <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
         
       </layer>
-    </fixed_layout>
+    </auto_layout>
   </layout>
   <device>
     <sizing R_minW_nmos="13090" R_minW_pmos="19086.83"/>
