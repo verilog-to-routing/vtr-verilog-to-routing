@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: /home/kimia/uxsdcxx/uxsdcxx.py /home/kimia/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/kimia/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: c839d46b92f4a4b5a20e187a784916a1
+ * Cmdline: /home/talaeikh/uxsdcxx/uxsdcxx.py /home/talaeikh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/talaeikh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 9c14a0ddd3c6bc1e690ca6abf467bae6
  */
 
 #include <functional>
@@ -140,8 +140,8 @@ public:
 	 * <xs:complexType name="channels">
 	 *   <xs:sequence>
 	 *     <xs:element name="channel" type="channel" />
-	 *     <xs:element name="x_list" type="x_list" maxOccurs="unbounded" />
-	 *     <xs:element name="y_list" type="y_list" maxOccurs="unbounded" />
+	 *     <xs:element maxOccurs="unbounded" name="x_list" type="x_list" />
+	 *     <xs:element maxOccurs="unbounded" name="y_list" type="y_list" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
 	*/
@@ -192,7 +192,7 @@ public:
 	/** Generated for complex type "switch":
 	 * <xs:complexType name="switch">
 	 *   <xs:all>
-	 *     <xs:element name="timing" type="timing" minOccurs="0" />
+	 *     <xs:element minOccurs="0" name="timing" type="timing" />
 	 *     <xs:element name="sizing" type="sizing" />
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
@@ -218,7 +218,7 @@ public:
 	/** Generated for complex type "switches":
 	 * <xs:complexType name="switches">
 	 *   <xs:sequence>
-	 *     <xs:element name="switch" type="switch" maxOccurs="unbounded" />
+	 *     <xs:element maxOccurs="unbounded" name="switch" type="switch" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
 	*/
@@ -242,7 +242,7 @@ public:
 	/** Generated for complex type "segment":
 	 * <xs:complexType name="segment">
 	 *   <xs:all>
-	 *     <xs:element name="timing" type="segment_timing" minOccurs="0" />
+	 *     <xs:element minOccurs="0" name="timing" type="segment_timing" />
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
@@ -262,7 +262,7 @@ public:
 	/** Generated for complex type "segments":
 	 * <xs:complexType name="segments">
 	 *   <xs:sequence>
-	 *     <xs:element name="segment" type="segment" maxOccurs="unbounded" />
+	 *     <xs:element maxOccurs="unbounded" name="segment" type="segment" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
 	*/
@@ -288,7 +288,7 @@ public:
 	/** Generated for complex type "pin_class":
 	 * <xs:complexType name="pin_class">
 	 *   <xs:sequence>
-	 *     <xs:element name="pin" type="pin" maxOccurs="unbounded" />
+	 *     <xs:element maxOccurs="unbounded" name="pin" type="pin" />
 	 *   </xs:sequence>
 	 *   <xs:attribute name="type" type="pin_type" use="required" />
 	 * </xs:complexType>
@@ -303,7 +303,7 @@ public:
 	/** Generated for complex type "block_type":
 	 * <xs:complexType name="block_type">
 	 *   <xs:sequence>
-	 *     <xs:element name="pin_class" type="pin_class" minOccurs="0" maxOccurs="unbounded" />
+	 *     <xs:element maxOccurs="unbounded" minOccurs="0" name="pin_class" type="pin_class" />
 	 *   </xs:sequence>
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
@@ -325,7 +325,7 @@ public:
 	/** Generated for complex type "block_types":
 	 * <xs:complexType name="block_types">
 	 *   <xs:sequence>
-	 *     <xs:element name="block_type" type="block_type" maxOccurs="unbounded" />
+	 *     <xs:element maxOccurs="unbounded" name="block_type" type="block_type" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
 	*/
@@ -337,7 +337,7 @@ public:
 
 	/** Generated for complex type "grid_loc":
 	 * <xs:complexType name="grid_loc">
-	 *   <xs:attribute name="layer" type="xs:int" use="required" />
+	 *   <xs:attribute default="0" name="layer" type="xs:int" />
 	 *   <xs:attribute name="x" type="xs:int" use="required" />
 	 *   <xs:attribute name="y" type="xs:int" use="required" />
 	 *   <xs:attribute name="block_type_id" type="xs:int" use="required" />
@@ -348,6 +348,7 @@ public:
 	virtual inline int get_grid_loc_block_type_id(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_height_offset(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_layer(typename ContextTypes::GridLocReadContext &ctx) = 0;
+	virtual inline void set_grid_loc_layer(int layer, typename ContextTypes::GridLocWriteContext &ctx) = 0;
 	virtual inline int get_grid_loc_width_offset(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_x(typename ContextTypes::GridLocReadContext &ctx) = 0;
 	virtual inline int get_grid_loc_y(typename ContextTypes::GridLocReadContext &ctx) = 0;
@@ -355,31 +356,35 @@ public:
 	/** Generated for complex type "grid_locs":
 	 * <xs:complexType name="grid_locs">
 	 *   <xs:sequence>
-	 *     <xs:element name="grid_loc" type="grid_loc" maxOccurs="unbounded" />
+	 *     <xs:element maxOccurs="unbounded" name="grid_loc" type="grid_loc" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
 	*/
 	virtual inline void preallocate_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int layer, int width_offset, int x, int y) = 0;
+	virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext &ctx, int block_type_id, int height_offset, int width_offset, int x, int y) = 0;
 	virtual inline void finish_grid_locs_grid_loc(typename ContextTypes::GridLocWriteContext &ctx) = 0;
 	virtual inline size_t num_grid_locs_grid_loc(typename ContextTypes::GridLocsReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::GridLocReadContext get_grid_locs_grid_loc(int n, typename ContextTypes::GridLocsReadContext &ctx) = 0;
 
 	/** Generated for complex type "node_loc":
 	 * <xs:complexType name="node_loc">
-	 *   <xs:attribute name="layer" type="xs:int" use="required" />
+	 *   <xs:attribute default="0" name="layer" type="xs:int" />
 	 *   <xs:attribute name="xlow" type="xs:int" use="required" />
 	 *   <xs:attribute name="ylow" type="xs:int" use="required" />
 	 *   <xs:attribute name="xhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="yhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="side" type="loc_side" />
 	 *   <xs:attribute name="ptc" type="xs:int" use="required" />
+	 *   <xs:attribute name="twist" type="xs:int" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_node_loc_layer(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline void set_node_loc_layer(int layer, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline int get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_side(enum_loc_side side, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
+	virtual inline int get_node_loc_twist(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline void set_node_loc_twist(int twist, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline int get_node_loc_xhigh(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline int get_node_loc_xlow(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline int get_node_loc_yhigh(typename ContextTypes::NodeLocReadContext &ctx) = 0;
@@ -418,7 +423,7 @@ public:
 	/** Generated for complex type "metadata":
 	 * <xs:complexType name="metadata">
 	 *   <xs:sequence>
-	 *     <xs:element name="meta" type="meta" maxOccurs="unbounded" />
+	 *     <xs:element maxOccurs="unbounded" name="meta" type="meta" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
 	*/
@@ -432,9 +437,9 @@ public:
 	 * <xs:complexType name="node">
 	 *   <xs:all>
 	 *     <xs:element name="loc" type="node_loc" />
-	 *     <xs:element name="timing" type="node_timing" minOccurs="0" />
-	 *     <xs:element name="segment" type="node_segment" minOccurs="0" />
-	 *     <xs:element name="metadata" type="metadata" minOccurs="0" />
+	 *     <xs:element minOccurs="0" name="timing" type="node_timing" />
+	 *     <xs:element minOccurs="0" name="segment" type="node_segment" />
+	 *     <xs:element minOccurs="0" name="metadata" type="metadata" />
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
 	 *   <xs:attribute name="type" type="node_type" use="required" />
@@ -453,7 +458,7 @@ public:
 	virtual inline const char * get_node_name(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline void set_node_name(const char * name, typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline enum_node_type get_node_type(typename ContextTypes::NodeReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int layer, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
+	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
 	virtual inline void finish_node_loc(typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeLocReadContext get_node_loc(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeTimingWriteContext init_node_timing(typename ContextTypes::NodeWriteContext &ctx, float C, float R) = 0;
@@ -485,7 +490,7 @@ public:
 	/** Generated for complex type "edge":
 	 * <xs:complexType name="edge">
 	 *   <xs:all>
-	 *     <xs:element name="metadata" type="metadata" minOccurs="0" />
+	 *     <xs:element minOccurs="0" name="metadata" type="metadata" />
 	 *   </xs:all>
 	 *   <xs:attribute name="src_node" type="xs:unsignedInt" use="required" />
 	 *   <xs:attribute name="sink_node" type="xs:unsignedInt" use="required" />

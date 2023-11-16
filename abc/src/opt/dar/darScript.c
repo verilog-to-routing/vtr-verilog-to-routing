@@ -848,6 +848,8 @@ pPars->timeSynth = Abc_Clock() - clk;
 ***********************************************************************/
 Aig_Man_t * Dar_ManChoiceNew( Aig_Man_t * pAig, Dch_Pars_t * pPars )
 {
+    extern Aig_Man_t * Cec_ComputeChoicesNew( Gia_Man_t * pGia, int nConfs, int fVerbose );
+    extern Aig_Man_t * Cec_ComputeChoicesNew2( Gia_Man_t * pGia, int nConfs, int fVerbose );
     extern Aig_Man_t * Cec_ComputeChoices( Gia_Man_t * pGia, Dch_Pars_t * pPars );
 //    extern Aig_Man_t * Dch_DeriveTotalAig( Vec_Ptr_t * vAigs );
     extern Aig_Man_t * Dch_ComputeChoices( Aig_Man_t * pAig, Dch_Pars_t * pPars );
@@ -870,15 +872,19 @@ clk = Abc_Clock();
 pPars->timeSynth = Abc_Clock() - clk;
 
     // perform choice computation
-    if ( pPars->fUseGia )
+    if ( pPars->fUseNew )
+        pMan = Cec_ComputeChoicesNew( pGia, pPars->nBTLimit, pPars->fVerbose );
+    else if ( pPars->fUseNew2 )
+        pMan = Cec_ComputeChoicesNew2( pGia, pPars->nBTLimit, pPars->fVerbose );
+    else if ( pPars->fUseGia )
         pMan = Cec_ComputeChoices( pGia, pPars );
     else
     {
         pMan = Gia_ManToAigSkip( pGia, 3 );
-        Gia_ManStop( pGia );
         pMan = Dch_ComputeChoices( pTemp = pMan, pPars );
         Aig_ManStop( pTemp );
     }
+    Gia_ManStop( pGia );
 
     // create guidence
     vPios = Aig_ManOrderPios( pMan, pAig ); 

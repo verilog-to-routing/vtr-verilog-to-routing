@@ -36,6 +36,7 @@ jobs:
           - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: "" }
           - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           - {test: "vtr_reg_parmys",             cores: "16", options: "",          cmake: "",                                                             extra_pkgs: "" }
           - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
@@ -49,6 +50,8 @@ jobs:
     steps:
 
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
@@ -60,6 +63,7 @@ jobs:
     - name: Execute test script
       run: stdbuf -i0 -o0 -e0 ./.github/scripts/run-vtr.sh
       env:
+        VPR_NUM_WORKERS: 4
         VTR_TEST: ${{ matrix.test }}
         VTR_TEST_OPTIONS: ${{ matrix.options }}
         VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
@@ -90,6 +94,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -133,6 +139,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -150,6 +158,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -177,7 +187,7 @@ jobs:
           },
           {
             name: 'Basic_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
@@ -192,7 +202,7 @@ jobs:
           },
           {
             name: 'Basic_odin with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_ODIN=on',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
@@ -202,7 +212,7 @@ jobs:
           },
           {
             name: 'Strong_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_strong_odin'
           },
           {
@@ -218,6 +228,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -257,7 +269,7 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
+            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           }
           #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
@@ -271,6 +283,9 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -296,6 +311,8 @@ jobs:
         with:
           python-version: 3.10.10
       - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - run: ./.github/scripts/install_dependencies.sh
 
       - uses: hendrikmuhs/ccache-action@v1.2
@@ -319,13 +336,15 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on'
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on'
         BUILD_TYPE: debug
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -342,6 +361,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -375,6 +396,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -409,6 +432,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2

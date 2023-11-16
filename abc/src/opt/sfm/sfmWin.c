@@ -365,15 +365,15 @@ int Sfm_NtkCreateWindow( Sfm_Ntk_t * p, int iNode, int fVerbose )
     Vec_IntAppend( p->vDivs, p->vNodes );
     Vec_IntPop( p->vDivs );
     // add non-topological divisors
-    if ( Vec_IntSize(p->vDivs) < p->pPars->nWinSizeMax + 0 )
+    if ( !p->pPars->nWinSizeMax || Vec_IntSize(p->vDivs) < p->pPars->nWinSizeMax + 0 )
     {
         Sfm_NtkIncrementTravId2( p );
         Vec_IntForEachEntry( p->vDivs, iTemp, i )
-            if ( Vec_IntSize(p->vDivs) < p->pPars->nWinSizeMax + 0 )
+            if ( !p->pPars->nWinSizeMax || Vec_IntSize(p->vDivs) < p->pPars->nWinSizeMax + 0 )
 //                Sfm_NtkAddDivisors( p, iTemp, Sfm_ObjLevel(p, iNode) - 1 );
                 Sfm_NtkAddDivisors( p, iTemp, p->nLevelMax - Sfm_ObjLevelR(p, iNode) ); 
     }
-    if ( Vec_IntSize(p->vDivs) > p->pPars->nWinSizeMax )
+    if ( p->pPars->nWinSizeMax && Vec_IntSize(p->vDivs) > p->pPars->nWinSizeMax )
     {
 /*
         k = 0;
@@ -383,8 +383,8 @@ int Sfm_NtkCreateWindow( Sfm_Ntk_t * p, int iNode, int fVerbose )
 */
         Vec_IntShrink( p->vDivs, p->pPars->nWinSizeMax );
     }
-    assert( Vec_IntSize(p->vDivs) <= p->pPars->nWinSizeMax );
-    p->nMaxDivs += (int)(Vec_IntSize(p->vDivs) == p->pPars->nWinSizeMax);
+    assert( !p->pPars->nWinSizeMax || Vec_IntSize(p->vDivs) <= p->pPars->nWinSizeMax );
+    p->nMaxDivs += (int)(p->pPars->nWinSizeMax && Vec_IntSize(p->vDivs) == p->pPars->nWinSizeMax);
     // remove node/fanins from divisors
     // mark fanins
     Sfm_NtkIncrementTravId2( p );
@@ -397,7 +397,7 @@ int Sfm_NtkCreateWindow( Sfm_Ntk_t * p, int iNode, int fVerbose )
         if ( !Sfm_ObjIsTravIdCurrent2(p, iTemp) && Sfm_ObjIsUseful(p, iTemp) )
             Vec_IntWriteEntry( p->vDivs, k++, iTemp );
     Vec_IntShrink( p->vDivs, k );
-    assert( Vec_IntSize(p->vDivs) <= p->pPars->nWinSizeMax );
+    assert( !p->pPars->nWinSizeMax || Vec_IntSize(p->vDivs) <= p->pPars->nWinSizeMax );
     clkDiv = Abc_Clock() - clkDiv;
     p->timeDiv += clkDiv;
     p->nTotalDivs += Vec_IntSize(p->vDivs);

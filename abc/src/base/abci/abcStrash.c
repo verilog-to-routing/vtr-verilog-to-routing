@@ -548,29 +548,99 @@ Abc_Obj_t * Abc_NtkTopmost_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNode, int Leve
 Abc_Ntk_t * Abc_NtkTopmost( Abc_Ntk_t * pNtk, int nLevels )
 {
     Abc_Ntk_t * pNtkNew;
-    Abc_Obj_t * pObjNew, * pObjPo;
-    int LevelCut;
+    Abc_Obj_t * pObjNew, * pObj;
+    int LevelCut, i;
     assert( Abc_NtkIsStrash(pNtk) );
-    assert( Abc_NtkCoNum(pNtk) == 1 );
     // get the cutoff level
     LevelCut = Abc_MaxInt( 0, Abc_AigLevel(pNtk) - nLevels );
     // start the network
     pNtkNew = Abc_NtkAlloc( ABC_NTK_STRASH, ABC_FUNC_AIG, 1 );
     pNtkNew->pName = Extra_UtilStrsav(pNtk->pName);
-    Abc_AigConst1(pNtk)->pCopy = Abc_AigConst1(pNtkNew);
     // create PIs below the cut and nodes above the cut
     Abc_NtkCleanCopy( pNtk );
-    pObjNew = Abc_NtkTopmost_rec( pNtkNew, Abc_ObjFanin0(Abc_NtkPo(pNtk, 0)), LevelCut );
-    pObjNew = Abc_ObjNotCond( pObjNew, Abc_ObjFaninC0(Abc_NtkPo(pNtk, 0)) );
+    Abc_AigConst1(pNtk)->pCopy = Abc_AigConst1(pNtkNew);
+    Abc_NtkForEachCo( pNtk, pObj, i )
+    {
+        pObjNew = Abc_NtkTopmost_rec( pNtkNew, Abc_ObjFanin0(pObj), LevelCut );
+        pObjNew = Abc_ObjNotCond( pObjNew, Abc_ObjFaninC0(pObj) );
+        Abc_ObjAddFanin( (pObj->pCopy = Abc_NtkCreatePo(pNtkNew)), pObjNew );
+    }
     // add the PO node and name
-    pObjPo = Abc_NtkCreatePo(pNtkNew);
-    Abc_ObjAddFanin( pObjPo, pObjNew );
     Abc_NtkAddDummyPiNames( pNtkNew );
-    Abc_ObjAssignName( pObjPo, Abc_ObjName(Abc_NtkPo(pNtk, 0)), NULL );
+    Abc_NtkForEachCo( pNtk, pObj, i )
+        Abc_ObjAssignName( pObj->pCopy, Abc_ObjName(pObj), NULL );
     // make sure everything is okay
     if ( !Abc_NtkCheck( pNtkNew ) )
     {
         printf( "Abc_NtkTopmost: The network check has failed.\n" );
+        Abc_NtkDelete( pNtkNew );
+        return NULL;
+    }
+    return pNtkNew;
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Copies the bottommost levels of the network.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Abc_Obj_t * Abc_NtkBottommost_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNode, int LevelCut )
+{
+    assert( !Abc_ObjIsComplement(pNode) );
+    if ( pNode->pCopy )
+        return pNode->pCopy;
+    Abc_NtkBottommost_rec( pNtkNew, Abc_ObjFanin0(pNode), LevelCut );
+    Abc_NtkBottommost_rec( pNtkNew, Abc_ObjFanin1(pNode), LevelCut );
+    if ( pNode->Level > (unsigned)LevelCut )
+        return NULL;
+    return pNode->pCopy = Abc_AigAnd( (Abc_Aig_t *)pNtkNew->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild1Copy(pNode) );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Copies the topmost levels of the network.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Abc_Ntk_t * Abc_NtkBottommost( Abc_Ntk_t * pNtk, int nLevels )
+{
+    Abc_Ntk_t * pNtkNew;
+    Abc_Obj_t * pObj, * pObjNew;
+    int i;
+    assert( Abc_NtkIsStrash(pNtk) );
+    assert( nLevels >= 0 );
+    // start the network
+    pNtkNew = Abc_NtkAlloc( ABC_NTK_STRASH, ABC_FUNC_AIG, 1 );
+    pNtkNew->pName = Extra_UtilStrsav(pNtk->pName);
+    // create PIs below the cut and nodes above the cut
+    Abc_NtkCleanCopy( pNtk );
+    Abc_AigConst1(pNtk)->pCopy = Abc_AigConst1(pNtkNew);
+    Abc_NtkForEachCi( pNtk, pObj, i )
+        pObj->pCopy = Abc_NtkCreatePi( pNtkNew );
+    Abc_NtkForEachCo( pNtk, pObj, i )
+        Abc_NtkBottommost_rec( pNtkNew, Abc_ObjFanin0(pObj), nLevels );
+    // add POs to nodes without fanout
+    Abc_NtkForEachNode( pNtkNew, pObjNew, i )
+        if ( Abc_ObjFanoutNum(pObjNew) == 0 )
+            Abc_ObjAddFanin( Abc_NtkCreatePo(pNtkNew), pObjNew );
+    Abc_NtkAddDummyPiNames( pNtkNew );
+    Abc_NtkAddDummyPoNames( pNtkNew );
+    // make sure everything is okay
+    if ( !Abc_NtkCheck( pNtkNew ) )
+    {
+        printf( "Abc_NtkBottommost: The network check has failed.\n" );
         Abc_NtkDelete( pNtkNew );
         return NULL;
     }
@@ -642,7 +712,7 @@ Vec_Ptr_t * Abc_NodeGetSuper( Abc_Obj_t * pNode )
     Vec_PtrFree( vSuper );
     vSuper = vFront;
     // uniquify and return the frontier
-    Vec_PtrUniqify( vSuper, (int (*)())Vec_CompareNodeIds );
+    Vec_PtrUniqify( vSuper, (int (*)(const void *, const void *))Vec_CompareNodeIds );
     return vSuper;
 }
 

@@ -43,6 +43,7 @@ ABC_NAMESPACE_HEADER_START
 typedef struct Cec_ParSat_t_ Cec_ParSat_t;
 struct Cec_ParSat_t_
 {
+    int              SolverType;    // SAT solver type
     int              nBTLimit;      // conflict limit at a node
     int              nSatVarMax;    // the max number of SAT variables
     int              nCallsRecycle; // calls to perform before recycling SAT solver
@@ -51,6 +52,7 @@ struct Cec_ParSat_t_
     int              fCheckMiter;   // the circuit is the miter
 //    int              fFirstStop;    // stop on the first sat output
     int              fLearnCls;     // perform clause learning
+    int              fSaveCexes;    // saves counter-examples
     int              fVerbose;      // verbose stats
 };
 
@@ -94,13 +96,18 @@ struct Cec_ParSmf_t_
 typedef struct Cec_ParFra_t_ Cec_ParFra_t;
 struct Cec_ParFra_t_
 {
+    int              jType;         // solver type
     int              nWords;        // the number of simulation words
     int              nRounds;       // the number of simulation rounds
     int              nItersMax;     // the maximum number of iterations of SAT sweeping
     int              nBTLimit;      // conflict limit at a node
+    int              nBTLimitPo;    // conflict limit at an output
     int              TimeLimit;     // the runtime limit in seconds
     int              nLevelMax;     // restriction on the level nodes to be swept
     int              nDepthMax;     // the depth in terms of steps of speculative reduction
+    int              nCallsRecycle; // calls to perform before recycling SAT solver
+    int              nSatVarMax;    // the max number of SAT variables
+    int              nGenIters;     // pattern generation iterations
     int              fRewriting;    // enables AIG rewriting
     int              fCheckMiter;   // the circuit is the miter
 //    int              fFirstStop;    // stop on the first sat output
@@ -140,8 +147,11 @@ struct Cec_ParCor_t_
     int              nFrames;       // the number of time frames
     int              nPrefix;       // the number of time frames in the prefix
     int              nBTLimit;      // conflict limit at a node
+    int              nProcs;        // the number of processes
+    int              nPartSize;     // the partition size
     int              nLevelMax;     // (scorr only) the max number of levels
     int              nStepsMax;     // (scorr only) the max number of induction steps
+    int              nLimitMax;     // (scorr only) stop after this many iterations if little or no improvement
     int              fLatchCorr;    // consider only latch outputs
     int              fConstCorr;    // consider only constants
     int              fUseRings;     // use rings
@@ -199,6 +209,7 @@ struct Cec_ParSeq_t_
 /*=== cecCec.c ==========================================================*/
 extern int           Cec_ManVerify( Gia_Man_t * p, Cec_ParCec_t * pPars );
 extern int           Cec_ManVerifyTwo( Gia_Man_t * p0, Gia_Man_t * p1, int fVerbose );
+extern int           Cec_ManVerifyTwoInv( Gia_Man_t * p0, Gia_Man_t * p1, int fVerbose );
 extern int           Cec_ManVerifySimple( Gia_Man_t * p );
 /*=== cecChoice.c ==========================================================*/
 extern Gia_Man_t *   Cec_ManChoiceComputation( Gia_Man_t * pAig, Cec_ParChc_t * pPars );
@@ -214,7 +225,7 @@ extern void          Cec_ManCecSetDefaultParams( Cec_ParCec_t * p );
 extern void          Cec_ManCorSetDefaultParams( Cec_ParCor_t * p );
 extern void          Cec_ManChcSetDefaultParams( Cec_ParChc_t * p );
 extern Gia_Man_t *   Cec_ManSatSweeping( Gia_Man_t * pAig, Cec_ParFra_t * pPars, int fSilent );
-extern Gia_Man_t *   Cec_ManSatSolving( Gia_Man_t * pAig, Cec_ParSat_t * pPars );
+extern Gia_Man_t *   Cec_ManSatSolving( Gia_Man_t * pAig, Cec_ParSat_t * pPars, int f0Proved );
 extern void          Cec_ManSimulation( Gia_Man_t * pAig, Cec_ParSim_t * pPars );
 /*=== cecSeq.c ==========================================================*/
 extern int           Cec_ManSeqResimulateCounter( Gia_Man_t * pAig, Cec_ParSim_t * pPars, Abc_Cex_t * pCex );

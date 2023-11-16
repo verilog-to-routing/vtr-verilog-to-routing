@@ -442,7 +442,7 @@ void Abc_NtkPrintBoxInfo( Abc_Ntk_t * pNtk )
     }
     // sort models by name
     vMods = pNtk->pDesign->vModules;
-    Vec_PtrSort( vMods, (int(*)())Abc_NtkCompareNames );
+    Vec_PtrSort( vMods, (int(*)(const void *, const void *))Abc_NtkCompareNames );
 //    Vec_PtrForEachEntry( Abc_Ntk_t *, vMods, pModel, i )
 //        printf( "%s\n", Abc_NtkName(pModel) );
 

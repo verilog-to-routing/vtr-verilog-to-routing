@@ -370,10 +370,11 @@ Abc_Ntk_t * Io_ReadPlaNetwork( Extra_FileReader_t * p, int fZeros, int fBoth, in
     Abc_Ntk_t * pNtk;
     Abc_Obj_t * pTermPi, * pTermPo, * pNode;
     Vec_Str_t ** ppSops = NULL;
-    char Buffer[100];
+    char Buffer[1000];
     int nInputs = -1, nOutputs = -1, nProducts = -1;
     char * pCubeIn, * pCubeOut;
-    int i, k, iLine, nDigits, nCubes;
+    int i, k, iLine, nCubes;
+    unsigned char nDigits;
 
     // allocate the empty network
     pNtk = Abc_NtkStartRead( Extra_FileReaderGetFileName(p) );
@@ -445,7 +446,7 @@ Abc_Ntk_t * Io_ReadPlaNetwork( Extra_FileReader_t * p, int fZeros, int fBoth, in
                     ABC_FREE( ppSops );
                     return NULL;
                 }
-                nDigits = Abc_Base10Log( nInputs );
+                nDigits = (unsigned char)Abc_Base10Log( nInputs );
                 for ( i = 0; i < nInputs; i++ )
                 {
                     sprintf( Buffer, "x%0*d", nDigits, i );
@@ -462,7 +463,7 @@ Abc_Ntk_t * Io_ReadPlaNetwork( Extra_FileReader_t * p, int fZeros, int fBoth, in
                     ABC_FREE( ppSops );
                     return NULL;
                 }
-                nDigits = Abc_Base10Log( nOutputs );
+                nDigits = (unsigned char)Abc_Base10Log( nOutputs );
                 for ( i = 0; i < nOutputs; i++ )
                 {
                     sprintf( Buffer, "z%0*d", nDigits, i );

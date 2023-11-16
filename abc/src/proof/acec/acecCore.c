@@ -527,7 +527,7 @@ int Acec_Solve( Gia_Man_t * pGia0, Gia_Man_t * pGia1, Acec_ParCec_t * pPars )
         if ( fDumpMiter )
         {
             Abc_Print( 0, "The verification miter is written into file \"%s\".\n", "acec_miter.aig" );
-            Gia_AigerWrite( pMiter, "acec_miter.aig", 0, 0 );
+            Gia_AigerWrite( pMiter, "acec_miter.aig", 0, 0, 0 );
         }
         status = Cec_ManVerify( pMiter, pCecPars );
         ABC_SWAP( Abc_Cex_t *, pGia0->pCexComb, pMiter->pCexComb );

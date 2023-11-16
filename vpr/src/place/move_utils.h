@@ -28,7 +28,8 @@ enum class e_move_type {
     CRIT_UNIFORM,
     FEASIBLE_REGION,
     NUMBER_OF_AUTO_MOVES,
-    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES
+    MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
+    INVALID_MOVE
 };
 
 enum class e_create_move {
@@ -43,8 +44,8 @@ enum class e_create_move {
  *        random block type to be chosen to be swapped.
  */
 struct t_propose_action {
-    e_move_type move_type;         ///<move type that propose_action chooses to perform
-    t_logical_block_type blk_type; ///<propose_action can choose block type or leave it empty to allow any block type to be chosen
+    e_move_type move_type = e_move_type::INVALID_MOVE; ///<move type that propose_action chooses to perform
+    int logical_blk_type_index = -1;                   ///<propose_action can choose block type or set it to -1 to allow any block type to be chosen
 };
 
 /**
@@ -84,7 +85,7 @@ struct t_range_limiters {
 };
 
 //Records a reasons for an aborted move
-void log_move_abort(std::string reason);
+void log_move_abort(const std::string& reason);
 
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
@@ -112,14 +113,18 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 /**
  * @brief Propose block for the RL agent based on required block type.
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: Index of the block type being perturbed, which is used to select the proper agent data
  *  @param highly_crit_block: block should be chosen from highly critical blocks.
  *  @param net_from: if block is chosen from highly critical blocks, should store the critical net id.
  *  @param pin_from: if block is chosen from highly critical blocks, should save its critical pin id.
  *
  * @return block id if any blocks found. ClusterBlockId::INVALID() if no block found.
  */
-ClusterBlockId propose_block_to_move(t_logical_block_type& blk_type, bool highly_crit_block, ClusterNetId* net_from, int* pin_from);
+ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
+                                     int& logical_blk_type_index,
+                                     bool highly_crit_block,
+                                     ClusterNetId* net_from,
+                                     int* pin_from);
 
 /**
  * @brief Select a random block to be swapped with another block
@@ -131,11 +136,11 @@ ClusterBlockId pick_from_block();
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: the agent type of the moving block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(t_logical_block_type blk_type);
+ClusterBlockId pick_from_block(int logical_blk_type_index);
 
 /**
  * @brief Select a random highly critical block to be swapped with another block
@@ -147,11 +152,11 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param blk_type: the agent type of the moving block.
+ *  @param logical_blk_type_index: the agent type of the moving block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type blk_type);
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, int logical_blk_type_index);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
@@ -203,7 +208,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from);
 
-std::string move_type_to_string(e_move_type);
+const std::string& move_type_to_string(e_move_type);
 
 /* find to loaction helper functions */
 /**
@@ -270,13 +275,11 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
  * @param compressed_block_grid
  * @param compressed_locs
  * @param rlim
- * @param num_layers
  * @return A compressed search range for each layer
  */
-std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                          const std::vector<t_physical_tile_loc>& compressed_locs,
-                                                          float rlim,
-                                                          int num_layers);
+t_bb get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                             const t_physical_tile_loc& compressed_locs,
+                                             float rlim);
 
 /**
  * @brief This function calculates the search range based on the given rlim value and the number of columns/rows
@@ -289,14 +292,12 @@ std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_blo
  * @param from_compressed_loc
  * @param target_compressed_loc
  * @param rlim
- * @param num_layers
  * @return
  */
-std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                           const std::vector<t_physical_tile_loc>& from_compressed_loc,
-                                                           const std::vector<t_physical_tile_loc>& target_compressed_loc,
-                                                           float rlim,
-                                                           int num_layers);
+t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                              const t_physical_tile_loc& from_compressed_loc,
+                                              const t_physical_tile_loc& target_compressed_loc,
+                                              float rlim);
 
 /*
  * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords
@@ -324,28 +325,47 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
 std::string e_move_result_to_string(e_move_result move_outcome);
 
 /**
- * @brief find the physical block type index associated to the agent block type
+ * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accomodate "logical_block".
+ * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
+ * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
  *
- * Agent block types are defined as physical block types used by the netlist.
- * More information on agent block type can be found on the placement context in "vpr_context.h"
- *
- * @return physical block type index associated with the agent_blk_type_index
+ * @param logical_block
+ * @param loc
+ * @return
  */
-int convert_agent_to_phys_blk_type(int agent_blk_type_index);
+int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc);
+
+int get_random_layer(t_logical_block_type_ptr logical_block);
 
 /**
- * @brief find the agent block type index associated to the physical block type
- *
- * Agent block types are defined as physical block types used by the netlist.
- * More information on agent block type can be found on the placement context in "vpr_context.h"
- *
- * @return agent block type index associated with the phys_blk_type_index
+ * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. set the layer min and max
+ * based on the layers that have a valid BB.
+ * @param tbb_vec
+ * @return 3D bounding box
  */
-int convert_phys_to_agent_blk_type(int phys_blk_type_index);
+t_bb union_2d_bb(const std::vector<t_2D_bb>& tbb_vec);
 
 /**
- * @brief return number of available block types in the RLplace agent.
+ * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. Create the "num_edge" in a similar way. This data structure
+ * stores how many blocks are on each edge of the BB. set the layer min and max based on the layers that have a valid BB.
+ * @param num_edge_vec
+ * @param bb_vec
+ * @return num_edge, 3D bb
  */
-int get_num_agent_types();
+std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
+                                       const std::vector<t_2D_bb>& bb_vec);
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+/**
+ * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
+ * connected to the block share the same ID as the net ID passed to the placer_debug_net parameter of the command line,
+ * then debugging information should be printed.
+ *
+ * @param placer_opts
+ * @param blk_id The ID of the block that is considered to be moved
+ */
+void enable_placer_debug(const t_placer_opts& placer_opts,
+                         ClusterBlockId blk_id);
+#endif
 
 #endif

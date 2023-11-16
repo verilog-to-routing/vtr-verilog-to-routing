@@ -442,7 +442,7 @@ Vec_Int_t * Ree_ManComputeCuts( Gia_Man_t * p, Vec_Int_t ** pvXors, int fVerbose
     Vec_IntFree( vTemp );
     Vec_IntFree( vCuts );
     vAdds = Ree_ManDeriveAdds( pHash, vData, fVerbose );
-    qsort( Vec_IntArray(vAdds), Vec_IntSize(vAdds)/6, 24, (int (*)(const void *, const void *))Ree_ManCompare );
+    qsort( Vec_IntArray(vAdds), (size_t)(Vec_IntSize(vAdds)/6), 24, (int (*)(const void *, const void *))Ree_ManCompare );
     if ( fVerbose )
         printf( "Adders = %d.  Total cuts = %d.  Hashed cuts = %d.  Hashed/Adders = %.2f.\n", 
             Vec_IntSize(vAdds)/6, Vec_IntSize(vData)/3, Hash_IntManEntryNum(pHash), 6.0*Hash_IntManEntryNum(pHash)/Vec_IntSize(vAdds) );

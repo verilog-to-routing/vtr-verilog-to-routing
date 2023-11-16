@@ -139,6 +139,9 @@ struct SimInstance
 	dict<SigBit, pool<Cell*>> upd_cells;
 	dict<SigBit, pool<Wire*>> upd_outports;
 
+	dict<SigBit, SigBit> in_parent_drivers;
+	dict<SigBit, SigBit> clk2fflogic_drivers;
+
 	pool<SigBit> dirty_bits;
 	pool<Cell*> dirty_cells;
 	pool<IdString> dirty_memories;
@@ -185,6 +188,10 @@ struct SimInstance
 	{
 		log_assert(module);
 
+		if (module->get_blackbox_attribute(true))
+			log_error("Cannot simulate blackbox module %s (instanced at %s).\n",
+					  log_id(module->name), hiername().c_str());
+
 		if (parent) {
 			log_assert(parent->children.count(instance) == 0);
 			parent->children[instance] = this;
@@ -217,6 +224,13 @@ struct SimInstance
 						state_nets[sig[i]] = initval[i];
 						dirty_bits.insert(sig[i]);
 					}
+			}
+
+			if (wire->port_input && instance != nullptr && parent != nullptr) {
+				for (int i = 0; i < GetSize(sig); i++) {
+					if (instance->hasPort(wire->name))
+						in_parent_drivers.emplace(sig[i], parent->sigmap(instance->getPort(wire->name)[i]));
+				}
 			}
 		}
 
@@ -261,6 +275,11 @@ struct SimInstance
 				ff.past_srst = State::Sx;
 				ff.data = ff_data;
 				ff_database[cell] = ff;
+
+				if (cell->get_bool_attribute(ID(clk2fflogic))) {
+					for (int i = 0; i < ff_data.width; i++)
+						clk2fflogic_drivers.emplace(sigmap(ff_data.sig_d[i]), sigmap(ff_data.sig_q[i]));
+				}
 			}
 
 			if (cell->is_mem_cell())
@@ -370,6 +389,26 @@ struct SimInstance
 		if (shared->debug)
 			log("[%s] set %s: %s\n", hiername().c_str(), log_signal(sig), log_signal(value));
 		return did_something;
+	}
+
+	void set_state_parent_drivers(SigSpec sig, Const value)
+	{
+		sigmap.apply(sig);
+
+		for (int i = 0; i < GetSize(sig); i++) {
+			auto sigbit = sig[i];
+			auto sigval = value[i];
+
+			auto clk2fflogic_driver = clk2fflogic_drivers.find(sigbit);
+			if (clk2fflogic_driver != clk2fflogic_drivers.end())
+				sigbit = clk2fflogic_driver->second;
+
+			auto in_parent_driver = in_parent_drivers.find(sigbit);
+			if (in_parent_driver == in_parent_drivers.end())
+				set_state(sigbit, sigval);
+			else
+				parent->set_state_parent_drivers(in_parent_driver->second, sigval);
+		}
 	}
 
 	void set_memory_state(IdString memid, Const addr, Const data)
@@ -564,7 +603,7 @@ struct SimInstance
 		}
 	}
 
-	bool update_ph2(bool gclk)
+	bool update_ph2(bool gclk, bool stable_past_update = false)
 	{
 		bool did_something = false;
 
@@ -575,7 +614,7 @@ struct SimInstance
 
 			Const current_q = get_state(ff.data.sig_q);
 
-			if (ff_data.has_clk) {
+			if (ff_data.has_clk && !stable_past_update) {
 				// flip-flops
 				State current_clk = get_state(ff_data.sig_clk)[0];
 				if (ff_data.pol_clk ? (ff.past_clk == State::S0 && current_clk != State::S0) :
@@ -596,7 +635,7 @@ struct SimInstance
 			if (ff_data.has_aload) {
 				State current_aload = get_state(ff_data.sig_aload)[0];
 				if (current_aload == (ff_data.pol_aload ? State::S1 : State::S0)) {
-					current_q = ff_data.has_clk ? ff.past_ad : get_state(ff.data.sig_ad);
+					current_q = ff_data.has_clk && !stable_past_update ? ff.past_ad : get_state(ff.data.sig_ad);
 				}
 			}
 			// async reset
@@ -647,6 +686,8 @@ struct SimInstance
 				}
 				else
 				{
+					if (stable_past_update)
+						continue;
 					if (port.clk_polarity ?
 							(mdb.past_wr_clk[port_idx] == State::S1 || get_state(port.clk) != State::S1) :
 							(mdb.past_wr_clk[port_idx] == State::S0 || get_state(port.clk) != State::S0))
@@ -676,7 +717,7 @@ struct SimInstance
 		}
 
 		for (auto it : children)
-			if (it.second->update_ph2(gclk)) {
+			if (it.second->update_ph2(gclk, stable_past_update)) {
 				dirty_children.insert(it.second);
 				did_something = true;
 			}
@@ -1138,6 +1179,11 @@ struct SimWorker : SimShared
 		}
 		for(auto& writer : outputfiles)
 			writer->write(use_signal);
+		
+		if (writeback) {
+			pool<Module*> wbmods;
+			top->writeback(wbmods);
+		}
 	}
 
 	void update(bool gclk)
@@ -1167,9 +1213,21 @@ struct SimWorker : SimShared
 
 	void initialize_stable_past()
 	{
-		if (debug)
-			log("\n-- ph1 (initialize) --\n");
-		top->update_ph1();
+
+		while (1)
+		{
+			if (debug)
+				log("\n-- ph1 (initialize) --\n");
+
+			top->update_ph1();
+
+			if (debug)
+				log("\n-- ph2 (initialize) --\n");
+
+			if (!top->update_ph2(false, true))
+				break;
+		}
+
 		if (debug)
 			log("\n-- ph3 (initialize) --\n");
 		top->update_ph3(true);
@@ -1241,11 +1299,6 @@ struct SimWorker : SimShared
 		register_output_step(10*numcycles + 2);
 
 		write_output_files();
-
-		if (writeback) {
-			pool<Module*> wbmods;
-			top->writeback(wbmods);
-		}
 	}
 
 	void run_cosim_fst(Module *topmod, int numcycles)
@@ -1370,11 +1423,6 @@ struct SimWorker : SimShared
 		}
 
 		write_output_files();
-
-		if (writeback) {
-			pool<Module*> wbmods;
-			top->writeback(wbmods);
-		}
 		delete fst;
 	}
 
@@ -1760,7 +1808,7 @@ struct SimWorker : SimShared
 				log("yw: set %s to %s\n", signal.path.str().c_str(), log_const(value));
 
 			if (found_path.wire != nullptr) {
-				found_path.instance->set_state(
+				found_path.instance->set_state_parent_drivers(
 						SigChunk(found_path.wire, signal.offset, signal.width),
 						value);
 			} else if (!found_path.memid.empty()) {

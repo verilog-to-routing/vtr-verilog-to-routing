@@ -188,7 +188,7 @@ void Mpm_ManPrintStats( Mpm_Man_t * p )
         Abc_Print( 1, "Runtime breakdown:\n" );
         ABC_PRTP( "Complete cut computation   ", p->timeDerive , p->timeTotal );
         ABC_PRTP( "- Merging cuts             ", p->timeMerge  , p->timeTotal );
-        ABC_PRTP( "- Evaluting cut parameters ", p->timeEval   , p->timeTotal );
+        ABC_PRTP( "- Evaluating cut parameters ", p->timeEval   , p->timeTotal );
         ABC_PRTP( "- Checking cut containment ", p->timeCompare, p->timeTotal );
         ABC_PRTP( "- Adding cuts to storage   ", p->timeStore  , p->timeTotal );
         ABC_PRTP( "Other                      ", p->timeOther  , p->timeTotal );

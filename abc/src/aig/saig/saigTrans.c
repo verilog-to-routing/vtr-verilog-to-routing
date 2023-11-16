@@ -6,7 +6,7 @@
 
   PackageName [Sequential AIG package.]
 
-  Synopsis    [Dynamic simplication of the transition relation.]
+  Synopsis    [Dynamic simplification of the transition relation.]
 
   Author      [Alan Mishchenko]
   

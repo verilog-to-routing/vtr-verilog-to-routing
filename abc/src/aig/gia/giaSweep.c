@@ -203,6 +203,7 @@ Gia_Man_t * Gia_ManDupWithBoxes( Gia_Man_t * p, int fSeq )
     pNew->pAigExtra = Gia_ManUpdateExtraAig2( p->pManTime, p->pAigExtra, vBoxesLeft );
     assert( Gia_ManCiNum(pNew) == Tim_ManPiNum((Tim_Man_t*)pNew->pManTime) + Gia_ManCoNum(pNew->pAigExtra) );
     Vec_IntFree( vBoxesLeft );
+    pNew->nAnd2Delay = p->nAnd2Delay;
     return pNew;
 }
 
@@ -387,6 +388,14 @@ Vec_Int_t * Gia_ManComputeCarryOuts( Gia_Man_t * p )
     Tim_Man_t * pManTime = (Tim_Man_t *)p->pManTime;
     int i, iLast, iBox, nBoxes =  Tim_ManBoxNum( pManTime );
     Vec_Int_t * vCarryOuts = Vec_IntAlloc( nBoxes );
+
+    // Create and populate reference count (and free later) only if not already
+    // done.
+    int createRefs = (p->pRefs == NULL);
+    if (createRefs) {
+        Gia_ManCreateRefs( p );
+    }
+
     for ( i = 0; i < nBoxes; i++ )
     {
         iLast = Tim_ManBoxInputLast( pManTime, i );
@@ -397,9 +406,24 @@ Vec_Int_t * Gia_ManComputeCarryOuts( Gia_Man_t * p )
         if ( iBox == -1 ) 
             continue;
         assert( Gia_ObjIsCi(pObj) );
-        if ( Gia_ObjCioId(pObj) == Tim_ManBoxOutputLast(pManTime, iBox) )
+        if ( Gia_ObjCioId(pObj) == Tim_ManBoxOutputLast(pManTime, iBox) ) {
             Vec_IntPush( vCarryOuts, Gia_ObjId(p, pObj) );
+
+            // We have identified a carry connection. Check if the carry out
+            // of the destination box is unconnected. If so then add it to
+            // the carry list as well.
+            iLast = Tim_ManBoxOutputLast(pManTime, i);
+            pObj = Gia_ManCi(p, iLast);
+            if ( Gia_ObjRefNum(p, pObj) == 0 ) {
+                Vec_IntPush( vCarryOuts, Gia_ObjId(p, pObj) );
+            }
+        }
     }
+
+    if (createRefs) {
+        ABC_FREE( p->pRefs );
+    }
+
     return vCarryOuts;
 }
 

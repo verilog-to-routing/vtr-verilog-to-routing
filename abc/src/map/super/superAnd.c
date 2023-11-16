@@ -475,7 +475,7 @@ clk = Abc_Clock();
     // sort the supergates by truth table
     s_uMaskBit = pLib->uMaskBit;
     s_uMaskAll = SUPER_MASK(pLib->nMints);
-    qsort( (void *)pLib->pGates, pLib->nGates, sizeof(Super2_Gate_t *), 
+    qsort( (void *)pLib->pGates, (size_t)pLib->nGates, sizeof(Super2_Gate_t *), 
             (int (*)(const void *, const void *)) Super2_LibCompareGates );
     assert( Super2_LibCompareGates( pLib->pGates, pLib->pGates + pLib->nGates - 1 ) < 0 );
 ABC_PRT( "Sorting", Abc_Clock() - clk );

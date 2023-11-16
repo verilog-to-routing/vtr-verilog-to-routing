@@ -583,7 +583,7 @@ void Tab_DecomposeTest()
     Vec_Int_t * vPrimes = Abc_GenPrimes( nVars );
     Tab_Man_t * p = Tab_ManAlloc( nVars, Vec_IntSize(vPrimes) );
     Tab_ManStart( p, vPrimes );
-    printf( "Created %d cubes dependent on %d variables with %d literals.\n", p->nCubes, p->nVars );
+    printf( "Created %d cubes dependent on %d variables.\n", p->nCubes, p->nVars );
     vPairs = Tab_ManCollectDist1( p, 0 );
     printf( "Collected %d pairs.\n", Vec_IntSize(vPairs)/2 );
     Vec_IntFree( vPairs );

@@ -806,6 +806,335 @@ int Gia_ManHashAndMulti2( Gia_Man_t * p, Vec_Int_t * vLits )
         iRes = Gia_ManHashAnd( p, iRes, iLit );
     return iRes;
 }
+int Gia_ManHashDualMiter( Gia_Man_t * p, Vec_Int_t * vOuts )
+{
+    int i, iLit0, iLit1, iRes = 0;
+    Vec_IntForEachEntryDouble( vOuts, iLit0, iLit1, i )
+        iRes = Gia_ManHashOr( p, iRes, Gia_ManHashXor(p, iLit0, iLit1) );
+    return iRes;
+}
+
+
+
+/**Function*************************************************************
+
+  Synopsis    [Create multi-input tree.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int * Gia_ManCollectLiterals( int nVars )
+{
+    int i, * pRes = ABC_CALLOC( int, nVars );
+    for ( i = 0; i < nVars; i++ )
+        pRes[i] = Abc_Var2Lit( i+1, 0 );
+    return pRes;
+}
+int * Gia_ManGenZero( int nBits )
+{
+    return ABC_CALLOC( int, nBits );
+}
+int * Gia_ManGenPerm( int nBits )
+{
+    int i, * pRes = ABC_CALLOC( int, nBits );
+    srand( time(NULL) );
+    for ( i = 0; i < nBits; i++ )
+        pRes[i] = i;
+    for ( i = 0; i < nBits; i++ )
+    {
+        int iPerm = rand() % nBits;
+        ABC_SWAP( int, pRes[i], pRes[iPerm] );
+    }
+    return pRes;
+}
+int * Gia_ManGenPerm2( int nBits )
+{
+    int i, * pRes = ABC_CALLOC( int, nBits );
+    srand( time(NULL) );
+    for ( i = 0; i < nBits; i++ )
+        pRes[i] = rand() % nBits;
+    return pRes;
+}
+int Gia_ManMultiCheck( int * pPerm, int nPerm )
+{
+    int i;
+    for ( i = 1; i < nPerm; i++ )
+        if ( pPerm[i-1] <= pPerm[i] )
+            return 0;
+    return 1;
+}
+int Gia_ManMultiInputPerm( Gia_Man_t * pNew, int * pVars, int nVars, int * pPerm, int fOr, int fXor )
+{
+    int fPrint = 1;
+    int i, iLit;
+    if ( fPrint )
+    {
+        for ( i = 0; i < nVars; i++ )
+            printf( "%d ", pPerm[i] );
+        printf( "\n" );
+    }
+    while ( 1 )
+    {
+        for ( i = 1; i < nVars; i++ )
+            if ( pPerm[i-1] >= pPerm[i] )
+                break;
+        if ( i == nVars )
+            break;
+        assert( pPerm[i-1] >= pPerm[i] );
+        if ( pPerm[i-1] > pPerm[i] )
+        {
+            ABC_SWAP( int, pPerm[i-1], pPerm[i] );
+            ABC_SWAP( int, pVars[i-1], pVars[i] );
+        }
+        else
+        {
+            assert( pPerm[i-1] == pPerm[i] );
+            pPerm[i-1]++;
+            if ( fXor )
+                pVars[i-1] = Gia_ManHashXor( pNew, pVars[i-1], pVars[i] );
+            else if ( fOr )
+                pVars[i-1] = Gia_ManHashOr( pNew, pVars[i-1], pVars[i] );
+            else
+                pVars[i-1] = Gia_ManHashAnd( pNew, pVars[i-1], pVars[i] );
+            for ( i = i+1; i < nVars; i++ )
+            {
+                pPerm[i-1] = pPerm[i];
+                pVars[i-1] = pVars[i];
+            }
+            nVars--;
+        }
+        if ( fPrint )
+        {
+            for ( i = 0; i < nVars; i++ )
+                printf( "%d ", pPerm[i] );
+            printf( "\n" );
+        }
+    }
+    iLit = pVars[0];
+    for ( i = 1; i < nVars; i++ )
+        if ( fXor )
+            iLit = Gia_ManHashXor( pNew, iLit, pVars[i] );
+        else if ( fOr )
+            iLit = Gia_ManHashOr( pNew, iLit, pVars[i] );
+        else
+            iLit = Gia_ManHashAnd( pNew, iLit, pVars[i] );
+    return iLit;
+}
+Gia_Man_t * Gia_ManMultiInputTest( int nBits )
+{
+    Gia_Man_t * pNew;
+    int i, iRes, * pPerm;
+    int * pMulti = Gia_ManCollectLiterals( nBits );
+    pNew = Gia_ManStart( 1000 );
+    pNew->pName = Abc_UtilStrsav( "multi" );
+    for ( i = 0; i < nBits; i++ )
+        Gia_ManAppendCi( pNew );
+    Gia_ManHashAlloc( pNew );
+    pPerm = Gia_ManGenPerm2( nBits );
+    //pPerm = Gia_ManGenZero( nBits );
+    iRes = Gia_ManMultiInputPerm( pNew, pMulti, nBits, pPerm, 0, 0 );
+    Gia_ManAppendCo( pNew, iRes );
+    ABC_FREE( pPerm );
+    ABC_FREE( pMulti );
+    return pNew;
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Create MUX tree.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Gia_ManCube( Gia_Man_t * pNew, int Vars, int nVars, int * pLits )
+{
+    int i, iLit = 1;
+    for ( i = 0; i < nVars; i++ )
+        iLit = Gia_ManHashAnd( pNew, iLit, Abc_LitNotCond(pLits[i], !((Vars >> i) & 1)) );
+    return iLit;
+}
+int Gia_ManMuxTree_rec( Gia_Man_t * pNew, int * pCtrl, int nCtrl, int * pData )
+{
+    int iLit0, iLit1;
+    if ( nCtrl == 0 )
+        return pData[0];
+    iLit0 = Gia_ManMuxTree_rec( pNew, pCtrl, nCtrl-1, pData );
+    iLit1 = Gia_ManMuxTree_rec( pNew, pCtrl, nCtrl-1, pData + (1<<(nCtrl-1)) );
+    return Gia_ManHashMux( pNew, pCtrl[nCtrl-1], iLit1, iLit0 );
+}
+void Gia_ManUsePerm( int * pTree, int nBits, int * pPerm )
+{
+    int fPrint = 0;
+    int i, k, m, nVars = nBits + (1 << nBits);
+    if ( fPrint )
+    {
+        for ( i = 0; i < nVars; i++ )
+            printf( "%d ", pPerm[i] );
+        printf( "\n" );
+    }
+    for ( i = 0; i < nBits; i++ )
+    {
+        for ( k = i+1; k < nBits; k++ )
+            if ( pPerm[i] > pPerm[k] )
+                break;
+        if ( k == nBits )
+            break;
+        assert( pPerm[i] > pPerm[k] );
+        ABC_SWAP( int, pPerm[i], pPerm[k] );
+        ABC_SWAP( int, pTree[i], pTree[k] );
+        for ( m = 0; m < (1 << nBits); m++ )
+            if ( ((m >> i) & 1) && !((m >> k) & 1) )
+            {
+                ABC_SWAP( int, pTree[nBits+m], pTree[nBits+(m^(1<<i)^(1<<k))] );
+                ABC_SWAP( int, pPerm[nBits+m], pPerm[nBits+(m^(1<<i)^(1<<k))] );
+            }
+    }
+    if ( fPrint )
+    {
+        for ( i = 0; i < nVars; i++ )
+            printf( "%d ", pPerm[i] );
+        printf( "\n" );
+    }
+}
+int Gia_ManFindCond( int * pLits, int nBits, int iLate1, int iLate2 )
+{
+    int i;
+    assert( iLate1 != iLate2 );
+    for ( i = 0; i < nBits; i++ )
+        if ( (((iLate1 ^ iLate2) >> i) & 1) )
+            return Abc_LitNotCond( pLits[i], (iLate1 >> i) & 1 );
+    return -1;
+}
+int Gia_ManLatest( int * pPerm, int nVars, int iPrev1, int iPrev2, int iPrev3 )
+{
+    int i, Value = -1, iLate = -1;
+    for ( i = 0; i < nVars; i++ )
+        if ( Value < pPerm[i] && i != iPrev1 && i != iPrev2 && i != iPrev3 )
+        {
+            Value = pPerm[i];
+            iLate = i;
+        }
+    return iLate;
+}
+int Gia_ManEarliest( int * pPerm, int nVars )
+{
+    int i, Value = ABC_INFINITY, iLate = -1;
+    for ( i = 0; i < nVars; i++ )
+        if ( Value > pPerm[i] )
+        {
+            Value = pPerm[i];
+            iLate = i;
+        }
+    return iLate;
+}
+int Gia_ManDecompOne( Gia_Man_t * pNew, int * pTree, int nBits, int * pPerm, int iLate )
+{
+    int iRes, iData;
+    assert( iLate >= 0 && iLate < (1<<nBits) );
+    iData = pTree[nBits+iLate];
+    pTree[nBits+iLate] = pTree[nBits+(iLate^1)];
+    iRes = Gia_ManMuxTree_rec( pNew, pTree, nBits, pTree+nBits );
+    return Gia_ManHashMux( pNew, Gia_ManCube(pNew, iLate, nBits, pTree), iData, iRes );
+}
+int Gia_ManDecompTwo( Gia_Man_t * pNew, int * pTree, int nBits, int * pPerm, int iLate1, int iLate2 )
+{
+    int iRes, iData1, iData2, iData, iCond, iCond2;
+    assert( iLate1 != iLate2 );
+    assert( iLate1 >= 0 && iLate1 < (1<<nBits) );
+    assert( iLate2 >= 0 && iLate2 < (1<<nBits) );
+    iData1 = pTree[nBits+iLate1];
+    iData2 = pTree[nBits+iLate2];
+    pTree[nBits+iLate1] = pTree[nBits+(iLate1^1)];
+    pTree[nBits+iLate2] = pTree[nBits+(iLate2^1)];
+    iRes   = Gia_ManMuxTree_rec( pNew, pTree, nBits, pTree+nBits );
+    iCond  = Gia_ManHashOr( pNew, Gia_ManCube(pNew, iLate1, nBits, pTree), Gia_ManCube(pNew, iLate2, nBits, pTree) ); 
+    iCond2 = Gia_ManFindCond( pTree, nBits, iLate1, iLate2 );
+    iData  = Gia_ManHashMux( pNew, iCond2, iData2, iData1 );
+    return Gia_ManHashMux( pNew, iCond, iData, iRes );
+}
+int Gia_ManDecompThree( Gia_Man_t * pNew, int * pTree, int nBits, int * pPerm, int iLate1, int iLate2, int iLate3 )
+{
+    int iRes, iData1, iData2, iData3, iCube1, iCube2, iCube3, iCtrl0, iCtrl1, iMux10, iMux11;
+    assert( iLate1 != iLate2 );
+    assert( iLate1 != iLate3 );
+    assert( iLate2 != iLate3 );
+    assert( iLate1 >= 0 && iLate1 < (1<<nBits) );
+    assert( iLate2 >= 0 && iLate2 < (1<<nBits) );
+    assert( iLate3 >= 0 && iLate3 < (1<<nBits) );
+    iData1 = pTree[nBits+iLate1];
+    iData2 = pTree[nBits+iLate2];
+    iData3 = pTree[nBits+iLate3];
+    pTree[nBits+iLate1] = pTree[nBits+(iLate1^1)];
+    pTree[nBits+iLate2] = pTree[nBits+(iLate2^1)];
+    pTree[nBits+iLate3] = pTree[nBits+(iLate3^1)];
+    iRes   = Gia_ManMuxTree_rec( pNew, pTree, nBits, pTree+nBits );
+    iCube1 = Gia_ManCube( pNew, iLate1, nBits, pTree );
+    iCube2 = Gia_ManCube( pNew, iLate2, nBits, pTree );
+    iCube3 = Gia_ManCube( pNew, iLate3, nBits, pTree );
+    iCtrl0 = Gia_ManHashOr( pNew, iCube1, iCube3 );
+    iCtrl1 = Gia_ManHashOr( pNew, iCube2, iCube3 );
+    iMux10 = Gia_ManHashMux( pNew, iCtrl0, iData1, iRes );
+    iMux11 = Gia_ManHashMux( pNew, iCtrl0, iData3, iData2 );
+    return Gia_ManHashMux( pNew, iCtrl1, iMux11, iMux10 );
+}
+int Gia_ManDecomp( Gia_Man_t * pNew, int * pTree, int nBits, int * pPerm )
+{
+    if ( nBits == 2 )
+        return Gia_ManMuxTree_rec( pNew, pTree, nBits, pTree+nBits );
+    else
+    {
+        int iBase  = Gia_ManEarliest( pPerm+nBits, 1<<nBits ), BaseValue = pPerm[nBits+iBase];
+        int iLate1 = Gia_ManLatest( pPerm+nBits, 1<<nBits, -1, -1, -1 );
+        int iLate2 = Gia_ManLatest( pPerm+nBits, 1<<nBits, iLate1, -1, -1 );
+        int iLate3 = Gia_ManLatest( pPerm+nBits, 1<<nBits, iLate1, iLate2, -1 );
+        int iLate4 = Gia_ManLatest( pPerm+nBits, 1<<nBits, iLate1, iLate2, iLate3 );
+        if ( 0 )
+        {
+            int i;
+            for ( i = 0; i < (1<<nBits); i++ )
+                printf( "%d ", pPerm[nBits+i] );
+            printf( "\n" );
+        }
+        if ( pPerm[nBits+iLate1] > BaseValue && pPerm[nBits+iLate2] > BaseValue && pPerm[nBits+iLate3] > BaseValue && pPerm[nBits+iLate4] == BaseValue )
+            return Gia_ManDecompThree( pNew, pTree, nBits, pPerm, iLate1, iLate2, iLate3 );
+        if ( pPerm[nBits+iLate1] > BaseValue && pPerm[nBits+iLate2] > BaseValue && pPerm[nBits+iLate3] == BaseValue )
+            return Gia_ManDecompTwo( pNew, pTree, nBits, pPerm, iLate1, iLate2 );
+        if ( pPerm[nBits+iLate1] > BaseValue && pPerm[nBits+iLate2] == BaseValue )
+            return Gia_ManDecompOne( pNew, pTree, nBits, pPerm, iLate1 );
+        return Gia_ManMuxTree_rec( pNew, pTree, nBits, pTree+nBits );
+    }
+}
+Gia_Man_t * Gia_ManMuxTreeTest( int nBits )
+{
+    Gia_Man_t * pNew;
+    int i, iLit, nVars = nBits + (1 << nBits);
+    int * pPerm, * pTree = Gia_ManCollectLiterals( nVars );
+    pNew = Gia_ManStart( 1000 );
+    pNew->pName = Abc_UtilStrsav( "mux_tree" );
+    for ( i = 0; i < nVars; i++ )
+        Gia_ManAppendCi( pNew );
+    Gia_ManHashAlloc( pNew );
+    pPerm = Gia_ManGenPerm( nVars );
+    //pPerm = Gia_ManGenZero( nVars );
+    pPerm[nBits+1] = 100;
+    pPerm[nBits+5] = 100;
+    pPerm[nBits+4] = 100;
+    Gia_ManUsePerm( pTree, nBits, pPerm );
+    iLit = Gia_ManDecomp( pNew, pTree, nBits, pPerm );
+    Gia_ManAppendCo( pNew, iLit );
+    ABC_FREE( pPerm );
+    ABC_FREE( pTree );
+    return pNew;
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

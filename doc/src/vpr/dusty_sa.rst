@@ -1,3 +1,5 @@
+.. _dusty_sa:
+
 Dusty's Simulated Annealing Schedule
 ====================================
 

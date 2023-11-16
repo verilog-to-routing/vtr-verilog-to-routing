@@ -219,6 +219,22 @@ Cudd_MakeBddFromZddCover(
 /*---------------------------------------------------------------------------*/
 
 
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup2 that can
+              be casted to DD_CTFP.
+
+******************************************************************************/
+static DdNode  *
+cuddZddIsop_dummy(DdManager * dd, DdNode * L, DdNode * U)
+{
+  assert(0);
+  return 0;
+}
+#endif
+
+
 /**Function********************************************************************
 
   Synopsis [Performs the recursive step of Cudd_zddIsop.]
@@ -273,7 +289,11 @@ cuddZddIsop(
     ** Hence we need a double hit in the cache to terminate the
     ** recursion. Clearly, collisions may evict only one of the two
     ** results. */
+#ifdef USE_CASH_DUMMY
+    cacheOp = (DD_CTFP) cuddZddIsop_dummy;
+#else
     cacheOp = (DD_CTFP) cuddZddIsop;
+#endif
     r = cuddCacheLookup2(dd, cuddBddIsop, L, U);
     if (r) {
         *zdd_I = cuddCacheLookup2Zdd(dd, cacheOp, L, U);

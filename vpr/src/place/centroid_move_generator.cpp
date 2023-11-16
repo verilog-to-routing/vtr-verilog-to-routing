@@ -5,11 +5,17 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 
-e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
+e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(blk_type, false, NULL, NULL);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts,
+                                                  proposed_action.logical_blk_type_index,
+                                                  false,
+                                                  nullptr,
+                                                  nullptr);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Centroid Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
 
@@ -23,16 +29,18 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     auto grid_from_type = device_ctx.grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
-    t_range_limiters range_limiters;
-    range_limiters.original_rlim = rlim;
-    range_limiters.dm_rlim = placer_opts.place_dm_rlim;
-    range_limiters.first_rlim = place_move_ctx.first_rlim;
+    t_range_limiters range_limiters{rlim,
+                                    place_move_ctx.first_rlim,
+                                    placer_opts.place_dm_rlim};
 
     t_pl_loc to, centroid;
 
     /* Calculate the centroid location*/
-    calculate_centroid_loc(b_from, false, centroid, NULL);
+    calculate_centroid_loc(b_from, false, centroid, nullptr);
 
+    // Centroid location is not necessarily a valid location, and the downstream location expect a valid
+    // layer for "to" location. So if the layer is not valid, we set it to the same layer as from loc.
+    to.layer = (centroid.layer < 0) ? from.layer : centroid.layer;
     /* Find a location near the weighted centroid_loc */
     if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from)) {
         return e_create_move::ABORT;

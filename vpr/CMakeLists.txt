@@ -47,6 +47,11 @@ if(${VTR_ENABLE_CAPNPROTO})
     add_definitions("-DVTR_ENABLE_CAPNPROTO")
 endif()
 
+if(${VPR_DEBUG_PARTITION_TREE})
+    message(STATUS "VPR: Partition tree debug logs: enabled")
+    add_definitions("-DVPR_DEBUG_PARTITION_TREE")
+endif()
+
 #Create the library
 add_library(libvpr STATIC
              ${LIB_HEADERS}
@@ -271,7 +276,7 @@ if (TEST_VPR_USES_IPO)
 endif()
 
 add_test(NAME test_vpr
-    COMMAND test_vpr --use-colour=yes
+    COMMAND test_vpr --colour-mode ansi
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
     )
 

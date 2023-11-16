@@ -43,7 +43,7 @@
 #    include "manual_moves.h"
 
 #    include "rr_graph.h"
-#    include "route_util.h"
+#    include "route_utilization.h"
 #    include "place_macro.h"
 #    include "buttons.h"
 
@@ -97,5 +97,11 @@ void draw_get_rr_pin_coords(RRNodeId inode, float* xcen, float* ycen, const e_si
  * the physical pin is on.                                                  */
 void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side);
 
+/**
+ * @brief returns transparency, given rr node
+ * Checks the layer transparency of the given rr node and returns it
+ *
+ */
+int get_rr_node_transparency(RRNodeId rr_node);
 #endif /* NO_GRAPHICS */
 #endif /* DRAW_RR_H */

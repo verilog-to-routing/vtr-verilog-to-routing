@@ -269,7 +269,7 @@ int Abc_ZddDiff( Abc_ZddMan * p, int a, int b )
     else
         r0 = Abc_ZddDiff( p, A->False, B->False ), 
         r1 = Abc_ZddDiff( p, A->True, B->True ),
-        r = Abc_ZddUniqueCreate( p, A->Var, A->True, r0 );
+        r = Abc_ZddUniqueCreate( p, A->Var, r1, r0 );
     return Abc_ZddCacheInsert( p, a, b, ABC_ZDD_OPER_DIFF, r );
 }
 int Abc_ZddUnion( Abc_ZddMan * p, int a, int b )

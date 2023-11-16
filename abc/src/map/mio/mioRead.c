@@ -595,7 +595,7 @@ void Mio_LibrarySortGates( Mio_Library_t * pLib )
     pLib->ppGates0 = ABC_ALLOC( Mio_Gate_t *, pLib->nGates );
     for ( i = 0; i < pLib->nGates; i++ )
         pLib->ppGates0[i] = ppGates[i];
-    qsort( (void *)ppGates, pLib->nGates, sizeof(void *), 
+    qsort( (void *)ppGates, (size_t)pLib->nGates, sizeof(void *), 
             (int (*)(const void *, const void *)) Mio_LibraryCompareGatesByName );
     for ( i = 0; i < pLib->nGates; i++ )
         ppGates[i]->pNext = (i < pLib->nGates-1)? ppGates[i+1] : NULL;
@@ -734,37 +734,48 @@ void Io_ReadFileRemoveComments( char * pBuffer, int * pnDots, int * pnLines )
     // (in the BLIF file, comments are lines starting with "#")
     nDots = nLines = 0;
     for ( pCur = pBuffer; *pCur; pCur++ )
-    {
+      {
         // if this is the beginning of comment
         // clean it with spaces until the new line statement
-        if ( *pCur == '#' )
-            while ( *pCur != '\n' )
-                *pCur++ = ' ';
-    
+        if ( *pCur == '#' ) {
+          while ( *pCur != '\n' ) {
+            *pCur++ = ' ';
+          }
+        }
         // count the number of new lines and dots
         if ( *pCur == '\n' ) {
-        if (*(pCur-1)=='\r') {
-        // DOS(R) file support
-        if (*(pCur-2)!='\\') nLines++;
-        else {
-            // rewind to backslash and overwrite with a space
-            *(pCur-2) = ' ';
-            *(pCur-1) = ' ';
-            *pCur = ' ';
+          if (pCur > pBuffer) {
+            if (*(pCur - 1) == '\r') {
+              // DOS(R) file support
+              if (pCur > (pBuffer + 1)) {
+                if (*(pCur - 2) != '\\') {
+                  nLines++;
+                }
+                else {
+                  // rewind to backslash and overwrite with a space
+                  *(pCur - 2) = ' ';
+                  *(pCur - 1) = ' ';
+                  *pCur = ' ';
+                }
+              }
+            } else {
+              // UNIX(TM) file support
+              if (*(pCur - 1) != '\\') {
+                nLines++;
+              }
+              else {
+                // rewind to backslash and overwrite with a space
+                *(pCur - 1) = ' ';
+                *pCur = ' ';
+              }
+            }
+          }
         }
-        } else {
-        // UNIX(TM) file support
-        if (*(pCur-1)!='\\') nLines++;
-        else {
-            // rewind to backslash and overwrite with a space
-            *(pCur-1) = ' ';
-            *pCur = ' ';
+        else if ( *pCur == '.' ) {
+          nDots++;
         }
-        }
-    }
-        else if ( *pCur == '.' )
-            nDots++;
-    }
+      }
+
     if ( pnDots )
         *pnDots = nDots; 
     if ( pnLines )

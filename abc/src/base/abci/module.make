@@ -41,6 +41,7 @@ SRC +=    src/base/abci/abc.c \
     src/base/abci/abcNtbdd.c \
     src/base/abci/abcNpn.c \
     src/base/abci/abcNpnSave.c \
+    src/base/abci/abcOrchestration.c \
     src/base/abci/abcOdc.c \
     src/base/abci/abcOrder.c \
     src/base/abci/abcPart.c \
@@ -59,6 +60,7 @@ SRC +=    src/base/abci/abc.c \
     src/base/abci/abcRewrite.c \
     src/base/abci/abcRpo.c \
     src/base/abci/abcRr.c \
+    src/base/abci/abcRunGen.c \
     src/base/abci/abcSat.c \
     src/base/abci/abcSaucy.c \
     src/base/abci/abcScorr.c \

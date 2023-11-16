@@ -1106,7 +1106,7 @@ int Abc_RecToGia3( Gia_Man_t * pMan, If_Man_t * pIfMan, If_Cut_t * pCut, Vec_Int
 {
     Lms_Man_t * p = s_pMan3;
     char pCanonPerm[LMS_VAR_MAX];
-    unsigned uCanonPhase;
+    unsigned uCanonPhase = 0;
     int iFan0, iFan1, iGiaObj;
     Gia_Man_t * pGia = p->pGia;
     Gia_Obj_t * pGiaPo, * pGiaTemp = NULL;
@@ -1356,7 +1356,7 @@ void Abc_NtkRecDumpTt3( char * pFileName, int fBinary )
     Vec_MemForEachEntry( p->vTtMem, pTruth, i )
         Vec_StrPush( p->vSupps, (char)Abc_TtSupportSize(pTruth, nVars) );
     vEntries = Vec_IntStartNatural( nEntries );
-    qsort( (void *)Vec_IntArray(vEntries), nEntries, sizeof(int), (int(*)(const void *,const void *))Abc_NtkRecTruthCompare );
+    qsort( (void *)Vec_IntArray(vEntries), (size_t)nEntries, sizeof(int), (int(*)(const void *,const void *))Abc_NtkRecTruthCompare );
     Vec_StrFreeP( &p->vSupps );
     // write the file
     Vec_IntForEachEntry( vEntries, Entry, i )

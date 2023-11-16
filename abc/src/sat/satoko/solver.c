@@ -173,7 +173,7 @@ static inline void clause_realloc(struct cdb *dest, struct cdb *src, unsigned *c
     }
     new_cref = cdb_append(dest, 3 + old_clause->f_learnt + old_clause->size);
     new_clause = cdb_handler(dest, new_cref);
-    memcpy(new_clause, old_clause, (3 + old_clause->f_learnt + old_clause->size) * 4);
+    memcpy(new_clause, old_clause, (size_t)((3 + old_clause->f_learnt + old_clause->size) * 4));
     old_clause->f_reallocd = 1;
     old_clause->size = (unsigned) new_cref;
     *cref = new_cref;

@@ -193,7 +193,7 @@ static inline int Sbd_ManCutExpandOne( Gia_Man_t * p, Vec_Int_t * vMirrors, Vec_
         Vec_IntPushOrder( vCut, Fan1 );
     return 1;
 }
-void Vec_IntIsOrdered( Vec_Int_t * vCut )
+void Vec_IntOrdered( Vec_Int_t * vCut )
 {
     int i, Prev, Entry;
     Prev = Vec_IntEntry( vCut, 0 );
@@ -229,7 +229,7 @@ void Sbd_ManCutReload( Vec_Int_t * vMirrors, Vec_Int_t * vLutLevs, int LevStop, 
         else
             Vec_IntPush( vCutBot, Entry );
     }
-    Vec_IntIsOrdered( vCut );
+    Vec_IntOrdered( vCut );
 }
 int Sbd_ManCutCollect_rec( Gia_Man_t * p, Vec_Int_t * vMirrors, int iObj, int LevStop, Vec_Int_t * vLutLevs, Vec_Int_t * vCut )
 {
@@ -267,7 +267,7 @@ int Sbd_ManCutReduceTop( Gia_Man_t * p, Vec_Int_t * vMirrors, int iObj, Vec_Int_
 {
     int i, Entry, Lit0m, Lit1m, Fan0, Fan1;
     int LevStop = Vec_IntEntry(vLutLevs, iObj) - 2;
-    Vec_IntIsOrdered( vCut );
+    Vec_IntOrdered( vCut );
     Vec_IntForEachEntryReverse( vCutTop, Entry, i )
     {
         Gia_Obj_t * pObj = Gia_ManObj( p, Entry );

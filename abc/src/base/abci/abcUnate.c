@@ -82,7 +82,7 @@ void Abc_NtkPrintUnateBdd( Abc_Ntk_t * pNtk, int fUseNaive, int fVerbose )
     abctime clkBdd, clkUnate;
 
     // compute the global BDDs
-    dd = (DdManager *)Abc_NtkBuildGlobalBdds(pNtk, 10000000, 1, 1, fVerbose);
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds(pNtk, 10000000, 1, 1, 0, fVerbose);
     if ( dd == NULL )
         return;
 clkBdd = Abc_Clock() - clk;

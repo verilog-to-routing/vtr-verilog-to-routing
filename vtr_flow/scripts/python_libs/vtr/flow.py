@@ -56,6 +56,7 @@ def run(
     relax_w_factor=1.3,
     check_route=False,
     check_place=False,
+    no_second_run=False,
 ):
     """
     Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
@@ -130,6 +131,9 @@ def run(
 
         check_place:
             Route existing placement by enabling VPR routing.
+
+        no_second_run:
+            Don't run VPR again even if it's writing out some intermediate files.
     """
 
     #
@@ -299,6 +303,9 @@ def run(
                 or "write_intra_cluster_router_lookahead" in vpr_args
             ):
                 do_second_run = True
+
+            if no_second_run:
+                do_second_run = False
 
             vtr.vpr.run(
                 architecture_copy,
