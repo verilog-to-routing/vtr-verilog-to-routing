@@ -4,6 +4,7 @@
 #include <queue>
 #include <mutex>
 
+#include "connection_router_interface.h"
 #include "rr_node.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_sampling.h"
@@ -14,8 +15,8 @@
 #include "echo_files.h"
 #include "rr_graph.h"
 
-#include "route_timing.h"
 #include "route_common.h"
+#include "route_debug.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"

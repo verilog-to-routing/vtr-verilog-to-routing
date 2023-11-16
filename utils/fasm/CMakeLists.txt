@@ -57,6 +57,6 @@ endif()
 
 add_test(
   NAME test_fasm
-  COMMAND test_fasm --use-colour=yes
+  COMMAND test_fasm --colour-mode ansi
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
   )

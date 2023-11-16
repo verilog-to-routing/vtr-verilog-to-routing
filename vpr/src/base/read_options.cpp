@@ -2995,8 +2995,6 @@ void set_conditional_defaults(t_options& args) {
      */
     //Base cost type
     if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
-        VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN || args.RouterAlgorithm == PARALLEL);
-
         if (args.RouteType == DETAILED) {
             if (args.timing_analysis) {
                 args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);

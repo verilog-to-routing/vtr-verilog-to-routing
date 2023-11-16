@@ -20,7 +20,7 @@
 #include "globals.h"
 #include "place_and_route.h"
 #include "route_common.h"
-#include "route_timing.h"
+#include "route_net.h"
 #include "route_export.h"
 #include "rr_graph.h"
 #include "timing_place_lookup.h"

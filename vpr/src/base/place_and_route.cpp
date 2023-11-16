@@ -20,6 +20,7 @@
 #include "place.h"
 #include "read_place.h"
 #include "read_route.h"
+#include "route.h"
 #include "route_export.h"
 #include "draw.h"
 #include "stats.h"
@@ -191,19 +192,19 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                       arch->num_directs,
                       false);
         }
-        success = try_route(router_net_list,
-                            current,
-                            router_opts,
-                            analysis_opts,
-                            det_routing_arch, segment_inf,
-                            net_delay,
-                            timing_info,
-                            delay_calc,
-                            arch->Chans,
-                            arch->Directs,
-                            arch->num_directs,
-                            (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
-                            is_flat);
+        success = route(router_net_list,
+                        current,
+                        router_opts,
+                        analysis_opts,
+                        det_routing_arch, segment_inf,
+                        net_delay,
+                        timing_info,
+                        delay_calc,
+                        arch->Chans,
+                        arch->Directs,
+                        arch->num_directs,
+                        (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
+                        is_flat);
 
         attempt_count++;
         fflush(stdout);
@@ -331,19 +332,20 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                           false);
             }
 
-            success = try_route(router_net_list,
-                                current,
-                                router_opts,
-                                analysis_opts,
-                                det_routing_arch, segment_inf,
-                                net_delay,
-                                timing_info,
-                                delay_calc,
-                                arch->Chans,
-                                arch->Directs,
-                                arch->num_directs,
-                                ScreenUpdatePriority::MINOR,
-                                is_flat);
+            success = route(router_net_list,
+                            current,
+                            router_opts,
+                            analysis_opts,
+                            det_routing_arch,
+                            segment_inf,
+                            net_delay,
+                            timing_info,
+                            delay_calc,
+                            arch->Chans,
+                            arch->Directs,
+                            arch->num_directs,
+                            ScreenUpdatePriority::MINOR,
+                            is_flat);
 
             if (success && Fc_clipped == false) {
                 final = current;

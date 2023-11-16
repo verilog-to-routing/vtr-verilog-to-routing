@@ -1,7 +1,6 @@
 #include "router_lookahead_map_utils.h"
 
-/*
- * This file contains utility functions that can be shared among different
+/** @file This file contains utility functions that can be shared among different
  * lookahead computation strategies.
  *
  * In general, this utility library contains:
@@ -9,15 +8,14 @@
  * - Different dijkstra expansion algorithms used to perform specific tasks, such as computing the SOURCE/OPIN --> CHAN lookup tables
  * - Cost Entries definitions used when generating and querying the lookahead
  *
- * To access the utility functions, the util namespace needs to be used.
- */
+ * To access the utility functions, the util namespace needs to be used. */
 
 #include "globals.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
 #include "route_common.h"
-#include "route_timing.h"
+#include "route_debug.h"
 
 static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_delays& src_opin_delays, util::t_src_opin_inter_layer_delays& src_opin_inter_layer_delays, bool is_multi_layer);
 
