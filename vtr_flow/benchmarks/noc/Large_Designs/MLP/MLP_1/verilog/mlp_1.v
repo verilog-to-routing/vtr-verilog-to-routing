@@ -11,6 +11,8 @@
 	   modules to the collector module.
 */
 
+/* This file contain only module instanstation, for each module definition see "shared_verilog" folder */
+
 module mlp_1 (
     clk,
     reset,

@@ -2,6 +2,79 @@
 List of major changes and improvements between releases
 =======================================================
 
+Yosys 0.31 .. Yosys 0.32
+--------------------------
+ * Verific support
+    - Added sub option "-lib" to reading commands for VHDL and
+      SystemVerilog, that will later import all units/modules from
+      marked files as blackboxes.
+
+ * Various
+    - Added support for $lt, $le, $gt, $ge to the code generating AIGs.
+
+Yosys 0.30 .. Yosys 0.31
+--------------------------
+ * New commands and options
+    - Added option "-lsbidx" to "write_edif" pass.
+
+ * Various
+    - Added support for $divfloor operator to cxxrtl backend.
+    - dfflegalize: allow setting mince and minsrst args from scratchpad.
+
+Yosys 0.29 .. Yosys 0.30
+--------------------------
+ * New commands and options
+    - Added "recover_names" pass to recover names post-mapping.
+
+ * Gowin support
+    - Added remaining primitives blackboxes.
+
+ * Various
+    - "show -colorattr" will now color the cells, wires, and 
+      connection arrows.
+    - "show -viewer none" will not execute viewer.
+
+Yosys 0.28 .. Yosys 0.29
+--------------------------
+ * New commands and options
+    - Added "synthprop" pass for synthesizable properties.
+
+ * Verific support
+    - Handle conditions on clocked concurrent assertions in unclocked
+      procedural contexts.
+
+ * Verilog
+    - Fix const eval of unbased unsized constants.
+    - Handling of attributes for struct / union variables.
+
+Yosys 0.27 .. Yosys 0.28
+--------------------------
+ * Verilog
+    - Out of bounds checking for struct/union members.
+
+ * Verific support
+    - Fix enum_values support and signed attribute values.
+
+ * ECP5 support
+    - Added "synth_ecp5 -iopad"
+
+ * MachXO2 support
+    - Added "synth_machxo2 -ccu2"
+
+Yosys 0.26 .. Yosys 0.27
+--------------------------
+ * New commands and options
+    - Added option "-make_assert" to "equiv_make" pass.
+    - Added option "-coverenable" to "chformal" pass.
+
+ * Verilog
+    - Resolve package types in interfaces.
+    - Handle range offsets in packed arrays within packed structs.
+    - Support for data and array queries on struct/union item expressions.
+
+ * GateMate support
+    - Enable register initialization.
+
 Yosys 0.25 .. Yosys 0.26
 --------------------------
  * New commands and options

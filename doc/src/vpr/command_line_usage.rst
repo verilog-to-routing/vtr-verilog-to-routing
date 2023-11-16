@@ -784,7 +784,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     **Default:** ``0.0``
 
 .. _dusty_sa_options:
-Setting any of the following options selects `Dusty's annealing schedule <dusty_sa.rst>`_.
+Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>` .
 
 .. option:: --alpha_min <float>
 
@@ -879,6 +879,38 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 
     **Default:** ``move_block_type``
 
+.. option:: --placer_debug_block <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which block the placer produces detailed debug information for. 
+    
+    If the block being moved has the same ID as the number assigned to this parameter, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the block ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all blocks.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
+.. option:: --placer_debug_net <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which net the placer produces detailed debug information for.
+
+    If a net with the same ID assigned to this parameter is connected to the block that is being moved, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the net ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all nets.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
 
 .. _timing_driven_placer_options:
 
@@ -903,6 +935,13 @@ The following options are only valid when the placement engine is in timing-driv
 .. option:: --inner_loop_recompute_divider <int>
 
     Controls how many times the placer performs a timing analysis to update its criticality estimates while at a single temperature.
+
+    **Default:** ``0``
+
+.. option:: --quench_recompute_divider <int>
+
+    Controls how many times the placer performs a timing analysis to update its criticality estimates during a quench. 
+    If unspecified, uses the value from --inner_loop_recompute_divider.
 
     **Default:** ``0``
 

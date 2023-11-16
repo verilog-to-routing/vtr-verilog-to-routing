@@ -390,17 +390,10 @@ struct PlacementContext : public Context {
     std::string placement_id;
 
     /**
-     * @brief Map physical block type to RL-agent block type
-     *
-     * RL-agent block types are the physical block types that are used in the netlist (at least one logical block in the netlist maps to).
-     * As an example:
-     *      Having physical block types (EMPTY, LAB, DSP, IO),
-     *      agent block types would be (LAB,IO) if netlist doesn't contain DSP blocks.
-     * Key   : physical (agent) block type index
-     * Value : agent (physical) block type index
+     * Use during placement to print extra debug information. It is set to true based on the number assigned to
+     * placer_debug_net or placer_debug_block parameters in the command line.
      */
-    std::unordered_map<int, int> phys_blk_type_to_agent_blk_type_map;
-    std::unordered_map<int, int> agent_blk_type_to_phys_blk_type_map;
+    bool f_placer_debug = false;
 };
 
 /**

@@ -3,13 +3,15 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 
+#include <utility>
+
 /**
  * @file
  * @brief ClusteredNetlist Class Implementation
  */
 
 ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
-    : Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(name, id) {}
+    : Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(std::move(name), std::move(id)) {}
 
 /*
  *
@@ -28,11 +30,16 @@ t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) c
     return block_types_[id];
 }
 
-std::vector<ClusterBlockId> ClusteredNetlist::blocks_per_type(const t_logical_block_type blk_type) const {
+const std::vector<ClusterBlockId>& ClusteredNetlist::blocks_per_type(const t_logical_block_type& blk_type) const {
+    // empty vector is declared static to avoid re-allocation every time the function is called
+    static std::vector<ClusterBlockId> empty_vector;
     if (blocks_per_type_.count(blk_type.index) == 0) {
-        std::vector<ClusterBlockId> empty_vector;
         return empty_vector;
     }
+
+    // the vector is returned as const reference to avoid unnecessary copies,
+    // especially that returned vectors may be very large as they contain
+    // all clustered blocks with a specific block type
     return blocks_per_type_.at(blk_type.index);
 }
 
@@ -132,7 +139,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
     return blk_id;
 }
 
-ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type) {
+ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string& name, BitIndex width, PortType type) {
     ClusterPortId port_id = find_port(blk_id, name);
     if (!port_id) {
         port_id = Netlist::create_port(blk_id, name, width, type);
@@ -163,7 +170,7 @@ ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex 
     return pin_id;
 }
 
-ClusterNetId ClusteredNetlist::create_net(const std::string name) {
+ClusterNetId ClusteredNetlist::create_net(const std::string& name) {
     //Check if the net has already been created
     StringId name_id = create_string(name);
     ClusterNetId net_id = find_net(name_id);
@@ -292,9 +299,9 @@ ClusterBlockId ClusteredNetlist::find_block_by_name_fragment(const std::string& 
     ClusterBlockId blk_id = ClusterBlockId::INVALID();
     std::regex name_to_match(name_pattern);
 
-    for (auto compatible_block_id = cluster_block_candidates.begin(); compatible_block_id != cluster_block_candidates.end(); compatible_block_id++) {
-        if (std::regex_match(Netlist::block_name(*compatible_block_id), name_to_match)) {
-            blk_id = *compatible_block_id;
+    for (auto cluster_block_candidate : cluster_block_candidates) {
+        if (std::regex_match(Netlist::block_name(cluster_block_candidate), name_to_match)) {
+            blk_id = cluster_block_candidate;
             break;
         }
     }
