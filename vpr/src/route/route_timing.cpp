@@ -1029,7 +1029,7 @@ NetResultFlags timing_driven_route_net(ConnectionRouter& router,
     // Pre-route to clock source for clock nets (marked as global nets)
     if (net_list.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
         //VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
-        // TODO: the name "clock_network" is just a place holder. This needs to be replaced with the name 
+        // TODO: the name "clock_network" is just a place holder. This needs to be replaced with the name
         // user provides in the routing constraints file
         RRNodeId sink_node = rr_graph.virtual_clock_network_root_idx("clock_network");
 
