@@ -164,7 +164,7 @@ static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
  * @param num_affected_nets
  * @param is_src_moving
  */
-static inline void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
+static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
                                                const PlaceDelayModel* delay_model,
                                                const PlacerCriticalities* criticalities,
                                                const ClusterBlockId& blk_id,
@@ -629,7 +629,7 @@ static void record_affected_net(const ClusterNetId net,
     }
 }
 
-static inline void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
+static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
                                                const PlaceDelayModel* delay_model,
                                                const PlacerCriticalities* criticalities,
                                                const ClusterBlockId& blk_id,
