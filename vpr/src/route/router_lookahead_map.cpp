@@ -266,7 +266,6 @@ static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opi
  * @return (delay, congestion)
  */
 static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
-                                                      int from_layer_num,
                                                       int delta_x,
                                                       int delta_y,
                                                       int to_layer_num);
@@ -473,7 +472,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
         std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
-                                                                                   from_layer_num,
                                                                                    delta_x,
                                                                                    delta_y,
                                                                                    to_layer_num);
@@ -1491,7 +1489,6 @@ static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 3>& internal_opi
 }
 
 static std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
-                                                      int from_layer_num,
                                                       int delta_x,
                                                       int delta_y,
                                                       int to_layer_num) {
