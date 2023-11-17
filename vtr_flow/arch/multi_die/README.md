@@ -19,6 +19,18 @@ This directory contains architecture files for 3D FPGAs. The architectures are d
    - Contains architecture files based on a [StratixIV-like](../titan/stratixiv_arch.timing.xml) architecture.
    - Delays of switches and routing resources are similar to those reported in the capture of the StratixIV architecture.
    - For the inter-die connection, we multiply the L4 wire delay of SIV by the ratio of the inter-die connection delay to the L4 wire delay of the Koios benchmark.
+   - **Architectures:**
+     - `3d_10x10_noc_base_stratixiv_up.xml`
+       - A 10x10 NoC mech is put on the base die.
+       - The upper die is SIV-like FPGA fabric.
+     - `3d_full_inter_die_stratixiv_arch.timing.xml`
+       - The architecture has two dice.
+       - Both dice are SIV-like FPGA fabric.
+       - All pins can cross die.
+     - `3d_full_OPIN_inter_die_stratixiv_arch.timing.xml`
+       - The architecture has two dice.
+       - Both dice are SIV-like FPGA fabric.
+       - Only OPINs can cross die.
 
 3. **simple_arch:**
    - Simple architectures primarily used for quick testing in the flow.
