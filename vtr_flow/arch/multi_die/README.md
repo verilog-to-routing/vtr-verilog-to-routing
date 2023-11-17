@@ -35,3 +35,5 @@ This directory contains architecture files for 3D FPGAs. The architectures are d
 3. **simple_arch:**
    - Simple architectures primarily used for quick testing in the flow.
    - The inter-die delay of architectures in this file is considered to be zero.
+   - Contains two dice and both have the simple fabric.
+   - All pins can cross die.
