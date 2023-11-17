@@ -510,7 +510,7 @@
       <y distr="uniform" peak="1.000000"/>
     </chan_width_distr>
     <switch_block type="custom"/>
-    <connection_block input_switch_name="ipin_cblock" input_inter_die_switch_name="die_connection"/>
+    <connection_block input_switch_name="ipin_cblock" input_inter_die_switch_name="ipin_inter_layer_cblock"/>
   </device>
   <switchlist>
     <switch type="mux" name="L4_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="9.877e-11" mux_trans_size="2.6482996805637553" buf_size="18.744014602932605"/>
@@ -520,7 +520,7 @@
     <switch type="mux" name="L16_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="2.016e-10" mux_trans_size="3.1851297470059468" buf_size="39.327334265524485"/>
     <switch type="mux" name="L16_inter_layer_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="2.746e-10" mux_trans_size="3.1851297470059468" buf_size="39.327334265524485"/>
     <switch type="mux" name="ipin_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="5.636e-11" mux_trans_size="2.008" buf_size="9.624436045683868"/>
-    <switch type="mux" name="die_connection" R="0.0" Cout="0.0" Cin="0.0" Tdel="130e-12" mux_trans_size="1.508" buf_size="11.71"/>
+    <switch type="mux" name="ipin_inter_layer_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="130e-12" mux_trans_size="1.508" buf_size="11.71"/>
   </switchlist>
   <segmentlist>
     <segment name="L4" freq="280" length="4" type="unidir" Rmetal="0.0" Cmetal="0.0">
