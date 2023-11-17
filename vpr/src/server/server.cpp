@@ -125,10 +125,9 @@ void Server::startListening()
                 std::unique_lock<std::mutex> lock(m_sendTasksMutex);
                 for (const Task& task: m_sendTasks) {
                     std::string response = task.toJsonStr();
-                    response += END_TELEGRAM_SEQUENCE;
+                    response += static_cast<unsigned char>(TELEGRAM_FRAME_DELIMETER);
                     std::cout << "sending" << response << "to client" << std::endl;
                     send(client_socket, response.c_str(), response.length(), 0);
-                    std::cout << "sent" << std::endl;
                 }
                 m_sendTasks.clear();
             }
@@ -158,24 +157,10 @@ void Server::startListening()
             } else {
                 if (FD_ISSET(client_socket, &readfds)) {
                     // Data is available; proceed with recv
-                    char buffer[1024];
-
-                    //std::cout << "before receive" << std::endl;
-                    ssize_t bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
-                    //std::cout << "after receive" << std::endl;
+                    char data[1024];
+                    ssize_t bytes_received = recv(client_socket, data, sizeof(data), 0);
                     if (bytes_received > 0) {
-                        // Process received data
-                        std::string message(buffer, bytes_received);
-                        std::cout << "Received: " << message << std::endl;
-
-                        int jobId = telegramparser::extractJobId(message);
-                        int cmd = telegramparser::extractCmd(message);
-                        std::string options = telegramparser::extractOptions(message);
-                        std::cout << "server: jobId=" << jobId << ", cmd=" << cmd << ", options=" << options << std::endl;
-                        if ((jobId != -1) && (cmd != -1)) {
-                            std::unique_lock<std::mutex> lock(m_receivedTasksMutex);
-                            m_receivedTasks.emplace_back(jobId, cmd, options);
-                        }
+                        m_telegramBuff.append(ByteArray{data});
                     } else if (bytes_received == 0) {
                         std::cout << "Connection closed\n";
                         connectionProblemDetected = true;
@@ -186,8 +171,25 @@ void Server::startListening()
                 }
             }
 
+            auto frames = m_telegramBuff.takeFrames();
+            for (const ByteArray& frame: frames) {
+                // Process received data
+                std::string message{frame.to_string()};
+                std::cout << "Received: " << message << std::endl;
+
+                int jobId = telegramparser::extractJobId(message);
+                int cmd = telegramparser::extractCmd(message);
+                std::string options = telegramparser::extractOptions(message);
+                std::cout << "server: jobId=" << jobId << ", cmd=" << cmd << ", options=" << options << std::endl;
+                if ((jobId != -1) && (cmd != -1)) {
+                    std::unique_lock<std::mutex> lock(m_receivedTasksMutex);
+                    m_receivedTasks.emplace_back(jobId, cmd, options);
+                }
+            }
+
             if (connectionProblemDetected && (client_socket >= 0)) {
                 close(client_socket);
+                m_telegramBuff.clear();
             }
         }
 

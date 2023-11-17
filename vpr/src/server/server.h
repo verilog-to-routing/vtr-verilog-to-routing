@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include "task.h"
+#include "telegrambuffer.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -48,6 +49,8 @@ private:
 
     std::vector<Task> m_sendTasks;
     std::mutex m_sendTasksMutex;
+
+    TelegramBuffer m_telegramBuff;
 
     void startListening();
 };
