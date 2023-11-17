@@ -175,7 +175,7 @@ Vec_Ptr_t * Gia_ManMultiProveAig( Aig_Man_t * p, Bmc_MulPar_t * pPars )
         printf( "MultiProve parameters: Global timeout = %d sec.  Local timeout = %d sec.  Time increase = %d %%.\n", 
             pPars->TimeOutGlo, pPars->TimeOutLoc, pPars->TimeOutInc );
     if ( pPars->fVerbose )
-        printf( "Gap timout = %d sec. Per-output timeout = %d msec. Use synthesis = %d. Dump final = %d. Verbose = %d.\n", 
+        printf( "Gap timeout = %d sec. Per-output timeout = %d msec. Use synthesis = %d. Dump final = %d. Verbose = %d.\n", 
             pPars->TimeOutGap, pPars->TimePerOut, pPars->fUseSyn, pPars->fDumpFinal, pPars->fVerbose );
     // create output map
     vOutMap = Vec_IntStartNatural( Saig_ManPoNum(p) ); // maps current outputs into their original IDs

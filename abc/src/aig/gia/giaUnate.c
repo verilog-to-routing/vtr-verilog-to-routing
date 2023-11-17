@@ -178,7 +178,7 @@ void Gia_ManCheckUnateVecTest( Gia_Man_t * p, int fVerbose )
     for ( o = 0; o < Gia_ManCoNum(p); o++ )
     {
         Vec_Int_t * vUnate = Vec_WecEntry( vUnates, o );
-        memset( pBuffer, ' ', nVars );
+        memset( pBuffer, ' ', (size_t)nVars );
         Vec_IntForEachEntry( vUnate, Var, i )
             if ( i+1 < Vec_IntSize(vUnate) && Abc_Lit2Var(Var) == Abc_Lit2Var(Vec_IntEntry(vUnate, i+1)) ) // both lits are present
                 pBuffer[Abc_Lit2Var(Var)] = '.', i++, nNonUnate++; // does not depend on this var

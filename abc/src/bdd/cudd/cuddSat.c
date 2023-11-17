@@ -279,7 +279,7 @@ Cudd_LargestCube(
   DdNode * f,
   int * length)
 {
-    register    DdNode  *F;
+       DdNode  *F;
     st__table    *visited;
     DdNode      *sol;
     cuddPathPair *rootPair;
@@ -351,7 +351,7 @@ Cudd_ShortestLength(
   DdNode * f,
   int * weight)
 {
-    register    DdNode  *F;
+       DdNode  *F;
     st__table    *visited;
     cuddPathPair *my_pair;
     int         complement, cost;
@@ -388,6 +388,22 @@ Cudd_ShortestLength(
     return(cost);
 
 } /* end of Cudd_ShortestLength */
+
+
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup2 that can
+              be casted to DD_CTFP.
+
+******************************************************************************/
+static DdNode *
+Cudd_Decreasing_dummy(DdManager * dd, DdNode * f, DdNode * g)
+{
+  assert(0);
+  return 0;
+}
+#endif
 
 
 /**Function********************************************************************
@@ -434,7 +450,11 @@ Cudd_Decreasing(
     /* From now on, f is not constant. */
 
     /* Check cache. */
+#ifdef USE_CASH_DUMMY
+    cacheOp = (DD_CTFP) Cudd_Decreasing_dummy;
+#else
     cacheOp = (DD_CTFP) Cudd_Decreasing;
+#endif
     res = cuddCacheLookup2(dd,cacheOp,f,dd->vars[i]);
     if (res != NULL) {
         return(res);
@@ -768,6 +788,22 @@ Cudd_bddLeqUnless(
 } /* end of Cudd_bddLeqUnless */
 
 
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup2 that can
+              be casted to DD_CTFP.
+
+******************************************************************************/
+static DdNode *
+Cudd_EqualSupNorm_dummy(DdManager * dd, DdNode * f, DdNode * g)
+{
+  assert(0);
+  return 0;
+}
+#endif
+
+
 /**Function********************************************************************
 
   Synopsis    [Compares two ADDs for equality within tolerance.]
@@ -817,7 +853,11 @@ Cudd_EqualSupNorm(
 
     /* We only insert the result in the cache if the comparison is
     ** successful. Therefore, if we hit we return 1. */
+#ifdef USE_CASH_DUMMY
+    r = cuddCacheLookup2(dd,(DD_CTFP)Cudd_EqualSupNorm_dummy,f,g);
+#else
     r = cuddCacheLookup2(dd,(DD_CTFP)Cudd_EqualSupNorm,f,g);
+#endif
     if (r != NULL) {
         return(1);
     }
@@ -832,7 +872,11 @@ Cudd_EqualSupNorm(
     if (!Cudd_EqualSupNorm(dd,fv,gv,tolerance,pr)) return(0);
     if (!Cudd_EqualSupNorm(dd,fvn,gvn,tolerance,pr)) return(0);
 
+#ifdef USE_CASH_DUMMY
+    cuddCacheInsert2(dd,(DD_CTFP)Cudd_EqualSupNorm_dummy,f,g,DD_ONE(dd));
+#else
     cuddCacheInsert2(dd,(DD_CTFP)Cudd_EqualSupNorm,f,g,DD_ONE(dd));
+#endif
 
     return(1);
 

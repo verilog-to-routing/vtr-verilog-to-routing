@@ -65,7 +65,8 @@ void Cmd_HistoryAddCommand(    Abc_Frame_t * p, const char * command )
          strncmp(Buffer,"time",4) && 
          strncmp(Buffer,"quit",4) && 
          strncmp(Buffer,"alias",5) && 
-//         strncmp(Buffer,"source",6) && 
+         strncmp(Buffer,"source abc.rc",13) && 
+         strncmp(Buffer,"source ..\\abc.rc",16) && 
          strncmp(Buffer,"history",7) && strncmp(Buffer,"hi ", 3) && strcmp(Buffer,"hi") &&
          Buffer[strlen(Buffer)-1] != '?' )
     {
@@ -101,7 +102,7 @@ void Cmd_HistoryAddCommand(    Abc_Frame_t * p, const char * command )
 ***********************************************************************/
 void Cmd_HistoryRead( Abc_Frame_t * p )
 {
-#if defined(WIN32) && defined(ABC_USE_HISTORY)
+#if defined(ABC_USE_HISTORY)
     char Buffer[ABC_MAX_STR];
     FILE * pFile;
     assert( Vec_PtrSize(p->aHistory) == 0 );
@@ -132,7 +133,7 @@ void Cmd_HistoryRead( Abc_Frame_t * p )
 ***********************************************************************/
 void Cmd_HistoryWrite( Abc_Frame_t * p, int Limit )
 {
-#if defined(WIN32) && defined(ABC_USE_HISTORY)
+#if defined(ABC_USE_HISTORY)
     FILE * pFile;
     char * pStr; 
     int i;
@@ -162,7 +163,7 @@ void Cmd_HistoryWrite( Abc_Frame_t * p, int Limit )
 ***********************************************************************/
 void Cmd_HistoryPrint( Abc_Frame_t * p, int Limit )
 {
-#if defined(WIN32) && defined(ABC_USE_HISTORY) 
+#if defined(ABC_USE_HISTORY) 
     char * pStr; 
     int i;
     Limit = Abc_MaxInt( 0, Vec_PtrSize(p->aHistory)-Limit );

@@ -34,7 +34,7 @@ ABC_NAMESPACE_IMPL_START
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, int fUpdateLevel, int fUseZeros, int fUseDcs, int fVerbose );
+extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nMinSaved, int nConeSizeMax, int fUpdateLevel, int fUseZeros, int fUseDcs, int fVerbose );
 extern Abc_Ntk_t * Abc_NtkFromFraig( Fraig_Man_t * pMan, Abc_Ntk_t * pNtk );
 
 static Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, ABC_INT64_T nInspLimit, int * pRetValue, int * pNumFails, ABC_INT64_T * pNumConfs, ABC_INT64_T * pNumInspects );
@@ -151,7 +151,7 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
                     break;
                 if ( --Counter == 0 )
                     break;
-                Abc_NtkRefactor( pNtk, 10, 16, 0, 0, 0, 0 );
+                Abc_NtkRefactor( pNtk, 10, 1, 16, 0, 0, 0, 0 );
                 if ( (RetValue = Abc_NtkMiterIsConstant(pNtk)) >= 0 )
                     break;
                 if ( --Counter == 0 )
@@ -201,7 +201,7 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
             fflush( stdout );
         }
         clk = Abc_Clock();
-        pNtk = Abc_NtkCollapse( pNtkTemp = pNtk, pParams->nBddSizeLimit, 0, pParams->fBddReorder, 0 );
+        pNtk = Abc_NtkCollapse( pNtkTemp = pNtk, pParams->nBddSizeLimit, 0, pParams->fBddReorder, 0, 0, 0 );
         if ( pNtk )   
         {
             Abc_NtkDelete( pNtkTemp );
@@ -340,7 +340,7 @@ Abc_Ntk_t * Abc_NtkMiterRwsat( Abc_Ntk_t * pNtk )
     Abc_NtkRewrite( pNtk, 0, 0, 0, 0, 0 );
     pNtk = Abc_NtkBalance( pNtkTemp = pNtk, 0, 0, 0 );  Abc_NtkDelete( pNtkTemp );
     Abc_NtkRewrite( pNtk, 0, 0, 0, 0, 0 );
-    Abc_NtkRefactor( pNtk, 10, 16, 0, 0, 0, 0 );
+    Abc_NtkRefactor( pNtk, 10, 1, 16, 0, 0, 0, 0 );
     return pNtk;
 }
 

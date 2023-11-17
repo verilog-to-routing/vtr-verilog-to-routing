@@ -107,7 +107,7 @@ static inline Vec_Str_t * Vec_StrStart( int nSize )
     Vec_Str_t * p;
     p = Vec_StrAlloc( nSize );
     p->nSize = nSize;
-    memset( p->pArray, 0, sizeof(char) * nSize );
+    memset( p->pArray, 0, sizeof(char) * (size_t)nSize );
     return p;
 }
 
@@ -150,7 +150,7 @@ static inline Vec_Str_t * Vec_StrAllocArrayCopy( char * pArray, int nSize )
     p->nSize  = nSize;
     p->nCap   = nSize;
     p->pArray = ABC_ALLOC( char, nSize );
-    memcpy( p->pArray, pArray, sizeof(char) * nSize );
+    memcpy( p->pArray, pArray, sizeof(char) * (size_t)nSize );
     return p;
 }
 
@@ -172,7 +172,7 @@ static inline Vec_Str_t * Vec_StrDup( Vec_Str_t * pVec )
     p->nSize  = pVec->nSize;
     p->nCap   = pVec->nCap;
     p->pArray = p->nCap? ABC_ALLOC( char, p->nCap ) : NULL;
-    memcpy( p->pArray, pVec->pArray, sizeof(char) * pVec->nSize );
+    memcpy( p->pArray, pVec->pArray, sizeof(char) * (size_t)pVec->nSize );
     return p;
 }
 
@@ -337,7 +337,7 @@ static inline int Vec_StrCap( Vec_Str_t * p )
 ***********************************************************************/
 static inline double Vec_StrMemory( Vec_Str_t * p )
 {
-    return !p ? 0.0 : 1.0 * sizeof(char) * p->nCap + sizeof(Vec_Str_t);
+    return !p ? 0.0 : 1.0 * sizeof(char) * (size_t)p->nCap + sizeof(Vec_Str_t);
 }
 
 /**Function*************************************************************
@@ -561,11 +561,16 @@ static inline void Vec_StrPush( Vec_Str_t * p, char Entry )
     }
     p->pArray[p->nSize++] = Entry;
 }
+static inline void Vec_StrPushTwo( Vec_Str_t * p, char Entry1, char Entry2 )
+{
+    Vec_StrPush( p, Entry1 );
+    Vec_StrPush( p, Entry2 );
+}
 static inline void Vec_StrPushBuffer( Vec_Str_t * p, char * pBuffer, int nSize )
 {
     if ( p->nSize + nSize > p->nCap )
         Vec_StrGrow( p, 2 * (p->nSize + nSize) );
-    memcpy( p->pArray + p->nSize, pBuffer, nSize );
+    memcpy( p->pArray + p->nSize, pBuffer, (size_t)nSize );
     p->nSize += nSize;
 }
 
@@ -916,10 +921,10 @@ static int Vec_StrSortCompare2( char * pp1, char * pp2 )
 static inline void Vec_StrSort( Vec_Str_t * p, int fReverse )
 {
     if ( fReverse ) 
-        qsort( (void *)p->pArray, p->nSize, sizeof(char), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(char), 
                 (int (*)(const void *, const void *)) Vec_StrSortCompare2 );
     else
-        qsort( (void *)p->pArray, p->nSize, sizeof(char), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(char), 
                 (int (*)(const void *, const void *)) Vec_StrSortCompare1 );
 }
 
@@ -940,7 +945,7 @@ static inline int Vec_StrCompareVec( Vec_Str_t * p1, Vec_Str_t * p2 )
         return (p1 != NULL) - (p2 != NULL);
     if ( Vec_StrSize(p1) != Vec_StrSize(p2) )
         return Vec_StrSize(p1) - Vec_StrSize(p2);
-    return memcmp( Vec_StrArray(p1), Vec_StrArray(p2), Vec_StrSize(p1) );
+    return memcmp( Vec_StrArray(p1), Vec_StrArray(p2), (size_t)Vec_StrSize(p1) );
 }
 
 

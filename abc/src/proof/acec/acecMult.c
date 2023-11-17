@@ -158,6 +158,62 @@ unsigned s_Classes4c[768] = {
   SeeAlso     []
 
 ***********************************************************************/
+word Extra_TruthCanonNPN3( word uTruth, int nVars, Vec_Wrd_t * vRes )
+{
+    int nMints  = (1 << nVars);
+    int nPerms  = Extra_Factorial( nVars );
+    int * pComp = Extra_GreyCodeSchedule( nVars );
+    int * pPerm = Extra_PermSchedule( nVars );
+    word tCur, tTemp1, tTemp2;
+    word uTruthMin = ABC_CONST(0xFFFFFFFFFFFFFFFF);
+    int i, p, c;
+    Vec_WrdClear( vRes );
+    for ( i = 0; i < 2; i++ )
+    {
+        tCur = i ? ~uTruth : uTruth;
+        tTemp1 = tCur;
+        for ( p = 0; p < nPerms; p++ )
+        {
+            tTemp2 = tCur;
+            for ( c = 0; c < nMints; c++ )
+            {
+                if ( uTruthMin > tCur )
+                    uTruthMin = tCur;
+                Vec_WrdPushUnique( vRes, tCur );
+                tCur = Abc_Tt6Flip( tCur, pComp[c] );
+            }
+            assert( tTemp2 == tCur );
+            tCur = Abc_Tt6SwapAdjacent( tCur, pPerm[p] );
+        }
+        assert( tTemp1 == tCur );
+    }
+    ABC_FREE( pComp );
+    ABC_FREE( pPerm );
+    return uTruthMin;
+}
+void Acec_MultFuncTest6()
+{
+    Vec_Wrd_t * vRes = Vec_WrdAlloc( 10000 );
+    int i; word Entry;
+
+    word Truth = ABC_CONST(0xfedcba9876543210);
+    word Canon = Extra_TruthCanonNPN3( Truth, 6, vRes );
+
+    Extra_PrintHex( stdout, (unsigned*)&Truth, 6 );  printf( "\n" );
+    Extra_PrintHex( stdout, (unsigned*)&Canon, 6 );  printf( "\n" );
+
+    printf( "Members = %d.\n", Vec_WrdSize(vRes) );
+    Vec_WrdForEachEntry( vRes, Entry, i )
+    {
+        Extra_PrintHex( stdout, (unsigned*)&Entry, 6 );  
+        printf( ", " );
+        if ( i % 8 == 7 )
+            printf( "\n" );
+    }
+
+    Vec_WrdFree( vRes );
+}
+
 unsigned Extra_TruthCanonNPN2( unsigned uTruth, int nVars, Vec_Int_t * vRes )
 {
     static int nVarsOld, nPerms;

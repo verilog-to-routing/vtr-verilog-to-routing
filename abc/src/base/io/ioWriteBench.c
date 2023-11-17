@@ -259,7 +259,7 @@ int Io_WriteBenchLutOneNode( FILE * pFile, Abc_Obj_t * pNode, Vec_Int_t * vTruth
     int i, nFanins;
     assert( Abc_ObjIsNode(pNode) );
     nFanins = Abc_ObjFaninNum(pNode);
-    assert( nFanins <= 8 );
+    assert( nFanins <= 15 );
     // compute the truth table
     pTruth = Hop_ManConvertAigToTruth( (Hop_Man_t *)pNode->pNtk->pManFunc, Hop_Regular((Hop_Obj_t *)pNode->pData), nFanins, vTruth, 0 );
     if ( Hop_IsComplement((Hop_Obj_t *)pNode->pData) )

@@ -222,31 +222,28 @@ Its primary purpose is try and achieve high functionality coverage.
 QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
 Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
     
-### vtr_reg_nightly_test1-3
+### vtr_reg_nightly_test1-N
 
-**Goal:** Basic QoR and Performance evaluation 
+**Goal:** Most QoR and Performance evaluation 
 
 **Feature Coverage:** Medium
 
 **Architectures:** A wider variety of architectures
 
-**Benchmarks:** Small-medium size, diverse. All include: 
+**Benchmarks:** Small-large size, diverse. Includes: 
 
 * VTR benchmarks
-* Additional benchmarks for each suite. 
+* Titan benchmarks except gaussian_blur (which has the longest run time)
+* Koios benchmarks
+* Various special benchmarks and tests for functionality 
 
    QoR checks in these regression suites are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
    
    Note:
    
-   These suites comproise a single large suite, `vtr_reg_nightly` and should be run together to test nightly level regression. They are mostly similar in benchmark coverage interms of size and diversity however each suite tests some unique benchmarks in addition to the VTR benchmarks.  
+   These suites comprise a single large suite, `vtr_reg_nightly` and should be run together to test nightly level regression. They are mostly similar in benchmark coverage interms of size and diversity however each suite tests some unique benchmarks in addition to the VTR benchmarks. Each vtr_reg_nightly<N> suite runs on a different server (in parallel), so by having N such test suites we speed up CI by a factor of N. Currently the runtime of each suite is capped at 6 hours, so if the runtime exceeds six hours a new vtr_reg_nightly suite (i.e. N+1) should be created.
     
-    | suite | wall-clock time| Additional benchmarks|
-    |-------|----------------|----------------------|
-    |vtr_reg_nightly_test1|~4.5 hours with `-j8`|ISPD and MCNC20 |
-    |vtr_reg_nightly_test2|~6 hours with `-j8`|Titan23 and Titan `other`|
-    |vtr_reg_nightly_test3|~5.5 hours with `-j8`|none|
 
 ### vtr_reg_weekly
 
@@ -259,7 +256,7 @@ Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particula
 **Benchmarks:** Medium-Large size, diverse. Includes:
 
 * VTR benchmarks
-* Titan23 benchmarks
+* Titan23 benchmarks, including gaussian_blur
 
 **Architectures:** A wide variety of architectures
 
@@ -306,11 +303,12 @@ a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 ## Continuous integration (CI)
 For the following tests, you can use remote servers instead of running them locally. Once the changes are pushed into the 
 remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
-will be triggered. The following tests are included in the workflow:
-* [vtr_reg_nightly_test1-3](#vtr_reg_nightly_test1-3)
+will be triggered. Many tests are included in the workflow, including:
+* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-N)
 * [vtr_reg_strong](#vtr_reg_strong)
-* parmys_reg_basic
+* [vtr_reg_basic](#vtr_reg_basic)
 * odin_reg_strong
+* parmys_reg_basic
 
 instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).
 

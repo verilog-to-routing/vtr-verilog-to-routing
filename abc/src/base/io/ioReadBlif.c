@@ -22,6 +22,9 @@
 #include "base/main/main.h"
 #include "map/mio/mio.h"
 
+
+
+
 ABC_NAMESPACE_IMPL_START
 
 
@@ -877,10 +880,13 @@ int Io_ReadBlifNetworkInputArrival( Io_ReadBlif_t * p, Vec_Ptr_t * vTokens )
         return 1;
     }
     // set timing info
-    //Abc_NtkTimeSetArrival( p->pNtkCur, Abc_ObjFanin0(pNet)->Id, (float)TimeRise, (float)TimeFall );
-    Vec_IntPush( p->vInArrs, Abc_ObjFanin0(pNet)->Id );
-    Vec_IntPush( p->vInArrs, Abc_Float2Int((float)TimeRise) );
-    Vec_IntPush( p->vInArrs, Abc_Float2Int((float)TimeFall) );
+    //    printf("Debug: Forcing setting of arrival times\n");
+    if (Abc_ObjFaninNum(pNet) >0){
+      Abc_NtkTimeSetArrival( p->pNtkCur, Abc_ObjFanin0(pNet)->Id, (float)TimeRise, (float)TimeFall );
+      Vec_IntPush( p->vInArrs, Abc_ObjFanin0(pNet)->Id );
+      Vec_IntPush( p->vInArrs, Abc_Float2Int((float)TimeRise) );
+      Vec_IntPush( p->vInArrs, Abc_Float2Int((float)TimeFall) );
+    }
     return 0;
 }
 
@@ -928,7 +934,10 @@ int Io_ReadBlifNetworkOutputRequired( Io_ReadBlif_t * p, Vec_Ptr_t * vTokens )
         return 1;
     }
     // set timing info
-//    Abc_NtkTimeSetRequired( p->pNtkCur, Abc_ObjFanout0(pNet)->Id, (float)TimeRise, (float)TimeFall );
+    //    printf("Setting required time for object %d to R %f F %f\n",
+    //	   Abc_ObjFanout0(pNet)->Id, (float)TimeRise, (float)TimeFall );
+    
+    Abc_NtkTimeSetRequired( p->pNtkCur, Abc_ObjFanout0(pNet)->Id, (float)TimeRise, (float)TimeFall );
     Vec_IntPush( p->vOutReqs, Abc_ObjFanout0(pNet)->Id );
     Vec_IntPush( p->vOutReqs, Abc_Float2Int((float)TimeRise) );
     Vec_IntPush( p->vOutReqs, Abc_Float2Int((float)TimeFall) );

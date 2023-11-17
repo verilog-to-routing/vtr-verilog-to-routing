@@ -57,7 +57,7 @@ struct Dsd_Node_t_
     DdNode *       G;          // function of the node   
     DdNode *       S;          // support of this function
     Dsd_Node_t **  pDecs;      // pointer to structures for formal inputs
-    int            Mark;       // the mark used by CASE 4 of disjoint decomposition
+    word           Mark;       // the mark used by CASE 4 of disjoint decomposition
     short          nDecs;      // the number of formal inputs
     short          nVisits;    // the counter of visits
 };

@@ -58,7 +58,7 @@ void Abc_NtkEspresso( Abc_Ntk_t * pNtk, int fVerbose )
         Abc_NtkMapToSop(pNtk);
     else if ( Abc_NtkHasBdd(pNtk) )
     {
-        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY) )
+        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY, 1) )
         {
             printf( "Abc_NtkEspresso(): Converting to SOPs has failed.\n" );
             return;

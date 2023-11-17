@@ -364,6 +364,85 @@ void Bdc_ManDecomposeTest( unsigned uTruth, int nVars )
     Bdc_ManFree( p );
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Performs decomposition of one function.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Bdc_ManBidecNodeNum( word * pFunc, word * pCare, int nVars, int fVerbose )
+{
+    int nNodes;
+    Bdc_Man_t * pManDec;
+    Bdc_Par_t Pars = {0}, * pPars = &Pars;
+    pPars->nVarsMax = nVars;
+    pManDec = Bdc_ManAlloc( pPars );
+    Bdc_ManDecompose( pManDec, (unsigned *)pFunc, (unsigned *)pCare, nVars, NULL, 1000 );
+    nNodes = Bdc_ManAndNum( pManDec );
+    if ( fVerbose )
+        Bdc_ManDecPrint( pManDec );
+    Bdc_ManFree( pManDec );
+    return nNodes;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Performs decomposition of one function.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Bdc_ManBidecResubInt( Bdc_Man_t * p, Vec_Int_t * vRes )
+{
+    int i, iRoot = Bdc_FunId(p,Bdc_Regular(p->pRoot)) - 1;
+    if ( iRoot == -1 )
+        Vec_IntPush( vRes, !Bdc_IsComplement(p->pRoot) );
+    else if ( iRoot < p->nVars )
+        Vec_IntPush( vRes, 4 + Abc_Var2Lit(iRoot, Bdc_IsComplement(p->pRoot)) );
+    else
+    {
+        for ( i = p->nVars+1; i < p->nNodes; i++ )
+        {
+            Bdc_Fun_t * pNode = p->pNodes + i;
+            int iLit0 = Abc_Var2Lit( Bdc_FunId(p,Bdc_Regular(pNode->pFan0)) - 1, Bdc_IsComplement(pNode->pFan0) );
+            int iLit1 = Abc_Var2Lit( Bdc_FunId(p,Bdc_Regular(pNode->pFan1)) - 1, Bdc_IsComplement(pNode->pFan1) );
+            if ( iLit0 > iLit1 )
+                iLit0 ^= iLit1, iLit1 ^= iLit0, iLit0 ^= iLit1;
+            Vec_IntPushTwo( vRes, 4 + iLit0, 4 + iLit1 );
+        }
+        assert( 2 + iRoot == p->nNodes );
+        Vec_IntPush( vRes, 4 + Abc_Var2Lit(iRoot, Bdc_IsComplement(p->pRoot)) );
+    }
+}
+Vec_Int_t * Bdc_ManBidecResub( word * pFunc, word * pCare, int nVars )
+{
+    Vec_Int_t * vRes = NULL;
+    int nNodes;
+    Bdc_Man_t * pManDec; 
+    Bdc_Par_t Pars = {0}, * pPars = &Pars;
+    pPars->nVarsMax = nVars;
+    pManDec = Bdc_ManAlloc( pPars );
+    Bdc_ManDecompose( pManDec, (unsigned *)pFunc, (unsigned *)pCare, nVars, NULL, 1000 );
+    if ( pManDec->pRoot != NULL )
+    {
+        //Bdc_ManDecPrint( pManDec );
+        nNodes = Bdc_ManAndNum( pManDec );
+        vRes = Vec_IntAlloc( 2*nNodes + 1 );
+        Bdc_ManBidecResubInt( pManDec, vRes );
+        assert( Vec_IntSize(vRes) == 2*nNodes + 1 );
+    }
+    Bdc_ManFree( pManDec );
+    return vRes;
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

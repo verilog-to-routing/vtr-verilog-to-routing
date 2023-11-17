@@ -79,7 +79,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         // If multile layers are available, I need to keep track of how many sinks are in each layer.
         if (is_multi_layer) {
             for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
+                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num];
             }
             // If the pin under consideration if of type sink, it is counted in place_move_ctx.num_sink_pin_layer, and we don't want to consider the moving pins
             if (cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {

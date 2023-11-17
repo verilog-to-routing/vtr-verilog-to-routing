@@ -106,6 +106,7 @@ extern char *       Extra_FileNameGenericAppend( char * pBase, char * pSuffix );
 extern void         Extra_FileNameCorrectPath( char * FileName );
 extern char *       Extra_FileNameWithoutPath( char * FileName );
 extern char *       Extra_FilePathWithoutName( char * FileName );
+extern char *       Extra_FileInTheSameDir( char * pPathFile, char * pFileName );
 extern char *       Extra_FileDesignName( char * pFileName );
 extern int          Extra_FileCheck( char * pFileName );
 extern int          Extra_FileSize( char * pFileName );
@@ -119,11 +120,13 @@ extern char *       Extra_StringAppend( char * pStrGiven, char * pStrAdd );
 extern void         Extra_StringClean( char * pStrGiven, char * pCharKeep );
 extern unsigned     Extra_ReadBinary( char * Buffer );
 extern void         Extra_PrintBinary( FILE * pFile, unsigned Sign[], int nBits );
+extern void         Extra_PrintBinary2( FILE * pFile, unsigned Sign[], int nBits );
 extern int          Extra_ReadHex( unsigned Sign[], char * pString, int nDigits );
 extern int          Extra_ReadHexadecimal( unsigned Sign[], char * pString, int nVars );
 extern void         Extra_PrintHexadecimal( FILE * pFile, unsigned Sign[], int nVars );
 extern void         Extra_PrintHexadecimalString( char * pString, unsigned Sign[], int nVars );
 extern void         Extra_PrintHex( FILE * pFile, unsigned * pTruth, int nVars );
+extern void         Extra_PrintHex2( FILE * pFile, unsigned * pTruth, int nVars );
 extern void         Extra_PrintHexReverse( FILE * pFile, unsigned * pTruth, int nVars );
 extern void         Extra_PrintSymbols( FILE * pFile, char Char, int nTimes, int fPrintNewLine );
 
@@ -248,9 +251,9 @@ static inline void Extra_ProgressBarUpdate( ProgressBar * p, int nItemsCur, char
 static inline int   Extra_BitWordNum( int nBits )    { return nBits/(8*sizeof(unsigned)) + ((nBits%(8*sizeof(unsigned))) > 0);  }
 static inline int   Extra_TruthWordNum( int nVars )  { return nVars <= 5 ? 1 : (1 << (nVars - 5)); }
 
-static inline void  Extra_TruthSetBit( unsigned * p, int Bit )   { p[Bit>>5] |= (1<<(Bit & 31));               }
-static inline void  Extra_TruthXorBit( unsigned * p, int Bit )   { p[Bit>>5] ^= (1<<(Bit & 31));               }
-static inline int   Extra_TruthHasBit( unsigned * p, int Bit )   { return (p[Bit>>5] & (1<<(Bit & 31))) > 0;   }
+static inline void  Extra_TruthSetBit( unsigned * p, int Bit )   { p[Bit>>5] |= (unsigned)(1<<(Bit & 31));               }
+static inline void  Extra_TruthXorBit( unsigned * p, int Bit )   { p[Bit>>5] ^= (unsigned)(1<<(Bit & 31));               }
+static inline int   Extra_TruthHasBit( unsigned * p, int Bit )   { return (p[Bit>>5] & (unsigned)(1<<(Bit & 31))) > 0;   }
 
 static inline int Extra_WordCountOnes( unsigned uWord )
 {

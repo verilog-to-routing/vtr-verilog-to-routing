@@ -218,7 +218,7 @@ Vec_Str_t * Gia_AigerWriteMapping( Gia_Man_t * p )
 ***********************************************************************/
 int * Gia_AigerReadMappingSimple( unsigned char ** ppPos, int nSize )
 {
-    int * pMapping = ABC_ALLOC( int, nSize/4 );
+    int * pMapping = ABC_ALLOC( int, (size_t)nSize/4 );
     memcpy( pMapping, *ppPos, nSize );
     assert( nSize % 4 == 0 );
     return pMapping;
@@ -226,7 +226,7 @@ int * Gia_AigerReadMappingSimple( unsigned char ** ppPos, int nSize )
 Vec_Str_t * Gia_AigerWriteMappingSimple( Gia_Man_t * p )
 {
     unsigned char * pBuffer = ABC_ALLOC( unsigned char, 4*Vec_IntSize(p->vMapping) );
-    memcpy( pBuffer, Vec_IntArray(p->vMapping), 4*Vec_IntSize(p->vMapping) );
+    memcpy( pBuffer, Vec_IntArray(p->vMapping), (size_t)4*Vec_IntSize(p->vMapping) );
     assert( Vec_IntSize(p->vMapping) >= Gia_ManObjNum(p) );
     return Vec_StrAllocArray( (char *)pBuffer, 4*Vec_IntSize(p->vMapping) );
 }

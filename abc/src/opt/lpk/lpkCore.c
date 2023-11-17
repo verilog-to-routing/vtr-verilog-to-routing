@@ -35,6 +35,82 @@ ABC_NAMESPACE_IMPL_START
 
 /**Function*************************************************************
 
+  Synopsis    [Returns decomposed network.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Abc_Ntk_t * Abc_NtkDecFromTruth( word * pTruth, int nVars, int nLutSize )
+{
+    extern Abc_Ntk_t * Abc_NtkLutmin( Abc_Ntk_t * pNtk, int nLutSize, int fVerbose );
+    Vec_Int_t * vCover = Vec_IntAlloc( 1 << 16 );
+    Abc_Ntk_t * pTemp = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
+    char * pSopCover = Abc_SopCreateFromTruthIsop( (Mem_Flex_t *)pTemp->pManFunc, nVars, pTruth, vCover );
+    Abc_Ntk_t * pNtk = Abc_NtkCreateWithNode( pSopCover );
+    Abc_Ntk_t * pNew = Abc_NtkLutmin( pNtk, nLutSize, 0 );
+    Abc_NtkDelete( pTemp );
+    Abc_NtkDelete( pNtk );
+    Vec_IntFree( vCover );
+    if ( !Abc_NtkToAig(pNew) )
+    {
+        Abc_NtkDelete( pNew );
+        fprintf( stdout, "Converting to AIG has failed.\n" );
+        return NULL;
+    }
+    assert( Abc_NtkHasAig(pNew) );
+    return pNew;
+}
+Abc_Obj_t * Abc_NtkLutMinDecompose( Abc_Ntk_t * pNtk, Vec_Ptr_t * vLeaves, word * pTruth, int nLutSize, int Required )
+{
+    Abc_Obj_t * pObj = NULL, * pFanin; int i, k;
+    Abc_Ntk_t * pNew = Abc_NtkDecFromTruth( pTruth, Vec_PtrSize(vLeaves), nLutSize );
+    Vec_Ptr_t * vNodes = Abc_NtkDfs( pNew, 0 );
+    assert( Abc_NtkHasAig(pNtk) );
+    // levels
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
+        Abc_NtkCi( pNew, i )->Level = pObj->Level;
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
+    {
+        pObj->Level = 0;
+        Abc_ObjForEachFanin( pObj, pFanin, k )
+            if ( pObj->Level < pFanin->Level )
+                pObj->Level = pFanin->Level;
+        pObj->Level++;
+    }
+    if ( (int)pObj->Level > Required )
+    {
+        Vec_PtrFree( vNodes );
+        Abc_NtkDelete( pNew );
+        return NULL;
+    }
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
+        Abc_NtkCi( pNew, i )->pCopy = pObj;
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
+    {
+        Abc_NtkDupObj( pNtk, pObj, 0 );
+        pObj->pCopy->Level = 0;
+        Abc_ObjForEachFanin( pObj, pFanin, k )
+        {
+            Abc_ObjAddFanin( pObj->pCopy, pFanin->pCopy );
+            if ( pObj->pCopy->Level < pFanin->pCopy->Level )
+                pObj->pCopy->Level = pFanin->pCopy->Level;
+        }
+        pObj->pCopy->Level++;
+    }
+    //printf( "Decomposed %d-input function, resulting in %d nodes.\n", Vec_PtrSize(vLeaves), Vec_PtrSize(vNodes) );
+    pObj = pObj->pCopy;
+    Vec_PtrFree( vNodes );
+    Abc_NtkDelete( pNew );
+    return pObj;
+}
+
+
+/**Function*************************************************************
+
   Synopsis    [Prepares the mapping manager.]
 
   Description []
@@ -272,7 +348,7 @@ p->timeCuts += Abc_Clock() - clk;
 //        printf( "Mffc size = %d.  ", Abc_NodeMffcLabel(p->pObj) );
         for ( k = 0; k < (int)pCut->nLeaves; k++ )
             Abc_NtkObj(p->pNtk, pCut->pLeaves[k])->vFanouts.nSize++;
-        nCutNodes = Abc_NodeMffcLabel(p->pObj);
+        nCutNodes = Abc_NodeMffcLabel(p->pObj, NULL);
 //        printf( "Mffc with cut = %d.  ", nCutNodes );
         for ( k = 0; k < (int)pCut->nLeaves; k++ )
             Abc_NtkObj(p->pNtk, pCut->pLeaves[k])->vFanouts.nSize--;
@@ -353,7 +429,6 @@ void Lpk_ComputeSupports( Lpk_Man_t * p, Lpk_Cut_t * pCut, unsigned * pTruth )
         p->puSupps[0] = p->puSupps[1] = 0;
 }
 
-
 /**Function*************************************************************
 
   Synopsis    [Performs resynthesis for one node.]
@@ -368,6 +443,7 @@ void Lpk_ComputeSupports( Lpk_Man_t * p, Lpk_Cut_t * pCut, unsigned * pTruth )
 int Lpk_ResynthesizeNodeNew( Lpk_Man_t * p )
 {
 //    static int Count = 0;
+    int NodeCounts[16] = { 0, 0, 0, 0, 1, 3, 6, 14, 26, 57, 106, 230, 425, 1000000, 1000000, 1000000 };
     Abc_Obj_t * pObjNew, * pLeaf;
     Lpk_Cut_t * pCut;
     unsigned * pTruth;
@@ -405,7 +481,7 @@ p->timeCuts += Abc_Clock() - clk;
 //        printf( "Mffc size = %d.  ", Abc_NodeMffcLabel(p->pObj) );
         for ( k = 0; k < (int)pCut->nLeaves; k++ )
             Abc_NtkObj(p->pNtk, pCut->pLeaves[k])->vFanouts.nSize++;
-        nCutNodes = Abc_NodeMffcLabel(p->pObj);
+        nCutNodes = Abc_NodeMffcLabel(p->pObj, NULL);
 //        printf( "Mffc with cut = %d.  ", nCutNodes );
         for ( k = 0; k < (int)pCut->nLeaves; k++ )
             Abc_NtkObj(p->pNtk, pCut->pLeaves[k])->vFanouts.nSize--;
@@ -451,6 +527,7 @@ p->timeTruth3 += Abc_Clock() - clk;
                 printf( "%c=%d ", 'a'+k, Abc_ObjLevel(pLeaf) );
             printf( "\n" );
             Kit_DsdPrintFromTruth( pTruth, pCut->nLeaves );
+            printf( "\n" );
 //            pFileName = Kit_TruthDumpToFile( pTruth, pCut->nLeaves, Count++ );
 //            printf( "Saved truth table in file \"%s\".\n", pFileName );
         }
@@ -460,6 +537,8 @@ p->timeTruth3 += Abc_Clock() - clk;
 clk = Abc_Clock();
         pObjNew = Lpk_Decompose( p, p->pNtk, p->vLeaves, pTruth, p->puSupps, p->pPars->nLutSize,
             (int)pCut->nNodes - (int)pCut->nNodesDup - 1 + (int)(p->pPars->fZeroCost > 0), Required );
+        if ( pObjNew == NULL && p->pPars->nLutSize == 4 && (int)pCut->nNodes > NodeCounts[Vec_PtrSize(p->vLeaves)] + !p->pPars->fZeroCost )
+            pObjNew = Abc_NtkLutMinDecompose( p->pNtk, p->vLeaves, (word *)pTruth, p->pPars->nLutSize, Required );
 p->timeEval += Abc_Clock() - clk;
         nNodesAft = Abc_NtkNodeNum(p->pNtk);
 
@@ -467,7 +546,7 @@ p->timeEval += Abc_Clock() - clk;
         if ( pObjNew )
         {
             int nGain = (int)pCut->nNodes - (int)pCut->nNodesDup - (nNodesAft - nNodesBef);
-            assert( nGain >= 1 - p->pPars->fZeroCost );
+            //assert( nGain >= 1 - p->pPars->fZeroCost );
             assert( Abc_ObjLevel(pObjNew) <= Required );
 /*
             if ( nGain <= 0 )

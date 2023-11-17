@@ -113,7 +113,7 @@ int AllocateCover( int nCubes, int nWordsIn, int nWordsOut )
     pp[0] = (Cube *)ABC_ALLOC( char, TotalSize );
     if ( pp[0] == NULL )
         return 0;
-    memset( pp[0], 0, TotalSize );
+    memset( pp[0], 0, (size_t)TotalSize );
 
     // assign pointers to cubes and bit strings inside this piece
     pp[0]->pCubeDataIn  = (unsigned*)(pp[0] + 1);

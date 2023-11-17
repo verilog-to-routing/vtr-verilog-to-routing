@@ -39,6 +39,7 @@
 #include "misc/st/st.h"
 #include "map/mio/mio.h"
 #include "base/abc/abc.h"
+#include "misc/util/utilTruth.h"
 #include "sfm.h"
 
 ////////////////////////////////////////////////////////////////////////
@@ -47,7 +48,8 @@
 
 ABC_NAMESPACE_HEADER_START
 
-#define SFM_FANIN_MAX 6
+#define SFM_FANIN_MAX 12
+#define SFM_WORDS_MAX ((SFM_FANIN_MAX>6) ? (1<<(SFM_FANIN_MAX-6)) : 1)
 #define SFM_SAT_UNDEC 0x1234567812345678
 #define SFM_SAT_SAT   0x8765432187654321
 
@@ -81,6 +83,8 @@ struct Sfm_Ntk_t_
     Vec_Str_t *       vEmpty;      // transparent objects
     Vec_Wrd_t *       vTruths;     // truth tables
     Vec_Wec_t         vFanins;     // fanins
+    Vec_Int_t *       vStarts;     // offsets
+    Vec_Wrd_t *       vTruths2;    // truth tables (large)
     // attributes
     Vec_Wec_t         vFanouts;    // fanouts
     Vec_Int_t         vLevels;     // logic level
@@ -105,8 +109,10 @@ struct Sfm_Ntk_t_
     sat_solver *      pSat;        // SAT solver
     int               nSatVars;    // the number of variables
     int               nTryRemoves; // number of fanin removals
+    int               nTryImproves;// number of node improvements
     int               nTryResubs;  // number of resubstitutions
     int               nRemoves;    // number of fanin removals
+    int               nImproves;   // number of node improvements
     int               nResubs;     // number of resubstitutions
     // counter-examples
     int               nCexes;      // number of CEXes
@@ -119,6 +125,10 @@ struct Sfm_Ntk_t_
     Vec_Int_t *       vValues;     // SAT variable values
     Vec_Wec_t *       vClauses;    // CNF clauses for the node
     Vec_Int_t *       vFaninMap;   // mapping fanins into their SAT vars
+    word              TtElems[SFM_FANIN_MAX][SFM_WORDS_MAX];
+    word *            pTtElems[SFM_FANIN_MAX];
+    word              pTruth[SFM_WORDS_MAX];
+    word              pCube[SFM_WORDS_MAX];
     // nodes
     int               nTotalNodesBeg;
     int               nTotalEdgesBeg;
@@ -195,7 +205,7 @@ extern void        Kit_DsdPrintFromTruth( unsigned * pTruth, int nVars );
 
 /*=== sfmCnf.c ==========================================================*/
 extern void         Sfm_PrintCnf( Vec_Str_t * vCnf );
-extern int          Sfm_TruthToCnf( word Truth, int nVars, Vec_Int_t * vCover, Vec_Str_t * vCnf );
+extern int          Sfm_TruthToCnf( word Truth, word * pTruth, int nVars, Vec_Int_t * vCover, Vec_Str_t * vCnf );
 extern Vec_Wec_t *  Sfm_CreateCnf( Sfm_Ntk_t * p );
 extern void         Sfm_TranslateCnf( Vec_Wec_t * vRes, Vec_Str_t * vCnf, Vec_Int_t * vFaninMap, int iPivotVar );
 /*=== sfmCore.c ==========================================================*/
@@ -212,10 +222,11 @@ extern int          Sfm_LibImplementGatesDelay( Sfm_Lib_t * p, int * pFanins, Mi
 /*=== sfmNtk.c ==========================================================*/
 extern Sfm_Ntk_t *  Sfm_ConstructNetwork( Vec_Wec_t * vFanins, int nPis, int nPos );
 extern void         Sfm_NtkPrepare( Sfm_Ntk_t * p );
-extern void         Sfm_NtkUpdate( Sfm_Ntk_t * p, int iNode, int f, int iFaninNew, word uTruth );
+extern void         Sfm_NtkUpdate( Sfm_Ntk_t * p, int iNode, int f, int iFaninNew, word uTruth, word * pTruth );
 /*=== sfmSat.c ==========================================================*/
 extern int          Sfm_NtkWindowToSolver( Sfm_Ntk_t * p );
 extern word         Sfm_ComputeInterpolant( Sfm_Ntk_t * p );
+extern word         Sfm_ComputeInterpolant2( Sfm_Ntk_t * p );
 /*=== sfmTim.c ==========================================================*/
 extern Sfm_Tim_t *  Sfm_TimStart( Mio_Library_t * pLib, Scl_Con_t * pExt, Abc_Ntk_t * pNtk, int DeltaCrit );
 extern void         Sfm_TimStop( Sfm_Tim_t * p );

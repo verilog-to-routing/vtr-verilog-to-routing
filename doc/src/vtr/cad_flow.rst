@@ -24,7 +24,7 @@ CAD Flow Variations
 
 Titan CAD Flow
 ~~~~~~~~~~~~~~
-The Titan CAD Flow :cite:`murray_titan,murray_timing_driven_titan` interfaces Intel's Quartus tool with VPR.
+The Titan CAD Flow :cite:`murray_titan,murray_timing_driven_titan, talaei_titan2` interfaces Intel's Quartus tool with VPR.
 This allows designs requiring industrial strength language coverage and IP to be brought into VPR.
 
 Other CAD Flow Variants

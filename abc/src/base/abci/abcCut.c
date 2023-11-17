@@ -72,7 +72,7 @@ void Abc_NtkCutsSubtractFanunt( Abc_Ntk_t * pNtk )
             Counter++;
         }
     }
-    printf("Substracted %d fanouts\n", Counter );
+    printf("Subtracted %d fanouts\n", Counter );
 }
 
 /**Function*************************************************************

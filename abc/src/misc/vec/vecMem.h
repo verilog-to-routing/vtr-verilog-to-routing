@@ -236,12 +236,12 @@ static inline word * Vec_MemGetEntry( Vec_Mem_t * p, int i )
 static inline void Vec_MemSetEntry( Vec_Mem_t * p, int i, word * pEntry )
 {
     word * pPlace = Vec_MemGetEntry( p, i );
-    memmove( pPlace, pEntry, sizeof(word) * p->nEntrySize );
+    memmove( pPlace, pEntry, sizeof(word) * (size_t)p->nEntrySize );
 }
 static inline void Vec_MemPush( Vec_Mem_t * p, word * pEntry )
 {
     word * pPlace = Vec_MemGetEntry( p, p->nEntries );
-    memmove( pPlace, pEntry, sizeof(word) * p->nEntrySize );
+    memmove( pPlace, pEntry, sizeof(word) * (size_t)p->nEntrySize );
 }
 
 /**Function*************************************************************
@@ -341,10 +341,24 @@ static int * Vec_MemHashLookup( Vec_Mem_t * p, word * pEntry )
             return pSpot;
     return pSpot;
 }
+static void Vec_MemHashProfile( Vec_Mem_t * p )
+{
+    int e;
+    for ( e = 0; e < 1000; e++ )
+    {
+        int Count = 0;
+        int * pSpot = Vec_IntEntryP( p->vTable, e );
+        for ( ; *pSpot != -1; pSpot = Vec_IntEntryP(p->vNexts, *pSpot) )
+            Count++;
+        printf( "%d ", Count );
+    }
+    printf( "\n" );
+}
 static void Vec_MemHashResize( Vec_Mem_t * p )
 {
     word * pEntry;
     int i, * pSpot;
+    //Vec_MemHashProfile( p );
     Vec_IntFill( p->vTable, Abc_PrimeCudd(2 * Vec_IntSize(p->vTable)), -1 );
     Vec_IntClear( p->vNexts );
     Vec_MemForEachEntry( p, pEntry, i )
@@ -383,6 +397,13 @@ static int Vec_MemHashInsert( Vec_Mem_t * p, word * pEntry )
   SeeAlso     []
 
 ***********************************************************************/
+static inline Vec_Mem_t * Vec_MemAllocForTTSimple( int nVars )
+{
+    int nWords = (nVars <= 6 ? 1 : (1 << (nVars - 6)));
+    Vec_Mem_t * vTtMem = Vec_MemAlloc( nWords, 12 );
+    Vec_MemHashAlloc( vTtMem, 10000 );
+    return vTtMem;
+}
 static inline Vec_Mem_t * Vec_MemAllocForTT( int nVars, int fCompl )
 {
     int Value, nWords = (nVars <= 6 ? 1 : (1 << (nVars - 6)));

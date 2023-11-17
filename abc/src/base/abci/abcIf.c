@@ -230,9 +230,13 @@ If_Man_t * Abc_NtkToIf( Abc_Ntk_t * pNtk, If_Par_t * pPars )
     Abc_AigConst1(pNtk)->pCopy = (Abc_Obj_t *)If_ManConst1( pIfMan );
     Abc_NtkForEachCi( pNtk, pNode, i )
     {
-        pNode->pCopy = (Abc_Obj_t *)If_ManCreateCi( pIfMan );
+        If_Obj_t * pIfObj = If_ManCreateCi( pIfMan );
+        pNode->pCopy = (Abc_Obj_t *)pIfObj;
         // transfer logic level information
         Abc_ObjIfCopy(pNode)->Level = pNode->Level;
+        // mark the largest level
+        if ( pIfMan->nLevelMax < (int)pIfObj->Level )
+            pIfMan->nLevelMax = (int)pIfObj->Level;
     }
 
     // load the AIG into the mapper
@@ -755,7 +759,7 @@ Vec_Ptr_t * Abc_NtkFindGoodOrder( Abc_Ntk_t * pNtk )
     }
 
     // sort nodes in the increasing order of the flow
-    qsort( (Abc_Obj_t **)Vec_PtrArray(vCos), Abc_NtkCoNum(pNtk), 
+    qsort( (Abc_Obj_t **)Vec_PtrArray(vCos), (size_t)Abc_NtkCoNum(pNtk), 
         sizeof(Abc_Obj_t *), (int (*)(const void *, const void *))Abc_ObjCompareFlow );
     // verify sorting
     pFanin0 = (Abc_Obj_t *)Vec_PtrEntry(vCos, 0);
