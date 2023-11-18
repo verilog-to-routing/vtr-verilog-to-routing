@@ -1006,6 +1006,8 @@ static Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to
     if (std::isnan(copy_entry.delay) && std::isnan(copy_entry.congestion)) {
         if (copy_x == 0 && copy_y == 0) {
             copy_entry = Cost_Entry(0., 0.); //(0, 0) entry is invalid so set zero to terminate recursion
+            // set zero if the source and sink nodes are on the same layer. If they are not, it means that there is no connection from the source node to
+            // the other layer. This means that the connection should be set to a very large number
             if (from_layer_num == to_layer_num) {
                 copy_entry = Cost_Entry(0., 0.);
             } else {
