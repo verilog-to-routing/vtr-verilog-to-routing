@@ -5,7 +5,7 @@ This directory contains architecture files for 3D FPGAs. The architectures are d
 1. **koios_3d:**
 - Contains architecture files based on the [k6FracN10LB_mem20K_complexDSP_customSB_22nm](../COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.clustered.xml) architecture, utilized in Koios benchmarks.
 - Inside the architecture file, the fabric with multiple sizes based on the sector size is defined.
-- Routing resource and switch delays in this architecture are configured for 7 nm technology, with a delay of 73 ps.
+- Routing resource and switch delays in this architecture are configured for 7 nm technology. The inter-die connection delay is 73 ps.
 - Detailed information on how these delays are obtained can be found in the paper "Into the Third Dimension: Architecture Exploration Tools for 3D Reconfigurable Acceleration Devices," presented at FPT '23.
 - **Architectures:**
    - `3d_full_OPIN_inter_die_k6FracN10LB_mem20k_complexDSP_customSB_7nm.xml`
@@ -18,7 +18,7 @@ This directory contains architecture files for 3D FPGAs. The architectures are d
 2. **stratixiv_3d:**
    - Contains architecture files based on a [StratixIV-like](../titan/stratixiv_arch.timing.xml) architecture.
    - Delays of switches and routing resources are similar to those reported in the capture of the StratixIV architecture.
-   - For the inter-die connection, we multiply the L4 wire delay of SIV by the ratio of the inter-die connection delay to the L4 wire delay of the Koios benchmark.
+   - For the inter-die connection, we multiply the L4 wire delay of SIV by the ratio of the inter-die connection delay to the L4 wire delay of the Koios_3d benchmark.
    - **Architectures:**
      - `3d_10x10_noc_base_stratixiv_up.xml`
        - A 10x10 NoC mech is put on the base die.
