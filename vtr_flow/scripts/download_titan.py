@@ -28,7 +28,7 @@ class ExtractionError(Exception):
     pass
 
 
-TITAN_URL_MIRRORS = {"eecg": "http://www.eecg.utoronto.ca/~vaughn/titan/"}
+TITAN_URL_MIRRORS = {"eecg": "https://www.eecg.utoronto.ca/~vaughn/titan/"}
 
 
 def parse_args():
