@@ -351,7 +351,13 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
     rr_indexed_data[RRIndexedDataId(SOURCE_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost = 0.;
     rr_indexed_data[RRIndexedDataId(OPIN_COST_INDEX)].base_cost = delay_normalization_fac;
+    // IF the SPEC_CPU flag is set, we need to make sure that all floating point numbers are perfectly representable in
+    // binary format. Thus, we changed the IPIN_COST_INDEX base cost from 0.95 to 0.875.
+#ifdef SPEC_CPU
+    rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].base_cost = 0.875 * delay_normalization_fac;
+#else
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].base_cost = 0.95 * delay_normalization_fac;
+#endif
 
     auto rr_segment_counts = count_rr_segment_types(rr_graph, rr_indexed_data);
     size_t total_segments = std::accumulate(rr_segment_counts.begin(), rr_segment_counts.end(), 0u);
