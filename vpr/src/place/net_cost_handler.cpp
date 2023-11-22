@@ -758,7 +758,7 @@ static void get_non_updatable_layer_bb(ClusterNetId net_id,
 
     auto& device_ctx = g_vpr_ctx.device();
     int num_layers = device_ctx.grid.get_num_layers();
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         num_sink_layer[layer_num] = 0;
     }
 
