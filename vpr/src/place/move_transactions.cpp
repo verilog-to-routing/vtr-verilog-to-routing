@@ -131,16 +131,7 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 }
 
 void revert_move_blocks(t_pl_atom_blocks_to_be_moved& blocks_affected) {
-    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    std::set<ClusterBlockId> seen_clusters;
-    for (int blk_idx = 0; blk_idx < blocks_affected.num_moved_blocks; blk_idx++) {
-        AtomBlockId atom_blk = blocks_affected.moved_blocks[blk_idx].block_num;
-        ClusterBlockId cluster_blk = atom_lookup.atom_clb(atom_blk);
-        if (seen_clusters.find(cluster_blk) == seen_clusters.end()) {
-            seen_clusters.insert(cluster_blk);
-            place_sync_external_block_connections(cluster_blk);
-        }
-    }
+    //TODO: this function needs to be implemented
 }
 
 //Moves the blocks in blocks_affected to their old locations
