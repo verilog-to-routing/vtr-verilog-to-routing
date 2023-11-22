@@ -6,7 +6,7 @@ namespace telegramparser {
 
 int extractJobId(const std::string& message)
 {
-    std::regex pattern("\"JOB_ID\":(\\d+)");
+    static std::regex pattern("\"JOB_ID\":(\\d+)");
     std::smatch match;
     if (std::regex_search(message, match, pattern)) {
         if (match.size() > 1) {
@@ -18,7 +18,7 @@ int extractJobId(const std::string& message)
 
 int extractCmd(const std::string& message)
 {
-    std::regex pattern("\"CMD\":(\\d+)");
+    static std::regex pattern("\"CMD\":(\\d+)");
     std::smatch match;
     if (std::regex_search(message, match, pattern)) {
         if (match.size() > 1) {
@@ -30,7 +30,7 @@ int extractCmd(const std::string& message)
 
 std::string extractOptions(const std::string& message)
 {
-    std::regex pattern("\"OPTIONS\":\"(.*?)\"");
+    static std::regex pattern("\"OPTIONS\":\"(.*?)\"");
     std::smatch match;
     if (std::regex_search(message, match, pattern)) {
         if (match.size() > 1) {
@@ -38,18 +38,6 @@ std::string extractOptions(const std::string& message)
         }
     }
     return "";
-}
-
-int extractPathIndex(const std::string& message)
-{
-    std::regex pattern("^#Path (\\d+)");
-    std::smatch match;
-    if (std::regex_search(message, match, pattern)) {
-        if (match.size() > 1) {
-            return std::atoi(match[1].str().c_str());
-        }
-    }
-    return -1;
 }
 
 } // telegramparser

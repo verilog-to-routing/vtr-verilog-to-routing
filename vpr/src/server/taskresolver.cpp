@@ -6,6 +6,7 @@
 #ifndef STANDALONE_APP
 #include "globals.h"
 #include "pathhelper.h"
+#include "telegramoptions.h"
 #include "telegramparser.h"
 #include <gtk/gtk.h>
 #include <ezgl/application.hpp>
@@ -72,15 +73,14 @@ void TaskResolver::update(ezgl::application* app)
 {
     for (auto& task: m_tasks) {
         if (!task.isFinished()) {
-            // ugly, but let's have it for now
-            std::vector<std::string> optionsList = splitString(task.options(), ';');
+            TelegramOptions options{task.options()};
             if (task.cmd() == CMD_GET_PATH_LIST_ID) {
-                if (optionsList.size() == 4) {
-                    int nCriticalPathNum = std::atoi(optionsList[0].c_str());
-                    std::string typePath = optionsList[1];
-                    int detailsLevel = std::atoi(optionsList[2].c_str());
-                    bool isFlat = std::atoi(optionsList[3].c_str());
-
+                options.validateNamePresence({OPTION_PATH_NUM, OPTION_PATH_TYPE, OPTION_DETAILS_LEVEL, OPTION_IS_FLOAT_ROUTING});
+                int nCriticalPathNum = options.getInt(OPTION_PATH_NUM, 1);
+                std::string typePath = options.getString(OPTION_PATH_TYPE);
+                int detailsLevel = options.getInt(OPTION_DETAILS_LEVEL, 0);
+                bool isFlat = options.getBool(OPTION_IS_FLOAT_ROUTING, false);
+                if (!options.hasErrors()) {
                     calcCritPath(nCriticalPathNum, typePath);
                     std::string msg = getPathsStr(g_vpr_ctx.crit_paths, detailsLevel, isFlat);
                     if (typePath != g_vpr_ctx.path_type) {
@@ -89,21 +89,15 @@ void TaskResolver::update(ezgl::application* app)
                     g_vpr_ctx.path_type = typePath; // duplicated
                     task.success(msg);
                 } else {
-                    std::string msg = "bad options [" + task.options() + "] for get crit path list telegram";
+                    std::string msg = "options errors in get crit path list telegram: " + options.errorsStr();
                     std::cerr << msg << std::endl;
                     task.error(msg);
                 }
             } else if (task.cmd() == CMD_DRAW_PATH_ID) {
-                if (optionsList.size() == 2) {
-                    int pathIndex = telegramparser::extractPathIndex(optionsList[0]) - 1;
-                    int highLightMode = 1;
-                    
-                    try {
-                        highLightMode = std::atoi(optionsList[1].c_str());
-                    } catch(...) {
-
-                    }
-
+                options.validateNamePresence({OPTION_PATH_INDEX, OPTION_HIGHTLIGHT_MODE});
+                int pathIndex = options.getInt(OPTION_PATH_INDEX, -1);
+                int highLightMode = options.getInt(OPTION_HIGHTLIGHT_MODE, 1);
+                if (!options.hasErrors()) {
                     if ((pathIndex >= 0) && (pathIndex < g_vpr_ctx.crit_paths.size())) {
                         g_vpr_ctx.crit_path_index = pathIndex;
 
@@ -117,7 +111,7 @@ void TaskResolver::update(ezgl::application* app)
                         task.error(msg);
                     }
                 } else {
-                    std::string msg = "bad options [" + task.options() + "] for highlight crit path telegram";
+                    std::string msg = "options errors in highlight crit path telegram: " + options.errorsStr();
                     std::cerr << msg << std::endl;
                     task.error(msg);
                 }
