@@ -10,9 +10,12 @@ using std::min;
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
-#define NOT_UPDATED_YET 'N'
-#define UPDATED_ONCE 'U'
-#define GOT_FROM_SCRATCH 'S'
+
+enum class NetUpdateState {
+    NOT_UPDATED_YET,
+    UPDATED_ONCE,
+    GOT_FROM_SCRATCH
+};
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
@@ -57,7 +60,7 @@ static vtr::vector<ClusterNetId, double> net_cost, proposed_net_cost;
  * particular bounding box cannot be updated incrementally before, hence the     *
  * bounding box is got from scratch, so the bounding box would definitely be     *
  * right, DO NOT update again.                                                   */
-static vtr::vector<ClusterNetId, char> bb_updated_before;
+static vtr::vector<ClusterNetId, NetUpdateState> bb_updated_before;
 
 /* The following arrays are used by the try_swap function for speed.   */
 
@@ -453,7 +456,7 @@ static void update_net_bb(const ClusterNetId& net,
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
 
-        if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
+        if (bb_updated_before[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
             get_non_updatable_bb(net,
                                  ts_bb_coord_new[net],
                                  ts_layer_sink_pin_count[size_t(net)]);
@@ -491,7 +494,7 @@ static void update_net_layer_bb(const ClusterNetId& net,
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
 
-        if (bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
+        if (bb_updated_before[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
             get_non_updatable_layer_bb(net,
                                        layer_ts_bb_coord_new[net],
                                        ts_layer_sink_pin_count[size_t(net)]);
@@ -849,18 +852,18 @@ static void update_bb(ClusterNetId net_id,
     pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
     /* Check if the net had been updated before. */
-    if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+    if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
         /* The net had been updated from scratch, DO NOT update again! */
         return;
     }
 
-    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_updated_before[net_id] == NOT_UPDATED_YET) ? place_move_ctx.num_sink_pin_layer[size_t(net_id)] : num_sink_pin_layer_new;
+    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) ? place_move_ctx.num_sink_pin_layer[size_t(net_id)] : num_sink_pin_layer_new;
 
-    if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
+    if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
         curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
         curr_bb_coord = &place_move_ctx.bb_coords[net_id];
-        bb_updated_before[net_id] = UPDATED_ONCE;
+        bb_updated_before[net_id] = NetUpdateState::UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */
         curr_bb_coord = &bb_coord_new;
@@ -876,7 +879,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_old_loc.x == curr_bb_coord->xmax) { /* Old position at xmax. */
             if (curr_bb_edge->xmax == 1) {
                 get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.xmax = curr_bb_edge->xmax - 1;
@@ -908,7 +911,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_old_loc.x == curr_bb_coord->xmin) { /* Old position at xmin. */
             if (curr_bb_edge->xmin == 1) {
                 get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.xmin = curr_bb_edge->xmin - 1;
@@ -949,7 +952,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_old_loc.y == curr_bb_coord->ymax) { /* Old position at ymax. */
             if (curr_bb_edge->ymax == 1) {
                 get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.ymax = curr_bb_edge->ymax - 1;
@@ -981,7 +984,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_old_loc.y == curr_bb_coord->ymin) { /* Old position at ymin. */
             if (curr_bb_edge->ymin == 1) {
                 get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.ymin = curr_bb_edge->ymin - 1;
@@ -1028,8 +1031,8 @@ static void update_bb(ClusterNetId net_id,
         }
     }
 
-    if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
-        bb_updated_before[net_id] = UPDATED_ONCE;
+    if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+        bb_updated_before[net_id] = NetUpdateState::UPDATED_ONCE;
     }
 }
 
@@ -1064,18 +1067,18 @@ static void update_layer_bb(ClusterNetId net_id,
     pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
     /* Check if the net had been updated before. */
-    if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+    if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
         /* The net had been updated from scratch, DO NOT update again! */
         return;
     }
 
-    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_updated_before[net_id] == NOT_UPDATED_YET) ? place_move_ctx.num_sink_pin_layer[size_t(net_id)] : bb_pin_sink_count_new;
+    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) ? place_move_ctx.num_sink_pin_layer[size_t(net_id)] : bb_pin_sink_count_new;
 
-    if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
+    if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
         curr_bb_edge = &place_move_ctx.layer_bb_num_on_edges[net_id];
         curr_bb_coord = &place_move_ctx.layer_bb_coords[net_id];
-        bb_updated_before[net_id] = UPDATED_ONCE;
+        bb_updated_before[net_id] = NetUpdateState::UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */
         curr_bb_edge = &bb_edge_new;
@@ -1118,8 +1121,8 @@ static void update_layer_bb(ClusterNetId net_id,
                              bb_coord_new);
     }
 
-    if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
-        bb_updated_before[net_id] = UPDATED_ONCE;
+    if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+        bb_updated_before[net_id] = NetUpdateState::UPDATED_ONCE;
     }
 }
 
@@ -1150,7 +1153,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
                            curr_bb_coord[layer_num].xmax,
                            bb_edge_new[layer_num].xmax,
                            bb_coord_new[layer_num].xmax);
-            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+            if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
                 return;
             }
         }
@@ -1173,7 +1176,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
                            curr_bb_coord[layer_num].xmin,
                            bb_edge_new[layer_num].xmin,
                            bb_coord_new[layer_num].xmin);
-            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+            if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
                 return;
             }
         }
@@ -1197,7 +1200,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
                            curr_bb_coord[layer_num].ymax,
                            bb_edge_new[layer_num].ymax,
                            bb_coord_new[layer_num].ymax);
-            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+            if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
                 return;
             }
         }
@@ -1220,7 +1223,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
                            curr_bb_coord[layer_num].ymin,
                            bb_edge_new[layer_num].ymin,
                            bb_coord_new[layer_num].ymin);
-            if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+            if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
                 return;
             }
         }
@@ -1260,7 +1263,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                        curr_bb_coord[old_layer_num].xmax,
                        bb_edge_new[old_layer_num].xmax,
                        bb_coord_new[old_layer_num].xmax);
-        if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+        if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
             return;
         }
     } else if (x_old == curr_bb_coord[old_layer_num].xmin) {
@@ -1272,7 +1275,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                        curr_bb_coord[old_layer_num].xmin,
                        bb_edge_new[old_layer_num].xmin,
                        bb_coord_new[old_layer_num].xmin);
-        if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+        if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
             return;
         }
     }
@@ -1286,7 +1289,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                        curr_bb_coord[old_layer_num].ymax,
                        bb_edge_new[old_layer_num].ymax,
                        bb_coord_new[old_layer_num].ymax);
-        if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+        if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
             return;
         }
     } else if (y_old == curr_bb_coord[old_layer_num].ymin) {
@@ -1298,7 +1301,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                        curr_bb_coord[old_layer_num].ymin,
                        bb_edge_new[old_layer_num].ymin,
                        bb_coord_new[old_layer_num].ymin);
-        if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+        if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
             return;
         }
     }
@@ -1339,7 +1342,7 @@ static inline void update_bb_edge(ClusterNetId net_id,
                                   bb_edge_new,
                                   bb_coord_new,
                                   bb_layer_pin_sink_count);
-        bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+        bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
         return;
     } else {
         new_num_block_on_edge = old_num_block_on_edge - 1;
@@ -2008,7 +2011,7 @@ void update_move_nets(int num_nets_affected,
 
         /* negative proposed_net_cost value is acting as a flag. */
         proposed_net_cost[net_id] = -1;
-        bb_updated_before[net_id] = NOT_UPDATED_YET;
+        bb_updated_before[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }
 }
 
@@ -2018,7 +2021,7 @@ void reset_move_nets(int num_nets_affected) {
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
         proposed_net_cost[net_id] = -1;
-        bb_updated_before[net_id] = NOT_UPDATED_YET;
+        bb_updated_before[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }
 }
 
@@ -2205,7 +2208,7 @@ void init_net_cost_structs(size_t num_nets) {
     /* Used to store costs for moves not yet made and to indicate when a net's   *
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
      * been recomputed.                                                          */
-    bb_updated_before.resize(num_nets, NOT_UPDATED_YET);
+    bb_updated_before.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
 }
 
 void free_net_cost_structs() {
