@@ -46,7 +46,7 @@ static std::pair<ClusterBlockId, AtomBlockId> getCriticalAtomBlock() {
     const auto& place_ctx = g_vpr_ctx.placement();
     /* Pick a random block to be swapped with another random block.   */
     // pick it from the highly critical blocks
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
+    if (place_move_ctx.highly_crit_pins.empty()) {
         return std::make_pair(ClusterBlockId::INVALID(), AtomBlockId::INVALID()); //No critical block
     }
     std::pair<ClusterNetId, int> crit_cluster_net_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
