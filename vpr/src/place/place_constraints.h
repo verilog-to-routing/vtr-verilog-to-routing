@@ -67,8 +67,8 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro);
 
 inline bool floorplan_legal(const t_pl_atom_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
-
-    for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
+    const int num_moved_blocks = blocks_affected.num_moved_blocks;
+    for (int i = 0; i < num_moved_blocks; i++) {
         AtomBlockId mv_atom_blk = blocks_affected.moved_blocks[i].block_num;
         ClusterBlockId cluster_blk = g_vpr_ctx.atom().lookup.atom_clb(mv_atom_blk);
         const t_pl_atom_loc& to_pl_atom_loc = blocks_affected.moved_blocks[i].new_loc;
@@ -86,8 +86,8 @@ inline bool floorplan_legal(const t_pl_atom_blocks_to_be_moved& blocks_affected)
 
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
-
-    for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
+    const int num_moved_blocks = blocks_affected.num_moved_blocks;
+    for (int i = 0; i < num_moved_blocks; i++) {
         floorplan_legal = cluster_floorplanning_legal(blocks_affected.moved_blocks[i].block_num, blocks_affected.moved_blocks[i].new_loc);
         if (!floorplan_legal) {
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n", size_t(blocks_affected.moved_blocks[i].block_num), blocks_affected.moved_blocks[i].new_loc.x, blocks_affected.moved_blocks[i].new_loc.y, blocks_affected.moved_blocks[i].new_loc.sub_tile);
