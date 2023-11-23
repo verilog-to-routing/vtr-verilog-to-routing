@@ -313,7 +313,6 @@ template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
-    const auto
     auto& rr_graph = device_ctx.rr_graph;
 
     int num_layers = device_ctx.grid.get_num_layers();
