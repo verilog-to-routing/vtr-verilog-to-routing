@@ -21,6 +21,11 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_
 
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays);
 
+/**
+ * @brief Return the maximum ptc number of the SOURCE/OPINs of a tile type
+ * @param itile
+ * @return
+ */
 static int get_tile_src_opin_max_ptc_from_rr_graph(int itile);
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev);
@@ -717,6 +722,7 @@ static int get_tile_src_opin_max_ptc_from_rr_graph(int itile) {
     const int num_layers = device_ctx.grid.get_num_layers();
     int max_ptc = OPEN;
 
+    // Find a layer that has instances of the tile type
     int tile_layer_num = OPEN;
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         if (device_ctx.grid.num_instances(&physical_tile, layer_num) > 0) {
