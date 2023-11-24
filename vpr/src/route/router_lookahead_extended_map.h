@@ -19,9 +19,6 @@ class ExtendedMapLookahead : public RouterLookahead {
     ///<Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
 
-    ///< Lookup table from SOURCE/OPIN to CHANX/CHANY of the another layer
-    util::t_src_opin_inter_layer_delays src_opin_inter_layer_delays;
-
     ///<Look-up table from CHANX/CHANY to SINK/IPIN of various types
     util::t_chan_ipins_delays chan_ipins_delays;
 
@@ -33,7 +30,7 @@ class ExtendedMapLookahead : public RouterLookahead {
      * @param criticality_fac criticality of the current connection between 0 (all congestion) and 1 (all timing)
      * @return expected cost to get to the destination
      */
-    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const;
+    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const;
 
     /**
      * @brief Returns the CHAN -> IPIN delay that gets added to the final expected delay
