@@ -1509,13 +1509,19 @@ enum e_parallel_axis {
     BOTH_AXIS
 };
 
-/* GCLK: Describes a segment type that is part of the clock network                   *
- * GENERAL: Describes a segment type that is part of the general routing resources    */
-enum e_seg_res_type {
+/**
+ * @brief An attribute of a segment that defines the general category of the wire segment type.
+ *
+ * @details
+ * - `GCLK`: A segment type that is part of the global routing network for clocks.
+ * - `GENERAL`: Describes a segment type that is part of the regular routing network.
+ */
+enum class SegResType {
     GCLK = 0,
     GENERAL = 1,
     NUM_RES_TYPES
 };
+
 constexpr std::array<const char*, NUM_RES_TYPES> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
 
 enum e_switch_block_type {
@@ -1574,10 +1580,10 @@ enum e_Fc_type {
  *           Possible values are:
  *              - GENERAL: The segment is part of the general routing        *
  *                         resources.                                        *
- *              - GCLK: The segment is part of the generic clock network.    *
+ *              - GCLK: The segment is part of the global routing network.   *
  *           For backward compatibility, this attribute is optional. If not  *
  *           specified, the resource type for the segment is considered to   *
- *           be generic.                                                     *
+ *           be GENERAL.                                                     *
  * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
     std::string name;
