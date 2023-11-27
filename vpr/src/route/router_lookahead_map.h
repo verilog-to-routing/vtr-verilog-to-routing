@@ -14,7 +14,7 @@ class MapLookahead : public RouterLookahead {
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
     // Lookup table from a tile pins to the primitive classes inside that tile
-    std::unordered_map<int, util::t_ipin_primitive_sink_delays> inter_tile_pin_primitive_pin_delay; // [physical_tile_type][from_pin_physical_num][sink_physical_num] -> cost
+    std::unordered_map<int, util::t_ipin_primitive_sink_delays> intra_tile_pin_primitive_pin_delay; // [physical_tile_type][from_pin_physical_num][sink_physical_num] -> cost
     // Lookup table to store the minimum cost to reach to a primitive pin from the root-level IPINs
     std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
     // Lookup table to store the minimum cost for each dx and dy
