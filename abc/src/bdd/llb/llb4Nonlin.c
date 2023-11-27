@@ -1156,7 +1156,7 @@ Aig_Man_t * Llb_ReachableStates( Aig_Man_t * pAig )
     Cudd_Quit( dd );
 
     // convert
-    pNtkMuxes = Abc_NtkBddToMuxes( pNtk );
+    pNtkMuxes = Abc_NtkBddToMuxes( pNtk, 0, 1000000, 0 );
     Abc_NtkDelete( pNtk );
     pNtk = Abc_NtkStrash( pNtkMuxes, 0, 1, 0 );
     Abc_NtkDelete( pNtkMuxes );

@@ -26,22 +26,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: "" }
-          - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: "" }
-          - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: "" }
-          - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_parmys",             cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: "" }
-          - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                                           extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_PARMYS=OFF -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_PARMYS=OFF -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                                       extra_pkgs: ""}
-          - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: "" }
+          - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: "" }
+          - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: "" }
+          - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_parmys",             cores: "16", options: "",          cmake: "",                                                             extra_pkgs: "" }
+          - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+          - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
 
     env:
       DEBIAN_FRONTEND: "noninteractive"
@@ -49,6 +50,8 @@ jobs:
     steps:
 
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
@@ -91,6 +94,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -134,6 +139,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -151,6 +158,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -219,6 +228,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -272,6 +283,9 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -297,6 +311,8 @@ jobs:
         with:
           python-version: 3.10.10
       - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - run: ./.github/scripts/install_dependencies.sh
 
       - uses: hendrikmuhs/ccache-action@v1.2
@@ -320,6 +336,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -343,6 +361,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -376,6 +396,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -410,6 +432,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2

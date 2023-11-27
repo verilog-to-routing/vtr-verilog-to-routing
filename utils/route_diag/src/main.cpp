@@ -33,7 +33,7 @@
 #include "router_delay_profiling.h"
 #include "route_tree.h"
 #include "route_common.h"
-#include "route_timing.h"
+#include "route_net.h"
 #include "route_export.h"
 #include "rr_graph.h"
 #include "rr_graph2.h"
@@ -84,6 +84,8 @@ static void do_one_route(const Netlist<>& net_list,
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
+    bounding_box.layer_min = 0;
+    bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = router_opts.max_criticality;
@@ -122,8 +124,7 @@ static void do_one_route(const Netlist<>& net_list,
                                                                                                     cost_params,
                                                                                                     bounding_box,
                                                                                                     router_stats,
-                                                                                                    conn_params,
-                                                                                                    true);
+                                                                                                    conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
@@ -203,9 +204,12 @@ static void profile_source(const Netlist<>& net_list,
                     vtr::ScopedStartFinishTimer delay_timer(vtr::string_fmt(
                         "Routing Src: %d Sink: %d", source_rr_node,
                         sink_rr_node));
-                    successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node), RRNodeId(sink_rr_node),
-                                                        router_opts,
-                                                        &delays[sink_x][sink_y]);
+
+                    successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node),
+                                                                   RRNodeId(sink_rr_node),
+                                                                   router_opts,
+                                                                   &delays[sink_x][sink_y],
+                                                                   layer_num);
                 }
 
                 if (successfully_routed) {

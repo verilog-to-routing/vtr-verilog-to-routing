@@ -397,10 +397,7 @@ int Abc_NtkRRUpdate( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode, Abc_Obj_t * pFanin, Ab
     else assert( 0 );
     // replace
     if ( pFanout == NULL )
-    {
-        Abc_AigReplace( (Abc_Aig_t *)pNtk->pManFunc, pNode, pNodeNew, 1 );
-        return 1;
-    }
+        return Abc_AigReplace( (Abc_Aig_t *)pNtk->pManFunc, pNode, pNodeNew, 1 );
     // find the fanout after redundancy removal
     if ( pNode == Abc_ObjFanin0(pFanout) )
         pFanoutNew = Abc_AigAnd( (Abc_Aig_t *)pNtk->pManFunc, Abc_ObjNotCond(pNodeNew,Abc_ObjFaninC0(pFanout)), Abc_ObjChild1(pFanout) );

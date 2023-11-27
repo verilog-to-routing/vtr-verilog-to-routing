@@ -5,12 +5,8 @@
  ***************************************************************************/
 #include <queue>
 #include <random>
-#include <algorithm>
 
 #include "rr_graph_utils.h"
-
-#include "vtr_memory.h"
-#include "vtr_time.h"
 
 #include "vpr_error.h"
 
@@ -119,4 +115,27 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
         });
 
     return node_fan_in_list;
+}
+
+bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
+    bool limited_to_opin = true;
+    for (const auto& from_node : rr_graph.nodes()) {
+        for (t_edge_size edge : rr_graph.edges(from_node)) {
+            RRNodeId to_node = rr_graph.edge_sink_node(from_node, edge);
+            int from_layer = rr_graph.node_layer(from_node);
+            int to_layer = rr_graph.node_layer(to_node);
+
+            if (from_layer != to_layer) {
+                if (rr_graph.node_type(from_node) != e_rr_type::OPIN) {
+                    limited_to_opin = false;
+                    break;
+                }
+            }
+        }
+        if (!limited_to_opin) {
+            break;
+        }
+    }
+
+    return limited_to_opin;
 }

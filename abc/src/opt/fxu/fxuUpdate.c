@@ -588,7 +588,7 @@ void Fxu_UpdatePairsSort( Fxu_Matrix * p, Fxu_Double * pDouble )
     if ( p->vPairs->nSize < 2 )
         return;
     // sort
-    qsort( (void *)p->vPairs->pArray, p->vPairs->nSize, sizeof(Fxu_Pair *), 
+    qsort( (void *)p->vPairs->pArray, (size_t)p->vPairs->nSize, sizeof(Fxu_Pair *), 
         (int (*)(const void *, const void *)) Fxu_UpdatePairCompare );
     assert( Fxu_UpdatePairCompare( (Fxu_Pair**)p->vPairs->pArray, (Fxu_Pair**)p->vPairs->pArray + p->vPairs->nSize - 1 ) < 0 );
 }

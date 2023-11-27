@@ -1,4 +1,4 @@
-The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks are distributed seperately from VTR due to their large size.
+The `Titan <http://www.eecg.utoronto.ca/~vaughn/titan/>` benchmarks are distributed seperately from VTR due to their large size.
 
 The Titan repo is located under /home/kmurray/trees/titan on the U of T EECG network. Memebers of Vaughn Betz's research lab have read/write privileges. 
 
@@ -19,10 +19,10 @@ This will download and extract the benchmark netlists to:
 
     <vtr>/vtr_flow/benchmarks/titan_blif/
 
-and
 
-    <vtr>/vtr_flow/benchmarks/titan_other_blif/
-
-where 'titan_blif' contains the main Titan23 benchmarks, and 'titan_other_blif' contains smaller 
-titan-like benchmarks which are useful for testing (but should not be used for architecture and 
-CAD evaluation).
+In the directory 'titan_blif', you will find three primary subdirectories that 
+correspond to three sets of main benchmarks: 'titan23', 'titan_new', and 'other_benchmarks'. 
+Each of these subdirectories contains two further directories, namely 'stratixiv' and 'stratix10'. 
+These nested directories house the BLIF files specific to each device. 
+The 'titan_other_blif' contains smaller titan-like benchmarks which are useful for 
+testing (but should not be used for architecture and CAD evaluation).

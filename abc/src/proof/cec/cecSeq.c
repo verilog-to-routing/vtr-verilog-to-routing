@@ -401,14 +401,14 @@ int Cec_ManSeqSemiformal( Gia_Man_t * pAig, Cec_ParSmf_t * pPars )
         }
 
         // write equivalence classes
-        Gia_AigerWrite( pAig, "gore.aig", 0, 0 );
+        Gia_AigerWrite( pAig, "gore.aig", 0, 0, 0 );
         // reduce the model
         pReduce = Gia_ManSpecReduce( pAig, 0, 0, 1, 0, 0 );
         if ( pReduce )
         {
             pReduce = Gia_ManSeqStructSweep( pAux = pReduce, 1, 1, 0 );
             Gia_ManStop( pAux );
-            Gia_AigerWrite( pReduce, "gsrm.aig", 0, 0 );
+            Gia_AigerWrite( pReduce, "gsrm.aig", 0, 0, 0 );
 //            Abc_Print( 1, "Speculatively reduced model was written into file \"%s\".\n", "gsrm.aig" );
 //          Gia_ManPrintStatsShort( pReduce );
             Gia_ManStop( pReduce );

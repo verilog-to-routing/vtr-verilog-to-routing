@@ -126,41 +126,52 @@ void Amap_RemoveComments( char * pBuffer, int * pnDots, int * pnLines )
     // (in the BLIF file, comments are lines starting with "#")
     nDots = nLines = 0;
     for ( pCur = pBuffer; *pCur; pCur++ )
-    {
+      {
         // if this is the beginning of comment
         // clean it with spaces until the new line statement
-        if ( *pCur == '#' )
-            while ( *pCur != '\n' )
-                *pCur++ = ' ';
-    
+        if ( *pCur == '#' ) {
+          while ( *pCur != '\n' ) {
+            *pCur++ = ' ';
+          }
+        }    
         // count the number of new lines and dots
         if ( *pCur == '\n' ) {
-        if (*(pCur-1)=='\r') {
-        // DOS(R) file support
-        if (*(pCur-2)!='\\') nLines++;
-        else {
-            // rewind to backslash and overwrite with a space
-            *(pCur-2) = ' ';
-            *(pCur-1) = ' ';
-            *pCur = ' ';
+          if (pCur > pBuffer) {
+            if (*(pCur - 1) == '\r') {
+              // DOS(R) file support
+              if (pCur > (pBuffer + 1)) {
+                if (*(pCur - 2)!='\\') {
+                  nLines++;
+                }
+                else {
+                  // rewind to backslash and overwrite with a space
+                  *(pCur - 2) = ' ';
+                  *(pCur - 1) = ' ';
+                  *pCur = ' ';
+                }
+              }
+            } else {
+              // UNIX(TM) file support
+              if (*(pCur - 1) != '\\') {
+                nLines++;
+              }
+              else {
+                // rewind to backslash and overwrite with a space
+                *(pCur-1) = ' ';
+                *pCur = ' ';
+              }
+            }
+          }
         }
-        } else {
-        // UNIX(TM) file support
-        if (*(pCur-1)!='\\') nLines++;
-        else {
-            // rewind to backslash and overwrite with a space
-            *(pCur-1) = ' ';
-            *pCur = ' ';
+        else if ( *pCur == '.' ) {
+          nDots++;
         }
-        }
-    }
-        else if ( *pCur == '.' )
-            nDots++;
-    }
+      }
+
     if ( pnDots )
-        *pnDots = nDots; 
+      *pnDots = nDots; 
     if ( pnLines )
-        *pnLines = nLines; 
+      *pnLines = nLines; 
 }
 
 /**Function*************************************************************
@@ -491,4 +502,3 @@ Amap_Lib_t * Amap_LibReadFile( char * pFileName, int fVerbose )
 
 
 ABC_NAMESPACE_IMPL_END
-

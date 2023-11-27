@@ -43,7 +43,7 @@
 #    include "manual_moves.h"
 
 #    include "rr_graph.h"
-#    include "route_util.h"
+#    include "route_utilization.h"
 #    include "place_macro.h"
 #    include "buttons.h"
 

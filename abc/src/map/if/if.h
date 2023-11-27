@@ -117,6 +117,7 @@ struct If_Par_t_
     int                fFancy;        // a fancy feature
     int                fExpRed;       // expand/reduce of the best cuts
     int                fLatchPaths;   // reset timing on latch paths
+    int                fLut6Filter;   // uses filtering of 6-LUT functions
     int                fEdge;         // uses edge-based cut selection heuristics
     int                fPower;        // uses power-aware cut selection heuristics
     int                fCutMin;       // performs cut minimization by removing functionally reducdant variables
@@ -139,10 +140,13 @@ struct If_Par_t_
     int                fUseCofVars;   // use cofactoring variables
     int                fUseAndVars;   // use bi-decomposition
     int                fUseTtPerm;    // compute truth tables of the cut functions
+    int                fUseCheck1;    // compute truth tables of the cut functions
+    int                fUseCheck2;    // compute truth tables of the cut functions
     int                fDeriveLuts;   // enables deriving LUT structures
     int                fDoAverage;    // optimize average rather than maximum level
     int                fHashMapping;  // perform AIG hashing after mapping
     int                fVerbose;      // the verbosity flag
+    int                fVerboseTrace; // the verbosity flag
     char *             pLutStruct;    // LUT structure
     float              WireDelay;     // wire delay
     // internal parameters
@@ -259,6 +263,7 @@ struct If_Man_t_
     Hash_IntMan_t *    vPairHash;     // hashing pairs of truth tables
     Vec_Int_t *        vPairRes;      // resulting truth table
     Vec_Str_t *        vPairPerms;    // resulting permutation
+    Vec_Mem_t *        vTtMem6;
     char               pCanonPerm[IF_MAX_LUTSIZE];
     unsigned           uCanonPhase;
     int                nCacheHits;
@@ -272,6 +277,8 @@ struct If_Man_t_
     void *             pUserMan;
     Vec_Int_t *        vDump;
     int                pDumpIns[16];
+    Vec_Str_t *        vMarks;
+    Vec_Int_t *        vVisited2;
 
     // timing manager
     Tim_Man_t *        pManTim;
@@ -411,8 +418,8 @@ static inline int        If_CutTruthWords( int nVarsMax )                    { r
 static inline int        If_CutPermWords( int nVarsMax )                     { return nVarsMax / sizeof(int) + ((nVarsMax % sizeof(int)) > 0); }
 static inline int        If_CutLeafBit( If_Cut_t * pCut, int i )             { return (pCut->uMaskFunc >> i) & 1;                }
 static inline char *     If_CutPerm( If_Cut_t * pCut )                       { return (char *)(pCut->pLeaves + pCut->nLeaves);   }
-static inline void       If_CutCopy( If_Man_t * p, If_Cut_t * pDst, If_Cut_t * pSrc ) { memcpy( pDst, pSrc, p->nCutBytes );      }
-static inline void       If_CutSetup( If_Man_t * p, If_Cut_t * pCut        ) { memset(pCut, 0, p->nCutBytes); pCut->nLimit = p->pPars->nLutSize; }
+static inline void       If_CutCopy( If_Man_t * p, If_Cut_t * pDst, If_Cut_t * pSrc ) { memcpy( pDst, pSrc, (size_t)p->nCutBytes );      }
+static inline void       If_CutSetup( If_Man_t * p, If_Cut_t * pCut        ) { memset(pCut, 0, (size_t)p->nCutBytes); pCut->nLimit = p->pPars->nLutSize; }
 
 static inline If_Cut_t * If_ObjCutBest( If_Obj_t * pObj )                    { return &pObj->CutBest;                }
 static inline unsigned   If_ObjCutSign( unsigned ObjId )                     { return (1 << (ObjId % 31));           }
@@ -548,6 +555,8 @@ extern int             If_CluCheckExt( void * p, word * pTruth, int nVars, int n
                            char * pLut0, char * pLut1, word * pFunc0, word * pFunc1 );
 extern int             If_CluCheckExt3( void * p, word * pTruth, int nVars, int nLutLeaf, int nLutLeaf2, int nLutRoot, 
                            char * pLut0, char * pLut1, char * pLut2, word * pFunc0, word * pFunc1, word * pFunc2 );
+extern int             If_MatchCheck1( If_Man_t * p, unsigned * pTruth, int nVars, int nLeaves, char * pStr );
+extern int             If_MatchCheck2( If_Man_t * p, unsigned * pTruth, int nVars, int nLeaves, char * pStr );
 /*=== ifDelay.c =============================================================*/
 extern int             If_CutDelaySop( If_Man_t * p, If_Cut_t * pCut );
 extern int             If_CutSopBalanceEvalInt( Vec_Int_t * vCover, int * pTimes, int * pFaninLits, Vec_Int_t * vAig, int * piRes, int nSuppAll, int * pArea );
@@ -561,7 +570,7 @@ extern If_DsdMan_t *   If_DsdManAlloc( int nVars, int nLutSize );
 extern void            If_DsdManAllocIsops( If_DsdMan_t * p, int nLutSize );
 extern void            If_DsdManPrint( If_DsdMan_t * p, char * pFileName, int Number, int Support, int fOccurs, int fTtDump, int fVerbose );
 extern void            If_DsdManTune( If_DsdMan_t * p, int LutSize, int fFast, int fAdd, int fSpec, int fVerbose );
-extern void            Id_DsdManTuneStr( If_DsdMan_t * p, char * pStruct, int nConfls, int nProcs, int fVerbose );
+extern void            Id_DsdManTuneStr( If_DsdMan_t * p, char * pStruct, int nConfls, int nProcs, int nInputs, int fVerbose );
 extern void            If_DsdManFree( If_DsdMan_t * p, int fVerbose );
 extern void            If_DsdManSave( If_DsdMan_t * p, char * pFileName );
 extern If_DsdMan_t *   If_DsdManLoad( char * pFileName );
@@ -651,6 +660,8 @@ extern void            If_ManComputeRequired( If_Man_t * p );
 extern void            If_CutRotatePins( If_Man_t * p, If_Cut_t * pCut );
 extern int             If_CutComputeTruth( If_Man_t * p, If_Cut_t * pCut, If_Cut_t * pCut0, If_Cut_t * pCut1, int fCompl0, int fCompl1 );
 extern int             If_CutComputeTruthPerm( If_Man_t * p, If_Cut_t * pCut, If_Cut_t * pCut0, If_Cut_t * pCut1, int fCompl0, int fCompl1 );
+extern Vec_Mem_t *     If_DeriveHashTable6( int nVars, word Truth );
+extern int             If_CutCheckTruth6( If_Man_t * p, If_Cut_t * pCut );
 /*=== ifTune.c ===========================================================*/
 extern Ifn_Ntk_t *     Ifn_NtkParse( char * pStr );
 extern int             Ifn_NtkTtBits( char * pStr );

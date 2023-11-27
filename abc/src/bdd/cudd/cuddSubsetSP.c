@@ -1099,7 +1099,7 @@ CreatePathTable(
         st__free_table(pathTable);
         goto OUT_OF_MEM;
     } else if (insertValue == 1) {
-        fprintf(fp, "Something wrong, the entry exists but didnt show up in st__lookup\n");
+        fprintf(fp, "Something wrong, the entry exists but didn't show up in st__lookup\n");
         return(NULL);
     }
 

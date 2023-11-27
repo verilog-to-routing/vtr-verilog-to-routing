@@ -903,14 +903,14 @@ ABC_PRT( "Constructing the problem", Abc_Clock() - clk );
         if ( f == nFramesSatur )
         {
             if ( fVerbose )
-            printf( "Begining to saturate simulation after %d frames\n", f );
+            printf( "Beginning to saturate simulation after %d frames\n", f );
             // find all flops that have at least one X value in the past and set them to X forever
             p->vXFlops = Saig_MvManFindXFlops( p );            
         }
         if ( f == 2 * nFramesSatur )
         {
             if ( fVerbose )
-            printf( "Agressively saturating simulation after %d frames\n", f );
+            printf( "Aggressively saturating simulation after %d frames\n", f );
             Vec_IntFree( p->vXFlops );
             p->vXFlops = Saig_MvManCreateNextSkip( p );
         }

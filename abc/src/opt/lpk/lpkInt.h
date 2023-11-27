@@ -44,8 +44,8 @@ ABC_NAMESPACE_HEADER_START
 ///                         BASIC TYPES                              ///
 ////////////////////////////////////////////////////////////////////////
 
-#define LPK_SIZE_MAX             24     // the largest size of the function
-#define LPK_CUTS_MAX            512     // the largest number of cuts considered
+#define LPK_SIZE_MAX            100    // the largest size of the function
+#define LPK_CUTS_MAX          10000    // the largest number of cuts considered
 
 typedef struct Lpk_Man_t_ Lpk_Man_t;
 typedef struct Lpk_Cut_t_ Lpk_Cut_t;
@@ -93,6 +93,7 @@ struct Lpk_Man_t_
     int          pRefs[LPK_SIZE_MAX];   // fanin reference counters 
     int          pCands[LPK_SIZE_MAX];  // internal nodes pointing only to the leaves
     Vec_Ptr_t *  vLeaves;
+    Vec_Ptr_t *  vTemp;
     // truth table representation
     Vec_Ptr_t *  vTtElems;              // elementary truth tables
     Vec_Ptr_t *  vTtNodes;              // storage for temporary truth tables of the nodes 
@@ -147,13 +148,13 @@ struct Lpk_Fun_t_
     unsigned     Id         :  7;  // the ID of this node
     unsigned     nVars      :  5;  // the number of variables
     unsigned     nLutK      :  4;  // the number of LUT inputs
-    unsigned     nAreaLim   :  5;  // the area limit (the largest allowed)
-    unsigned     nDelayLim  :  9;  // the delay limit (the largest allowed)
+    unsigned     nAreaLim   : 14;  // the area limit (the largest allowed)
     unsigned     fSupports  :  1;  // supports of cofactors were precomputed
     unsigned     fMark      :  1;  // marks the MUX-based dec
     unsigned     uSupp;            // the support of this component
     unsigned     puSupps[32];      // the supports of the cofactors
-    char         pDelays[16];      // the delays of the inputs
+    unsigned     nDelayLim;        // the delay limit (the largest allowed)
+    int          pDelays[16];      // the delays of the inputs
     char         pFanins[16];      // the fanins of this function
     unsigned     pTruth[0];        // the truth table (contains room for three truth tables)    
 };
@@ -215,7 +216,7 @@ extern Lpk_Fun_t *    Lpk_FunCreate( Abc_Ntk_t * pNtk, Vec_Ptr_t * vLeaves, unsi
 extern Lpk_Fun_t *    Lpk_FunDup( Lpk_Fun_t * p, unsigned * pTruth );
 extern int            Lpk_FunSuppMinimize( Lpk_Fun_t * p );
 extern void           Lpk_FunComputeCofSupps( Lpk_Fun_t * p );
-extern int            Lpk_SuppDelay( unsigned uSupp, char * pDelays );
+extern int            Lpk_SuppDelay( unsigned uSupp, int * pDelays );
 extern int            Lpk_SuppToVars( unsigned uBoundSet, char * pVars );
 
 

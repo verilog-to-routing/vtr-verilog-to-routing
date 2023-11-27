@@ -20,6 +20,7 @@
 
 #include "if.h"
 #include "bool/kit/kit.h"
+#include "misc/extra/extra.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -328,6 +329,79 @@ clk = Abc_Clock();
 if ( p->pPars->fVerbose )
 p->timeCache[2] += Abc_Clock() - clk;
     return 0;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Check the function of 6-input LUT.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Mem_t * If_DeriveHashTable6( int nVars, word uTruth )
+{
+    int fVerbose = 0;
+    int nMints   = (1 << nVars);
+    int nPerms   = Extra_Factorial( nVars );
+    int * pComp  = Extra_GreyCodeSchedule( nVars );
+    int * pPerm  = Extra_PermSchedule( nVars );
+    word Canon   = ABC_CONST(0xFFFFFFFFFFFFFFFF);
+    word tCur, tTemp1, tTemp2;
+    Vec_Mem_t * vTtMem6 = Vec_MemAllocForTTSimple( nVars );
+    int i, p, c;
+    for ( i = 0; i < 2; i++ )
+    {
+        tCur = i ? ~uTruth : uTruth;
+        tTemp1 = tCur;
+        for ( p = 0; p < nPerms; p++ )
+        {
+            tTemp2 = tCur;
+            for ( c = 0; c < nMints; c++ )
+            {
+                if ( Canon > tCur )
+                    Canon = tCur;
+                Vec_MemHashInsert( vTtMem6, &tCur );
+                tCur = Abc_Tt6Flip( tCur, pComp[c] );
+            }
+            assert( tTemp2 == tCur );
+            tCur = Abc_Tt6SwapAdjacent( tCur, pPerm[p] );
+        }
+        assert( tTemp1 == tCur );
+    }
+    ABC_FREE( pComp );
+    ABC_FREE( pPerm );
+    if ( fVerbose )
+    {
+/*
+        word * pEntry;
+        Vec_MemForEachEntry( vTtMem6, pEntry, i )
+        {
+            Extra_PrintHex( stdout, (unsigned*)pEntry, nVars );  
+            printf( ", " );
+            if ( i % 4 == 3 )
+                printf( "\n" );
+        }
+*/
+        Extra_PrintHex( stdout, (unsigned*)&uTruth, nVars );  printf( "\n" );
+        Extra_PrintHex( stdout, (unsigned*)&Canon,  nVars );  printf( "\n" );
+        printf( "Members = %d.\n", Vec_MemEntryNum(vTtMem6) );
+    }
+    return vTtMem6;
+}
+
+int If_CutCheckTruth6( If_Man_t * p, If_Cut_t * pCut )
+{
+    if ( pCut->nLeaves != 6 )
+        return 0;
+    if ( p->vTtMem6 == NULL )
+        p->vTtMem6 = If_DeriveHashTable6( 6, ABC_CONST(0xfedcba9876543210) );
+    if ( *Vec_MemHashLookup( p->vTtMem6, If_CutTruthWR(p, pCut) ) == -1 )
+        return 0;
+    return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////

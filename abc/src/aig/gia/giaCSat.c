@@ -1034,7 +1034,7 @@ void Cbs_ManSatPrintStats( Cbs_Man_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-Vec_Int_t * Cbs_ManSolveMiterNc( Gia_Man_t * pAig, int nConfs, Vec_Str_t ** pvStatus, int fVerbose )
+Vec_Int_t * Cbs_ManSolveMiterNc( Gia_Man_t * pAig, int nConfs, Vec_Str_t ** pvStatus, int f0Proved, int fVerbose )
 {
     extern void Gia_ManCollectTest( Gia_Man_t * pAig );
     extern void Cec_ManSatAddToStore( Vec_Int_t * vCexStore, Vec_Int_t * vCex, int Out );
@@ -1105,6 +1105,8 @@ Vec_Int_t * Cbs_ManSolveMiterNc( Gia_Man_t * pAig, int nConfs, Vec_Str_t ** pvSt
         }
         if ( status == 1 )
         {
+            if ( f0Proved )
+                Gia_ManPatchCoDriver( pAig, i, 0 );
             p->nSatUnsat++;
             p->nConfUnsat += p->Pars.nBTThis;
             p->timeSatUnsat += Abc_Clock() - clk;

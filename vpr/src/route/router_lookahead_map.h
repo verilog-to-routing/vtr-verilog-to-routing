@@ -8,9 +8,7 @@
 
 class MapLookahead : public RouterLookahead {
   public:
-    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
-        : det_routing_arch_(det_routing_arch)
-        , is_flat_(is_flat) {}
+    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat);
 
   private:
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
@@ -21,6 +19,7 @@ class MapLookahead : public RouterLookahead {
     std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
     // Lookup table to store the minimum cost for each dx and dy
     vtr::NdMatrix<util::Cost_Entry, 3> distance_based_min_cost; // [layer_num][dx][dy] -> cost
+
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
 
@@ -56,8 +55,14 @@ class Cost_Entry {
 
 /* provides delay/congestion estimates to travel specified distances
  * in the x/y direction */
-typedef vtr::NdMatrix<Cost_Entry, 5> t_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+// This is a 6D array storing the cost to travel from a node of type CHANX/CHANY to a point that is dx, dy further, and is on the "layer_num" layer.
+// To store this information, the first index is the layer number that the node under consideration is on, the second index represents the type of channel (X/Y)
+// that the node under consideration belongs to, the third is the segment type (specified in the architecture file under the "segmentlist" tag), the fourth is the
+// target "layer_num" mentioned above, the fifth is dx, and the last one is dy.
+typedef vtr::NdMatrix<Cost_Entry, 6> t_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
                                                       //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
+                                                      // The first index is the layer number that the node under consideration is on, and the forth index
+                                                      // is the layer number that the target node is on.
 
 void read_router_lookahead(const std::string& file);
 void write_router_lookahead(const std::string& file);
