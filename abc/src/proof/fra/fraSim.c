@@ -958,6 +958,12 @@ void Fra_SmlPrintOutputs( Fra_Sml_t * p, int nPatterns )
     int i, k;
     for ( k = 0; k < nPatterns; k++ )
     {
+        Aig_ManForEachCi( p->pAig, pObj, i )
+        {
+            pSims = Fra_ObjSim( p, pObj->Id );
+            printf( "%d", Abc_InfoHasBit( pSims, k ) );
+        }
+        printf( " " );               ;
         Aig_ManForEachCo( p->pAig, pObj, i )
         {
             pSims = Fra_ObjSim( p, pObj->Id );

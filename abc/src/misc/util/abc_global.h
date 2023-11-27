@@ -25,6 +25,10 @@
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
+#ifndef ABC_USE_BRIDGE
+#define ABC_USE_BRIDGE
+#endif
+
 #ifdef _WIN32
 #ifndef __MINGW32__
 #define inline __inline // compatible with MS VS 6.0
@@ -84,17 +88,11 @@
   #endif
 #endif
 
-#ifdef __APPLE__
-  #define ABC_USE_STDINT_H
-#endif
-
 #include "abc_namespaces.h"
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
-
-ABC_NAMESPACE_HEADER_START
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -142,6 +140,8 @@ ABC_NAMESPACE_HEADER_START
 #endif
 
 #endif
+
+ABC_NAMESPACE_HEADER_START
 
 /**
  * Pointer difference type; replacement for ptrdiff_t.
@@ -251,22 +251,22 @@ typedef ABC_INT64_T iword;
 
 #define ABC_SWAP(Type, a, b)  { Type t = a; a = b; b = t; }
 
-#define ABC_PRT(a,t)    (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%9.2f sec\n", 1.0*(t)/(CLOCKS_PER_SEC)))
-#define ABC_PRTr(a,t)   (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%9.2f sec\r", 1.0*(t)/(CLOCKS_PER_SEC)))
-#define ABC_PRTn(a,t)   (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%9.2f sec  ", 1.0*(t)/(CLOCKS_PER_SEC)))
-#define ABC_PRTP(a,t,T) (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%9.2f sec (%6.2f %%)\n", 1.0*(t)/(CLOCKS_PER_SEC), (T)? 100.0*(t)/(T) : 0.0))
-#define ABC_PRM(a,f)    (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%10.3f MB\n",    1.0*(f)/(1<<20)))
-#define ABC_PRMr(a,f)   (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%10.3f MB\r",    1.0*(f)/(1<<20)))
-#define ABC_PRMn(a,f)   (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%10.3f MB  ",    1.0*(f)/(1<<20)))
-#define ABC_PRMP(a,f,F) (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%10.3f MB (%6.2f %%)\n",  (1.0*(f)/(1<<20)), ((F)? 100.0*(f)/(F) : 0.0) ) )
+#define ABC_PRT(a,t)    (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%9.2f sec\n", 1.0*((double)(t))/((double)CLOCKS_PER_SEC)))
+#define ABC_PRTr(a,t)   (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%9.2f sec\r", 1.0*((double)(t))/((double)CLOCKS_PER_SEC)))
+#define ABC_PRTn(a,t)   (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%9.2f sec  ", 1.0*((double)(t))/((double)CLOCKS_PER_SEC)))
+#define ABC_PRTP(a,t,T) (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%9.2f sec (%6.2f %%)\n", 1.0*((double)(t))/((double)CLOCKS_PER_SEC), ((double)(T))? 100.0*((double)(t))/((double)(T)) : 0.0))
+#define ABC_PRM(a,f)    (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%10.3f MB\n",    1.0*((double)(f))/(1<<20)))
+#define ABC_PRMr(a,f)   (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%10.3f MB\r",    1.0*((double)(f))/(1<<20)))
+#define ABC_PRMn(a,f)   (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%10.3f MB  ",    1.0*((double)(f))/(1<<20)))
+#define ABC_PRMP(a,f,F) (Abc_Print(1, "%s =", (a)), Abc_Print(1, "%10.3f MB (%6.2f %%)\n",  (1.0*((double)(f))/(1<<20)), (((double)(F))? 100.0*((double)(f))/((double)(F)) : 0.0) ) )
 
-#define ABC_ALLOC(type, num)     ((type *) malloc(sizeof(type) * (num)))
-#define ABC_CALLOC(type, num)    ((type *) calloc((num), sizeof(type)))
-#define ABC_FALLOC(type, num)    ((type *) memset(malloc(sizeof(type) * (num)), 0xff, sizeof(type) * (num)))
+#define ABC_ALLOC(type, num)     ((type *) malloc(sizeof(type) * (size_t)(num)))
+#define ABC_CALLOC(type, num)    ((type *) calloc((size_t)(num), sizeof(type)))
+#define ABC_FALLOC(type, num)    ((type *) memset(malloc(sizeof(type) * (size_t)(num)), 0xff, sizeof(type) * (size_t)(num)))
 #define ABC_FREE(obj)            ((obj) ? (free((char *) (obj)), (obj) = 0) : 0)
 #define ABC_REALLOC(type, obj, num) \
-        ((obj) ? ((type *) realloc((char *)(obj), sizeof(type) * (num))) : \
-         ((type *) malloc(sizeof(type) * (num))))
+        ((obj) ? ((type *) realloc((char *)(obj), sizeof(type) * (size_t)(num))) : \
+         ((type *) malloc(sizeof(type) * (size_t)(num))))
 
 static inline int      Abc_AbsInt( int a        )             { return a < 0 ? -a : a; }
 static inline int      Abc_MaxInt( int a, int b )             { return a > b ?  a : b; }
@@ -284,17 +284,21 @@ static inline int      Abc_Float2Int( float Val )             { union { int x; f
 static inline float    Abc_Int2Float( int Num )               { union { int x; float y; } v; v.x = Num; return v.y;         }
 static inline word     Abc_Dbl2Word( double Dbl )             { union { word x; double y; } v; v.y = Dbl; return v.x;       }
 static inline double   Abc_Word2Dbl( word Num )               { union { word x; double y; } v; v.x = Num; return v.y;       }
-static inline int      Abc_Base2Log( unsigned n )             { int r; if ( n < 2 ) return n; for ( r = 0, n--; n; n >>= 1, r++ ) {}; return r; }
-static inline int      Abc_Base10Log( unsigned n )            { int r; if ( n < 2 ) return n; for ( r = 0, n--; n; n /= 10, r++ ) {}; return r; }
-static inline int      Abc_Base16Log( unsigned n )            { int r; if ( n < 2 ) return n; for ( r = 0, n--; n; n /= 16, r++ ) {}; return r; }
+static inline int      Abc_Base2Log( unsigned n )             { int r; if ( n < 2 ) return (int)n; for ( r = 0, n--; n; n >>= 1, r++ ) {}; return r; }
+static inline int      Abc_Base10Log( unsigned n )            { int r; if ( n < 2 ) return (int)n; for ( r = 0, n--; n; n /= 10, r++ ) {}; return r; }
+static inline int      Abc_Base16Log( unsigned n )            { int r; if ( n < 2 ) return (int)n; for ( r = 0, n--; n; n /= 16, r++ ) {}; return r; }
 static inline char *   Abc_UtilStrsav( char * s )             { return s ? strcpy(ABC_ALLOC(char, strlen(s)+1), s) : NULL;  }
+static inline char *   Abc_UtilStrsavTwo( char * s, char * a ){ char * r; if (!a) return Abc_UtilStrsav(s); r = ABC_ALLOC(char, strlen(s)+strlen(a)+1); sprintf(r, "%s%s", s, a ); return r; }
+static inline char *   Abc_UtilStrsavNum( char * s, int n )   { char * r; if (!s) return NULL;              r = ABC_ALLOC(char, strlen(s)+12+1);        sprintf(r, "%s%d", s, n ); return r; }
+static inline int      Abc_BitByteNum( int nBits )            { return (nBits>>3) + ((nBits&7)  > 0);                       }
 static inline int      Abc_BitWordNum( int nBits )            { return (nBits>>5) + ((nBits&31) > 0);                       }
 static inline int      Abc_Bit6WordNum( int nBits )           { return (nBits>>6) + ((nBits&63) > 0);                       }
+static inline int      Abc_TruthByteNum( int nVars )          { return nVars <= 3 ? 1 : (1 << (nVars - 3));                 }
 static inline int      Abc_TruthWordNum( int nVars )          { return nVars <= 5 ? 1 : (1 << (nVars - 5));                 }
 static inline int      Abc_Truth6WordNum( int nVars )         { return nVars <= 6 ? 1 : (1 << (nVars - 6));                 }
-static inline int      Abc_InfoHasBit( unsigned * p, int i )  { return (p[(i)>>5] & (1<<((i) & 31))) > 0;                   }
-static inline void     Abc_InfoSetBit( unsigned * p, int i )  { p[(i)>>5] |= (1<<((i) & 31));                               }
-static inline void     Abc_InfoXorBit( unsigned * p, int i )  { p[(i)>>5] ^= (1<<((i) & 31));                               }
+static inline int      Abc_InfoHasBit( unsigned * p, int i )  { return (p[(i)>>5] & (unsigned)(1<<((i) & 31))) > 0;         }
+static inline void     Abc_InfoSetBit( unsigned * p, int i )  { p[(i)>>5] |= (unsigned)(1<<((i) & 31));                     }
+static inline void     Abc_InfoXorBit( unsigned * p, int i )  { p[(i)>>5] ^= (unsigned)(1<<((i) & 31));                     }
 static inline unsigned Abc_InfoMask( int nVar )               { return (~(unsigned)0) >> (32-nVar);                         }
 
 static inline int      Abc_Var2Lit( int Var, int c )          { assert(Var >= 0 && !(c >> 1)); return Var + Var + c;        }
@@ -321,11 +325,35 @@ static inline int      Abc_Var2Lit4( int Var, int Att )       { assert(!(Att >> 
 static inline int      Abc_Lit2Var4( int Lit )                { assert(Lit >= 0);    return Lit >> 4;         }
 static inline int      Abc_Lit2Att4( int Lit )                { assert(Lit >= 0);    return Lit & 15;         }
 
-// time counting
 typedef ABC_INT64_T abctime;
+// counting wall time
 static inline abctime Abc_Clock()
 {
-#if (defined(LIN) || defined(LIN64)) && !(__APPLE__ & __MACH__) && !defined(__MINGW32__)
+#if defined(__APPLE__) && defined(__MACH__)
+  #define APPLE_MACH (__APPLE__ & __MACH__)
+#else
+  #define APPLE_MACH 0
+#endif
+#if (defined(LIN) || defined(LIN64)) && !APPLE_MACH && !defined(__MINGW32__)
+    struct timespec ts;
+    if ( clock_gettime(CLOCK_MONOTONIC, &ts) < 0 ) 
+        return (abctime)-1;
+    abctime res = ((abctime) ts.tv_sec) * CLOCKS_PER_SEC;
+    res += (((abctime) ts.tv_nsec) * CLOCKS_PER_SEC) / 1000000000;
+    return res;
+#else
+    return (abctime) clock();
+#endif
+}
+// counting thread time
+static inline abctime Abc_ThreadClock()
+{
+#if defined(__APPLE__) && defined(__MACH__)
+  #define APPLE_MACH (__APPLE__ & __MACH__)
+#else
+  #define APPLE_MACH 0
+#endif
+#if (defined(LIN) || defined(LIN64)) && !APPLE_MACH && !defined(__MINGW32__)
     struct timespec ts;
     if ( clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) < 0 ) 
         return (abctime)-1;
@@ -337,6 +365,19 @@ static inline abctime Abc_Clock()
 #endif
 }
 
+// misc printing procedures
+enum Abc_VerbLevel
+{
+    ABC_PROMPT   = -2,
+    ABC_ERROR    = -1,
+    ABC_WARNING  =  0,
+    ABC_STANDARD =  1,
+    ABC_VERBOSE  =  2
+};
+
+
+#ifdef ABC_USE_BRIDGE
+
 // bridge communication
 #define BRIDGE_NETLIST           106
 #define BRIDGE_ABS_NETLIST       107
@@ -347,20 +388,13 @@ extern int Gia_ManToBridgeAbsNetlist( FILE * pFile, void * p, int pkg_type );
 extern char * vnsprintf(const char* format, va_list args);
 extern char * nsprintf(const char* format, ...);
 
-
-// misc printing procedures
-enum Abc_VerbLevel
-{
-    ABC_PROMPT   = -2,
-    ABC_ERROR    = -1,
-    ABC_WARNING  =  0,
-    ABC_STANDARD =  1,
-    ABC_VERBOSE  =  2
-};
 static inline void Abc_Print( int level, const char * format, ... )
 {
     extern ABC_DLL int Abc_FrameIsBridgeMode();
     va_list args;
+    extern unsigned enable_dbg_outs;  
+    if ( !enable_dbg_outs )
+        return;
 
     if ( ! Abc_FrameIsBridgeMode() ){
         if ( level == ABC_ERROR )
@@ -386,6 +420,23 @@ static inline void Abc_Print( int level, const char * format, ... )
     va_end( args );
 }
 
+#else
+
+static inline void Abc_Print( int level, const char * format, ... )
+{
+    va_list args;
+    va_start( args, format );
+    if ( level == ABC_ERROR )
+        printf( "Error: " );
+    else if ( level == ABC_WARNING )
+        printf( "Warning: " );
+    vprintf( format, args );
+    va_end( args );
+}
+
+#endif
+
+
 static inline void Abc_PrintInt( int i )
 {
     double v3 = (double)i/1000;
@@ -410,6 +461,7 @@ static inline void Abc_PrintInt( int i )
     else if ( v6 > -999.5 && v6 < 999.5 )
         Abc_Print( 1, "%4.0fm", v6 );
 }
+
 
 static inline void Abc_PrintTime( int level, const char * pStr, abctime time )
 {
@@ -439,7 +491,7 @@ static inline int Abc_PrimeCudd( unsigned int p )
             i = 3;
             while ((unsigned) (i * i) <= p)
             {
-                if (p % i == 0) {
+                if (p % (unsigned)i == 0) {
                     pn = 0;
                     break;
                 }
@@ -449,20 +501,53 @@ static inline int Abc_PrimeCudd( unsigned int p )
         else
             pn = 0;
     } while (!pn);
-    return(p);
+    return (int)(p);
 
 } // end of Cudd_Prime 
+
+// the returned buffer has 32 unused bytes at the end, filled with zeros
+static inline void * Abc_FileReadContents( char * pFileName, int * pnFileSize )
+{
+    int RetValue, nFileSize;
+    char * pBuffer;
+    FILE * pFile = fopen( pFileName, "rb" );
+    if ( pFile == NULL )
+        return NULL;
+    // get the file size, in bytes
+    fseek( pFile, 0, SEEK_END );
+    nFileSize = ftell( pFile );
+    if ( pnFileSize )
+        *pnFileSize = nFileSize;
+    rewind( pFile );
+    // load the contents of the file into memory
+    pBuffer = ABC_ALLOC( char, nFileSize + 32 );
+    RetValue = fread( pBuffer, 1, nFileSize, pFile );
+    memset( pBuffer + nFileSize, 0, 32 );
+    assert( RetValue == nFileSize );
+    fclose( pFile );
+    return (void *)pBuffer;
+}
+static inline void Abc_ReverseOrder( int * pA, int nA )
+{
+    int i;
+    for ( i = 0; i < nA/2; i++ )
+        ABC_SWAP( int, pA[i], pA[nA-1-i] );
+}
 
 
 // sorting
 extern void   Abc_MergeSort( int * pInput, int nSize );
 extern int *  Abc_MergeSortCost( int * pCosts, int nSize );
+extern void   Abc_MergeSortCost2( int * pInput, int nSize, int * pCost );
+extern void   Abc_MergeSortCost2Reverse( int * pInput, int nSize, int * pCost );
 extern void   Abc_QuickSort1( word * pData, int nSize, int fDecrease );
 extern void   Abc_QuickSort2( word * pData, int nSize, int fDecrease );
 extern void   Abc_QuickSort3( word * pData, int nSize, int fDecrease );
 extern void   Abc_QuickSortCostData( int * pCosts, int nSize, int fDecrease, word * pData, int * pResult );
 extern int *  Abc_QuickSortCost( int * pCosts, int nSize, int fDecrease );
 
+extern unsigned Abc_Random( int fReset );
+extern word     Abc_RandomW( int fReset );
 
 ABC_NAMESPACE_HEADER_END
 

@@ -1,44 +1,12 @@
-#include <cstdio>
-#include <ctime>
-#include <cmath>
-#include <algorithm>
-#include <vector>
-#include <iostream>
+/** @file Impls for more router utils */
 
-#include "route_tree.h"
-#include "vtr_assert.h"
-#include "vtr_util.h"
-#include "vtr_log.h"
-#include "vtr_digest.h"
-#include "vtr_memory.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
-#include "vpr_utils.h"
-
-#include "stats.h"
-#include "globals.h"
-#include "route_export.h"
-#include "route_common.h"
-#include "route_parallel.h"
-#include "route_timing.h"
-#include "place_and_route.h"
-#include "rr_graph.h"
-#include "rr_graph2.h"
-#include "read_xml_arch_file.h"
-#include "draw.h"
-#include "echo_files.h"
 #include "atom_netlist_utils.h"
-
-#include "route_profiling.h"
-
-#include "timing_util.h"
-#include "RoutingDelayCalculator.h"
-#include "timing_info.h"
-#include "tatum/echo_writer.hpp"
-#include "binary_heap.h"
-#include "bucket.h"
+#include "connection_router_interface.h"
 #include "draw_global.h"
+#include "place_and_route.h"
+#include "route_common.h"
+#include "route_export.h"
+#include "rr_graph.h"
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
@@ -69,7 +37,7 @@
  *            chan_width_y[0]        chan_width_y[1]                        *
  *                                                                          */
 
-/******************** Subroutines local to route_common.c *******************/
+/******************** Subroutines local to route_common.cpp *******************/
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
@@ -107,7 +75,7 @@ void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routi
     saved_clb_opins_used_locally = clb_opins_used_locally;
 }
 
-/* Empties route_ctx.current_rt and copies over best_routing onto it.
+/* Empties route_ctx.route_trees and copies over best_routing onto it.
  * Also restores the locally used opin data. */
 void restore_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
                      t_clb_opins_used& clb_opins_used_locally,
@@ -150,170 +118,7 @@ void get_serial_num(const Netlist<>& net_list) {
     VTR_LOG("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
-void try_graph(int width_fac,
-               const t_router_opts& router_opts,
-               t_det_routing_arch* det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
-               t_chan_width_dist chan_width_dist,
-               t_direct_inf* directs,
-               int num_directs,
-               bool is_flat) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    t_graph_type graph_type;
-    t_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_BIDIR;
-    } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-    }
-
-    /* Set the channel widths */
-    t_chan_width chan_width = init_chan(width_fac, chan_width_dist, graph_directionality);
-
-    /* Free any old routing graph, if one exists. */
-    free_rr_graph();
-
-    /* Set up the routing resource graph defined by this FPGA architecture. */
-    int warning_count;
-    create_rr_graph(graph_type,
-                    device_ctx.physical_tile_types,
-                    device_ctx.grid,
-                    chan_width,
-                    det_routing_arch,
-                    segment_inf,
-                    router_opts,
-                    directs, num_directs,
-                    &warning_count,
-                    is_flat);
-}
-
-bool try_route(const Netlist<>& net_list,
-               int width_fac,
-               const t_router_opts& router_opts,
-               const t_analysis_opts& analysis_opts,
-               t_det_routing_arch* det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
-               NetPinsMatrix<float>& net_delay,
-               std::shared_ptr<SetupHoldTimingInfo> timing_info,
-               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-               t_chan_width_dist chan_width_dist,
-               t_direct_inf* directs,
-               int num_directs,
-               ScreenUpdatePriority first_iteration_priority,
-               bool is_flat) {
-    /* Attempts a routing via an iterated maze router algorithm.  Width_fac *
-     * specifies the relative width of the channels, while the members of   *
-     * router_opts determine the value of the costs assigned to routing     *
-     * resource node, etc.  det_routing_arch describes the detailed routing *
-     * architecture (connection and switch boxes) of the FPGA; it is used   *
-     * only if a DETAILED routing has been selected.                        */
-
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    t_graph_type graph_type;
-    t_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_BIDIR;
-    } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-    }
-
-    /* Set the channel widths */
-    t_chan_width chan_width = init_chan(width_fac, chan_width_dist, graph_directionality);
-
-    /* Set up the routing resource graph defined by this FPGA architecture. */
-    int warning_count;
-
-    create_rr_graph(graph_type,
-                    device_ctx.physical_tile_types,
-                    device_ctx.grid,
-                    chan_width,
-                    det_routing_arch,
-                    segment_inf,
-                    router_opts,
-                    directs,
-                    num_directs,
-                    &warning_count,
-                    is_flat);
-
-    //Initialize drawing, now that we have an RR graph
-    init_draw_coords(width_fac);
-
-    bool success = true;
-
-    /* Allocate and load additional rr_graph information needed only by the router. */
-    alloc_and_load_rr_node_route_structs();
-
-    init_route_structs(net_list,
-                       router_opts.bb_factor,
-                       router_opts.has_choking_spot,
-                       is_flat);
-
-    if (net_list.nets().empty()) {
-        VTR_LOG_WARN("No nets to route\n");
-    }
-
-    if (router_opts.router_algorithm == PARALLEL) {
-        VTR_LOG("Confirming router algorithm: PARALLEL.\n");
-
-#ifdef VPR_USE_TBB
-        auto& atom_ctx = g_vpr_ctx.atom();
-
-        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
-
-        success = try_parallel_route(net_list,
-                                     *det_routing_arch,
-                                     router_opts,
-                                     analysis_opts,
-                                     segment_inf,
-                                     net_delay,
-                                     netlist_pin_lookup,
-                                     timing_info,
-                                     delay_calc,
-                                     first_iteration_priority,
-                                     is_flat);
-
-        profiling::time_on_fanout_analysis();
-#else
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR was not compiled with TBB support required for parallel routing\n");
-#endif
-
-    } else { /* TIMING_DRIVEN route */
-        VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
-        auto& atom_ctx = g_vpr_ctx.atom();
-
-        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
-        success = try_timing_driven_route(net_list,
-                                          *det_routing_arch,
-                                          router_opts,
-                                          analysis_opts,
-                                          segment_inf,
-                                          net_delay,
-                                          netlist_pin_lookup,
-                                          timing_info,
-                                          delay_calc,
-                                          first_iteration_priority,
-                                          is_flat);
-
-        profiling::time_on_fanout_analysis();
-    }
-
-    return (success);
-}
-
 bool feasible_routing() {
-    /* This routine checks to see if this is a resource-feasible routing.      *
-     * That is, are all rr_node capacity limitations respected?  It assumes    *
-     * that the occupancy arrays are up to date when it is called.             */
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -327,7 +132,7 @@ bool feasible_routing() {
     return (true);
 }
 
-//Returns all RR nodes in the current routing which are congested
+/** Returns all RR nodes in the current routing which are congested */
 std::vector<RRNodeId> collect_congested_rr_nodes() {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -364,10 +169,9 @@ vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets() {
     return rr_node_nets;
 }
 
+/** Updates pathfinder's occupancy by either adding or removing the
+ * usage of a resource node. */
 void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub) {
-    /* Updates pathfinder's occupancy by either adding or removing the
-     * usage of a resource node. */
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     int occ = route_ctx.rr_node_route_inf[inode].occ() + add_or_sub;
@@ -376,14 +180,13 @@ void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub) {
     VTR_ASSERT(occ >= 0);
 }
 
+/** This routine recomputes the acc_cost (accumulated congestion cost) of each
+ * routing resource for the pathfinder algorithm after all nets have been routed.
+ * It updates the accumulated cost to by adding in the number of extra signals
+ * sharing a resource right now (i.e. after each complete iteration) times acc_fac.
+ * THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO DATE.
+ * This routine also creates a new overuse info for the current routing iteration. */
 void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& overuse_info) {
-    /* This routine recomputes the acc_cost (accumulated congestion cost) of each       *
-     * routing resource for the pathfinder algorithm after all nets have been routed.   *
-     * It updates the accumulated cost to by adding in the number of extra signals      *
-     * sharing a resource right now (i.e. after each complete iteration) times acc_fac. *
-     * THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO DATE.             *
-     * This routine also creates a new overuse info for the current routing iteration.  */
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -415,20 +218,6 @@ void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_o
     for (auto& node : root.all_nodes()) {
         pathfinder_update_single_node_occupancy(node.inode, add_or_sub);
     }
-}
-
-float update_pres_fac(float new_pres_fac) {
-    /* This routine should take the new value of the present congestion factor *
-     * and propagate it to all the relevant data fields in the vpr flow.       *
-     * Currently, it only updates the pres_fac used by the drawing functions   */
-#ifndef NO_GRAPHICS
-
-    // Only updates the drawing pres_fac if graphics is enabled
-    get_draw_state_vars()->pres_fac = new_pres_fac;
-
-#endif // NO_GRAPHICS
-
-    return new_pres_fac;
 }
 
 /* Call this before you route any nets. It frees any old route trees and
@@ -595,12 +384,9 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
     return (clb_opins_used_locally);
 }
 
-/*the trace lists are only freed after use by the timing-driven placer */
-/*Do not  free them after use by the router, since stats, and draw  */
-/*routines use the trace values */
+/* Frees the temporary storage needed only during the routing. The
+ * final routing result is not freed. */
 void free_route_structs() {
-    /* Frees the temporary storage needed only during the routing.  The  *
-     * final routing result is not freed.                                */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (route_ctx.route_bb.size() != 0) {
@@ -835,6 +621,8 @@ vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
         full_device_bounding_box.ymin = 0;
         full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
         full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+        full_device_bounding_box.layer_min = 0;
+        full_device_bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
     }
 
     auto nets = net_list.nets();
@@ -905,6 +693,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     int ymin = rr_graph.node_ylow(driver_rr);
     int xmax = rr_graph.node_xhigh(driver_rr);
     int ymax = rr_graph.node_yhigh(driver_rr);
+    int layer_min = rr_graph.node_layer(driver_rr);
+    int layer_max = rr_graph.node_layer(driver_rr);
 
     auto net_sinks = net_list.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
@@ -914,10 +704,15 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
+        VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
+        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
+
         xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
         xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
         ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
         ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_rr));
+        layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
+        layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
 
     /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
@@ -933,6 +728,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     bb.xmax = std::min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
     bb.ymin = std::max<int>(ymin - bb_factor, 0);
     bb.ymax = std::min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+    bb.layer_min = layer_min;
+    bb.layer_max = layer_max;
 
     return bb;
 }

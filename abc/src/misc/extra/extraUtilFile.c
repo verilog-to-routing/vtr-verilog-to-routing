@@ -240,12 +240,24 @@ char * Extra_FilePathWithoutName( char * FileName )
     for ( pRes = FileName + strlen(FileName) - 1; pRes >= FileName; pRes-- )
         if ( *pRes == '\\' || *pRes == '/' )
         {
-           *pRes = 0;
+           pRes[1] = '\0';
            Extra_FileNameCorrectPath( FileName );
            return FileName;
         }
     ABC_FREE( FileName );
     return NULL;
+}
+char * Extra_FileInTheSameDir( char * pPathFile, char * pFileName )
+{
+    static char pBuffer[1000]; char * pThis;
+    assert( strlen(pPathFile) + strlen(pFileName) < 990 );
+    memmove( pBuffer, pPathFile, strlen(pPathFile) );
+    for ( pThis = pBuffer + strlen(pPathFile) - 1; pThis >= pBuffer; pThis-- )
+        if ( *pThis == '\\' || *pThis == '/' )
+            break;
+    memmove( ++pThis, pFileName, strlen(pFileName) );
+    pThis[strlen(pFileName)] = '\0';
+    return pBuffer;
 }
 char * Extra_FileDesignName( char * pFileName )
 {
@@ -496,17 +508,17 @@ unsigned Extra_ReadBinary( char * Buffer )
 ***********************************************************************/
 void Extra_PrintBinary( FILE * pFile, unsigned Sign[], int nBits )
 {
-    int Remainder, nWords;
-    int w, i;
-
-    Remainder = (nBits%(sizeof(unsigned)*8));
-    nWords    = (nBits/(sizeof(unsigned)*8)) + (Remainder>0);
-
-    for ( w = nWords-1; w >= 0; w-- )
-        for ( i = ((w == nWords-1 && Remainder)? Remainder-1: 31); i >= 0; i-- )
-            fprintf( pFile, "%c", '0' + (int)((Sign[w] & (1<<i)) > 0) );
-
-//  fprintf( pFile, "\n" );
+    int i;
+    for ( i = nBits-1; i >= 0; i-- )
+        fprintf( pFile, "%c", '0' + Abc_InfoHasBit(Sign, i) );
+//    fprintf( pFile, "\n" );
+}
+void Extra_PrintBinary2( FILE * pFile, unsigned Sign[], int nBits )
+{
+    int i;
+    for ( i = 0; i < nBits; i++ )
+        fprintf( pFile, "%c", '0' + Abc_InfoHasBit(Sign, i) );
+//    fprintf( pFile, "\n" );
 }
 
 /**Function*************************************************************
@@ -627,6 +639,24 @@ void Extra_PrintHex( FILE * pFile, unsigned * pTruth, int nVars )
 
     // write the number into the file
     fprintf( pFile, "0x" );
+    nMints  = (1 << nVars);
+    nDigits = nMints / 4 + ((nMints % 4) > 0);
+    for ( k = nDigits - 1; k >= 0; k-- )
+    {
+        Digit = ((pTruth[k/8] >> (k * 4)) & 15);
+        if ( Digit < 10 )
+            fprintf( pFile, "%d", Digit );
+        else
+            fprintf( pFile, "%c", 'A' + Digit-10 );
+    }
+//    fprintf( pFile, "\n" );
+}
+void Extra_PrintHex2( FILE * pFile, unsigned * pTruth, int nVars )
+{
+    int nMints, nDigits, Digit, k;
+
+    // write the number into the file
+    //fprintf( pFile, "0x" );
     nMints  = (1 << nVars);
     nDigits = nMints / 4 + ((nMints % 4) > 0);
     for ( k = nDigits - 1; k >= 0; k-- )
@@ -791,7 +821,7 @@ void Extra_FileSort( char * pFileName, char * pFileNameOut )
             Begin = i + 1;
         }
     // sort the lines
-    qsort( pLines, nLines, sizeof(char *), (int(*)(const void *,const void *))Extra_StringCompare );
+    qsort( pLines, (size_t)nLines, sizeof(char *), (int(*)(const void *,const void *))Extra_StringCompare );
     // write a new file
     pFile = fopen( pFileNameOut, "wb" );
     for ( i = 0; i < nLines; i++ )

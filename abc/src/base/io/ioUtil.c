@@ -157,8 +157,10 @@ Abc_Ntk_t * Io_ReadNetlist( char * pFileName, Io_FileType_t FileType, int fCheck
         fprintf( stdout, "Reading network from file has failed.\n" );
         return NULL;
     }
-    if ( fCheck && (Abc_NtkBlackboxNum(pNtk) || Abc_NtkWhiteboxNum(pNtk)) )
+
+    if ( fCheck && (Abc_NtkBlackboxNum(pNtk) || Abc_NtkWhiteboxNum(pNtk)) && pNtk->pDesign )
     {
+
         int i, fCycle = 0;
         Abc_Ntk_t * pModel;
 //        fprintf( stdout, "Warning: The network contains hierarchy.\n" );
@@ -390,7 +392,7 @@ void Io_Write( Abc_Ntk_t * pNtk, char * pFileName, Io_FileType_t FileType )
             pNtkTemp = Abc_NtkToNetlist( pNtk );
         else
         {
-            fprintf( stdout, "Latches are writen into the PLA file at PI/PO pairs.\n" );
+            fprintf( stdout, "Latches are written into the PLA file at PI/PO pairs.\n" );
             pNtkCopy = Abc_NtkDup( pNtk );
             Abc_NtkMakeComb( pNtkCopy, 0 );
             pNtkTemp = Abc_NtkToNetlist( pNtk );
@@ -860,6 +862,172 @@ FILE * Io_FileOpen( const char * FileName, const char * PathVar, const char * Mo
             return fopen( FileName, Mode );
         }
     }
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Tranform SF into PLA.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Io_TransformSF2PLA( char * pNameIn, char * pNameOut )
+{
+    int fStart = 0, Size = 1000000;
+    char * pBuffer, * pToken;
+    FILE * pFileIn  = fopen( pNameIn,  "rb" );
+    FILE * pFileOut = fopen( pNameOut, "wb" );
+    if ( pFileIn == NULL )
+    {
+        if ( pFileOut ) fclose( pFileOut );
+        printf( "Cannot open file \"%s\" for reading.\n", pNameIn );
+        return;
+    }
+    if ( pFileOut == NULL )
+    {
+        if ( pFileIn )  fclose( pFileIn );
+        printf( "Cannot open file \"%s\" for reading.\n", pNameOut );
+        return;
+    }
+    pBuffer = ABC_ALLOC( char, Size );
+    fprintf( pFileOut, ".type fd\n" );
+    while ( fgets(pBuffer, Size, pFileIn) )
+    {
+        if ( strstr(pBuffer, "END_SDF") )
+            break;
+        if ( strstr(pBuffer, "SDF") )
+        {
+            char * pRes = fgets(pBuffer, Size, pFileIn);
+            assert( pRes != NULL );
+            if ( (pToken = strtok( pBuffer, " \t\r\n" )) )
+                fprintf( pFileOut, ".i %d\n", atoi(pToken) );
+            if ( (pToken = strtok( NULL, " \t\r\n" )) )
+                fprintf( pFileOut, ".o %d\n", atoi(pToken) );
+            if ( (pToken = strtok( NULL, " \t\r\n" )) )
+                fprintf( pFileOut, ".p %d\n", atoi(pToken) );
+            fStart = 1;
+        }
+        else if ( fStart )
+            fprintf( pFileOut, "%s", pBuffer );
+    }
+    fprintf( pFileOut, ".e\n" );
+    fclose( pFileIn );
+    fclose( pFileOut );
+    ABC_FREE( pBuffer );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Reads CNF from file.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Ptr_t * Io_ConvertNumsToSop( Vec_Wec_t * vNums, int nVars )
+{
+    Vec_Ptr_t * vSops = Vec_PtrAlloc(1);
+    Vec_Int_t * vLevel; int i, k, Num;
+    int nSize = (nVars + 3)*Vec_WecSize(vNums);
+    char * pStr = ABC_ALLOC( char, nSize+1 );
+    memset( pStr, '-', nSize );
+    pStr[nSize] = 0;
+    Vec_WecForEachLevel( vNums, vLevel, i )
+    {
+        char * pCube = pStr + (nVars + 3)*i;
+        Vec_IntForEachEntry( vLevel, Num, k )
+            pCube[Abc_Lit2Var(Num)] = '0' + Abc_LitIsCompl(Num);
+        pCube[nVars+0] = ' ';
+        pCube[nVars+1] = '0';
+        pCube[nVars+2] = '\n';                
+    }
+    Vec_PtrPush( vSops, pStr );
+    return vSops;
+}
+Vec_Ptr_t * Io_ConvertNumsToSopMulti( Vec_Wec_t * vNums, int nVars )
+{
+    Vec_Ptr_t * vSops = Vec_PtrAlloc( Vec_WecSize(vNums) );
+    Vec_Int_t * vLevel; int i, k, Num;
+    Vec_WecForEachLevel( vNums, vLevel, i )
+    {
+        char * pCube = ABC_ALLOC( char, nVars + 4 );
+        memset( pCube, '-', nVars );
+        Vec_IntForEachEntry( vLevel, Num, k )
+            pCube[Abc_Lit2Var(Num)] = '0' + Abc_LitIsCompl(Num);
+        pCube[nVars+0] = ' ';
+        pCube[nVars+1] = '0';
+        pCube[nVars+2] = '\n';     
+        pCube[nVars+3] = '\0';    
+        Vec_PtrPush( vSops, pCube );               
+    }
+    return vSops;
+}
+Vec_Ptr_t * Io_FileReadCnf( char * pFileName, int fMulti )
+{
+    Vec_Ptr_t * vSops = NULL;
+    Vec_Wec_t * vNums = Vec_WecAlloc( 100 );
+    Vec_Int_t * vLevel;
+    char * pThis, pLine[10000];
+    int nVars = -1, nClas = -1;
+    FILE * pFile = fopen( pFileName, "rb" );
+    if ( pFile == NULL ) {
+        printf( "Cannot open file \"%s\" for reading.\n", pFileName );
+        return NULL;
+    }
+    while ( fgets( pLine, 10000, pFile ) )
+    {
+        if ( pLine[0] == 'c' )
+            continue;
+        if ( pLine[0] == 'p' )
+        {
+            pThis = strtok(pLine+1, " \t\n\r");
+            if ( strcmp(pThis, "cnf") )
+            {
+                Vec_PtrFree( vSops );
+                Vec_WecFree( vNums );
+                fclose( pFile );
+                printf( "Wrong file format.\n" );
+                return NULL;
+            }
+            pThis = strtok(NULL, " \t\n\r");
+            nVars = atoi(pThis);
+            pThis = strtok(NULL, " \t\n\r");            
+            nClas = atoi(pThis);
+            continue;
+        }
+        pThis = strtok(pLine, " \t\n\r");
+        if ( pThis == NULL )
+            continue;
+        vLevel = Vec_WecPushLevel( vNums );
+        while ( pThis ) {
+            int fComp, Temp = atoi(pThis);
+            if ( Temp == 0 )
+                break;
+            fComp = Temp < 0;
+            Temp  = Temp < 0 ? -Temp : Temp;
+            Temp -= 1;
+            assert( Temp < nVars );
+            Vec_IntPush( vLevel, Abc_Var2Lit(Temp, fComp) );
+            pThis = strtok(NULL, " \t\n\r"); 
+        }
+    }
+    fclose( pFile );
+    if ( nClas != Vec_WecSize(vNums) )
+        printf( "Warning: The number of clauses (%d) listed is different from the actual number (%d).\n", nClas, Vec_WecSize(vNums) );
+    //Vec_WecPrint( vNums, 0 );
+    if ( fMulti )
+        vSops = Io_ConvertNumsToSopMulti(vNums, nVars);
+    else
+        vSops = Io_ConvertNumsToSop(vNums, nVars);
+    Vec_WecFree( vNums );
+    return vSops;
 }
 
 ////////////////////////////////////////////////////////////////////////

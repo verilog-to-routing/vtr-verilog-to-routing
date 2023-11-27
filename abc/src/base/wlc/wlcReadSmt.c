@@ -746,7 +746,7 @@ int Smt_PrsBuildNode( Wlc_Ntk_t * pNtk, Smt_Prs_t * p, int iNode, int RangeOut, 
             }
             else if ( Type == WLC_OBJ_ROTATE_R || Type == WLC_OBJ_ROTATE_L )
             {
-                char Buffer[10];
+                char Buffer[100];
                 assert( Value1 >= 0 );
                 sprintf( Buffer, "%d", Value1 ); 
                 NameId = Smt_PrsBuildConstant( pNtk, Buffer, -1, NULL );

@@ -289,6 +289,9 @@ p->timeSim += Abc_Clock() - clk;
             p->nAllFailed++;
         }
     } 
+    p->nAllProvedS    += p->nAllProved;
+    p->nAllDisprovedS += p->nAllDisproved;
+    p->nAllFailedS    += p->nAllFailed;
     return 0;
 }
 

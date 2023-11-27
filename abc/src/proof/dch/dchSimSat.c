@@ -91,8 +91,8 @@ void Dch_ManCollectTfoCands( Dch_Man_t * p, Aig_Obj_t * pObj1, Aig_Obj_t * pObj2
     Aig_ObjSetTravIdCurrent( p->pAigTotal, Aig_ManConst1(p->pAigTotal) );    
     Dch_ManCollectTfoCands_rec( p, pObj1 );
     Dch_ManCollectTfoCands_rec( p, pObj2 );
-    Vec_PtrSort( p->vSimRoots, (int (*)(void))Aig_ObjCompareIdIncrease );
-    Vec_PtrSort( p->vSimClasses, (int (*)(void))Aig_ObjCompareIdIncrease );
+    Vec_PtrSort( p->vSimRoots, (int (*)(const void *, const void *))Aig_ObjCompareIdIncrease );
+    Vec_PtrSort( p->vSimClasses, (int (*)(const void *, const void *))Aig_ObjCompareIdIncrease );
     Vec_PtrForEachEntry( Aig_Obj_t *, p->vSimClasses, pObj, i )
         pObj->fMarkA = 0;
 }

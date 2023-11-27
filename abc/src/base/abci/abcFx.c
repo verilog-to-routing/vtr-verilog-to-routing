@@ -201,7 +201,7 @@ void Abc_NtkFxInsert( Abc_Ntk_t * pNtk, Vec_Wec_t * vCubes )
     // quit if nothing changes
     if ( iNodeMax < Abc_NtkObjNumMax(pNtk) )
     {
-        printf( "The network is unchanged by fast extract.\n" );
+        //printf( "The network is unchanged by fast extract.\n" );
         return;
     }
     // create new nodes

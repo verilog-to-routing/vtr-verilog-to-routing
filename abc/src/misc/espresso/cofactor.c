@@ -372,7 +372,7 @@ pcube *T;
     (void) set_copy(cube.temp[0], T[0]);        /* retrieve cofactor */
 
     ncubes = CUBELISTSIZE(T);
-    qsort((char *) (T+2), ncubes, sizeof(pset), (int (*)()) d1_order);
+    qsort((char *) (T+2), (size_t)ncubes, sizeof(pset), (int (*)()) d1_order);
 
     Tdest = T+2;
     /*   *Tdest++ = T[2];   */

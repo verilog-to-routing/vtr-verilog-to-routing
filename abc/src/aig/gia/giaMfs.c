@@ -46,7 +46,7 @@ ABC_NAMESPACE_IMPL_START
 ***********************************************************************/
 Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
 {
-    word uTruth, uTruths6[6] = {
+    word uTruth, * pTruth, uTruths6[6] = {
         ABC_CONST(0xAAAAAAAAAAAAAAAA),
         ABC_CONST(0xCCCCCCCCCCCCCCCC),
         ABC_CONST(0xF0F0F0F0F0F0F0F0),
@@ -60,14 +60,19 @@ Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
     Vec_Str_t * vEmpty;  // mfs data
     Vec_Wrd_t * vTruths; // mfs data
     Vec_Int_t * vArray;
+    Vec_Int_t * vStarts;
+    Vec_Wrd_t * vTruths2;
     Vec_Int_t * vLeaves;
     Tim_Man_t * pManTime = (Tim_Man_t *)p->pManTime;
     int nBoxes   = Gia_ManBoxNum(p), nVars;
     int nRealPis = nBoxes ? Tim_ManPiNum(pManTime) : Gia_ManPiNum(p);
     int nRealPos = nBoxes ? Tim_ManPoNum(pManTime) : Gia_ManPoNum(p);
-    int i, j, k, curCi, curCo, nBoxIns, nBoxOuts;
+    int i, j, k, curCi, curCo, nBoxIns, nBoxOuts, w, nWords;
     int Id, iFan, nMfsVars, nBbIns = 0, nBbOuts = 0, Counter = 0;
-    assert( !p->pAigExtra || Gia_ManPiNum(p->pAigExtra) <= 6 );
+    int nLutSizeMax = Gia_ManLutSizeMax( p );
+    nLutSizeMax = Abc_MaxInt( nLutSizeMax, 6 );
+    assert( nLutSizeMax < 16 );
+    //assert( !p->pAigExtra || Gia_ManPiNum(p->pAigExtra) <= 6 );
     if ( pManTime ) Tim_ManBlackBoxIoNum( pManTime, &nBbIns, &nBbOuts );
     // skip PIs due to box outputs
     Counter += nBbOuts;
@@ -77,6 +82,8 @@ Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
     vFixed   = Vec_StrStart( nMfsVars );
     vEmpty   = Vec_StrStart( nMfsVars );
     vTruths  = Vec_WrdStart( nMfsVars );
+    vStarts  = Vec_IntStart( nMfsVars );
+    vTruths2 = Vec_WrdAlloc( 10000 );
     // set internal PIs
     Gia_ManCleanCopyArray( p );
     Gia_ManForEachCiId( p, Id, i )
@@ -86,8 +93,8 @@ Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
     Vec_WrdWriteEntry( vTruths, Counter, (word)0 );
     Gia_ObjSetCopyArray( p, 0, Counter++ );
     // set internal LUTs
-    vLeaves = Vec_IntAlloc( 6 );
-    Gia_ObjComputeTruthTableStart( p, 6 );
+    vLeaves = Vec_IntAlloc( nLutSizeMax );
+    Gia_ObjComputeTruthTableStart( p, nLutSizeMax );
     Gia_ManForEachLut( p, Id )
     {
         Vec_IntClear( vLeaves );
@@ -99,12 +106,18 @@ Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
             Vec_IntPush( vArray, Gia_ObjCopyArray(p, iFan) );
             Vec_IntPush( vLeaves, iFan );
         }
-        assert( Vec_IntSize(vLeaves) <= 6 );
+        assert( Vec_IntSize(vLeaves) < 16 );
         assert( Vec_IntSize(vLeaves) == Gia_ObjLutSize(p, Id) );
-        uTruth = *Gia_ObjComputeTruthTableCut( p, Gia_ManObj(p, Id), vLeaves );
-        nVars = Abc_Tt6MinBase( &uTruth, Vec_IntArray(vArray), Vec_IntSize(vArray) );
+//        uTruth = *Gia_ObjComputeTruthTableCut( p, Gia_ManObj(p, Id), vLeaves );
+//        nVars = Abc_Tt6MinBase( &uTruth, Vec_IntArray(vArray), Vec_IntSize(vArray) );
+        pTruth = Gia_ObjComputeTruthTableCut( p, Gia_ManObj(p, Id), vLeaves );
+        nVars = Abc_TtMinBase( pTruth, Vec_IntArray(vArray), Vec_IntSize(vArray), Vec_IntSize(vLeaves) );
         Vec_IntShrink( vArray, nVars );
-        Vec_WrdWriteEntry( vTruths, Counter, uTruth );
+        Vec_WrdWriteEntry( vTruths, Counter, pTruth[0] );
+        nWords = Abc_Truth6WordNum( nVars );
+        Vec_IntWriteEntry( vStarts, Counter, Vec_WrdSize(vTruths2) );
+        for ( w = 0; w < nWords; w++ )
+            Vec_WrdPush( vTruths2, pTruth[w] );
         if ( Gia_ObjLutIsMux(p, Id) )
         {
             Vec_StrWriteEntry( vFixed, Counter, (char)1 );
@@ -126,6 +139,8 @@ Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
             Vec_StrWriteEntry( vEmpty, Counter, (char)1 );
             uTruth = Gia_ObjFaninC0(pObj) ? ~uTruths6[0]: uTruths6[0];
             Vec_WrdWriteEntry( vTruths, Counter, uTruth );
+            Vec_IntWriteEntry( vStarts, Counter, Vec_WrdSize(vTruths2) );
+            Vec_WrdPush( vTruths2, uTruth );
         }
         Gia_ObjSetCopyArray( p, Gia_ObjId(p, pObj), Counter++ );
     }
@@ -136,20 +151,21 @@ Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
     if ( p->pAigExtra )
     {
         int iBbIn = 0, iBbOut = 0;
-        Gia_ObjComputeTruthTableStart( p->pAigExtra, 6 );
+        assert( Gia_ManCiNum(p->pAigExtra) < 16 );
+        Gia_ObjComputeTruthTableStart( p->pAigExtra, Gia_ManCiNum(p->pAigExtra) );
         curCi = nRealPis;
         curCo = 0;
         for ( k = 0; k < nBoxes; k++ )
         {
             nBoxIns = Tim_ManBoxInputNum( pManTime, k );
             nBoxOuts = Tim_ManBoxOutputNum( pManTime, k );
-            // collect truth table leaves
-            Vec_IntClear( vLeaves );
-            for ( i = 0; i < nBoxIns; i++ )
-                Vec_IntPush( vLeaves, Gia_ObjId(p->pAigExtra, Gia_ManCi(p->pAigExtra, i)) );
             // iterate through box outputs
-            if ( !Tim_ManBoxIsBlack(pManTime, k) )
+            if ( !Tim_ManBoxIsBlack(pManTime, k) ) //&& Tim_ManBoxInputNum(pManTime, k) <= 6 )
             {
+                // collect truth table leaves
+                Vec_IntClear( vLeaves );
+                for ( i = 0; i < nBoxIns; i++ )
+                    Vec_IntPush( vLeaves, Gia_ObjId(p->pAigExtra, Gia_ManCi(p->pAigExtra, i)) );
                 for ( j = 0; j < nBoxOuts; j++ )
                 {
                     // CI corresponding to the box outputs
@@ -168,17 +184,39 @@ Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
                     // box output in the extra manager
                     pObjExtra = Gia_ManCo( p->pAigExtra, curCi - nRealPis + j );
                     // compute truth table
+                    pTruth = NULL;
                     if ( Gia_ObjFaninId0p(p->pAigExtra, pObjExtra) == 0 )
+                    {
                         uTruth = 0;
+                        uTruth = Gia_ObjFaninC0(pObjExtra) ? ~uTruth : uTruth;
+                        pTruth = &uTruth;
+                    }
                     else if ( Gia_ObjIsCi(Gia_ObjFanin0(pObjExtra)) )
+                    {
                         uTruth = uTruths6[Gia_ObjCioId(Gia_ObjFanin0(pObjExtra))];
+                        uTruth = Gia_ObjFaninC0(pObjExtra) ? ~uTruth : uTruth;
+                        pTruth = &uTruth;
+                    }
                     else
-                        uTruth = *Gia_ObjComputeTruthTableCut( p->pAigExtra, Gia_ObjFanin0(pObjExtra), vLeaves );
-                    uTruth = Gia_ObjFaninC0(pObjExtra) ? ~uTruth : uTruth;
+                    {
+                        pTruth = Gia_ObjComputeTruthTableCut( p->pAigExtra, Gia_ObjFanin0(pObjExtra), vLeaves );
+                        if ( Gia_ObjFaninC0(pObjExtra) )
+                            Abc_TtNot( pTruth, Abc_Truth6WordNum(Vec_IntSize(vLeaves)) );
+                    }
+                    //uTruth = Gia_ObjFaninC0(pObjExtra) ? ~uTruth : uTruth;
                     //Dau_DsdPrintFromTruth( &uTruth, Vec_IntSize(vArray) );
-                    nVars = Abc_Tt6MinBase( &uTruth, Vec_IntArray(vArray), Vec_IntSize(vArray) );
+                    //nVars = Abc_Tt6MinBase( &uTruth, Vec_IntArray(vArray), Vec_IntSize(vArray) );
+                    nVars = Abc_TtMinBase( pTruth, Vec_IntArray(vArray), Vec_IntSize(vArray), Vec_IntSize(vLeaves) );
                     Vec_IntShrink( vArray, nVars );
-                    Vec_WrdWriteEntry( vTruths, Counter, uTruth );
+                    if ( nVars <= 6 )
+                        Vec_WrdWriteEntry( vTruths, Counter, pTruth[0] );
+                    else
+                    {
+                        int w, nWords = Abc_Truth6WordNum( nVars );
+                        Vec_IntWriteEntry( vStarts, Counter, Vec_WrdSize(vTruths2) );
+                        for ( w = 0; w < nWords; w++ )
+                            Vec_WrdPush( vTruths2, pTruth[w] );
+                    }
                 }
             }
             else // create buffers for black box inputs and outputs
@@ -230,7 +268,7 @@ Sfm_Ntk_t * Gia_ManExtractMfs( Gia_Man_t * p )
     }
     // finalize 
     Vec_IntFree( vLeaves );
-    return Sfm_NtkConstruct( vFanins, nBbOuts + nRealPis, nRealPos + nBbIns, vFixed, vEmpty, vTruths );
+    return Sfm_NtkConstruct( vFanins, nBbOuts + nRealPis, nRealPos + nBbIns, vFixed, vEmpty, vTruths, vStarts, vTruths2 );
 }
 
 /**Function*************************************************************
@@ -354,7 +392,8 @@ Gia_Man_t * Gia_ManInsertMfs( Gia_Man_t * p, Sfm_Ntk_t * pNtk, int fAllBoxes )
             if ( Gia_ObjLutIsMux(p, Vec_IntEntry(vMfs2Old, iMfsId)) )
             {
                 int MapSize = Vec_IntSize(vMapping2);
-                int nVarsNew, Res = Abc_TtSimplify( pTruth, Vec_IntArray(vLeaves), Vec_IntSize(vLeaves), &nVarsNew );
+                int nVarsNew;
+                Abc_TtSimplify( pTruth, Vec_IntArray(vLeaves), Vec_IntSize(vLeaves), &nVarsNew );
                 Vec_IntShrink( vLeaves, nVarsNew );
                 iLitNew = Gia_ManFromIfLogicCreateLut( pNew, pTruth, vLeaves, vCover, vMapping, vMapping2 );
                 if ( MapSize < Vec_IntSize(vMapping2) )
@@ -392,6 +431,8 @@ Gia_Man_t * Gia_ManInsertMfs( Gia_Man_t * p, Sfm_Ntk_t * pNtk, int fAllBoxes )
             if ( Vec_IntFind(vMfsTopo, iGroup) >= 0 )
             {
                 iLitNew = Vec_IntEntry( vMfs2Gia, iMfsId );
+                if ( iLitNew < 0 )
+                    continue;
                 assert( iLitNew >= 0 );
             }
             continue;
@@ -427,6 +468,7 @@ Gia_Man_t * Gia_ManInsertMfs( Gia_Man_t * p, Sfm_Ntk_t * pNtk, int fAllBoxes )
     // duplicated initial state
     if ( p->vRegInits )
         pNew->vRegInits = Vec_IntDup( p->vRegInits );
+    pNew->nAnd2Delay = p->nAnd2Delay;
 
     // cleanup
     Vec_WecFree( vGroups );
@@ -461,11 +503,16 @@ Gia_Man_t * Gia_ManPerformMfs( Gia_Man_t * p, Sfm_Par_t * pPars )
         Abc_Print( 1, "Timing manager is given but there is no GIA of boxes.\n" );
         return NULL;
     }
+    if ( p->pManTime != NULL && p->pAigExtra != NULL && Gia_ManCiNum(p->pAigExtra) > 15 )
+    {
+        Abc_Print( 1, "Currently \"&mfs\" cannot process the network containing white-boxes with more than 15 inputs.\n" );
+        return NULL;
+    }
     // count fanouts
     nFaninMax = Gia_ManLutSizeMax( p );
-    if ( nFaninMax > 6 )
+    if ( nFaninMax > 15 )
     {
-        Abc_Print( 1, "Currently \"&mfs\" cannot process the network containing nodes with more than 6 fanins.\n" );
+        Abc_Print( 1, "Currently \"&mfs\" cannot process the network containing nodes with more than 15 fanins.\n" );
         return NULL;
     }
     // collect information

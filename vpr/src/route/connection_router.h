@@ -47,6 +47,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , router_debug_(false) {
         heap_.init_heap(grid);
         heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
+        only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
@@ -74,8 +75,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params,
-        bool can_grow_bb) final;
+        const ConnectionParameters& conn_params) final;
 
     /** Finds a path from the route tree rooted at rt_root to sink_node for a
      * high fanout net.
@@ -94,8 +94,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         t_bb net_bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params,
-        bool can_grow_bb) final;
+        const ConnectionParameters& conn_params) final;
 
     // Finds a path from the route tree rooted at rt_root to all sinks
     // available.
@@ -159,15 +158,13 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * @param[in] sink_node Sink node ID to route to
      * @param[in] cost_params
      * @param[in] bounding_box Keep search confined to this bounding box
-     * @param[in] can_grow_bb Can this fn grow the given bounding box? 
      * @return bool Signal to retry this connection with a full-device bounding box,
      * @return t_heap* Heap element describing the path found. */
     std::tuple<bool, t_heap*> timing_driven_route_connection_common_setup(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
         const t_conn_cost_params cost_params,
-        t_bb bounding_box,
-        bool can_grow_bb);
+        t_bb bounding_box);
 
     // Finds a path to sink_node, starting from the elements currently in the
     // heap.
@@ -285,6 +282,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const ConnectionParameters* conn_params_;
     HeapImplementation heap_;
     bool router_debug_;
+
+    bool only_opin_inter_layer;
 
     // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of the heap types
     PathManager rcv_path_manager;

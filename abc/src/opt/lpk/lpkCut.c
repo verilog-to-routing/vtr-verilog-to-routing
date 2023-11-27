@@ -576,6 +576,37 @@ void Lpk_NodeCutsOne( Lpk_Man_t * p, Lpk_Cut_t * pCut, int Node )
 
 /**Function*************************************************************
 
+  Synopsis    [Count support.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Lpk_CountSupp( Abc_Ntk_t * p, Vec_Ptr_t * vNodes )
+{
+    Abc_Obj_t * pObj, * pFanin; 
+    int i, k, Count = 0;
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
+    {
+        Abc_ObjForEachFanin( pObj, pFanin, k )
+        {
+            if ( Abc_NodeIsTravIdCurrent(pFanin) )
+                continue;
+            Count += !pFanin->fPersist;
+            pFanin->fPersist = 1;
+        }
+    }
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
+        Abc_ObjForEachFanin( pObj, pFanin, k )
+            pFanin->fPersist = 0;
+    return Count;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Computes the set of all cuts.]
 
   Description []
@@ -589,13 +620,20 @@ int Lpk_NodeCuts( Lpk_Man_t * p )
 {
     Lpk_Cut_t * pCut, * pCut2;
     int i, k, Temp, nMffc, fChanges;
+    //int nSupp;
 
     // mark the MFFC of the node with the current trav ID
-    nMffc = p->nMffc = Abc_NodeMffcLabel( p->pObj );
+    Vec_PtrClear( p->vTemp );
+    nMffc = p->nMffc = Abc_NodeMffcLabel( p->pObj, p->vTemp );
     assert( nMffc > 0 );
     if ( nMffc == 1 )
         return 0;
-
+/*
+    // count the leaves
+    nSupp = Lpk_CountSupp( p->pNtk, p->vTemp );
+    if ( nMffc > 10 && nSupp <= 10 )
+        printf( "Obj = %4d : Supp = %4d. Mffc = %4d.\n", p->pObj->Id, nSupp, nMffc );
+*/
     // initialize the first cut
     pCut = p->pCuts; p->nCuts = 1;
     pCut->nNodes = 0; 
@@ -650,6 +688,9 @@ int Lpk_NodeCuts( Lpk_Man_t * p )
         if ( pCut->fHasDsd )
             continue;
         p->pEvals[p->nEvals++] = i;
+
+//        if ( pCut->nLeaves <= 9 && pCut->nNodes > 15 )
+//        printf( "%5d : Obj = %4d  Leaves = %4d  Nodes = %4d  LUTs = %4d\n", i, p->pObj->Id, pCut->nLeaves, pCut->nNodes, pCut->nLuts );
     }
     if ( p->nEvals == 0 )
         return 0;

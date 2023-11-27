@@ -269,6 +269,118 @@ static inline int sat_solver_add_and2( sat_solver * pSat, int iVar, int iVar0, i
     return 3;
 }
 
+
+/**Function*************************************************************
+
+  Synopsis    [Adds a general cardinality constraint in terms of vVars.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline int Card_AddClause( Vec_Int_t * p, int* begin, int* end )
+{
+    Vec_IntPush( p, (int)(end-begin) );
+    while ( begin < end )
+        Vec_IntPush( p, (int)*begin++ );
+    return 1;
+}
+static inline int Card_AddHalfSorter( Vec_Int_t * p, int iVarA, int iVarB, int iVar0, int iVar1 )
+{
+    lit Lits[3];
+    int Cid;
+
+    Lits[0] = toLitCond( iVarA, 0 );
+    Lits[1] = toLitCond( iVar0, 1 );
+    Cid = Card_AddClause( p, Lits, Lits + 2 );
+    assert( Cid );
+
+    Lits[0] = toLitCond( iVarA, 0 );
+    Lits[1] = toLitCond( iVar1, 1 );
+    Cid = Card_AddClause( p, Lits, Lits + 2 );
+    assert( Cid );
+
+    Lits[0] = toLitCond( iVarB, 0 );
+    Lits[1] = toLitCond( iVar0, 1 );
+    Lits[2] = toLitCond( iVar1, 1 );
+    Cid = Card_AddClause( p, Lits, Lits + 3 );
+    assert( Cid );
+    return 3;
+}
+static inline void Card_AddSorter( Vec_Int_t * p, int * pVars, int i, int k, int * pnVars )
+{
+    int iVar1 = (*pnVars)++;
+    int iVar2 = (*pnVars)++;
+    Card_AddHalfSorter( p, iVar1, iVar2, pVars[i], pVars[k] );
+    pVars[i] = iVar1;
+    pVars[k] = iVar2;
+}
+static inline void Card_AddCardinConstrMerge( Vec_Int_t * p, int * pVars, int lo, int hi, int r, int * pnVars )
+{
+    int i, step = r * 2;
+    if ( step < hi - lo )
+    {
+        Card_AddCardinConstrMerge( p, pVars, lo, hi-r, step, pnVars );
+        Card_AddCardinConstrMerge( p, pVars, lo+r, hi, step, pnVars );
+        for ( i = lo+r; i < hi-r; i += step )
+            Card_AddSorter( p, pVars, i, i+r, pnVars );
+        for ( i = lo+r; i < hi-r-1; i += r )
+        {
+            lit Lits[2] = { Abc_Var2Lit(pVars[i], 0), Abc_Var2Lit(pVars[i+r], 1) };
+            int Cid = Card_AddClause( p, Lits, Lits + 2 );
+            assert( Cid );
+        }
+    }
+}
+static inline void Card_AddCardinConstrRange( Vec_Int_t * p, int * pVars, int lo, int hi, int * pnVars )
+{
+    if ( hi - lo >= 1 )
+    {
+        int i, mid = lo + (hi - lo) / 2;
+        for ( i = lo; i <= mid; i++ )
+            Card_AddSorter( p, pVars, i, i + (hi - lo + 1) / 2, pnVars );
+        Card_AddCardinConstrRange( p, pVars, lo, mid, pnVars );
+        Card_AddCardinConstrRange( p, pVars, mid+1, hi, pnVars );
+        Card_AddCardinConstrMerge( p, pVars, lo, hi, 1, pnVars );
+    }
+}
+int Card_AddCardinConstrPairWise( Vec_Int_t * p, Vec_Int_t * vVars )
+{
+    int nVars = Vec_IntSize(vVars);
+    Card_AddCardinConstrRange( p, Vec_IntArray(vVars), 0, nVars - 1, &nVars );
+    return nVars;
+}
+int Card_AddCardinSolver( int LogN, Vec_Int_t ** pvVars, Vec_Int_t ** pvRes )
+{
+    int nVars = 1 << LogN;
+    int nVarsAlloc = nVars + 2 * (nVars * LogN * (LogN-1) / 4 + nVars - 1);
+    Vec_Int_t * vRes = Vec_IntAlloc( 1000 );
+    Vec_Int_t * vVars = Vec_IntStartNatural( nVars );
+    int nVarsReal = Card_AddCardinConstrPairWise( vRes, vVars );
+    assert( nVarsReal == nVarsAlloc );
+    Vec_IntPush( vRes, -1 );  
+    *pvVars = vVars;
+    *pvRes  = vRes;  
+    return nVarsReal;
+}
+sat_solver * Sbm_AddCardinSolver2( int LogN, Vec_Int_t ** pvVars, Vec_Int_t ** pvRes )
+{
+    Vec_Int_t * vVars = NULL;
+    Vec_Int_t * vRes  = NULL;    
+    int nVarsReal = Card_AddCardinSolver( LogN, &vVars, &vRes ), i, size;
+    sat_solver * pSat = sat_solver_new();
+    sat_solver_setnvars( pSat, nVarsReal );
+    for ( i = 0, size = Vec_IntEntry(vRes, i++); i < Vec_IntSize(vRes); i += size, size = Vec_IntEntry(vRes, i++) )
+        sat_solver_addclause( pSat, Vec_IntEntryP(vRes, i), Vec_IntEntryP(vRes, i+size) );
+    if ( pvVars ) *pvVars = vVars;
+    if ( pvRes )  *pvRes  = vRes;
+    return pSat;
+}
+
+
 /**Function*************************************************************
 
   Synopsis    [Adds a general cardinality constraint in terms of vVars.]

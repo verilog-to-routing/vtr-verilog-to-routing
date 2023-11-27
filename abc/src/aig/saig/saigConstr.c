@@ -300,8 +300,8 @@ Aig_Man_t * Saig_ManDupUnfoldConstrs( Aig_Man_t * pAig )
             Vec_VecFree( (Vec_Vec_t *)vConsAll );
             return Aig_ManDupDfs( pAig );
         }
-        Vec_PtrSort( vOuts, (int (*)(void))Saig_ManDupCompare );
-        Vec_PtrSort( vCons, (int (*)(void))Saig_ManDupCompare );
+        Vec_PtrSort( vOuts, (int (*)(const void *, const void *))Saig_ManDupCompare );
+        Vec_PtrSort( vCons, (int (*)(const void *, const void *))Saig_ManDupCompare );
         Vec_PtrPush( vOutsAll, vOuts );
         Vec_PtrPush( vConsAll, vCons );
     }

@@ -1619,7 +1619,7 @@ void Gia_GlaDumpAbsracted( Gla_Man_t * p, int fVerbose )
     pAbs = Gia_ManDupAbsGates( p->pGia0, vGateClasses );
     Vec_IntFreeP( &vGateClasses );
     // write into file
-    Gia_AigerWrite( pAbs, pFileName, 0, 0 );
+    Gia_AigerWrite( pAbs, pFileName, 0, 0, 0 );
     Gia_ManStop( pAbs );
 }
 

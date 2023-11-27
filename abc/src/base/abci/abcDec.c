@@ -439,6 +439,84 @@ Abc_TtStore_t * Abc_TtStoreLoad( char * pFileName, int nVarNum )
   SeeAlso     []
 
 ***********************************************************************/
+void Abc_TtStoreLoadSave( char * pFileName )
+{ 
+    Abc_TtStore_t * p;
+    char * pFileInput  = pFileName;
+    char * pFileOutput = Extra_FileNameGenericAppend(pFileName, "_binary.data");
+
+    // read info from file
+    p = Abc_TtStoreLoad( pFileInput, -1 );
+    if ( p == NULL )
+        return;
+
+    // write into another file
+    Abc_TtStoreWrite( pFileOutput, p, 1 );
+
+    // delete data-structure
+    Abc_TtStoreFree( p, -1 );
+    printf( "Input file \"%s\" was copied into output file \"%s\".\n", pFileInput, pFileOutput );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Read truth tables in binary text form and write them into file as binary data.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_TtStoreLoadSaveBin( char * pFileName )
+{ 
+    unsigned * pTruth = ABC_CALLOC( unsigned, (1 << 11) );
+    char * pBuffer = ABC_CALLOC( char, (1 << 16) );
+    char * pFileInput  = pFileName;
+    char * pFileOutput = Extra_FileNameGenericAppend(pFileName, "_binary.data");
+    FILE * pFileI = fopen( pFileInput,  "rb" );
+    FILE * pFileO = fopen( pFileOutput, "wb" );
+    int i, Value, nVarsAll = -1;
+    if ( pFileI == NULL )
+        return;
+    while ( fgets(pBuffer, (1 << 16), pFileI) )
+    {
+        int Len   = strlen(pBuffer)-1; // subtract 1 for end-of-line
+        int nVars = Abc_Base2Log(Len);
+        int nInts = Abc_BitWordNum(Len);
+        assert( Len == (1 << nVars) );
+        if ( nVarsAll == -1 )
+            nVarsAll = nVars;
+        else
+            assert( nVarsAll == nVars );
+        memset( pTruth, 0, sizeof(int)*nInts );
+        for ( i = 0; i < Len; i++ )
+            if ( pBuffer[i] == '1' )
+                Abc_InfoSetBit( pTruth, i );
+            else
+                assert( pBuffer[i] == '0' );
+        Value = fwrite( pTruth, 1, sizeof(int) * nInts, pFileO );
+        assert( Value == (int)sizeof(int) * nInts );
+    }
+    ABC_FREE( pTruth );
+    ABC_FREE( pBuffer );
+    fclose( pFileI );
+    fclose( pFileO );
+    printf( "Input file \"%s\" was copied into output file \"%s\".\n", pFileInput, pFileOutput );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Read truth tables from input file and write them into output file.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
 void Abc_TtStoreTest( char * pFileName )
 { 
     Abc_TtStore_t * p;

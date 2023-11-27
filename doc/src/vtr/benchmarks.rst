@@ -55,12 +55,12 @@ The VTR benchmarks are also included as pre-synthesized BLIF files under: ::
 
 Titan Benchmarks
 ----------------
-The Titan benchmarks :cite:`murray_titan,murray_timing_driven_titan` are a set of large modern FPGA benchmarks.
+The Titan benchmarks are a set of large modern FPGA benchmarks compatible with Intel Stratix IV :cite:`murray_titan,murray_timing_driven_titan` and Stratix 10 :cite:`talaei_titan2` devices.
 The pre-synthesized versions of these benchmarks are compatible with recent versions of VPR.
 
 The Titan benchmarks are suitable for large-scale FPGA CAD research, and FPGA architecture research which does not require synthesizing new netlist primitives.
 
-.. note:: The Titan benchmarks are not included with the VTR release (due to their size). However they can be downloaded and extracted by running ``make get_titan_benchmarks`` from the root of the VTR tree.  They can also be `downloaded manually <http://www.eecg.utoronto.ca/~kmurray/titan/>`_.
+.. note:: The Titan benchmarks are not included with the VTR release (due to their size). However they can be downloaded and extracted by running ``make get_titan_benchmarks`` from the root of the VTR tree.  They can also be `downloaded manually <https://www.eecg.utoronto.ca/~vaughn/titan/>`_.
 
 .. seealso:: :ref:`titan_benchmarks_tutorial`
 

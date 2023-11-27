@@ -175,10 +175,10 @@ static inline unsigned        Kit_DsdLitSupport( Kit_DsdNtk_t * pNtk, int Lit ) 
 #define KIT_MAX(a,b)       (((a) > (b))? (a) : (b))
 #define KIT_INFINITY       (100000000)
 
-static inline int          Kit_CubeHasLit( unsigned uCube, int i )                        { return(uCube &  (unsigned)(1<<i)) > 0;  }
-static inline unsigned     Kit_CubeSetLit( unsigned uCube, int i )                        { return uCube |  (unsigned)(1<<i);       }
-static inline unsigned     Kit_CubeXorLit( unsigned uCube, int i )                        { return uCube ^  (unsigned)(1<<i);       }
-static inline unsigned     Kit_CubeRemLit( unsigned uCube, int i )                        { return uCube & ~(unsigned)(1<<i);       }
+static inline int          Kit_CubeHasLit( unsigned uCube, int i )                        { return(uCube &  (unsigned)(1U<<i)) > 0;  }
+static inline unsigned     Kit_CubeSetLit( unsigned uCube, int i )                        { return uCube |  (unsigned)(1U<<i);       }
+static inline unsigned     Kit_CubeXorLit( unsigned uCube, int i )                        { return uCube ^  (unsigned)(1U<<i);       }
+static inline unsigned     Kit_CubeRemLit( unsigned uCube, int i )                        { return uCube & ~(unsigned)(1U<<i);       }
 
 static inline int          Kit_CubeContains( unsigned uLarge, unsigned uSmall )           { return (uLarge & uSmall) == uSmall;     }
 static inline unsigned     Kit_CubeSharp( unsigned uCube, unsigned uMask )                { return uCube & ~uMask;                  }
@@ -194,7 +194,7 @@ static inline void         Kit_SopShrink( Kit_Sop_t * cSop, int nCubesNew )     
 static inline void         Kit_SopPushCube( Kit_Sop_t * cSop, unsigned uCube )            { cSop->pCubes[cSop->nCubes++] = uCube;   }
 static inline void         Kit_SopWriteCube( Kit_Sop_t * cSop, unsigned uCube, int i )    { cSop->pCubes[i] = uCube;                }
 
-static inline Kit_Edge_t   Kit_EdgeCreate( int Node, int fCompl )                         { Kit_Edge_t eEdge = { fCompl, Node }; return eEdge;  }
+static inline Kit_Edge_t   Kit_EdgeCreate( int Node, int fCompl )                         { Kit_Edge_t eEdge = { (unsigned)fCompl, (unsigned)Node }; return eEdge;  }
 static inline unsigned     Kit_EdgeToInt( Kit_Edge_t eEdge )                              { return (eEdge.Node << 1) | eEdge.fCompl;            }
 static inline Kit_Edge_t   Kit_IntToEdge( unsigned Edge )                                 { return Kit_EdgeCreate( Edge >> 1, Edge & 1 );       }
 //static inline unsigned     Kit_EdgeToInt_( Kit_Edge_t eEdge )                             { return *(unsigned *)&eEdge;                         }
@@ -566,14 +566,19 @@ extern Kit_Edge_t      Kit_GraphAddNodeXor( Kit_Graph_t * pGraph, Kit_Edge_t eEd
 extern Kit_Edge_t      Kit_GraphAddNodeMux( Kit_Graph_t * pGraph, Kit_Edge_t eEdgeC, Kit_Edge_t eEdgeT, Kit_Edge_t eEdgeE, int Type );
 extern unsigned        Kit_GraphToTruth( Kit_Graph_t * pGraph );
 extern Kit_Graph_t *   Kit_TruthToGraph( unsigned * pTruth, int nVars, Vec_Int_t * vMemory );
+extern Kit_Graph_t *   Kit_TruthToGraph2( unsigned * pTruth0, unsigned * pTruth1, int nVars, Vec_Int_t * vMemory );
 extern int             Kit_GraphLeafDepth_rec( Kit_Graph_t * pGraph, Kit_Node_t * pNode, Kit_Node_t * pLeaf );
+extern int             Kit_TruthLitNum( unsigned * pTruth, int nVars, Vec_Int_t * vMemory );
 /*=== kitHop.c ==========================================================*/
 //extern int             Kit_TruthToGia( Gia_Man_t * pMan, unsigned * pTruth, int nVars, Vec_Int_t * vMemory, Vec_Int_t * vLeaves, int fHash );
 //extern Hop_Obj_t *     Kit_GraphToHop( Hop_Man_t * pMan, Kit_Graph_t * pGraph );
 //extern Hop_Obj_t *     Kit_TruthToHop( Hop_Man_t * pMan, unsigned * pTruth, int nVars, Vec_Int_t * vMemory );
 //extern Hop_Obj_t *     Kit_CoverToHop( Hop_Man_t * pMan, Vec_Int_t * vCover, int nVars, Vec_Int_t * vMemory );
+extern int             Kit_IsopNodeNum( unsigned * pTruth0, unsigned * pTruth1, int nVars, Vec_Int_t * vMemory );
+extern Vec_Int_t *     Kit_IsopResub( unsigned * pTruth0, unsigned * pTruth1, int nVars, Vec_Int_t * vMemory );
 /*=== kitIsop.c ==========================================================*/
 extern int             Kit_TruthIsop( unsigned * puTruth, int nVars, Vec_Int_t * vMemory, int fTryBoth );
+extern int             Kit_TruthIsop2( unsigned * puTruth0, unsigned * puTruth1, int nVars, Vec_Int_t * vMemory, int fTryBoth, int fReturnTt );
 extern void            Kit_TruthIsopPrint( unsigned * puTruth, int nVars, Vec_Int_t * vMemory, int fTryBoth );
 extern void            Kit_TruthIsopPrintCover( Vec_Int_t * vCover, int nVars, int fCompl );
 /*=== kitPla.c ==========================================================*/

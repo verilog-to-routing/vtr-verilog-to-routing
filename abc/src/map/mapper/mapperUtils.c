@@ -543,7 +543,7 @@ int Map_CompareNodesByLevel( Map_Node_t ** ppS1, Map_Node_t ** ppS2 )
 ***********************************************************************/
 void Map_MappingSortByLevel( Map_Man_t * pMan, Map_NodeVec_t * vNodes )
 {
-    qsort( (void *)vNodes->pArray, vNodes->nSize, sizeof(Map_Node_t *), 
+    qsort( (void *)vNodes->pArray, (size_t)vNodes->nSize, sizeof(Map_Node_t *), 
             (int (*)(const void *, const void *)) Map_CompareNodesByLevel );
 //    assert( Map_CompareNodesByLevel( vNodes->pArray, vNodes->pArray + vNodes->nSize - 1 ) <= 0 );
 }

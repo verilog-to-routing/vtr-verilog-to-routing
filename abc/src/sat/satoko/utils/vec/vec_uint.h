@@ -242,10 +242,10 @@ static inline int vec_uint_desc_compare(const void *p1, const void *p2)
 static inline void vec_uint_sort(vec_uint_t *p, int ascending)
 {
     if (ascending)
-        qsort((void *) p->data, p->size, sizeof(unsigned),
+        qsort((void *) p->data, (size_t)p->size, sizeof(unsigned),
               (int (*)(const void *, const void *)) vec_uint_asc_compare);
     else
-        qsort((void*) p->data, p->size, sizeof(unsigned),
+        qsort((void*) p->data, (size_t)p->size, sizeof(unsigned),
               (int (*)(const void *, const void *)) vec_uint_desc_compare);
 }
 

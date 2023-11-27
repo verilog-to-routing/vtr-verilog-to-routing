@@ -106,6 +106,8 @@ int If_ManPerformMappingComb( If_Man_t * p )
     If_Obj_t * pObj;
     abctime clkTotal = Abc_Clock();
     int i;
+    //p->vVisited2 = Vec_IntAlloc( 100 );
+    //p->vMarks = Vec_StrStart( If_ManObjNum(p) );
 
     // set arrival times and fanout estimates
     If_ManForEachCi( p, pObj, i )

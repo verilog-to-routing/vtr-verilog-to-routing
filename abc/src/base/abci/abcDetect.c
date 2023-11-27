@@ -914,7 +914,7 @@ Vec_Int_t * Abc_NtkFinCheckPair( Abc_Ntk_t * pNtk, Vec_Int_t * vTypes, Vec_Int_t
             int i, nConfLimit = 10000;
             Vec_Int_t * vPat = NULL;
             int status, iVarBeg = pCnf->nVars - Gia_ManPiNum(pGia);// - 1;
-            //Gia_AigerWrite( pGia, "temp_detect.aig", 0, 0 );
+            //Gia_AigerWrite( pGia, "temp_detect.aig", 0, 0, 0 );
             Gia_ManStop( pGia );
             Cnf_DataFree( pCnf );
             status = sat_solver_solve( pSat, NULL, NULL, (ABC_INT64_T)nConfLimit, 0, 0, 0 );

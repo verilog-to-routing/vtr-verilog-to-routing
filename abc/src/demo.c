@@ -25,14 +25,31 @@
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
+#if defined(ABC_NAMESPACE)
+namespace ABC_NAMESPACE
+{
+#elif defined(__cplusplus)
+extern "C"
+{
+#endif
+
 // procedures to start and stop the ABC framework
 // (should be called before and after the ABC procedures are called)
-extern void   Abc_Start();
-extern void   Abc_Stop();
+void   Abc_Start();
+void   Abc_Stop();
 
 // procedures to get the ABC framework and execute commands in it
-extern void * Abc_FrameGetGlobalFrame();
-extern int    Cmd_CommandExecute( void * pAbc, char * sCommand );
+typedef struct Abc_Frame_t_ Abc_Frame_t;
+
+Abc_Frame_t * Abc_FrameGetGlobalFrame();
+int    Cmd_CommandExecute( Abc_Frame_t * pAbc, const char * sCommand );
+
+#if defined(ABC_NAMESPACE)
+}
+using namespace ABC_NAMESPACE;
+#elif defined(__cplusplus)
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -60,7 +77,7 @@ int main( int argc, char * argv[] )
     int fPrintStats = 1;
     int fVerify     = 1;
     // variables
-    void * pAbc;
+    Abc_Frame_t * pAbc;
     char * pFileName;
     char Command[1000];
     clock_t clkRead, clkResyn, clkVer, clk;
