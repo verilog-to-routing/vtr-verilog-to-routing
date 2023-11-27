@@ -236,7 +236,16 @@ class t_rr_graph_storage {
     short node_layer(RRNodeId id) const{
         return node_layer_[id];
     }
-    /* Retrieve the name assigned to the node id. If no name is assigned, empty string is returned */
+    
+    /**
+     * @brief Retrieve the name assigned to a given node ID.
+     *
+     * If no name is assigned, an empty optional is returned.
+     *
+     * @param id The id of the node.
+     * @return An optional pointer to the string representing the name if found,
+     *         otherwise an empty optional.
+     */
     std::optional<const std::string*> node_name(RRNodeId id) const{
         auto it = node_name_.find(id);
         if (it != node_name_.end()) {
@@ -791,13 +800,14 @@ class t_rr_graph_storage {
      */
     vtr::vector<RRNodeId, short> node_layer_;
 
-   /**
-     * @brief Stores the assigned names for the rr_node IDs.
+    /**
+     * @brief Stores the assigned names for the RRNode IDs.
      *
-     * The primary use case for this attribute is to find the name of the clock network that a given virtual sink belongs to.
-     * If the user is modeling a clock network, they need to specify the clock network virtual sink in the rr_graph
-     * using the attribute clk_res_type. If the clk_res_type is specified, the attribute name is used as the name for the clock
-     * network.
+     * We use a hash table for efficiency because most RRNodes do not have names.
+     * An RRNode can be given a name (e.g., example_name) by reading in an rr-graph
+     * in which the optional attribute <name=example_name> is set.
+     * Currently, the only use case for names is with global clock networks, where
+     * the name specifies the clock network to which an RRNode belongs.
      */
     std::unordered_map<RRNodeId, std::string> node_name_;
 
@@ -990,19 +1000,44 @@ class t_rr_graph_view {
         VTR_PREFETCH(&node_storage_[id], 0, 0);
     }
 
-    // Returns the node id of the virtual sink for the given clock network name
-    RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const{
+    /**
+     * @brief Returns the node ID of the virtual sink for the specified clock network name.
+     *
+     * If the clock network name is not found, the function returns INVALID RRNodeId.
+     *
+     * @param clock_network_name The name of the clock network.
+     * @return The node ID of the virtual sink associated with the provided clock network name,
+     *         or INVALID RRNodeID if the clock network name is not found.
+     */
+    RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
+        // Convert the input char* to a C++ string
         std::string clock_network_name_str(clock_network_name);
+        
+        // Check if the clock network name exists in the list of virtual sink entries
         auto it = virtual_clock_network_root_idx_.find(clock_network_name_str);
+        
         if (it != virtual_clock_network_root_idx_.end()) {
-            return it->second; // Get 
+            // Return the node ID for the virtual sink of the given clock network name
+            return it->second;
         }
+        
+        // Return INVALID RRNodeID if the clock network name is not found
         return RRNodeId::INVALID();
     }
 
     
-    // Returns a bool indicating whether the input node id is a virtual sink for a clock network.
-    bool is_virtual_clock_network_root(RRNodeId id) const{
+    /**
+     * @brief Checks if the specified RRNode ID is a virtual sink for a clock network.
+     *
+     * A virtual sink is a node with the type SINK to which all clock network drive points are 
+     * connected in the routing graph.
+     * When the two-stage router routes a net through a clock network, it first routes to the virtual sink 
+     * in the first stage and then proceeds from there to the destination in the second stage.
+     *
+     * @param id The ID of an RRNode.
+     * @return True if the node with the given ID is a virtual sink for a clock network, false otherwise.
+     */
+    bool is_virtual_clock_network_root(RRNodeId id) const {
         for (const auto& pair : virtual_clock_network_root_idx_) {
             if (pair.second == id) {
                 return true;
