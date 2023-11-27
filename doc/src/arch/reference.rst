@@ -1955,7 +1955,7 @@ Wire Segments
 The content within the ``<segmentlist>`` tag consists of a group of ``<segment>`` tags.
 The ``<segment>`` tag and its contents are described below.
 
-.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" freq="float" Rmetal="float" Cmetal="float">content</segment>
+.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
 
 
     :opt_param axis:
@@ -1975,6 +1975,10 @@ The ``<segment>`` tag and its contents are described below.
 
         .. note:: ``longline`` is only supported on with ``bidir`` routing
 
+    :opt_param res_type:
+        Specifies whether the segment belongs to the general or global routing network. If this tag is not specified, the resource type for
+        the segment is considered to be GENERAL.
+  
     :req_param freq:
         The supply of routing tracks composed of this type of segment.
         VPR automatically determines the percentage of tracks for each segment type by taking the frequency for the type specified and dividing with the sum of all frequencies.
