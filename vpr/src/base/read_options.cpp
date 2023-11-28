@@ -31,6 +31,7 @@ t_options read_options(int argc, const char** argv) {
 
 struct ParseOnOff {
     ConvertedValue<bool> from_str(std::string str) {
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
         ConvertedValue<bool> conv_value;
         if (str == "on")
             conv_value.set_value(true);
@@ -42,7 +43,6 @@ struct ParseOnOff {
             conv_value.set_error(msg.str());
         }
         return conv_value;
-        ;
     }
 
     ConvertedValue<std::string> to_str(bool val) {
