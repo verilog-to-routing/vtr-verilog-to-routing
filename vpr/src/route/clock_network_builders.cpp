@@ -37,7 +37,7 @@ void populate_segment_values(int seg_index,
     segment_inf[seg_index].arch_opin_switch = -1;
     segment_inf[seg_index].frac_cb = -1;
     segment_inf[seg_index].frac_sb = -1;
-    segment_inf[seg_index].res_type = e_seg_res_type::GCLK;
+    segment_inf[seg_index].res_type = SegResType::GCLK;
 }
 
 /*

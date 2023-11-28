@@ -1522,7 +1522,7 @@ enum class SegResType {
     NUM_RES_TYPES
 };
 
-constexpr std::array<const char*, NUM_RES_TYPES> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
+constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
 
 enum e_switch_block_type {
     SUBSET,
@@ -1602,7 +1602,7 @@ struct t_segment_inf {
     std::vector<bool> cb;
     std::vector<bool> sb;
     int seg_index;
-    enum e_seg_res_type res_type = e_seg_res_type::GENERAL;
+    enum SegResType res_type = SegResType::GENERAL;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 

@@ -1359,9 +1359,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline void set_segment_res_type(uxsd::enum_segment_res_type seg_res_type, const t_segment_inf*& segment) final {
         if (segment->res_type != from_uxsd_segment_res_type(seg_res_type)) {
+            const auto arch_index = static_cast<size_t>(segment->res_type);
+            const auto rrgraph_index = static_cast<size_t>(from_uxsd_segment_res_type(seg_res_type));
+            
             report_error(
                 "Architecture file does not match RR graph's segment res_type: arch uses %s, RR graph uses %s",
-               RES_TYPE_STRING[segment->res_type], RES_TYPE_STRING[from_uxsd_segment_res_type(seg_res_type)]);
+               RES_TYPE_STRING[arch_index], RES_TYPE_STRING[rrgraph_index]);
         }
     }
 
@@ -1963,11 +1966,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
 
-    uxsd::enum_segment_res_type to_uxsd_segment_res_type(e_seg_res_type segment_res_type) {
+    uxsd::enum_segment_res_type to_uxsd_segment_res_type(SegResType segment_res_type) {
         switch (segment_res_type) {
-            case e_seg_res_type::GCLK:
+            case SegResType::GCLK:
                 return uxsd::enum_segment_res_type::GCLK;
-            case e_seg_res_type::GENERAL:
+            case SegResType::GENERAL:
                 return uxsd::enum_segment_res_type::GENERAL;
             default:
                 report_error(
@@ -1975,12 +1978,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
 
-    e_seg_res_type from_uxsd_segment_res_type(uxsd::enum_segment_res_type segment_res_type) {
+    SegResType from_uxsd_segment_res_type(uxsd::enum_segment_res_type segment_res_type) {
         switch (segment_res_type) {
             case uxsd::enum_segment_res_type::GCLK:
-                return e_seg_res_type::GCLK;
+                return SegResType::GCLK;
             case uxsd::enum_segment_res_type::GENERAL:
-                return e_seg_res_type::GENERAL;
+                return SegResType::GENERAL;
             default:
                 report_error(
                     "Invalid node segment_res_type %d", segment_res_type);
