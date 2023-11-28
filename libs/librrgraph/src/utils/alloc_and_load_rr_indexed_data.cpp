@@ -353,6 +353,11 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
     rr_indexed_data[RRIndexedDataId(OPIN_COST_INDEX)].base_cost = delay_normalization_fac;
     // IF the SPEC_CPU flag is set, we need to make sure that all floating point numbers are perfectly representable in
     // binary format. Thus, we changed the IPIN_COST_INDEX base cost from 0.95 to 0.875.
+    // This number is perfectly representable in a binary mantissa (without round-off) so we can get the same routing result on different platforms.
+    // Since the router cost calculations and heap use floating point numbers, normally we get slightly different round off with different compiler settings,
+    // leading to different heap sorts and hence different routings.
+    // To make result validation for SPEC easier, we choose all router parameters to result in calculations that fit perfectly in a 24-bit binary mantissa.
+    // .875 = 1/2 + 1/4 + 1/8 can be perfectly represented in a binary mantissa with only the first 3 bits set.
 #ifdef SPEC_CPU
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].base_cost = 0.875 * delay_normalization_fac;
 #else
