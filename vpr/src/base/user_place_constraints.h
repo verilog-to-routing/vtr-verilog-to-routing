@@ -51,7 +51,7 @@ class UserPlaceConstraints {
      *
      *   @param blk_id      The atom for which the partition id is needed
      */
-    PartitionId get_atom_partition(AtomBlockId blk_id);
+    const PartitionId get_atom_partition(AtomBlockId blk_id) const;
 
     /**
      * @brief Store a partition
@@ -65,26 +65,26 @@ class UserPlaceConstraints {
      *
      *   @param part_id    The id of the partition that is wanted
      */
-    Partition get_partition(PartitionId part_id);
+    const Partition get_partition(PartitionId part_id) const;
 
     /**
      * @brief Return all the atoms that belong to a partition
      *
      *   @param part_id   The id of the partition whose atoms are needed
      */
-    std::vector<AtomBlockId> get_part_atoms(PartitionId part_id);
+    const std::vector<AtomBlockId> get_part_atoms(PartitionId part_id) const;
 
     /**
      * @brief Returns the number of partitions in the object
      */
-    int get_num_partitions();
+    int get_num_partitions() const;
 
     /**
      * @brief Returns the PartitionRegion belonging to the specified Partition
      *
      *   @param part_id The id of the partition whose PartitionRegion is needed
      */
-    PartitionRegion get_partition_pr(PartitionId part_id);
+    const PartitionRegion get_partition_pr(PartitionId part_id) const;
 
   private:
     /**

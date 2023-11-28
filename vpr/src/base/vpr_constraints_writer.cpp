@@ -79,12 +79,12 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
 
         pr.add_to_part_region(reg);
         part.set_part_region(pr);
-        constraints.add_partition(part);
+        constraints.mutable_place_constraints().add_partition(part);
 
         std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(blk_id);
 
         for (auto atom_id : *atoms) {
-            constraints.add_constrained_atom(atom_id, partid);
+            constraints.mutable_place_constraints().add_constrained_atom(atom_id, partid);
         }
         part_id++;
     }
@@ -203,10 +203,10 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
         const auto reg_coord = region.first.get_region_rect();
         create_partition(part, part_name,
                          {reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax, reg_coord.layer_num});
-        constraints.add_partition(part);
+        constraints.mutable_place_constraints().add_partition(part);
 
         for (unsigned int k = 0; k < region.second.size(); k++) {
-            constraints.add_constrained_atom(region.second[k], partid);
+            constraints.mutable_place_constraints().add_constrained_atom(region.second[k], partid);
         }
 
         num_partitions++;

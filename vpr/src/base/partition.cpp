@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <vector>
 
-const std::string Partition::get_name() {
+const std::string Partition::get_name() const {
     return name;
 }
 
@@ -11,7 +11,7 @@ void Partition::set_name(std::string _part_name) {
     name = _part_name;
 }
 
-const PartitionRegion Partition::get_part_region() {
+const PartitionRegion Partition::get_part_region() const{
     return part_region;
 }
 

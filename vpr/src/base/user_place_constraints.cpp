@@ -15,7 +15,7 @@ void UserPlaceConstraints::add_constrained_atom(const AtomBlockId blk_id, const 
     }
 }
 
-PartitionId UserPlaceConstraints::get_atom_partition(AtomBlockId blk_id) {
+const PartitionId UserPlaceConstraints::get_atom_partition(AtomBlockId blk_id) const{
     PartitionId part_id;
 
     auto got = constrained_atoms.find(blk_id);
@@ -31,11 +31,11 @@ void UserPlaceConstraints::add_partition(Partition part) {
     partitions.push_back(part);
 }
 
-Partition UserPlaceConstraints::get_partition(PartitionId part_id) {
+const Partition UserPlaceConstraints::get_partition(PartitionId part_id) const{
     return partitions[part_id];
 }
 
-std::vector<AtomBlockId> UserPlaceConstraints::get_part_atoms(PartitionId part_id) {
+const std::vector<AtomBlockId> UserPlaceConstraints::get_part_atoms(PartitionId part_id) const{
     std::vector<AtomBlockId> part_atoms;
 
     for (auto& it : constrained_atoms) {
@@ -47,11 +47,11 @@ std::vector<AtomBlockId> UserPlaceConstraints::get_part_atoms(PartitionId part_i
     return part_atoms;
 }
 
-int UserPlaceConstraints::get_num_partitions() {
+int UserPlaceConstraints::get_num_partitions() const {
     return partitions.size();
 }
 
-PartitionRegion UserPlaceConstraints::get_partition_pr(PartitionId part_id) {
+const PartitionRegion UserPlaceConstraints::get_partition_pr(PartitionId part_id) const{
     PartitionRegion pr;
     pr = partitions[part_id].get_part_region();
     return pr;

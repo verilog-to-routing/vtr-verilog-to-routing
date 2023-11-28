@@ -241,7 +241,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         PartitionId part_id(num_partitions_);
 
         for (unsigned int i = 0; i < atoms_.size(); i++) {
-            constraints_.add_constrained_atom(atoms_[i], part_id);
+            constraints_.mutable_place_constraints().add_constrained_atom(atoms_[i], part_id);
         }
     }
 
@@ -298,12 +298,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         PartitionRegion clear_pr;
         loaded_part_region = clear_pr;
 
-        constraints_.add_partition(loaded_partition);
+        constraints_.mutable_place_constraints().add_partition(loaded_partition);
 
         num_partitions_++;
     }
     virtual inline size_t num_partition_list_partition(void*& /*ctx*/) final {
-        return constraints_.get_num_partitions();
+        return constraints_.place_constraints().get_num_partitions();
     }
 
     /*
@@ -312,8 +312,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      */
     virtual inline partition_info get_partition_list_partition(int n, void*& /*ctx*/) final {
         PartitionId partid(n);
-        Partition part = constraints_.get_partition(partid);
-        std::vector<AtomBlockId> atoms = constraints_.get_part_atoms(partid);
+        Partition part = constraints_.place_constraints().get_partition(partid);
+        std::vector<AtomBlockId> atoms = constraints_.place_constraints().get_part_atoms(partid);
 
         partition_info part_info;
         part_info.part = part;
@@ -401,13 +401,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Invalid routing constraint for net \"%s\". The network name has to be specified when routing model is set to \"dedicated_network\".\n", loaded_route_constraint.first.c_str());
             }
-        constraints_.add_route_constraint(loaded_route_constraint.first, loaded_route_constraint.second);
+        constraints_.mutable_route_constraints().add_route_constraint(loaded_route_constraint.first, loaded_route_constraint.second);
     }
     virtual inline size_t num_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
-        return constraints_.get_num_route_constraints();
+        return constraints_.route_constraints().get_num_route_constraints();
     }
     virtual inline std::pair<std::string, RoutingScheme> get_global_route_constraints_set_global_signal(int n, void*& /*ctx*/) final {
-        return constraints_.get_route_constraint_by_idx((std::size_t)n);
+        return constraints_.route_constraints().get_route_constraint_by_idx((std::size_t)n);
     }
 
     virtual inline void* init_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
@@ -421,7 +421,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline bool has_vpr_constraints_global_route_constraints(void*& /*ctx*/){
-        if(constraints_.get_num_route_constraints() > 0)
+        if(constraints_.route_constraints().get_num_route_constraints() > 0)
             return true;
         else   
             return false;
@@ -460,7 +460,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline bool has_vpr_constraints_partition_list(void*& /*ctx*/) final{
-        if(constraints_.get_num_partitions() > 0)
+        if(constraints_.place_constraints().get_num_partitions() > 0)
             return true;
         else   
             return false;
