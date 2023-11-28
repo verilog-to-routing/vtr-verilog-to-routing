@@ -93,7 +93,15 @@ class RRGraphView {
         return node_storage_.node_type(node);
     }
 
-    /** @brief Get the name assigned to a node id. */
+    /**
+     * @brief Retrieve the name assigned to a given node ID.
+     *
+     * If no name is assigned, an empty optional is returned.
+     *
+     * @param id The id of the node.
+     * @return An optional pointer to the string representing the name if found,
+     *         otherwise an empty optional.
+     */
     std::optional<const std::string*> node_name(RRNodeId node) const {
         return node_storage_.node_name(node);
     }
@@ -321,7 +329,11 @@ class RRGraphView {
         return node_storage_.virtual_clock_network_root_idx(clock_network_name);
     }
 
-    /** @brief Get the node id of the clock network virtual sink */
+    /**
+     * @brief Checks if the specified RRNode ID is a virtual sink for a clock network.
+     * @param id The ID of an RRNode.
+     * @return True if the node with the given ID is a virtual sink for a clock network, false otherwise.
+     */
     inline bool is_virtual_clock_network_root(RRNodeId id) const {
         return node_storage_.is_virtual_clock_network_root(id);
     }

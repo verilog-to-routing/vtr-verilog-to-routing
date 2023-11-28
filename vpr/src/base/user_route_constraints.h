@@ -8,7 +8,11 @@
 
 /**
  * @brief This class specifies a routing scheme for a global net.
- *
+ * 
+ * Global nets, such as clocks, may require special
+ * handling. Clocks are marked as global by default in VPR, but other nets can be specified
+ * as global in a user routing constraints file.
+ * 
  * The variable `route_model_` can decide between different routing schemes:
  *   - "ideal": The net is not routed.
  *   - "route": The net is routed through the general routing fabric.
@@ -80,7 +84,9 @@ class UserRouteConstraints {
      * @brief Get a global route constraint by its index. 
      *
      * The index refers to the position of the key-value entry in the unordered map that stores
-     * the route constraints.
+     * the route constraints. This function has a linear complexity, and calling it in an outer
+     * loop may result in performance issues. Currently, it is primarily used in auto-generated
+     * constraint writer code that loops over the number of constraints and fetches them by index.
      *
      *    @param index The index of the key-value entry in the unordered map.
      *    @return A pair containing the net name and its corresponding routing scheme.
@@ -90,9 +96,9 @@ class UserRouteConstraints {
     /**
      * @brief Check if a routing constraint has been specified for a specific net.
      *
-     * It first searches for an exact match of the net name in the route_constraints collection.
+     * The net name can include wildcard / regex patterns. The function first searches for an exact match of the net name in the route_constraints collection.
      * If no exact match is found, the method iterates through the entries in the collection,
-     * attempting to match the net name using wildcard matching.
+     * attempting to match the net name using wildcard or regex patterns.
      * 
      * @param net_name The name of the net to check for a routing constraint.
      * @return True if a routing constraint has been specified for the net, false otherwise.
@@ -102,19 +108,24 @@ class UserRouteConstraints {
     /**
      * @brief Get the routing scheme for a specific net by its name.
      *
+     * The net name may include wildcard patterns, which will be supported.
+     *
      * @param net_name The name of the net for which to retrieve the routing scheme.
      * @return The routing scheme associated with the specified net.
      */
     const RoutingScheme get_route_scheme_by_net_name(std::string net_name) const;
 
     /**
-     * @brief Get the routing method for a specific net by its name.
+     * @brief Get the routing model for a specific net by its name.
      *
      * This function retrieves the routing scheme associated with a specific net and 
      * then obtains the routing method from the retrieved routing scheme.
      * 
      *    @param net_name The name of the net for which to retrieve the routing method.
      *    @return The routing method associated with the specified net.
+     *  
+     * Note: This is a convenience method that just extracts part of the routing scheme.
+     * 
      */
     e_clock_modeling get_route_model_by_net_name(std::string net_name) const;
 

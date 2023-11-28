@@ -773,16 +773,17 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
 }
 
 void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
-   auto clock_network_name_str = node_name(virtual_clock_network_root_idx);
-    if(clock_network_name_str)
-    {
+    // Retrieve the name string for the specified RRNodeId.
+    auto clock_network_name_str = node_name(virtual_clock_network_root_idx);
+
+    // If the name is available, associate it with the given node id for the clock network virtual sink.
+    if(clock_network_name_str) {
         virtual_clock_network_root_idx_.insert(std::make_pair(*(clock_network_name_str.value()), virtual_clock_network_root_idx));
     }
-    else
-    {
+    else {
+        // If no name is available, throw a VtrError indicating the absence of the attribute name for the virtual sink node.
         throw vtr::VtrError(vtr::string_fmt("Attribute name is not specified for virtual sink node '%u'\n", size_t(virtual_clock_network_root_idx)), __FILE__, __LINE__);
     }
-
 }
 
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
