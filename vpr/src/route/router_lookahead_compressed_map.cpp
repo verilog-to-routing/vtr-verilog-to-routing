@@ -26,20 +26,18 @@
 
 struct SamplingRegion {
     SamplingRegion() = default;
-    SamplingRegion(int x_max_, int y_max_, int x_min_, int y_min_, int x_step_, int y_step_)
+    SamplingRegion(int x_max_, int y_max_, int x_min_, int y_min_, int step_)
         : x_max(x_max_)
         , y_max(y_max_)
         , x_min(x_min_)
         , y_min(y_min_)
-        , x_step(x_step_)
-        , y_step(y_step_) {}
+        , step(step_) {}
     int x_max = OPEN;
     int y_max = OPEN;
     int x_min = OPEN;
     int y_min = OPEN;
 
-    int x_step = OPEN;
-    int y_step = OPEN;
+    int step = OPEN;
 };
 
 static std::vector<SamplingRegion> get_sampling_points(const std::vector<t_segment_inf>& segment_inf);
@@ -50,30 +48,26 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
-    auto sampling_points = get_sampling_points(segment_inf);
+    auto sampling_regions = get_sampling_regions(segment_inf);
+
+    size_t compresses_x_size = 0;
+    size_t compressed_y_size = 0;
+    for (const auto& sampling_region : sampling_regions) {
+        int step = sampling_region.step;
+        int num_x = (sampling_region.x_max - sampling_region.x_min) / step;
+        int num_y = (sampling_region.y_max - sampling_region.y_min) / step;
+        compresses_x_size += num_x;
+        compressed_y_size += num_y;
+    }
 
     compressed_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
                                                 2,
                                                 segment_inf.size(),
                                                 static_cast<unsigned long>(grid.get_num_layers()),
-                                                sampling_points.size(),
-                                                sampling_points[0].size()});
+                                                compresses_x_size,
+                                                compressed_y_size});
 
-    for (int compressed_x = 0; compressed_x < static_cast<int>(sampling_points.size())-1; ++compressed_x) {
-        int curr_comp_x = sampling_points[compressed_x].first;
-        for (int compressed_y = 0; compressed_y < static_cast<int>(sampling_points[compressed_x].size())-1; ++compressed_y) {
-
-            int curr_comp_y = sampling_points[compressed_x].at(compressed_y);
-            int nxt_comp_x = sampling_points[compressed_x+1];
-
-
-
-
-        }
-    }
-
-
-
+    initialize_index_map(sampling_regions, compresses_x_size * compressed_y_size);
 }
 
 static std::vector<SamplingRegion> get_sampling_points(const std::vector<t_segment_inf>& segment_inf) {
@@ -99,20 +93,16 @@ static std::vector<SamplingRegion> get_sampling_points(const std::vector<t_segme
 
     for (int x = 0; x < grid_width; x+=max_seg_lenght) {
         for (int y = 0; y < grid_height; y+=max_seg_lenght) {
-            SamplingRegion sampling_region(x + max_seg_lenght, y + max_seg_lenght, x, y, -1, -1);
+            SamplingRegion sampling_region(x + max_seg_lenght, y + max_seg_lenght, x, y, -1);
             if (x == 0 && y == 0) {
-                sampling_region.x_step = 1;
-                sampling_region.y_step = 1;
+                sampling_region.step = 1;
             } else if (x < 2*max_seg_lenght && y < 2*max_seg_lenght) {
-                    sampling_region.x_step = 2;
-                    sampling_region.y_step = 2;
+                    sampling_region.step = 2;
 
             } else if (x < 4*max_seg_lenght || y < 4*max_seg_lenght) {
-                sampling_region.x_step = 4;
-                sampling_region.y_step = 4;
+                sampling_region.step = 4;
             } else {
-                sampling_region.x_step = 4;
-                sampling_region.y_step = 4;
+                sampling_region.step = 8;
             }
         }
     }
@@ -123,16 +113,7 @@ static std::vector<SamplingRegion> get_sampling_points(const std::vector<t_segme
 
 
 
-
-
-
-
-
-
-
-
-
-    /******** Interface class member function definitions ********/
+/******** Interface class member function definitions ********/
 CompressedMapLookahead::CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
     : det_routing_arch_(det_routing_arch)
     , is_flat_(is_flat) {}
