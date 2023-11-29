@@ -73,7 +73,7 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
 
-    add_route_tree_to_heap(rt_root, sink_node, cost_params, false);
+    add_route_tree_to_heap(rt_root, sink_node, cost_params);
     heap_.build_heap(); // via sifting down everything
 
     RRNodeId source_node = rt_root.inode;
@@ -137,7 +137,6 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    router_stats_->add_high_fanout_rt++;
     t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, net_bounding_box);
     heap_.build_heap();
 
@@ -274,7 +273,7 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
 
     // Add the route tree to the heap with no specific target node
     RRNodeId target_node = RRNodeId::INVALID();
-    add_route_tree_to_heap(rt_root, target_node, cost_params, false);
+    add_route_tree_to_heap(rt_root, target_node, cost_params);
     heap_.build_heap(); // via sifting down everything
 
     auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
@@ -852,17 +851,10 @@ template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_to_heap(
     const RouteTreeNode& rt_node,
     RRNodeId target_node,
-    const t_conn_cost_params cost_params,
-    bool from_high_fanout) {
+    const t_conn_cost_params cost_params) {
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
-
-    if (from_high_fanout) {
-        router_stats_->add_all_rt_from_high_fanout++;
-    } else {
-        router_stats_->add_all_rt++;
-    }
 
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
@@ -883,14 +875,12 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
                                         target_node)) {
                 add_route_tree_to_heap(child_node,
                                        target_node,
-                                       cost_params,
-                                       from_high_fanout);
+                                       cost_params);
             }
         } else {
             add_route_tree_to_heap(child_node,
                                    target_node,
-                                   cost_params,
-                                   from_high_fanout);
+                                   cost_params);
         }
     }
 }
@@ -945,12 +935,9 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                         inode,
                         true);
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
     router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
-    if (is_high_fanout) {
-        router_stats_->rt_node_high_fanout_pushes[rr_graph_->node_type(inode)]++;
-    } else {
-        router_stats_->rt_node_entire_tree_pushes[rr_graph_->node_type(inode)]++;
-    }
+#endif
 }
 
 /* Expand bb by inode's extents and clip against net_bb */
@@ -1065,7 +1052,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     }
 
     if (nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
-        add_route_tree_to_heap(rt_root, target_node, cost_params, true);
+        add_route_tree_to_heap(rt_root, target_node, cost_params);
         return net_bounding_box;
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing
@@ -1124,6 +1111,7 @@ static inline void update_router_stats(const DeviceContext& device_ctx,
         router_stats->heap_pops++;
     }
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
     auto node_type = rr_graph->node_type(rr_node_id);
     VTR_ASSERT(node_type != NUM_RR_TYPES);
     t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph->node_xlow(rr_node_id),
@@ -1150,6 +1138,7 @@ static inline void update_router_stats(const DeviceContext& device_ctx,
             router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
         }
     }
+#endif
 }
 
 std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type heap_type,

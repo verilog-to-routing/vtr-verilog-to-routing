@@ -239,8 +239,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     //used as branch-points for further routing.
     void add_route_tree_to_heap(const RouteTreeNode& rt_node,
                                 RRNodeId target_node,
-                                const t_conn_cost_params cost_params,
-                                bool from_high_fanout);
+                                const t_conn_cost_params cost_params);
 
     // Evaluate node costs using the RCV algorith
     float compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
