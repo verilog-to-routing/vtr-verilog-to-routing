@@ -601,9 +601,11 @@ bool route(const Netlist<>& net_list,
     VTR_ASSERT(router_stats.heap_pushes >= router_stats.intra_cluster_node_pushes);
     VTR_ASSERT(router_stats.heap_pops >= router_stats.intra_cluster_node_pops);
     VTR_LOG(
-        "Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu "
+        "Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu ",
+        router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    VTR_LOG(
         "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
-        router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops,
         router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops,
         router_stats.inter_cluster_node_pushes, router_stats.inter_cluster_node_pops);
     for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
@@ -619,6 +621,7 @@ bool route(const Netlist<>& net_list,
     VTR_LOG("total_number_of_adding_all_rt: %zu ", router_stats.add_all_rt);
     VTR_LOG("total_number_of_adding_high_fanout_rt: %zu ", router_stats.add_high_fanout_rt);
     VTR_LOG("total_number_of_adding_all_rt_from_calling_high_fanout_rt: %zu ", router_stats.add_all_rt_from_high_fanout);
+#endif
     VTR_LOG("\n");
 
     return success;
