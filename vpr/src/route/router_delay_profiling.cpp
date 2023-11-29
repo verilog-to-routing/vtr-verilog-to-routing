@@ -1,7 +1,7 @@
 #include "router_delay_profiling.h"
 #include "globals.h"
 #include "route_common.h"
-#include "route_timing.h"
+#include "route_net.h"
 #include "route_export.h"
 #include "route_tree.h"
 #include "rr_graph.h"
@@ -58,6 +58,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
+    // If layer num is not specified, it means the BB should cover all layers
     if (layer_num == OPEN) {
         bounding_box.layer_min = 0;
         bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
@@ -88,8 +89,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         cost_params,
         bounding_box,
         router_stats,
-        conn_params,
-        true);
+        conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);

@@ -2,7 +2,6 @@
 #define ROUTER_DELAY_PROFILING_H_
 
 #include "vpr_types.h"
-#include "route_timing.h"
 #include "binary_heap.h"
 #include "connection_router.h"
 
@@ -13,6 +12,19 @@ class RouterDelayProfiler {
     RouterDelayProfiler(const Netlist<>& net_list,
                         const RouterLookahead* lookahead,
                         bool is_flat);
+
+    /**
+     * @brief Returns true as long as found some way to hook up this net, even if that
+     * way resulted in overuse of resources (congestion).  If there is no way
+     * to route this net, even ignoring congestion, it returns false.  In this
+     * case the rr_graph is disconnected and you can give up.
+     * @param source_node
+     * @param sink_node
+     * @param router_opts
+     * @param net_delay
+     * @param layer_num
+     * @return
+     */
     bool calculate_delay(RRNodeId source_node,
                          RRNodeId sink_node,
                          const t_router_opts& router_opts,

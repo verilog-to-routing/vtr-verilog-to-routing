@@ -435,7 +435,7 @@ void Abc_SclBufSize( Bus_Man_t * p, float Gain )
             // add one or more inverters
 //            Abc_NtkPrintFanoutProfile( pObj );
             Abc_NodeCollectFanouts( pObj, p->vFanouts );
-            Vec_PtrSort( p->vFanouts, (int(*)(void))Bus_SclCompareFanouts );
+            Vec_PtrSort( p->vFanouts, (int(*)(const void *, const void *))Bus_SclCompareFanouts );
             do 
             {
                 Abc_Obj_t * pInv;

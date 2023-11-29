@@ -211,7 +211,7 @@ void Bdc_SpfdDecompose( word Truth, int nVars, int nCands, int nGatesMax )
     vWeight = Vec_IntAlloc( 100 );
 
     // initialize elementary variables
-    pNode = ABC_CALLOC( Bdc_Nod_t, nVars );
+    pNode = ABC_CALLOC( Bdc_Nod_t, (unsigned char)nVars );
     for ( i = 0; i < nVars; i++ )
         pNode[i].Truth  = Truths[i];
     for ( i = 0; i < nVars; i++ )

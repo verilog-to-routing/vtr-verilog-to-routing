@@ -1,6 +1,5 @@
 #include "connection_based_routing.h"
 
-#include "route_timing.h"
 #include "route_profiling.h"
 
 // incremental rerouting resources class definitions

@@ -51,14 +51,14 @@ void Abc_NtkSynthesize( Abc_Ntk_t ** ppNtk, int fMoreEffort )
     pNtk = *ppNtk;
 
     Abc_NtkRewrite( pNtk, 0, 0, 0, 0, 0 );
-    Abc_NtkRefactor( pNtk, 10, 16, 0, 0, 0, 0 );
+    Abc_NtkRefactor( pNtk, 10, 1, 16, 0, 0, 0, 0 );
     pNtk = Abc_NtkBalance( pNtkTemp = pNtk, 0, 0, 0 );          
     Abc_NtkDelete( pNtkTemp );
 
     if ( fMoreEffort )
     {
         Abc_NtkRewrite( pNtk, 0, 0, 0, 0, 0 );
-        Abc_NtkRefactor( pNtk, 10, 16, 0, 0, 0, 0 );
+        Abc_NtkRefactor( pNtk, 10, 1, 16, 0, 0, 0, 0 );
         pNtk = Abc_NtkBalance( pNtkTemp = pNtk, 0, 0, 0 );          
         Abc_NtkDelete( pNtkTemp );
 
@@ -340,7 +340,7 @@ Abc_Ntk_t * Abc_NtkReachability( Abc_Ntk_t * pNtkRel, int nIters, int fVerbose )
     // compute the network composed of the initial states
     pNtkFront = Abc_NtkInitialState( pNtkRel );
     pNtkReached = Abc_NtkDup( pNtkFront );
-//Abc_NtkShow( pNtkReached, 0, 0, 0 );
+//Abc_NtkShow( pNtkReached, 0, 0, 0, 0 );
 
 //    if ( fVerbose )
 //        printf( "Transition relation = %6d.\n", Abc_NtkNodeNum(pNtkRel) );

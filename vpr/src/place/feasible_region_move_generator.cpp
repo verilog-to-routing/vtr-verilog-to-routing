@@ -33,6 +33,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     /* Calculate the feasible region */
     t_pl_loc to;
+    // Currently, we don't change the layer for this move
     to.layer = from.layer;
     int ipin;
     ClusterBlockId bnum;

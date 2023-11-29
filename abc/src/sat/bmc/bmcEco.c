@@ -291,7 +291,7 @@ void Bmc_EcoMiterTest()
         Vec_IntPush( vFans, Gia_ObjId(pOld, pObj) );
     pMiter = Bmc_EcoMiter( pGold, pOld, vFans );
     Vec_IntFree( vFans );
-    Gia_AigerWrite( pMiter, "eco_miter.aig", 0, 0 );
+    Gia_AigerWrite( pMiter, "eco_miter.aig", 0, 0, 0 );
     // find the patch
     RetValue = Bmc_EcoPatch( pMiter, Gia_ManCiNum(pGold), Gia_ManCoNum(pGold) );
     if ( RetValue == 1 )

@@ -844,7 +844,7 @@ void Bbl_ManSortCubes( char ** pCubes, int nCubes, int nVars )
     {
         best_i = i;
         for (j = i+1; j < nCubes; j++)
-            if ( memcmp( pCubes[j], pCubes[best_i], nVars ) < 0 )
+            if ( memcmp( pCubes[j], pCubes[best_i], (size_t)nVars ) < 0 )
                 best_i = j;
         pTemp = pCubes[i]; pCubes[i] = pCubes[best_i]; pCubes[best_i] = pTemp;
     }
@@ -871,7 +871,7 @@ char * Bbl_ManSortSop( char * pSop, int nVars )
     if ( nCubes < 2 )
     {
         pSopNew = BBLIF_ALLOC( char, Length + 1 );
-        memcpy( pSopNew, pSop, Length + 1 );
+        memcpy( pSopNew, pSop, (size_t)(Length + 1) );
         return pSopNew;
     }
     pCubes = BBLIF_ALLOC( char *, nCubes );
@@ -881,7 +881,7 @@ char * Bbl_ManSortSop( char * pSop, int nVars )
         Bbl_ManSortCubes( pCubes, nCubes, nVars );
     pSopNew = BBLIF_ALLOC( char, Length + 1 );
     for ( c = 0; c < nCubes; c++ )
-        memcpy( pSopNew + c * (nVars + 3), pCubes[c], nVars + 3 );
+        memcpy( pSopNew + c * (nVars + 3), pCubes[c], (size_t)(nVars + 3) );
     BBLIF_FREE( pCubes );
     pSopNew[nCubes * (nVars + 3)] = 0;
     return pSopNew;
@@ -933,7 +933,7 @@ int Bbl_ManSopCheckUnique( Bbl_Man_t * p, char * pSop, int nVars, int nCubes, in
         pEnt = Bbl_VecEnt( p->pEnts, h );
         pFnc = Bbl_VecFnc( p->pFncs, pEnt->iFunc );
         assert( nVars == 16 || nCubes == 16 || pFnc->nWords == nWords );
-        if ( pFnc->nWords == nWords && memcmp( pFnc->pWords, pSop, Length ) == 0 )
+        if ( pFnc->nWords == nWords && memcmp( pFnc->pWords, pSop, (size_t)Length ) == 0 )
             return pEnt->iFunc;
     }
     p->SopMap[nVars][nCubes] = Bbl_ManCreateEntry( p, iFunc, p->SopMap[nVars][nCubes] );

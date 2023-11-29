@@ -131,7 +131,7 @@ void NocStorage::set_device_grid_width(int grid_width) {
 
 void NocStorage::set_device_grid_spec(int grid_width, int grid_height) {
     device_grid_width = grid_width;
-    layer_num_blocks = grid_width * grid_height;
+    layer_num_grid_locs = grid_width * grid_height;
     return;
 }
 
@@ -235,7 +235,7 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
 
 int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y, int layer_position) const {
     // calculate the key value
-    return (layer_num_blocks * layer_position + device_grid_width * grid_position_y + grid_position_x);
+    return (layer_num_grid_locs * layer_position + device_grid_width * grid_position_y + grid_position_x);
 }
 
 void NocStorage::echo_noc(char* file_name) const {

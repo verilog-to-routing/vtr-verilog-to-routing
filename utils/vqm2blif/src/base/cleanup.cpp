@@ -676,7 +676,7 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unorder
 				net_source = (t_net*)temp_net->source;
 
                 //PIN_INOUT should have been removed earlier
-				VTR_ASSERT((net_source->pin->type == PIN_INPUT)||(net_source->pin->type == PIN_WIRE));
+				VTR_ASSERT((net_source->pin->type == PIN_OUTPUT) || (net_source->pin->type == PIN_INPUT)||(net_source->pin->type == PIN_WIRE));
 
 				VTR_ASSERT((unsigned int)net_source->bus_index < child_count.size());
 				VTR_ASSERT((unsigned int)net_source->wire_index < child_count[net_source->bus_index].size());

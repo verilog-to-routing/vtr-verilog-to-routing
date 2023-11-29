@@ -463,16 +463,16 @@ Abc_Cex_t * Abc_CexTransformUndc( Abc_Cex_t * p, char * pInit )
     int i, f, iBit, iAddPi = 0, nAddPis = 0;
     // count how many flops got a new PI
     for ( i = 0; i < nFlops; i++ )
-        nAddPis += (int)(pInit[i] == 'x');
+        nAddPis += (int)(pInit[i] == 'x' || pInit[i] == 'X');
     // create new CEX
     pCex = Abc_CexAlloc( nFlops, p->nPis - nAddPis, p->iFrame + 1 );
     pCex->iPo    = p->iPo;
     pCex->iFrame = p->iFrame;
     for ( iBit = 0; iBit < nFlops; iBit++ )
     {
-        if ( pInit[iBit] == '1' || (pInit[iBit] == 'x' && Abc_InfoHasBit(p->pData, p->nRegs + p->nPis - nAddPis + iAddPi)) )
+        if ( pInit[iBit] == '1' || ((pInit[iBit] == 'x' || pInit[iBit] == 'X') && Abc_InfoHasBit(p->pData, p->nRegs + p->nPis - nAddPis + iAddPi)) )
             Abc_InfoSetBit( pCex->pData, iBit );
-        iAddPi += (int)(pInit[iBit] == 'x');
+        iAddPi += (int)(pInit[iBit] == 'x' || pInit[iBit] == 'X');
     }
     assert( iAddPi == nAddPis );
     // add timeframes

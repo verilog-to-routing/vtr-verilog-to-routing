@@ -460,7 +460,11 @@ Gia_Man_t * Gia_ManPerformFx( Gia_Man_t * p, int nNewNodesMax, int LitCountMax, 
     Vec_Wec_t * vCubes;
     Vec_Str_t * vCompl;
     if ( Gia_ManAndNum(p) == 0 )
-        return Gia_ManDup(p);
+    {
+        pNew = Gia_ManDup(p);
+        Gia_ManTransferTiming( pNew, p );
+        return pNew;
+    }
 //    abctime clk;
     assert( Gia_ManHasMapping(p) );   
     // collect information

@@ -5,7 +5,7 @@
 #include "placer_globals.h"
 #include "move_utils.h"
 
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int layer);
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew);
 
 static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
@@ -39,7 +39,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     /* Calculate the median region */
     t_pl_loc to;
-    to.layer = from_layer;
 
     t_bb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
     t_bb limit_coords;
@@ -73,11 +72,12 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 continue;
         } else {
             t_bb union_bb;
-            if (is_multi_layer) {
+            const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
+            if (!cube_bb) {
                 union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
             }
 
-            const auto& net_bb_coords = is_multi_layer ? union_bb : place_move_ctx.bb_coords[net_id];
+            const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
@@ -86,7 +86,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             yold = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-            int block_layer = place_ctx.block_locs[bnum].loc.layer;
 
             //To calulate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
@@ -102,7 +101,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 ynew = net_bb_coords.ymin;
             }
 
-            if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew, block_layer)) {
+            if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew)) {
                 get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
                 if (skip_net)
                     continue;
@@ -115,10 +114,12 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.Y_coord.push_back(coords.ymax);
         if (is_multi_layer) {
             for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[net_id][layer_num];
+                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num];
             }
-            if(cluster_ctx.clb_nlist.pin_type(pin_id) != PinType::DRIVER) {
-                VTR_ASSERT(layer_blk_cnt[from_layer] > 0);
+            // If the pin under consideration is of type sink, it shouldn't be added to layer_blk_cnt since the block
+            // is moving
+            if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::SINK) {
+                VTR_ASSERT_SAFE(layer_blk_cnt[from_layer] > 0);
                 layer_blk_cnt[from_layer]--;
             }
         }
@@ -148,10 +149,16 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
-    // TODO: When placer is updated to support moving blocks between dice, this needs to be changed. Currently, we only move blocks within a die.
-    median_point.layer = from.layer;
+
+    // Before calling find_to_loc_centroid a valid layer should be assigned to "to" location. If there are multiple layers, the layer
+    // with highest number of sinks will be used. Otherwise, the same layer as "from" loc is assigned.
     if (is_multi_layer) {
-        to.layer = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
+        int layer_num = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
+        median_point.layer = layer_num;
+        to.layer = layer_num;
+    } else {
+        median_point.layer = from.layer;
+        to.layer = from.layer;
     }
     if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
@@ -266,13 +273,11 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
  * the pins always lie on the outside of the bounding box.            *
  * The x and y coordinates are the pin's x and y coordinates.         */
 /* IO blocks are considered to be one cell in for simplicity.         */
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew, int /* layer */) {
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew) {
     //TODO: account for multiple physical pin instances per logical pin
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.move();
-
-    bool is_multi_layer = (device_ctx.grid.get_num_layers() > 1);
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -281,14 +286,17 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
 
     t_bb union_bb_edge;
     t_bb union_bb;
-    if (is_multi_layer) {
+    const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
+    if (!cube_bb) {
         std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
                                                              place_move_ctx.layer_bb_coords[net_id]);
     }
 
-    /* The net had NOT been updated before, could use the old values */
-    const t_bb& curr_bb_edge = is_multi_layer ? union_bb_edge : place_move_ctx.bb_num_on_edges[net_id];
-    const t_bb& curr_bb_coord = is_multi_layer ? union_bb : place_move_ctx.bb_coords[net_id];
+    /* In this move, we use a 3D bounding box. Thus, if per-layer BB is used by placer, we need to take a union of BBs and use that for the rest of
+     * operations in this move
+     */
+    const t_bb& curr_bb_edge = cube_bb ? place_move_ctx.bb_num_on_edges[net_id] : union_bb_edge;
+    const t_bb& curr_bb_coord = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
 
     /* Check if I can update the bounding box incrementally. */
 

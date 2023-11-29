@@ -449,6 +449,10 @@ int Dsm_ManTruthToGia( void * p, word * pTruth, Vec_Int_t * vLeaves, Vec_Int_t *
     Abc_TtCopy( pTruthCopy, pTruth, Abc_TtWordNum(Vec_IntSize(vLeaves)), 0 );
     m_Calls++;
     assert( Vec_IntSize(vLeaves) <= DAU_DSD_MAX_VAR );
+    if ( Vec_IntSize(vLeaves) == 0 )
+        return (int)(pTruth[0] & 1);
+    if ( Vec_IntSize(vLeaves) == 1 )
+        return Abc_LitNotCond( Vec_IntEntry(vLeaves, 0), (int)(pTruth[0] & 1) );
     // collect delay information
     if ( fDelayBalance && fUseMuxes )
     {

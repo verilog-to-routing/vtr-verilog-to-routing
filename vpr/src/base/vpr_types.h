@@ -65,6 +65,14 @@
 
 //#define VERBOSE //Prints additional intermediate data
 
+/*
+ * We need to define the maximum number of layers to address a specific issue.
+ * For certain data structures, such as `num_sink_pin_layer` in the placer context, dynamically allocating
+ * memory based on the number of layers can lead to a performance hit due to additional pointer chasing and
+ * cache locality concerns. Defining a constant variable helps optimize the memory allocation process.
+ */
+constexpr int MAX_NUM_LAYERS = 2;
+
 /**
  * @brief For update_screen. Denotes importance of update.
  *
@@ -619,10 +627,11 @@ struct t_2D_bb {
 
 /**
  * @brief An offset between placement locations (t_pl_loc)
- *
+ * @note In the case of comparing the offset, the layer offset should be equal
  * x: x-offset
  * y: y-offset
- * z: z-offset
+ * sub_tile: sub_tile-offset
+ * layer: layer-offset
  */
 struct t_pl_offset {
     t_pl_offset() = default;
@@ -1439,6 +1448,8 @@ struct t_router_opts {
 
     bool flat_routing;
     bool has_choking_spot;
+
+    bool with_timing_analysis;
 
     // Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;

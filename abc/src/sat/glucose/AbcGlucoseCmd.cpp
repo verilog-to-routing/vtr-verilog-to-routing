@@ -81,10 +81,11 @@ int Abc_CommandGlucose( Abc_Frame_t * pAbc, int argc, char ** argv )
     int pre     = 1;
     int verb    = 0;
     int nConfls = 0;
+    int fDumpCnf = 0;
 
     Glucose_Pars pPars;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "Cpvh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Cpdvh" ) ) != EOF )
     {
         switch ( c )
         {
@@ -102,6 +103,9 @@ int Abc_CommandGlucose( Abc_Frame_t * pAbc, int argc, char ** argv )
             case 'p':
                 pre ^= 1;
                 break;
+            case 'd':
+                fDumpCnf ^= 1;
+                break;
             case 'v':
                 verb ^= 1;
                 break;
@@ -116,7 +120,7 @@ int Abc_CommandGlucose( Abc_Frame_t * pAbc, int argc, char ** argv )
 
     if ( argc == globalUtilOptind + 1 )
     {
-        Glucose_SolveCnf( argv[globalUtilOptind], &pPars );
+        Glucose_SolveCnf( argv[globalUtilOptind], &pPars, fDumpCnf );
         return 0;
     }
 
@@ -132,10 +136,11 @@ int Abc_CommandGlucose( Abc_Frame_t * pAbc, int argc, char ** argv )
     return 0;
     
 usage:
-    Abc_Print( -2, "usage: &glucose [-C num] [-pvh] <file.cnf>\n" );
+    Abc_Print( -2, "usage: &glucose [-C num] [-pdvh] <file.cnf>\n" );
     Abc_Print( -2, "\t             run Glucose 3.0 by Gilles Audemard and Laurent Simon\n" );
     Abc_Print( -2, "\t-C num     : conflict limit [default = %d]\n",  nConfls );
     Abc_Print( -2, "\t-p         : enable preprocessing [default = %d]\n",pre);
+    Abc_Print( -2, "\t-d         : enable dumping CNF after proprocessing [default = %d]\n",fDumpCnf);
     Abc_Print( -2, "\t-v         : verbosity [default = %d]\n",verb);
     Abc_Print( -2, "\t-h         : print the command usage\n");
     Abc_Print( -2, "\t<file.cnf> : (optional) CNF file to solve\n");

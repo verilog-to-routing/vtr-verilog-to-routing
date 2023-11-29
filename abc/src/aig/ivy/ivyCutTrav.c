@@ -142,7 +142,7 @@ unsigned * Ivy_NodeCutElementary( Vec_Int_t * vStore, int nWords, int NodeId )
 {
     unsigned * pBitCut;
     pBitCut = Vec_IntFetch( vStore, nWords );
-    memset( pBitCut, 0, 4 * nWords );
+    memset( pBitCut, 0, (size_t)(4 * nWords) );
     Extra_TruthSetBit( pBitCut, NodeId );
     return pBitCut;
 }
@@ -329,7 +329,7 @@ void Ivy_NodeComputeVolume2( Ivy_Obj_t * pObj, int nNodeLimit, Vec_Ptr_t * vNode
     } while ( Vec_PtrSize(vNodes) < nNodeLimit );
 
     // sort nodes by level
-    Vec_PtrSort( vNodes, (int (*)(void))Ivy_CompareNodesByLevel );
+    Vec_PtrSort( vNodes, (int (*)(const void *, const void *))Ivy_CompareNodesByLevel );
     // make sure the nodes are ordered in the increasing number of levels
     pFanin = (Ivy_Obj_t *)Vec_PtrEntry( vNodes, 0 );
     pPivot = (Ivy_Obj_t *)Vec_PtrEntryLast( vNodes );

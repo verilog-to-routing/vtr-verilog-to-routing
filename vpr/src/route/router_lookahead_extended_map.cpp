@@ -4,6 +4,7 @@
 #include <queue>
 #include <mutex>
 
+#include "connection_router_interface.h"
 #include "rr_node.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_sampling.h"
@@ -14,8 +15,8 @@
 #include "echo_files.h"
 #include "rr_graph.h"
 
-#include "route_timing.h"
 #include "route_common.h"
+#include "route_debug.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
@@ -421,7 +422,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 
 // compute the cost maps for lookahead
 void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    this->src_opin_delays= util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 

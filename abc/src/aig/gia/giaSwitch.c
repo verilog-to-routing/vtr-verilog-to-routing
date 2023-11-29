@@ -795,6 +795,14 @@ float Gia_ManComputeSwitching( Gia_Man_t * p, int nFrames, int nPref, int fProbO
         Gia_ManForEachAnd( p, pObj, i )
             SwiTotal += pSwi[Gia_ObjFaninId0(pObj, i)] + pSwi[Gia_ObjFaninId1(pObj, i)];
     }
+    if ( 0 )
+    {
+        Gia_ManForEachObj( p, pObj, i )
+        {
+            printf( "Switch %6.2f  ", pSwi[i] );
+            Gia_ObjPrint( p, pObj );
+        }
+    }
     Vec_IntFree( vSwitching );
     return SwiTotal;
 }

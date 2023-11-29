@@ -200,8 +200,8 @@ int lifting;            /* whether to perform lifting or not */
 
     /* Sort the arrays for a distance-1 merge */
     (void) set_copy(cube.temp[0], cube.var_mask[var]);
-    qsort((char *) (L1 = sf_list(L)), L->count, sizeof(pset), (int (*)()) d1_order);
-    qsort((char *) (R1 = sf_list(R)), R->count, sizeof(pset), (int (*)()) d1_order);
+    qsort((char *) (L1 = sf_list(L)), (size_t)L->count, sizeof(pset), (int (*)()) d1_order);
+    qsort((char *) (R1 = sf_list(R)), (size_t)R->count, sizeof(pset), (int (*)()) d1_order);
 
     /* Perform distance-1 merge */
     compl_d1merge(L1, R1);

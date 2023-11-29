@@ -897,9 +897,9 @@ Vec_Ptr_t * Abc_NtkNodeSupport( Abc_Ntk_t * pNtk, Abc_Obj_t ** ppNodes, int nNod
     vNodes = Vec_PtrAlloc( 100 );
     // go through the PO nodes and call for each of them
     for ( i = 0; i < nNodes; i++ )
-        if ( Abc_ObjIsCo(ppNodes[i]) )
+        if ( Abc_ObjIsCo(ppNodes[i]) && Abc_ObjFaninNum(Abc_ObjFanin0(ppNodes[i])) != 0 )
             Abc_NtkNodeSupport_rec( Abc_ObjFanin0(ppNodes[i]), vNodes );
-        else
+        else if ( !Abc_ObjIsCo(ppNodes[i]) && Abc_ObjFaninNum(ppNodes[i]) != 0 )
             Abc_NtkNodeSupport_rec( ppNodes[i], vNodes );
     return vNodes;
 }

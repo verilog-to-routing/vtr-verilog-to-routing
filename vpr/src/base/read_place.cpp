@@ -306,14 +306,10 @@ void read_place_body(std::ifstream& placement_file,
  *
  * The architecture and netlist files used to generate this placement are recorded
  * in the file to avoid loading a placement with the wrong support file later.
- *
- * The is_initial_place bool indicates whether this is the initial placement or not. It is used to determine the
- * suffix of the output file name.
  */
 void print_place(const char* net_file,
                  const char* net_id,
-                 const char* place_file,
-                 bool is_initial_place) {
+                 const char* place_file) {
     FILE* fp;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -346,9 +342,5 @@ void print_place(const char* net_file,
     fclose(fp);
 
     //Calculate the ID of the placement
-    if (is_initial_place) {
-        place_ctx.initial_placement_id = vtr::secure_digest_file(place_file);
-    } else {
-        place_ctx.placement_id = vtr::secure_digest_file(place_file);
-    }
+    place_ctx.placement_id = vtr::secure_digest_file(place_file);
 }

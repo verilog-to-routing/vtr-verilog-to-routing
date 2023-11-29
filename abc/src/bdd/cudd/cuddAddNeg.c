@@ -226,6 +226,22 @@ cuddAddNegateRecur(
 } /* end of cuddAddNegateRecur */
 
 
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup1 that can
+              be casted to DD_CTFP.
+
+******************************************************************************/
+static DdNode *
+Cudd_addRoundOff_dummy(DdManager * dd, DdNode * f) 
+{
+  assert(0);
+  return 0;
+}
+#endif
+
+
 /**Function********************************************************************
 
   Synopsis    [Implements the recursive step of Cudd_addRoundOff.]
@@ -253,7 +269,11 @@ cuddAddRoundOffRecur(
         res = cuddUniqueConst(dd,n);
         return(res);
     }
+#ifdef USE_CASH_DUMMY
+    cacheOp = (DD_CTFP1) Cudd_addRoundOff_dummy;
+#else
     cacheOp = (DD_CTFP1) Cudd_addRoundOff;
+#endif
     res = cuddCacheLookup1(dd,cacheOp,f);
     if (res != NULL) {
         return(res);

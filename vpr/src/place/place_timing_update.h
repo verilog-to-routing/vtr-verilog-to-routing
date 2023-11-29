@@ -7,6 +7,8 @@
 #include "timing_place.h"
 #include "place_util.h"
 
+#include "NetPinTimingInvalidator.h"
+
 ///@brief Initialize the timing information and structures in the placer.
 void initialize_timing_info(const PlaceCritParams& crit_params,
                             const PlaceDelayModel* delay_model,

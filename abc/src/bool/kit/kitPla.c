@@ -216,7 +216,7 @@ char * Kit_PlaStart( void * p, int nCubes, int nVars )
 
     Length = nCubes * (nVars + 3);
     pSopCover = Aig_MmFlexEntryFetch( pMan, Length + 1 );
-    memset( pSopCover, '-', Length );
+    memset( pSopCover, '-', (size_t)Length );
     pSopCover[Length] = 0;
 
     for ( i = 0; i < nCubes; i++ )

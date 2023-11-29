@@ -147,7 +147,7 @@ class NocStorage {
      * to get the corresponding physical (hard) router at the given grid
      * location using 'grid_location_to_router_id'.
      */
-    int layer_num_blocks;
+    int layer_num_grid_locs;
 
     // prevent "copying" of this object
     NocStorage(const NocStorage&) = delete;

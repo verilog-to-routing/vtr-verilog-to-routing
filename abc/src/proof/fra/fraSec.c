@@ -20,6 +20,7 @@
 
 #include "fra.h"
 #include "aig/ioa/ioa.h"
+#include "aig/gia/giaAig.h"
 #include "proof/int/int.h"
 #include "proof/ssw/ssw.h"
 #include "aig/saig/saig.h"
@@ -79,6 +80,28 @@ void Fra_SecSetDefaultParams( Fra_Sec_t * p )
     p->TimeLimit         =       0;  // enables the timeout
     // internal parameters
     p->fReportSolution   =       0;  // enables specialized format for reporting solution
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Aig_Man_t * Fra_FraigEquivence2( Aig_Man_t * pAig, int nConfs, int fVerbose )
+{
+    extern Gia_Man_t * Cec4_ManSimulateTest3( Gia_Man_t * p, int nBTLimit, int fVerbose );
+    Gia_Man_t * pGia    = Gia_ManFromAig( pAig );
+    Gia_Man_t * pGiaNew = Cec4_ManSimulateTest3( pGia, nConfs, 0 );
+    Aig_Man_t * pAigNew = Gia_ManToAig( pGiaNew, 0 );
+    Gia_ManStop( pGiaNew );
+    Gia_ManStop( pGia );
+    return pAigNew;
 }
 
 /**Function*************************************************************
@@ -267,6 +290,7 @@ ABC_PRT( "Time", Abc_Clock() - clk );
     {
 clk = Abc_Clock();
     pNew = Fra_FraigEquivence( pTemp = pNew, 100, 0 );
+    //pNew = Fra_FraigEquivence2( pTemp = pNew, 100, 0 );
     Aig_ManStop( pTemp );
     if ( pParSec->fVerbose )
     {

@@ -128,7 +128,7 @@ local int gz_zero(gz_statep state, z_off64_t len)
         n = GT_OFF(state->size) || (z_off64_t)state->size > len ?
             (unsigned)len : state->size;
         if (first) {
-            memset(state->in, 0, n);
+            memset(state->in, 0, (size_t)n);
             first = 0;
         }
         strm->avail_in = n;

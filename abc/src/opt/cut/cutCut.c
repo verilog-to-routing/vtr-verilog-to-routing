@@ -126,7 +126,7 @@ Cut_Cut_t * Cut_CutDupList( Cut_Man_t * p, Cut_Cut_t * pList )
     Cut_ListForEachCut( pList, pTemp )
     {
         pCopy = (Cut_Cut_t *)Extra_MmFixedEntryFetch( p->pMmCuts );
-        memcpy( pCopy, pTemp, p->EntrySize );
+        memcpy( pCopy, pTemp, (size_t)p->EntrySize );
         *ppTail = pCopy;
         ppTail = &pCopy->pNext;
     }

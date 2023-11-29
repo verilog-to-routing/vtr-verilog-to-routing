@@ -61,6 +61,18 @@ void Io_WriteGml( Abc_Ntk_t * pNtk, char * pFileName )
     fprintf( pFile, "# GML for \"%s\" written by ABC on %s\n", pNtk->pName, Extra_TimeStamp() );
     fprintf( pFile, "graph [\n" );
 
+    // output constant node in the AIG if it has fanouts
+    if ( Abc_NtkIsStrash(pNtk) )
+    {
+        pObj = Abc_AigConst1( pNtk );
+        if ( Abc_ObjFanoutNum(pObj) > 0 )
+        {
+            fprintf( pFile, "\n" );
+            fprintf( pFile, "    node [ id %5d label \"%s\"\n", pObj->Id, Abc_ObjName(pObj) );
+            fprintf( pFile, "        graphics [ type \"ellipse\" fill \"#CCCCFF\" ]\n" );   // grey
+            fprintf( pFile, "    ]\n" );
+        }
+    }
     // output the POs
     fprintf( pFile, "\n" );
     Abc_NtkForEachPo( pNtk, pObj, i )
