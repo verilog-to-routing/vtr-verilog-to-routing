@@ -864,8 +864,7 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
         }
         add_route_tree_node_to_heap(rt_node,
                                     target_node,
-                                    cost_params,
-                                    false);
+                                    cost_params);
     }
 
     for (const RouteTreeNode& child_node : rt_node.child_nodes()) {
@@ -893,8 +892,7 @@ template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     const RouteTreeNode& rt_node,
     RRNodeId target_node,
-    const t_conn_cost_params cost_params,
-    bool is_high_fanout) {
+    const t_conn_cost_params cost_params) {
     const auto& device_ctx = g_vpr_ctx.device();
     const RRNodeId inode = rt_node.inode;
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
@@ -1021,7 +1019,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     continue;
                 }
                 // Put the node onto the heap
-                add_route_tree_node_to_heap(rt_node, target_node, cost_params, true);
+                add_route_tree_node_to_heap(rt_node, target_node, cost_params);
 
                 // Expand HF BB to include the node (clip by original BB)
                 expand_highfanout_bounding_box(highfanout_bb, net_bounding_box, rr_node_to_add, rr_graph_);
