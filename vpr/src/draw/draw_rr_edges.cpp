@@ -464,7 +464,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     /* Only 1 side will be picked in the end
      * Any rr_node of a grid should have at least 1 side!!!
      */
-    e_side pin_side = NUM_SIDES;
+    e_side pin_side = NUM_2D_SIDES;
     const t_rr_type channel_type = rr_graph.node_type(chan_node);
     if (1 == pin_candidate_sides.size()) {
         pin_side = pin_candidate_sides[0];
@@ -483,7 +483,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
         VTR_ASSERT(pin_candidate_sides.end() != std::find(pin_candidate_sides.begin(), pin_candidate_sides.end(), pin_side));
     }
     /* Sanity check */
-    VTR_ASSERT(NUM_SIDES != pin_side);
+    VTR_ASSERT(NUM_2D_SIDES != pin_side);
 
     /* Now we determine which side to be used, calculate the offset for the pin to be drawn
      * - For the pin locates above/right to the grid (at the top/right side),

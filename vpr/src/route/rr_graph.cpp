@@ -3418,11 +3418,11 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     }
 
     auto tracks_connected_to_pin = vtr::NdMatrix<int, 6>({
-                                                             size_t(Type->num_pins),        //[0..num_pins-1]
+                                                                 size_t(Type->num_pins),        //[0..num_pins-1]
                                                              size_t(Type->width),           //[0..width-1]
                                                              size_t(Type->height),          //[0..height-1]
                                                              size_t(grid.get_num_layers()), //[0..layer-1]
-                                                             NUM_SIDES,                     //[0..NUM_SIDES-1]
+                                                             NUM_2D_SIDES,                     //[0..NUM_2D_SIDES-1]
                                                              size_t(Fc)                     //[0..Fc-1]
                                                          },
                                                          OPEN); //Unconnected
@@ -3432,10 +3432,10 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //Type->num_pins) if a logical pin has multiple specified physical
     //pinlocations (i.e. appears on multiple sides of the block)
     auto num_dir = vtr::NdMatrix<int, 4>({
-                                             size_t(Type->width),           //[0..width-1]
+                                                 size_t(Type->width),           //[0..width-1]
                                              size_t(Type->height),          //[0..height-1]
                                              size_t(grid.get_num_layers()), //[0..layer-1]
-                                             NUM_SIDES                      //[0..NUM_SIDES-1]
+                                             NUM_2D_SIDES                      //[0..NUM_2D_SIDES-1]
                                          },
                                          0);
 
@@ -3445,20 +3445,20 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //
     //Max possible space alloced for simplicity
     auto dir_list = vtr::NdMatrix<int, 5>({
-                                              size_t(Type->width),                                   //[0..width-1]
+                                                  size_t(Type->width),                                   //[0..width-1]
                                               size_t(Type->height),                                  //[0..height-1]
                                               size_t(grid.get_num_layers()),                         //[0..layer-1]
-                                              NUM_SIDES,                                             //[0..NUM_SIDES-1]
+                                              NUM_2D_SIDES,                                             //[0..NUM_2D_SIDES-1]
                                               size_t(Type->num_pins) * size_t(grid.get_num_layers()) //[0..num_pins * num_layers-1]
                                           },
                                           -1); //Defensive coding: Initialize to invalid
 
     //Number of currently assigned physical pins
     auto num_done_per_dir = vtr::NdMatrix<int, 4>({
-                                                      size_t(Type->width),           //[0..width-1]
+                                                          size_t(Type->width),           //[0..width-1]
                                                       size_t(Type->height),          //[0..height-1]
                                                       size_t(grid.get_num_layers()), //[0..layer-1]
-                                                      NUM_SIDES                      //[0..NUM_SIDES-1]
+                                                      NUM_2D_SIDES                      //[0..NUM_2D_SIDES-1]
                                                   },
                                                   0);
 
@@ -3748,7 +3748,7 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
      * counts will not get too big.
      */
     std::vector<std::vector<std::vector<std::vector<char>>>> excess_tracks_selected;
-    excess_tracks_selected.resize(NUM_SIDES);
+    excess_tracks_selected.resize(NUM_2D_SIDES);
 
     for (int i = 0; i < num_phys_pins; ++i) {
         int width = pin_locations[i].width_offset;
@@ -3758,7 +3758,7 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
         max_height = std::max(max_height, height);
     }
 
-    for (int iside = 0; iside < NUM_SIDES; iside++) {
+    for (int iside = 0; iside < NUM_2D_SIDES; iside++) {
         excess_tracks_selected[iside].resize(max_width + 1);
 
         for (int dx = 0; dx <= max_width; dx++) {
@@ -4363,7 +4363,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
         /* Find matching direct clb-to-clb connections with the same type as current grid location */
         if (clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
 
-            if (directs[i].from_side != NUM_SIDES && directs[i].from_side != side) continue;
+            if (directs[i].from_side != NUM_2D_SIDES && directs[i].from_side != side) continue;
 
             //Offset must be in range
             if (x + directs[i].x_offset < int(device_ctx.grid.width() - 1)
@@ -4431,7 +4431,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                         /* Add new ipin edge to list of edges */
                         std::vector<RRNodeId> inodes;
 
-                        if (directs[i].to_side != NUM_SIDES) {
+                        if (directs[i].to_side != NUM_2D_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
                             RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin, directs[i].to_side);
                             if (inode) {

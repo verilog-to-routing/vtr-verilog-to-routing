@@ -4922,9 +4922,9 @@ int find_switch_by_name(const t_arch& arch, std::string switch_name) {
 }
 
 e_side string_to_side(std::string side_str) {
-    e_side side = NUM_SIDES;
+    e_side side = NUM_2D_SIDES;
     if (side_str.empty()) {
-        side = NUM_SIDES;
+        side = NUM_2D_SIDES;
     } else if (side_str == "left") {
         side = LEFT;
     } else if (side_str == "right") {

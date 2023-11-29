@@ -1155,7 +1155,7 @@ vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_in
             for (auto layer = 0; layer < grid_ctx.get_num_layers(); layer++){
                 for (auto from_side : TOTAL_SIDES) {
                     for (auto to_side : TOTAL_SIDES) {
-                        if (from_side < NUM_SIDES && to_side < NUM_SIDES) { //this connection is not crossing any layer
+                        if (from_side < NUM_2D_SIDES && to_side < NUM_2D_SIDES) { //this connection is not crossing any layer
                             continue;
                         } else if (from_side == to_side) {
                             continue;
@@ -1481,9 +1481,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.height(), grid.width(), rr_type, NUM_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.height(), grid.width(), rr_type, NUM_2D_SIDES);
         } else {
-            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_2D_SIDES);
         }
     }
 
@@ -2660,12 +2660,12 @@ void load_sblock_pattern_lookup(const int i,
     /* SB's range from (0, 0) to (grid.width() - 2, grid.height() - 2) */
     /* First find all four sides' incoming wires */
 
-    static_assert(NUM_SIDES == 4, "Should be 4 sides");
-    std::array<std::vector<int>, NUM_SIDES> wire_mux_on_track;
-    std::array<std::vector<int>, NUM_SIDES> incoming_wire_label;
-    int num_incoming_wires[NUM_SIDES];
-    int num_ending_wires[NUM_SIDES];
-    int num_wire_muxes[NUM_SIDES];
+    static_assert(NUM_2D_SIDES == 4, "Should be 4 sides");
+    std::array<std::vector<int>, NUM_2D_SIDES> wire_mux_on_track;
+    std::array<std::vector<int>, NUM_2D_SIDES> incoming_wire_label;
+    int num_incoming_wires[NUM_2D_SIDES];
+    int num_ending_wires[NUM_2D_SIDES];
+    int num_wire_muxes[NUM_2D_SIDES];
 
     /* "Label" the wires around the switch block by connectivity. */
     for (e_side side : SIDES) {

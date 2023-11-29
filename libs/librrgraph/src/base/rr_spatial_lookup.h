@@ -73,7 +73,7 @@ class RRSpatialLookup {
                        int y,
                        t_rr_type type,
                        int ptc,
-                       e_side side = NUM_SIDES) const;
+                       e_side side = NUM_2D_SIDES) const;
 
     /**
      * @brief Returns the indices of the specified routing resource nodes, representing routing tracks in a channel.  

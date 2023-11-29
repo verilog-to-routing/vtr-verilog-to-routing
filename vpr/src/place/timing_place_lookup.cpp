@@ -1041,7 +1041,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 //Check that the from pin exists at this from location
                 //(with multi-width/height blocks pins may not exist at all locations)
                 bool from_pin_found = false;
-                if (direct->from_side != NUM_SIDES) {
+                if (direct->from_side != NUM_2D_SIDES) {
                     RRNodeId from_pin_rr = node_lookup.find_node(layer_num, x, y, OPIN, from_pin, direct->from_side);
                     from_pin_found = from_pin_rr.is_valid();
                 } else {
@@ -1057,7 +1057,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 //Check that the from pin exists at this from location
                 //(with multi-width/height blocks pins may not exist at all locations)
                 bool to_pin_found = false;
-                if (direct->to_side != NUM_SIDES) {
+                if (direct->to_side != NUM_2D_SIDES) {
                     RRNodeId to_pin_rr = node_lookup.find_node(layer_num, to_x, to_y, IPIN, to_pin, direct->to_side);
                     to_pin_found = (to_pin_rr != RRNodeId::INVALID());
                 } else {

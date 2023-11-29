@@ -686,7 +686,7 @@ class t_rr_graph_storage {
                           rr_node_typename[node_data.type_]);
         }
         // Return a vector showing only the sides that the node appears
-        std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
+        std::bitset<NUM_2D_SIDES> side_tt = node_storage[id].dir_side_.sides;
         return side_tt[size_t(side)];
     }
 

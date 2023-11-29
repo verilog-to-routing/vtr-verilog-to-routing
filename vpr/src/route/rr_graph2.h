@@ -67,7 +67,7 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
                       int y,
                       t_rr_type rr_type,
                       int ptc,
-                      e_side side = NUM_SIDES);
+                      e_side side = NUM_2D_SIDES);
 
 //Return how many connection inside switch blocks located at each grid location are going to a different layer
 vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,

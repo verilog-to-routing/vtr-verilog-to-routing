@@ -16,20 +16,20 @@ RRNodeId RRSpatialLookup::find_node(int layer,
      * - For other types of nodes, there is no need to define a side. However, a default value
      *   is needed when store the node in the fast look-up data structure.
      *   Here we just arbitrary use the first side of the SIDE vector as the default value.
-     *   We may consider to use NUM_SIDES as the default value but it will cause an increase
+     *   We may consider to use NUM_2D_SIDES as the default value but it will cause an increase
      *   in the dimension of the fast look-up data structure.
      *   Please note that in the add_node function, we should keep the SAME convention!
      */
     e_side node_side = side;
     if (type == IPIN || type == OPIN) {
-        VTR_ASSERT_MSG(side != NUM_SIDES, "IPIN/OPIN must specify desired side (can not be default NUM_SIDES)");
+        VTR_ASSERT_MSG(side != NUM_2D_SIDES, "IPIN/OPIN must specify desired side (can not be default NUM_2D_SIDES)");
     } else {
         VTR_ASSERT_SAFE(type != IPIN && type != OPIN);
         node_side = SIDES[0];
     }
 
     /* Pre-check: the layer, x, y, side and ptc should be non-negative numbers! Otherwise, return an invalid id */
-    if ((layer < 0) || (x < 0) || (y < 0) || (node_side == NUM_SIDES) || (ptc < 0)) {
+    if ((layer < 0) || (x < 0) || (y < 0) || (node_side == NUM_2D_SIDES) || (ptc < 0)) {
         return RRNodeId::INVALID();
     }
 
@@ -170,7 +170,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
 
     /* TODO: Consider to access the raw data like find_node() rather than calling find_node() many times, which hurts runtime */
     if (rr_type == IPIN || rr_type == OPIN) {
-        indices.reserve(NUM_SIDES);
+        indices.reserve(NUM_2D_SIDES);
         //For pins, we need to look at all the sides of the current grid tile
         for (e_side side : SIDES) {
             RRNodeId rr_node_index = find_node(layer, x, y, rr_type, ptc, side);
