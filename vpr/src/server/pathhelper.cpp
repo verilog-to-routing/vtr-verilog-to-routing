@@ -10,7 +10,7 @@
 #include <sstream>
 #include <cassert>
 
-std::string getPathsStr(const std::vector<tatum::TimingPath>& paths, int detailesLevel, bool is_flat_routing) 
+std::string getPathsStr(const std::vector<tatum::TimingPath>& paths, const std::string& detailsLevel, bool is_flat_routing) 
 {
     // shortcuts
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -22,7 +22,19 @@ std::string getPathsStr(const std::vector<tatum::TimingPath>& paths, int detaile
     auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat_routing);
     
     VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, *analysis_delay_calc.get(), is_flat_routing);
-    resolver.set_detail_level(static_cast<e_timing_report_detail>(detailesLevel));
+    e_timing_report_detail detailesLevelEnum = e_timing_report_detail::NETLIST;
+    if (detailsLevel == "netlist") {
+        detailesLevelEnum = e_timing_report_detail::NETLIST;
+    } else if (detailsLevel == "aggregated") {
+        detailesLevelEnum = e_timing_report_detail::AGGREGATED;
+    } else if (detailsLevel == "detailed") {
+        detailesLevelEnum = e_timing_report_detail::DETAILED_ROUTING;
+    } else if (detailsLevel == "debug") {
+        detailesLevelEnum = e_timing_report_detail::DEBUG;
+    } else {
+        std::cerr << "unhandled option" << detailsLevel << std::endl;
+    }
+    resolver.set_detail_level(detailesLevelEnum);
     //
 
     std::stringstream ss;

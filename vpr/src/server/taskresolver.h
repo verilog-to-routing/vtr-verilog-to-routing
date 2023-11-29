@@ -8,7 +8,7 @@
 #ifndef STANDALONE_APP
 namespace ezgl {
     class application;
-};
+}
 #endif
 
 class TaskResolver {

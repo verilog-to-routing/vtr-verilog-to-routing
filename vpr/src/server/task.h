@@ -28,7 +28,7 @@ public:
     bool isFinished() const { return m_isFinished; }
     bool hasError() const { return m_hasError; }
 
-    void error(const std::string& error) {
+    void fail(const std::string& error) {
         std::cout << "task " << info() << " finished with error " << error << std::endl;
         m_result = error;
         m_isFinished = true;
