@@ -5,8 +5,6 @@
 #ifndef VTR_ROUTER_LOOKAHEAD_SPARSE_MAP_H
 #define VTR_ROUTER_LOOKAHEAD_SPARSE_MAP_H
 
-#pragma once
-
 #include <string>
 #include <limits>
 #include "vtr_ndmatrix.h"
@@ -54,5 +52,26 @@ class CompressedMapLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write_intra_cluster unimplemented");
     }
 };
+
+class Cost_Entry {
+  public:
+    float delay;
+    float congestion;
+
+    Cost_Entry()
+        : Cost_Entry(std::numeric_limits<float>::quiet_NaN(),
+                     std::numeric_limits<float>::quiet_NaN()) {
+    }
+
+    Cost_Entry(float set_delay, float set_congestion) {
+        delay = set_delay;
+        congestion = set_congestion;
+    }
+};
+
+typedef vtr::NdMatrix<Cost_Entry, 6> t_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+                                                      //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
+                                                      // The first index is the layer number that the node under consideration is on, and the forth index
+                                                      // is the layer number that the target node is on.
 
 #endif //VTR_ROUTER_LOOKAHEAD_SPARSE_MAP_H
