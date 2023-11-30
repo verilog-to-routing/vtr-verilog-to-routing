@@ -34,6 +34,28 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     t_physical_tile_type_ptr physical_tile,
                                     RRNodeId starting_node_id);
 
+/* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
+ * to that pin is stored is added to an entry in the routing_cost_map */
+static void run_dijkstra(RRNodeId start_node,
+                  int start_x,
+                  int start_y,
+                  util::t_routing_cost_map& routing_cost_map,
+                  util::t_dijkstra_data* data);
+
+static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
+                                vtr::vector<RRNodeId, float>& node_visited_costs,
+                                vtr::vector<RRNodeId, bool>& node_expanded,
+                                std::priority_queue<util::PQ_Entry>& pq);
+
+static void adjust_rr_position(const RRNodeId rr, int& x, int& y);
+
+static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y);
+
+static void adjust_rr_wire_position(const RRNodeId rr, int& x, int& y);
+
+static void adjust_rr_src_sink_position(const RRNodeId rr, int& x, int& y);
+
+
 // Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
 // These are used when finding all the delays to get to the IPINs of all the different tile types
 // of the device.
@@ -488,6 +510,102 @@ RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int t
     }
 
     return result;
+}
+
+/* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
+void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int* delta_x, int* delta_y) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    e_rr_type from_type = rr_graph.node_type(from_node);
+    e_rr_type to_type = rr_graph.node_type(to_node);
+
+    if (!is_chan(from_type) && !is_chan(to_type)) {
+        //Alternate formulation for non-channel types
+        int from_x = 0;
+        int from_y = 0;
+        adjust_rr_position(from_node, from_x, from_y);
+
+        int to_x = 0;
+        int to_y = 0;
+        adjust_rr_position(to_node, to_x, to_y);
+
+        *delta_x = to_x - from_x;
+        *delta_y = to_y - from_y;
+    } else {
+        //Traditional formulation
+
+        /* get chan/seg coordinates of the from/to nodes. seg coordinate is along the wire,
+         * chan coordinate is orthogonal to the wire */
+        int from_seg_low;
+        int from_seg_high;
+        int from_chan;
+        int to_seg;
+        int to_chan;
+        if (from_type == CHANY) {
+            from_seg_low = rr_graph.node_ylow(from_node);
+            from_seg_high = rr_graph.node_yhigh(from_node);
+            from_chan = rr_graph.node_xlow(from_node);
+            to_seg = rr_graph.node_ylow(to_node);
+            to_chan = rr_graph.node_xlow(to_node);
+        } else {
+            from_seg_low = rr_graph.node_xlow(from_node);
+            from_seg_high = rr_graph.node_xhigh(from_node);
+            from_chan = rr_graph.node_ylow(from_node);
+            to_seg = rr_graph.node_xlow(to_node);
+            to_chan = rr_graph.node_ylow(to_node);
+        }
+
+        /* now we want to count the minimum number of *channel segments* between the from and to nodes */
+        int delta_seg, delta_chan;
+
+        /* orthogonal to wire */
+        int no_need_to_pass_by_clb = 0; //if we need orthogonal wires then we don't need to pass by the target CLB along the current wire direction
+        if (to_chan > from_chan + 1) {
+            /* above */
+            delta_chan = to_chan - from_chan;
+            no_need_to_pass_by_clb = 1;
+        } else if (to_chan < from_chan) {
+            /* below */
+            delta_chan = from_chan - to_chan + 1;
+            no_need_to_pass_by_clb = 1;
+        } else {
+            /* adjacent to current channel */
+            delta_chan = 0;
+            no_need_to_pass_by_clb = 0;
+        }
+
+        /* along same direction as wire. */
+        if (to_seg > from_seg_high) {
+            /* ahead */
+            delta_seg = to_seg - from_seg_high - no_need_to_pass_by_clb;
+        } else if (to_seg < from_seg_low) {
+            /* behind */
+            delta_seg = from_seg_low - to_seg - no_need_to_pass_by_clb;
+        } else {
+            /* along the span of the wire */
+            delta_seg = 0;
+        }
+
+        /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
+         * that are opposite of the wire direction, let's add 1 to delta_seg */
+        Direction from_dir = rr_graph.node_direction(from_node);
+        if (is_chan(from_type)
+            && ((to_seg < from_seg_low && from_dir == Direction::INC) || (to_seg > from_seg_high && from_dir == Direction::DEC))) {
+            delta_seg++;
+        }
+
+        if (from_type == CHANY) {
+            *delta_x = delta_chan;
+            *delta_y = delta_seg;
+        } else {
+            *delta_x = delta_seg;
+            *delta_y = delta_chan;
+        }
+    }
+
+    VTR_ASSERT_SAFE(std::abs(*delta_x) < (int)device_ctx.grid.width());
+    VTR_ASSERT_SAFE(std::abs(*delta_y) < (int)device_ctx.grid.height());
 }
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
@@ -1017,4 +1135,239 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
             }
         }
     }
+}
+
+/* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
+ * to that pin is stored is added to an entry in the routing_cost_map */
+static void run_dijkstra(RRNodeId start_node,
+                  int start_x,
+                  int start_y,
+                  util::t_routing_cost_map& routing_cost_map,
+                  util::t_dijkstra_data* data) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    auto& node_expanded = data->node_expanded;
+    node_expanded.resize(rr_graph.num_nodes());
+    std::fill(node_expanded.begin(), node_expanded.end(), false);
+
+    auto& node_visited_costs = data->node_visited_costs;
+    node_visited_costs.resize(rr_graph.num_nodes());
+    std::fill(node_visited_costs.begin(), node_visited_costs.end(), -1.0);
+
+    /* a priority queue for expansion */
+    std::priority_queue<util::PQ_Entry>& pq = data->pq;
+
+    //Clear priority queue if non-empty
+    while (!pq.empty()) {
+        pq.pop();
+    }
+
+    /* first entry has no upstream delay or congestion */
+    util::PQ_Entry first_entry(start_node, UNDEFINED, 0, 0, 0, true);
+
+    pq.push(first_entry);
+
+    /* now do routing */
+    while (!pq.empty()) {
+        util::PQ_Entry current = pq.top();
+        pq.pop();
+
+        RRNodeId curr_node = current.rr_node;
+
+        /* check that we haven't already expanded from this node */
+        if (node_expanded[curr_node]) {
+            continue;
+        }
+
+        //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, curr_node).c_str());
+
+        /* if this node is an ipin record its congestion/delay in the routing_cost_map */
+        if (rr_graph.node_type(curr_node) == IPIN) {
+            int ipin_x = rr_graph.node_xlow(curr_node);
+            int ipin_y = rr_graph.node_ylow(curr_node);
+            int ipin_layer = rr_graph.node_layer(curr_node);
+
+            if (ipin_x >= start_x && ipin_y >= start_y) {
+                int delta_x, delta_y;
+                util::get_xy_deltas(start_node, curr_node, &delta_x, &delta_y);
+                delta_x = std::abs(delta_x);
+                delta_y = std::abs(delta_y);
+
+                routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(util::e_representative_entry_method::SMALLEST,
+                                                                              current.delay,
+                                                                              current.congestion_upstream);
+            }
+        }
+
+        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
+        node_expanded[curr_node] = true;
+    }
+}
+
+/* iterates over the children of the specified node and selectively pushes them onto the priority queue */
+static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
+                                vtr::vector<RRNodeId, float>& node_visited_costs,
+                                vtr::vector<RRNodeId, bool>& node_expanded,
+                                std::priority_queue<util::PQ_Entry>& pq) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    RRNodeId parent = parent_entry.rr_node;
+
+    for (t_edge_size edge : rr_graph.edges(parent)) {
+        RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
+        // For the time being, we decide to not let the lookahead explore the node inside the clusters
+        t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(child_node),
+                                                                                    rr_graph.node_ylow(child_node),
+                                                                                    rr_graph.node_layer(child_node)});
+
+        if (!is_inter_cluster_node(physical_type,
+                                   rr_graph.node_type(child_node),
+                                   rr_graph.node_ptc_num(child_node))) {
+            continue;
+        }
+        int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
+
+        if (rr_graph.node_type(child_node) == SINK) return;
+
+        /* skip this child if it has already been expanded from */
+        if (node_expanded[child_node]) {
+            continue;
+        }
+
+        util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
+                             parent_entry.R_upstream, parent_entry.congestion_upstream, false);
+
+        //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
+
+        /* skip this child if it has been visited with smaller cost */
+        if (node_visited_costs[child_node] >= 0 && node_visited_costs[child_node] < child_entry.cost) {
+            continue;
+        }
+
+        /* finally, record the cost with which the child was visited and put the child entry on the queue */
+        node_visited_costs[child_node] = child_entry.cost;
+        pq.push(child_entry);
+    }
+}
+
+static void adjust_rr_position(const RRNodeId rr, int& x, int& y) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    e_rr_type rr_type = rr_graph.node_type(rr);
+
+    if (is_chan(rr_type)) {
+        adjust_rr_wire_position(rr, x, y);
+    } else if (is_pin(rr_type)) {
+        adjust_rr_pin_position(rr, x, y);
+    } else {
+        VTR_ASSERT_SAFE(is_src_sink(rr_type));
+        adjust_rr_src_sink_position(rr, x, y);
+    }
+}
+
+static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y) {
+    /*
+     * VPR uses a co-ordinate system where wires above and to the right of a block
+     * are at the same location as the block:
+     *
+     *
+     *       <-----------C
+     *    D
+     *    |  +---------+  ^
+     *    |  |         |  |
+     *    |  |  (1,1)  |  |
+     *    |  |         |  |
+     *    V  +---------+  |
+     *                    A
+     *     B----------->
+     *
+     * So wires are located as follows:
+     *
+     *      A: (1, 1) CHANY
+     *      B: (1, 0) CHANX
+     *      C: (1, 1) CHANX
+     *      D: (0, 1) CHANY
+     *
+     * But all pins incident on the surrounding channels
+     * would be at (1,1) along with a relevant side.
+     *
+     * In the following, we adjust the positions of pins to
+     * account for the channel they are incident too.
+     *
+     * Note that blocks at (0,*) such as IOs, may have (unconnected)
+     * pins on the left side, so we also clip the minimum x to zero.
+     * Similarly for blocks at (*,0) we clip the minimum y to zero.
+     */
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_graph;
+
+    VTR_ASSERT_SAFE(is_pin(rr_graph.node_type(rr)));
+    VTR_ASSERT_SAFE(rr_graph.node_xlow(rr) == rr_graph.node_xhigh(rr));
+    VTR_ASSERT_SAFE(rr_graph.node_ylow(rr) == rr_graph.node_yhigh(rr));
+
+    x = rr_graph.node_xlow(rr);
+    y = rr_graph.node_ylow(rr);
+
+    /* Use the first side we can find
+     * Note that this may NOT return an accurate coordinate
+     * when a rr node appears on different sides
+     * However, current test show that the simple strategy provides
+     * a good trade-off between runtime and quality of results
+     */
+    e_side rr_side = NUM_SIDES;
+    for (const e_side& candidate_side : SIDES) {
+        if (rr_graph.is_node_on_specific_side(rr, candidate_side)) {
+            rr_side = candidate_side;
+            break;
+        }
+    }
+    VTR_ASSERT_SAFE(NUM_SIDES != rr_side);
+
+    if (rr_side == LEFT) {
+        x -= 1;
+        x = std::max(x, 0);
+    } else if (rr_side == BOTTOM && y > 0) {
+        y -= 1;
+        y = std::max(y, 0);
+    }
+}
+
+static void adjust_rr_wire_position(const RRNodeId rr, int& x, int& y) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    VTR_ASSERT_SAFE(is_chan(rr_graph.node_type(rr)));
+
+    Direction rr_dir = rr_graph.node_direction(rr);
+
+    if (rr_dir == Direction::DEC) {
+        x = rr_graph.node_xhigh(rr);
+        y = rr_graph.node_yhigh(rr);
+    } else if (rr_dir == Direction::INC) {
+        x = rr_graph.node_xlow(rr);
+        y = rr_graph.node_ylow(rr);
+    } else {
+        VTR_ASSERT_SAFE(rr_dir == Direction::BIDIR);
+        //Not sure what to do here...
+        //Try average for now.
+        x = vtr::nint((rr_graph.node_xlow(rr) + rr_graph.node_xhigh(rr)) / 2.);
+        y = vtr::nint((rr_graph.node_ylow(rr) + rr_graph.node_yhigh(rr)) / 2.);
+    }
+}
+
+static void adjust_rr_src_sink_position(const RRNodeId rr, int& x, int& y) {
+    //SOURCE/SINK nodes assume the full dimensions of their
+    //associated block
+    //
+    //Use the average position.
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    VTR_ASSERT_SAFE(is_src_sink(rr_graph.node_type(rr)));
+
+    x = vtr::nint((rr_graph.node_xlow(rr) + rr_graph.node_xhigh(rr)) / 2.);
+    y = vtr::nint((rr_graph.node_ylow(rr) + rr_graph.node_yhigh(rr)) / 2.);
 }
