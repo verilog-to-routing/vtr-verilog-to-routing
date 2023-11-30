@@ -50,15 +50,6 @@
 #    include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
-/* we will profile delay/congestion using this many tracks for each wire type */
-#define MAX_TRACK_OFFSET 16
-
-/* we're profiling routing cost over many tracks for each wire type, so we'll have many cost entries at each |dx|,|dy| offset.
- * there are many ways to "boil down" the many costs at each offset to a single entry for a given (wire type, chan_type) combination --
- * we can take the smallest cost, the average, median, etc. This define selects the method we use.
- * See e_representative_entry_method */
-#define REPRESENTATIVE_ENTRY_METHOD SMALLEST
-
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
  * calculated */
