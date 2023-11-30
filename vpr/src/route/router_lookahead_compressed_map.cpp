@@ -93,17 +93,17 @@ static std::vector<SamplingRegion> get_sampling_points(const std::vector<t_segme
 
     for (int x = 0; x < grid_width; x+=max_seg_lenght) {
         for (int y = 0; y < grid_height; y+=max_seg_lenght) {
-            SamplingRegion sampling_region(x + max_seg_lenght, y + max_seg_lenght, x, y, -1);
+            int step;
             if (x == 0 && y == 0) {
-                sampling_region.step = 1;
+                step= 1;
             } else if (x < 2*max_seg_lenght && y < 2*max_seg_lenght) {
-                    sampling_region.step = 2;
-
-            } else if (x < 4*max_seg_lenght || y < 4*max_seg_lenght) {
-                sampling_region.step = 4;
+                    step = 2;
+            } else if (x < 4*max_seg_lenght && y < 4*max_seg_lenght) {
+                step = 4;
             } else {
-                sampling_region.step = 8;
+                step = 8;
             }
+            sampling_regions.emplace_back(x+max_seg_lenght, y+max_seg_lenght, x, y, step);
         }
     }
 
