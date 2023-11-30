@@ -46,7 +46,7 @@ const RoutingScheme UserRouteConstraints::get_route_scheme_by_net_name(std::stri
     {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                   "in get_route_scheme_by_net_name: no routing constraints exist for net name %s \n",
-                  net_name);
+                  net_name.c_str());
     }
 
     RoutingScheme route_scheme;
