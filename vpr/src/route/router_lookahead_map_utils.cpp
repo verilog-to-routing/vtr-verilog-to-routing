@@ -69,52 +69,6 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
 
 namespace util {
 
-PQ_Entry::PQ_Entry(
-    RRNodeId set_rr_node,
-    int switch_ind,
-    float parent_delay,
-    float parent_R_upstream,
-    float parent_congestion_upstream,
-    bool starting_node,
-    float Tsw_adjust) {
-    this->rr_node = set_rr_node;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    this->delay = parent_delay;
-    this->congestion_upstream = parent_congestion_upstream;
-    this->R_upstream = parent_R_upstream;
-    if (!starting_node) {
-        float Tsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).Tdel;
-        Tsw += Tsw_adjust;
-        VTR_ASSERT(Tsw >= 0.f);
-        float Rsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).R;
-        float Cnode = rr_graph.node_C(set_rr_node);
-        float Rnode = rr_graph.node_R(set_rr_node);
-
-        float T_linear = 0.f;
-        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).buffered()) {
-            T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
-        } else { /* Pass transistor */
-            T_linear = Tsw + 0.5 * Rsw * Cnode;
-        }
-
-        float base_cost = 0.f;
-        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).configurable()) {
-            base_cost = get_single_rr_cong_base_cost(set_rr_node);
-        }
-
-        VTR_ASSERT(T_linear >= 0.);
-        VTR_ASSERT(base_cost >= 0.);
-        this->delay += T_linear;
-
-        this->congestion_upstream += base_cost;
-    }
-
-    /* set the cost of this node */
-    this->cost = this->delay;
-}
-
 util::PQ_Entry_Delay::PQ_Entry_Delay(
     RRNodeId set_rr_node,
     int switch_ind,

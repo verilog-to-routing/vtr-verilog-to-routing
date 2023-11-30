@@ -24,6 +24,7 @@
 #include "vtr_geometry.h"
 #include "rr_node.h"
 #include "rr_graph_view.h"
+#include "globals.h"
 
 /* we will profile delay/congestion using this many tracks for each wire type */
 #define MAX_TRACK_OFFSET 16
@@ -182,25 +183,6 @@ struct HashRoutingCostKey {
 
 // Map used to store intermediate routing costs
 typedef std::unordered_map<RoutingCostKey, float, HashRoutingCostKey> RoutingCosts;
-
-/* a class that represents an entry in the Dijkstra expansion priority queue */
-class PQ_Entry {
-  public:
-    RRNodeId rr_node; //index in device_ctx.rr_nodes that this entry represents
-    float cost;       //the cost of the path to get to this node
-
-    /* store backward delay, R and congestion info */
-    float delay;
-    float R_upstream;
-    float congestion_upstream;
-
-    PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node, float Tsw_adjust);
-
-    bool operator<(const PQ_Entry& obj) const {
-        /* inserted into max priority queue so want queue entries with a lower cost to be greater */
-        return (this->cost > obj.cost);
-    }
-};
 
 // A version of PQ_Entry that only calculates and stores the delay.
 class PQ_Entry_Delay {

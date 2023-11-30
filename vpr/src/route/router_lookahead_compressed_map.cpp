@@ -98,6 +98,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
 
     auto sampling_regions = get_sampling_regions(segment_inf);
