@@ -25,11 +25,17 @@ static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId node_to_add,
                                     RRNodeId target_node);
 
-static void update_router_stats(const DeviceContext& device_ctx,
-                                const RRGraphView* rr_graph,
-                                RouterStats* router_stats,
-                                RRNodeId rr_node_id,
-                                bool is_push);
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+static void update_router_stats(const RRGraphView* rr_graph,
+                                       RouterStats* router_stats,
+                                       RRNodeId rr_node_id,
+                                       bool is_push);
+#else
+static void update_router_stats(const RRGraphView* /*rr_graph*/,
+                                       RouterStats* router_stats,
+                                       RRNodeId /*rr_node_id*/,
+                                       bool is_push);
+#endif
 
 /** return tuple <found_path, retry_with_full_bb, cheapest> */
 template<typename Heap>
@@ -214,8 +220,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         cheapest = heap_.get_heap_head();
-        update_router_stats(device_ctx,
-                            rr_graph_,
+        update_router_stats(rr_graph_,
                             router_stats_,
                             cheapest->index,
                             false);
@@ -304,8 +309,7 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         t_heap* cheapest = heap_.get_heap_head();
-        update_router_stats(g_vpr_ctx.device(),
-                            rr_graph_,
+        update_router_stats(rr_graph_,
                             router_stats_,
                             cheapest->index,
                             false);
@@ -613,8 +617,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         }
 
         heap_.add_to_heap(next_ptr);
-        update_router_stats(device_ctx,
-                            rr_graph_,
+        update_router_stats(rr_graph_,
                             router_stats_,
                             to_node,
                             true);
@@ -927,8 +930,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                                  backward_path_cost, R_upstream, rt_node.Tdel, &rcv_path_manager);
     }
 
-    update_router_stats(device_ctx,
-                        rr_graph_,
+    update_router_stats(rr_graph_,
                         router_stats_,
                         inode,
                         true);
@@ -1098,11 +1100,17 @@ static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
     return false;
 }
 
-static inline void update_router_stats(const DeviceContext& device_ctx,
-                                       const RRGraphView* rr_graph,
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+static inline void update_router_stats(const RRGraphView* rr_graph,
                                        RouterStats* router_stats,
                                        RRNodeId rr_node_id,
                                        bool is_push) {
+#else
+static inline void update_router_stats(const RRGraphView* /*rr_graph*/,
+                                       RouterStats* router_stats,
+                                       RRNodeId /*rr_node_id*/,
+                                       bool is_push) {
+#endif
     if (is_push) {
         router_stats->heap_pushes++;
     } else {
@@ -1110,6 +1118,7 @@ static inline void update_router_stats(const DeviceContext& device_ctx,
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
+    const auto& device_ctx = g_vpr_ctx.device();
     auto node_type = rr_graph->node_type(rr_node_id);
     VTR_ASSERT(node_type != NUM_RR_TYPES);
     t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph->node_xlow(rr_node_id),
