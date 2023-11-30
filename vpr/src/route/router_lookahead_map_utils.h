@@ -37,6 +37,16 @@
 
 namespace util {
 
+struct t_dijkstra_data {
+    /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
+    vtr::vector<RRNodeId, bool> node_expanded;
+    /* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
+     * a candidate node onto the expansion queue */
+    vtr::vector<RRNodeId, float> node_visited_costs;
+    /* a priority queue for expansion */
+    std::priority_queue<PQ_Entry> pq;
+};
+
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
  * calculated */

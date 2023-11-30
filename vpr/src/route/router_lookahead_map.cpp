@@ -180,16 +180,6 @@ class PQ_Entry {
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
 typedef vtr::NdMatrix<Expansion_Cost_Entry, 3> t_routing_cost_map; //[0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
-struct t_dijkstra_data {
-    /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
-    vtr::vector<RRNodeId, bool> node_expanded;
-    /* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
-     * a candidate node onto the expansion queue */
-    vtr::vector<RRNodeId, float> node_visited_costs;
-    /* a priority queue for expansion */
-    std::priority_queue<PQ_Entry> pq;
-};
-
 /******** File-Scope Variables ********/
 
 //Look-up table from CHANX/CHANY (to SINKs) for various distances
@@ -767,7 +757,7 @@ static void run_dijkstra(RRNodeId start_node,
                          int start_x,
                          int start_y,
                          t_routing_cost_map& routing_cost_map,
-                         t_dijkstra_data* data) {
+                         util::t_dijkstra_data* data) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
