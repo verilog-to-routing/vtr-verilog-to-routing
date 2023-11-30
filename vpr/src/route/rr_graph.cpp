@@ -484,6 +484,16 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int wire_to_pin_between_dice_switch,
                           const enum e_directionality directionality);
 
+/**
+ * @brief builds the extra length-0 CHANX nodes to handle 3D custom switchblocks edges in the RR graph.
+ *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
+ *  @param layer switch block layer-coordinate
+ *  @param x_coord switch block x_coordinate
+ *  @param y_coord switch block y-coordinate
+ *  @param const_index_offset index to the correct node type for RR node cost initialization
+ *  @param nodes_per_chan max tracks per channel (x, y)
+ *  @param chan_details_x channel-x details (length, start and end points, ...)
+ */
 static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
                                               const int layer,
                                               const int x_coord,
@@ -1079,14 +1089,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
     /* END CHAN_DETAILS */
 
-    /* START A SEG DETAIL WITH LENGTH 0 */
-    //define a channel segment with length 0 to support 3d custom switchblocks
-
-    t_chan_seg_details seg_detail_layer;
-    seg_detail_layer.set_length(0);
-
-    /* END A SEG DETAILS WITH LENGTH 0 */
-
     /* START FC */
     /* Determine the actual value of Fc */
     std::vector<vtr::Matrix<int>> Fc_in;  /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..num_segments-1] */
@@ -1262,11 +1264,20 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
     /* END SB LOOKUP */
 
-    /* Add extra nodes to switch blocks for multi-layer FPGAs with custom switch blocks that define track-to_track connections */
-    vtr::NdMatrix<t_inter_die_switchblock_edge, 5> multi_layer_track_conn; //keeps the extra nodes offset and drivers for each destination track
+    /* Add extra nodes to RR graph to support 3D custom switch blocks for multi-layer FPGAs
+     * For each connection in 3D custom switch blocks, multiple drivers can drive the same sink in another layer,
+     * this matrix keeps the drivers and the offset to extra length-0 node index in RR graph for each destination track
+     * based on its coordinate (layer, x, y), track ptc_num, channel type
+     * Access pattern: [0..grid.layer-1][0..grid.width-1][0..grid.height-1][0..max_chan_width-1][CHANX or CHANY]
+     */
+    vtr::NdMatrix<t_inter_die_switchblock_edge, 5> multi_layer_track_conn;
     auto& grid_ctx = device_ctx.grid;
     multi_layer_track_conn.resize(std::array<size_t, 5>{(size_t)grid_ctx.get_num_layers(), grid.width(), grid.height(), (size_t) max_chan_width, 2});
 
+    /* check whether RR graph need to allocate new nodes for 3D custom switch blocks.
+     * To avoid wasting memory, the data structures are only allocated if a custom switch block
+     * is described in the architecture file and we have more than one die in device grid.
+     */
     if (grid.get_num_layers() > 1 && sb_type == CUSTOM) {
         //keep how many nodes each switchblock requires
         auto extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(multi_layer_track_conn, sb_conn_map, device_ctx.rr_graph_builder);
@@ -2158,7 +2169,10 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
         for (size_t i = 0; i < grid.width() - 1; ++i) {
             for (size_t j = 0; j < grid.height() - 1; ++j) {
-                //In multi-die FPGAs with track-to-track connection between layers, we need to load newly added CHANX nodes
+                /* In multi-die FPGAs with track-to-track connections between layers, we need to load newly added length-0 CHANX nodes
+                 * These extra nodes can be driven from many tracks in the source layer and can drive multiple tracks in the destination layer,
+                 * since these die-crossing connections have more delays.
+                 */
                 if (grid.get_num_layers() > 1 && sb_conn_map != nullptr) {
                     //custom switch block defined in the architecture
                     VTR_ASSERT(sblock_pattern.empty() && switch_block_conn.empty());
@@ -3270,11 +3284,22 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const t_chan_seg_details* seg_details = chan_details_x[x_coord][y_coord].data();
 
-    /* Loads up all the extra routing resource nodes required to support multi-die custom switch blocks */
+    /* 3D connections within the switch blocks use some extra length-0 CHANX node to allow a single 3D connection to be driven
+     * by multiple tracks in the source layer, and drives multiple tracks in the destination layer.
+     * These nodes has already been added to RRGraph builder, this function will go through all added nodes
+     * with specific location (layer, x_coord, y_coord) and sets their attributes.
+     *
+     * The extra length-0 nodes have the following attributes to make them distinigushable form normal chanx wires (e.g., length-4):
+     * 1) type: CHANX (could have used either CHANX or CHANY, we used CHANX)
+     * 2) ptc_num: [max_chan_width : max_chan_width + num_of_3d_connections - 1]
+     * 3) length: 0
+     * 4) xhigh=xlow, yhigh=ylow
+     * 5) directionality: NONE (neither incremental nor decremental in 2D space)
+     */
     int start_track = nodes_per_chan.max;
     int offset = 0;
 
-    while (true) {
+    while (true) { //going through allocated nodes until no nodes are found within the RRGraph builder
         RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, CHANX, start_track + offset);
         if (node) {
             rr_graph_builder.set_node_layer(node, layer);
