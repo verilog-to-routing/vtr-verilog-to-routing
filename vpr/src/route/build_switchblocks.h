@@ -114,10 +114,27 @@ typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, 
 
 /************ Functions ************/
 
-/* allocate and build switch block permutation map */
-t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, std::vector<t_switchblock_inf> switchblocks, t_chan_width* nodes_per_chan, enum e_directionality directionality, vtr::RandState& rand_state);
+/**
+ * @brief allocates and builds switch block permutation map
+ *
+ *   @param chan_details_x channel-x details (length, start and end points, ...)
+ *   @param chan_details_y channel-y details (length, start and end points, ...)
+ *   @param grid device grid
+ *   @param inter_cluster_rr used to check if a certain layer contain inter-cluster programmable routing resources (wires and switch blocks)
+ *   @param switchblocks switch block information extracted from the architecture file
+ *   @param nodes_per_chan number of track in each channel (x,y)
+ *   @param directionality specifies the switch block edges direction (unidirectional or bidirectional)
+ *   @param rand_state initialize the random number generator (RNG)
+ *
+ *   @return creates a map between switch blocks (key) and their corresponding edges (value).
+ */
+t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const std::vector<t_switchblock_inf>& switchblocks, t_chan_width* nodes_per_chan, enum e_directionality directionality, vtr::RandState& rand_state);
 
-/* deallocates switch block connections sparse array */
+/**
+ * @brief deallocates switch block connections sparse array
+ *
+ *  @param sb_conns switch block permutation map
+ */
 void free_switchblock_permutations(t_sb_connection_map* sb_conns);
 
 #endif
