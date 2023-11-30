@@ -23,6 +23,9 @@
 #include "rr_graph.h"
 #include "route_common.h"
 
+vtr::Matrix<int> compressed_loc_index_map;
+std::unordered_map<int, std::unordered_set<int>> sample_locations;
+
 
 struct SamplingRegion {
     SamplingRegion() = default;
@@ -36,11 +39,63 @@ struct SamplingRegion {
     int y_max = OPEN;
     int x_min = OPEN;
     int y_min = OPEN;
-
     int step = OPEN;
+
+    int width() const {
+        return x_max - x_min;
+    }
+
+    int height() const {
+        return y_max - y_min;
+    }
 };
 
-static std::vector<SamplingRegion> get_sampling_points(const std::vector<t_segment_inf>& segment_inf);
+static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf);
+
+static void initialize_sample_locations(const std::vector<SamplingRegion>& sampling_regions, size_t num_sampling_points);
+
+static void initialize_index_map(const std::vector<SamplingRegion>& sampling_regions, size_t num_sampling_points);
+
+static void initialize_sample_locations(std::vector<SamplingRegion>& sampling_regions, size_t num_sampling_points) {
+    std::sort(sampling_regions.begin(), sampling_regions.end(), [](const SamplingRegion& a, const SamplingRegion& b) {
+        VTR_ASSERT_DEBUG(a.width() == b.width() && a.height() == b.height());
+        VTR_ASSERT_DEBUG(a.height() != 0 && b.height() != 0);
+
+        if(a.y_max <= b.y_min) {
+            return true;
+        } else if (b.y_max <= a.y_min) {
+            return false;
+        } else{
+            VTR_ASSERT_DEBUG(a.y_min == b.y_min);
+            if (a.x_min < b.x_min) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    });
+
+    int sample_point_num = 0;
+    for (const auto& sample_region: sampling_regions) {
+        int step = sample_region.step;
+        int x_max = sample_region.x_max;
+        int y_max = sample_region.y_max;
+        int x_min = sample_region.x_min;
+        int y_min = sample_region.y_min;
+        for (int x = sample_region.x_min; x < x_max; x += step) {
+            for (int y = y_min; y < y_min; y += step) {
+                if (sample_locations.count(x) == 0) {
+                    sample_locations[x] = std::unordered_set<int>();
+                }
+                sample_locations[x].insert(y);
+            }
+        }
+    }
+    VTR_ASSERT_DEBUG(sample_point_num == num_sampling_points);
+}
+
+static void initialize_index_map(const std::vector<SamplingRegion>& sampling_regions, size_t num_sampling_points) {
+}
 
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf)  {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
@@ -60,17 +115,11 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         compressed_y_size += num_y;
     }
 
-    compressed_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
-                                                2,
-                                                segment_inf.size(),
-                                                static_cast<unsigned long>(grid.get_num_layers()),
-                                                compresses_x_size,
-                                                compressed_y_size});
-
     initialize_index_map(sampling_regions, compresses_x_size * compressed_y_size);
+    initialize_sample_locations(sampling_regions, compresses_x_size * compressed_y_size);
 }
 
-static std::vector<SamplingRegion> get_sampling_points(const std::vector<t_segment_inf>& segment_inf) {
+static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf) {
 
     const auto& grid = g_vpr_ctx.device().grid;
     std::vector<SamplingRegion> sampling_regions;
