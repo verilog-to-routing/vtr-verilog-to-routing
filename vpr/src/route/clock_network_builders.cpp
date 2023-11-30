@@ -6,8 +6,6 @@
 #include "vtr_log.h"
 #include "vtr_error.h"
 
-std::string default_clock_network_name = "clock_network";
-
 void static populate_segment_values(int seg_index,
                                     std::string name,
                                     int length,

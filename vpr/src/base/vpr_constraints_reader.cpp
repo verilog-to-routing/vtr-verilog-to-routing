@@ -12,7 +12,7 @@
 #include "vpr_constraints_reader.h"
 
 void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
-    vtr::ScopedStartFinishTimer timer("Loading VPR constraints file");
+    vtr::ScopedStartFinishTimer timer("Reading VPR constraints from " + std::string(read_vpr_constraints_name));
 
     VprConstraintsSerializer reader;
 

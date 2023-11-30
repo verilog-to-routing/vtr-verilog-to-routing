@@ -95,6 +95,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     auto& rr_graph_builder = device_ctx.rr_graph_builder;
     auto& node_lookup = device_ctx.rr_graph_builder.node_lookup();
     auto& rr_rc_data = device_ctx.rr_rc_data;
+    auto& arch = device_ctx.arch;
     rr_graph_builder.emplace_back();
     RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
 
@@ -108,7 +109,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     int ptc = max_ptc + 1;
 
     rr_graph_builder.set_node_type(node_index, SINK);
-    rr_graph_builder.set_node_name(node_index, default_clock_network_name);
+    rr_graph_builder.set_node_name(node_index, arch->default_clock_network_name);
     rr_graph_builder.set_node_class_num(node_index, ptc);
     rr_graph_builder.set_node_coordinates(node_index, x, y, x, y);
     rr_graph_builder.set_node_layer(node_index, layer);
