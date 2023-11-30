@@ -1272,7 +1272,7 @@ static void build_rr_graph(const t_graph_type graph_type,
      */
     vtr::NdMatrix<t_inter_die_switchblock_edge, 5> multi_layer_track_conn;
     auto& grid_ctx = device_ctx.grid;
-    multi_layer_track_conn.resize(std::array<size_t, 5>{(size_t)grid_ctx.get_num_layers(), grid.width(), grid.height(), (size_t) max_chan_width, 2});
+    multi_layer_track_conn.resize(std::array<size_t, 5>{(size_t)grid_ctx.get_num_layers(), grid.width(), grid.height(), (size_t)max_chan_width, 2});
 
     /* check whether RR graph need to allocate new nodes for 3D custom switch blocks.
      * To avoid wasting memory, the data structures are only allocated if a custom switch block
@@ -3317,8 +3317,7 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
             rr_graph_builder.set_node_direction(node, Direction::NONE);
 
             offset++;
-        }
-        else{
+        } else {
             break;
         }
     }
@@ -3443,11 +3442,11 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     }
 
     auto tracks_connected_to_pin = vtr::NdMatrix<int, 6>({
-                                                                 size_t(Type->num_pins),        //[0..num_pins-1]
+                                                             size_t(Type->num_pins),        //[0..num_pins-1]
                                                              size_t(Type->width),           //[0..width-1]
                                                              size_t(Type->height),          //[0..height-1]
                                                              size_t(grid.get_num_layers()), //[0..layer-1]
-                                                             NUM_2D_SIDES,                     //[0..NUM_2D_SIDES-1]
+                                                             NUM_2D_SIDES,                  //[0..NUM_2D_SIDES-1]
                                                              size_t(Fc)                     //[0..Fc-1]
                                                          },
                                                          OPEN); //Unconnected
@@ -3457,10 +3456,10 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //Type->num_pins) if a logical pin has multiple specified physical
     //pinlocations (i.e. appears on multiple sides of the block)
     auto num_dir = vtr::NdMatrix<int, 4>({
-                                                 size_t(Type->width),           //[0..width-1]
+                                             size_t(Type->width),           //[0..width-1]
                                              size_t(Type->height),          //[0..height-1]
                                              size_t(grid.get_num_layers()), //[0..layer-1]
-                                             NUM_2D_SIDES                      //[0..NUM_2D_SIDES-1]
+                                             NUM_2D_SIDES                   //[0..NUM_2D_SIDES-1]
                                          },
                                          0);
 
@@ -3470,20 +3469,20 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //
     //Max possible space alloced for simplicity
     auto dir_list = vtr::NdMatrix<int, 5>({
-                                                  size_t(Type->width),                                   //[0..width-1]
+                                              size_t(Type->width),                                   //[0..width-1]
                                               size_t(Type->height),                                  //[0..height-1]
                                               size_t(grid.get_num_layers()),                         //[0..layer-1]
-                                              NUM_2D_SIDES,                                             //[0..NUM_2D_SIDES-1]
+                                              NUM_2D_SIDES,                                          //[0..NUM_2D_SIDES-1]
                                               size_t(Type->num_pins) * size_t(grid.get_num_layers()) //[0..num_pins * num_layers-1]
                                           },
                                           -1); //Defensive coding: Initialize to invalid
 
     //Number of currently assigned physical pins
     auto num_done_per_dir = vtr::NdMatrix<int, 4>({
-                                                          size_t(Type->width),           //[0..width-1]
+                                                      size_t(Type->width),           //[0..width-1]
                                                       size_t(Type->height),          //[0..height-1]
                                                       size_t(grid.get_num_layers()), //[0..layer-1]
-                                                      NUM_2D_SIDES                      //[0..NUM_2D_SIDES-1]
+                                                      NUM_2D_SIDES                   //[0..NUM_2D_SIDES-1]
                                                   },
                                                   0);
 

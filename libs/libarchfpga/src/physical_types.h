@@ -181,10 +181,10 @@ enum e_side : unsigned char {
     NUM_3D_SIDES,
 };
 
-constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                    //Set of all side orientations
+constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
 constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
 
-constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                        //Set of all side orientations including different layers
+constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
 constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
 
 /* pin location distributions */

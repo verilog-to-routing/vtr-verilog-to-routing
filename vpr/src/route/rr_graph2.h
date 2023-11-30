@@ -42,7 +42,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const t_chan_width* nodes_per_chan,
                                               const DeviceGrid& grid,
-                                              const vtr::NdMatrix<int,2>& extra_nodes_per_switchblock,
+                                              const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index);
 
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
@@ -87,9 +87,9 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
  *
  * @return number of die-crossing connection for each unique (x, y) location within the grid ([0..grid.width-1][0..grid.height-1])
  */
-vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
-                                              t_sb_connection_map* sb_conn_map,
-                                              RRGraphBuilder& rr_graph_builder);
+vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
+                                                               t_sb_connection_map* sb_conn_map,
+                                                               RRGraphBuilder& rr_graph_builder);
 
 int find_average_rr_node_index(int device_width,
                                int device_height,

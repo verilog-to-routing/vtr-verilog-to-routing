@@ -1183,18 +1183,17 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
-vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
-                                              t_sb_connection_map* sb_conn_map,
-                                              RRGraphBuilder& rr_graph_builder) {
-
+vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
+                                                               t_sb_connection_map* sb_conn_map,
+                                                               RRGraphBuilder& rr_graph_builder) {
     auto& grid_ctx = g_vpr_ctx.device().grid;
     vtr::NdMatrix<int, 2> extra_nodes_per_switchblocks;
     extra_nodes_per_switchblocks.resize(std::array<size_t, 2>{grid_ctx.width(), grid_ctx.height()});
 
     for (size_t y = 0; y < grid_ctx.height(); y++) {
         for (size_t x = 0; x < grid_ctx.width(); x++) {
-            int curr_switchblocks_offset =0;
-            for (auto layer = 0; layer < grid_ctx.get_num_layers(); layer++){
+            int curr_switchblocks_offset = 0;
+            for (auto layer = 0; layer < grid_ctx.get_num_layers(); layer++) {
                 for (auto from_side : TOTAL_3D_SIDES) {
                     for (auto to_side : TOTAL_3D_SIDES) {
                         if (from_side < NUM_2D_SIDES && to_side < NUM_2D_SIDES) { //this connection is not crossing any layer
@@ -1215,20 +1214,19 @@ vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_in
                                         //CHANY -> CHANX connection
                                         RRNodeId from_inode = rr_graph_builder.node_lookup().find_node(conn_vector[iconn].from_wire_layer, x, y, CHANY, conn_vector[iconn].from_wire_layer);
                                         RRNodeId to_inode = rr_graph_builder.node_lookup().find_node(conn_vector[iconn].to_wire_layer, x, y, CHANX, conn_vector[iconn].to_wire);
-                                        if(from_inode && to_inode){
-                                            if(multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][1].offset_to_extra_chanx_node == -1){
+                                        if (from_inode && to_inode) {
+                                            if (multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][1].offset_to_extra_chanx_node == -1) {
                                                 multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][1].offset_to_extra_chanx_node = curr_switchblocks_offset;
                                                 curr_switchblocks_offset++;
                                             }
                                             multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][1].from_tracks.push_back(conn_vector[iconn].from_wire);
-
                                         }
 
                                         //CHANX -> CHANY connection
                                         from_inode = rr_graph_builder.node_lookup().find_node(conn_vector[iconn].from_wire_layer, x, y, CHANX, conn_vector[iconn].from_wire_layer);
                                         to_inode = rr_graph_builder.node_lookup().find_node(conn_vector[iconn].to_wire_layer, x, y, CHANY, conn_vector[iconn].to_wire);
-                                        if(from_inode && to_inode){
-                                            if(multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][0].offset_to_extra_chanx_node == -1){
+                                        if (from_inode && to_inode) {
+                                            if (multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][0].offset_to_extra_chanx_node == -1) {
                                                 multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][0].offset_to_extra_chanx_node = curr_switchblocks_offset;
                                                 curr_switchblocks_offset++;
                                             }
@@ -1250,7 +1248,7 @@ vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_in
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const t_chan_width* nodes_per_chan,
                                               const DeviceGrid& grid,
-                                              const vtr::NdMatrix<int,2>& extra_nodes_per_switchblock,
+                                              const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index) {
     /*
      * In case of multi-die FPGAs, we add extra nodes (can be either CHANX OR CHANY, used CHANX) to
@@ -1269,7 +1267,6 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
         }
         for (size_t y = 0; y < grid.height() - 1; ++y) {
             for (size_t x = 1; x < grid.width() - 1; ++x) {
-
                 //count how many track-to-track connection go from current layer to other layers
                 int conn_count = extra_nodes_per_switchblock[x][y];
 
@@ -2244,12 +2241,12 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     continue;
                 }
 
-                if(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].offset_to_extra_chanx_node == -1){
+                if (multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].offset_to_extra_chanx_node == -1) {
                     //either source track or destination track doesn't exist
                     continue;
                 }
 
-                if(tile_x != to_x || tile_y != to_y){
+                if (tile_x != to_x || tile_y != to_y) {
                     continue;
                 }
 
@@ -2259,7 +2256,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                  * 2) connect extra "chanx" node located in from_layer to another extra "chanx" node located in to_layer
                  * 3) connect "chanx" node located in to_layer to "to_track"
                  * */
-                int offset = multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].offset_to_extra_chanx_node;
+                int offset = multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].offset_to_extra_chanx_node;
                 RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, CHANX, max_chan_width + offset);
                 RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, CHANX, max_chan_width + offset);
                 RRNodeId chanx_to_track_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
@@ -2277,8 +2274,8 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 ++edge_count;
 
                 //we only add the following edge once for the first driver, otherwise we are adding the same edge multiple times
-                if(!multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].connected_to_dest) {
-                    multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].connected_to_dest = true;
+                if (!multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].connected_to_dest) {
+                    multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].connected_to_dest = true;
                     rr_edges_to_create.emplace_back(track_to_chanx_node, diff_layer_chanx_node, src_switch, false);
                     ++edge_count;
 
@@ -2290,8 +2287,8 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     //Add reverse edge since bi-directional
                     rr_edges_to_create.emplace_back(track_to_chanx_node, from_rr_node, src_switch, false);
                     ++edge_count;
-                    VTR_ASSERT(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].from_tracks.size() > 0);
-                    if(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].from_tracks[0] == from_wire) {
+                    VTR_ASSERT(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].from_tracks.size() > 0);
+                    if (multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].from_tracks[0] == from_wire) {
                         rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, src_switch, false);
                         ++edge_count;
                     }

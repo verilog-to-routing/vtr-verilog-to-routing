@@ -98,7 +98,7 @@ struct t_switchblock_edge {
  *  @connected_to_dest this flag is used to avoid edge duplications while adding edges for all "from_tracks" RR nodes to the same node (length-0 RR node) in the destination layer
  *
  */
-struct t_inter_die_switchblock_edge{
+struct t_inter_die_switchblock_edge {
     std::vector<short> from_tracks;
     short offset_to_extra_chanx_node = -1;
     bool connected_to_dest = false;

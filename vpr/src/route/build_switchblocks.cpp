@@ -755,7 +755,7 @@ static void compute_wireconn_connections(
                           &scratchpad->potential_src_wires,
                           &scratchpad->scratch_wires);
 
-    get_switchpoint_wires(grid,to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, to_side,
+    get_switchpoint_wires(grid, to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, to_side,
                           wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
                           wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
                           &scratchpad->scratch_wires);
@@ -986,7 +986,7 @@ static const std::vector<t_chan_details> index_into_correct_chan(int tile_x, int
     return chan_details; //Unreachable, return empty vector
 }
 
-static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coord,  int layer_coord, e_rr_type chan_type) {
+static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coord, int layer_coord, e_rr_type chan_type) {
     bool result = false;
 
     /* the layer that channel is located at must be legal regardless of chan_type*/
