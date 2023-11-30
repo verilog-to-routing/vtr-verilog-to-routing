@@ -140,11 +140,6 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_
 static void write_intra_cluster_router_lookahead(const std::string& file,
                                                  const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay);
 
-/* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
-                                       vtr::vector<RRNodeId, float>& node_visited_costs,
-                                       vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<util::PQ_Entry>& pq);
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
@@ -459,7 +454,7 @@ util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_
     return f_wire_cost_map[from_layer_num][chan_index][seg_index][to_layer_num][delta_x][delta_y];
 }
 
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf) {
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf_vec) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -469,150 +464,48 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     //Re-allocate
     f_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
                                        2,
-                                       segment_inf.size(),
+                                       segment_inf_vec.size(),
                                        static_cast<unsigned long>(grid.get_num_layers()),
                                        device_ctx.grid.width(),
                                        device_ctx.grid.height()});
 
-    int longest_length = 0;
-    for (const auto& seg_inf : segment_inf) {
-        longest_length = std::max(longest_length, seg_inf.length);
+    int longest_seg_length = 0;
+    for (const auto& seg_inf : segment_inf_vec) {
+        longest_seg_length = std::max(longest_seg_length, seg_inf.length);
     }
-
-    //Start sampling at the lower left non-corner
-    int ref_x = 1;
-    int ref_y = 1;
-
-    //Sample from locations near the reference location (to capture maximum distance paths)
-    //Also sample from locations at least the longest wire length away from the edge (to avoid
-    //edge effects for shorter distances)
-    std::vector<int> ref_increments = {0, 1,
-                                       longest_length, longest_length + 1};
-
-    //Uniquify the increments (avoid sampling the same locations repeatedly if they happen to
-    //overlap)
-    std::sort(ref_increments.begin(), ref_increments.end());
-    ref_increments.erase(std::unique(ref_increments.begin(), ref_increments.end()), ref_increments.end());
-
-    //Upper right non-corner
-    int target_x = device_ctx.grid.width() - 2;
-    int target_y = device_ctx.grid.height() - 2;
 
     //Profile each wire segment type
     for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
-        //if arch file specifies die_number="layer_num" doesn't require inter-cluster
-        //programmable routing resources, then we shouldn't profile wire segment types in
-        //the current layer
-        if (!device_ctx.inter_cluster_prog_routing_resources[from_layer_num]) {
-            continue;
-        }
-        for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
-            //First try to pick good representative sample locations for each type
+        for (const auto& segment_inf : segment_inf_vec) {
             std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;
             std::vector<e_rr_type> chan_types;
-            if (segment_inf[iseg].parallel_axis == X_AXIS)
+            if (segment_inf.parallel_axis == X_AXIS)
                 chan_types.push_back(CHANX);
-            else if (segment_inf[iseg].parallel_axis == Y_AXIS)
+            else if (segment_inf.parallel_axis == Y_AXIS)
                 chan_types.push_back(CHANY);
             else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
                 chan_types.insert(chan_types.end(), {CHANX, CHANY});
 
             for (e_rr_type chan_type : chan_types) {
-                for (int ref_inc : ref_increments) {
-                    int sample_x = ref_x + ref_inc;
-                    int sample_y = ref_y + ref_inc;
-
-                    if (sample_x >= int(grid.width())) continue;
-                    if (sample_y >= int(grid.height())) continue;
-
-                    for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
-                        /* get the rr node index from which to start routing */
-                        RRNodeId start_node = util::get_start_node(from_layer_num, sample_x, sample_y,
-                                                             target_x, target_y, //non-corner upper right
-                                                             chan_type, iseg, track_offset);
-
-                        if (!start_node) {
-                            continue;
-                        }
-                        // TODO: Temporary - After testing benchmarks this can be deleted
-                        VTR_ASSERT(rr_graph.node_layer(start_node) == from_layer_num);
-
-                        sample_nodes[chan_type].push_back(RRNodeId(start_node));
-                    }
+                util::t_routing_cost_map routing_cost_map = util::get_routing_cost_map(longest_seg_length,
+                                                                                       from_layer_num,
+                                                                                       chan_type,
+                                                                                       segment_inf);
+                if (routing_cost_map.empty()) {
+                    continue;
                 }
-            }
 
-            //If we failed to find any representative sample locations, search exhaustively
-            //
-            //This is to ensure we sample 'unusual' wire types which may not exist in all channels
-            //(e.g. clock routing)
-            for (e_rr_type chan_type : chan_types) {
-                if (!sample_nodes[chan_type].empty()) continue;
-
-                //Try an exhaustive search to find a suitable sample point
-                for (RRNodeId rr_node : rr_graph.nodes()) {
-                    auto rr_type = rr_graph.node_type(rr_node);
-                    if (rr_type != chan_type) continue;
-                    if (rr_graph.node_layer(rr_node) != from_layer_num) continue;
-
-                    auto cost_index = rr_graph.node_cost_index(rr_node);
-                    VTR_ASSERT(cost_index != RRIndexedDataId(OPEN));
-
-                    int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-
-                    if (seg_index == iseg) {
-                        sample_nodes[chan_type].push_back(rr_node);
-                    }
-
-                    if (sample_nodes[chan_type].size() >= ref_increments.size()) {
-                        break;
-                    }
-                }
-            }
-
-            //Finally, now that we have a list of sample locations, run a Djikstra flood from
-            //each sample location to profile the routing network from this type
-
-            util::t_dijkstra_data dijkstra_data;
-            util::t_routing_cost_map routing_cost_map({static_cast<unsigned long>(device_ctx.grid.get_num_layers()), device_ctx.grid.width(), device_ctx.grid.height()});
-
-            for (e_rr_type chan_type : chan_types) {
-                if (sample_nodes[chan_type].empty()) {
-                    VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
-                                 rr_node_typename[chan_type],
-                                 segment_inf[iseg].name.c_str(),
-                                 segment_inf[iseg].length);
-                } else {
-                    //reset cost for this segment
-                    routing_cost_map.fill(util::Expansion_Cost_Entry());
-
-                    for (RRNodeId sample_node : sample_nodes[chan_type]) {
-                        int sample_x = rr_graph.node_xlow(sample_node);
-                        int sample_y = rr_graph.node_ylow(sample_node);
-
-                        if (rr_graph.node_direction(sample_node) == Direction::DEC) {
-                            sample_x = rr_graph.node_xhigh(sample_node);
-                            sample_y = rr_graph.node_yhigh(sample_node);
-                        }
-
-                        run_dijkstra(sample_node,
-                                     sample_x,
-                                     sample_y,
-                                     routing_cost_map,
-                                     &dijkstra_data);
-                    }
-
-                    /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
+                /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
                      * cost map */
-                    set_lookahead_map_costs(from_layer_num, iseg, chan_type, routing_cost_map);
+                set_lookahead_map_costs(from_layer_num, segment_inf.seg_index, chan_type, routing_cost_map);
 
-                    /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
+                /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
                      * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
-                    fill_in_missing_lookahead_entries(iseg, chan_type);
-                }
+                fill_in_missing_lookahead_entries(segment_inf.seg_index, chan_type);
             }
         }
     }
+
 }
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
