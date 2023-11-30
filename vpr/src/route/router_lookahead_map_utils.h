@@ -24,7 +24,6 @@
 #include "vtr_geometry.h"
 #include "rr_node.h"
 #include "rr_graph_view.h"
-#include "globals.h"
 
 /* we will profile delay/congestion using this many tracks for each wire type */
 #define MAX_TRACK_OFFSET 16
@@ -47,41 +46,7 @@ class PQ_Entry {
     float R_upstream;
     float congestion_upstream;
 
-    PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node) {
-        this->rr_node = set_rr_node;
-
-        auto& device_ctx = g_vpr_ctx.device();
-        const auto& rr_graph = device_ctx.rr_graph;
-        this->delay = parent_delay;
-        this->congestion_upstream = parent_congestion_upstream;
-        this->R_upstream = parent_R_upstream;
-        if (!starting_node) {
-            auto cost_index = rr_graph.node_cost_index(RRNodeId(set_rr_node));
-            //this->delay += rr_graph.node_C(RRNodeId(set_rr_node)) * (g_rr_switch_inf[switch_ind].R + 0.5*rr_graph.node_R(RRNodeId(set_rr_node))) +
-            //              g_rr_switch_inf[switch_ind].Tdel;
-
-            //FIXME going to use the delay data that the VPR7 lookahead uses. For some reason the delay calculation above calculates
-            //    a value that's just a little smaller compared to what VPR7 lookahead gets. While the above calculation should be more accurate,
-            //    I have found that it produces the same CPD results but with worse runtime.
-            //
-            //    TODO: figure out whether anything's wrong with the calculation above and use that instead. If not, add the other
-            //          terms like T_quadratic and R_upstream to the calculation below (they are == 0 or UNDEFINED for buffered archs I think)
-
-            //NOTE: We neglect the T_quadratic and C_load terms and Switch R, so this lookahead is likely
-            //      less accurate on unbuffered (e.g. pass-gate) architectures
-
-            this->delay += device_ctx.rr_indexed_data[cost_index].T_linear;
-
-            this->congestion_upstream += device_ctx.rr_indexed_data[cost_index].base_cost;
-        }
-
-        if (this->delay < 0) {
-            VTR_LOG("NEGATIVE DELAY!\n");
-        }
-
-        /* set the cost of this node */
-        this->cost = this->delay;
-    }
+    PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node);
 
     bool operator<(const PQ_Entry& obj) const {
         /* inserted into max priority queue so want queue entries with a lower cost to be greater */

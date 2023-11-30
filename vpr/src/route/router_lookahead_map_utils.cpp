@@ -92,10 +92,46 @@ static void adjust_rr_src_sink_position(const RRNodeId rr, int& x, int& y);
 
 namespace util {
 
-util::PQ_Entry_Delay::PQ_Entry_Delay(
+PQ_Entry::PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node) {
+    this->rr_node = set_rr_node;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    this->delay = parent_delay;
+    this->congestion_upstream = parent_congestion_upstream;
+    this->R_upstream = parent_R_upstream;
+    if (!starting_node) {
+        auto cost_index = rr_graph.node_cost_index(RRNodeId(set_rr_node));
+        //this->delay += rr_graph.node_C(RRNodeId(set_rr_node)) * (g_rr_switch_inf[switch_ind].R + 0.5*rr_graph.node_R(RRNodeId(set_rr_node))) +
+        //              g_rr_switch_inf[switch_ind].Tdel;
+
+        //FIXME going to use the delay data that the VPR7 lookahead uses. For some reason the delay calculation above calculates
+        //    a value that's just a little smaller compared to what VPR7 lookahead gets. While the above calculation should be more accurate,
+        //    I have found that it produces the same CPD results but with worse runtime.
+        //
+        //    TODO: figure out whether anything's wrong with the calculation above and use that instead. If not, add the other
+        //          terms like T_quadratic and R_upstream to the calculation below (they are == 0 or UNDEFINED for buffered archs I think)
+
+        //NOTE: We neglect the T_quadratic and C_load terms and Switch R, so this lookahead is likely
+        //      less accurate on unbuffered (e.g. pass-gate) architectures
+
+        this->delay += device_ctx.rr_indexed_data[cost_index].T_linear;
+
+        this->congestion_upstream += device_ctx.rr_indexed_data[cost_index].base_cost;
+    }
+
+    if (this->delay < 0) {
+        VTR_LOG("NEGATIVE DELAY!\n");
+    }
+
+    /* set the cost of this node */
+    this->cost = this->delay;
+}
+
+PQ_Entry_Delay::PQ_Entry_Delay(
     RRNodeId set_rr_node,
     int switch_ind,
-    const util::PQ_Entry_Delay* parent) {
+    const PQ_Entry_Delay* parent) {
     this->rr_node = set_rr_node;
 
     if (parent != nullptr) {
@@ -120,10 +156,10 @@ util::PQ_Entry_Delay::PQ_Entry_Delay(
     }
 }
 
-util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
+PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
     RRNodeId set_rr_node,
     int switch_ind,
-    const util::PQ_Entry_Base_Cost* parent) {
+    const PQ_Entry_Base_Cost* parent) {
     this->rr_node = set_rr_node;
 
     if (parent != nullptr) {
@@ -140,8 +176,8 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
 }
 
 /* returns cost entry with the smallest delay */
-util::Cost_Entry util::Expansion_Cost_Entry::get_smallest_entry() const {
-    util::Cost_Entry smallest_entry;
+Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
+    Cost_Entry smallest_entry;
 
     for (auto entry : this->cost_vector) {
         if (!smallest_entry.valid() || entry.delay < smallest_entry.delay) {
@@ -153,7 +189,7 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_smallest_entry() const {
 }
 
 /* returns a cost entry that represents the average of all the recorded entries */
-util::Cost_Entry util::Expansion_Cost_Entry::get_average_entry() const {
+Cost_Entry Expansion_Cost_Entry::get_average_entry() const {
     float avg_delay = 0;
     float avg_congestion = 0;
 
@@ -165,11 +201,11 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_average_entry() const {
     avg_delay /= (float)this->cost_vector.size();
     avg_congestion /= (float)this->cost_vector.size();
 
-    return util::Cost_Entry(avg_delay, avg_congestion);
+    return Cost_Entry(avg_delay, avg_congestion);
 }
 
 /* returns a cost entry that represents the geomean of all the recorded entries */
-util::Cost_Entry util::Expansion_Cost_Entry::get_geomean_entry() const {
+Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
     float geomean_delay = 0;
     float geomean_cong = 0;
     for (auto cost_entry : this->cost_vector) {
@@ -180,11 +216,11 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_geomean_entry() const {
     geomean_delay = exp(geomean_delay / (float)this->cost_vector.size());
     geomean_cong = exp(geomean_cong / (float)this->cost_vector.size());
 
-    return util::Cost_Entry(geomean_delay, geomean_cong);
+    return Cost_Entry(geomean_delay, geomean_cong);
 }
 
 /* returns a cost entry that represents the medial of all recorded entries */
-util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
+Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     /* find median by binning the delays of all entries and then chosing the bin
      * with the largest number of entries */
 
@@ -195,8 +231,8 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
     int num_bins = 10;
 
     /* find entries with smallest and largest delays */
-    util::Cost_Entry min_del_entry;
-    util::Cost_Entry max_del_entry;
+    Cost_Entry min_del_entry;
+    Cost_Entry max_del_entry;
     for (auto entry : this->cost_vector) {
         if (!min_del_entry.valid() || entry.delay < min_del_entry.delay) {
             min_del_entry = entry;
@@ -211,7 +247,7 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
     float bin_size = delay_diff / (float)num_bins;
 
     /* sort the cost entries into bins */
-    std::vector<std::vector<util::Cost_Entry>> entry_bins(num_bins, std::vector<util::Cost_Entry>());
+    std::vector<std::vector<Cost_Entry>> entry_bins(num_bins, std::vector<Cost_Entry>());
     for (auto entry : this->cost_vector) {
         float bin_num = floor((entry.delay - min_del_entry.delay) / bin_size);
 
@@ -234,7 +270,7 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
     }
 
     /* get the representative delay of the largest bin */
-    util::Cost_Entry representative_entry = entry_bins[largest_bin][0];
+    Cost_Entry representative_entry = entry_bins[largest_bin][0];
 
     return representative_entry;
 }
@@ -242,7 +278,7 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
 template<typename Entry>
 void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                 const Entry& parent_entry,
-                                std::vector<util::Search_Path>* paths,
+                                std::vector<Search_Path>* paths,
                                 std::vector<bool>* node_expanded,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
