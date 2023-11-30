@@ -93,6 +93,27 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         RRNodeId from_rr_node,
                                         t_rr_edge_info_set& rr_edges_to_create);
 
+/**
+ * @brief creates the RR graph edges corresponding to switch blocks permutation map
+ *
+ *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
+ *  @param tile_x x-coordinate of the switch block
+ *  @param tile_y y-coordinate of the switch block
+ *  @param layer layer-coordinate of the switch block
+ *  @param max_chan_width number of available tracks within the channel
+ *  @param from_side switch block connection source side
+ *  @param from_wire switch block connection source wire index (ptc_num) within the channel
+ *  @param from_rr_node switch block connection source wire RRNode index
+ *  @param to_side switch block connection destination side
+ *  @param to_x switch block connection destination x-coordinate
+ *  @param to_y switch block connection destination y-coordinate
+ *  @param to_chan_type switch block connection destination channel type (CHANX or CHANY)
+ *  @param multi_layer_track_conn 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..)
+ *  @param switch_override used to set the correct switch index for the RR graph edge
+ *  @param sb_conn_map switch block permutation map
+ *  @param rr_edges_to_create Total RR edges count
+ *  @param edge_count number of RR edges that this function creates
+ */
 static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int tile_x,
                                    const int tile_y,
@@ -110,6 +131,27 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    t_sb_connection_map* sb_conn_map,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    int& edge_count);
+
+/*
+ * @brief Figures out the edges that should connect the given wire segment to the given channel segment, adds these edges to 'rr_edge_to_create'
+ *
+ *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
+ *  @param layer the channel segment layer-coordinate
+ *  @param max_chan_width number of tracks per channel
+ *  @param from_track source track index (ptc_num) within the channel
+ *  @param to_chan destination coordinate (x or y) based on chan type
+ *  @param to_seg destination segment coordinate (x or y) based on chan type
+ *  @param to_chan_type destination wire segment channel type (CHANX or CHANY)
+ *  @param from_side swtich block connection source side
+ *  @param to_side swtich block connection destination side
+ *  @param multi_layer_track_conn 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..)
+ *  @param swtich_override used to set the correct switch index for the RR graph edge
+ *  @param sb_conn_map switch block permutation map, created based on the architecture file
+ *  @param from_rr_node the source wire segment RRNodeID
+ *  @param rr_edges_to_create keeps the created edges
+ *
+ * @return the number of edges added to 'rr_edge_to_create'
+ */
 
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int layer,
@@ -2259,11 +2301,6 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-/* Figures out the edges that should connect the given wire segment to the given
- * channel segment, adds these edges to 'edge_list' and returns the number of
- * edges added .
- * See route/build_switchblocks.c for a detailed description of how the switch block
- * connection map sb_conn_map is generated. */
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int layer,
                                  const int max_chan_width,

@@ -491,7 +491,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
  *  @param x_coord switch block x_coordinate
  *  @param y_coord switch block y-coordinate
  *  @param const_index_offset index to the correct node type for RR node cost initialization
- *  @param nodes_per_chan max tracks per channel (x, y)
+ *  @param nodes_per_chan number of tracks per channel (x, y)
  *  @param chan_details_x channel-x details (length, start and end points, ...)
  */
 static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
