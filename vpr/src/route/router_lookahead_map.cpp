@@ -269,8 +269,6 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_
 static void write_intra_cluster_router_lookahead(const std::string& file,
                                                  const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay);
 
-/* returns index of a node from which to start routing */
-static RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(RRNodeId start_node,
@@ -672,7 +670,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
                     for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
                         /* get the rr node index from which to start routing */
-                        RRNodeId start_node = get_start_node(from_layer_num, sample_x, sample_y,
+                        RRNodeId start_node = util::get_start_node(from_layer_num, sample_x, sample_y,
                                                              target_x, target_y, //non-corner upper right
                                                              chan_type, iseg, track_offset);
 
@@ -761,48 +759,6 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         }
         if (false) print_wire_cost_map(from_layer_num, segment_inf);
     }
-}
-
-/* returns index of a node from which to start routing */
-static RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    const auto& node_lookup = rr_graph.node_lookup();
-
-    RRNodeId result = RRNodeId::INVALID();
-
-    if (rr_type != CHANX && rr_type != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Must start lookahead routing from CHANX or CHANY node\n");
-    }
-
-    /* determine which direction the wire should go in based on the start & target coordinates */
-    Direction direction = Direction::INC;
-    if ((rr_type == CHANX && target_x < start_x) || (rr_type == CHANY && target_y < start_y)) {
-        direction = Direction::DEC;
-    }
-
-    int start_lookup_x = start_x;
-    int start_lookup_y = start_y;
-
-    /* find first node in channel that has specified segment index and goes in the desired direction */
-    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(layer, start_lookup_x, start_lookup_y, rr_type)) {
-        VTR_ASSERT(rr_graph.node_type(node_id) == rr_type);
-
-        Direction node_direction = rr_graph.node_direction(node_id);
-        auto node_cost_ind = rr_graph.node_cost_index(node_id);
-        int node_seg_ind = device_ctx.rr_indexed_data[node_cost_ind].seg_index;
-
-        if ((node_direction == direction || node_direction == Direction::BIDIR) && node_seg_ind == seg_index) {
-            /* found first track that has the specified segment index and goes in the desired direction */
-            result = node_id;
-            if (track_offset == 0) {
-                break;
-            }
-            track_offset -= 2;
-        }
-    }
-
-    return result;
 }
 
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information

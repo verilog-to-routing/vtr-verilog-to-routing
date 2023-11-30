@@ -494,6 +494,48 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     return pin_delays;
 }
 
+/* returns index of a node from which to start routing */
+RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    const auto& node_lookup = rr_graph.node_lookup();
+
+    RRNodeId result = RRNodeId::INVALID();
+
+    if (rr_type != CHANX && rr_type != CHANY) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Must start lookahead routing from CHANX or CHANY node\n");
+    }
+
+    /* determine which direction the wire should go in based on the start & target coordinates */
+    Direction direction = Direction::INC;
+    if ((rr_type == CHANX && target_x < start_x) || (rr_type == CHANY && target_y < start_y)) {
+        direction = Direction::DEC;
+    }
+
+    int start_lookup_x = start_x;
+    int start_lookup_y = start_y;
+
+    /* find first node in channel that has specified segment index and goes in the desired direction */
+    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(layer, start_lookup_x, start_lookup_y, rr_type)) {
+        VTR_ASSERT(rr_graph.node_type(node_id) == rr_type);
+
+        Direction node_direction = rr_graph.node_direction(node_id);
+        auto node_cost_ind = rr_graph.node_cost_index(node_id);
+        int node_seg_ind = device_ctx.rr_indexed_data[node_cost_ind].seg_index;
+
+        if ((node_direction == direction || node_direction == Direction::BIDIR) && node_seg_ind == seg_index) {
+            /* found first track that has the specified segment index and goes in the desired direction */
+            result = node_id;
+            if (track_offset == 0) {
+                break;
+            }
+            track_offset -= 2;
+        }
+    }
+
+    return result;
+}
+
 } // namespace util
 
 static void dijkstra_flood_to_wires(int itile,
