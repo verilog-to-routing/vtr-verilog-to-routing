@@ -50,13 +50,11 @@ struct SamplingRegion {
     }
 };
 
+static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampling_regions, int num_sampling_points);
+
 static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf);
 
-static void initialize_sample_locations(const std::vector<SamplingRegion>& sampling_regions, size_t num_sampling_points);
-
-static void initialize_index_map(const std::vector<SamplingRegion>& sampling_regions, size_t num_sampling_points);
-
-static void initialize_sample_locations(std::vector<SamplingRegion>& sampling_regions, size_t num_sampling_points) {
+static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampling_regions, int num_sampling_points) {
     std::sort(sampling_regions.begin(), sampling_regions.end(), [](const SamplingRegion& a, const SamplingRegion& b) {
         VTR_ASSERT_DEBUG(a.width() == b.width() && a.height() == b.height());
         VTR_ASSERT_DEBUG(a.height() != 0 && b.height() != 0);
@@ -88,13 +86,12 @@ static void initialize_sample_locations(std::vector<SamplingRegion>& sampling_re
                     sample_locations[x] = std::unordered_set<int>();
                 }
                 sample_locations[x].insert(y);
+                compressed_loc_index_map[x][y] = sample_point_num;
+                sample_point_num++;
             }
         }
     }
-    VTR_ASSERT_DEBUG(sample_point_num == num_sampling_points);
-}
-
-static void initialize_index_map(const std::vector<SamplingRegion>& sampling_regions, size_t num_sampling_points) {
+    VTR_ASSERT(sample_point_num == num_sampling_points);
 }
 
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf)  {
@@ -105,8 +102,8 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
     auto sampling_regions = get_sampling_regions(segment_inf);
 
-    size_t compresses_x_size = 0;
-    size_t compressed_y_size = 0;
+    int compresses_x_size = 0;
+    int compressed_y_size = 0;
     for (const auto& sampling_region : sampling_regions) {
         int step = sampling_region.step;
         int num_x = (sampling_region.x_max - sampling_region.x_min) / step;
@@ -115,8 +112,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         compressed_y_size += num_y;
     }
 
-    initialize_index_map(sampling_regions, compresses_x_size * compressed_y_size);
-    initialize_sample_locations(sampling_regions, compresses_x_size * compressed_y_size);
+    initialize_compressed_loc_structs(sampling_regions, compresses_x_size * compressed_y_size);
 }
 
 static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf) {
