@@ -240,7 +240,24 @@ static void compute_wireconn_connections(
 
 static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::string num_conns_formula, int from_wire_count, int to_wire_count);
 
-/* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */
+/**
+ *
+ * @brief calculates the wire indices belonging to the types in types in 'wire_type_sizes' and switchpoints in 'points' at the given channel segment
+ *
+ *  @param grid device grid
+ *  @param chan_details channel segment details (length, start and end points, ...)
+ *  @param chan_type channel type (CHANX/CHANY)
+ *  @param x the wire x-coordinate
+ *  @param y the wire y-coordinate
+ *  @param side switch block side (top/right/bottom/left/above/under)
+ *  @param wire_switchpoints_vec valid switch points at the given channel segment
+ *  @param wire_type_sizes valid wire types
+ *  @param is_dest whether wires are source or destination within a switch block connection
+ *  @param order switchpoint order (fixed, shuffled) specified in the architecture file
+ *  @param rand_state used to randomly shuffle switchpoint if required (shuffled order)
+ *  @param output_wires collected wire indices that matches the specified types and switchpoints
+ *
+ */
 static void get_switchpoint_wires(
     const DeviceGrid& grid,
     const t_chan_seg_details* chan_details,
@@ -295,7 +312,7 @@ static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, 
 static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer, e_sb_location location);
 
 /**
- * @brief check whether specified coordinate is located at the device grid corner
+ * @brief check whether specified coordinate is located at the device grid corner and a switch block exists there
  *
  *   @param grid device grid
  *   @param inter_cluster_rr used to check whether inter-cluster programmable routing resources exist in the current layer
@@ -303,12 +320,12 @@ static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_c
  *   @param y y-coordinate of the location
  *   @param layer layer-coordinate of the location
  *
- * @return true if the specified coordinate represents a corner location within the device grid, false otherwise.
+ * @return true if the specified coordinate represents a corner location within the device grid and a switch block exists there, false otherwise.
  */
-static bool is_corner(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
+static bool is_corner_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
 
 /**
- * @brief check whether specified coordinate is located at one of the perimeter device grid locations
+ * @brief check whether specified coordinate is located at one of the perimeter device grid locations and a switch block exists there
  *
  *   @param grid device grid
  *   @param inter_cluster_rr used to check whether inter-cluster programmable routing resources exist in the current layer
@@ -316,12 +333,12 @@ static bool is_corner(const DeviceGrid& grid, const std::vector<bool>& inter_clu
  *   @param y y-coordinate of the location
  *   @param layer layer-coordinate of the location
  *
- * @return true if the specified coordinate represents a perimeter location within the device grid, false otherwise.
+ * @return true if the specified coordinate represents a perimeter location within the device grid and a switch block exists there, false otherwise.
  */
-static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
+static bool is_perimeter_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
 
 /**
- * @brief check whether specified coordinate is located at core of the device grid (not perimeter)
+ * @brief check whether specified coordinate is located at core of the device grid (not perimeter) and a switch block exists there
  *
  *   @param grid device grid
  *   @param inter_cluster_rr used to check whether inter-cluster programmable routing resources exist in the current layer
@@ -329,9 +346,9 @@ static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_
  *   @param y y-coordinate of the location
  *   @param layer layer-coordinate of the location
  *
- * @return true if the specified coordinate represents a core location within the device grid, false otherwise.
+ * @return true if the specified coordinate represents a core location within the device grid and a switch block exists there, false otherwise.
  */
-static bool is_core(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
+static bool is_core_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer);
 
 /**
  * @brief check whether specified layer has inter-cluster programmable routing resources or not.
@@ -390,7 +407,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
         if (directionality != sb.directionality) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
         }
-        /* Iterate over the x,y, layer coordinates spanning the FPGA. */
+        /* Iterate over the x,y, layer coordinates spanning the FPGA, filling in all the switch blocks that exist */
         for (int layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
             for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
                 for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
@@ -438,22 +455,22 @@ static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_c
             sb_not_here = false;
             break;
         case E_PERIMETER:
-            if (is_perimeter(grid, inter_cluster_rr, x, y, layer)) {
+            if (is_perimeter_sb(grid, inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
         case E_CORNER:
-            if (is_corner(grid, inter_cluster_rr, x, y, layer)) {
+            if (is_corner_sb(grid, inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
         case E_CORE:
-            if (is_core(grid, inter_cluster_rr, x, y, layer)) {
+            if (is_core_sb(grid, inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
         case E_FRINGE:
-            if (is_perimeter(grid, inter_cluster_rr, x, y, layer) && !is_corner(grid, inter_cluster_rr, x, y, layer)) {
+            if (is_perimeter_sb(grid, inter_cluster_rr, x, y, layer) && !is_corner_sb(grid, inter_cluster_rr, x, y, layer)) {
                 sb_not_here = false;
             }
             break;
@@ -464,7 +481,7 @@ static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_c
     return sb_not_here;
 }
 
-static bool is_corner(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
+static bool is_corner_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
     if (!is_prog_routing_avail(grid, inter_cluster_rr, layer)) {
         return false;
     }
@@ -477,7 +494,7 @@ static bool is_corner(const DeviceGrid& grid, const std::vector<bool>& inter_clu
     return is_corner;
 }
 
-static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
+static bool is_perimeter_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
     if (!is_prog_routing_avail(grid, inter_cluster_rr, layer)) {
         return false;
     }
@@ -488,11 +505,11 @@ static bool is_perimeter(const DeviceGrid& grid, const std::vector<bool>& inter_
     return is_perimeter;
 }
 
-static bool is_core(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
+static bool is_core_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer) {
     if (!is_prog_routing_avail(grid, inter_cluster_rr, layer)) {
         return false;
     }
-    bool is_core = !is_perimeter(grid, inter_cluster_rr, x, y, layer);
+    bool is_core = !is_perimeter_sb(grid, inter_cluster_rr, x, y, layer);
     return is_core;
 }
 
@@ -727,39 +744,26 @@ static void compute_wireconn_connections(
     t_wireconn_scratchpad* scratchpad) {
     constexpr bool verbose = false;
 
-    /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
-    if (sb_conn.from_side == ABOVE || sb_conn.from_side == UNDER) {
-        get_switchpoint_wires(grid,
-                              from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.to_side,
-                              wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
-                              &scratchpad->potential_src_wires,
-                              &scratchpad->scratch_wires);
+    //choose the from_side to be the same as to_side if the connection is travelling across dice in multi-die FPGAs
+    auto from_side = (sb_conn.from_side != ABOVE && sb_conn.from_side != UNDER) ? sb_conn.from_side : sb_conn.to_side;
+    //choose the to_side to be the same as from_side if the connection is travelling across dice in multi-die FPGAs
+    auto to_side = (sb_conn.to_side != ABOVE && sb_conn.to_side != UNDER) ? sb_conn.to_side : sb_conn.from_side;
 
-    } else {
-        get_switchpoint_wires(grid,
-                              from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.from_side,
-                              wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
-                              &scratchpad->potential_src_wires,
-                              &scratchpad->scratch_wires);
-    }
-    if (sb_conn.to_side == ABOVE || sb_conn.to_side == UNDER) {
-        get_switchpoint_wires(grid,
-                              to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.from_side,
-                              wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
-                              wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
-                              &scratchpad->scratch_wires);
-    } else {
-        get_switchpoint_wires(grid,
-                              to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
-                              wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
-                              wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
-                              &scratchpad->scratch_wires);
-    }
+    /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
+    get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, from_side,
+                          wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
+                          &scratchpad->potential_src_wires,
+                          &scratchpad->scratch_wires);
+
+    get_switchpoint_wires(grid,to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, to_side,
+                          wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
+                          wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
+                          &scratchpad->scratch_wires);
 
     const auto& potential_src_wires = scratchpad->potential_src_wires;
     const auto& potential_dest_wires = scratchpad->potential_dest_wires;
 
-#if 0
+#ifdef VERBOSE_RR
     VTR_LOGV(verbose, "SB_LOC: %d,%d %s->%s\n", sb_conn.x_coord, sb_conn.y_coord, SIDE_STRING[sb_conn.from_side], SIDE_STRING[sb_conn.to_side]);
 
     //Define to print out specific wire-switchpoints used in to/from sets, if verbose is set true
