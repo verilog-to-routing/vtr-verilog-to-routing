@@ -42,6 +42,7 @@ static void run_dijkstra(RRNodeId start_node,
                   util::t_routing_cost_map& routing_cost_map,
                   util::t_dijkstra_data* data);
 
+/* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                 vtr::vector<RRNodeId, float>& node_visited_costs,
                                 vtr::vector<RRNodeId, bool>& node_expanded,

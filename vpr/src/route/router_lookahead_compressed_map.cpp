@@ -80,8 +80,8 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
         int y_max = sample_region.y_max;
         int x_min = sample_region.x_min;
         int y_min = sample_region.y_min;
-        for (int x = sample_region.x_min; x < x_max; x += step) {
-            for (int y = y_min; y < y_min; y += step) {
+        for (int x = x_min; x < x_max; x += step) {
+            for (int y = y_min; y < y_max; y += step) {
                 if (sample_locations.count(x) == 0) {
                     sample_locations[x] = std::unordered_set<int>();
                 }
@@ -98,8 +98,6 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    const auto& grid = device_ctx.grid;
 
     auto sampling_regions = get_sampling_regions(segment_inf);
 
