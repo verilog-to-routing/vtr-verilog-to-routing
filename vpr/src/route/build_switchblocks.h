@@ -72,8 +72,16 @@ struct t_hash_Switchblock_Lookup {
     }
 };
 
-/* contains the index of the destination wire segment within a channel
- * and the index of the switch used to connect to it */
+/**
+ * @brief contains the required information to build an RR graph edge for a switch block connection
+ *
+ *  @from_wire source wire ptc_num index in a channel
+ *  @to_wire destination wire ptc_num index in a channel
+ *  @switch_ind RR graph switch index that connects the source wire to the destination wire
+ *  @from_wire_layer the layer index that the source wire is located at
+ *  @to_wire_layer the layer index that the destination wire is located at
+ *
+ */
 struct t_switchblock_edge {
     short from_wire;
     short to_wire;
@@ -82,11 +90,18 @@ struct t_switchblock_edge {
     short to_wire_layer;
 };
 
-/** @brief Contain required information to create track-to-track connection in switchblocks in multi-die FPGAs **/
+/**
+ * @brief contains the required information to create extra length-0 RR nodes to model 3D custom switch blocks connections within the RR graph
+ *
+ *  @from_tracks a vector containing source tracks ptc_num indices that are connected to the same destination track in above or below layer in multi-die FPGAs
+ *  @offset_to_extra_chanx_node index (max_chan_width + "offset_to_extra_chanx_node") to the correct length-0 RR node that all tracks in "from_tracks" should be connected to in RR graph.
+ *  @connected_to_dest this flag is used to avoid edge duplications while adding edges for all "from_tracks" RR nodes to the same node (length-0 RR node) in the destination layer
+ *
+ */
 struct t_inter_die_switchblock_edge{
-    std::vector<short> from_track; // keeps the tracks that should connect to the same track in another layer
-    short offset_to_extra_chanx_node = -1; //index to length-0 extra node available in the switchblock
-    bool connected_to_des = false;
+    std::vector<short> from_tracks;
+    short offset_to_extra_chanx_node = -1;
+    bool connected_to_dest = false;
 };
 
 /* Switchblock connections are made as [x][y][from_side][to_side][from_wire_ind].

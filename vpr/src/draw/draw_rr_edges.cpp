@@ -103,7 +103,7 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch
             if (rr_graph.node_direction(to_node) == Direction::INC) { /* INC wire starts at bottom edge */
 
                 y2 = to_chan.bottom();
-                /* since no U-turns from_track must be INC as well */
+                /* since no U-turns from_tracks must be INC as well */
                 y1 = draw_coords->tile_y[to_ylow - 1]
                      + draw_coords->get_tile_width();
             } else { /* DEC wire starts at top edge */
@@ -194,7 +194,7 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
             if (rr_graph.node_direction(to_node) == Direction::INC) { /* INC wire starts at leftmost edge */
                 VTR_ASSERT(from_xlow < to_xlow);
                 x2 = to_chan.left();
-                /* since no U-turns from_track must be INC as well */
+                /* since no U-turns from_tracks must be INC as well */
                 x1 = draw_coords->tile_x[to_xlow - 1]
                      + draw_coords->get_tile_width();
             } else { /* DEC wire starts at rightmost edge */

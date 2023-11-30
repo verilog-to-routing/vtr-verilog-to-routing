@@ -24,8 +24,8 @@
  *                   BOTTOM (CHANY)                                        */
 
 /* [0..3][0..3][0..nodes_per_chan-1].  Structure below is indexed as:       *
- * [from_side][to_side][from_track].  That yields an integer vector (ivec)  *
- * of the tracks to which from_track connects in the proper to_location.    *
+ * [from_side][to_side][from_tracks].  That yields an integer vector (ivec)  *
+ * of the tracks to which from_tracks connects in the proper to_location.    *
  * For simple switch boxes this is overkill, but it will allow complicated  *
  * switch boxes with Fs > 3, etc. without trouble.                          */
 
@@ -95,7 +95,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
                                   const enum e_switch_block_type switch_block_type,
                                   const int from_chan_width,
                                   const int to_chan_width) {
-    /* This routine returns the track number to which the from_track should     *
+    /* This routine returns the track number to which the from_tracks should     *
      * connect.  It supports three simple, Fs = 3, switch blocks.               */
 
     int to_track = SBOX_ERROR; /* Can check to see if it's not set later. */

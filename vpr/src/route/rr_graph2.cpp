@@ -1178,7 +1178,7 @@ vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_in
                                                 multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][1].offset_to_extra_chanx_node = curr_switchblocks_offset;
                                                 curr_switchblocks_offset++;
                                             }
-                                            multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][1].from_track.push_back(conn_vector[iconn].from_wire);
+                                            multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][1].from_tracks.push_back(conn_vector[iconn].from_wire);
 
                                         }
 
@@ -1190,7 +1190,7 @@ vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_in
                                                 multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][0].offset_to_extra_chanx_node = curr_switchblocks_offset;
                                                 curr_switchblocks_offset++;
                                             }
-                                            multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][0].from_track.push_back(conn_vector[iconn].from_wire);
+                                            multi_layer_track_conn[conn_vector[iconn].to_wire_layer][x][y][conn_vector[iconn].to_wire][0].from_tracks.push_back(conn_vector[iconn].from_wire);
                                         }
                                     }
                                 }
@@ -2213,7 +2213,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
 
                 /*
                  * In order to connect two tracks in different layers, we need to follow these three steps:
-                 * 1) connect "from_track" to extra "chanx" node in the same switchblocks
+                 * 1) connect "from_tracks" to extra "chanx" node in the same switchblocks
                  * 2) connect extra "chanx" node located in from_layer to another extra "chanx" node located in to_layer
                  * 3) connect "chanx" node located in to_layer to "to_track"
                  * */
@@ -2235,8 +2235,8 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 ++edge_count;
 
                 //we only add the following edge once for the first driver, otherwise we are adding the same edge multiple times
-                if(!multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].connected_to_des) {
-                    multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].connected_to_des = true;
+                if(!multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].connected_to_dest) {
+                    multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].connected_to_dest = true;
                     rr_edges_to_create.emplace_back(track_to_chanx_node, diff_layer_chanx_node, src_switch, false);
                     ++edge_count;
 
@@ -2248,8 +2248,8 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     //Add reverse edge since bi-directional
                     rr_edges_to_create.emplace_back(track_to_chanx_node, from_rr_node, src_switch, false);
                     ++edge_count;
-                    VTR_ASSERT(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].from_track.size() > 0);
-                    if(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].from_track[0] == from_wire) {
+                    VTR_ASSERT(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].from_tracks.size() > 0);
+                    if(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type-CHANX)].from_tracks[0] == from_wire) {
                         rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, src_switch, false);
                         ++edge_count;
                     }
@@ -3005,7 +3005,7 @@ static void label_incoming_wires(const int chan_num,
 static int find_label_of_track(const std::vector<int>& wire_mux_on_track,
                                int num_wire_muxes,
                                int from_track) {
-    /* Returns the index/label in array wire_mux_on_track whose entry equals from_track. If none are
+    /* Returns the index/label in array wire_mux_on_track whose entry equals from_tracks. If none are
      * found, then returns the index of the entry whose value is the largest */
     int i_label = -1;
     int max_track = -1;
