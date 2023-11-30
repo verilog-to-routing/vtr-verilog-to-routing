@@ -752,7 +752,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         } else {
             std::bitset<NUM_2D_SIDES> sides_to_add = from_uxsd_loc_side(side);
-            for (const e_side& side_to_add : SIDES) {
+            for (const e_side& side_to_add : TOTAL_2D_SIDES) {
                 if (sides_to_add[side_to_add]) {
                     rr_graph_builder_->add_node_side(node_id, side_to_add);
                 }
@@ -770,7 +770,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const auto& rr_graph = (*rr_graph_);
         if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {
             std::bitset<NUM_2D_SIDES> sides_bitset;
-            for (const e_side& side : SIDES) {
+            for (const e_side& side : TOTAL_2D_SIDES) {
                 if (rr_graph.is_node_on_specific_side(node.id(), side)) {
                     sides_bitset.set(side);
                 }

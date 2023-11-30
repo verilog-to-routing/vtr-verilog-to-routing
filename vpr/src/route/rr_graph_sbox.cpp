@@ -40,8 +40,8 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
 
     vtr::NdMatrix<std::vector<int>, 3> switch_block_conn({4, 4, (size_t)nodes_per_chan->max});
 
-    for (e_side from_side : SIDES) {
-        for (e_side to_side : SIDES) {
+    for (e_side from_side : TOTAL_2D_SIDES) {
+        for (e_side to_side : TOTAL_2D_SIDES) {
             int from_chan_width = (from_side == TOP || from_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
             int to_chan_width = (to_side == TOP || to_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
             for (int from_track = 0; from_track < from_chan_width; from_track++) {

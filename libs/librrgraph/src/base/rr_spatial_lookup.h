@@ -125,7 +125,7 @@ class RRSpatialLookup {
                        int y,
                        t_rr_type type,
                        int num_nodes,
-                       e_side side = SIDES[0]);
+                       e_side side = TOTAL_2D_SIDES[0]);
 
     /**
      * @brief Register a node in the fast look-up 
@@ -157,7 +157,7 @@ class RRSpatialLookup {
                   int y,
                   t_rr_type type,
                   int ptc,
-                  e_side side = SIDES[0]);
+                  e_side side = TOTAL_2D_SIDES[0]);
 
     /**
      * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
@@ -238,7 +238,7 @@ class RRSpatialLookup {
                                      int x,
                                      int y,
                                      t_rr_type type,
-                                     e_side side = SIDES[0]) const;
+                                     e_side side = TOTAL_2D_SIDES[0]) const;
 
     /* -- Internal data storage -- */
   private:

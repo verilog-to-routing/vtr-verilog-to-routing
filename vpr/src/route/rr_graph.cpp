@@ -2113,7 +2113,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (size_t i = 0; i < grid.width(); ++i) {
             for (size_t j = 0; j < grid.height(); ++j) {
-                for (e_side side : SIDES) {
+                for (e_side side : TOTAL_2D_SIDES) {
                     if (BI_DIRECTIONAL == directionality) {
                         build_bidir_rr_opins(rr_graph_builder, rr_graph, layer, i, j, side,
                                              opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x,
@@ -2401,7 +2401,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
         std::vector<int> x_offset_vec;
         std::vector<int> y_offset_vec;
         std::vector<e_side> pin_sides_vec;
-        std::tie(x_offset_vec, y_offset_vec, pin_sides_vec) = get_pin_coordinates(physical_type, pin_num, std::vector<e_side>(SIDES.begin(), SIDES.end()));
+        std::tie(x_offset_vec, y_offset_vec, pin_sides_vec) = get_pin_coordinates(physical_type, pin_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
         VTR_ASSERT(!pin_sides_vec.empty());
         for (int pin_coord = 0; pin_coord < (int)pin_sides_vec.size(); pin_coord++) {
             int x_offset = x_offset_vec[pin_coord];
@@ -3475,7 +3475,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         for (auto type_layer_index : type_layer) {
             for (int width = 0; width < Type->width; ++width) {
                 for (int height = 0; height < Type->height; ++height) {
-                    for (e_side side : SIDES) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (Type->pinloc[width][height][side][pin] == 1) {
                             for (auto i = 0; i < (int)get_layers_connected_to_pin(Type, type_layer_index, pin).size(); i++) {
                                 dir_list[width][height][type_layer_index][side][num_dir[width][height][type_layer_index][side]] = pin;
@@ -3494,7 +3494,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         int num_phys_pins = 0;
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
-                for (e_side side : SIDES) {
+                for (e_side side : TOTAL_2D_SIDES) {
                     num_phys_pins += num_dir[width][height][layer][side]; /* Num. physical pins per type */
                 }
             }
@@ -4576,7 +4576,7 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
     float best_dist = std::numeric_limits<float>::infinity();
     RRNodeId best_rr = RRNodeId::INVALID();
 
-    for (const e_side& from_side : SIDES) {
+    for (const e_side& from_side : TOTAL_2D_SIDES) {
         /* Bypass those side where the node does not appear */
         if (!rr_graph.is_node_on_specific_side(from_rr, from_side)) {
             continue;
@@ -4587,7 +4587,7 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
             float to_dist = std::abs(rr_graph.node_xlow(from_rr) - rr_graph.node_xlow(to_rr))
                             + std::abs(rr_graph.node_ylow(from_rr) - rr_graph.node_ylow(to_rr));
 
-            for (const e_side& to_side : SIDES) {
+            for (const e_side& to_side : TOTAL_2D_SIDES) {
                 /* Bypass those side where the node does not appear */
                 if (!rr_graph.is_node_on_specific_side(to_rr, to_side)) {
                     continue;

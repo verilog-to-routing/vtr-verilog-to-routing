@@ -324,7 +324,7 @@ void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) 
      */
     float x1 = 0, y1 = 0;
     std::vector<e_side> opin_candidate_sides;
-    for (const e_side& opin_candidate_side : SIDES) {
+    for (const e_side& opin_candidate_side : TOTAL_2D_SIDES) {
         if (rr_graph.is_node_on_specific_side(opin_node, opin_candidate_side)) {
             opin_candidate_sides.push_back(opin_candidate_side);
         }
@@ -334,7 +334,7 @@ void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) 
 
     float x2 = 0, y2 = 0;
     std::vector<e_side> ipin_candidate_sides;
-    for (const e_side& ipin_candidate_side : SIDES) {
+    for (const e_side& ipin_candidate_side : TOTAL_2D_SIDES) {
         if (rr_graph.is_node_on_specific_side(ipin_node, ipin_candidate_side)) {
             ipin_candidate_sides.push_back(ipin_candidate_side);
         }
@@ -355,7 +355,7 @@ void draw_pin_to_sink(RRNodeId ipin_node, RRNodeId sink_node, ezgl::renderer* g)
 
     float x1 = 0, y1 = 0;
     /* Draw the line for each ipin on different sides */
-    for (const e_side& pin_side : SIDES) {
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(ipin_node, pin_side)) {
             continue;
         }
@@ -381,7 +381,7 @@ void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer
     draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(source_node)], &x1, &y1);
 
     /* Draw the line for each ipin on different sides */
-    for (const e_side& pin_side : SIDES) {
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(opin_node, pin_side)) {
             continue;
         }
@@ -455,7 +455,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
      *       the actual offset of the pin in the context of grid width and height
      */
     std::vector<e_side> pin_candidate_sides;
-    for (const e_side& pin_candidate_side : SIDES) {
+    for (const e_side& pin_candidate_side : TOTAL_2D_SIDES) {
         if ((rr_graph.is_node_on_specific_side(pin_node, pin_candidate_side))
             && (grid_type->pinloc[width_offset][height_offset][pin_candidate_side][rr_graph.node_pin_num(pin_node)])) {
             pin_candidate_sides.push_back(pin_candidate_side);

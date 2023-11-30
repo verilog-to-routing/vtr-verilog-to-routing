@@ -445,8 +445,8 @@ static void check_bidir_switchblock(const t_permutation_map* permutation_map) {
     SB_Side_Connection conn;
 
     /* iterate over all combinations of from_side -> to side */
-    for (e_side from_side : SIDES) {
-        for (e_side to_side : SIDES) {
+    for (e_side from_side : TOTAL_2D_SIDES) {
+        for (e_side to_side : TOTAL_2D_SIDES) {
             /* can't connect a switchblock side to itself */
             if (from_side == to_side) {
                 continue;

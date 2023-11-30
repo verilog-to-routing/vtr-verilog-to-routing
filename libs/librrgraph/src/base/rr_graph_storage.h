@@ -211,7 +211,7 @@ class t_rr_graph_storage {
      * Developers can easily use the following codes with more flexibility
      *
      *   if (rr_graph.is_node_on_specific_side(id, side)) {
-     *       const char* side_string = SIDE_STRING[side];
+     *       const char* side_string = TOTAL_2D_SIDE_STRINGS[side];
      *   }
      */
     const char* node_side_string(RRNodeId id) const;

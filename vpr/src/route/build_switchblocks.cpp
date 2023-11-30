@@ -415,8 +415,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                         continue;
                     }
                     /* now we iterate over all the potential side1->side2 connections */
-                    for (e_side from_side : TOTAL_SIDES) {
-                        for (e_side to_side : TOTAL_SIDES) {
+                    for (e_side from_side : TOTAL_3D_SIDES) {
+                        for (e_side to_side : TOTAL_3D_SIDES) {
                             /* Fill appropriate entry of the sb_conns map with vector specifying the wires
                              * the current wire will connect to */
                             compute_wire_connections(x_coord, y_coord, layer_coord, from_side, to_side,
@@ -764,7 +764,7 @@ static void compute_wireconn_connections(
     const auto& potential_dest_wires = scratchpad->potential_dest_wires;
 
 #ifdef VERBOSE_RR
-    VTR_LOGV(verbose, "SB_LOC: %d,%d %s->%s\n", sb_conn.x_coord, sb_conn.y_coord, SIDE_STRING[sb_conn.from_side], SIDE_STRING[sb_conn.to_side]);
+    VTR_LOGV(verbose, "SB_LOC: %d,%d %s->%s\n", sb_conn.x_coord, sb_conn.y_coord, TOTAL_2D_SIDE_STRINGS[sb_conn.from_side], TOTAL_2D_SIDE_STRINGS[sb_conn.to_side]);
 
     //Define to print out specific wire-switchpoints used in to/from sets, if verbose is set true
 

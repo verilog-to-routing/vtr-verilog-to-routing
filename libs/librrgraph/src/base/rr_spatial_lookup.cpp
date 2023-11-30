@@ -25,7 +25,7 @@ RRNodeId RRSpatialLookup::find_node(int layer,
         VTR_ASSERT_MSG(side != NUM_2D_SIDES, "IPIN/OPIN must specify desired side (can not be default NUM_2D_SIDES)");
     } else {
         VTR_ASSERT_SAFE(type != IPIN && type != OPIN);
-        node_side = SIDES[0];
+        node_side = TOTAL_2D_SIDES[0];
     }
 
     /* Pre-check: the layer, x, y, side and ptc should be non-negative numbers! Otherwise, return an invalid id */
@@ -172,7 +172,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
     if (rr_type == IPIN || rr_type == OPIN) {
         indices.reserve(NUM_2D_SIDES);
         //For pins, we need to look at all the sides of the current grid tile
-        for (e_side side : SIDES) {
+        for (e_side side : TOTAL_2D_SIDES) {
             RRNodeId rr_node_index = find_node(layer, x, y, rr_type, ptc, side);
             if (rr_node_index) {
                 indices.push_back(rr_node_index);
@@ -202,12 +202,12 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
     std::vector<RRNodeId> nodes;
     /* Reserve space to avoid memory fragmentation */
     size_t num_nodes = 0;
-    for (e_side node_side : SIDES) {
+    for (e_side node_side : TOTAL_2D_SIDES) {
         num_nodes += find_nodes(layer,x, y, rr_type, node_side).size();
     }
 
     nodes.reserve(num_nodes);
-    for (e_side node_side : SIDES) {
+    for (e_side node_side : TOTAL_2D_SIDES) {
         std::vector<RRNodeId> temp_nodes = find_nodes(layer,x, y, rr_type, node_side);
         nodes.insert(nodes.end(), temp_nodes.begin(), temp_nodes.end());
     }
@@ -224,7 +224,7 @@ void RRSpatialLookup::reserve_nodes(int layer,
 
     /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
     if (type != IPIN && type != OPIN) {
-        VTR_ASSERT(side == SIDES[0]);
+        VTR_ASSERT(side == TOTAL_2D_SIDES[0]);
     }
 
     resize_nodes(layer, x, y, type, side);
@@ -244,7 +244,7 @@ void RRSpatialLookup::add_node(RRNodeId node,
 
     /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
     if (type != IPIN && type != OPIN) {
-        VTR_ASSERT(side == SIDES[0]);
+        VTR_ASSERT(side == TOTAL_2D_SIDES[0]);
     }
 
     resize_nodes(layer, x, y, type, side);

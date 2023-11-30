@@ -501,7 +501,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         int num_sides = 4 * (type->width * type->height);
         int side_index = 0;
         int count = 0;
-        for (e_side side : SIDES) {
+        for (e_side side : TOTAL_2D_SIDES) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
                     for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides) + 1; ++pin_offset) {
@@ -526,7 +526,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < type->num_pins) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : SIDES) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (((width == 0 && side == LEFT)
                              || (height == type->height - 1 && side == TOP)
                              || (width == type->width - 1 && side == RIGHT)
@@ -567,7 +567,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < input_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : SIDES) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (ipin < input_pins.size()) {
                             //Pins still to allocate
 
@@ -590,7 +590,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < output_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : SIDES) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (((width == 0 && side == LEFT)
                              || (height == type->height - 1 && side == TOP)
                              || (width == type->width - 1 && side == RIGHT)
@@ -621,7 +621,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
             for (int layer = 0; layer < num_of_avail_layer; ++layer) {
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
-                        for (e_side side : SIDES) {
+                        for (e_side side : TOTAL_2D_SIDES) {
                             for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
                                 auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
                                                                                &sub_tile,
@@ -3398,7 +3398,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         for (int l = 0; l < num_of_avail_layer; ++l) {
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
-                    for (e_side side : SIDES) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
                             InstPort inst_port(token.c_str());
 

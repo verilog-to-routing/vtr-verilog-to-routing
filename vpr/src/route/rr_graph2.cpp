@@ -710,7 +710,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     num_conn = 0;
 
     /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-    for (e_side side : SIDES) {
+    for (e_side side : TOTAL_2D_SIDES) {
         /* Figure out coords of channel segment based on side */
         tr_i = ((side == LEFT) ? (i - 1) : i);
         tr_j = ((side == BOTTOM) ? (j - 1) : j);
@@ -1153,8 +1153,8 @@ vtr::NdMatrix<int,2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_in
         for (size_t x = 0; x < grid_ctx.width(); x++) {
             int curr_switchblocks_offset =0;
             for (auto layer = 0; layer < grid_ctx.get_num_layers(); layer++){
-                for (auto from_side : TOTAL_SIDES) {
-                    for (auto to_side : TOTAL_SIDES) {
+                for (auto from_side : TOTAL_3D_SIDES) {
+                    for (auto to_side : TOTAL_3D_SIDES) {
                         if (from_side < NUM_2D_SIDES && to_side < NUM_2D_SIDES) { //this connection is not crossing any layer
                             continue;
                         } else if (from_side == to_side) {
@@ -1332,7 +1332,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                      * Deposit all the sides
                      */
                     if (wanted_sides.empty()) {
-                        for (e_side side : SIDES) {
+                        for (e_side side : TOTAL_2D_SIDES) {
                             wanted_sides.push_back(side);
                         }
                     }
@@ -1418,8 +1418,8 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                        int* index) {
     for (int x_tile = root_x; x_tile < (root_x + block_width); x_tile++) {
         for (int y_tile = root_y; y_tile < (root_y + block_height); y_tile++) {
-            rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, SOURCE, class_num_vec.size(), SIDES[0]);
-            rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, SINK, class_num_vec.size(), SIDES[0]);
+            rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, SOURCE, class_num_vec.size(), TOTAL_2D_SIDES[0]);
+            rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, SINK, class_num_vec.size(), TOTAL_2D_SIDES[0]);
         }
     }
 
@@ -1448,11 +1448,11 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             rr_graph_builder.node_lookup().mirror_nodes(layer, vtr::Point<int>(root_x, root_y),
                                                         vtr::Point<int>(curr_x, curr_y),
                                                         SOURCE,
-                                                        SIDES[0]);
+                                                        TOTAL_2D_SIDES[0]);
             rr_graph_builder.node_lookup().mirror_nodes(layer, vtr::Point<int>(root_x, root_y),
                                                         vtr::Point<int>(curr_x, curr_y),
                                                         SINK,
-                                                        SIDES[0]);
+                                                        TOTAL_2D_SIDES[0]);
         }
     }
 }
@@ -1662,8 +1662,8 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                              * This check code should be invalid
                              * if (rr_node.side() != side) {
                              *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%s/%s): %s",
-                             *               SIDE_STRING[rr_node.side()],
-                             *               SIDE_STRING[side],
+                             *               TOTAL_2D_SIDE_STRINGS[rr_node.side()],
+                             *               TOTAL_2D_SIDE_STRINGS[side],
                              *               describe_rr_node(rr_graph, grid, rr_indexed_data, inode).c_str());
                              * } else {
                              *     VTR_ASSERT(rr_node.side() == side);
@@ -2668,7 +2668,7 @@ void load_sblock_pattern_lookup(const int i,
     int num_wire_muxes[NUM_2D_SIDES];
 
     /* "Label" the wires around the switch block by connectivity. */
-    for (e_side side : SIDES) {
+    for (e_side side : TOTAL_2D_SIDES) {
         /* Assume the channel segment doesn't exist. */
         wire_mux_on_track[side].clear();
         incoming_wire_label[side].clear();
@@ -2742,7 +2742,7 @@ void load_sblock_pattern_lookup(const int i,
                          false, wire_mux_on_track[side], &num_wire_muxes[side], &dummy);
     }
 
-    for (e_side to_side : SIDES) {
+    for (e_side to_side : TOTAL_2D_SIDES) {
         /* Can't do anything if no muxes on this side. */
         if (num_wire_muxes[to_side] == 0)
             continue;
