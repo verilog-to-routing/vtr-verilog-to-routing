@@ -360,6 +360,10 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 /* returns index of a node from which to start routing */
 RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
 
+t_routing_cost_map get_routing_cost_map(int longest_seg_length,
+                                        int from_layer_num,
+                                        const e_rr_type& chan_type,
+                                        const t_segment_inf& segment_inf);
 } // namespace util
 
 #endif
