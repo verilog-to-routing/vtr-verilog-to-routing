@@ -123,59 +123,6 @@ class Expansion_Cost_Entry {
     }
 };
 
-/* a class that represents an entry in the Dijkstra expansion priority queue */
-class PQ_Entry {
-  public:
-    RRNodeId rr_node; //index in device_ctx.rr_nodes that this entry represents
-    float cost;       //the cost of the path to get to this node
-
-    /* store backward delay, R and congestion info */
-    float delay;
-    float R_upstream;
-    float congestion_upstream;
-
-    PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node) {
-        this->rr_node = set_rr_node;
-
-        auto& device_ctx = g_vpr_ctx.device();
-        const auto& rr_graph = device_ctx.rr_graph;
-        this->delay = parent_delay;
-        this->congestion_upstream = parent_congestion_upstream;
-        this->R_upstream = parent_R_upstream;
-        if (!starting_node) {
-            auto cost_index = rr_graph.node_cost_index(RRNodeId(set_rr_node));
-            //this->delay += rr_graph.node_C(RRNodeId(set_rr_node)) * (g_rr_switch_inf[switch_ind].R + 0.5*rr_graph.node_R(RRNodeId(set_rr_node))) +
-            //              g_rr_switch_inf[switch_ind].Tdel;
-
-            //FIXME going to use the delay data that the VPR7 lookahead uses. For some reason the delay calculation above calculates
-            //    a value that's just a little smaller compared to what VPR7 lookahead gets. While the above calculation should be more accurate,
-            //    I have found that it produces the same CPD results but with worse runtime.
-            //
-            //    TODO: figure out whether anything's wrong with the calculation above and use that instead. If not, add the other
-            //          terms like T_quadratic and R_upstream to the calculation below (they are == 0 or UNDEFINED for buffered archs I think)
-
-            //NOTE: We neglect the T_quadratic and C_load terms and Switch R, so this lookahead is likely
-            //      less accurate on unbuffered (e.g. pass-gate) architectures
-
-            this->delay += device_ctx.rr_indexed_data[cost_index].T_linear;
-
-            this->congestion_upstream += device_ctx.rr_indexed_data[cost_index].base_cost;
-        }
-
-        if (this->delay < 0) {
-            VTR_LOG("NEGATIVE DELAY!\n");
-        }
-
-        /* set the cost of this node */
-        this->cost = this->delay;
-    }
-
-    bool operator<(const PQ_Entry& obj) const {
-        /* inserted into max priority queue so want queue entries with a lower cost to be greater */
-        return (this->cost > obj.cost);
-    }
-};
-
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
 typedef vtr::NdMatrix<Expansion_Cost_Entry, 3> t_routing_cost_map; //[0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
@@ -265,12 +212,12 @@ static void run_dijkstra(RRNodeId start_node,
                          int start_x,
                          int start_y,
                          t_routing_cost_map& routing_cost_map,
-                         t_dijkstra_data* data);
+                         util::t_dijkstra_data* data);
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
+static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<PQ_Entry>& pq);
+                                       std::priority_queue<util::PQ_Entry>& pq);
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, t_routing_cost_map& routing_cost_map);
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
@@ -706,7 +653,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
             //Finally, now that we have a list of sample locations, run a Djikstra flood from
             //each sample location to profile the routing network from this type
 
-            t_dijkstra_data dijkstra_data;
+            util::t_dijkstra_data dijkstra_data;
             t_routing_cost_map routing_cost_map({static_cast<unsigned long>(device_ctx.grid.get_num_layers()), device_ctx.grid.width(), device_ctx.grid.height()});
 
             for (e_rr_type chan_type : chan_types) {
@@ -770,7 +717,7 @@ static void run_dijkstra(RRNodeId start_node,
     std::fill(node_visited_costs.begin(), node_visited_costs.end(), -1.0);
 
     /* a priority queue for expansion */
-    std::priority_queue<PQ_Entry>& pq = data->pq;
+    std::priority_queue<util::PQ_Entry>& pq = data->pq;
 
     //Clear priority queue if non-empty
     while (!pq.empty()) {
@@ -778,13 +725,13 @@ static void run_dijkstra(RRNodeId start_node,
     }
 
     /* first entry has no upstream delay or congestion */
-    PQ_Entry first_entry(start_node, UNDEFINED, 0, 0, 0, true);
+    util::PQ_Entry first_entry(start_node, UNDEFINED, 0, 0, 0, true);
 
     pq.push(first_entry);
 
     /* now do routing */
     while (!pq.empty()) {
-        PQ_Entry current = pq.top();
+        util::PQ_Entry current = pq.top();
         pq.pop();
 
         RRNodeId curr_node = current.rr_node;
@@ -818,10 +765,10 @@ static void run_dijkstra(RRNodeId start_node,
 }
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
+static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<PQ_Entry>& pq) {
+                                       std::priority_queue<util::PQ_Entry>& pq) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -848,7 +795,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
             continue;
         }
 
-        PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
+        util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
                              parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
         //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
