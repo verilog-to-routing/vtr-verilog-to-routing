@@ -29,13 +29,12 @@
 /* we will profile delay/congestion using this many tracks for each wire type */
 #define MAX_TRACK_OFFSET 16
 
-/* we're profiling routing cost over many tracks for each wire type, so we'll have many cost entries at each |dx|,|dy| offset.
- * there are many ways to "boil down" the many costs at each offset to a single entry for a given (wire type, chan_type) combination --
- * we can take the smallest cost, the average, median, etc. This define selects the method we use.
- * See e_representative_entry_method */
-#define REPRESENTATIVE_ENTRY_METHOD SMALLEST
-
 namespace util {
+
+class Expansion_Cost_Entry;
+/* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
+ * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
+typedef vtr::NdMatrix<Expansion_Cost_Entry, 3> t_routing_cost_map; //[0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry {
