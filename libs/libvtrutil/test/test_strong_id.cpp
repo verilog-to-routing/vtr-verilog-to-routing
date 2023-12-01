@@ -82,7 +82,7 @@ TEST_CASE("StrongIdIterator", "[StrongId/StrongIdIterator]") {
     REQUIRE(c_iter[-4] == b);
     REQUIRE(c_iter[-5] == a);
 
-    REQUIRE((a_iter + 5) == c_iter);
+    REQUIRE(c_iter == (a_iter + 5));
     REQUIRE(a_iter == (c_iter - 5));
     a_iter += 5;
     REQUIRE(a_iter == c_iter);
