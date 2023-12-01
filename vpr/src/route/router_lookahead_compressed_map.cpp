@@ -26,6 +26,8 @@
 vtr::Matrix<int> compressed_loc_index_map;
 std::unordered_map<int, std::unordered_set<int>> sample_locations;
 
+t_compressed_wire_cost_map f_compressed_wire_cost_map;
+
 
 struct SamplingRegion {
     SamplingRegion() = default;
