@@ -130,7 +130,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     const int verbosity = packer_opts.pack_verbosity;
 
     int unclustered_list_head_size;
-    std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
 
     cluster_stats.num_molecules_processed = 0;
     cluster_stats.mols_since_last_print = 0;
@@ -151,9 +150,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     helper_ctx.enable_pin_feasibility_filter = packer_opts.enable_pin_feasibility_filter;
     helper_ctx.feasible_block_array_size = packer_opts.feasible_block_array_size;
+    helper_ctx.timing_driven = packer_opts.timing_driven;
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
-    std::shared_ptr<SetupTimingInfo> timing_info;
 
     // this data structure tracks the number of Logic Elements (LEs) used. It is
     // populated only for architectures which has LEs. The architecture is assumed
@@ -199,9 +198,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 #if 0
 	check_for_duplicate_inputs ();
 #endif
-    alloc_and_init_clustering(max_molecule_stats,
-                              &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), molecule_head,
-                              clustering_data, net_output_feeds_driving_block_input,
+    alloc_and_init_clustering(packer_opts, max_molecule_stats, molecule_head,
+                              clustering_data, helper_ctx.net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
@@ -221,7 +219,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     if (packer_opts.timing_driven) {
         calc_init_packing_timing(packer_opts, analysis_opts, expected_lowest_cost_pb_gnode,
-                                 clustering_delay_calc, timing_info, atom_criticality);
+                                 clustering_delay_calc, helper_ctx.timing_info, atom_criticality);
     }
 
     auto seed_atoms = initialize_seed_atoms(packer_opts.cluster_seed_type, max_molecule_stats, atom_criticality);
@@ -247,7 +245,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
              * stores PartitionRegion information while the cluster is packed*/
             PartitionRegion temp_cluster_pr;
 
-            start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
+            start_new_cluster(helper_ctx.cluster_placement_stats[0], helper_ctx.primitives_list[0],
                               clb_index, istart,
                               num_used_type_instances,
                               packer_opts.target_device_utilization,
@@ -290,9 +288,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  packer_opts.alpha, packer_opts.beta,
                                  packer_opts.timing_driven, packer_opts.connection_driven,
                                  high_fanout_threshold,
-                                 *timing_info,
+                                 *(helper_ctx.timing_info),
                                  attraction_groups,
-                                 net_output_feeds_driving_block_input);
+                                 helper_ctx.net_output_feeds_driving_block_input);
             helper_ctx.total_clb_num++;
 
             if (packer_opts.timing_driven) {
@@ -300,7 +298,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
             }
-            cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
+            cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[0][cluster_ctx.clb_nlist.block_type(clb_index)->index]);
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,
@@ -342,7 +340,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  prev_molecule,
                                  next_molecule,
                                  num_repeated_molecules,
-                                 helper_ctx.primitives_list,
+                                 helper_ctx.primitives_list[0],
                                  cluster_stats,
                                  helper_ctx.total_clb_num,
                                  num_models,
@@ -354,14 +352,14 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  allow_unrelated_clustering,
                                  high_fanout_threshold,
                                  is_clock,
-                                 timing_info,
+                                 helper_ctx.timing_info,
                                  router_data,
                                  target_ext_pin_util,
                                  temp_cluster_pr,
                                  block_pack_status,
                                  clustering_data.unclustered_list_head,
                                  unclustered_list_head_size,
-                                 net_output_feeds_driving_block_input,
+                                 helper_ctx.net_output_feeds_driving_block_input,
                                  primitive_candidate_block_types);
             }
 

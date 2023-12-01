@@ -26,7 +26,8 @@
 bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              bool during_packing,
                              int verbosity,
-                             t_clustering_data& clustering_data);
+                             t_clustering_data& clustering_data,
+                             int thread_id);
 
 /**
  * @brief This function moves a molecule out of its cluster to another cluster that already exists.
@@ -41,7 +42,8 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId& new_clb,
                                   bool during_packing,
                                   int verbosity,
-                                  t_clustering_data& clustering_data);
+                                  t_clustering_data& clustering_data,
+                                  int thread_id);
 
 /**
  * @brief This function swap two molecules between two different clusters.
@@ -56,5 +58,6 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
                         t_pack_molecule* molecule_2,
                         bool during_packing,
                         int verbosity,
-                        t_clustering_data& clustering_data);
+                        t_clustering_data& clustering_data,
+                        int thread_id);
 #endif

@@ -2,6 +2,7 @@
 #include "vtr_log.h"
 
 #include "atom_lookup.h"
+#include "globals.h"
 /*
  * PB
  */
@@ -15,11 +16,21 @@ const t_pb* AtomLookup::atom_pb(const AtomBlockId blk_id) const {
 }
 
 AtomBlockId AtomLookup::pb_atom(const t_pb* pb) const {
+#ifdef PACK_MULTITHREADED
+    auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+    packing_multithreading_ctx.lookup_mu.lock();
+#endif
     auto iter = atom_to_pb_.find(pb);
     if (iter == atom_to_pb_.inverse_end()) {
         //Not found
+#ifdef PACK_MULTITHREADED
+        packing_multithreading_ctx.lookup_mu.unlock();
+#endif
         return AtomBlockId::INVALID();
     }
+#ifdef PACK_MULTITHREADED
+    packing_multithreading_ctx.lookup_mu.unlock();
+#endif
     return iter->second;
 }
 
@@ -35,7 +46,10 @@ const t_pb_graph_node* AtomLookup::atom_pb_graph_node(const AtomBlockId blk_id) 
 void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
     //If either of blk_id or pb are not valid,
     //remove any mapping
-
+#ifdef PACK_MULTITHREADED
+    auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+    packing_multithreading_ctx.lookup_mu.lock();
+#endif
     if (!blk_id && pb) {
         //Remove
         atom_to_pb_.erase(pb);
@@ -46,6 +60,9 @@ void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
         //If both are valid store the mapping
         atom_to_pb_.update(blk_id, pb);
     }
+#ifdef PACK_MULTITHREADED
+    packing_multithreading_ctx.lookup_mu.unlock();
+#endif
 }
 
 /*
