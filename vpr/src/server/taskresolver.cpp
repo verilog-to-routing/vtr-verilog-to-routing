@@ -81,11 +81,11 @@ void TaskResolver::update(ezgl::application* app)
                 std::string detailsLevel = options.getString(OPTION_DETAILS_LEVEL);
                 bool isFlat = options.getBool(OPTION_IS_FLOAT_ROUTING, false);
                 if (!options.hasErrors()) {
-                    calcCritPath(nCriticalPathNum, typePath);
-                    std::string msg = getPathsStr(g_vpr_ctx.crit_paths, detailsLevel, isFlat);
                     if (typePath != g_vpr_ctx.path_type) {
                         g_vpr_ctx.crit_path_index = -1;
                     }
+                    calcCritPath(nCriticalPathNum, typePath);
+                    std::string msg = getPathsStr(g_vpr_ctx.crit_paths, detailsLevel, isFlat);
                     g_vpr_ctx.path_type = typePath; // duplicated
                     task.success(msg);
                 } else {
