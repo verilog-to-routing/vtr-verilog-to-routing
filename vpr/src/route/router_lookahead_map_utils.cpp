@@ -37,10 +37,12 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(RRNodeId start_node,
-                  int start_x,
-                  int start_y,
-                  util::t_routing_cost_map& routing_cost_map,
-                  util::t_dijkstra_data* data);
+                         int start_x,
+                         int start_y,
+                         util::t_routing_cost_map& routing_cost_map,
+                         util::t_dijkstra_data* data,
+                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
+                         bool sample_all_locs);
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
@@ -648,7 +650,9 @@ void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int* delta_
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         int from_layer_num,
                                         const e_rr_type& chan_type,
-                                        const t_segment_inf& segment_inf) {
+                                        const t_segment_inf& segment_inf,
+                                        const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
+                                        bool sample_all_locs) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
@@ -1177,10 +1181,12 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(RRNodeId start_node,
-                  int start_x,
-                  int start_y,
-                  util::t_routing_cost_map& routing_cost_map,
-                  util::t_dijkstra_data* data) {
+                         int start_x,
+                         int start_y,
+                         util::t_routing_cost_map& routing_cost_map,
+                         util::t_dijkstra_data* data,
+                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
+                         bool sample_all_locs) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 

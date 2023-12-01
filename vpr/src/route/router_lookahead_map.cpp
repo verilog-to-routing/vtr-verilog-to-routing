@@ -490,7 +490,9 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 util::t_routing_cost_map routing_cost_map = util::get_routing_cost_map(longest_seg_length,
                                                                                        from_layer_num,
                                                                                        chan_type,
-                                                                                       segment_inf);
+                                                                                       segment_inf,
+                                                                                       std::unordered_map<int, std::unordered_set<int>>(),
+                                                                                       true);
                 if (routing_cost_map.empty()) {
                     continue;
                 }

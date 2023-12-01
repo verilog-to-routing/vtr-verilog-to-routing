@@ -330,7 +330,9 @@ void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int* delta_
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         int from_layer_num,
                                         const e_rr_type& chan_type,
-                                        const t_segment_inf& segment_inf);
+                                        const t_segment_inf& segment_inf,
+                                        const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
+                                        bool sample_all_locs);
 } // namespace util
 
 #endif
