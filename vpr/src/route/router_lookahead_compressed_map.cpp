@@ -56,7 +56,19 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
 
 static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf);
 
+/* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
+
+/* fills in missing lookahead map entries by copying the cost of the closest valid entry */
+static void fill_in_missing_compressed_lookahead_entries(int segment_index, e_rr_type chan_type);
+
+/* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
+static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_layer_num,
+                                                                   int x,
+                                                                   int y,
+                                                                   int to_layer_num,
+                                                                   int segment_index,
+                                                                   int chan_index);
 
 static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampling_regions, int num_sampling_points) {
     std::sort(sampling_regions.begin(), sampling_regions.end(), [](const SamplingRegion& a, const SamplingRegion& b) {
@@ -189,6 +201,96 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
     }
 }
 
+static void fill_in_missing_compressed_lookahead_entries(int segment_index, e_rr_type chan_type) {
+    int chan_index = 0;
+    if (chan_type == CHANY) {
+        chan_index = 1;
+    }
+
+    auto& device_ctx = g_vpr_ctx.device();
+    int grid_width = static_cast<int>(device_ctx.grid.width());
+    int grid_height = static_cast<int>(device_ctx.grid.height());
+    /* find missing cost entries and fill them in by copying a nearby cost entry */
+    for (int from_layer_num = 0; from_layer_num < device_ctx.grid.get_num_layers(); from_layer_num++) {
+        for (int to_layer_num = 0; to_layer_num < device_ctx.grid.get_num_layers(); ++to_layer_num) {
+            for (int ix = 0; ix < grid_width; ix++) {
+                for (int iy = 0; iy < grid_height; iy++) {
+                    if (sample_locations.find(ix) == sample_locations.end() || sample_locations.at(ix).find(iy) == sample_locations[ix].end()) {
+                        continue;
+                    }
+                    int compressed_idx = compressed_loc_index_map[ix][iy];
+                    util::Cost_Entry cost_entry = f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][compressed_idx];
+
+                    if (std::isnan(cost_entry.delay) && std::isnan(cost_entry.congestion)) {
+                        util::Cost_Entry copied_entry = get_nearby_cost_entry_compressed_lookahead(from_layer_num,
+                                                                                                   ix,
+                                                                                                   iy,
+                                                                                                   to_layer_num,
+                                                                                                   segment_index,
+                                                                                                   chan_index);
+                        f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][compressed_idx] = copied_entry;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
+static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_layer_num,
+                                                                   int x,
+                                                                   int y,
+                                                                   int to_layer_num,
+                                                                   int segment_index,
+                                                                   int chan_index) {
+    /* compute the slope from x,y to 0,0 and then move towards 0,0 by one unit to get the coordinates
+     * of the cost entry to be copied */
+
+    //VTR_ASSERT(x > 0 || y > 0); //Asertion fails in practise. TODO: debug
+
+    float slope;
+    if (x == 0) {
+        slope = 1e12; //just a really large number
+    } else if (y == 0) {
+        slope = 1e-12; //just a really small number
+    } else {
+        slope = (float)y / (float)x;
+    }
+
+    int copy_x, copy_y;
+    if (slope >= 1.0) {
+        copy_y = y - 1;
+        copy_x = vtr::nint((float)y / slope);
+    } else {
+        copy_x = x - 1;
+        copy_y = vtr::nint((float)x * slope);
+    }
+
+    copy_y = std::max(copy_y, 0); //Clip to zero
+    copy_x = std::max(copy_x, 0); //Clip to zero
+
+    int compressed_idx = compressed_loc_index_map[copy_x][copy_y];
+
+    util::Cost_Entry copy_entry = f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][compressed_idx];
+
+    /* if the entry to be copied is also empty, recurse */
+    if (std::isnan(copy_entry.delay) && std::isnan(copy_entry.congestion)) {
+        if (copy_x == 0 && copy_y == 0) {
+            copy_entry = util::Cost_Entry(0., 0.); //(0, 0) entry is invalid so set zero to terminate recursion
+            // set zero if the source and sink nodes are on the same layer. If they are not, it means that there is no connection from the source node to
+            // the other layer. This means that the connection should be set to a very large number
+            if (from_layer_num == to_layer_num) {
+                copy_entry = util::Cost_Entry(0., 0.);
+            } else {
+                copy_entry = util::Cost_Entry(std::numeric_limits<float>::max() / 1e12, std::numeric_limits<float>::max() / 1e12);
+            }
+        } else {
+            copy_entry = get_nearby_cost_entry_compressed_lookahead(from_layer_num, copy_x, copy_y, to_layer_num, segment_index, chan_index);
+        }
+    }
+
+    return copy_entry;
+}
 
 
 
