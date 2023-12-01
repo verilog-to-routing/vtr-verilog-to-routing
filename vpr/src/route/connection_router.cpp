@@ -26,15 +26,15 @@ static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId target_node);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-static void update_router_stats(const RRGraphView* rr_graph,
-                                       RouterStats* router_stats,
-                                       RRNodeId rr_node_id,
-                                       bool is_push);
+static void update_router_stats(RouterStats* router_stats,
+                                bool is_push,
+                                RRNodeId rr_node_id,
+                                const RRGraphView* rr_graph);
 #else
-static void update_router_stats(const RRGraphView* /*rr_graph*/,
-                                       RouterStats* router_stats,
-                                       RRNodeId /*rr_node_id*/,
-                                       bool is_push);
+static void update_router_stats(RouterStats* router_stats,
+                                bool is_push,
+                                RRNodeId /*rr_node_id*/,
+                                const RRGraphView* /*rr_graph*/);
 #endif
 
 /** return tuple <found_path, retry_with_full_bb, cheapest> */
@@ -220,10 +220,10 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         cheapest = heap_.get_heap_head();
-        update_router_stats(rr_graph_,
-                            router_stats_,
+        update_router_stats(router_stats_,
+                            false,
                             cheapest->index,
-                            false);
+                            rr_graph_);
 
         RRNodeId inode = cheapest->index;
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
@@ -309,10 +309,10 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         t_heap* cheapest = heap_.get_heap_head();
-        update_router_stats(rr_graph_,
-                            router_stats_,
+        update_router_stats(router_stats_,
+                            false,
                             cheapest->index,
-                            false);
+                            rr_graph_);
 
         RRNodeId inode = cheapest->index;
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
@@ -617,10 +617,10 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         }
 
         heap_.add_to_heap(next_ptr);
-        update_router_stats(rr_graph_,
-                            router_stats_,
+        update_router_stats(router_stats_,
+                            true,
                             to_node,
-                            true);
+                            rr_graph_);
 
     } else {
         VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
@@ -930,10 +930,10 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                                  backward_path_cost, R_upstream, rt_node.Tdel, &rcv_path_manager);
     }
 
-    update_router_stats(rr_graph_,
-                        router_stats_,
+    update_router_stats(router_stats_,
+                        true,
                         inode,
-                        true);
+                        rr_graph_);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
     router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
@@ -1101,15 +1101,15 @@ static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
 }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-static inline void update_router_stats(const RRGraphView* rr_graph,
-                                       RouterStats* router_stats,
+static inline void update_router_stats(RouterStats* router_stats,
+                                       bool is_push,
                                        RRNodeId rr_node_id,
-                                       bool is_push) {
+                                       const RRGraphView* rr_graph,) {
 #else
-static inline void update_router_stats(const RRGraphView* /*rr_graph*/,
-                                       RouterStats* router_stats,
+static inline void update_router_stats(RouterStats* router_stats,
+                                       bool is_push,
                                        RRNodeId /*rr_node_id*/,
-                                       bool is_push) {
+                                       const RRGraphView* /*rr_graph*/) {
 #endif
     if (is_push) {
         router_stats->heap_pushes++;
