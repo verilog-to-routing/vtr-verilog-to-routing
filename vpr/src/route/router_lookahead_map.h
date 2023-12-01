@@ -11,6 +11,7 @@ class MapLookahead : public RouterLookahead {
     explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat);
 
   private:
+    float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
     // Lookup table from a tile pins to the primitive classes inside that tile
