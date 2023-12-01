@@ -72,6 +72,8 @@ static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_laye
                                                                    int segment_index,
                                                                    int chan_index);
 
+static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num);
+
 static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampling_regions, int num_sampling_points) {
     std::sort(sampling_regions.begin(), sampling_regions.end(), [](const SamplingRegion& a, const SamplingRegion& b) {
         VTR_ASSERT_DEBUG(a.width() == b.width() && a.height() == b.height());
@@ -331,6 +333,22 @@ static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_laye
     }
 
     return copy_entry;
+}
+
+static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
+    VTR_ASSERT_SAFE(rr_type == CHANX || rr_type == CHANY);
+
+    int chan_index = 0;
+    if (rr_type == CHANY) {
+        chan_index = 1;
+    }
+
+    int compressed_idx = compressed_loc_index_map[delta_x][delta_y];
+    VTR_ASSERT_SAFE(from_layer_num < (int)f_compressed_wire_cost_map.dim_size(0));
+    VTR_ASSERT_SAFE(to_layer_num < (int)f_compressed_wire_cost_map.dim_size(3));
+    VTR_ASSERT_SAFE(compressed_idx < (int)f_compressed_wire_cost_map.dim_size(4));
+
+    return f_compressed_wire_cost_map[from_layer_num][chan_index][seg_index][to_layer_num][compressed_idx];
 }
 
 
