@@ -146,8 +146,6 @@ static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type);
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
-/* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
-static void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int* delta_x, int* delta_y);
 
 /******** Interface class member function definitions ********/
 MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
@@ -221,7 +219,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                     // distance_based_min_cost to get an estimation of the global cost, and then, add this cost to the tile_min_cost
                     // to have an estimation of the cost of getting into a cluster - We don't have any estimation of the cost to get out of the cluster
                     int delta_x, delta_y;
-                    get_xy_deltas(current_node, target_node, &delta_x, &delta_y);
+                    util::get_xy_deltas(current_node, target_node, &delta_x, &delta_y);
                     delta_x = abs(delta_x);
                     delta_y = abs(delta_y);
                     delay_cost = params.criticality * distance_based_min_cost[to_layer_num][delta_x][delta_y].delay;
@@ -253,7 +251,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                 cong_offset_cost = 0.;
             } else {
                 int delta_x, delta_y;
-                get_xy_deltas(current_node, target_node, &delta_x, &delta_y);
+                util::get_xy_deltas(current_node, target_node, &delta_x, &delta_y);
                 delta_x = abs(delta_x);
                 delta_y = abs(delta_y);
                 delay_cost = params.criticality * distance_based_min_cost[to_layer_num][delta_x][delta_y].delay;
@@ -290,7 +288,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     int delta_x, delta_y;
     int from_layer_num = rr_graph.node_layer(from_node);
     int to_layer_num = rr_graph.node_layer(to_node);
-    get_xy_deltas(from_node, to_node, &delta_x, &delta_y);
+    util::get_xy_deltas(from_node, to_node, &delta_x, &delta_y);
     delta_x = abs(delta_x);
     delta_y = abs(delta_y);
 
