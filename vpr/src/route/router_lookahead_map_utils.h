@@ -307,6 +307,8 @@ typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_d
 // and the tile's IPIN. If there are many connections to the same IPIN, the one with the minimum delay is selected.
 typedef std::vector<std::vector<std::vector<t_reachable_wire_inf>>> t_chan_ipins_delays;
 
+typedef Cost_Entry (*WireCostFunc)(e_rr_type, int, int, int, int, int);
+
 /**
  * @brief For each tile, iterate over its OPINs and store which segment types are accessible from each OPIN
  * @param is_flat
@@ -333,6 +335,22 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs);
+
+/**
+ * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink
+ * @param src_opin_delay_map
+ * @param layer_num
+ * @param delta_x
+ * @param delta_y
+ * @param to_layer_num
+ * @param wire_cost_func call back function that would return a cost ot get to a given location from the given segment
+ * @return (delay, congestion)
+ */
+std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
+                                               int delta_x,
+                                               int delta_y,
+                                               int to_layer_num,
+                                               WireCostFunc wire_cost_func);
 } // namespace util
 
 #endif

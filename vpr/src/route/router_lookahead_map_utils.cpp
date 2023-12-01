@@ -783,6 +783,70 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     return routing_cost_map;
 }
 
+std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,
+                                               int delta_x,
+                                               int delta_y,
+                                               int to_layer_num,
+                                               WireCostFunc wire_cost_func) {
+    float expected_delay_cost = std::numeric_limits<float>::infinity();
+    float expected_cong_cost = std::numeric_limits<float>::infinity();
+    if (src_opin_delay_map.empty()) {
+        //During lookahead profiling we were unable to find any wires which connected
+        //to this PTC.
+        //
+        //This can sometimes occur at very low channel widths (e.g. during min W search on
+        //small designs) where W discretization combined with fraction Fc may cause some
+        //pins/sources to be left disconnected.
+        //
+        //Such RR graphs are of course unroutable, but that should be determined by the
+        //router. So just return an arbitrary value here rather than error.
+
+        //We choose to return the largest (non-infinite) value possible, but scaled
+        //down by a large factor to maintain some dynaimc range in case this value ends
+        //up being processed (e.g. by the timing analyzer).
+        //
+        //The cost estimate should still be *extremely* large compared to a typical delay, and
+        //so should ensure that the router de-prioritizes exploring this path, but does not
+        //forbid the router from trying.
+        expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
+        expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
+    } else {
+        //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
+        //and then add the estimates from those wire types for the distance of interest.
+        //If there are multiple options we use the minimum value.
+        for (const auto& kv : src_opin_delay_map) {
+            const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
+
+            util::Cost_Entry wire_cost_entry;
+            if (reachable_wire_inf.wire_rr_type == SINK) {
+                //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
+                //In the lookahead, we treat such connections as 'special' wire types
+                //with no delay/congestion cost
+                wire_cost_entry.delay = 0;
+                wire_cost_entry.congestion = 0;
+            } else {
+                //For an actual accessible wire, we query the wire look-up to get it's
+                //delay and congestion cost estimates
+                wire_cost_entry = wire_cost_func(reachable_wire_inf.wire_rr_type,
+                                                 reachable_wire_inf.wire_seg_index,
+                                                 reachable_wire_inf.layer_number,
+                                                 delta_x,
+                                                 delta_y,
+                                                 to_layer_num);
+            }
+
+            float this_delay_cost = reachable_wire_inf.delay + wire_cost_entry.delay;
+            float this_cong_cost = reachable_wire_inf.congestion + wire_cost_entry.congestion;
+
+            expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
+            expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
+        }
+    }
+
+    return std::make_pair(expected_delay_cost, expected_cong_cost);
+}
+
+
 } // namespace util
 
 static void dijkstra_flood_to_wires(int itile,
