@@ -56,6 +56,8 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
 
 static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf);
 
+static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
+
 static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampling_regions, int num_sampling_points) {
     std::sort(sampling_regions.begin(), sampling_regions.end(), [](const SamplingRegion& a, const SamplingRegion& b) {
         VTR_ASSERT_DEBUG(a.width() == b.width() && a.height() == b.height());
@@ -74,6 +76,9 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
             }
         }
     });
+
+    const auto& grid = g_vpr_ctx.device().grid;
+    compressed_loc_index_map.resize({grid.width(), grid.height()}, OPEN);
 
     int sample_point_num = 0;
     for (const auto& sample_region: sampling_regions) {
@@ -155,6 +160,33 @@ static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segm
     }
 
     return sampling_regions;
+}
+
+static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map) {
+    int chan_index = 0;
+    if (chan_type == CHANY) {
+        chan_index = 1;
+    }
+
+    /* set the lookahead cost map entries with a representative cost entry from routing_cost_map */
+    int to_layer_dim = static_cast<int>(routing_cost_map.dim_size(0));
+    for (int to_layer = 0; to_layer < to_layer_dim; to_layer++) {
+        int x_dim = static_cast<int>(routing_cost_map.dim_size(1));
+        for (int ix = 0; ix < x_dim; ix++) {
+            int y_dim = static_cast<int>(routing_cost_map.dim_size(2));
+            for (int iy = 0; iy < y_dim; iy++) {
+                if (sample_locations.find(ix) == sample_locations.end() || sample_locations.at(ix).find(iy) == sample_locations[ix].end()) {
+                    continue;
+                }
+                util::Expansion_Cost_Entry& expansion_cost_entry = routing_cost_map[to_layer][ix][iy];
+                int compressed_idx = compressed_loc_index_map[ix][iy];
+                VTR_ASSERT(compressed_idx != OPEN);
+
+                f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][compressed_idx] =
+                    expansion_cost_entry.get_representative_cost_entry(util::e_representative_entry_method::SMALLEST);
+            }
+        }
+    }
 }
 
 
