@@ -54,6 +54,8 @@ struct SamplingRegion {
 
 static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampling_regions, int num_sampling_points);
 
+static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec);
+
 static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf);
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
@@ -113,7 +115,7 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
     VTR_ASSERT(sample_point_num == num_sampling_points);
 }
 
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf_vec)  {
+static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec)  {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -132,6 +134,45 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     }
 
     initialize_compressed_loc_structs(sampling_regions, compresses_x_size * compressed_y_size);
+
+    int longest_seg_length = 0;
+    for (const auto& seg_inf : segment_inf_vec) {
+        longest_seg_length = std::max(longest_seg_length, seg_inf.length);
+    }
+
+    //Profile each wire segment type
+    for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
+        for (const auto& segment_inf : segment_inf_vec) {
+            std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;
+            std::vector<e_rr_type> chan_types;
+            if (segment_inf.parallel_axis == X_AXIS)
+                chan_types.push_back(CHANX);
+            else if (segment_inf.parallel_axis == Y_AXIS)
+                chan_types.push_back(CHANY);
+            else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
+                chan_types.insert(chan_types.end(), {CHANX, CHANY});
+
+            for (e_rr_type chan_type : chan_types) {
+                util::t_routing_cost_map routing_cost_map = util::get_routing_cost_map(longest_seg_length,
+                                                                                       from_layer_num,
+                                                                                       chan_type,
+                                                                                       segment_inf,
+                                                                                       sample_locations,
+                                                                                       false);
+                if (routing_cost_map.empty()) {
+                    continue;
+                }
+
+                /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
+                     * cost map */
+                set_compressed_lookahead_map_costs(from_layer_num, segment_inf.seg_index, chan_type, routing_cost_map);
+
+                /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
+                     * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
+                fill_in_missing_compressed_lookahead_entries(segment_inf.seg_index, chan_type);
+            }
+        }
+    }
 }
 
 static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf) {
@@ -140,8 +181,8 @@ static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segm
     std::vector<SamplingRegion> sampling_regions;
 
 
-    int grid_width = grid.width();
-    int grid_height = grid.height();
+    int grid_width = static_cast<int>(grid.width());
+    int grid_height = static_cast<int>(grid.height());
 
     int max_seg_lenght = std::numeric_limits<int>::min();
     int min_seg_length = std::numeric_limits<int>::max();
