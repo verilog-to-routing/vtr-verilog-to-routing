@@ -774,7 +774,9 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                          sample_x,
                          sample_y,
                          routing_cost_map,
-                         &dijkstra_data);
+                         &dijkstra_data,
+                         sample_locs,
+                         sample_all_locs);
         }
     }
 
@@ -1227,19 +1229,34 @@ static void run_dijkstra(RRNodeId start_node,
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (rr_graph.node_type(curr_node) == IPIN) {
+            VTR_ASSERT_SAFE(rr_graph.node_xlow(curr_node) == rr_graph.node_xhigh(curr_node));
+            VTR_ASSERT_SAFE(rr_graph.node_ylow(curr_node) == rr_graph.node_yhigh(curr_node));
             int ipin_x = rr_graph.node_xlow(curr_node);
             int ipin_y = rr_graph.node_ylow(curr_node);
             int ipin_layer = rr_graph.node_layer(curr_node);
 
-            if (ipin_x >= start_x && ipin_y >= start_y) {
-                int delta_x, delta_y;
-                util::get_xy_deltas(start_node, curr_node, &delta_x, &delta_y);
-                delta_x = std::abs(delta_x);
-                delta_y = std::abs(delta_y);
+            bool store_this_pin = true;
+            if (!sample_all_locs) {
+                if (sample_locs.find(ipin_x) == sample_locs.end()) {
+                    store_this_pin = false;
+                } else {
+                    if (sample_locs.at(ipin_x).find(ipin_y) == sample_locs.at(ipin_x).end()) {
+                        store_this_pin = false;
+                    }
+                }
+            }
 
-                routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(util::e_representative_entry_method::SMALLEST,
-                                                                              current.delay,
-                                                                              current.congestion_upstream);
+            if (store_this_pin) {
+                if (ipin_x >= start_x && ipin_y >= start_y) {
+                    int delta_x, delta_y;
+                    util::get_xy_deltas(start_node, curr_node, &delta_x, &delta_y);
+                    delta_x = std::abs(delta_x);
+                    delta_y = std::abs(delta_y);
+
+                    routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(util::e_representative_entry_method::SMALLEST,
+                                                                                  current.delay,
+                                                                                  current.congestion_upstream);
+                }
             }
         }
 

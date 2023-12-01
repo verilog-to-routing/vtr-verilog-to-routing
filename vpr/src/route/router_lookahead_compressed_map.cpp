@@ -94,12 +94,13 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
     VTR_ASSERT(sample_point_num == num_sampling_points);
 }
 
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf)  {
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf_vec)  {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
-    auto sampling_regions = get_sampling_regions(segment_inf);
+    auto sampling_regions = get_sampling_regions(segment_inf_vec);
 
     int compresses_x_size = 0;
     int compressed_y_size = 0;
