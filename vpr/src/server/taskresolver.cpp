@@ -1,21 +1,11 @@
 #include "taskresolver.h"
-#ifdef ENABLE_RANDOM_PATH_GENERATION
-#include <server_app/pathsgen.h>
-#endif
 
-#ifndef STANDALONE_APP
 #include "globals.h"
 #include "pathhelper.h"
 #include "telegramoptions.h"
 #include "telegramparser.h"
 #include "gtkcomboboxhelper.h"
 #include <ezgl/application.hpp>
-#endif
-
-#ifdef ENABLE_TASK_DELAY
-#include <thread>
-#include <chrono>
-#endif
 
 void TaskResolver::addTasks(const std::vector<Task>& tasks)
 {
@@ -68,7 +58,6 @@ std::vector<std::string> splitString(const std::string& input, char delimiter)
     return tokens;
 }
 
-#ifndef STANDALONE_APP
 void TaskResolver::update(ezgl::application* app)
 {
     for (auto& task: m_tasks) {
@@ -126,16 +115,4 @@ void TaskResolver::update(ezgl::application* app)
         }
     }
 }
-#else
-void TaskResolver::update()
-{
-    for (auto& task: m_tasks) {
-        if (!task.isFinished()) {
-#ifdef ENABLE_TASK_DELAY
-            std::this_thread::sleep_for(std::chrono::milliseconds(TASK_RESOLVE_DELAY_MS));
-#endif
-            task.success(generateRandomPathsString());
-        }
-    }
-}
-#endif
+
