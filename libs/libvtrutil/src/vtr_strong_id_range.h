@@ -90,14 +90,12 @@ class StrongIdIterator {
 
     ///@brief ~ operator
     template<typename IdType>
-    friend ssize_t operator-(
-        const StrongIdIterator<IdType>& lhs,
-        const StrongIdIterator<IdType>& rhs) {
-        VTR_ASSERT_SAFE(bool(lhs.id_));
-        VTR_ASSERT_SAFE(bool(rhs.id_));
+    ssize_t operator-(const StrongIdIterator<IdType>& other) {
+        VTR_ASSERT_SAFE(bool(id_));
+        VTR_ASSERT_SAFE(bool(other.id_));
 
-        ssize_t ret = size_t(lhs.id_);
-        ret -= size_t(rhs.id_);
+        ssize_t ret = size_t(id_);
+        ret -= size_t(other.id_);
         return ret;
     }
 
