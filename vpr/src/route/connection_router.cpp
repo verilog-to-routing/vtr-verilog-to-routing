@@ -1104,7 +1104,7 @@ static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
 static inline void update_router_stats(RouterStats* router_stats,
                                        bool is_push,
                                        RRNodeId rr_node_id,
-                                       const RRGraphView* rr_graph,) {
+                                       const RRGraphView* rr_graph) {
 #else
 static inline void update_router_stats(RouterStats* router_stats,
                                        bool is_push,
