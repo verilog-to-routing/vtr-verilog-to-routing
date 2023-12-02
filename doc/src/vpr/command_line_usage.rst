@@ -1124,6 +1124,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     If this option is enabled, the *run-flat* router is used instead of the *two-stage* router.
     This means that during the routing stage, all nets, both intra- and inter-cluster, are routed directly from one primitive pin to another primitive pin.
+    This increases routing time but can improve routing quality by re-arranging LUT inputs and exposing additional optimization opportunities in architectures with local intra-cluster routing that is not a full crossbar.
 
     **Default:** ``OFF`
 
