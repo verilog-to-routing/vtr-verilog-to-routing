@@ -13,27 +13,9 @@ archs_dir=arch/COFFE_22nm
 # Some of these benchmarks are designs with hard dsp and ram blocks 
 # but in this task, we're running them without enabling these
 # blocks (that is, the macro `complex_dsp` and `hard_mem` are not defined).
-circuit_list_add=proxy.2.v
-circuit_list_add=tdarknet_like.large.v
-circuit_list_add=proxy.4.v
-circuit_list_add=proxy.1.v
-circuit_list_add=bwave_like.float.large.v
-circuit_list_add=proxy.3.v
-circuit_list_add=lenet.v
-#circuit_list_add=deepfreeze.style1.sv
-#circuit_list_add=deepfreeze.style2.sv
-#circuit_list_add=deepfreeze.style3.sv
-circuit_list_add=clstm_like.small.v
-circuit_list_add=clstm_like.medium.v
-circuit_list_add=clstm_like.large.v
-circuit_list_add=lstm.v
-circuit_list_add=gemm_layer.v
-circuit_list_add=tpu_like.large.os.v
-circuit_list_add=tpu_like.large.ws.v
-circuit_list_add=tdarknet_like.small.v
-circuit_list_add=tdarknet_like.large.v
-circuit_list_add=dla_like.medium.v
-circuit_list_add=dla_like.large.v
+circuit_list_add=deepfreeze.style1.sv
+circuit_list_add=deepfreeze.style2.sv
+circuit_list_add=deepfreeze.style3.sv
 
 # Add architectures to list to sweep
 arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
@@ -48,4 +30,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 300
+script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 300 -parser system-verilog
