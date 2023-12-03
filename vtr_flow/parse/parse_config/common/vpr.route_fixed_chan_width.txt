@@ -8,59 +8,6 @@ total_nets_routed;vpr.out;Router Stats: total_nets_routed: (\d+) .*
 total_connections_routed;vpr.out;Router Stats: .*total_connections_routed: (\d+) .*
 total_heap_pushes;vpr.out;Router Stats: .*total_heap_pushes: (\d+) .*
 total_heap_pops;vpr.out;Router Stats: .*total_heap_pops: (\d+)
-total_internal_heap_pushes;vpr.out;Router Stats: .*total_internal_heap_pushes: (\d+) .*
-total_internal_heap_pops;vpr.out;Router Stats: .*total_internal_heap_pops: (\d+) .*
-total_external_heap_pushes;vpr.out;Router Stats: .*total_external_heap_pushes: (\d+) .*
-total_external_heap_pops;vpr.out;Router Stats: .*total_external_heap_pops: (\d+) .*
-total_external_SOURCE_pushes;vpr.out;Router Stats: .*total_external_SOURCE_pushes: (\d+) .*
-total_external_SOURCE_pops;vpr.out;Router Stats: .*total_external_SOURCE_pops: (\d+) .*
-total_internal_SOURCE_pushes;vpr.out;Router Stats: .*total_internal_SOURCE_pushes: (\d+) .*
-total_internal_SOURCE_pops;vpr.out;Router Stats: .*total_internal_SOURCE_pops: (\d+) .*
-total_external_SINK_pushes;vpr.out;Router Stats: .*total_external_SINK_pushes: (\d+) .*
-total_external_SINK_pops;vpr.out;Router Stats: .*total_external_SINK_pops: (\d+) .*
-total_internal_SINK_pushes;vpr.out;Router Stats: .*total_internal_SINK_pushes: (\d+) .*
-total_internal_SINK_pops;vpr.out;Router Stats: .*total_internal_SINK_pops: (\d+) .*
-total_external_IPIN_pushes;vpr.out;Router Stats: .*total_external_IPIN_pushes: (\d+) .*
-total_external_IPIN_pops;vpr.out;Router Stats: .*total_external_IPIN_pops: (\d+) .*
-total_internal_IPIN_pushes;vpr.out;Router Stats: .*total_internal_IPIN_pushes: (\d+) .*
-total_internal_IPIN_pops;vpr.out;Router Stats: .*total_internal_IPIN_pops: (\d+) .*
-total_external_OPIN_pushes;vpr.out;Router Stats: .*total_external_OPIN_pushes: (\d+) .*
-total_external_OPIN_pops;vpr.out;Router Stats: .*total_external_OPIN_pops: (\d+) .*
-total_internal_OPIN_pushes;vpr.out;Router Stats: .*total_internal_OPIN_pushes: (\d+) .*
-total_internal_OPIN_pops;vpr.out;Router Stats: .*total_internal_OPIN_pops: (\d+) .*
-total_external_CHANX_pushes;vpr.out;Router Stats: .*total_external_CHANX_pushes: (\d+) .*
-total_external_CHANX_pops;vpr.out;Router Stats: .*total_external_CHANX_pops: (\d+) .*
-total_internal_CHANX_pushes;vpr.out;Router Stats: .*total_internal_CHANX_pushes: (\d+) .*
-total_internal_CHANX_pops;vpr.out;Router Stats: .*total_internal_CHANX_pops: (\d+) .*
-total_external_CHANY_pushes;vpr.out;Router Stats: .*total_external_CHANY_pushes: (\d+) .*
-total_external_CHANY_pops;vpr.out;Router Stats: .*total_external_CHANY_pops: (\d+) .*
-total_internal_CHANY_pushes;vpr.out;Router Stats: .*total_internal_CHANY_pushes: (\d+) .*
-total_internal_CHANY_pops;vpr.out;Router Stats: .*total_internal_CHANY_pops: (\d+) .*
-
-rt_node_SOURCE_pushes;vpr.out;Router Stats: .*rt_node_SOURCE_pushes: (\d+) .*
-rt_node_SINK_pushes;vpr.out;Router Stats: .*rt_node_SINK_pushes: (\d+) .*
-rt_node_IPIN_pushes;vpr.out;Router Stats: .*rt_node_IPIN_pushes: (\d+) .*
-rt_node_OPIN_pushes;vpr.out;Router Stats: .*rt_node_OPIN_pushes: (\d+) .*
-rt_node_CHANX_pushes;vpr.out;Router Stats: .*rt_node_CHANX_pushes: (\d+) .*
-rt_node_CHANY_pushes;vpr.out;Router Stats: .*rt_node_CHANY_pushes: (\d+) .*
-
-rt_node_SOURCE_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_SOURCE_high_fanout_pushes: (\d+) .*
-rt_node_SINK_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_SINK_high_fanout_pushes: (\d+) .*
-rt_node_IPIN_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_IPIN_high_fanout_pushes: (\d+) .*
-rt_node_OPIN_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_OPIN_high_fanout_pushes: (\d+) .*
-rt_node_CHANX_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_CHANX_high_fanout_pushes: (\d+) .*
-rt_node_CHANY_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_CHANY_high_fanout_pushes: (\d+) .*
-
-rt_node_SOURCE_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_SOURCE_entire_tree_pushes: (\d+) .*
-rt_node_SINK_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_SINK_entire_tree_pushes: (\d+) .*
-rt_node_IPIN_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_IPIN_entire_tree_pushes: (\d+) .*
-rt_node_OPIN_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_OPIN_entire_tree_pushes: (\d+) .*
-rt_node_CHANX_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_CHANX_entire_tree_pushes: (\d+) .*
-rt_node_CHANY_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_CHANY_entire_tree_pushes: (\d+) .*
-
-adding_all_rt;vpr.out;Router Stats: .*total_number_of_adding_all_rt: (\d+) .*
-adding_high_fanout_rt;vpr.out;Router Stats: .*total_number_of_adding_high_fanout_rt: (\d+) .*
-total_number_of_adding_all_rt_from_calling_high_fanout_rt;vpr.out;Router Stats: .*total_number_of_adding_all_rt_from_calling_high_fanout_rt: (\d+) .*
 
 #Area Metrics
 logic_block_area_total;vpr.out;\s*Total logic block area .*: (.*)
