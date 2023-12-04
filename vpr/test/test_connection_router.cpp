@@ -1,6 +1,7 @@
 #include <tuple>
 #include "catch2/catch_test_macros.hpp"
 
+#include "route_net.h"
 #include "rr_graph_fwd.h"
 #include "vpr_api.h"
 #include "vpr_signal_handler.h"
@@ -75,8 +76,7 @@ static float do_one_route(RRNodeId source_node,
                                                                                                         cost_params,
                                                                                                         bounding_box,
                                                                                                         router_stats,
-                                                                                                        conn_params,
-                                                                                                        true);
+                                                                                                        conn_params);
 
     // Default delay is infinity, which indicates that a route was not found.
     float delay = std::numeric_limits<float>::infinity();

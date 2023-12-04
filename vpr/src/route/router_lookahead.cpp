@@ -1,10 +1,10 @@
 #include "router_lookahead.h"
 
+#include "connection_router_interface.h"
 #include "router_lookahead_map.h"
 #include "router_lookahead_extended_map.h"
 #include "vpr_error.h"
 #include "globals.h"
-#include "route_timing.h"
 
 static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int* num_segs_ortho_dir_ptr);
 static int round_up(float x);

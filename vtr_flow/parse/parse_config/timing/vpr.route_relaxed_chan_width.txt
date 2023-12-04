@@ -11,45 +11,6 @@ crit_path_total_nets_routed;vpr.crit_path.out;.* total_nets_routed: (\d+)
 crit_path_total_connections_routed;vpr.crit_path.out;.* total_connections_routed: (\d+)
 crit_path_total_heap_pushes;vpr.crit_path.out;.* total_heap_pushes: (\d+)
 crit_path_total_heap_pops;vpr.crit_path.out;.* total_heap_pops: (\d+)
-crit_path_total_internal_heap_pushes;vpr.crit_path.out;Router Stats: .*total_internal_heap_pushes: (\d+) .*
-crit_path_total_internal_heap_pops;vpr.crit_path.out;Router Stats: .*total_internal_heap_pops: (\d+) .*
-crit_path_total_external_heap_pushes;vpr.crit_path.out;Router Stats: .*total_external_heap_pushes: (\d+) .*
-crit_path_total_external_heap_pops;vpr.crit_path.out;Router Stats: .*total_external_heap_pops: (\d+) .*
-crit_path_total_external_SOURCE_pushes;vpr.crit_path.out;Router Stats: .*total_external_SOURCE_pushes: (\d+) .*
-crit_path_total_external_SOURCE_pops;vpr.crit_path.out;Router Stats: .*total_external_SOURCE_pops: (\d+) .*
-crit_path_total_internal_SOURCE_pushes;vpr.crit_path.out;Router Stats: .*total_internal_SOURCE_pushes: (\d+) .*
-crit_path_total_internal_SOURCE_pops;vpr.crit_path.out;Router Stats: .*total_internal_SOURCE_pops: (\d+) .*
-crit_path_total_external_SINK_pushes;vpr.crit_path.out;Router Stats: .*total_external_SINK_pushes: (\d+) .*
-crit_path_total_external_SINK_pops;vpr.crit_path.out;Router Stats: .*total_external_SINK_pops: (\d+) .*
-crit_path_total_internal_SINK_pushes;vpr.crit_path.out;Router Stats: .*total_internal_SINK_pushes: (\d+) .*
-crit_path_total_internal_SINK_pops;vpr.crit_path.out;Router Stats: .*total_internal_SINK_pops: (\d+) .*
-crit_path_total_external_IPIN_pushes;vpr.crit_path.out;Router Stats: .*total_external_IPIN_pushes: (\d+) .*
-crit_path_total_external_IPIN_pops;vpr.crit_path.out;Router Stats: .*total_external_IPIN_pops: (\d+) .*
-crit_path_total_internal_IPIN_pushes;vpr.crit_path.out;Router Stats: .*total_internal_IPIN_pushes: (\d+) .*
-crit_path_total_internal_IPIN_pops;vpr.crit_path.out;Router Stats: .*total_internal_IPIN_pops: (\d+) .*
-crit_path_total_external_OPIN_pushes;vpr.crit_path.out;Router Stats: .*total_external_OPIN_pushes: (\d+) .*
-crit_path_total_external_OPIN_pops;vpr.crit_path.out;Router Stats: .*total_external_OPIN_pops: (\d+) .*
-crit_path_total_internal_OPIN_pushes;vpr.crit_path.out;Router Stats: .*total_internal_OPIN_pushes: (\d+) .*
-crit_path_total_internal_OPIN_pops;vpr.crit_path.out;Router Stats: .*total_internal_OPIN_pops: (\d+) .*
-crit_path_total_external_CHANX_pushes;vpr.crit_path.out;Router Stats: .*total_external_CHANX_pushes: (\d+) .*
-crit_path_total_external_CHANX_pops;vpr.crit_path.out;Router Stats: .*total_external_CHANX_pops: (\d+) .*
-crit_path_total_internal_CHANX_pushes;vpr.crit_path.out;Router Stats: .*total_internal_CHANX_pushes: (\d+) .*
-crit_path_total_internal_CHANX_pops;vpr.crit_path.out;Router Stats: .*total_internal_CHANX_pops: (\d+) .*
-crit_path_total_external_CHANY_pushes;vpr.crit_path.out;Router Stats: .*total_external_CHANY_pushes: (\d+) .*
-crit_path_total_external_CHANY_pops;vpr.crit_path.out;Router Stats: .*total_external_CHANY_pops: (\d+) .*
-crit_path_total_internal_CHANY_pushes;vpr.crit_path.out;Router Stats: .*total_internal_CHANY_pushes: (\d+) .*
-crit_path_total_internal_CHANY_pops;vpr.crit_path.out;Router Stats: .*total_internal_CHANY_pops: (\d+) .*
-
-crit_path_rt_node_SOURCE_pushes;vpr.crit_path.out;Router Stats: .*rt_node_SOURCE_pushes: (\d+) .*
-crit_path_rt_node_SINK_pushes;vpr.crit_path.out;Router Stats: .*rt_node_SINK_pushes: (\d+) .*
-crit_path_rt_node_IPIN_pushes;vpr.crit_path.out;Router Stats: .*rt_node_IPIN_pushes: (\d+) .*
-crit_path_rt_node_OPIN_pushes;vpr.crit_path.out;Router Stats: .*rt_node_OPIN_pushes: (\d+) .*
-crit_path_rt_node_CHANX_pushes;vpr.crit_path.out;Router Stats: .*rt_node_CHANX_pushes: (\d+) .*
-crit_path_rt_node_CHANY_pushes;vpr.crit_path.out;Router Stats: .*rt_node_CHANY_pushes: (\d+) .*
-
-crit_path_adding_all_rt;vpr.crit_path.out;Router Stats: .*total_number_of_adding_all_rt: (\d+) .*
-crit_path_adding_high_fanout_rt;vpr.crit_path.out;Router Stats: .*total_number_of_adding_high_fanout_rt: (\d+) .*
-crit_path_total_number_of_adding_all_rt_from_calling_high_fanout_rt;vpr.crit_path.out;Router Stats: .*total_number_of_adding_all_rt_from_calling_high_fanout_rt: (\d+)
 
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.crit_path.out;Final critical path delay \(least slack\): (.*) ns

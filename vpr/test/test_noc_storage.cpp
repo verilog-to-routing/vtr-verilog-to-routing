@@ -205,8 +205,6 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
     NocRouterId source;
     NocRouterId sink;
 
-    NocLinkId link_id;
-
     // testing datastructure
     NocStorage test_noc;
 
@@ -411,8 +409,6 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
     test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
-
-    NocRouterId converted_id;
 
     // add all the routers to noc_storage and populate the golden router set
     for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++) {
