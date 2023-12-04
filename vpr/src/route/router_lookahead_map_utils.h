@@ -90,8 +90,8 @@ class Cost_Entry {
                       ///<holes filling procedure
 
     Cost_Entry() {
-        delay = std::numeric_limits<float>::infinity();
-        congestion = std::numeric_limits<float>::infinity();
+        delay = std::numeric_limits<float>::quiet_NaN();
+        congestion = std::numeric_limits<float>::quiet_NaN();
         fill = false;
     }
     Cost_Entry(float set_delay, float set_congestion)
