@@ -273,7 +273,25 @@ static void get_switchpoint_wires(
     std::vector<t_wire_switchpoint>* output_wires,
     std::vector<t_wire_switchpoint>* scratch_wires);
 
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type);
+/**
+ * @brief finds the correct channel (x or y), and the coordinates to index into it based on the
+ * specified tile coordinates (x,y,layer) and the switch block side.
+ *
+ *  @param tile_x x-coordinate of the tile
+ *  @param tile_y y-coordinate of the tile
+ *  @param tile_layer layer-coordinate of the tile
+ *  @param src_side switch block source side
+ *  @param dest_side swtich block destination side
+ *  @param chan_details_x x-channel segment details (length, start and end points, ...)
+ *  @param chan_details_y x-channel segment details (length, start and end points, ...)
+ *  @param chan_x x-coordinate of the channel
+ *  @param chan_y y-coordinate of the channel
+ *  @param chan_layer layer_coordinate of the channel
+ *  @param chan_type chan type that the function index into
+ *
+ * @return returns the type of channel that we are indexing into (ie, CHANX or CHANY)
+ */
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type);
 
 /**
  * @brief check whether a specific track location is valid within the device grid
@@ -674,11 +692,11 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
      * destination channels. also return the channel type (ie chanx/chany/both) into which we are
      * indexing */
     /* details for source channel */
-    const t_chan_details from_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, from_side, chan_details_x, chan_details_y,
+    const t_chan_details from_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, from_side, to_side, chan_details_x, chan_details_y,
                                                                                   from_x, from_y, from_layer, from_chan_type);
 
     /* details for destination channel */
-    const t_chan_details to_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, to_side, chan_details_x, chan_details_y,
+    const t_chan_details to_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, to_side, from_side, chan_details_x, chan_details_y,
                                                                                 to_x, to_y, to_layer, to_chan_type);
 
 
@@ -906,14 +924,11 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
     return scratchpad->formula_parser.parse_formula(num_conns_formula, vars);
 }
 
-/* Here we find the correct channel (x or y or both), and the coordinates to index into it based on the
- * specified tile coordinates (x,y,layer) and the switchblock side. Also returns the type of channel
- * that we are indexing into (ie, CHANX or CHANY) */
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type){
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type){
     chan_type = CHANX;
     /* here we use the VPR convention that a tile 'owns' the channels directly to the right
      * and above it */
-    switch (side) {
+    switch (src_side) {
         case TOP:
             /* this is y-channel belonging to tile above in the same layer */
             chan_x = tile_x;
@@ -951,19 +966,19 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer + 1;
-            chan_type = CHANX;
-            return chan_details_x;
+            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? CHANX : CHANY;
+            return (dest_side == RIGHT || dest_side == LEFT) ? chan_details_x : chan_details_y;
             break;
         case UNDER:
             /* this is x-channel and y-channel on the same tile location in layer under the current layer */
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer - 1;
-            chan_type = CHANX;
-            return chan_details_x;
+            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? CHANX : CHANY;
+            return (dest_side == RIGHT || dest_side == LEFT) ? chan_details_x : chan_details_y;
             break;
         default:
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: unknown side specified: %d\n", side);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: unknown side specified: %d\n", src_side);
             break;
     }
     VTR_ASSERT(false);
