@@ -427,8 +427,17 @@ void MapLookahead::read_intra_cluster(const std::string& file) {
     min_global_cost_map(distance_based_min_cost);
 }
 
-void MapLookahead::write(const std::string& file) const {
-    write_router_lookahead(file);
+void MapLookahead::write(const std::string& file_name) const {
+    if (vtr::check_file_name_extension(file_name, ".tsv")) {
+        std::vector<int> wire_cost_map_size(f_wire_cost_map.ndims());
+        for (size_t i = 0; i < f_wire_cost_map.ndims(); ++i) {
+            wire_cost_map_size[i] = static_cast<int>(f_wire_cost_map.dim_size(i));
+        }
+        dump_readable_router_lookahead_map(file_name, wire_cost_map_size, get_wire_cost_entry);
+    } else {
+        VTR_ASSERT(vtr::check_file_name_extension(file_name, ".bin"));
+        write_router_lookahead(file_name);
+    }
 }
 
 void MapLookahead::write_intra_cluster(const std::string& file) const {

@@ -32,7 +32,7 @@ class MapLookahead : public RouterLookahead {
     void compute_intra_tile() override;
     void read(const std::string& file) override;
     void read_intra_cluster(const std::string& file) override;
-    void write(const std::string& file) const override;
+    void write(const std::string& file_name) const override;
     void write_intra_cluster(const std::string& file) const override;
 };
 
