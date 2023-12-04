@@ -490,7 +490,7 @@ void CompressedMapLookahead::write(const std::string& file_name) const {
         dump_readable_router_lookahead_map(file_name, wire_cost_map_size, get_wire_cost_entry_compressed_lookahead);
 
     } else {
-        VTR_ASSERT(vtr::check_file_name_extension(file_name, ".bin"));
+        VTR_ASSERT(vtr::check_file_name_extension(file_name, ".capnp"));
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write for .bin format unimplemented");
     }
 }
