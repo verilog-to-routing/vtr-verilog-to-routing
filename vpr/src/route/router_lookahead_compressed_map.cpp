@@ -480,3 +480,17 @@ void CompressedMapLookahead::compute(const std::vector<t_segment_inf>& segment_i
     //from the different physical tile type's SOURCEs & OPINs
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 }
+
+void CompressedMapLookahead::write(const std::string& file_name) const {
+    if (vtr::check_file_name_extension(file_name, ".tsv")) {
+        std::vector<int> wire_cost_map_size(f_compressed_wire_cost_map.ndims());
+        for (size_t i = 0; i < f_compressed_wire_cost_map.ndims(); ++i) {
+            wire_cost_map_size[i] = static_cast<int>(f_compressed_wire_cost_map.dim_size(i));
+        }
+        dump_readable_router_lookahead_map(file_name, wire_cost_map_size, get_wire_cost_entry_compressed_lookahead);
+
+    } else {
+        vtr::check_file_name_extension(file_name, ".bin");
+        VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write for .bin format unimplemented");
+    }
+}

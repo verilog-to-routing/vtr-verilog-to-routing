@@ -46,9 +46,7 @@ class CompressedMapLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::read_intra_cluster unimplemented");
     }
 
-    void write(const std::string& /*file*/) const override {
-        VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write unimplemented");
-    }
+    void write(const std::string& file_name) const override;
 
     void write_intra_cluster(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write_intra_cluster unimplemented");
