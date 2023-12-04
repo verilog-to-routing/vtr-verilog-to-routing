@@ -902,11 +902,14 @@ struct ParseRouteBBUpdate {
 
 struct ParseRouterLookahead {
     ConvertedValue<e_router_lookahead> from_str(std::string str) {
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
         ConvertedValue<e_router_lookahead> conv_value;
         if (str == "classic")
             conv_value.set_value(e_router_lookahead::CLASSIC);
         else if (str == "map")
             conv_value.set_value(e_router_lookahead::MAP);
+        else if (str == "compressed_map")
+            conv_value.set_value(e_router_lookahead::COMPRESSED_MAP);
         else if (str == "extended_map")
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
         else {
@@ -926,15 +929,17 @@ struct ParseRouterLookahead {
             conv_value.set_value("classic");
         else if (val == e_router_lookahead::MAP) {
             conv_value.set_value("map");
+        } else if (val == e_router_lookahead::COMPRESSED_MAP) {
+            conv_value.set_value("compressed_map");
         } else {
-            VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
-            conv_value.set_value("extended_map");
+                VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
+                conv_value.set_value("extended_map");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "extended_map"};
+        return {"classic", "map", "compressed_map", "extended_map"};
     }
 };
 
@@ -2566,6 +2571,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * classic: The classic VPR lookahead (may perform better on un-buffered routing\n"
             "            architectures)\n"
             " * map: An advanced lookahead which accounts for diverse wire type\n"
+            " * compressed_map: The algorithm is similar to map lookahead with the exception of saprse sampling of the chip"
+            " to reduce the run-time to build the router lookahead and also its memory footprint\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
             "\n"
