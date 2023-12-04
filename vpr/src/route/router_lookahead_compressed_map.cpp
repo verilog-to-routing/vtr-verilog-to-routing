@@ -135,7 +135,15 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
         compressed_y_size += num_y;
     }
 
-    initialize_compressed_loc_structs(sampling_regions, compresses_x_size * compressed_y_size);
+    int num_sampling_points = compresses_x_size * compressed_y_size;
+
+    initialize_compressed_loc_structs(sampling_regions, num_sampling_points);
+
+    f_compressed_wire_cost_map = t_compressed_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
+                                                             2,
+                                                             segment_inf_vec.size(),
+                                                             static_cast<unsigned long>(grid.get_num_layers()),
+                                                             static_cast<unsigned long>(num_sampling_points)});
 
     int longest_seg_length = 0;
     for (const auto& seg_inf : segment_inf_vec) {
@@ -210,7 +218,9 @@ static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segm
             } else {
                 step = 8;
             }
-            sampling_regions.emplace_back(x+max_seg_lenght, y+max_seg_lenght, x, y, step);
+            int sample_region_max_x = std::min(grid_width-1, x+max_seg_lenght);
+            int sample_region_max_y = std::min(grid_height-1, y+max_seg_lenght);
+            sampling_regions.emplace_back(sample_region_max_x, sample_region_max_y, x, y, step);
         }
     }
 
