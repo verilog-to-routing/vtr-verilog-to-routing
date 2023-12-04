@@ -850,7 +850,7 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
 void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func) {
     VTR_ASSERT(vtr::check_file_name_extension(file_name, ".tsv"));
     const auto& grid = g_vpr_ctx.device().grid;
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    
 
     int num_layers = grid.get_num_layers();
     int grid_width = static_cast<int>(grid.width());

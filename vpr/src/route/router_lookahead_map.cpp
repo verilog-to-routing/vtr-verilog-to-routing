@@ -467,7 +467,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+
     auto& grid = device_ctx.grid;
 
     //Re-allocate
