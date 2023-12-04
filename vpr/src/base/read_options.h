@@ -74,7 +74,8 @@ struct t_options {
     argparse::ArgValue<std::string> suppress_warnings;
     argparse::ArgValue<bool> allow_dangling_combinational_nodes;
     argparse::ArgValue<bool> terminate_if_timing_fails;
-    argparse::ArgValue<bool> server;
+    argparse::ArgValue<bool> is_server_enabled;
+    argparse::ArgValue<int> server_port_num;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;

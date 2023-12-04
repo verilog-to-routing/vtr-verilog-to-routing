@@ -20,6 +20,12 @@ Server::~Server()
     stop();
 }
 
+void Server::setPortNum(int portNum)
+{
+    std::unique_lock<std::mutex> lock(m_portNumMutex);
+    m_portNum = portNum;
+}
+
 void Server::start()
 {
     if (!m_isStarted.load()) {
@@ -83,14 +89,14 @@ void Server::startListening()
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT_NUM);
+    address.sin_port = htons(m_portNum);
 
     // Bind the socket to the network address and port
     if (bind(server_socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     } else {
-        std::cout << "~~~ th=" << std::this_thread::get_id() << " start listening port: " << PORT_NUM << std::endl;
+        std::cout << "~~~ th=" << std::this_thread::get_id() << " start listening port: " << m_portNum << std::endl;
     }
 
     // Put the server socket in a passive mode, where it waits for the client to approach the server to make a connection
@@ -109,15 +115,15 @@ void Server::startListening()
 
     // Event loop
     while(!m_isStopped.load()) {
-        //std::cout << "~~~ th=" << std::this_thread::get_id() << " loop_000" << " is stopped=" << m_isStopped.load() << std::endl;
-        
         if (connectionProblemDetected || client_socket < 0) {
             int flags = fcntl(client_socket, F_GETFL, 0);
             fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
             client_socket = accept(server_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+            if (client_socket > 0) {
+                std::cout << "accept client" << std::endl;
+            }
         }
 
-        //std::cout << "~~~ th=" << std::this_thread::get_id() << " loop_111" << std::endl;
         if (client_socket >= 0) {
             connectionProblemDetected = false;
             // Handle sending
@@ -188,19 +194,17 @@ void Server::startListening()
             }
 
             if (connectionProblemDetected && (client_socket >= 0)) {
+                std::cout << "close client connection" << std::endl;
                 close(client_socket);
                 m_telegramBuff.clear();
             }
         }
-
-        //std::this_thread::sleep_for(std::chrono::milliseconds(COMM_LOOP_INTERVAL_MS));
-        //std::cout << "~~~ th=" << std::this_thread::get_id() << " loop_222" << std::endl << std::endl;
     }
 
     if (client_socket >= 0) {
+        std::cout << "close client socket" << std::endl;
         close(client_socket);
     }
 
     close(server_socket);
-    //std::cout << "~~~ th=" << std::this_thread::get_id() << " exit thread call!!!" << std::endl;
 }

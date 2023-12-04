@@ -38,6 +38,8 @@ static void SetupAnnealSched(const t_options& Options,
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts);
 static void SetupNocOpts(const t_options& Options,
                          t_noc_opts* NocOpts);
+static void SetupServerOpts(const t_options& Options,
+                            t_server_opts* ServerOpts);
 static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch);
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
@@ -99,6 +101,7 @@ void SetupVPR(const t_options* Options,
               t_router_opts* RouterOpts,
               t_analysis_opts* AnalysisOpts,
               t_noc_opts* NocOpts,
+              t_server_opts* ServerOpts,
               t_det_routing_arch* RoutingArch,
               std::vector<t_lb_type_rr_node>** PackerRRGraphs,
               std::vector<t_segment_inf>& Segments,
@@ -107,7 +110,6 @@ void SetupVPR(const t_options* Options,
               int* GraphPause,
               bool* SaveGraphics,
               std::string* GraphicsCommands,
-              bool* server,
               t_power_opts* PowerOpts,
               t_vpr_setup* vpr_setup) {
     using argparse::Provenance;
@@ -145,6 +147,7 @@ void SetupVPR(const t_options* Options,
     SetupAnalysisOpts(*Options, *AnalysisOpts);
     SetupPowerOpts(*Options, PowerOpts, Arch);
     SetupNocOpts(*Options, NocOpts);
+    SetupServerOpts(*Options, ServerOpts);
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
@@ -314,8 +317,6 @@ void SetupVPR(const t_options* Options,
 
     *SaveGraphics = Options->save_graphics;
     *GraphicsCommands = Options->graphics_commands;
-
-    *server = Options->server;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
         EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, Arch);
@@ -751,6 +752,11 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
 
     return;
+}
+
+static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {
+    ServerOpts->is_enabled = Options.is_server_enabled;
+    ServerOpts->port_num = Options.server_port_num;
 }
 
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {

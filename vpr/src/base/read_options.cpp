@@ -1280,11 +1280,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
-    stage_grp.add_argument<bool, ParseOnOff>(args.server, "--server")
+    stage_grp.add_argument<bool, ParseOnOff>(args.is_server_enabled, "--server")
         .help("Run server mode")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
         
+    stage_grp.add_argument<int>(args.server_port_num, "--port")
+        .help("Server port number")
+        .default_value("60555")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     stage_grp.epilog(
         "If none of the stage options are specified, all stages are run.\n"
         "Analysis is always run after routing, unless the implementation\n"

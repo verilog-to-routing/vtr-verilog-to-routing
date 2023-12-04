@@ -13,19 +13,13 @@
 #include <mutex>
 #include <vector>
 
-#ifndef COMM_LOOP_INTERVAL_MS
-#define COMM_LOOP_INTERVAL_MS 18
-#endif
-
-#ifndef PORT_NUM
-#define PORT_NUM 61555
-#endif
-
 class Server
 {
 public:
     explicit Server();
     ~Server();
+
+    void setPortNum(int portNum);
 
     bool isStarted() const { return m_isStarted.load(); }
     bool isStopped() const { return m_isStopped.load(); }
@@ -37,6 +31,9 @@ public:
     void stop();
 
 private:
+    int m_portNum = -1;
+    std::mutex m_portNumMutex;
+
     std::string m_pathsStr;
     std::atomic<bool> m_isStarted;
     std::atomic<bool> m_isStopped;

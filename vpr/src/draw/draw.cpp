@@ -219,7 +219,8 @@ void init_graphics_state(bool show_graphics_val,
                          bool save_graphics,
                          std::string graphics_commands,
                          bool is_flat,
-                         bool server) {
+                         bool server,
+                         int port_num) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -236,6 +237,7 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->is_flat = is_flat;
 
     if (server) {
+        g_vpr_ctx.server().setPortNum(port_num);
         guint timer_id = g_timeout_add(200, redraw_callback, &application);
     }
 
