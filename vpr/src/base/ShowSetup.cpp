@@ -373,6 +373,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 case e_router_lookahead::MAP:
                     VTR_LOG("MAP\n");
                     break;
+                case e_router_lookahead::COMPRESSED_MAP:
+                    VTR_LOG("COMPRESSED_MAP\n");
+                    break;
                 case e_router_lookahead::EXTENDED_MAP:
                     VTR_LOG("EXTENDED_MAP\n");
                     break;
@@ -511,6 +514,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                     break;
                 case e_router_lookahead::MAP:
                     VTR_LOG("MAP\n");
+                    break;
+                case e_router_lookahead::COMPRESSED_MAP:
+                    VTR_LOG("COMPRESSED_MAP\n");
                     break;
                 case e_router_lookahead::EXTENDED_MAP:
                     VTR_LOG("EXTENDED_MAP\n");
