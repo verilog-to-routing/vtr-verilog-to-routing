@@ -289,7 +289,7 @@ static void get_switchpoint_wires(
  *  @param chan_layer layer_coordinate of the channel
  *  @param chan_type chan type that the function index into
  *
- * @return returns the type of channel that we are indexing into (ie, CHANX or CHANY)
+ * @return returns the type of channel that we are indexing into (ie, CHANX or CHANY) and channel coordinates and type
  */
 static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type);
 
