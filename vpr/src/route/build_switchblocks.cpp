@@ -987,7 +987,7 @@ static const std::vector<t_chan_details> index_into_correct_chan(int tile_x, int
 }
 
 static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coord, int layer_coord, e_rr_type chan_type) {
-    bool result = false;
+    bool result = true;
 
     /* the layer that channel is located at must be legal regardless of chan_type*/
     if (layer_coord < 0 || layer_coord > grid.get_num_layers()) {
