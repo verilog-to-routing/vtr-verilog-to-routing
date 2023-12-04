@@ -30,10 +30,14 @@
 
 namespace util {
 
+class Cost_Entry;
+
 class Expansion_Cost_Entry;
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
 typedef vtr::NdMatrix<Expansion_Cost_Entry, 3> t_routing_cost_map; //[0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+
+typedef Cost_Entry (*WireCostCallBackFunction)(e_rr_type, int, int, int, int, int);
 
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry {
@@ -351,6 +355,8 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
                                                int delta_y,
                                                int to_layer_num,
                                                WireCostFunc wire_cost_func);
+
+void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func);
 } // namespace util
 
 #endif

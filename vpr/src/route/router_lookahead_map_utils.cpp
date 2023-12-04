@@ -10,6 +10,7 @@
  *
  * To access the utility functions, the util namespace needs to be used. */
 
+#include <fstream>
 #include "globals.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
@@ -844,6 +845,56 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
     }
 
     return std::make_pair(expected_delay_cost, expected_cong_cost);
+}
+
+void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    int num_layers = grid.get_num_layers();
+    int grid_width = static_cast<int>(grid.width());
+    int grid_height = static_cast<int>(grid.height());
+
+    std::ofstream ofs(file_name);
+    if (!ofs.good()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unable to open file '%s' for writing\n", file_name.c_str());
+    }
+
+    VTR_ASSERT(dim_sizes[0] == num_layers);
+    VTR_ASSERT(dim_sizes[1] == 2);
+    VTR_ASSERT(dim_sizes[3] == num_layers);
+    VTR_ASSERT(dim_sizes.size() == 5 || (dim_sizes.size() == 6 && dim_sizes[4] == grid_width && dim_sizes[5] == grid_height));
+
+    ofs << "from_layer,"
+           "chan_type,"
+           "seg_type,"
+           "to_layer,"
+           "delta_x,"
+           "delta_y,"
+           "cong_cost,"
+           "delay_cost\n";
+
+    for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
+        for (e_rr_type chan_type : {CHANX, CHANY}) {
+            for (int seg_index = 0; seg_index < dim_sizes[2]; seg_index++) {
+                for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+                    for (int dx = 0; dx < grid_width; dx++) {
+                        for (int dy = 0; dy < grid_height; dy++) {
+                            auto cost = wire_cost_func(chan_type, seg_index, from_layer_num, dx, dy, to_layer_num);
+                            ofs << from_layer_num << ","
+                                << rr_node_typename[chan_type] << ","
+                                << seg_index << ","
+                                << to_layer_num << ","
+                                << dx << ","
+                                << dy << ","
+                                << cost.congestion << ","
+                                << cost.delay << "\n";
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 
