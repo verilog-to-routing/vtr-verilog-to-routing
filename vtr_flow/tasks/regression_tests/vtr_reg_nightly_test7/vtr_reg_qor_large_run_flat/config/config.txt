@@ -31,4 +31,4 @@ qor_parse_file=qor_large.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage -max_router_iterations 300 --flat_routing true
+script_params=-track_memory_usage -max_router_iterations 300 --flat_routing on
