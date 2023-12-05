@@ -179,8 +179,8 @@ std::string rr_highlight_message;
 gboolean redraw_callback(gpointer data) {
     // shortcuts
     ezgl::application* app = static_cast<ezgl::application*>(data);
-    Server& server = g_vpr_ctx.server();
-    TaskResolver& task_resolver = g_vpr_ctx.task_resolver();
+    Server& server = g_vpr_ctx.server_ctx().server();
+    TaskResolver& task_resolver = g_vpr_ctx.server_ctx().task_resolver();
     //
 
     bool isRunning = !server.isStopped();
@@ -237,8 +237,8 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->is_flat = is_flat;
 
     if (server) {
-        g_vpr_ctx.server().setPortNum(port_num);
-        guint timer_id = g_timeout_add(200, redraw_callback, &application);
+        g_vpr_ctx.server_ctx().server().setPortNum(port_num);
+        g_timeout_add(200, redraw_callback, &application);
     }
 
 #else

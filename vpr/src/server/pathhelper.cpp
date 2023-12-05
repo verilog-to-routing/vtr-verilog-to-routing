@@ -46,8 +46,10 @@ std::string getPathsStr(const std::vector<tatum::TimingPath>& paths, const std::
 
 void calcCritPath(int numMax, const std::string& type)
 {
-    g_vpr_ctx.critical_path_num = numMax;
-    g_vpr_ctx.path_type = type;
+    ServerContext& server_ctx = g_vpr_ctx.server_ctx(); // shortcut
+
+    server_ctx.set_critical_path_num(numMax);
+    server_ctx.set_path_type(type);
 
     tatum::TimingPathCollector path_collector;
 
@@ -56,9 +58,9 @@ void calcCritPath(int numMax, const std::string& type)
 
     //Get the worst timing path
     if (type == "setup") {
-        g_vpr_ctx.crit_paths = path_collector.collect_worst_setup_timing_paths(
+        server_ctx.set_crit_paths(path_collector.collect_worst_setup_timing_paths(
             *timing_ctx.graph,
-            *(draw_state->setup_timing_info->setup_analyzer()), numMax);
+            *(draw_state->setup_timing_info->setup_analyzer()), numMax));
     } else if (type == "hold") {
         /* ###########################
         // TODO: recalculate g_vpr_ctx.hold_timing_info, because it may cause the assert path check for index 0
@@ -76,10 +78,10 @@ void calcCritPath(int numMax, const std::string& type)
         // timing_info->update();
         /* */
 
-        if (g_vpr_ctx.hold_timing_info) {
-            g_vpr_ctx.crit_paths = path_collector.collect_worst_hold_timing_paths(
+        if (server_ctx.hold_timing_info()) {
+            server_ctx.set_crit_paths(path_collector.collect_worst_hold_timing_paths(
                 *timing_ctx.graph,
-                *(g_vpr_ctx.hold_timing_info->hold_analyzer()), numMax);
+                *(server_ctx.hold_timing_info()->hold_analyzer()), numMax));
         } else {
             std::cerr << "g_vpr_ctx.hold_timing_info is nullptr" << std::endl;
         }

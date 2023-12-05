@@ -952,16 +952,17 @@ void draw_crit_path(ezgl::renderer* g) {
         return; //No timing to draw
     }
 
-    calcCritPath(g_vpr_ctx.critical_path_num, g_vpr_ctx.path_type);
+    ServerContext& server_ctx = g_vpr_ctx.server_ctx(); // shortcut
+    calcCritPath(server_ctx.critical_path_num(), server_ctx.path_type());
 
-    const auto& paths = g_vpr_ctx.crit_paths; // shortcut
+    const auto& paths = server_ctx.crit_paths(); // shortcut
 
-    // check index inside the range
-    if (g_vpr_ctx.crit_path_index >= paths.size()) {
-        g_vpr_ctx.crit_path_index = -1;
+    // check path index
+    if (server_ctx.crit_path_index() >= static_cast<int>(paths.size())) {
+        server_ctx.set_crit_path_index(-1);
         return;
     }
-    tatum::TimingPath path = paths[g_vpr_ctx.crit_path_index];
+    tatum::TimingPath path = paths[server_ctx.crit_path_index()];
 
     //Walk through the timing path drawing each edge
     tatum::NodeId prev_node;

@@ -60,6 +60,7 @@ std::vector<std::string> splitString(const std::string& input, char delimiter)
 
 void TaskResolver::update(ezgl::application* app)
 {
+    ServerContext& server_ctx = g_vpr_ctx.server_ctx();
     for (auto& task: m_tasks) {
         if (!task.isFinished()) {
             TelegramOptions options{task.options()};
@@ -70,12 +71,12 @@ void TaskResolver::update(ezgl::application* app)
                 std::string detailsLevel = options.getString(OPTION_DETAILS_LEVEL);
                 bool isFlat = options.getBool(OPTION_IS_FLOAT_ROUTING, false);
                 if (!options.hasErrors()) {
-                    if (typePath != g_vpr_ctx.path_type) {
-                        g_vpr_ctx.crit_path_index = -1;
+                    if (typePath != server_ctx.path_type()) {
+                        server_ctx.set_crit_path_index(-1);
                     }
                     calcCritPath(nCriticalPathNum, typePath);
-                    std::string msg = getPathsStr(g_vpr_ctx.crit_paths, detailsLevel, isFlat);
-                    g_vpr_ctx.path_type = typePath; // duplicated
+                    std::string msg = getPathsStr(server_ctx.crit_paths(), detailsLevel, isFlat);
+                    server_ctx.set_path_type(typePath); // duplicated
                     task.success(msg);
                 } else {
                     std::string msg = "options errors in get crit path list telegram: " + options.errorsStr();
@@ -87,8 +88,8 @@ void TaskResolver::update(ezgl::application* app)
                 int pathIndex = options.getInt(OPTION_PATH_INDEX, -1);
                 std::string highLightMode = options.getString(OPTION_HIGHTLIGHT_MODE);
                 if (!options.hasErrors()) {
-                    if ((pathIndex >= 0) && (pathIndex < g_vpr_ctx.crit_paths.size())) {
-                        g_vpr_ctx.crit_path_index = pathIndex;
+                    if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx.crit_paths().size()))) {
+                        server_ctx.set_crit_path_index(pathIndex);
 
                         // update gtk UI
                         GtkComboBox* toggle_crit_path = GTK_COMBO_BOX(app->get_object("ToggleCritPath"));
@@ -102,7 +103,7 @@ void TaskResolver::update(ezgl::application* app)
                             task.fail(msg);
                         }                        
                     } else {
-                        std::string msg = "selectedIndex=" + std::to_string(pathIndex) + " is out of range [0-" + std::to_string(g_vpr_ctx.crit_paths.size()-1) + "]";
+                        std::string msg = "selectedIndex=" + std::to_string(pathIndex) + " is out of range [0-" + std::to_string(static_cast<int>(server_ctx.crit_paths().size())-1) + "]";
                         std::cerr << msg << std::endl;
                         task.fail(msg);
                     }

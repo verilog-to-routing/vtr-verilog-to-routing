@@ -36,7 +36,6 @@
 #include "server.h"
 #include "taskresolver.h"
 #include "tatum/report/TimingPath.hpp"
-#include <memory>
 
 class SetupHoldTimingInfo;
 
@@ -564,6 +563,40 @@ struct NocContext : public Context {
     NocRouting* noc_flows_router;
 };
 
+class ServerContext : public Context {
+  public:
+    const Server& server() const { return server_; }
+    Server& server() { return server_; }
+
+    const TaskResolver& task_resolver() const { return task_resolver_; }
+    TaskResolver& task_resolver() { return task_resolver_; }
+
+    void set_crit_paths(const std::vector<tatum::TimingPath>& crit_paths) { crit_paths_ = crit_paths; }
+    const std::vector<tatum::TimingPath>& crit_paths() const { return crit_paths_; }
+
+    void set_critical_path_num(int critical_path_num) { critical_path_num_ = critical_path_num; }
+    int critical_path_num() const { return critical_path_num_; }
+
+    void set_path_type(const std::string& path_type) { path_type_ = path_type; }
+    const std::string& path_type() const { return path_type_; }
+
+    void set_crit_path_index(int crit_path_index) { crit_path_index_ = crit_path_index; }
+    int crit_path_index() const { return crit_path_index_; }
+
+    void set_hold_timing_info(const std::shared_ptr<SetupHoldTimingInfo>& hold_timing_info) { hold_timing_info_ = hold_timing_info; }
+    const std::shared_ptr<SetupHoldTimingInfo>& hold_timing_info() const { return hold_timing_info_; }
+
+  private:
+    Server server_;
+    TaskResolver task_resolver_;
+
+    std::vector<tatum::TimingPath> crit_paths_;
+    int critical_path_num_ = 1;
+    std::string path_type_ = "setup";
+    int crit_path_index_ = -1;
+    std::shared_ptr<SetupHoldTimingInfo> hold_timing_info_;
+};
+
 /**
  * @brief This object encapsulates VPR's state.
  *
@@ -647,17 +680,8 @@ class VprContext : public Context {
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
 
-    const Server& server() const { return server_; }
-    Server& server() { return server_; }
-
-    const TaskResolver& task_resolver() const { return task_resolver_; }
-    TaskResolver& task_resolver() { return task_resolver_; }
-
-    std::vector<tatum::TimingPath> crit_paths;
-    int critical_path_num = 1; 
-    std::string path_type = "setup";
-    int crit_path_index = 0;
-    std::shared_ptr<SetupHoldTimingInfo> hold_timing_info;
+    const ServerContext& server_ctx() const { return server_ctx_; }
+    ServerContext& server_ctx() { return server_ctx_; }
 
   private:
     DeviceContext device_;
@@ -675,11 +699,9 @@ class VprContext : public Context {
     FloorplanningContext constraints_;
     NocContext noc_;
 
+    ServerContext server_ctx_;
+
     PackingMultithreadingContext packing_multithreading_;
-
-    Server server_;
-    TaskResolver task_resolver_;
-
 };
 
 #endif

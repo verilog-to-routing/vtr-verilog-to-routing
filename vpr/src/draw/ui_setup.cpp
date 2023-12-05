@@ -24,7 +24,7 @@
 #    include "ezgl/graphics.hpp"
 
 void on_window_destroy() {
-    g_vpr_ctx.server().stop();
+    g_vpr_ctx.server_ctx().server().stop();
 }
 
 void basic_button_setup(ezgl::application* app) {

@@ -370,7 +370,6 @@ void vpr_show_resource_usage(const t_vpr_setup& vpr_setup, const t_arch& Arch)
 {
     vtr::ScopedStartFinishTimer timer("Build Device Grid");
     /* Read in netlist file for placement and routing */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     device_ctx.arch = &Arch;
@@ -853,7 +852,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         net_delay = make_net_pins_matrix<float>(net_list);
 
         //Initialize the delay calculator
-        std::shared_ptr<SetupHoldTimingInfo>& timing_info = g_vpr_ctx.hold_timing_info; // shortcut
+        std::shared_ptr<SetupHoldTimingInfo> timing_info;
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
@@ -861,6 +860,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat);
 
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
+            g_vpr_ctx.server_ctx().set_hold_timing_info(timing_info);
         }
 
         if (router_opts.doRouting == STAGE_DO) {
@@ -1470,8 +1470,7 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, vpr_setup.RouterOpts.flat_routing);
-        g_vpr_ctx.hold_timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
-        auto& timing_info = g_vpr_ctx.hold_timing_info; // shortcut
+        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 
         if (isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
@@ -1503,6 +1502,8 @@ void vpr_analysis(const Netlist<>& net_list,
         if (vpr_setup.PowerOpts.do_power) {
             vpr_power_estimation(vpr_setup, Arch, *timing_info, route_status);
         }
+
+        g_vpr_ctx.server_ctx().set_hold_timing_info(std::move(timing_info)); // grab timing_info for further usage
     }
 }
 
