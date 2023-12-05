@@ -7,4 +7,4 @@ gint get_item_count(gpointer combo_box);
 
 gint get_item_index_by_text(gpointer combo_box, gchar* target_item);
 
-#endif // GTKCOMBOBOXHELPER_H
+#endif

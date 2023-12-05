@@ -1,5 +1,5 @@
-#ifndef PATH_HELPER_H
-#define PATH_HELPER_H
+#ifndef PATHHELPER_H
+#define PATHHELPER_H
 
 #include <vector>
 #include <string>

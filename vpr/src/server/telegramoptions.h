@@ -1,4 +1,5 @@
-#pragma once 
+#ifndef TELEGRAMOPTIONS_H
+#define TELEGRAMOPTIONS_H
 
 #include <sstream>
 #include <iostream>
@@ -113,3 +114,5 @@ private:
         return supportedTypes.count(type) != 0;
     }
 };
+
+#endif

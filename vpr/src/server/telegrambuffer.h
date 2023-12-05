@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TELEGRAMBUFFER_H
+#define TELEGRAMBUFFER_H
 
 #include <vector>
 #include <string>
@@ -55,3 +56,5 @@ public:
 private:
     ByteArray m_rawBuffer;
 };
+
+#endif

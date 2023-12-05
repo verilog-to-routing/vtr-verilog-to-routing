@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SERVERCONSTS_H
+#define SERVERCONSTS_H
 
 constexpr const char* KEY_JOB_ID = "JOB_ID";
 constexpr const char* KEY_CMD = "CMD";
@@ -18,3 +19,5 @@ enum CMD {
     CMD_GET_PATH_LIST_ID=0,
     CMD_DRAW_PATH_ID
 };
+
+#endif 

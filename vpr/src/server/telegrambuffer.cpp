@@ -1,5 +1,5 @@
 #include "telegrambuffer.h"
-#include "keys.h"
+#include "serverconsts.h"
 
 void TelegramBuffer::append(const ByteArray& bytes)
 {
