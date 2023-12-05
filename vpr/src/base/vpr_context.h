@@ -593,7 +593,7 @@ class ServerContext : public Context {
     std::vector<tatum::TimingPath> crit_paths_;
     int critical_path_num_ = 1;
     std::string path_type_ = "setup";
-    int crit_path_index_ = -1;
+    int crit_path_index_ = 0;
     std::shared_ptr<SetupHoldTimingInfo> hold_timing_info_;
 };
 

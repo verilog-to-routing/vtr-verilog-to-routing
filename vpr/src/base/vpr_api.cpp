@@ -852,7 +852,8 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         net_delay = make_net_pins_matrix<float>(net_list);
 
         //Initialize the delay calculator
-        std::shared_ptr<SetupHoldTimingInfo> timing_info;
+        std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
+
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
@@ -1471,6 +1472,7 @@ void vpr_analysis(const Netlist<>& net_list,
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, vpr_setup.RouterOpts.flat_routing);
         auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
+
         timing_info->update();
 
         if (isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {

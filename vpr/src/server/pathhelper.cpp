@@ -57,14 +57,16 @@ void calcCritPath(int numMax, const std::string& type)
     auto& timing_ctx = g_vpr_ctx.timing();
 
     if (type == "setup") {
-        server_ctx.set_crit_paths(path_collector.collect_worst_setup_timing_paths(
+        auto paths = path_collector.collect_worst_setup_timing_paths(
             *timing_ctx.graph,
-            *(draw_state->setup_timing_info->setup_analyzer()), numMax));
+            *(draw_state->setup_timing_info->setup_analyzer()), numMax);
+        server_ctx.set_crit_paths(paths);
     } else if (type == "hold") {
         if (server_ctx.hold_timing_info()) {
-            server_ctx.set_crit_paths(path_collector.collect_worst_hold_timing_paths(
+            auto paths = path_collector.collect_worst_hold_timing_paths(
                 *timing_ctx.graph,
-                *(server_ctx.hold_timing_info()->hold_analyzer()), numMax));
+                *(server_ctx.hold_timing_info()->hold_analyzer()), numMax);
+            server_ctx.set_crit_paths(paths);
         } else {
             std::cerr << "g_vpr_ctx.hold_timing_info is nullptr" << std::endl;
         }

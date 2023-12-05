@@ -959,8 +959,11 @@ void draw_crit_path(ezgl::renderer* g) {
     // check path index
     if (server_ctx.crit_path_index() >= static_cast<int>(paths.size())) {
         server_ctx.set_crit_path_index(-1);
+    }
+    if (server_ctx.crit_path_index() == -1) {
         return;
     }
+
     tatum::TimingPath path = paths[server_ctx.crit_path_index()];
 
     //Walk through the timing path drawing each edge
