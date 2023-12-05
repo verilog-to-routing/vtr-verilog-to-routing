@@ -179,7 +179,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
 static bool is_sb_conn_layer_crossing(enum e_side src_side, enum e_side dest_side);
 
 /**
- * @brief finds crossponding RR nodes for a 3D SB edge and fill 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..)
+ * @brief finds corresponding RR nodes for a 3D SB edge and fill 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..)
  *
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
  *  @param multi_layer_track_conn 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..)
@@ -2257,6 +2257,8 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
             int to_layer = conn_vector.at(iconn).to_wire_layer;
             /* Get the index of the switch connecting the two wires */
             int src_switch = conn_vector[iconn].switch_ind;
+            /* Get the index of the switch connecting the two wires in two layers */
+            int src_switch_betwen_layers = conn_vector[iconn].switch_ind_between_layers;
 
             if (to_layer == layer) { //track-to-track connection within the same layer
                 RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
@@ -2279,7 +2281,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 }
             } else { //track-to_track connection crossing layer
                 VTR_ASSERT(to_layer != layer);
-                //check if current connection is valid, since switchblock pattern is very general,
+                //check if current connection is valid, since switch block pattern is very general,
                 //we might see invalid layer in connection, so we just skip those
                 if ((layer < 0 || layer >= device_ctx.grid.get_num_layers()) || (to_layer < 0 || to_layer >= device_ctx.grid.get_num_layers())) {
                     continue;
@@ -2296,9 +2298,15 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
 
                 /*
                  * In order to connect two tracks in different layers, we need to follow these three steps:
-                 * 1) connect "from_tracks" to extra "chanx" node in the same switchblocks
+                 * 1) connect "from_tracks" to extra "chanx" node in the same switch blocks
                  * 2) connect extra "chanx" node located in from_layer to another extra "chanx" node located in to_layer
                  * 3) connect "chanx" node located in to_layer to "to_track"
+                 *
+                 *  +-------------+        +-------------+         +--------------+         +--------------+
+                 *  | from_wire   | -----> | extra_chanx | ------> | extra_chanx  | ------> | to_wire      |
+                 *  | (src_layer) |        | (src_layer) |         | (dest_layer) |         | (dest_layer) |
+                 *  +-------------+        +-------------+         +--------------+         +--------------+
+                 *
                  * */
                 int offset = multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].offset_to_extra_chanx_node;
                 RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, CHANX, max_chan_width + offset);
@@ -2320,22 +2328,11 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 //we only add the following edge once for the first driver, otherwise we are adding the same edge multiple times
                 if (!multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].connected_to_dest) {
                     multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].connected_to_dest = true;
-                    rr_edges_to_create.emplace_back(track_to_chanx_node, diff_layer_chanx_node, src_switch, false);
+                    rr_edges_to_create.emplace_back(track_to_chanx_node, diff_layer_chanx_node, src_switch_betwen_layers, false);
                     ++edge_count;
 
                     rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, src_switch, false);
                     ++edge_count;
-                }
-
-                if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
-                    //Add reverse edge since bi-directional
-                    rr_edges_to_create.emplace_back(track_to_chanx_node, from_rr_node, src_switch, false);
-                    ++edge_count;
-                    VTR_ASSERT(multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].from_tracks.size() > 0);
-                    if (multi_layer_track_conn[to_layer][to_x][to_y][to_wire][((int)to_chan_type - CHANX)].from_tracks[0] == from_wire) {
-                        rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, src_switch, false);
-                        ++edge_count;
-                    }
                 }
             }
         }

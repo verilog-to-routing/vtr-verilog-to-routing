@@ -889,9 +889,11 @@ static void compute_wireconn_connections(
                 sb_edge.switch_ind = wireconn_ptr->switch_override_indx;
             } else if (from_layer == to_layer) {
                 sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
+                sb_edge.switch_ind_between_layers = -1; //the connection does not cross any layers
             } else {
                 VTR_ASSERT(from_layer != to_layer);
-                sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_opin_between_dice_switch();
+                sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
+                sb_edge.switch_ind_between_layers = to_chan_details[to_x][to_y][to_wire].arch_opin_between_dice_switch();
             }
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
