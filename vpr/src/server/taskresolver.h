@@ -19,7 +19,7 @@ public:
     void addTasks(const std::vector<Task>&);
     void addTask(Task);
 
-    void update(ezgl::application*);
+    bool update(ezgl::application*);
     void takeFinished(std::vector<Task>&);
 
     const std::vector<Task>& tasks() const { return m_tasks; }

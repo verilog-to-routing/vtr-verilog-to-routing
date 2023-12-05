@@ -175,7 +175,6 @@ ezgl::point2d point_1(0, 0);
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
-// Define a callback function that will be called by the timer
 gboolean redraw_callback(gpointer data) {
     // shortcuts
     ezgl::application* app = static_cast<ezgl::application*>(data);
@@ -194,15 +193,17 @@ gboolean redraw_callback(gpointer data) {
         server.takeRecievedTasks(tasksBuff);
         task_resolver.addTasks(tasksBuff);
 
-        task_resolver.update(app);
+        bool process_task = task_resolver.update(app);
 
         tasksBuff.clear();
         task_resolver.takeFinished(tasksBuff);
 
         server.addSendTasks(tasksBuff);
 
-        // Call the redraw method of the application
-        app->refresh_drawing();
+        // Call the redraw method of the application if any of task was processed
+        if (process_task) {
+            app->refresh_drawing();
+        }
     }
 
     // Return TRUE to keep the timer running, or FALSE to stop it

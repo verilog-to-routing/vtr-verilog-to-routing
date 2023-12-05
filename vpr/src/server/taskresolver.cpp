@@ -45,24 +45,13 @@ void TaskResolver::takeFinished(std::vector<Task>& result)
     }
 }
 
-std::vector<std::string> splitString(const std::string& input, char delimiter) 
+bool TaskResolver::update(ezgl::application* app)
 {
-    std::vector<std::string> tokens;
-    std::istringstream tokenStream(input);
-    std::string token;
-
-    while (std::getline(tokenStream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-
-    return tokens;
-}
-
-void TaskResolver::update(ezgl::application* app)
-{
+    bool process_task = false;
     ServerContext& server_ctx = g_vpr_ctx.server_ctx();
     for (auto& task: m_tasks) {
         if (!task.isFinished()) {
+            process_task = true;
             TelegramOptions options{task.options()};
             if (task.cmd() == CMD_GET_PATH_LIST_ID) {
                 options.validateNamePresence({OPTION_PATH_NUM, OPTION_PATH_TYPE, OPTION_DETAILS_LEVEL, OPTION_IS_FLOAT_ROUTING});
@@ -115,5 +104,7 @@ void TaskResolver::update(ezgl::application* app)
             }
         }
     }
+
+    return process_task;
 }
 

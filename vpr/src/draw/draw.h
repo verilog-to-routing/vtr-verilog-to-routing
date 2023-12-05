@@ -42,6 +42,9 @@ extern ezgl::application application;
 
 #endif /* NO_GRAPHICS */
 
+// Define a callback function that will be called by the timer
+gboolean redraw_callback(gpointer data);
+
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
 
 //Initializes the drawing locations.

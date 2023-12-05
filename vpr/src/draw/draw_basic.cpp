@@ -942,7 +942,6 @@ void draw_routing_util(ezgl::renderer* g) {
  */
 void draw_crit_path(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& timing_ctx = g_vpr_ctx.timing();
 
     if (draw_state->show_crit_path == DRAW_NO_CRIT_PATH) {
         return;

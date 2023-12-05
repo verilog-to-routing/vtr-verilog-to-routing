@@ -20,6 +20,8 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
+void on_window_destroy();
+
 /**
  * @brief configures basic buttons
  * 
