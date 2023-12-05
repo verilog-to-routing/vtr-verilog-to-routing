@@ -53,7 +53,7 @@ void Gia_ManPrintStateEncoding( Vec_Vec_t * vCodes, int nBits )
     Vec_VecForEachLevelInt( vCodes, vVec, i )
     {
         printf( "%6d : ", i+1 );
-        memset( pBuffer, '-', nBits );
+        memset( pBuffer, '-', (size_t)nBits );
         Vec_IntForEachEntry( vVec, Bit, k )
         {
             assert( Bit < nBits );

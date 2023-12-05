@@ -80,7 +80,7 @@ Sym_Man_t * Sym_ManStart( Abc_Ntk_t * pNtk, int fVerbose )
     for ( i = 0; i < p->nOutputs; i++ )
         for ( v = 0; v < p->nInputs; v++ )
             if ( Sim_SuppFunHasVar( p->vSuppFun, i, v ) )
-                Vec_VecPush( p->vSupports, i, (void *)(ABC_PTRUINT_T)v );
+                Vec_VecPushInt( p->vSupports, i, v );
     return p;
 }
 

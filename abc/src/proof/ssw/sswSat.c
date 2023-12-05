@@ -77,7 +77,7 @@ int Ssw_NodesAreEquiv( Ssw_Man_t * p, Aig_Obj_t * pOld, Aig_Obj_t * pNew )
     if ( p->pMSat->pSat->qtail != p->pMSat->pSat->qhead )
     {
         RetValue = sat_solver_simplify(p->pMSat->pSat);
-        assert( RetValue != 0 );
+        //assert( RetValue != 0 );
     }
 
 clk = Abc_Clock();
@@ -139,7 +139,7 @@ p->timeSatUndec += Abc_Clock() - clk;
     if ( p->pMSat->pSat->qtail != p->pMSat->pSat->qhead )
     {
         RetValue = sat_solver_simplify(p->pMSat->pSat);
-        assert( RetValue != 0 );
+        //assert( RetValue != 0 );
     }
 
 clk = Abc_Clock();

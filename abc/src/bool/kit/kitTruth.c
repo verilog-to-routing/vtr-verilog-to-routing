@@ -639,7 +639,7 @@ int Kit_TruthVarIsVacuous( unsigned * pOnset, unsigned * pOffset, int nVars, int
         for ( i = 0; i < nWords; i++ )
             if ( ((pOnset[i] & (pOffset[i] >> 2)) | (pOffset[i] & (pOnset[i] >> 2))) & 0x33333333 )
                  return 0;
-            return 1;
+        return 1;
     case 2:
         for ( i = 0; i < nWords; i++ )
             if ( ((pOnset[i] & (pOffset[i] >> 4)) | (pOffset[i] & (pOnset[i] >> 4))) & 0x0F0F0F0F )

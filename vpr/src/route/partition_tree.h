@@ -25,16 +25,6 @@ inline Side operator!(const Side& rhs) {
     return Side(!size_t(rhs));
 }
 
-/** Routing iteration results per thread. (for a subset of the input netlist) */
-struct RouteIterResults {
-    /** Are there any connections impossible to route due to a disconnected rr_graph? */
-    bool is_routable = true;
-    /** Net IDs for which timing_driven_route_net() actually got called */
-    std::vector<ParentNetId> rerouted_nets;
-    /** RouterStats collected from my subset of nets */
-    RouterStats stats;
-};
-
 /** Spatial partition tree for routing.
  *
  * This divides the netlist into a tree of regions, so that nets with non-overlapping
@@ -56,10 +46,6 @@ class PartitionTreeNode {
     std::unique_ptr<PartitionTreeNode> left = nullptr;
     /** Right subtree. */
     std::unique_ptr<PartitionTreeNode> right = nullptr;
-    /** Are there any connections impossible to route due to a disconnected rr_graph? */
-    bool is_routable = false;
-    /** Net IDs for which timing_driven_route_net() actually got called */
-    std::vector<ParentNetId> rerouted_nets;
     /* Axis of the cutline. */
     Axis cutline_axis = Axis::X;
     /* Position of the cutline. It's a float, because cutlines are considered to be "between" integral coordinates. */
@@ -92,11 +78,7 @@ class PartitionTree {
 /** Log PartitionTree-related messages. Can handle multiple threads. */
 class PartitionTreeDebug {
   public:
-#    ifdef VPR_USE_TBB
     static inline tbb::concurrent_vector<std::string> lines;
-#    else
-    static inline std::vector<std::string> lines;
-#    endif
     /** Add msg to the log buffer (with a thread ID header) */
     static inline void log(std::string msg) {
         auto thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());

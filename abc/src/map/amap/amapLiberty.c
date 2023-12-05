@@ -209,6 +209,26 @@ int Amap_LibertyCellIsFlop( Amap_Tree_t * p, Amap_Item_t * pCell )
 
 /**Function*************************************************************
 
+  Synopsis    [Returns cell's function.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Amap_LibertyCellIsDontUse( Amap_Tree_t * p, Amap_Item_t * pCell )
+{
+    Amap_Item_t * pAttr;
+    Amap_ItemForEachChild( p, pCell, pAttr )
+        if ( !Amap_LibertyCompare(p, pAttr->Key, "dont_use") )
+            return 1;
+    return 0;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Returns pin's function.]
 
   Description []
@@ -414,6 +434,12 @@ int Amap_LibertyPrintGenlib( Amap_Tree_t * p, char * pFileName, int fVerbose )
                 printf( "Amap_LibertyPrintGenlib() skipped sequential cell \"%s\".\n", Amap_LibertyGetString(p, pCell->Head) );
             continue;
         }
+        if ( Amap_LibertyCellIsDontUse(p, pCell) )
+        {
+            if ( fVerbose )
+                printf( "Amap_LibertyPrintGenlib() skipped cell \"%s\" due to dont_use attribute.\n", Amap_LibertyGetString(p, pCell->Head) );
+            continue;
+        }
         Counter = Amap_LibertyCellCountOutputs( p, pCell );
         if ( Counter == 0 )
         {
@@ -496,6 +522,12 @@ Vec_Str_t * Amap_LibertyPrintGenlibStr( Amap_Tree_t * p, int fVerbose )
         {
             if ( fVerbose )
                 printf( "Amap_LibertyPrintGenlib() skipped sequential cell \"%s\".\n", Amap_LibertyGetString(p, pCell->Head) );
+            continue;
+        }
+        if ( Amap_LibertyCellIsDontUse(p, pCell) )
+        {
+            if ( fVerbose )
+                printf( "Amap_LibertyPrintGenlib() skipped cell \"%s\" due to dont_use attribute.\n", Amap_LibertyGetString(p, pCell->Head) );
             continue;
         }
         Counter = Amap_LibertyCellCountOutputs( p, pCell );

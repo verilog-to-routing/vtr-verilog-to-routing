@@ -161,7 +161,7 @@ int (*compare)();
     FREE(count);
 
     /* use qsort to sort the array */
-    qsort((char *) (F1 = sf_list(F)), F->count, sizeof(pcube), compare);
+    qsort((char *) (F1 = sf_list(F)), (size_t)F->count, sizeof(pcube), compare);
     F_sorted = sf_unlist(F1, F->count, F->sf_size);
     free_cover(F);
 
@@ -189,7 +189,7 @@ IN pcover T;
     foreach_set(T, last, p)
     PUTSIZE(p, ((n - cdist(largest,p)) << 7) + MIN(set_ord(p),127));
 
-    qsort((char *) (T1 = sf_list(T)), T->count, sizeof(pcube), (int (*)()) descend);
+    qsort((char *) (T1 = sf_list(T)), (size_t)T->count, sizeof(pcube), (int (*)()) descend);
     T_sorted = sf_unlist(T1, T->count, T->sf_size);
     free_cover(T);
 

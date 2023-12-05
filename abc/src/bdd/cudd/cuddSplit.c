@@ -638,8 +638,8 @@ bddAnnotateMintermCount(
 {
 
     DdNode *N,*Nv,*Nnv;
-    register double min_v,min_nv;
-    register double min_N;
+    double min_v,min_nv;
+    double min_N;
     double *pmin;
     double *dummy;
 

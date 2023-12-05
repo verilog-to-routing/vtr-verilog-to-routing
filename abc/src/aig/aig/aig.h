@@ -225,7 +225,7 @@ static inline Aig_Cut_t *  Aig_CutNext( Aig_Cut_t * pCut )              { return
 ///                      MACRO DEFINITIONS                           ///
 ////////////////////////////////////////////////////////////////////////
 
-static inline unsigned     Aig_ObjCutSign( unsigned ObjId )       { return (1 << (ObjId & 31));                            }
+static inline unsigned     Aig_ObjCutSign( unsigned ObjId )       { return (1U << (ObjId & 31));                            }
 static inline int          Aig_WordCountOnes( unsigned uWord )
 {
     uWord = (uWord & 0x55555555) + ((uWord>>1) & 0x55555555);

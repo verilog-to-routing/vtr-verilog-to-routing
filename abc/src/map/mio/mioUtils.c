@@ -224,6 +224,7 @@ void Mio_WritePin( FILE * pFile, Mio_Pin_t * pPin, int NameLen, int fAllPins )
 ***********************************************************************/
 void Mio_WriteGate( FILE * pFile, Mio_Gate_t * pGate, int GateLen, int NameLen, int FormLen, int fPrintSops, int fAllPins )
 {
+    //Vec_Int_t * vCover = Vec_IntAlloc( 1 << 10 );  int nLits;
     char Buffer[5000];
     Mio_Pin_t * pPin;
     assert( NameLen+FormLen+2 < 5000 );
@@ -239,7 +240,11 @@ void Mio_WriteGate( FILE * pFile, Mio_Gate_t * pGate, int GateLen, int NameLen, 
     else // different pins
         Mio_GateForEachPin( pGate, pPin )
             Mio_WritePin( pFile, pPin, NameLen, 0 );
+    //nLits = 2*Kit_TruthLitNum((unsigned*)&pGate->uTruth, Mio_GateReadPinNum(pGate), vCover);
+    //if ( nLits != Mio_GateReadArea(pGate) )
+    //    printf( " # %d ", nLits );
     fprintf( pFile, "\n" );
+    //Vec_IntFree( vCover );
 }
 
 /**Function*************************************************************
@@ -283,6 +288,99 @@ void Mio_WriteLibrary( FILE * pFile, Mio_Library_t * pLib, int fPrintSops, int f
     fprintf( pFile, "# The genlib library \"%s\" with %d gates written by ABC on %s\n", pLib->pName, Vec_PtrSize(vGates), Extra_TimeStamp() );
     Vec_PtrForEachEntry( Mio_Gate_t *, vGates, pGate, i )
         Mio_WriteGate( pFile, pGate, GateLen, NameLen, FormLen, fPrintSops, fAllPins );
+    Vec_PtrFree( vGates );
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Exp_PrintNodeVerilog( FILE * pFile, int nVars, Vec_Int_t * p, Vec_Ptr_t * vNames, int Node, int fCompl )
+{
+    extern void Exp_PrintLitVerilog( FILE * pFile, int nVars, Vec_Int_t * p, Vec_Ptr_t * vNames, int Lit );
+    if ( Vec_IntEntry(p, 2*Node+1) >= 2*nVars )
+        fprintf( pFile, "(" );
+    Exp_PrintLitVerilog( pFile, nVars, p, vNames, Vec_IntEntry(p, 2*Node+1) ^ fCompl );
+    if ( Vec_IntEntry(p, 2*Node+1) >= 2*nVars )
+        fprintf( pFile, ")" );
+    fprintf( pFile, " %c ", fCompl ? '|' : '&' );
+    if ( Vec_IntEntry(p, 2*Node+0) >= 2*nVars )
+        fprintf( pFile, "(" );
+    Exp_PrintLitVerilog( pFile, nVars, p, vNames, Vec_IntEntry(p, 2*Node+0) ^ fCompl );
+    if ( Vec_IntEntry(p, 2*Node+0) >= 2*nVars )
+        fprintf( pFile, ")" );
+}
+void Exp_PrintLitVerilog( FILE * pFile, int nVars, Vec_Int_t * p, Vec_Ptr_t * vNames, int Lit )
+{
+    if ( Lit == EXP_CONST0 )
+        fprintf( pFile, "1\'b0" );
+    else if ( Lit == EXP_CONST1 )
+        fprintf( pFile, "1\'b1" );
+    else if ( Lit < 2 * nVars )
+        fprintf( pFile, "%s%s", (Lit&1) ? "~" : "", (char *)Vec_PtrEntry(vNames, Lit/2) );
+    else
+        Exp_PrintNodeVerilog( pFile, nVars, p, vNames, Lit/2-nVars, Lit&1 );
+}
+void Exp_PrintVerilog( FILE * pFile, int nVars, Vec_Int_t * p, Vec_Ptr_t * vNames )
+{
+    Exp_PrintLitVerilog( pFile, nVars, p, vNames, Vec_IntEntryLast(p) );
+}
+void Mio_WriteGateVerilog( FILE * pFile, Mio_Gate_t * pGate, Vec_Ptr_t * vNames )
+{
+    char * pName; int i;
+    fprintf( pFile, "module %s ( ", pGate->pName );
+    fprintf( pFile, "%s", pGate->pOutName );
+    Vec_PtrForEachEntry( char *, vNames, pName, i )
+        fprintf( pFile, ", %s", pName );
+    fprintf( pFile, " );\n" );
+    fprintf( pFile, "  output %s;\n", pGate->pOutName );
+    if ( Vec_PtrSize(vNames) > 0 )
+    {
+        fprintf( pFile, "  input %s", (char *)Vec_PtrEntry(vNames, 0) );
+        Vec_PtrForEachEntryStart( char *, vNames, pName, i, 1 )
+            fprintf( pFile, ", %s", pName );
+        fprintf( pFile, ";\n" );
+    }
+    fprintf( pFile, "  assign %s = ", pGate->pOutName );
+    Exp_PrintVerilog( pFile, Vec_PtrSize(vNames), pGate->vExpr, vNames );
+    fprintf( pFile, ";\n" );
+    fprintf( pFile, "endmodule\n\n" );
+}
+void Mio_WriteLibraryVerilog( FILE * pFile, Mio_Library_t * pLib, int fPrintSops, int fShort, int fSelected )
+{
+    Mio_Gate_t * pGate;
+    Mio_Pin_t * pPin;
+    Vec_Ptr_t * vGates = Vec_PtrAlloc( 1000 );
+    Vec_Ptr_t * vNames = Vec_PtrAlloc( 100 );
+    int i, nCells;
+    if ( fSelected )
+    {
+        Mio_Cell2_t * pCells = Mio_CollectRootsNewDefault2( 6, &nCells, 0 );
+        for ( i = 0; i < nCells; i++ )
+            Vec_PtrPush( vGates, pCells[i].pMioGate );
+        ABC_FREE( pCells );
+    }
+    else
+    {
+        for ( i = 0; i < pLib->nGates; i++ )
+            Vec_PtrPush( vGates, pLib->ppGates0[i] );
+    }
+    fprintf( pFile, "// Verilog for genlib library \"%s\" with %d gates written by ABC on %s\n\n", pLib->pName, Vec_PtrSize(vGates), Extra_TimeStamp() );
+    Vec_PtrForEachEntry( Mio_Gate_t *, vGates, pGate, i )
+    {
+        Vec_PtrClear( vNames );
+        Mio_GateForEachPin( pGate, pPin )
+            Vec_PtrPush( vNames, pPin->pName );
+        Mio_WriteGateVerilog( pFile, pGate, vNames );
+    }
+    Vec_PtrFree( vNames );
     Vec_PtrFree( vGates );
 }
 
@@ -462,7 +560,7 @@ Mio_Gate_t ** Mio_CollectRoots( Mio_Library_t * pLib, int nInputs, float tDelay,
     // sort by delay
     if ( iGate > 0 ) 
     {
-        qsort( (void *)ppGates, iGate, sizeof(Mio_Gate_t *), 
+        qsort( (void *)ppGates, (size_t)iGate, sizeof(Mio_Gate_t *), 
                 (int (*)(const void *, const void *)) Mio_DelayCompare );
         assert( Mio_DelayCompare( ppGates, ppGates + iGate - 1 ) <= 0 );
     }
@@ -572,7 +670,7 @@ Mio_Cell_t * Mio_CollectRootsNew( Mio_Library_t * pLib, int nInputs, int * pnGat
     // sort by delay
     if ( iCell > 5 ) 
     {
-        qsort( (void *)(ppCells + 4), iCell - 4, sizeof(Mio_Cell_t), 
+        qsort( (void *)(ppCells + 4), (size_t)(iCell - 4), sizeof(Mio_Cell_t), 
                 (int (*)(const void *, const void *)) Mio_AreaCompare );
         assert( Mio_AreaCompare( ppCells + 4, ppCells + iCell - 1 ) <= 0 );
     }
@@ -729,7 +827,7 @@ Mio_Cell2_t * Mio_CollectRootsNew2( Mio_Library_t * pLib, int nInputs, int * pnG
     // sort by delay
     if ( iCell > 5 ) 
     {
-        qsort( (void *)(ppCells + 4), iCell - 4, sizeof(Mio_Cell2_t), 
+        qsort( (void *)(ppCells + 4), (size_t)(iCell - 4), sizeof(Mio_Cell2_t), 
                 (int (*)(const void *, const void *)) Mio_AreaCompare2 );
         assert( Mio_AreaCompare2( ppCells + 4, ppCells + iCell - 1 ) <= 0 );
     }
@@ -818,7 +916,7 @@ int Mio_CollectRootsNewDefault3( int nInputs, Vec_Ptr_t ** pvNames, Vec_Wrd_t **
             pTruth[1] = pTruth[3] = pGate0->pTruth[1];
         }
         else if ( pGate0->nInputs == 8 )
-            memcpy( pTruth, pGate0->pTruth, 4*sizeof(word) );
+            memcpy( pTruth, pGate0->pTruth, (size_t)(4*sizeof(word)) );
     }
     assert( iGate == nGates );
     assert( Vec_WrdEntry(*pvTruths,  0) ==        0 );
@@ -1613,7 +1711,7 @@ void Mio_LibraryShortNames( Mio_Library_t * pLib )
 {
     char Buffer[10000];
     Mio_Gate_t * pGate; Mio_Pin_t * pPin;
-    int c = 0, i, nDigits = Abc_Base10Log( Mio_LibraryReadGateNum(pLib) );
+    int c = 0, i; unsigned char nDigits = (unsigned char)Abc_Base10Log( Mio_LibraryReadGateNum(pLib) );
     // itereate through classes
     Mio_LibraryForEachGate( pLib, pGate )
     {

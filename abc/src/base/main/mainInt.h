@@ -76,6 +76,13 @@ struct Abc_Frame_t_
     int             fAutoexac;     // marks the autoexec mode
     int             fBatchMode;    // batch mode flag
     int             fBridgeMode;   // bridge mode flag
+    // save/load
+    Abc_Ntk_t *     pNtkBest;        // the current network
+    float           nBestNtkArea;   // best area
+    float           nBestNtkDelay;  // best delay
+    int             nBestNtkNodes;  // best nodes
+    int             nBestNtkLevels; // best levels
+
     // output streams
     FILE *          Out;
     FILE *          Err;
@@ -126,6 +133,8 @@ struct Abc_Frame_t_
     int             nFrames;               // the number of time frames completed by BMC
     Vec_Ptr_t *     vPlugInComBinPairs;    // pairs of command and its binary name
     Vec_Ptr_t *     vLTLProperties_global; // related to LTL
+    Vec_Ptr_t *     vSignalNames;  // temporary storage for signal names
+    char *          pSpecName;
     void *          pSave1; 
     void *          pSave2; 
     void *          pSave3; 
@@ -136,6 +145,7 @@ struct Abc_Frame_t_
     void *          pAbc85Delay;
     void *          pAbcWlc;
     Vec_Int_t *     pAbcWlcInv;
+    void *          pAbcRtl;
     void *          pAbcBac;
     void *          pAbcCba;
     void *          pAbcPla;
@@ -150,6 +160,8 @@ struct Abc_Frame_t_
     Vec_Int_t *     vCopyMiniLut;
     int *           pArray;
     int *           pBoxes;
+    void *          pNdr;
+    int *           pNdrArray;
 
     Abc_Frame_Callback_BmcFrameDone_Func pFuncOnFrameDone;
 };

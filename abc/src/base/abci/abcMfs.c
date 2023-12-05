@@ -82,6 +82,57 @@ Vec_Ptr_t * Abc_NtkAssignIDs2( Abc_Ntk_t * pNtk )
 
 /**Function*************************************************************
 
+  Synopsis    [Assign truth table sizes.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Int_t * Abc_NtkAssignStarts( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes, int * pnTotal )
+{
+    Abc_Obj_t * pObj; int i, Counter = 0;
+    Vec_Int_t * vStarts = Vec_IntStart( Abc_NtkObjNum(pNtk) );
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
+    {
+        Vec_IntWriteEntry( vStarts, pObj->iTemp, Counter );
+        Counter += Abc_Truth6WordNum( Abc_ObjFaninNum(pObj) );
+    }
+    Abc_NtkForEachCo( pNtk, pObj, i )
+        Vec_IntWriteEntry( vStarts, pObj->iTemp, Counter++ );
+    *pnTotal = Counter;
+    return vStarts;
+}
+
+void Abc_NtkFillTruthStore( word TruthStore[16][1<<10] )
+{
+    if ( TruthStore[0][0] == 0 )
+    {
+        static word Truth6[6] = {
+            0xAAAAAAAAAAAAAAAA,
+            0xCCCCCCCCCCCCCCCC,
+            0xF0F0F0F0F0F0F0F0,
+            0xFF00FF00FF00FF00,
+            0xFFFF0000FFFF0000,
+            0xFFFFFFFF00000000
+        };
+        int nVarsMax = 16;
+        int nWordsMax = (1 << 10);
+        int i, k;
+        assert( nVarsMax <= 16 );
+        for ( i = 0; i < 6; i++ )
+            for ( k = 0; k < nWordsMax; k++ )
+                TruthStore[i][k] = Truth6[i];
+        for ( i = 6; i < nVarsMax; i++ )
+            for ( k = 0; k < nWordsMax; k++ )
+                TruthStore[i][k] = ((k >> (i-6)) & 1) ? ~(word)0 : 0;
+    }
+}
+
+/**Function*************************************************************
+
   Synopsis    [Extracts information about the network.]
 
   Description []
@@ -93,28 +144,62 @@ Vec_Ptr_t * Abc_NtkAssignIDs2( Abc_Ntk_t * pNtk )
 ***********************************************************************/
 Sfm_Ntk_t * Abc_NtkExtractMfs( Abc_Ntk_t * pNtk, int nFirstFixed )
 {
+    word TruthStore[16][1<<10] = {{0}}, * pTruths[16] = {NULL}, pCube[1<<10] = {0};
     Vec_Ptr_t * vNodes;
     Vec_Wec_t * vFanins;
     Vec_Str_t * vFixed;
     Vec_Wrd_t * vTruths;
     Vec_Int_t * vArray;
+    Vec_Int_t * vStarts;
+    Vec_Wrd_t * vTruths2;
     Abc_Obj_t * pObj, * pFanin;
-    int i, k, nObjs;
+    int i, k, nObjs, nTotal = 0;
     vNodes  = nFirstFixed ? Abc_NtkAssignIDs2(pNtk) : Abc_NtkAssignIDs(pNtk);
     nObjs   = Abc_NtkCiNum(pNtk) + Vec_PtrSize(vNodes) + Abc_NtkCoNum(pNtk);
     vFanins = Vec_WecStart( nObjs );
     vFixed  = Vec_StrStart( nObjs );
     vTruths = Vec_WrdStart( nObjs );
+    vStarts = Abc_NtkAssignStarts( pNtk, vNodes, &nTotal );
+    vTruths2= Vec_WrdStart( nTotal );
+    Abc_NtkFillTruthStore( TruthStore );
+    for ( i = 0; i < 16; i++ )
+        pTruths[i] = TruthStore[i];
     Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
     {
-        word uTruth = Abc_SopToTruth((char *)pObj->pData, Abc_ObjFaninNum(pObj));
-        Vec_WrdWriteEntry( vTruths, pObj->iTemp, uTruth );
-        if ( uTruth == 0 || ~uTruth == 0 )
-            continue;
+        if ( Abc_ObjFaninNum(pObj) <= 6 )
+        {
+            word uTruth = Abc_SopToTruth((char *)pObj->pData, Abc_ObjFaninNum(pObj));
+            int Offset  = Vec_IntEntry( vStarts, pObj->iTemp );
+            Vec_WrdWriteEntry( vTruths2, Offset, uTruth );
+            Vec_WrdWriteEntry( vTruths, pObj->iTemp, uTruth );
+            if ( uTruth == 0 || ~uTruth == 0 )
+                continue;
+        }
+        else
+        {
+            int nWords  = Abc_Truth6WordNum( Abc_ObjFaninNum(pObj) );
+            int Offset  = Vec_IntEntry( vStarts, pObj->iTemp );
+            word * pRes = Vec_WrdEntryP( vTruths2, Offset );
+            Abc_SopToTruthBig( (char *)pObj->pData, Abc_ObjFaninNum(pObj), pTruths, pCube, pRes );
+            Vec_WrdWriteEntry( vTruths, pObj->iTemp, pRes[0] );
+            // check const0
+            for ( k = 0; k < nWords; k++ )
+                if ( pRes[k] )
+                    break;
+            if ( k == nWords )
+                continue;
+            // check const1
+            for ( k = 0; k < nWords; k++ )
+                if ( ~pRes[k] )
+                    break;
+            if ( k == nWords )
+                continue;
+        }
         vArray = Vec_WecEntry( vFanins, pObj->iTemp );
         Vec_IntGrow( vArray, Abc_ObjFaninNum(pObj) );
         Abc_ObjForEachFanin( pObj, pFanin, k )
             Vec_IntPush( vArray, pFanin->iTemp );
+        //Vec_IntPrint( vArray );
     }
     Abc_NtkForEachCo( pNtk, pObj, i )
     {
@@ -131,28 +216,58 @@ Sfm_Ntk_t * Abc_NtkExtractMfs( Abc_Ntk_t * pNtk, int nFirstFixed )
 //    for ( i = Abc_NtkCiNum(pNtk); i + Abc_NtkCoNum(pNtk) < Abc_NtkObjNum(pNtk); i++ )
 //        if ( rand() % 10 == 0 )
 //            Vec_StrWriteEntry( vFixed, i, (char)1 );
-    return Sfm_NtkConstruct( vFanins, Abc_NtkCiNum(pNtk), Abc_NtkCoNum(pNtk), vFixed, NULL, vTruths );
+    return Sfm_NtkConstruct( vFanins, Abc_NtkCiNum(pNtk), Abc_NtkCoNum(pNtk), vFixed, NULL, vTruths, vStarts, vTruths2 );
 }
 Sfm_Ntk_t * Abc_NtkExtractMfs2( Abc_Ntk_t * pNtk, int iPivot )
 {
+    word TruthStore[16][1<<10] = {{0}}, * pTruths[16] = {NULL}, pCube[1<<10] = {0};
     Vec_Ptr_t * vNodes;
     Vec_Wec_t * vFanins;
     Vec_Str_t * vFixed;
     Vec_Wrd_t * vTruths;
     Vec_Int_t * vArray;
+    Vec_Int_t * vStarts;
+    Vec_Wrd_t * vTruths2;
     Abc_Obj_t * pObj, * pFanin;
-    int i, k, nObjs;
+    int i, k, nObjs, nTotal = 0;
     vNodes  = Abc_NtkAssignIDs2(pNtk);
     nObjs   = Abc_NtkCiNum(pNtk) + Vec_PtrSize(vNodes) + Abc_NtkCoNum(pNtk);
     vFanins = Vec_WecStart( nObjs );
     vFixed  = Vec_StrStart( nObjs );
     vTruths = Vec_WrdStart( nObjs );
+    vStarts = Abc_NtkAssignStarts( pNtk, vNodes, &nTotal );
+    vTruths2= Vec_WrdAlloc( nTotal );
+    Abc_NtkFillTruthStore( TruthStore );
+    for ( i = 0; i < 16; i++ )
+        pTruths[i] = TruthStore[i];
     Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
     {
-        word uTruth = Abc_SopToTruth((char *)pObj->pData, Abc_ObjFaninNum(pObj));
-        Vec_WrdWriteEntry( vTruths, pObj->iTemp, uTruth );
-        if ( uTruth == 0 || ~uTruth == 0 )
-            continue;
+        if ( Abc_ObjFaninNum(pObj) <= 6 )
+        {
+            word uTruth = Abc_SopToTruth((char *)pObj->pData, Abc_ObjFaninNum(pObj));
+            Vec_WrdWriteEntry( vTruths, pObj->iTemp, uTruth );
+            if ( uTruth == 0 || ~uTruth == 0 )
+                continue;
+        }
+        else
+        {
+            int nWords  = Abc_Truth6WordNum( Abc_ObjFaninNum(pObj) );
+            int Offset  = Vec_IntEntry( vStarts, pObj->iTemp );
+            word * pRes = Vec_WrdEntryP( vTruths2, Offset );
+            Abc_SopToTruthBig( (char *)pObj->pData, Abc_ObjFaninNum(pObj), pTruths, pCube, pRes );
+            // check const0
+            for ( k = 0; k < nWords; k++ )
+                if ( pRes[k] )
+                    break;
+            if ( k == nWords )
+                continue;
+            // check const1
+            for ( k = 0; k < nWords; k++ )
+                if ( ~pRes[k] )
+                    break;
+            if ( k == nWords )
+                continue;
+        }
         vArray = Vec_WecEntry( vFanins, pObj->iTemp );
         Vec_IntGrow( vArray, Abc_ObjFaninNum(pObj) );
         Abc_ObjForEachFanin( pObj, pFanin, k )
@@ -170,7 +285,7 @@ Sfm_Ntk_t * Abc_NtkExtractMfs2( Abc_Ntk_t * pNtk, int iPivot )
     Abc_NtkForEachNode( pNtk, pObj, i )
         if ( i >= iPivot )
             Vec_StrWriteEntry( vFixed, pObj->iTemp, (char)1 );
-    return Sfm_NtkConstruct( vFanins, Abc_NtkCiNum(pNtk), Abc_NtkCoNum(pNtk), vFixed, NULL, vTruths );
+    return Sfm_NtkConstruct( vFanins, Abc_NtkCiNum(pNtk), Abc_NtkCoNum(pNtk), vFixed, NULL, vTruths, vStarts, vTruths2 );
 }
 
 /**Function*************************************************************
@@ -214,11 +329,13 @@ void Abc_NtkInsertMfs( Abc_Ntk_t * pNtk, Sfm_Ntk_t * p )
         }
         // update fanins
         vArray = Sfm_NodeReadFanins( p, pNode->iTemp );
-        Vec_IntForEachEntry( vArray, Fanin, k )
-            Abc_ObjAddFanin( pNode, Abc_NtkObj(pNtk, Vec_IntEntry(vMap, Fanin)) );
         pTruth = Sfm_NodeReadTruth( p, pNode->iTemp );
         pNode->pData = Abc_SopCreateFromTruthIsop( (Mem_Flex_t *)pNtk->pManFunc, Vec_IntSize(vArray), pTruth, vCover );
+        if ( Abc_SopGetVarNum((char *)pNode->pData) == 0 )
+            continue;
         assert( Abc_SopGetVarNum((char *)pNode->pData) == Vec_IntSize(vArray) );
+        Vec_IntForEachEntry( vArray, Fanin, k )
+            Abc_ObjAddFanin( pNode, Abc_NtkObj(pNtk, Vec_IntEntry(vMap, Fanin)) );
     }
     Vec_IntFree( vCover );
     Vec_IntFree( vMap );
@@ -243,9 +360,9 @@ int Abc_NtkPerformMfs( Abc_Ntk_t * pNtk, Sfm_Par_t * pPars )
     Abc_NtkSweep( pNtk, 0 );
     // count fanouts
     nFaninMax = Abc_NtkGetFaninMax( pNtk );
-    if ( nFaninMax > 6 )
+    if ( nFaninMax > 15 )
     {
-        Abc_Print( 1, "Currently \"mfs\" cannot process the network containing nodes with more than 6 fanins.\n" );
+        Abc_Print( 1, "Currently \"mfs\" cannot process the network containing nodes with more than 15 fanins.\n" );
         return 1;
     }
     if ( !Abc_NtkHasSop(pNtk) )
@@ -424,9 +541,9 @@ int Abc_NtkMfsAfterICheck( Abc_Ntk_t * p, int nFrames, int nFramesAdd, Vec_Int_t
     assert( Abc_NtkIsLogic(p) );
     // count fanouts
     nFaninMax = Abc_NtkGetFaninMax( p );
-    if ( nFaninMax > 6 )
+    if ( nFaninMax > 15 )
     {
-        Abc_Print( 1, "Currently \"mfs\" cannot process the network containing nodes with more than 6 fanins.\n" );
+        Abc_Print( 1, "Currently \"mfs\" cannot process the network containing nodes with more than 15 fanins.\n" );
         return 0;
     }
     if ( !Abc_NtkHasSop(p) )

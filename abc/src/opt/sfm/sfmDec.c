@@ -1865,7 +1865,7 @@ Abc_Obj_t * Abc_NtkAreaOptOne( Sfm_Dec_t * p, int i )
     Sfm_Par_t * pPars = p->pPars;
     Abc_Obj_t * pObj = Abc_NtkObj( p->pNtk, i ); 
     int Limit, RetValue;
-    if ( pPars->nMffcMin > 1 && Abc_NodeMffcLabel(pObj) < pPars->nMffcMin )
+    if ( pPars->nMffcMin > 1 && Abc_NodeMffcLabel(pObj, NULL) < pPars->nMffcMin )
         return NULL;
     if ( pPars->iNodeOne && i != pPars->iNodeOne )
         return NULL;

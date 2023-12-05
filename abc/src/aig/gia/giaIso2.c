@@ -328,7 +328,7 @@ int Gia_Iso2ManUniqify( Gia_Iso2Man_t * p )
         }
     Vec_IntShrink( p->vTied, k );
     // sort singletons
-    Vec_PtrSort( p->vSingles, (int (*)(void))Gia_ObjCompareByValue2 );
+    Vec_PtrSort( p->vSingles, (int (*)(const void *, const void *))Gia_ObjCompareByValue2 );
     // add them to unique and increment signature
     Vec_PtrForEachEntry( Gia_Obj_t *, p->vSingles, pObj, i )
     {

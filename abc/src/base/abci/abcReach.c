@@ -271,7 +271,7 @@ void Abc_NtkVerifyUsingBdds( Abc_Ntk_t * pNtk, int nBddMax, int nIterMax, int fP
     assert( Abc_ObjFanoutNum(Abc_NtkPo(pNtk,0)) == 0 ); // PO should go first
 
     // compute the global BDDs of the latches
-    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, nBddMax, 1, fReorder, fVerbose );    
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, nBddMax, 1, fReorder, 0, fVerbose );    
     if ( dd == NULL )
     {
         printf( "The number of intermediate BDD nodes exceeded the limit (%d).\n", nBddMax );

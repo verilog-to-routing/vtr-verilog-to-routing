@@ -68,24 +68,65 @@ void Sfm_PrintCnf( Vec_Str_t * vCnf )
   SeeAlso     []
 
 ***********************************************************************/
-int Sfm_TruthToCnf( word Truth, int nVars, Vec_Int_t * vCover, Vec_Str_t * vCnf )
+int Sfm_TruthToCnf( word Truth, word * pTruth, int nVars, Vec_Int_t * vCover, Vec_Str_t * vCnf )
 {
+    int w, nWords = Abc_Truth6WordNum( nVars );
     Vec_StrClear( vCnf );
-    if ( Truth == 0 || ~Truth == 0 )
+    if ( nVars <= 6 )
     {
-//        assert( nVars == 0 );
-        Vec_StrPush( vCnf, (char)(Truth == 0) );
-        Vec_StrPush( vCnf, (char)-1 );
-        return 1;
+        if ( Truth == 0 || ~Truth == 0 )
+        {
+            assert( nVars == 0 );
+            Vec_StrPush( vCnf, (char)(Truth == 0) );
+            Vec_StrPush( vCnf, (char)-1 );
+            return 1;
+        }
     }
-    else 
+    else
+    {
+        // const0
+        for ( w = 0; w < nWords; w++ )
+            if ( pTruth[w] )
+                break;
+        if ( w == nWords )
+        {
+            Vec_StrPush( vCnf, (char)1 );
+            Vec_StrPush( vCnf, (char)-1 );
+            assert( 0 );
+            return 1;
+        }
+        // const1
+        for ( w = 0; w < nWords; w++ )
+            if ( ~pTruth[w] )
+                break;
+        if ( w == nWords )
+        {
+            Vec_StrPush( vCnf, (char)0 );
+            Vec_StrPush( vCnf, (char)-1 );
+            assert( 0 );
+            return 1;
+        }
+    }
     {
         int i, k, c, RetValue, Literal, Cube, nCubes = 0;
         assert( nVars > 0 );
         for ( c = 0; c < 2; c ++ )
         {
-            Truth = c ? ~Truth : Truth;
-            RetValue = Kit_TruthIsop( (unsigned *)&Truth, nVars, vCover, 0 );
+            if ( nVars <= 6 )
+            {
+                Truth = c ? ~Truth : Truth;
+                RetValue = Kit_TruthIsop( (unsigned *)&Truth, nVars, vCover, 0 );
+            }
+            else
+            {
+                if ( c )
+                    for ( k = 0; k < nWords; k++ )
+                        pTruth[k] = ~pTruth[k];
+                RetValue = Kit_TruthIsop( (unsigned *)pTruth, nVars, vCover, 0 );
+                if ( c )
+                    for ( k = 0; k < nWords; k++ )
+                        pTruth[k] = ~pTruth[k];
+            }
             assert( RetValue == 0 );
             nCubes += Vec_IntSize( vCover );
             Vec_IntForEachEntry( vCover, Cube, i )
@@ -129,10 +170,12 @@ Vec_Wec_t * Sfm_CreateCnf( Sfm_Ntk_t * p )
     vCnfs = Vec_WecStart( p->nObjs );
     Vec_WrdForEachEntryStartStop( p->vTruths, uTruth, i, p->nPis, Vec_WrdSize(p->vTruths)-p->nPos )
     {
-        nCubes = Sfm_TruthToCnf( uTruth, Sfm_ObjFaninNum(p, i), p->vCover, vCnf );
+        int Offset  = Vec_IntEntry( p->vStarts, i );
+        word * pRes = Vec_WrdSize(p->vTruths2) ? Vec_WrdEntryP( p->vTruths2, Offset ) : NULL;
+        nCubes = Sfm_TruthToCnf( uTruth, pRes, Sfm_ObjFaninNum(p, i), p->vCover, vCnf );
         vCnfBase = (Vec_Str_t *)Vec_WecEntry( vCnfs, i );
         Vec_StrGrow( vCnfBase, Vec_StrSize(vCnf) );
-        memcpy( Vec_StrArray(vCnfBase), Vec_StrArray(vCnf), Vec_StrSize(vCnf) );
+        memcpy( Vec_StrArray(vCnfBase), Vec_StrArray(vCnf), (size_t)Vec_StrSize(vCnf) );
         vCnfBase->nSize = Vec_StrSize(vCnf);
     }
     Vec_StrFree( vCnf );
@@ -155,6 +198,7 @@ void Sfm_TranslateCnf( Vec_Wec_t * vRes, Vec_Str_t * vCnf, Vec_Int_t * vFaninMap
     Vec_Int_t * vClause;
     signed char Entry;
     int i, Lit;
+    assert( Vec_StrEntry(vCnf, 1) != -1 || Vec_IntSize(vFaninMap) == 1 );
     Vec_WecClear( vRes );
     vClause = Vec_WecPushLevel( vRes );
     Vec_StrForEachEntry( vCnf, Entry, i )
