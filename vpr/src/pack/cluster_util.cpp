@@ -1232,7 +1232,8 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
             }
         }
     } else {
-        if (parent_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
+       /* if this is not the first child of this parent, must match existing parent mode */
+       if (parent_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
             return BLK_FAILED_FEASIBLE;
         }
     }
