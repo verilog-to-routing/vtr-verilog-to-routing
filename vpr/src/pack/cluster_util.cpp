@@ -3686,6 +3686,9 @@ void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBl
     for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
         ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
 
+        /* if this data structure is being built alongside the clustered netlist    */
+        /* e.g. when ingesting and legalizing a flat placement solution, some atoms */
+        /* may not yet be mapped to a valid clb_index                               */
         if (clb_index != ClusterBlockId::INVALID()) {
             atoms_lookup[clb_index].insert(atom_blk_id);
         }
