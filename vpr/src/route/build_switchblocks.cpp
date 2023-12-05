@@ -693,11 +693,11 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
      * indexing */
     /* details for source channel */
     const t_chan_details& from_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, from_side, to_side, chan_details_x, chan_details_y,
-                                                                     from_x, from_y, from_layer, from_chan_type);
+                                                                      from_x, from_y, from_layer, from_chan_type);
 
     /* details for destination channel */
     const t_chan_details& to_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, to_side, from_side, chan_details_x, chan_details_y,
-                                                                   to_x, to_y, to_layer, to_chan_type);
+                                                                    to_x, to_y, to_layer, to_chan_type);
 
     /* make sure from_x/y and to_x/y aren't out of bounds */
     if (coords_out_of_bounds(grid, to_x, to_y, to_layer, to_chan_type) || coords_out_of_bounds(grid, from_x, from_y, from_layer, from_chan_type)) {

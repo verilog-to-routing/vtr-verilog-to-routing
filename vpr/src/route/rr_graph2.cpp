@@ -1221,20 +1221,19 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
-static bool is_sb_conn_layer_crossing(enum e_side src_side, enum e_side dest_side){
-    if(src_side < NUM_2D_SIDES && dest_side < NUM_2D_SIDES){
+static bool is_sb_conn_layer_crossing(enum e_side src_side, enum e_side dest_side) {
+    if (src_side < NUM_2D_SIDES && dest_side < NUM_2D_SIDES) {
         return false;
     }
 
-    if(src_side == dest_side){
+    if (src_side == dest_side) {
         return false;
     }
 
     return true;
 }
 
-
-static void set_multi_layer_track_conn(RRGraphBuilder& rr_graph_builder, vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn, int x, int y, int from_wire, int from_wire_layer, e_rr_type from_wire_type, int to_wire, int to_wire_layer, e_rr_type to_wire_type, int& curr_switchblocks_offset){
+static void set_multi_layer_track_conn(RRGraphBuilder& rr_graph_builder, vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn, int x, int y, int from_wire, int from_wire_layer, e_rr_type from_wire_type, int to_wire, int to_wire_layer, e_rr_type to_wire_type, int& curr_switchblocks_offset) {
     RRNodeId from_inode = rr_graph_builder.node_lookup().find_node(from_wire_layer, x, y, from_wire_type, from_wire);
     RRNodeId to_inode = rr_graph_builder.node_lookup().find_node(to_wire_layer, x, y, to_wire_type, to_wire);
 
@@ -1249,7 +1248,6 @@ static void set_multi_layer_track_conn(RRGraphBuilder& rr_graph_builder, vtr::Nd
     }
 }
 
-
 vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
                                                                t_sb_connection_map* sb_conn_map,
                                                                RRGraphBuilder& rr_graph_builder) {
@@ -1263,7 +1261,7 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_i
             for (auto layer = 0; layer < grid_ctx.get_num_layers(); layer++) {
                 for (auto from_side : TOTAL_3D_SIDES) {
                     for (auto to_side : TOTAL_3D_SIDES) {
-                        if (!is_sb_conn_layer_crossing(from_side,to_side)) { //this connection is not crossing any layer
+                        if (!is_sb_conn_layer_crossing(from_side, to_side)) { //this connection is not crossing any layer
                             continue;
                         } else {
                             Switchblock_Lookup sb_coord(x, y, layer, from_side, to_side);

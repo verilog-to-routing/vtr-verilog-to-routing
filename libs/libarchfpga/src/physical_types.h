@@ -178,7 +178,7 @@ enum e_side : unsigned char {
     NUM_2D_SIDES = 4,
     ABOVE = 5,
     UNDER = 7,
-    NUM_3D_SIDES =6,
+    NUM_3D_SIDES = 6,
 };
 
 constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
