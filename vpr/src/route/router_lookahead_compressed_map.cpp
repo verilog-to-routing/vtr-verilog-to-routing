@@ -56,7 +56,7 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
 
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec);
 
-static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf, int region_length);
+static std::vector<SamplingRegion> get_sampling_regions(int region_length);
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
@@ -143,7 +143,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     VTR_ASSERT(max_seg_lenght != std::numeric_limits<int>::min());
     VTR_ASSERT(min_seg_length != std::numeric_limits<int>::max());
 
-    auto sampling_regions = get_sampling_regions(segment_inf_vec, max_seg_lenght);
+    auto sampling_regions = get_sampling_regions(max_seg_lenght);
 
     int num_sampling_points = 0;
     for (const auto& sampling_region : sampling_regions) {
@@ -205,7 +205,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     }
 }
 
-static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf, int region_length) {
+static std::vector<SamplingRegion> get_sampling_regions(int region_length) {
 
     const auto& grid = g_vpr_ctx.device().grid;
     std::vector<SamplingRegion> sampling_regions;
