@@ -501,7 +501,7 @@ void CompressedMapLookahead::compute(const std::vector<t_segment_inf>& segment_i
 }
 
 void CompressedMapLookahead::write(const std::string& file_name) const {
-    if (vtr::check_file_name_extension(file_name, ".tsv")) {
+    if (vtr::check_file_name_extension(file_name, ".csv")) {
         std::vector<int> wire_cost_map_size(f_compressed_wire_cost_map.ndims());
         for (size_t i = 0; i < f_compressed_wire_cost_map.ndims(); ++i) {
             wire_cost_map_size[i] = static_cast<int>(f_compressed_wire_cost_map.dim_size(i));

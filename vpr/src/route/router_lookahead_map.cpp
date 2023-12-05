@@ -428,7 +428,7 @@ void MapLookahead::read_intra_cluster(const std::string& file) {
 }
 
 void MapLookahead::write(const std::string& file_name) const {
-    if (vtr::check_file_name_extension(file_name, ".tsv")) {
+    if (vtr::check_file_name_extension(file_name, ".csv")) {
         std::vector<int> wire_cost_map_size(f_wire_cost_map.ndims());
         for (size_t i = 0; i < f_wire_cost_map.ndims(); ++i) {
             wire_cost_map_size[i] = static_cast<int>(f_wire_cost_map.dim_size(i));
