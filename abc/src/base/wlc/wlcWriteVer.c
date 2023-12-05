@@ -144,10 +144,20 @@ void Wlc_WriteVerIntVec( FILE * pFile, Wlc_Ntk_t * p, Vec_Int_t * vVec, int Star
         NameCounter++;
     }
 } 
+
+int Wlc_ObjFaninBitNum( Wlc_Ntk_t * p, Wlc_Obj_t * pObj )
+{
+    Wlc_Obj_t * pFanin;
+    int i, Count = 0;
+    Wlc_ObjForEachFaninObj( p, pObj, pFanin, i )
+        Count += Wlc_ObjRange(pFanin);
+    return Count;
+}
+
 void Wlc_WriteVerInt( FILE * pFile, Wlc_Ntk_t * p, int fNoFlops )
 {
     Wlc_Obj_t * pObj;
-    int i, k, iFanin;
+    int i, k, j, iFanin;
     char Range[100];
     fprintf( pFile, "module %s ( ", p->pName );
     fprintf( pFile, "\n   " );
@@ -186,13 +196,13 @@ void Wlc_WriteVerInt( FILE * pFile, Wlc_Ntk_t * p, int fNoFlops )
                 continue;
             Range[0] = 0;
         }
-        if ( pObj->fIsPo || (fNoFlops && pObj->fIsFi) )
+        if ( (pObj->fIsPo || (fNoFlops && pObj->fIsFi)) && pObj->Type != WLC_OBJ_FF )
         {
             if ( Wlc_ObjFaninNum(pObj) == 0 )
                 continue;
             fprintf( pFile, "  assign                         " );
         }
-        else if ( pObj->Type == WLC_OBJ_MUX && Wlc_ObjFaninNum(pObj) > 3 )
+        else if ( (pObj->Type == WLC_OBJ_MUX && Wlc_ObjFaninNum(pObj) > 3) || pObj->Type == WLC_OBJ_SEL )
             fprintf( pFile, "reg  %s ", Range );
         else
             fprintf( pFile, "wire %s ", Range );
@@ -202,6 +212,21 @@ void Wlc_WriteVerInt( FILE * pFile, Wlc_Ntk_t * p, int fNoFlops )
             fprintf( pFile, "%s ;              table%d", Wlc_ObjName(p, i), Wlc_ObjTableId(pObj) );
             fprintf( pFile, " s%d_Index(%s, ", i, Wlc_ObjName(p, Wlc_ObjFaninId0(pObj)) );
             fprintf( pFile, "%s)",             Wlc_ObjName(p, i) );
+        }
+        else if ( pObj->Type == WLC_OBJ_LUT )
+        {
+            // wire [3:0] s4972; LUT lut4972_Index(s4971, s4972);
+            fprintf( pFile, "%s ;           LUT", Wlc_ObjName(p, i) );
+            fprintf( pFile, " lut%d (%s, ", i, Wlc_ObjName(p, Wlc_ObjFaninId0(pObj)) );
+            for ( k = 1; k < Wlc_ObjFaninNum(pObj); k++ )
+                fprintf( pFile, "%s, ", Wlc_ObjName(p, Wlc_ObjFaninId(pObj, k)) );
+            fprintf( pFile, "%s)",             Wlc_ObjName(p, i) );
+            if ( p->vLutTruths )
+            {
+                word Truth = Vec_WrdEntry( p->vLutTruths, Wlc_ObjId(p, pObj) );
+                fprintf( pFile, " ; // TT = " );
+                Extra_PrintHex( pFile, (unsigned *)&Truth, Wlc_ObjFaninBitNum(p, pObj) );
+            }
         }
         else if ( pObj->Type == WLC_OBJ_CONST )
         {
@@ -253,19 +278,115 @@ void Wlc_WriteVerInt( FILE * pFile, Wlc_Ntk_t * p, int fNoFlops )
             fprintf( pFile, "end\n" );
             continue;
         }
-        else if ( pObj->Type == WLC_OBJ_READ || pObj->Type == WLC_OBJ_WRITE )
+        else if ( pObj->Type == WLC_OBJ_SEL )
         {
-            int nBitsMem  = Wlc_ObjRange( Wlc_ObjFanin(p, pObj, 0) );
-            //int nBitsAddr = Wlc_ObjRange( Wlc_ObjFanin(p, pObj, 1) );
-            int nBitsDat  = pObj->Type == WLC_OBJ_READ ? Wlc_ObjRange(pObj) : Wlc_ObjRange(Wlc_ObjFanin(p, pObj, 2));
-            int Depth     = nBitsMem / nBitsDat;
-            assert( nBitsMem % nBitsDat == 0 );
             fprintf( pFile, "%s ;\n", Wlc_ObjName(p, i) );
             fprintf( pFile, "         " );
-            fprintf( pFile, "%s_%d (", pObj->Type == WLC_OBJ_READ ? "CPL_MEM_READ" : "CPL_MEM_WRITE", Depth );
+            fprintf( pFile, "always @( " );
             Wlc_ObjForEachFanin( pObj, iFanin, k )
-                fprintf( pFile, " .%s(%s)", k==0 ? "mem_data_in" : (k==1 ? "addr_in": "data_in"), Wlc_ObjName(p, iFanin) );
-            fprintf( pFile, " .%s(%s) );\n", "data_out", Wlc_ObjName(p, i) );
+                fprintf( pFile, "%s%s", k ? " or ":"", Wlc_ObjName(p, Wlc_ObjFaninId(pObj, k)) );
+            fprintf( pFile, " )\n" );
+            fprintf( pFile, "           " );
+            fprintf( pFile, "begin\n" );
+            fprintf( pFile, "             " );
+            fprintf( pFile, "case ( %s )\n", Wlc_ObjName(p, Wlc_ObjFaninId(pObj, 0)) );
+            Wlc_ObjForEachFanin( pObj, iFanin, k )
+            {
+                if ( !k ) continue;
+                fprintf( pFile, "               " );
+                fprintf( pFile, "%d\'b", Wlc_ObjFaninNum(pObj)-1 );
+                for ( j = Wlc_ObjFaninNum(pObj)-1; j > 0; j-- )
+                    fprintf( pFile, "%d", (int)(j==k) );
+                fprintf( pFile, " : %s = ", Wlc_ObjName(p, i) );
+                fprintf( pFile, "%s ;\n", Wlc_ObjName(p, Wlc_ObjFaninId(pObj, k)) );
+            }
+            fprintf( pFile, "               " );
+            fprintf( pFile, "default" );
+            fprintf( pFile, " : %s = ", Wlc_ObjName(p, i) );
+            fprintf( pFile, "%d\'b", Wlc_ObjRange(pObj) );
+            for ( j = Wlc_ObjRange(pObj)-1; j >= 0; j-- )
+                fprintf( pFile, "%d", 0 );
+            fprintf( pFile, " ;\n" );
+            fprintf( pFile, "             " );
+            fprintf( pFile, "endcase\n" );
+            fprintf( pFile, "           " );
+            fprintf( pFile, "end\n" );
+            continue;
+        }
+        else if ( pObj->Type == WLC_OBJ_DEC )
+        {
+            int nRange = Wlc_ObjRange(Wlc_ObjFanin0(p, pObj));
+            assert( (1 << nRange) == Wlc_ObjRange(pObj) );
+            fprintf( pFile, "%s ;\n", Wlc_ObjName(p, i) );
+            for ( k = 0; k < Wlc_ObjRange(pObj); k++ )
+            {
+                fprintf( pFile, "         " );
+                fprintf( pFile, "wire " );
+                fprintf( pFile, "%s_", Wlc_ObjName(p, i) );
+                for ( j = 0; j < nRange; j++ )
+                    fprintf( pFile, "%d", (k >> (nRange-1-j)) & 1 );
+                fprintf( pFile, " = " );
+                for ( j = 0; j < nRange; j++ )
+                    fprintf( pFile, "%s%s%s[%d]", 
+                        j ? " & ":"", ((k >> (nRange-1-j)) & 1) ? " ":"~", 
+                        Wlc_ObjName(p, Wlc_ObjFaninId(pObj, 0)), nRange-1-j );
+                fprintf( pFile, " ;\n" );
+            }
+            fprintf( pFile, "         " );
+            fprintf( pFile, "assign %s = { ", Wlc_ObjName(p, i) );
+            for ( k = Wlc_ObjRange(pObj)-1; k >= 0; k-- )
+            {
+                fprintf( pFile, "%s%s_", k < Wlc_ObjRange(pObj)-1 ? ", ":"", Wlc_ObjName(p, i) );
+                for ( j = 0; j < nRange; j++ )
+                    fprintf( pFile, "%d", (k >> (nRange-1-j)) & 1 );
+            }
+            fprintf( pFile, " } ;\n" );
+            continue;
+        }
+        else if ( pObj->Type == WLC_OBJ_ARI_ADDSUB )
+        {
+            // out = mode ? a+b+cin : a-b-cin
+            fprintf( pFile, "%s ;\n", Wlc_ObjName(p, i) );
+            fprintf( pFile, "         " );
+            fprintf( pFile, "assign " );
+            fprintf( pFile, "%s = %s ? %s + %s + %s : %s - %s - %s ;\n", 
+                        Wlc_ObjName(p, i), Wlc_ObjName(p, Wlc_ObjFaninId0(pObj)),
+                        Wlc_ObjName(p, Wlc_ObjFaninId2(pObj)), Wlc_ObjName(p, Wlc_ObjFaninId(pObj,3)), Wlc_ObjName(p, Wlc_ObjFaninId1(pObj)),
+                        Wlc_ObjName(p, Wlc_ObjFaninId2(pObj)), Wlc_ObjName(p, Wlc_ObjFaninId(pObj,3)), Wlc_ObjName(p, Wlc_ObjFaninId1(pObj)) 
+                   );
+            continue;
+        }
+        else if ( pObj->Type == WLC_OBJ_READ || pObj->Type == WLC_OBJ_WRITE )
+        {
+            if ( p->fMemPorts )
+            {
+                fprintf( pFile, "%s ;\n", Wlc_ObjName(p, i) );
+                fprintf( pFile, "         " );
+                fprintf( pFile, "%s (", pObj->Type == WLC_OBJ_READ ? "ABC_READ" : "ABC_WRITE" );
+                Wlc_ObjForEachFanin( pObj, iFanin, k )
+                    fprintf( pFile, " .%s(%s),", k==0 ? "mem_in" : (k==1 ? "addr": "data"), Wlc_ObjName(p, iFanin) );
+                fprintf( pFile, " .%s(%s) ) ;\n", pObj->Type == WLC_OBJ_READ ? "data" : "mem_out", Wlc_ObjName(p, i) );
+                continue;
+            }
+            else
+            {
+                int nBitsMem  = Wlc_ObjRange( Wlc_ObjFanin(p, pObj, 0) );
+                //int nBitsAddr = Wlc_ObjRange( Wlc_ObjFanin(p, pObj, 1) );
+                int nBitsDat  = pObj->Type == WLC_OBJ_READ ? Wlc_ObjRange(pObj) : Wlc_ObjRange(Wlc_ObjFanin(p, pObj, 2));
+                int Depth     = nBitsMem / nBitsDat;
+                assert( nBitsMem % nBitsDat == 0 );
+                fprintf( pFile, "%s ;\n", Wlc_ObjName(p, i) );
+                fprintf( pFile, "         " );
+                fprintf( pFile, "%s_%d (", pObj->Type == WLC_OBJ_READ ? "CPL_MEM_READ" : "CPL_MEM_WRITE", Depth );
+                Wlc_ObjForEachFanin( pObj, iFanin, k )
+                    fprintf( pFile, " .%s(%s),", k==0 ? "mem_data_in" : (k==1 ? "addr_in": "data_in"), Wlc_ObjName(p, iFanin) );
+                fprintf( pFile, " .%s(%s) ) ;\n", "data_out", Wlc_ObjName(p, i) );
+                continue;
+            }
+        }
+        else if ( pObj->Type == WLC_OBJ_FF )
+        {
+            fprintf( pFile, "%s ;\n", Wlc_ObjName(p, i) );
             continue;
         }
         else 
@@ -373,7 +494,8 @@ void Wlc_WriteVerInt( FILE * pFile, Wlc_Ntk_t * p, int fNoFlops )
                     fprintf( pFile, "#" );
                 else 
                 {
-                    assert( 0 );
+                    //assert( 0 );
+                    printf( "Failed to write node \"%s\" with unknown operator type (%d).\n", Wlc_ObjName(p, i), pObj->Type );
                     fprintf( pFile, "???\n" );
                     continue;
                 }
@@ -426,25 +548,50 @@ void Wlc_WriteVerInt( FILE * pFile, Wlc_Ntk_t * p, int fNoFlops )
             if ( pObj->Type == WLC_OBJ_PI )
                 continue;
             fprintf( pFile, "         " );
-            fprintf( pFile, "CPL_FF" );
-            if ( Wlc_ObjRange(pObj) > 1 )
-                fprintf( pFile, "#%d%*s", Wlc_ObjRange(pObj), 4 - Abc_Base10Log(Wlc_ObjRange(pObj)+1), "" );
+            if ( p->fEasyFfs )
+            {
+                fprintf( pFile, "ABC_DFF" );
+                fprintf( pFile, " reg%d (",        i );
+                fprintf( pFile, " .q(%s),",      Wlc_ObjName(p, Wlc_ObjId(p, pObj)) );
+                fprintf( pFile, " .d(%s),",      Wlc_ObjName(p, Wlc_ObjId(p, Wlc_ObjFo2Fi(p, pObj))) );
+                if ( p->vInits )
+                    fprintf( pFile, " .init(%s_init)", Wlc_ObjName(p, Wlc_ObjId(p, pObj)) );
+                fprintf( pFile, " ) ;\n" );
+            }
             else
-                fprintf( pFile, "     " );
-            fprintf( pFile, " reg%d (",       i );
-            fprintf( pFile, " .q( %s ),",      Wlc_ObjName(p, Wlc_ObjId(p, pObj)) );
-            fprintf( pFile, " .qbar()," );
-            fprintf( pFile, " .d( %s ),",      Wlc_ObjName(p, Wlc_ObjId(p, Wlc_ObjFo2Fi(p, pObj))) );
-            fprintf( pFile, " .clk( %s ),",    "1\'b0" );
-            fprintf( pFile, " .arst( %s ),",   "1\'b0" );
-            if ( p->vInits )
-                fprintf( pFile, " .arstval( %s_init )", Wlc_ObjName(p, Wlc_ObjId(p, pObj)) );
-            else
-                fprintf( pFile, " .arstval( %s )", "1\'b0" );
-            fprintf( pFile, " ) ;\n" );
+            {
+                fprintf( pFile, "CPL_FF" );
+                if ( Wlc_ObjRange(pObj) > 1 )
+                    fprintf( pFile, "#%d%*s", Wlc_ObjRange(pObj), 4 - Abc_Base10Log(Wlc_ObjRange(pObj)+1), "" );
+                else
+                    fprintf( pFile, "     " );
+                fprintf( pFile, " reg%d (",       i );
+                fprintf( pFile, " .q(%s),",      Wlc_ObjName(p, Wlc_ObjId(p, pObj)) );
+                fprintf( pFile, " .qbar()," );
+                fprintf( pFile, " .d(%s),",      Wlc_ObjName(p, Wlc_ObjId(p, Wlc_ObjFo2Fi(p, pObj))) );
+                fprintf( pFile, " .clk(%s),",    "1\'b0" );
+                fprintf( pFile, " .arst(%s),",   "1\'b0" );
+                if ( p->vInits )
+                    fprintf( pFile, " .arstval(%s_init)", Wlc_ObjName(p, Wlc_ObjId(p, pObj)) );
+                else
+                    fprintf( pFile, " .arstval(%s)", "1\'b0" );
+                fprintf( pFile, " ) ;\n" );
+            }
         }
         assert( !p->vInits || iFanin == (int)strlen(p->pInits) );
     }
+    // write DFFs in the end
+    fprintf( pFile, "\n" );
+    Wlc_NtkForEachFf2( p, pObj, i )
+    {
+        char * pInNames[8] = {"d", "clk", "reset", "set", "enable", "async", "sre", "init"};
+        fprintf( pFile, "         " );
+        fprintf( pFile, "%s (", "ABC_DFFRSE" );
+        Wlc_ObjForEachFanin( pObj, iFanin, k )
+            if ( iFanin ) fprintf( pFile, " .%s(%s),", pInNames[k], Wlc_ObjName(p, iFanin) );
+        fprintf( pFile, " .%s(%s) ) ;\n", "q", Wlc_ObjName(p, Wlc_ObjId(p, pObj)) );
+    }
+    fprintf( pFile, "\n" );
     fprintf( pFile, "endmodule\n\n" );
 } 
 void Wlc_WriteVer( Wlc_Ntk_t * p, char * pFileName, int fAddCos, int fNoFlops )
@@ -456,7 +603,7 @@ void Wlc_WriteVer( Wlc_Ntk_t * p, char * pFileName, int fAddCos, int fNoFlops )
         fprintf( stdout, "Wlc_WriteVer(): Cannot open the output file \"%s\".\n", pFileName );
         return;
     }
-    fprintf( pFile, "// Benchmark \"%s\" written by ABC on %s\n", p->pName, Extra_TimeStamp() );
+    fprintf( pFile, "// Benchmark \"%s\" from file \"%s\" written by ABC on %s\n", p->pName, p->pSpec ? p->pSpec : "unknown", Extra_TimeStamp() );
     fprintf( pFile, "\n" );
     Wlc_WriteTables( pFile, p );
     if ( fAddCos )

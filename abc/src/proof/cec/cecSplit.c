@@ -705,7 +705,7 @@ finish:
     // wait till threads finish
     for ( i = 0; i < nProcs; i++ )
         if ( ThData[i].fWorking )
-            i = 0;
+            i = -1;
     // stop threads
     for ( i = 0; i < nProcs; i++ )
     {

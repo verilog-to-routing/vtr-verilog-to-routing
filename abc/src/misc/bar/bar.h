@@ -61,7 +61,9 @@ extern void              Bar_ProgressStop( Bar_Progress_t * p );
 extern void              Bar_ProgressUpdate_int( Bar_Progress_t * p, int nItemsCur, char * pString );
 
 static inline void       Bar_ProgressUpdate( Bar_Progress_t * p, int nItemsCur, char * pString ) {  
-    if ( BAR_PROGRESS_USE && p && (nItemsCur < *((int*)p)) ) return; Bar_ProgressUpdate_int(p, nItemsCur, pString); }
+    if ( BAR_PROGRESS_USE && p && (nItemsCur < *((int*)p)) ) return;
+    Bar_ProgressUpdate_int(p, nItemsCur, pString);
+}
 
 
 

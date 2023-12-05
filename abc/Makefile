@@ -1,6 +1,7 @@
 
 CC   := gcc
 CXX  := g++
+AR   := ar
 LD   := $(CXX)
 
 MSG_PREFIX ?=
@@ -8,6 +9,7 @@ ABCSRC = .
 
 $(info $(MSG_PREFIX)Using CC=$(CC))
 $(info $(MSG_PREFIX)Using CXX=$(CXX))
+$(info $(MSG_PREFIX)Using AR=$(AR))
 $(info $(MSG_PREFIX)Using LD=$(LD))
 
 PROG := abc
@@ -16,7 +18,7 @@ OS := $(shell uname -s)
 MODULES := \
 	$(wildcard src/ext*) \
 	src/base/abc src/base/abci src/base/cmd src/base/io src/base/main src/base/exor \
-	src/base/ver src/base/wlc src/base/acb src/base/bac src/base/cba src/base/pla src/base/test \
+	src/base/ver src/base/wlc src/base/wln src/base/acb src/base/bac src/base/cba src/base/pla src/base/test \
 	src/map/mapper src/map/mio src/map/super src/map/if \
 	src/map/amap src/map/cov src/map/scl src/map/mpm \
 	src/misc/extra src/misc/mvc src/misc/st src/misc/util src/misc/nm \
@@ -25,7 +27,7 @@ MODULES := \
 	src/opt/cut src/opt/fxu src/opt/fxch src/opt/rwr src/opt/mfs src/opt/sim \
 	src/opt/ret src/opt/fret src/opt/res src/opt/lpk src/opt/nwk src/opt/rwt \
 	src/opt/cgt src/opt/csw src/opt/dar src/opt/dau src/opt/dsc src/opt/sfm src/opt/sbd \
-	src/sat/bsat src/sat/xsat src/sat/satoko src/sat/csat src/sat/msat src/sat/psat src/sat/cnf src/sat/bmc src/sat/glucose \
+	src/sat/bsat src/sat/xsat src/sat/satoko src/sat/csat src/sat/msat src/sat/psat src/sat/cnf src/sat/bmc src/sat/glucose src/sat/glucose2 \
 	src/bool/bdc src/bool/deco src/bool/dec src/bool/kit src/bool/lucky \
 	src/bool/rsb src/bool/rpo \
 	src/proof/pdr src/proof/abs src/proof/live src/proof/ssc src/proof/int \
@@ -59,9 +61,9 @@ ifneq ($(findstring arm,$(shell uname -m)),)
 	CFLAGS += -DABC_MEMALIGN=4
 endif
 
-# compile ABC using the C++ comipler and put everything in the namespace $(ABC_NAMESPACE)
+# compile ABC using the C++ compiler and put everything in the namespace $(ABC_NAMESPACE)
 ifdef ABC_USE_NAMESPACE
-  CFLAGS += -DABC_NAMESPACE=$(ABC_USE_NAMESPACE) -fpermissive
+  CFLAGS += -DABC_NAMESPACE=$(ABC_USE_NAMESPACE) -fpermissive -x c++
   CC := $(CXX)
   $(info $(MSG_PREFIX)Compiling in namespace $(ABC_NAMESPACE))
 endif
@@ -119,9 +121,14 @@ GCC_MINOR=$(word 2,$(subst .,$(space),$(GCC_VERSION)))
 
 $(info $(MSG_PREFIX)Found GCC_VERSION $(GCC_VERSION))
 ifeq ($(findstring $(GCC_MAJOR),0 1 2 3),)
-$(info $(MSG_PREFIX)Found GCC_MAJOR>=4)
+ifeq ($(GCC_MAJOR),4)
+$(info $(MSG_PREFIX)Found GCC_MAJOR==4)
 ifeq ($(findstring $(GCC_MINOR),0 1 2 3 4 5),)
 $(info $(MSG_PREFIX)Found GCC_MINOR>=6)
+CFLAGS += -Wno-unused-but-set-variable
+endif
+else
+$(info $(MSG_PREFIX)Found GCC_MAJOR>=5)
 CFLAGS += -Wno-unused-but-set-variable
 endif
 endif
@@ -179,15 +186,15 @@ DEP := $(OBJ:.o=.d)
 
 %.d: %.c
 	@echo "$(MSG_PREFIX)\`\` Generating dependency:" $(LOCAL_PATH)/$<
-	$(VERBOSE)$(ABCSRC)/depends.sh $(CC) `dirname $*.c` $(OPTFLAGS) $(INCLUDES) $(CFLAGS) $< > $@
+	$(VERBOSE)$(ABCSRC)/depends.sh "$(CC)" `dirname $*.c` $(OPTFLAGS) $(INCLUDES) $(CFLAGS) $< > $@
 
 %.d: %.cc
 	@echo "$(MSG_PREFIX)\`\` Generating dependency:" $(LOCAL_PATH)/$<
-	$(VERBOSE)$(ABCSRC)/depends.sh $(CXX) `dirname $*.cc` $(OPTFLAGS) $(INCLUDES) $(CXXFLAGS) $< > $@
+	$(VERBOSE)$(ABCSRC)/depends.sh "$(CXX)" `dirname $*.cc` $(OPTFLAGS) $(INCLUDES) $(CXXFLAGS) $< > $@
 
 %.d: %.cpp
 	@echo "$(MSG_PREFIX)\`\` Generating dependency:" $(LOCAL_PATH)/$<
-	$(VERBOSE)$(ABCSRC)/depends.sh $(CXX) `dirname $*.cpp` $(OPTFLAGS) $(INCLUDES) $(CXXFLAGS) $< > $@
+	$(VERBOSE)$(ABCSRC)/depends.sh "$(CXX)" `dirname $*.cpp` $(OPTFLAGS) $(INCLUDES) $(CXXFLAGS) $< > $@
 
 ifndef ABC_MAKE_NO_DEPS
 -include $(DEP)
@@ -210,8 +217,7 @@ $(PROG): $(OBJ)
 
 lib$(PROG).a: $(LIBOBJ)
 	@echo "$(MSG_PREFIX)\`\` Linking:" $(notdir $@)
-	$(VERBOSE)ar rv $@ $?
-	$(VERBOSE)ranlib $@
+	$(VERBOSE)$(AR) rsv $@ $?
 
 lib$(PROG).so: $(LIBOBJ)
 	@echo "$(MSG_PREFIX)\`\` Linking:" $(notdir $@)

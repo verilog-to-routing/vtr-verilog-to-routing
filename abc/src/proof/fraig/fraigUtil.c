@@ -872,13 +872,13 @@ clk = Abc_Clock();
             pNode2 = vPivots->pArray[k];
             if ( Fraig_NodeSimsContained( pMan, pNode, pNode2 ) )
             {
-                if ( Fraig_NodeIsImplication( pMan, pNode, pNode2, -1 ) )
+                if ( Fraig_NodeIsImplification( pMan, pNode, pNode2, -1 ) )
                     nProved++;
                 Counter++;
             }
             else if ( Fraig_NodeSimsContained( pMan, pNode2, pNode ) )
             {
-                if ( Fraig_NodeIsImplication( pMan, pNode2, pNode, -1 ) )
+                if ( Fraig_NodeIsImplification( pMan, pNode2, pNode, -1 ) )
                     nProved++;
                 Counter++;
             }

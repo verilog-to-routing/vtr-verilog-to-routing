@@ -195,7 +195,7 @@ void Gia_ManCounterExampleValueStart( Gia_Man_t * pGia, Abc_Cex_t * pCex )
     pGia->pData2 = ABC_CALLOC( unsigned, Abc_BitWordNum( (pCex->iFrame + 1) * Gia_ManObjNum(pGia) ) );
     // the register values in the counter-example should be zero
     Gia_ManForEachRo( pGia, pObj, k )
-        assert( Abc_InfoHasBit(pCex->pData, iBit++) == 0 );
+        assert( Abc_InfoHasBit(pCex->pData, iBit) == 0 ), iBit++;
     // iterate through the timeframes
     nObjs = Gia_ManObjNum(pGia);
     for ( i = 0; i <= pCex->iFrame; i++ )

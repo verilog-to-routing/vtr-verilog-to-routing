@@ -572,8 +572,8 @@ void Iso_ManCollectClasses( Iso_Man_t * p )
         }
     }
     clk = Abc_Clock();
-    Vec_PtrSort( p->vSingles, (int (*)(void))Iso_ObjCompare );
-    Vec_PtrSort( p->vClasses, (int (*)(void))Iso_ObjCompare );
+    Vec_PtrSort( p->vSingles, (int (*)(const void *, const void *))Iso_ObjCompare );
+    Vec_PtrSort( p->vClasses, (int (*)(const void *, const void *))Iso_ObjCompare );
     p->timeSort += Abc_Clock() - clk;
     assert( Vec_PtrSize(p->vSingles) == p->nSingles );
     assert( Vec_PtrSize(p->vClasses) == p->nClasses );
@@ -1115,8 +1115,8 @@ Vec_Int_t * Iso_ManFinalize( Iso_Man_t * p )
             Vec_PtrPush( p->vTemp1, pObj );
     }
     // sort CIs by their IDs
-    Vec_PtrSort( p->vTemp1, (int (*)(void))Iso_ObjCompareByData );
-    Vec_PtrSort( p->vTemp2, (int (*)(void))Iso_ObjCompareByData );
+    Vec_PtrSort( p->vTemp1, (int (*)(const void *, const void *))Iso_ObjCompareByData );
+    Vec_PtrSort( p->vTemp2, (int (*)(const void *, const void *))Iso_ObjCompareByData );
     // create the result
     vRes = Vec_IntAlloc( Aig_ManCiNum(p->pAig) );
     Vec_PtrForEachEntry( Aig_Obj_t *, p->vTemp1, pObj, i )

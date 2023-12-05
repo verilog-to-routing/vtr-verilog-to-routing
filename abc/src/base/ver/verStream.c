@@ -131,7 +131,7 @@ void Ver_StreamReload( Ver_Stream_t * p )
     // figure out how many chars are still not processed
     nCharsUsed = p->pBufferEnd - p->pBufferCur;
     // move the remaining data to the beginning of the buffer
-    memmove( p->pBuffer, p->pBufferCur, nCharsUsed );
+    memmove( p->pBuffer, p->pBufferCur, (size_t)nCharsUsed );
     p->pBufferCur = p->pBuffer;
     // determine how many chars we will read
     nCharsToRead = VER_MINIMUM( p->nBufferSize - nCharsUsed, p->nFileSize - p->nFileRead );
@@ -439,6 +439,24 @@ char * Ver_StreamGetWord( Ver_Stream_t * p, char * pCharsToStop )
     }
     printf( "Ver_StreamGetWord() failed to parse the file \"%s\".\n", p->pFileName );
     return NULL;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Ver_StreamMove( Ver_Stream_t * p )
+{
+    if ( !strncmp(p->pBufferCur+1, "z_g_", 4) || !strncmp(p->pBufferCur+1, "co_g", 3) )
+        while ( p->pBufferCur[0] != '(' )
+            p->pBufferCur++;
 }
 
 ////////////////////////////////////////////////////////////////////////

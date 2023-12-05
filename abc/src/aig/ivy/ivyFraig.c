@@ -572,7 +572,7 @@ Ivy_FraigMan_t * Ivy_FraigStart( Ivy_Man_t * pManAig, Ivy_FraigParams_t * pParam
 //    p->pSimWords    = ABC_ALLOC( unsigned, Ivy_ManObjNum(pManAig) * p->nSimWords ); 
     EntrySize    = sizeof(Ivy_FraigSim_t) + sizeof(unsigned) * p->nSimWords;
     p->pSimWords = (char *)ABC_ALLOC( char, Ivy_ManObjNum(pManAig) * EntrySize ); 
-    memset( p->pSimWords, 0, EntrySize );
+    memset( p->pSimWords, 0, (size_t)EntrySize );
     k = 0;
     Ivy_ManForEachObj( pManAig, pObj, i )
     {
@@ -1354,7 +1354,7 @@ int Ivy_FraigCheckOutputSims( Ivy_FraigMan_t * p )
 //    pObj = Ivy_ManPo( p->pManAig, 0 );
     Ivy_ManForEachPo( p->pManAig, pObj, i )
     {
-        assert( Ivy_ObjFanin0(pObj)->fPhase == (unsigned)Ivy_ObjFaninC0(pObj) ); // Ivy_ObjFaninPhase(Ivy_ObjChild0(pObj)) == 0
+        //assert( Ivy_ObjFanin0(pObj)->fPhase == (unsigned)Ivy_ObjFaninC0(pObj) ); // Ivy_ObjFaninPhase(Ivy_ObjChild0(pObj)) == 0
         // complement simulation info
 //        if ( Ivy_ObjFanin0(pObj)->fPhase ^ Ivy_ObjFaninC0(pObj) ) // Ivy_ObjFaninPhase(Ivy_ObjChild0(pObj))
 //            Ivy_NodeComplementSim( p, Ivy_ObjFanin0(pObj) );

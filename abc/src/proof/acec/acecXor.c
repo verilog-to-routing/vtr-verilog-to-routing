@@ -21,6 +21,7 @@
 #include "acecInt.h"
 #include "misc/vec/vecWec.h"
 #include "misc/extra/extra.h"
+#include "misc/util/utilTruth.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -424,6 +425,49 @@ Acec_Box_t * Acec_ProduceBox( Gia_Man_t * p, int fVerbose )
     return pBox;
 }
 
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Gia_ManTestXor( Gia_Man_t * p )
+{
+    Vec_Wrd_t * vSimsPi = Vec_WrdStartTruthTables( Gia_ManCiNum(p) );
+    Vec_Wrd_t * vSims   = Gia_ManSimPatSimOut( p, vSimsPi, 1 );
+    int n, i, nWords = Vec_WrdSize(vSimsPi) / Gia_ManCiNum(p);
+    Gia_Obj_t * pObj; Vec_Wrd_t * vSims2;
+    Gia_ManForEachAnd( p, pObj, i )
+    {
+        Gia_Obj_t Obj = *pObj;
+        for ( n = 0; n < 2; n++ )
+        {
+            if ( n ) 
+            {
+                pObj->iDiff1 = pObj->iDiff0;
+                pObj->fCompl1 = pObj->fCompl0;
+            }
+            else
+            {
+                pObj->iDiff0 = pObj->iDiff1;
+                pObj->fCompl0 = pObj->fCompl1;
+            }
+            vSims2 = Gia_ManSimPatSimOut( p, vSimsPi, 1 );
+            printf( "%2d %2d : %5d\n", i, n, Abc_TtCountOnesVecXor(Vec_WrdArray(vSims), Vec_WrdArray(vSims2), Vec_WrdSize(vSims2)) );
+            Vec_WrdFree( vSims2 );
+            *pObj = Obj;
+        }
+    }
+    Vec_WrdFree( vSimsPi );
+    Vec_WrdFree( vSims );
+    nWords = 0;
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

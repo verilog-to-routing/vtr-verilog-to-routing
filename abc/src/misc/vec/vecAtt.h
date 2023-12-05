@@ -108,7 +108,7 @@ static inline Vec_Att_t * Vec_AttAlloc(
     p->pFuncFreeObj  = pFuncFreeObj;
     p->nCap = nSize? nSize : 16;
     p->pArrayPtr = ABC_ALLOC( void *, p->nCap );
-    memset( p->pArrayPtr, 0, sizeof(void *) * p->nCap );
+    memset( p->pArrayPtr, 0, sizeof(void *) * (size_t)p->nCap );
     return p;
 }
 
@@ -167,7 +167,7 @@ static inline void Vec_AttClear( Vec_Att_t * p )
                 if ( p->pArrayPtr[i] )
                     p->pFuncFreeObj( p->pMan, p->pArrayPtr[i] );
     }
-    memset( p->pArrayPtr, 0, sizeof(void *) * p->nCap );
+    memset( p->pArrayPtr, 0, sizeof(void *) * (size_t)p->nCap );
 }
 
 /**Function*************************************************************
@@ -209,7 +209,7 @@ static inline void Vec_AttGrow( Vec_Att_t * p, int nCapMin )
     if ( p->nCap >= nCapMin )
         return;
     p->pArrayPtr = ABC_REALLOC( void *, p->pArrayPtr, nCapMin );
-    memset( p->pArrayPtr + p->nCap, 0, sizeof(void *) * (nCapMin - p->nCap) );
+    memset( p->pArrayPtr + p->nCap, 0, sizeof(void *) * (size_t)(nCapMin - p->nCap) );
     p->nCap = nCapMin;
 }
 

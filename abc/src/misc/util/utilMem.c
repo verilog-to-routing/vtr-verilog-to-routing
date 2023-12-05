@@ -153,7 +153,7 @@ static void Vec_MemSort( Vec_Mem_t * p, int (*Vec_MemSortCompare)() )
 {
     if ( p->nSize < 2 )
         return;
-    qsort( (void *)p->pArray, p->nSize, sizeof(void *), 
+    qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(void *), 
             (int (*)(const void *, const void *)) Vec_MemSortCompare );
 }
 

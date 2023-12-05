@@ -557,9 +557,31 @@ void Io_WriteVerilogObjects( FILE * pFile, Abc_Ntk_t * pNtk, int fOnlyAnds )
     }
     else
     {
+        //Vec_Int_t * vMap = Vec_IntStartFull( 2*Abc_NtkObjNumMax(pNtk) );
         vLevels = Vec_VecAlloc( 10 );
         Abc_NtkForEachNode( pNtk, pObj, i )
         {
+            if ( Abc_ObjFaninNum(pObj) == 0 )
+            {
+                fprintf( pFile, "  assign %s = ", Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(pObj))) );
+                fprintf( pFile, "1\'b%d;\n", Abc_NodeIsConst1(pObj) );
+                continue;
+            }
+            /*
+            if ( Abc_ObjFaninNum(pObj) == 1 || Abc_ObjIsCo(Abc_ObjFanout0(Abc_ObjFanout0(pObj))) )
+            {
+                int iLit = Abc_Var2Lit( Abc_ObjId( Abc_ObjFanin0(Abc_ObjFanin0(pObj)) ), Abc_NodeIsInv(pObj) );
+                int iObj = Vec_IntEntry( vMap, iLit );
+                if ( iObj == -1 )
+                    Vec_IntWriteEntry( vMap, iLit, Abc_ObjId(Abc_ObjFanout0(pObj)) );
+                else
+                {
+                    fprintf( pFile, "  assign %s = ", Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(pObj))) );
+                    fprintf( pFile, "%s;\n", Io_WriteVerilogGetName(Abc_ObjName(Abc_NtkObj(pNtk, iObj))) );
+                    continue;
+                }
+            }
+            */
             pFunc = (Hop_Obj_t *)pObj->pData;
             fprintf( pFile, "  assign %s = ", Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(pObj))) );
             // set the input names
@@ -567,12 +589,21 @@ void Io_WriteVerilogObjects( FILE * pFile, Abc_Ntk_t * pNtk, int fOnlyAnds )
                 Hop_IthVar((Hop_Man_t *)pNtk->pManFunc, k)->pData = Extra_UtilStrsav(Io_WriteVerilogGetName(Abc_ObjName(pFanin)));
             // write the formula
             Hop_ObjPrintVerilog( pFile, pFunc, vLevels, 0, fOnlyAnds );
+            if ( pObj->fPersist )
+            {
+                Abc_Obj_t * pFan0 = Abc_ObjFanin0(Abc_ObjFanin(pObj, 0));
+                Abc_Obj_t * pFan1 = Abc_ObjFanin0(Abc_ObjFanin(pObj, 1));
+                int Cond = Abc_ObjIsNode(pFan0) && Abc_ObjIsNode(pFan1) && !pFan0->fPersist && !pFan1->fPersist;
+                fprintf( pFile, "; // MUXF7 %s\n", Cond ? "":"to be legalized" );
+            }
+            else
             fprintf( pFile, ";\n" );
             // clear the input names
             Abc_ObjForEachFanin( pObj, pFanin, k )
                 ABC_FREE( Hop_IthVar((Hop_Man_t *)pNtk->pManFunc, k)->pData );
         }
         Vec_VecFree( vLevels );
+        //Vec_IntFree( vMap );
     }
 }
 
@@ -631,10 +662,8 @@ int Io_WriteVerilogWiresCount( Abc_Ntk_t * pNtk )
 char * Io_WriteVerilogGetName( char * pName )
 {
     static char Buffer[500];
-    int Length, i;
-    Length = strlen(pName);
-    // consider the case of a signal having name "0" or "1"
-    if ( !(Length == 1 && (pName[0] == '0' || pName[0] == '1')) )
+    int i, Length = strlen(pName);
+    if ( pName[0] < '0' || pName[0] > '9' )
     {
         for ( i = 0; i < Length; i++ )
             if ( !((pName[i] >= 'a' && pName[i] <= 'z') || 
@@ -651,6 +680,248 @@ char * Io_WriteVerilogGetName( char * pName )
     Buffer[Length+1] = ' ';
     Buffer[Length+2] = 0;
     return Buffer;
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Write the network of K-input LUTs.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Io_WriteLutModule( FILE * pFile, int nLutSize )
+{    
+    fprintf( pFile, "module lut%d #( parameter TT = %d\'h0 ) ( input [%d:0] in, output out );\n", nLutSize, 1<<nLutSize, nLutSize-1 );
+    fprintf( pFile, "    assign out = TT[in];\n" );
+    fprintf( pFile, "endmodule\n\n" );
+}
+void Io_WriteFixedModules( FILE * pFile )
+{    
+    fprintf( pFile, "module LUT6 #( parameter INIT = 64\'h0000000000000000 ) (\n" );
+    fprintf( pFile, "    output O,\n" );
+    fprintf( pFile, "    input I0,\n" );
+    fprintf( pFile, "    input I1,\n" );
+    fprintf( pFile, "    input I2,\n" );
+    fprintf( pFile, "    input I3,\n" );
+    fprintf( pFile, "    input I4,\n" );
+    fprintf( pFile, "    input I5\n" );
+    fprintf( pFile, ");\n" );
+    fprintf( pFile, "    assign O = INIT[ {I5, I4, I3, I2, I1, I0} ];\n" );
+    fprintf( pFile, "endmodule\n\n" );
+
+    fprintf( pFile, "module MUXF7 (\n" );
+    fprintf( pFile, "    output O,\n" );
+    fprintf( pFile, "    input I0,\n" );
+    fprintf( pFile, "    input I1,\n" );
+    fprintf( pFile, "    input S\n" );
+    fprintf( pFile, ");\n" );
+    fprintf( pFile, "    assign O = S ? I1 : I0;\n" );
+    fprintf( pFile, "endmodule\n\n" );
+
+    fprintf( pFile, "module MUXF8 (\n" );
+    fprintf( pFile, "    output O,\n" );
+    fprintf( pFile, "    input I0,\n" );
+    fprintf( pFile, "    input I1,\n" );
+    fprintf( pFile, "    input S\n" );
+    fprintf( pFile, ");\n" );
+    fprintf( pFile, "    assign O = S ? I1 : I0;\n" );
+    fprintf( pFile, "endmodule\n\n" );
+}
+void Io_WriteVerilogObjectsLut( FILE * pFile, Abc_Ntk_t * pNtk, int nLutSize, int fFixed )
+{
+    Abc_Ntk_t * pNtkBox;
+    Abc_Obj_t * pObj, * pTerm;
+    int i, k, Counter, nDigits, Length = 0;
+
+    // write boxes
+    nDigits = Abc_Base10Log( Abc_NtkBoxNum(pNtk)-Abc_NtkLatchNum(pNtk) );
+    Counter = 0;
+    Abc_NtkForEachBox( pNtk, pObj, i )
+    {
+        if ( Abc_ObjIsLatch(pObj) )
+            continue;
+        pNtkBox = (Abc_Ntk_t *)pObj->pData;
+        fprintf( pFile, "  %s box%0*d", pNtkBox->pName, nDigits, Counter++ );
+        fprintf( pFile, "(" );
+        Abc_NtkForEachPi( pNtkBox, pTerm, k )
+        {
+            fprintf( pFile, ".%s",   Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(pTerm))) );
+            fprintf( pFile, "(%s), ", Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanin0(Abc_ObjFanin(pObj,k)))) );
+        }
+        Abc_NtkForEachPo( pNtkBox, pTerm, k )
+        {
+            fprintf( pFile, ".%s",   Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanin0(pTerm))) );
+            fprintf( pFile, "(%s)%s", Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(Abc_ObjFanout(pObj,k)))), k==Abc_NtkPoNum(pNtkBox)-1? "":", " );
+        }
+        fprintf( pFile, ");\n" );
+    }
+
+    // find the longest signal name
+    Abc_NtkForEachNode( pNtk, pObj, i )
+    {
+        Length = Abc_MaxInt( Length, strlen(Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(pObj)))) );
+        Abc_ObjForEachFanin( pObj, pTerm, k )
+            Length = Abc_MaxInt( Length, strlen(Io_WriteVerilogGetName(Abc_ObjName(pTerm))) );
+    }
+
+    // write LUT instances
+    nDigits = Abc_Base10Log( Abc_NtkNodeNum(pNtk) );
+    Counter = 0;
+    if ( fFixed )
+    Abc_NtkForEachNode( pNtk, pObj, i )
+    {
+        if ( pObj->fPersist )
+        {
+            int One = Abc_ObjFanin0(Abc_ObjFanin(pObj, 1))->fPersist && Abc_ObjFanin0(Abc_ObjFanin(pObj, 2))->fPersist;
+            fprintf( pFile, "  MUXF%d                       ", 7+One );
+            fprintf( pFile, " mux_%0*d (", nDigits, Counter++ );
+            fprintf( pFile, " %*s", Length, Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(pObj))) );
+            for ( k = Abc_ObjFaninNum(pObj) - 1; k >= 0; k-- )
+                fprintf( pFile, ", %*s", Length, Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanin(pObj, k))) );
+            fprintf( pFile, " );\n" );
+        }
+        else
+        {
+            word Truth = Abc_SopToTruth( (char *)pObj->pData, Abc_ObjFaninNum(pObj) );
+            fprintf( pFile, "  LUT6 #(64\'h" );
+            fprintf( pFile, "%08x%08x", (unsigned)(Truth >> 32), (unsigned)Truth );
+            fprintf( pFile, ") lut_%0*d (", nDigits, Counter++ );
+            fprintf( pFile, " %*s", Length, Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(pObj))) );
+            for ( k = 0; k < Abc_ObjFaninNum(pObj); k++ )
+                fprintf( pFile, ", %*s", Length, Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanin(pObj, k))) );
+            for (      ; k < 6; k++ )
+                fprintf( pFile, ", %*s", Length, "1\'b0" );
+            fprintf( pFile, " );\n" );
+        }
+    }
+    else
+    Abc_NtkForEachNode( pNtk, pObj, i )
+    {
+        word Truth = Abc_SopToTruth( (char *)pObj->pData, Abc_ObjFaninNum(pObj) );
+        fprintf( pFile, "  lut%d #(%d\'h", nLutSize, 1<<nLutSize );
+        if ( nLutSize == 6 )
+            fprintf( pFile, "%08x%08x", (unsigned)(Truth >> 32), (unsigned)Truth );
+        else
+            fprintf( pFile, "%0*x", 1<<(nLutSize-2), Abc_InfoMask(1 << nLutSize) & (unsigned)Truth );
+        fprintf( pFile, ") lut_%0*d ( {", nDigits, Counter++ );
+        for ( k = nLutSize - 1; k >= Abc_ObjFaninNum(pObj); k-- )
+            fprintf( pFile, "%*s, ", Length, "1\'b0" );
+        for ( k = Abc_ObjFaninNum(pObj) - 1; k >= 0; k-- )
+            fprintf( pFile, "%*s%s", Length, Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanin(pObj, k))), k==0 ? "":", " );
+        fprintf( pFile, "}, %*s );\n", Length, Io_WriteVerilogGetName(Abc_ObjName(Abc_ObjFanout0(pObj))) );
+    }
+}
+void Io_WriteVerilogLutInt( FILE * pFile, Abc_Ntk_t * pNtk, int nLutSize, int fFixed )
+{
+    // write inputs and outputs
+//    fprintf( pFile, "module %s ( gclk,\n   ", Abc_NtkName(pNtk) );
+    fprintf( pFile, "module %s ( ", Io_WriteVerilogGetName(Abc_NtkName(pNtk)) );
+    // add the clock signal if it does not exist
+    if ( Abc_NtkLatchNum(pNtk) > 0 && Nm_ManFindIdByName(pNtk->pManName, "clock", ABC_OBJ_PI) == -1 )
+        fprintf( pFile, "clock, " );
+    // write other primary inputs
+    fprintf( pFile, "\n   " );
+    if ( Abc_NtkPiNum(pNtk) > 0  )
+    {
+        Io_WriteVerilogPis( pFile, pNtk, 3 );
+        fprintf( pFile, ",\n   " );
+    }
+    if ( Abc_NtkPoNum(pNtk) > 0  )
+        Io_WriteVerilogPos( pFile, pNtk, 3 );
+    fprintf( pFile, "  );\n\n" );
+    // add the clock signal if it does not exist
+    if ( Abc_NtkLatchNum(pNtk) > 0 && Nm_ManFindIdByName(pNtk->pManName, "clock", ABC_OBJ_PI) == -1 )
+        fprintf( pFile, "  input  clock;\n" );
+    // write inputs, outputs, registers, and wires
+    if ( Abc_NtkPiNum(pNtk) > 0  )
+    {
+//        fprintf( pFile, "  input gclk," );
+        fprintf( pFile, "  input " );
+        Io_WriteVerilogPis( pFile, pNtk, 10 );
+        fprintf( pFile, ";\n" );
+    }
+    if ( Abc_NtkPoNum(pNtk) > 0  )
+    {
+        fprintf( pFile, "  output" );
+        Io_WriteVerilogPos( pFile, pNtk, 5 );
+        fprintf( pFile, ";\n\n" );
+    }
+    // if this is not a blackbox, write internal signals
+    if ( !Abc_NtkHasBlackbox(pNtk) )
+    {
+        if ( Abc_NtkLatchNum(pNtk) > 0 )
+        {
+            fprintf( pFile, "  reg" );
+            Io_WriteVerilogRegs( pFile, pNtk, 4 );
+            fprintf( pFile, ";\n\n" );
+        }
+        if ( Io_WriteVerilogWiresCount(pNtk) > 0 )
+        {
+            fprintf( pFile, "  wire" );
+            Io_WriteVerilogWires( pFile, pNtk, 4 );
+            fprintf( pFile, ";\n\n" );
+        }
+        // write nodes
+        Io_WriteVerilogObjectsLut( pFile, pNtk, nLutSize, fFixed );        
+        // write registers
+        if ( Abc_NtkLatchNum(pNtk) > 0 )
+        {
+            fprintf( pFile, "\n" );
+            Io_WriteVerilogLatches( pFile, pNtk );
+        }
+    }
+    // finalize the file
+    fprintf( pFile, "\nendmodule\n\n" );
+} 
+void Io_WriteVerilogLut( Abc_Ntk_t * pNtk, char * pFileName, int nLutSize, int fFixed, int fNoModules )
+{
+    FILE * pFile;
+    Abc_Ntk_t * pNtkTemp;
+    Abc_Obj_t * pObj; 
+    int i, Counter = 0;
+    Abc_NtkForEachNode( pNtk, pObj, i )
+        if ( Abc_ObjFaninNum(pObj) > nLutSize )
+        {
+            if ( Counter < 3 )
+                printf( "Node \"%s\" has the fanin count (%d) larger than the LUT size (%d).\n", Abc_ObjName(pObj), Abc_ObjFaninNum(pObj), nLutSize );
+            Counter++;
+        }
+    if ( Counter )
+    {
+        printf( "In total, %d internal logic nodes exceed the fanin count limit. Verilog is not written.\n", Counter );
+        return;
+    }
+
+    // start the output stream
+    pFile = fopen( pFileName, "w" );
+    if ( pFile == NULL )
+    {
+        fprintf( stdout, "Io_WriteVerilog(): Cannot open the output file \"%s\".\n", pFileName );
+        return;
+    }
+
+    // write the equations for the network
+    fprintf( pFile, "// Benchmark \"%s\" written by ABC on %s\n", pNtk->pName, Extra_TimeStamp() );
+    fprintf( pFile, "\n" );
+    if ( !fNoModules )
+    {
+        if ( fFixed )
+            Io_WriteFixedModules( pFile );
+        else
+            Io_WriteLutModule( pFile, nLutSize );
+    }
+    pNtkTemp = Abc_NtkToNetlist( pNtk );
+    Abc_NtkToSop( pNtkTemp, -1, ABC_INFINITY );
+    Io_WriteVerilogLutInt( pFile, pNtkTemp, nLutSize, fFixed );
+    Abc_NtkDelete( pNtkTemp );
+
+    fprintf( pFile, "\n" );
+    fclose( pFile );
 }
 
 ////////////////////////////////////////////////////////////////////////
