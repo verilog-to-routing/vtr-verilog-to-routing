@@ -56,7 +56,7 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
 
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec);
 
-static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf);
+static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf, int region_length);
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
@@ -103,13 +103,21 @@ static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampl
         int y_max = sample_region.y_max;
         int x_min = sample_region.x_min;
         int y_min = sample_region.y_min;
-        for (int x = x_min; x < x_max; x += step) {
-            for (int y = y_min; y < y_max; y += step) {
+        for (int x = x_min; x <= x_max; x += step) {
+            int sample_x_max = std::min(x+step-1, x_max);
+            for (int y = y_min; y <= y_max; y += step) {
                 if (sample_locations.count(x) == 0) {
                     sample_locations[x] = std::unordered_set<int>();
                 }
                 sample_locations[x].insert(y);
-                compressed_loc_index_map[x][y] = sample_point_num;
+
+                int sample_y_max = std::min(y+step-1, y_max);
+                for(int sample_x = x; sample_x <= sample_x_max; sample_x++) {
+                    for(int sample_y = y; sample_y <= sample_y_max; sample_y++) {
+                        compressed_loc_index_map[sample_x][sample_y] = sample_point_num;
+                    }
+                }
+
                 sample_point_num++;
             }
         }
@@ -123,19 +131,31 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
-    auto sampling_regions = get_sampling_regions(segment_inf_vec);
+    int max_seg_lenght = std::numeric_limits<int>::min();
+    int min_seg_length = std::numeric_limits<int>::max();
 
-    int compresses_x_size = 0;
-    int compressed_y_size = 0;
+    for (const auto& segment : segment_inf_vec) {
+        if (!segment.longline) {
+            max_seg_lenght = std::max(max_seg_lenght, segment.length);
+            min_seg_length = std::min(min_seg_length, segment.length);
+        }
+    }
+    VTR_ASSERT(max_seg_lenght != std::numeric_limits<int>::min());
+    VTR_ASSERT(min_seg_length != std::numeric_limits<int>::max());
+
+    auto sampling_regions = get_sampling_regions(segment_inf_vec, max_seg_lenght);
+
+    int num_sampling_points = 0;
     for (const auto& sampling_region : sampling_regions) {
         int step = sampling_region.step;
-        int num_x = (sampling_region.x_max - sampling_region.x_min) / step;
-        int num_y = (sampling_region.y_max - sampling_region.y_min) / step;
-        compresses_x_size += num_x;
-        compressed_y_size += num_y;
-    }
+        int sampling_region_width = sampling_region.x_max - sampling_region.x_min + 1;
+        int sampling_region_height = sampling_region.y_max - sampling_region.y_min + 1;
 
-    int num_sampling_points = compresses_x_size * compressed_y_size;
+        int num_x = std::ceil(static_cast<float>(sampling_region_width) / static_cast<float>(step));
+        int num_y = std::ceil(static_cast<float>(sampling_region_height) / static_cast<float>(step));
+
+        num_sampling_points += (num_x * num_y);
+    }
 
     initialize_compressed_loc_structs(sampling_regions, num_sampling_points);
 
@@ -185,7 +205,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     }
 }
 
-static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf) {
+static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segment_inf>& segment_inf, int region_length) {
 
     const auto& grid = g_vpr_ctx.device().grid;
     std::vector<SamplingRegion> sampling_regions;
@@ -194,32 +214,21 @@ static std::vector<SamplingRegion> get_sampling_regions(const std::vector<t_segm
     int grid_width = static_cast<int>(grid.width());
     int grid_height = static_cast<int>(grid.height());
 
-    int max_seg_lenght = std::numeric_limits<int>::min();
-    int min_seg_length = std::numeric_limits<int>::max();
-
-    for (const auto& segment : segment_inf) {
-        if (!segment.longline) {
-            max_seg_lenght = std::max(max_seg_lenght, segment.length);
-            min_seg_length = std::min(min_seg_length, segment.length);
-        }
-    }
-    VTR_ASSERT(max_seg_lenght != std::numeric_limits<int>::min());
-    VTR_ASSERT(min_seg_length != std::numeric_limits<int>::max());
-
-    for (int x = 0; x < grid_width; x+=max_seg_lenght) {
-        for (int y = 0; y < grid_height; y+=max_seg_lenght) {
+    int incr = region_length+1;
+    for (int x = 0; x < grid_width; x+=incr) {
+        for (int y = 0; y < grid_height; y+=incr) {
             int step;
-            if (x == 0 && y == 0) {
-                step= 1;
-            } else if (x < 2*max_seg_lenght && y < 2*max_seg_lenght) {
-                    step = 2;
-            } else if (x < 4*max_seg_lenght && y < 4*max_seg_lenght) {
+            if (x < region_length && y < region_length) {
+                step = 1;
+            } else if (x < 2*region_length && y < 2*region_length) {
+                step = 2;
+            } else if (x < 4*region_length && y < 4*region_length) {
                 step = 4;
             } else {
                 step = 8;
             }
-            int sample_region_max_x = std::min(grid_width-1, x+max_seg_lenght);
-            int sample_region_max_y = std::min(grid_height-1, y+max_seg_lenght);
+            int sample_region_max_x = std::min(grid_width-1, x+region_length);
+            int sample_region_max_y = std::min(grid_height-1, y+region_length);
             sampling_regions.emplace_back(sample_region_max_x, sample_region_max_y, x, y, step);
         }
     }
