@@ -4,6 +4,7 @@
 # WARNING: Due to this file being yaml, any string starting with `*` must be
 # wrapped in quotes.
 
+dot: false
 
 # Tools
 ABC:
