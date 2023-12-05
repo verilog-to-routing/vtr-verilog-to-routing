@@ -1345,6 +1345,7 @@ struct t_placer_opts {
 
 enum e_router_algorithm {
     PARALLEL,
+    PARALLEL_DECOMP,
     TIMING_DRIVEN,
 };
 

@@ -263,6 +263,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case PARALLEL:
                 VTR_LOG("PARALLEL\n");
                 break;
+            case PARALLEL_DECOMP:
+                VTR_LOG("PARALLEL_DECOMP\n");
+                break;
             case TIMING_DRIVEN:
                 VTR_LOG("TIMING_DRIVEN\n");
                 break;
