@@ -56,19 +56,41 @@ bool TaskResolver::update(ezgl::application* app)
             if (task.cmd() == CMD_GET_PATH_LIST_ID) {
                 options.validateNamePresence({OPTION_PATH_NUM, OPTION_PATH_TYPE, OPTION_DETAILS_LEVEL, OPTION_IS_FLOAT_ROUTING});
                 int nCriticalPathNum = options.getInt(OPTION_PATH_NUM, 1);
-                std::string typePath = options.getString(OPTION_PATH_TYPE);
+                std::string pathType = options.getString(OPTION_PATH_TYPE);
                 std::string detailsLevel = options.getString(OPTION_DETAILS_LEVEL);
                 bool isFlat = options.getBool(OPTION_IS_FLOAT_ROUTING, false);
                 if (!options.hasErrors()) {
-                    if (typePath != server_ctx.path_type()) {
+                    if (pathType != server_ctx.path_type()) {
                         server_ctx.set_crit_path_index(-1);
                     }
-                    calcCritPath(nCriticalPathNum, typePath);
-                    std::string msg = getPathsStr(server_ctx.crit_paths(), detailsLevel, isFlat);
-                    server_ctx.set_path_type(typePath); // duplicated
-                    task.success(msg);
+
+                    server_ctx.set_path_type(pathType);
+                    server_ctx.set_critical_path_num(nCriticalPathNum);
+                    if (pathType == "setup") {
+                        auto paths = calcSetupCritPaths(nCriticalPathNum);
+                        server_ctx.set_crit_paths(paths);
+                    } else if (pathType == "hold") {
+                        auto hold_timing_info = server_ctx.hold_timing_info();
+                        if (hold_timing_info) {
+                            auto paths = calcHoldCritPaths(nCriticalPathNum, hold_timing_info);
+                            server_ctx.set_crit_paths(paths);
+                        } else {
+                            std::string msg{"cannot calculate hold critical path due to hold_timing_info nullptr"};
+                            std::cerr << msg << std::endl;
+                            task.fail(msg);
+                        }
+                    } else {
+                        std::string msg{"unknown path type " + pathType};
+                        std::cerr << msg << std::endl;
+                        task.fail(msg);
+                    }
+
+                    if (!task.hasError()) {
+                        std::string msg{getPathsStr(server_ctx.crit_paths(), detailsLevel, isFlat)};
+                        task.success(msg);
+                    }
                 } else {
-                    std::string msg = "options errors in get crit path list telegram: " + options.errorsStr();
+                    std::string msg{"options errors in get crit path list telegram: " + options.errorsStr()};
                     std::cerr << msg << std::endl;
                     task.fail(msg);
                 }
@@ -92,7 +114,7 @@ bool TaskResolver::update(ezgl::application* app)
                             task.fail(msg);
                         }                        
                     } else {
-                        std::string msg = "selectedIndex=" + std::to_string(pathIndex) + " is out of range [0-" + std::to_string(static_cast<int>(server_ctx.crit_paths().size())-1) + "]";
+                        std::string msg{"selectedIndex=" + std::to_string(pathIndex) + " is out of range [0-" + std::to_string(static_cast<int>(server_ctx.crit_paths().size())-1) + "]"};
                         std::cerr << msg << std::endl;
                         task.fail(msg);
                     }

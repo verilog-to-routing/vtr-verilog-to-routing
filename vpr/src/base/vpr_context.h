@@ -565,6 +565,9 @@ struct NocContext : public Context {
 
 class ServerContext : public Context {
   public:
+    bool is_enabled() const { return is_enabled_; }
+    void set_enabled(bool is_enabled) { is_enabled_ = is_enabled; }
+
     const Server& server() const { return server_; }
     Server& server() { return server_; }
 
@@ -587,6 +590,7 @@ class ServerContext : public Context {
     const std::shared_ptr<SetupHoldTimingInfo>& hold_timing_info() const { return hold_timing_info_; }
 
   private:
+    bool is_enabled_ = false;
     Server server_;
     TaskResolver task_resolver_;
 

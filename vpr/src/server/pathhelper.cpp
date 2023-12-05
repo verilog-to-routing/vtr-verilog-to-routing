@@ -44,31 +44,25 @@ std::string getPathsStr(const std::vector<tatum::TimingPath>& paths, const std::
     return ss.str();
 }
 
-void calcCritPath(int numMax, const std::string& type)
+std::vector<tatum::TimingPath> calcSetupCritPaths(int numMax)
 {
-    ServerContext& server_ctx = g_vpr_ctx.server_ctx(); // shortcut
-
-    server_ctx.set_critical_path_num(numMax);
-    server_ctx.set_path_type(type);
-
     tatum::TimingPathCollector path_collector;
 
     t_draw_state* draw_state = get_draw_state_vars();
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    if (type == "setup") {
-        auto paths = path_collector.collect_worst_setup_timing_paths(
-            *timing_ctx.graph,
-            *(draw_state->setup_timing_info->setup_analyzer()), numMax);
-        server_ctx.set_crit_paths(paths);
-    } else if (type == "hold") {
-        if (server_ctx.hold_timing_info()) {
-            auto paths = path_collector.collect_worst_hold_timing_paths(
-                *timing_ctx.graph,
-                *(server_ctx.hold_timing_info()->hold_analyzer()), numMax);
-            server_ctx.set_crit_paths(paths);
-        } else {
-            std::cerr << "g_vpr_ctx.hold_timing_info is nullptr" << std::endl;
-        }
-    } 
+    return path_collector.collect_worst_setup_timing_paths(
+        *timing_ctx.graph,
+        *(draw_state->setup_timing_info->setup_analyzer()), numMax);
+}
+
+std::vector<tatum::TimingPath> calcHoldCritPaths(int numMax, const std::shared_ptr<SetupHoldTimingInfo>& hold_timing_info)
+{
+    tatum::TimingPathCollector path_collector;
+
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    return path_collector.collect_worst_hold_timing_paths(
+        *timing_ctx.graph,
+        *(hold_timing_info->hold_analyzer()), numMax);
 }

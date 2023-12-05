@@ -86,6 +86,8 @@ void draw_routing_util(ezgl::renderer* g);
  */
 void draw_crit_path(ezgl::renderer* g);
 
+void draw_crit_path(const tatum::TimingPath& path, ezgl::renderer* g);
+
 /* Draws critical path shown as flylines. Takes in start and end coordinates, time delay, & renderer.*/
 void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g);
 
