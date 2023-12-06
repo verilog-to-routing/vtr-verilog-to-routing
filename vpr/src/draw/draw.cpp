@@ -240,7 +240,7 @@ void init_graphics_state(bool show_graphics_val,
     if (server) {
         g_vpr_ctx.server_ctx().set_enabled(true);
         g_vpr_ctx.server_ctx().server().setPortNum(port_num);
-        g_timeout_add(200, redraw_callback, &application);
+        g_timeout_add(100, redraw_callback, &application);
     }
 
 #else
