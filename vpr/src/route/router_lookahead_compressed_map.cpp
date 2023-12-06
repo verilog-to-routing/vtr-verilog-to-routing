@@ -490,7 +490,7 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
 }
 
 void CompressedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-
+    vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
     compute_router_wire_compressed_lookahead(segment_inf);
