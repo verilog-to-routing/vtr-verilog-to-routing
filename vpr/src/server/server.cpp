@@ -159,7 +159,7 @@ void Server::startListening()
             if (selectResult == -1) {
                 std::cerr << "Error in select()\n";
             } else if (selectResult == 0) {
-                std::cout << "Timeout occurred! No data available.\n";
+                //std::cout << "Timeout occurred! No data available.\n";
             } else {
                 if (FD_ISSET(client_socket, &readfds)) {
                     // Data is available; proceed with recv
