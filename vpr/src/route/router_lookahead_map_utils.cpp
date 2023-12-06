@@ -848,7 +848,7 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
 }
 
 void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func) {
-    VTR_ASSERT(vtr::check_file_name_extension(file_name, ".tsv"));
+    VTR_ASSERT(vtr::check_file_name_extension(file_name, ".csv"));
     const auto& grid = g_vpr_ctx.device().grid;
     
 
