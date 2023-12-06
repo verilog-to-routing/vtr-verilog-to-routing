@@ -7,8 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-      with:
-        ref: fix_labeler_v5
     - uses: actions/labeler@master
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
