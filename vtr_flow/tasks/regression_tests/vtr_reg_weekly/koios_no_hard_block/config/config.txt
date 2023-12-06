@@ -14,7 +14,6 @@ archs_dir=arch/COFFE_22nm
 # but in this task, we're running them without enabling these
 # blocks (that is, the macro `complex_dsp` and `hard_mem` are not defined).
 #circuit_list_add=proxy.2.v
-circuit_list_add=tdarknet_like.large.v
 circuit_list_add=proxy.4.v
 circuit_list_add=proxy.1.v
 #circuit_list_add=proxy.3.v
