@@ -10,4 +10,3 @@ jobs:
     - uses: actions/labeler@master
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
-        dot: false
