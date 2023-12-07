@@ -521,6 +521,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map) {
+    vtr::ScopedStartFinishTimer timer("Set cost");
     int chan_index = 0;
     if (chan_type == CHANY) {
         chan_index = 1;
@@ -541,6 +542,7 @@ static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_
 
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type) {
+    vtr::ScopedStartFinishTimer timer("Filling in");
     int chan_index = 0;
     if (chan_type == CHANY) {
         chan_index = 1;
