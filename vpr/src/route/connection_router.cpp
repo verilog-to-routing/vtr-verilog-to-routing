@@ -959,7 +959,7 @@ inline void adjust_highfanout_bounding_box(t_bb& bb, const t_bb& net_bb) {
     bb.xmax = std::min<int>(net_bb.xmax, bb.xmax + HIGH_FANOUT_BB_FAC);
     bb.ymax = std::min<int>(net_bb.ymax, bb.ymax + HIGH_FANOUT_BB_FAC);
     bb.layer_min = std::min<int>(net_bb.layer_min, bb.layer_min);
-    bb.layer_max = std::min<int>(net_bb.layer_min, bb.layer_max);
+    bb.layer_max = std::max<int>(net_bb.layer_max, bb.layer_max);
 }
 
 template<typename Heap>
