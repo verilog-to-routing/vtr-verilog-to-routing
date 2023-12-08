@@ -90,7 +90,7 @@ class StrongIdIterator {
 
     ///@brief ~ operator
     template<typename IdType>
-    ssize_t operator-(const StrongIdIterator<IdType>& other) {
+    ssize_t operator-(const StrongIdIterator<IdType>& other) const {
         VTR_ASSERT_SAFE(bool(id_));
         VTR_ASSERT_SAFE(bool(other.id_));
 
@@ -101,19 +101,19 @@ class StrongIdIterator {
 
     ///@brief == operator
     template<typename IdType>
-    bool operator==(const StrongIdIterator<IdType>& other) {
+    bool operator==(const StrongIdIterator<IdType>& other) const {
         return id_ == other.id_;
     }
 
     ///@brief != operator
     template<typename IdType>
-    bool operator!=(const StrongIdIterator<IdType>& other) {
+    bool operator!=(const StrongIdIterator<IdType>& other) const {
         return id_ != other.id_;
     }
 
     ///@brief < operator
     template<typename IdType>
-    bool operator<(const StrongIdIterator<IdType>& other) {
+    bool operator<(const StrongIdIterator<IdType>& other) const {
         return id_ < other.id_;
     }
 
