@@ -77,7 +77,8 @@ struct t_hash_Switchblock_Lookup {
  *
  *  @from_wire source wire ptc_num index in a channel
  *  @to_wire destination wire ptc_num index in a channel
- *  @switch_ind RR graph switch index that connects the source wire to the destination wire
+ *  @switch_ind RR graph switch index that connects the source wire to the destination wire that connect two tracks in same layer
+ *  @switch_ind_between_layers RR graph switch index that connects two tracks in different layers
  *  @from_wire_layer the layer index that the source wire is located at
  *  @to_wire_layer the layer index that the destination wire is located at
  *
@@ -86,6 +87,7 @@ struct t_switchblock_edge {
     short from_wire;
     short to_wire;
     short switch_ind;
+    short switch_ind_between_layers;
     short from_wire_layer;
     short to_wire_layer;
 };

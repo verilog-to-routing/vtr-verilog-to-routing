@@ -25,11 +25,17 @@ static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId node_to_add,
                                     RRNodeId target_node);
 
-static void update_router_stats(const DeviceContext& device_ctx,
-                                const RRGraphView* rr_graph,
-                                RouterStats* router_stats,
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+static void update_router_stats(RouterStats* router_stats,
+                                bool is_push,
                                 RRNodeId rr_node_id,
-                                bool is_push);
+                                const RRGraphView* rr_graph);
+#else
+static void update_router_stats(RouterStats* router_stats,
+                                bool is_push,
+                                RRNodeId /*rr_node_id*/,
+                                const RRGraphView* /*rr_graph*/);
+#endif
 
 /** return tuple <found_path, retry_with_full_bb, cheapest> */
 template<typename Heap>
@@ -73,7 +79,7 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
 
-    add_route_tree_to_heap(rt_root, sink_node, cost_params, false);
+    add_route_tree_to_heap(rt_root, sink_node, cost_params);
     heap_.build_heap(); // via sifting down everything
 
     RRNodeId source_node = rt_root.inode;
@@ -137,7 +143,6 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    router_stats_->add_high_fanout_rt++;
     t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, net_bounding_box);
     heap_.build_heap();
 
@@ -215,11 +220,10 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         cheapest = heap_.get_heap_head();
-        update_router_stats(device_ctx,
-                            rr_graph_,
-                            router_stats_,
+        update_router_stats(router_stats_,
+                            false,
                             cheapest->index,
-                            false);
+                            rr_graph_);
 
         RRNodeId inode = cheapest->index;
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
@@ -274,7 +278,7 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
 
     // Add the route tree to the heap with no specific target node
     RRNodeId target_node = RRNodeId::INVALID();
-    add_route_tree_to_heap(rt_root, target_node, cost_params, false);
+    add_route_tree_to_heap(rt_root, target_node, cost_params);
     heap_.build_heap(); // via sifting down everything
 
     auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
@@ -305,11 +309,10 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         t_heap* cheapest = heap_.get_heap_head();
-        update_router_stats(g_vpr_ctx.device(),
-                            rr_graph_,
-                            router_stats_,
+        update_router_stats(router_stats_,
+                            false,
                             cheapest->index,
-                            false);
+                            rr_graph_);
 
         RRNodeId inode = cheapest->index;
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
@@ -614,11 +617,10 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         }
 
         heap_.add_to_heap(next_ptr);
-        update_router_stats(device_ctx,
-                            rr_graph_,
-                            router_stats_,
+        update_router_stats(router_stats_,
+                            true,
                             to_node,
-                            true);
+                            rr_graph_);
 
     } else {
         VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
@@ -852,17 +854,10 @@ template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_to_heap(
     const RouteTreeNode& rt_node,
     RRNodeId target_node,
-    const t_conn_cost_params cost_params,
-    bool from_high_fanout) {
+    const t_conn_cost_params cost_params) {
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
-
-    if (from_high_fanout) {
-        router_stats_->add_all_rt_from_high_fanout++;
-    } else {
-        router_stats_->add_all_rt++;
-    }
 
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
@@ -872,8 +867,7 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
         }
         add_route_tree_node_to_heap(rt_node,
                                     target_node,
-                                    cost_params,
-                                    false);
+                                    cost_params);
     }
 
     for (const RouteTreeNode& child_node : rt_node.child_nodes()) {
@@ -883,14 +877,12 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
                                         target_node)) {
                 add_route_tree_to_heap(child_node,
                                        target_node,
-                                       cost_params,
-                                       from_high_fanout);
+                                       cost_params);
             }
         } else {
             add_route_tree_to_heap(child_node,
                                    target_node,
-                                   cost_params,
-                                   from_high_fanout);
+                                   cost_params);
         }
     }
 }
@@ -903,8 +895,7 @@ template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     const RouteTreeNode& rt_node,
     RRNodeId target_node,
-    const t_conn_cost_params cost_params,
-    bool is_high_fanout) {
+    const t_conn_cost_params cost_params) {
     const auto& device_ctx = g_vpr_ctx.device();
     const RRNodeId inode = rt_node.inode;
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
@@ -939,18 +930,14 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                                  backward_path_cost, R_upstream, rt_node.Tdel, &rcv_path_manager);
     }
 
-    update_router_stats(device_ctx,
-                        rr_graph_,
-                        router_stats_,
+    update_router_stats(router_stats_,
+                        true,
                         inode,
-                        true);
+                        rr_graph_);
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
     router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
-    if (is_high_fanout) {
-        router_stats_->rt_node_high_fanout_pushes[rr_graph_->node_type(inode)]++;
-    } else {
-        router_stats_->rt_node_entire_tree_pushes[rr_graph_->node_type(inode)]++;
-    }
+#endif
 }
 
 /* Expand bb by inode's extents and clip against net_bb */
@@ -1034,7 +1021,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     continue;
                 }
                 // Put the node onto the heap
-                add_route_tree_node_to_heap(rt_node, target_node, cost_params, true);
+                add_route_tree_node_to_heap(rt_node, target_node, cost_params);
 
                 // Expand HF BB to include the node (clip by original BB)
                 expand_highfanout_bounding_box(highfanout_bb, net_bounding_box, rr_node_to_add, rr_graph_);
@@ -1065,7 +1052,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     }
 
     if (nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
-        add_route_tree_to_heap(rt_root, target_node, cost_params, true);
+        add_route_tree_to_heap(rt_root, target_node, cost_params);
         return net_bounding_box;
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing
@@ -1113,17 +1100,25 @@ static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
     return false;
 }
 
-static inline void update_router_stats(const DeviceContext& device_ctx,
-                                       const RRGraphView* rr_graph,
-                                       RouterStats* router_stats,
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+static inline void update_router_stats(RouterStats* router_stats,
+                                       bool is_push,
                                        RRNodeId rr_node_id,
-                                       bool is_push) {
+                                       const RRGraphView* rr_graph) {
+#else
+static inline void update_router_stats(RouterStats* router_stats,
+                                       bool is_push,
+                                       RRNodeId /*rr_node_id*/,
+                                       const RRGraphView* /*rr_graph*/) {
+#endif
     if (is_push) {
         router_stats->heap_pushes++;
     } else {
         router_stats->heap_pops++;
     }
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    const auto& device_ctx = g_vpr_ctx.device();
     auto node_type = rr_graph->node_type(rr_node_id);
     VTR_ASSERT(node_type != NUM_RR_TYPES);
     t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph->node_xlow(rr_node_id),
@@ -1150,6 +1145,7 @@ static inline void update_router_stats(const DeviceContext& device_ctx,
             router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
         }
     }
+#endif
 }
 
 std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type heap_type,
