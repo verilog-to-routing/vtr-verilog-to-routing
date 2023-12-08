@@ -4,6 +4,7 @@
 #include "binary_heap.h"
 #include "bucket.h"
 #include "rr_graph_fwd.h"
+#include "vtr_time.h"
 
 /**
  * @brief This function is relevant when the architecture is 3D. If inter-layer connections are only from OPINs (determine by is_inter_layer_opin_connection),
@@ -49,6 +50,8 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
+    std::string timer_str = "Routing: Net " + std::to_string(size_t(conn_params.net_id_));
+    vtr::ScopedStartFinishTimer timer(timer_str);
     bool retry = false;
     t_heap* cheapest;
     std::tie(retry, cheapest) = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
