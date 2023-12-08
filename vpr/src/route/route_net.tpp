@@ -12,6 +12,7 @@
 #include "route_debug.h"
 #include "route_profiling.h"
 #include "rr_graph_fwd.h"
+#include "vtr_time.h"
 
 /** Attempt to route a single net.
  *
@@ -53,6 +54,8 @@ inline NetResultFlags route_net(ConnectionRouter& router,
                                 const RoutingPredictor& routing_predictor,
                                 const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                                 bool is_flat) {
+    std::string timer_str = "Routing: Net " + std::to_string(size_t(net_id));
+    vtr::ScopedStartFinishTimer timer(timer_str);
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     NetResultFlags flags;
