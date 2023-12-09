@@ -570,7 +570,7 @@ void draw_logical_connections(ezgl::renderer* g) {
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.nlist.nets()) {
-        if ((int)atom_ctx.nlist.net_pins(net_id).size() > draw_state->draw_net_max_fanout) {
+        if ((int)atom_ctx.nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
             continue;
         }
 

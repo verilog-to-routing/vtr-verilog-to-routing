@@ -249,7 +249,7 @@ void drawnets(ezgl::renderer* g) {
             continue; /* Don't draw */
         }
 
-        if ((int)cluster_ctx.clb_nlist.net_pins(net_id).size() > draw_state->draw_net_max_fanout) {
+        if ((int)cluster_ctx.clb_nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
             continue;
         }
 
