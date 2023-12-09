@@ -129,7 +129,7 @@ static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer 
 static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-static void run_graphics_commands(std::string commands);
+static void run_graphics_commands(const std::string& commands);
 
 /************************** File Scope Variables ****************************/
 
@@ -1245,7 +1245,7 @@ static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
     draw_state->forced_pause = true;
 }
 
-static void run_graphics_commands(std::string commands) {
+static void run_graphics_commands(const std::string& commands) {
     //A very simmple command interpreter for scripting graphics
     t_draw_state* draw_state = get_draw_state_vars();
 

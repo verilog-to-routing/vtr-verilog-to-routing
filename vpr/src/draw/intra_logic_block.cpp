@@ -919,7 +919,7 @@ bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair&
  * @param pb current node to be examined
  * @return t_pb* t_pb ptr of block w. name "name". Returns nullptr if nothing found
  */
-t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
+t_pb* find_atom_block_in_pb(const std::string& name, t_pb* pb) {
     //Checking if block is one being searched for
     std::string pbName(pb->name);
     if (pbName == name)
