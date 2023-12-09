@@ -4,7 +4,7 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/verilog/proxy
+circuits_dir=benchmarks/verilog/koios_proxy
 
 # Path to directory of architectures to use
 archs_dir=arch/COFFE_22nm
