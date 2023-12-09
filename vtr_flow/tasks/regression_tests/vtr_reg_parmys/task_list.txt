@@ -1,4 +1,4 @@
-regression_tests/vtr_reg_parmys/koios/
+regression_tests/vtr_reg_parmys/koios_medium/
 regression_tests/vtr_reg_parmys/vtr_benchmarks/
 regression_tests/vtr_reg_parmys/ultraembedded/
 regression_tests/vtr_reg_parmys/vexriscv/
