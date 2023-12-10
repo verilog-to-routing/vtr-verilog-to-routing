@@ -13,10 +13,6 @@ archs_dir=arch/COFFE_22nm
 includes_dir=benchmarks/verilog/koios
 
 # Add circuits to list to sweep
-circuit_list_add=proxy.2.v
-circuit_list_add=proxy.4.v
-circuit_list_add=proxy.1.v
-circuit_list_add=proxy.3.v
 circuit_list_add=lenet.v
 circuit_list_add=clstm_like.small.v
 circuit_list_add=clstm_like.medium.v

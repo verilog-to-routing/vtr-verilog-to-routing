@@ -13,10 +13,6 @@ archs_dir=arch/COFFE_22nm
 # Some of these benchmarks are designs with hard dsp and ram blocks 
 # but in this task, we're running them without enabling these
 # blocks (that is, the macro `complex_dsp` and `hard_mem` are not defined).
-#circuit_list_add=proxy.2.v
-circuit_list_add=proxy.4.v
-circuit_list_add=proxy.1.v
-#circuit_list_add=proxy.3.v
 circuit_list_add=lenet.v
 circuit_list_add=clstm_like.small.v
 circuit_list_add=clstm_like.medium.v
