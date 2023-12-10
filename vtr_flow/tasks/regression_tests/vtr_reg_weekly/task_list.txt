@@ -11,5 +11,7 @@ regression_tests/vtr_reg_weekly/koios_large_odin
 regression_tests/vtr_reg_weekly/koios_large_no_hb_odin
 regression_tests/vtr_reg_weekly/koios_large
 regression_tests/vtr_reg_weekly/koios_sv
+regression_tests/vtr_reg_weekly/koios_sv_no_complex_dsp
+regression_tests/vtr_reg_weekly/koios_sv_no_hard_mem
 regression_tests/vtr_reg_weekly/koios_large_no_hb
 regression_tests/vtr_reg_weekly/koios_sv_no_hb
