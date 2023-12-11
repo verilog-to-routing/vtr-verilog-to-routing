@@ -7,7 +7,7 @@
 circuits_dir=benchmarks/verilog/koios
 
 # Path to directory of architectures to use
-archs_dir=arch/timing
+archs_dir=arch/COFFE_22nm
 
 # Add circuits to list to sweep.
 # Some of these benchmarks are designs with hard dsp and ram blocks.
@@ -27,7 +27,7 @@ circuit_list_add=spmv.v
 circuit_list_add=softmax.v
 
 # Add architectures to list to sweep
-arch_list_add=k6_frac_N10_frac_chain_depop50_mem32K_40nm.xml
+arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
