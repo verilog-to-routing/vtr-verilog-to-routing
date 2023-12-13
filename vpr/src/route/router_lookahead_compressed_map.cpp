@@ -237,7 +237,6 @@ static std::vector<SamplingRegion> get_sampling_regions(int region_length) {
 }
 
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map) {
-    vtr::ScopedStartFinishTimer timer("Set cost");
     int chan_index = 0;
     if (chan_type == CHANY) {
         chan_index = 1;
@@ -265,7 +264,6 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
 }
 
 static void fill_in_missing_compressed_lookahead_entries(int segment_index, e_rr_type chan_type) {
-    vtr::ScopedStartFinishTimer timer("Filling in");
     int chan_index = 0;
     if (chan_type == CHANY) {
         chan_index = 1;
