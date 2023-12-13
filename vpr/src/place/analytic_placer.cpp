@@ -1,20 +1,128 @@
 #ifdef ENABLE_ANALYTIC_PLACE
 
-#    include "analytic_placer.h"
-#    include <Eigen/Core>
-#    include <Eigen/IterativeLinearSolvers>
-#    include <iostream>
-#    include <vector>
-#    include <stdint.h>
+#include "analytic_placer.h"
+#include <Eigen/Core>
+#include <Eigen/IterativeLinearSolvers>
+#include <iostream>
+#include <vector>
+#include <stdint.h>
+#include <fstream>
 
-#    include "vpr_types.h"
-#    include "vtr_time.h"
-#    include "read_place.h"
-#    include "globals.h"
-#    include "vtr_log.h"
-#    include "cut_spreader.h"
-#    include "vpr_utils.h"
-#    include "place_util.h"
+#include "vpr_types.h"
+#include "vtr_time.h"
+#include "read_place.h"
+#include "globals.h"
+#include "vtr_log.h"
+#include "cut_spreader.h"
+#include "vpr_utils.h"
+#include "place_util.h"
+
+#include "placer_globals.h"
+#include "place_delay_model.h"
+#include "place_timing_update.h"
+#include "PlacementDelayCalculator.h"
+#include "VprTimingGraphResolver.h"
+#include "timing_util.h"
+#include "timing_info.h"
+#include "timing_place.h"
+#include "tatum/echo_writer.hpp"
+#include "tatum/TimingReporter.hpp"
+#include "concrete_timing_info.h"
+
+
+static void analytical_update_td_delta_costs(const PlaceDelayModel* delay_model,
+                                  const PlacerCriticalities& criticalities,
+                                  const ClusterNetId net,
+                                  const ClusterPinId pin) {
+    constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
+    constexpr float INVALID_COST = std::numeric_limits<double>::quiet_NaN();
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    auto& connection_delay = g_placer_ctx.mutable_timing().connection_delay;
+    auto& connection_timing_cost = g_placer_ctx.mutable_timing().connection_timing_cost;
+    auto& proposed_connection_delay = g_placer_ctx.mutable_timing().proposed_connection_delay;
+    auto& proposed_connection_timing_cost = g_placer_ctx.mutable_timing().proposed_connection_timing_cost;
+
+    if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
+        /* This pin is a net driver on a moved block. */
+        /* Recompute all point to point connection delays for the net sinks. */
+        for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size();
+             ipin++) {
+            float temp_delay = comp_td_single_connection_delay(delay_model, net,
+                                                               ipin);
+            // std::cout << "temp delay: " << temp_delay << std::endl;
+            /* If the delay hasn't changed, do not mark this pin as affected */
+            // if (temp_delay == connection_delay[net][ipin]) {
+            //     continue;
+            // }
+
+            /* Calculate proposed delay and cost values */
+            proposed_connection_delay[net][ipin] = temp_delay;
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+
+            connection_delay[net][ipin] = proposed_connection_delay[net][ipin];
+            proposed_connection_delay[net][ipin] = INVALID_DELAY;
+            connection_timing_cost[net][ipin] = proposed_connection_timing_cost[net][ipin];
+            proposed_connection_timing_cost[net][ipin] = INVALID_DELAY;
+        }
+    } else {
+        /* This pin is a net sink on a moved block */
+        VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
+
+        /* Check if this sink's net is driven by a moved block */
+        /* Get the sink pin index in the net */
+        int ipin = cluster_ctx.clb_nlist.pin_net_index(pin);
+
+        float temp_delay = comp_td_single_connection_delay(delay_model, net,
+                                                            ipin);
+        /* If the delay hasn't changed, do not mark this pin as affected */
+        // if (temp_delay == connection_delay[net][ipin]) {
+        //     return;
+        // }
+
+        /* Calculate proposed delay and cost values */
+        proposed_connection_delay[net][ipin] = temp_delay;
+        proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+
+        connection_delay[net][ipin] = proposed_connection_delay[net][ipin];
+        proposed_connection_delay[net][ipin] = INVALID_DELAY;
+        connection_timing_cost[net][ipin] = proposed_connection_timing_cost[net][ipin];
+        proposed_connection_timing_cost[net][ipin] = INVALID_DELAY;
+
+        /* Record this connection in blocks_affected.affected_pins */
+        // blocks_affected.affected_pins.push_back(pin);
+    }
+}
+
+
+static void analytical_update_timing(const PlaceDelayModel* delay_model, 
+                                     const PlacerCriticalities* criticalities,
+                                     SetupTimingInfo* timing_info,
+                                     NetPinTimingInvalidator* pin_timing_invalidator)
+{
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    // for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+    //     ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+    for(auto blk: cluster_ctx.clb_nlist.blocks()){
+
+        /* Go through all the pins in the moved block. */
+        for(ClusterPinId blk_pin : cluster_ctx.clb_nlist.block_pins(blk)) {
+            ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(blk_pin);
+            VTR_ASSERT_SAFE_MSG(net_id,
+                                "Only valid nets should be found in compressed netlist block pins");
+            pin_timing_invalidator->invalidate_connection(blk_pin, timing_info);
+
+            if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+                //TODO: Do we require anyting special here for global nets?
+                //"Global nets are assumed to span the whole chip, and do not effect costs."
+                continue;
+
+            analytical_update_td_delta_costs(delay_model, *criticalities, net_id, blk_pin);
+        }
+    }
+}
+
 
 // Templated struct for constructing and solving matrix equations in analytic placer
 template<typename T>
@@ -96,7 +204,8 @@ struct EquationSystem {
         for (int i_row = 0; i_row < int(rhs.size()); i_row++)
             vec_rhs[i_row] = rhs.at(i_row);
 
-        ConjugateGradient<SparseMatrix<T>, Lower | Upper> solver;
+        // LeastSquaresConjugateGradient<SparseMatrix<T>> solver;
+        ConjugateGradient<SparseMatrix<T>, Lower | Upper, IdentityPreconditioner> solver;
         solver.setTolerance(tolerance);
         VectorXd x_res = solver.compute(mat).solveWithGuess(vec_rhs, vec_x_guess);
         for (int i_row = 0; i_row < int(x.size()); i_row++)
@@ -138,7 +247,7 @@ AnalyticPlacer::AnalyticPlacer() {
                         // current location and its anchor is formed with strength (alph * iter)
                         // @see build_equations()
 
-    ap_cfg.beta = 1; // utilization factor, <= 1, used to determine if a cut-spreading region is
+    ap_cfg.beta = 1.0; // utilization factor, <= 1, used to determine if a cut-spreading region is
                      // overutilized with the formula: bool overutilized = (num_blks / num_tiles) > beta
                      // for beta < 1, a region must have more tiles than logical blks to not be overutilized
 
@@ -170,7 +279,11 @@ AnalyticPlacer::AnalyticPlacer() {
  *
  * The final legal placement is passed back to annealer in g_vpr_ctx.mutable_placement()
  */
-void AnalyticPlacer::ap_place() {
+void AnalyticPlacer::ap_place(const Netlist<>& net_list, 
+                              std::unique_ptr<PlaceDelayModel>& place_delay_model,
+                              const t_placer_opts& placer_opts, 
+                              const t_analysis_opts& analysis_opts,
+                              bool is_flat) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     vtr::ScopedStartFinishTimer timer("Analytic Placement");
@@ -198,11 +311,106 @@ void AnalyticPlacer::ap_place() {
     // setup and solve matrix multiple times for all logic block types before main loop
     // this helps eliminating randomness from initial placement (when placing one block type, the random placement
     // of the other types may have residual effect on the result, since not all blocks are solved at the same time)
-    for (int i = 0; i < 1; i++) { // can tune number of iterations
+    for (int i = 0; i < 3; i++) { // can tune number of iterations
         for (auto run : ap_runs) {
             build_solve_type(run, -1);
         }
     }
+
+
+
+    std::ofstream outfile;
+
+    /*
+        * Initialize timing analysis
+    */
+    // For placement, we don't use flat-routing
+    std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
+    std::shared_ptr<SetupTimingInfo> timing_info;
+    std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
+    std::unique_ptr<PlacerCriticalities> placer_criticalities;
+    std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& p_timing_ctx = g_placer_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
+    t_placer_costs costs(placer_opts.place_algorithm);
+    tatum::TimingPathInfo critical_path;
+
+    comp_td_connection_delays(place_delay_model.get());
+    placement_delay_calc = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist,
+                                                                      atom_ctx.lookup,
+                                                                      p_timing_ctx.connection_delay,
+                                                                      is_flat);
+    placement_delay_calc->set_tsu_margin_relative(
+        placer_opts.tsu_rel_margin);
+    placement_delay_calc->set_tsu_margin_absolute(
+        placer_opts.tsu_abs_margin);
+
+    timing_info = make_setup_timing_info(placement_delay_calc,
+                                            placer_opts.timing_update_type);
+
+    /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
+    //Enables fast look-up of atom pins connect to CLB pins
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist,
+                                                  atom_ctx.nlist, pb_gpin_lookup);
+                                            
+    placer_setup_slacks = std::make_unique<PlacerSetupSlacks>(
+        cluster_ctx.clb_nlist, netlist_pin_lookup);
+
+    placer_criticalities = std::make_unique<PlacerCriticalities>(
+        cluster_ctx.clb_nlist, netlist_pin_lookup);
+    
+    pin_timing_invalidator = make_net_pin_timing_invalidator(e_timing_update_type::FULL, net_list,
+                                                             netlist_pin_lookup, atom_ctx.nlist, 
+                                                             atom_ctx.lookup,*timing_info->timing_graph(),
+                                                             is_flat);
+
+    // pin_timing_invalidator = std::make_unique<NoopNetPinTimingInvalidator>(
+    //     net_list, netlist_pin_lookup,
+    //     atom_ctx.nlist, atom_ctx.lookup,
+    //     *timing_info->timing_graph(),
+    //     is_flat);
+
+    //First time compute timing and costs, compute from scratch
+    PlaceCritParams crit_params;
+    float first_crit_exponent = placer_opts.td_place_exp_first;
+    crit_params.crit_exponent = first_crit_exponent;
+    crit_params.crit_limit = placer_opts.place_crit_limit;
+
+    initialize_timing_info(crit_params, place_delay_model.get(),
+                            placer_criticalities.get(), placer_setup_slacks.get(),
+                            pin_timing_invalidator.get(), timing_info.get(), &costs);
+
+    critical_path = timing_info->least_slack_critical_path();
+
+    VTR_LOG(
+            "Analytical placement estimated initial Critical Path Delay (CPD): %g ns\n",
+            1e9 * critical_path.delay());
+        VTR_LOG(
+            "Analytical placement estimated initial setup Total Negative Slack (sTNS): %g ns\n",
+            1e9 * timing_info->setup_total_negative_slack());
+        VTR_LOG(
+            "Analytical placement estimated initial setup Worst Negative Slack (sWNS): %g ns\n",
+            1e9 * timing_info->setup_worst_negative_slack());
+        VTR_LOG("\n");
+
+        VTR_LOG("Analytical placement estimated initial setup slack histogram:\n");
+        print_histogram(
+            create_setup_slack_histogram(*timing_info->setup_analyzer()));
+
+
+
+
+
+
+
+
+
+
+
 
     int iter = 0, stalled = 0;
     // variables for stats
@@ -211,9 +419,11 @@ void AnalyticPlacer::ap_place() {
 
     print_AP_status_header();
 
+    int loop_iter = 0;
     // main loop for AP
     // stopping criteria: stop after HEAP_STALLED_ITERATIONS_STOP iterations of no improvement
     while (stalled < HEAP_STALLED_ITERATIONS_STOP) {
+        loop_iter++;
         // TODO: investigate better stopping criteria
         iter_start = timer.elapsed_sec();
         for (auto blk_type : ap_runs) { // for each type of logic blocks
@@ -221,7 +431,7 @@ void AnalyticPlacer::ap_place() {
 
             // lower bound placement for blk_type
             // build and solve matrix equation for blocks of type "blk_type" in both x and y directions
-            build_solve_type(blk_type, iter);
+            build_solve_type(blk_type, iter, placer_criticalities.get());
             solve_t = timer.elapsed_sec() - run_start;
             solved_hpwl = total_hpwl();
             // lower bound placement complete
@@ -259,6 +469,20 @@ void AnalyticPlacer::ap_place() {
         }
 
         // TODO: update timing info here after timing weights are implemented in build_equations()
+        // placer_criticalities->recompute_criticalities();
+        // placer_setup_slacks->recompute_setup_slacks();
+        crit_params.crit_exponent *= loop_iter;
+        analytical_update_timing(place_delay_model.get(), placer_criticalities.get(), timing_info.get(), pin_timing_invalidator.get());
+        perform_full_timing_update(crit_params, place_delay_model.get(), placer_criticalities.get(),
+                                    placer_setup_slacks.get(), pin_timing_invalidator.get(), timing_info.get(), &costs);
+        // for(auto blk_id: g_vpr_ctx.clustering().clb_nlist.blocks()){
+        //     for(auto pin_id: g_vpr_ctx.clustering().clb_nlist.block_pins(blk_id)){
+        //         auto net_id = g_vpr_ctx.clustering().clb_nlist.pin_net(pin_id);
+        //         int pin_index = g_vpr_ctx.clustering().clb_nlist.pin_net_index(pin_id);
+        //         std::cout << "pin id: " << (size_t)pin_id << " criticality: " 
+        //                   << placer_criticalities->criticality(net_id, pin_index) << std::endl;
+        //     }
+        // }
 
         if (legal_hpwl < best_hpwl) {
             best_hpwl = legal_hpwl;
@@ -272,13 +496,24 @@ void AnalyticPlacer::ap_place() {
             bl.legal_loc = bl.loc;
         }
         iter_t = timer.elapsed_sec() - iter_start;
-        print_iter_stats(iter, iter_t, timer.elapsed_sec(), best_hpwl, stalled);
+        critical_path = timing_info->least_slack_critical_path();
+        print_iter_stats(iter, iter_t, timer.elapsed_sec(), best_hpwl, stalled, critical_path.delay());
         ++iter;
     }
 }
 
 // build matrix equations and solve for block type "run" in both x and y directions
 // macro member positions are updated after solving
+void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter, PlacerCriticalities *place_crit) {
+    setup_solve_blks(run);
+    // build and solve matrix equation for both x, y
+    // passing -1 as iter to build_solve_direction() signals build_equation() not to add pseudo-connections
+    build_solve_direction(false, (iter == 0) ? -1 : iter, ap_cfg.buildSolveIter, place_crit);
+    build_solve_direction(true, (iter == 0) ? -1 : iter, ap_cfg.buildSolveIter, place_crit);
+    update_macros(); // update macro member locations, since only macro head is solved
+}
+
+
 void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter) {
     setup_solve_blks(run);
     // build and solve matrix equation for both x, y
@@ -447,10 +682,19 @@ void AnalyticPlacer::update_macros() {
  * More build_solve_iter means better result, with runtime tradeoff. This parameter can be
  * tuned for better performance.
  */
+void AnalyticPlacer::build_solve_direction(bool yaxis, int iter, int build_solve_iter, PlacerCriticalities *place_crit) {
+    for (int i = 0; i < build_solve_iter; i++) {
+        EquationSystem<double> esx(solve_blks.size(), solve_blks.size());
+        build_equations(esx, yaxis, place_crit, iter=iter);
+        solve_equations(esx, yaxis);
+    }
+}
+
+
 void AnalyticPlacer::build_solve_direction(bool yaxis, int iter, int build_solve_iter) {
     for (int i = 0; i < build_solve_iter; i++) {
         EquationSystem<double> esx(solve_blks.size(), solve_blks.size());
-        build_equations(esx, yaxis, iter);
+        build_equations(esx, yaxis, iter=iter);
         solve_equations(esx, yaxis);
     }
 }
@@ -555,6 +799,58 @@ void AnalyticPlacer::add_pin_to_pin_connection(EquationSystem<double>& es,
                                                bool dir,
                                                int num_pins,
                                                ClusterPinId bound_pin,
+                                               ClusterPinId this_pin,
+                                               ClusterNetId net_id,
+                                               int ipin,
+                                               PlacerCriticalities *place_crit) {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    if (this_pin == bound_pin)
+        // no connection if 2 pins are the same
+        return;
+
+    // this_blk and bound_blk locations may not be accurate for larger tiles spanning multiple grid locations
+    // need block_locs[blk_id].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum]
+    // however, in order to do so, need place_sync_external_block_connections(blk_id) for all blocks
+    // TODO: map logical pin to physical pin and add this offset for more accurate pin location
+    ClusterBlockId this_blk = clb_nlist.pin_block(this_pin);
+    VTR_ASSERT(this_blk);
+    int this_pos = dir ? blk_locs[this_blk].loc.y : blk_locs[this_blk].loc.x;
+    ClusterBlockId bound_blk = clb_nlist.pin_block(bound_pin);
+    int bound_pos = dir ? blk_locs[bound_blk].loc.y : blk_locs[bound_blk].loc.x;
+    // implementing the bound-to-bound net model detailed in HeAP paper, where each bound blk has (num_pins - 1) connections
+    // (bound_pos - this_pos) in the denominator "linearizes" the quadratic term (bound_pos - this_pos)^2 in the objective function
+    // This ensures that the objective function target HPWL, rather than quadratic wirelength.
+    double weight = 1.0 / ((num_pins - 1) * std::max<double>(1, std::abs(bound_pos - this_pos)));
+
+    // std::cout << "Before Weight: " << weight << "   ";
+
+    /*
+     * TODO: adding timing weights to matrix entries 
+    */
+    ClusterNetId clb_net = g_vpr_ctx.clustering().clb_nlist.pin_net(this_pin);
+    VTR_ASSERT(clb_net);
+    int pin_index_in_net = g_vpr_ctx.clustering().clb_nlist.pin_net_index(this_pin);
+    if (this_pin != ClusterPinId::INVALID()){
+        weight *= (1.0 + ap_cfg.timingWeight * std::pow(place_crit->criticality(net_id, ipin), ap_cfg.criticalityExponent));
+    }
+    // std::cout << "pin id: " << static_cast<size_t>(this_pin) << " net id: " << static_cast<size_t>(clb_net) << "   " << static_cast<size_t>(net_id) 
+    //           << " pin index: " << pin_index_in_net << "After Weight: " << weight << std::endl;
+    // std::cout << "Criticality1: " << place_crit->criticality(clb_net, ipin) << "  ";
+    // std::cout << "Criticality2: " << place_crit->criticality(clb_net, pin_index_in_net) << std::endl;
+     
+
+    stamp_weight_on_matrix(es, dir, this_blk, this_blk, weight);
+    stamp_weight_on_matrix(es, dir, this_blk, bound_blk, -weight);
+    stamp_weight_on_matrix(es, dir, bound_blk, bound_blk, weight);
+    stamp_weight_on_matrix(es, dir, bound_blk, this_blk, -weight);
+}
+
+
+void AnalyticPlacer::add_pin_to_pin_connection(EquationSystem<double>& es,
+                                               bool dir,
+                                               int num_pins,
+                                               ClusterPinId bound_pin,
                                                ClusterPinId this_pin) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -574,13 +870,7 @@ void AnalyticPlacer::add_pin_to_pin_connection(EquationSystem<double>& es,
     // (bound_pos - this_pos) in the denominator "linearizes" the quadratic term (bound_pos - this_pos)^2 in the objective function
     // This ensures that the objective function target HPWL, rather than quadratic wirelength.
     double weight = 1.0 / ((num_pins - 1) * std::max<double>(1, std::abs(bound_pos - this_pos)));
-
-    /*
-     * TODO: adding timing weights to matrix entries
-     *if (this_pin != 0){
-     * weight *= (1.0 + tmpCfg.timingWeight * std::pow(place_crit.criticality(net_id, this_pin), tmgCfg.criticalityExponent));
-     * }
-     */
+     
 
     stamp_weight_on_matrix(es, dir, this_blk, this_blk, weight);
     stamp_weight_on_matrix(es, dir, this_blk, bound_blk, -weight);
@@ -589,8 +879,85 @@ void AnalyticPlacer::add_pin_to_pin_connection(EquationSystem<double>& es,
 }
 
 // Build the system of equations for either X or Y
-void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int iter) {
+void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, PlacerCriticalities *place_crit, int iter) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    // Return the x or y position of a block
+    auto blk_p = [&](ClusterBlockId blk_id) { return yaxis ? blk_locs[blk_id].loc.y : blk_locs[blk_id].loc.x; };
+    // Return legal position from legalization, after first iteration
+    auto legal_p = [&](ClusterBlockId blk_id) { return yaxis ? blk_locs[blk_id].legal_loc.y : blk_locs[blk_id].legal_loc.x; };
+    es.reset();
+
+    /*
+     * Bound2bound model is used in HeAP:
+     * For each net, the left-most and right-most (or down, up in y direction) are bound blocks
+     * These 2 blocks form connections with each other and all the other blocks (internal blocks)
+     * These connections are used to formulate the matrix equation
+     */
+    for (auto net_id : clb_nlist.nets()) {
+        if (clb_nlist.net_is_ignored(net_id)
+            || clb_nlist.net_driver(net_id) == ClusterPinId::INVALID()
+            || clb_nlist.net_sinks(net_id).empty()) {
+            // ensure net is not ignored (ex. clk nets), has valid driver, has at least 1 sink
+            continue;
+        }
+
+        // find the 2 bound pins (min and max pin)
+        ClusterPinId min_pin = ClusterPinId::INVALID(), max_pin = ClusterPinId::INVALID();
+        int min_pos = std::numeric_limits<int>::max(), max_pos = std::numeric_limits<int>::min();
+        for (auto pin_id : clb_nlist.net_pins(net_id)) {
+            int pos = blk_p(clb_nlist.pin_block(pin_id));
+            if (pos < min_pos) {
+                min_pos = pos;
+                min_pin = pin_id;
+            }
+            if (pos > max_pos) {
+                max_pos = pos;
+                max_pin = pin_id;
+            }
+        }
+        VTR_ASSERT(min_pin != ClusterPinId::INVALID());
+        VTR_ASSERT(max_pin != ClusterPinId::INVALID());
+
+        int num_pins = clb_nlist.net_pins(net_id).size();
+        for (int ipin = 0; ipin < num_pins; ipin++) {
+            ClusterPinId pin_id = clb_nlist.net_pin(net_id, ipin);
+            // for each pin in net, connect to 2 bound pins (bound2bound model)
+            add_pin_to_pin_connection(es, yaxis, num_pins, min_pin, pin_id, net_id, ipin, place_crit);
+            if (pin_id != min_pin)
+                // avoid adding min_pin to max_pin connection twice
+                add_pin_to_pin_connection(es, yaxis, num_pins, max_pin, pin_id, net_id, ipin, place_crit);
+        }
+    }
+       
+    // Add pseudo-connections to anchor points (legalized position for each block) after first iteration
+    // These pseudo-connections pull blocks towards their legal locations, which tends to reduce overlaps in the placement,
+    // also so that the next iteration of build-solving matrix doesn't destroy the placement from last iteration.
+    // As weight increases with number of iterations, solver's solution converges with the legal placement.
+    if (iter != -1) { // if not the first AP iteration
+        for (size_t row = 0; row < solve_blks.size(); row++) {
+            int l_pos = legal_p(solve_blks.at(row));        // legalized position from last iteration (anchors)
+            int solver_blk_pos = blk_p(solve_blks.at(row)); // matrix solved block position from last iteration
+
+            // weight increases with iteration --> psudo-connection strength increases to force convergence to legal placement
+            // weight is also higher for blocks that haven't moved much from their solver location to their legal location
+            double weight = ap_cfg.alpha * iter / std::max<double>(1, std::abs(l_pos - solver_blk_pos));
+
+            // Adding coefficient to Matrix[row][row] and adding weight to rhs vector is equivalent to adding connection
+            // to an immovable block at legal position.
+            // The equation becomes Weight * (blk_pos - legal_pos) = 0, where blk_pos is the variable to solve in rhs[row],
+            // legal_pos is a constant
+            // see comment for add_pin_to_pin_connection() -> special_case: immovable/fixed block
+            es.add_coeff(row, row, weight);
+            es.add_rhs(row, weight * l_pos);
+        }
+    }
+}
+
+
+// Build the system of equations for either X or Y
+void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int iter) {
+    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Return the x or y position of a block
     auto blk_p = [&](ClusterBlockId blk_id) { return yaxis ? blk_locs[blk_id].loc.y : blk_locs[blk_id].loc.x; };
@@ -796,11 +1163,11 @@ void AnalyticPlacer::print_place(const char* place_file) {
 
 void AnalyticPlacer::print_AP_status_header() {
     VTR_LOG("\n");
-    VTR_LOG("---- ------ ------ -------- ------- | ------ --------- ------ ------ ------ ------ -------- -------- --------\n");
-    VTR_LOG("Iter   Time   Iter     Best   Stall |    Run BlockType  Solve  Solve Spread  Legal   Solved   Spread    Legal\n");
-    VTR_LOG("              Time     hpwl         |   Time            Block   Time   Time   Time     hpwl     hpwl     hpwl\n");
-    VTR_LOG("      (sec)  (sec)                  |  (sec)              Num  (sec)  (sec)  (sec)                           \n");
-    VTR_LOG("---- ------ ------ -------- ------- | ------ --------- ------ ------ ------ ------ -------- -------- --------\n");
+    VTR_LOG("---- ------ ------ -------- ------- ----- | ------ --------- ------ ------ ------ ------ -------- -------- --------\n");
+    VTR_LOG("Iter   Time   Iter     Best   Stall  CPD  |    Run BlockType  Solve  Solve Spread  Legal   Solved   Spread    Legal\n");
+    VTR_LOG("              Time     hpwl               |   Time            Block   Time   Time   Time     hpwl     hpwl     hpwl\n");
+    VTR_LOG("      (sec)  (sec)                   (ns) |  (sec)              Num  (sec)  (sec)  (sec)                           \n");
+    VTR_LOG("---- ------ ------ -------- ------- ----- | ------ --------- ------ ------ ------ ------ -------- -------- --------\n");
 }
 
 void AnalyticPlacer::print_run_stats(const int iter,
@@ -817,7 +1184,7 @@ void AnalyticPlacer::print_run_stats(const int iter,
     VTR_LOG(
         "%4zu "
         "%6.3f "
-        "                        | "
+        "                              | "
         "%6.3f "
         "%9s "
         "%6d "
@@ -844,19 +1211,22 @@ void AnalyticPlacer::print_iter_stats(const int iter,
                                       const float iterTime,
                                       const float time,
                                       const int bestHPWL,
-                                      const int stall) {
+                                      const int stall,
+                                      const float cpd) {
     VTR_LOG(
         "%4zu "
         "%6.3f "
         "%6.3f "
         "%8d "
-        "%7d |\n",
+        "%7d"
+        "%7.3f |\n",
         iter,
         time,
         iterTime,
         bestHPWL,
-        stall);
-    VTR_LOG("                                    |\n");
+        stall,
+        cpd * 1e9);
+    VTR_LOG("                                          |\n");
 }
 
 // sentinel for blks not solved in current iteration
