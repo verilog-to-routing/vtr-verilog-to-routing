@@ -1305,7 +1305,6 @@ static void run_dijkstra(RRNodeId start_node,
                          util::t_dijkstra_data* data,
                          const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                          bool sample_all_locs) {
-    vtr::ScopedStartFinishTimer timer("Run Dijkstra");
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
