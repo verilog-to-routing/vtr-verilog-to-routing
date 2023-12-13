@@ -186,6 +186,9 @@ class RRGraphView {
      */
     inline int node_length(RRNodeId node) const {
         VTR_ASSERT(node_type(node) == CHANX || node_type(node) == CHANY);
+        if(node_direction(node) == Direction::NONE){
+            return 0; //length zero wire
+        }
         int length = 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
         VTR_ASSERT_SAFE(length > 0);
         return length;
