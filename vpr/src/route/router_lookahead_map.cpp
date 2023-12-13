@@ -134,6 +134,13 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
 
+static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_num,
+                                                                int missing_dx,
+                                                                int missing_dy,
+                                                                int to_layer_num,
+                                                                int segment_index,
+                                                                int chan_index);
+
 /******** Interface class member function definitions ********/
 MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
     : det_routing_arch_(det_routing_arch)
@@ -556,7 +563,12 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
                     util::Cost_Entry cost_entry = f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][ix][iy];
 
                     if (std::isnan(cost_entry.delay) && std::isnan(cost_entry.congestion)) {
-                        util::Cost_Entry copied_entry = get_nearby_cost_entry(from_layer_num, ix, iy, to_layer_num, segment_index, chan_index);
+                        util::Cost_Entry copied_entry = get_nearby_cost_entry_average_neighbour(from_layer_num,
+                                                                                                static_cast<int>(ix),
+                                                                                                static_cast<int>(iy),
+                                                                                                to_layer_num,
+                                                                                                segment_index,
+                                                                                                chan_index);
                         f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][ix][iy] = copied_entry;
                     }
                 }
@@ -612,6 +624,47 @@ static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, 
     }
 
     return copy_entry;
+}
+
+static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_num,
+                                                                int missing_dx,
+                                                                int missing_dy,
+                                                                int to_layer_num,
+                                                                int segment_index,
+                                                                int chan_index) {
+    VTR_ASSERT(std::isnan(f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_dx][missing_dy].delay));
+    VTR_ASSERT(std::isnan(f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_dx][missing_dy].congestion));
+
+    int neighbour_num = 0;
+    float neighbour_delay_sum = 0;
+    float neighbour_cong_sum = 0;
+    std::array<int, 6> window = {-3, -2, -1, 1, 2, 3};
+    for (int dx: window) {
+        int neighbour_x = missing_dx + dx;
+        if (neighbour_x < 0 || neighbour_x >= (int)f_wire_cost_map.dim_size(4)) {
+            continue;
+        }
+        for (int dy: window) {
+            int neighbour_y = missing_dy + dy;
+            if (neighbour_y < 0 || neighbour_y >= (int)f_wire_cost_map.dim_size(5)) {
+                continue;
+            }
+            util::Cost_Entry copy_entry = f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][neighbour_x][neighbour_y];
+            if (std::isnan(copy_entry.delay) || std::isnan(copy_entry.congestion)) {
+                continue;
+            }
+            neighbour_delay_sum += copy_entry.delay;
+            neighbour_cong_sum += copy_entry.congestion;
+            neighbour_num += 1;
+        }
+    }
+
+    if (neighbour_num >= 3) {
+        return {neighbour_delay_sum / static_cast<float>(neighbour_num),
+                neighbour_cong_sum / static_cast<float>(neighbour_num)};
+    } else {
+        return get_nearby_cost_entry(from_layer_num, missing_dx, missing_dy, to_layer_num, segment_index, chan_index);
+    }
 }
 
 static void compute_tiles_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay,
