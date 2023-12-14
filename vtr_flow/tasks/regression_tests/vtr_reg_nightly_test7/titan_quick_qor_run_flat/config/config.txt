@@ -20,7 +20,7 @@ archs_dir=arch/titan
 #of the slowest benchmarks
 
 #Largest benchmarks, excluded
-#circuit_list_add=gaussianblur_stratixiv_arch_timing.blif
+circuit_list_add=gaussianblur_stratixiv_arch_timing.blif
 
 #Mixed order of large and small
 circuit_list_add=gsm_switch_stratixiv_arch_timing.blif
