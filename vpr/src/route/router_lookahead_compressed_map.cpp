@@ -62,7 +62,7 @@ static std::vector<SamplingRegion> get_sampling_regions(int region_length);
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
 
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
-static void fill_in_missing_compressed_lookahead_entries(int segment_index, e_rr_type chan_type);
+static void fill_in_missing_compressed_lookahead_entries(const std::map<int, std::set<int>>& sorted_sample_loc, int segment_index, e_rr_type chan_type);
 
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_layer_num,
@@ -71,6 +71,14 @@ static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_laye
                                                                    int to_layer_num,
                                                                    int segment_index,
                                                                    int chan_index);
+
+static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<int, std::set<int>>& sorted_sample_loc,
+                                                                int from_layer_num,
+                                                                int missing_dx,
+                                                                int missing_dy,
+                                                                int to_layer_num,
+                                                                int segment_index,
+                                                                int chan_index);
 
 static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num);
 
@@ -203,7 +211,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
 
                 /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
                      * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
-                fill_in_missing_compressed_lookahead_entries(segment_inf.seg_index, chan_type);
+                fill_in_missing_compressed_lookahead_entries(sorted_sample_loc, segment_inf.seg_index, chan_type);
             }
         }
     }
@@ -267,7 +275,9 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
     }
 }
 
-static void fill_in_missing_compressed_lookahead_entries(int segment_index, e_rr_type chan_type) {
+static void fill_in_missing_compressed_lookahead_entries(const std::map<int, std::set<int>>& sorted_sample_loc,
+                                                         int segment_index,
+                                                         e_rr_type chan_type) {
     int chan_index = 0;
     if (chan_type == CHANY) {
         chan_index = 1;
@@ -288,12 +298,13 @@ static void fill_in_missing_compressed_lookahead_entries(int segment_index, e_rr
                     util::Cost_Entry cost_entry = f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][compressed_idx];
 
                     if (std::isnan(cost_entry.delay) && std::isnan(cost_entry.congestion)) {
-                        util::Cost_Entry copied_entry = get_nearby_cost_entry_compressed_lookahead(from_layer_num,
-                                                                                                   ix,
-                                                                                                   iy,
-                                                                                                   to_layer_num,
-                                                                                                   segment_index,
-                                                                                                   chan_index);
+                        util::Cost_Entry copied_entry = get_nearby_cost_entry_average_neighbour(sorted_sample_loc,
+                                                                                                from_layer_num,
+                                                                                                ix,
+                                                                                                iy,
+                                                                                                to_layer_num,
+                                                                                                segment_index,
+                                                                                                chan_index);
                         f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][compressed_idx] = copied_entry;
                     }
                 }
