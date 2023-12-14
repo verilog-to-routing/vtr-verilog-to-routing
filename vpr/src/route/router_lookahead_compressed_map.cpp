@@ -413,9 +413,6 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
             }
             std::advance(missing_point_compressed_iter_y, dy);
             int neighbour_y = *missing_point_compressed_iter_y;
-            if (neighbour_y < 0 || neighbour_y >= (int)f_compressed_wire_cost_map.dim_size(5)) {
-                continue;
-            }
             int neighbour_compressed_idx = compressed_loc_index_map[neighbour_x][neighbour_y];
             util::Cost_Entry copy_entry = f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][neighbour_compressed_idx];
             if (std::isnan(copy_entry.delay) || std::isnan(copy_entry.congestion)) {
