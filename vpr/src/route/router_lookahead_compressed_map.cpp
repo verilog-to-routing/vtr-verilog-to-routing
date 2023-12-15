@@ -410,8 +410,8 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
         neighbour_y = missing_dy - 1;
     }
 
-    if (std::abs(missing_dx - neighbour_x) == 1) {
-        VTR_ASSERT(std::abs(missing_dy - neighbour_y) == 1);
+    if (sample_locations.find(neighbour_x) != sample_locations.end()) {
+        VTR_ASSERT(sample_locations.at(neighbour_x).find(neighbour_y) != sample_locations.at(neighbour_x).end());
         return get_nearby_cost_entry_compressed_lookahead(from_layer_num, missing_dx, missing_dy, to_layer_num, segment_index, chan_index);
     } else {
         std::array<int, 6> window = {-3, -2, -1, 1, 2, 3};
