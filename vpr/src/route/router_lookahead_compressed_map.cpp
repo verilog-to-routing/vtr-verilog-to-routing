@@ -390,45 +390,70 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
     float neighbour_delay_sum = 0;
     float neighbour_cong_sum = 0;
 
-    std::array<int, 6> window = {-3, -2, -1, 1, 2, 3};
-    for (int dx: window) {
-        auto dist_to_begin = std::distance(sorted_sample_loc.begin(), missing_point_compressed_iter_x);
-        auto dist_to_end = std::distance(missing_point_compressed_iter_x, sorted_sample_loc.end());
-        if (dx >= dist_to_end || std::abs(dx) > dist_to_begin) {
-            continue;
-        }
-        auto neighbour_sample_loc_x_pair = missing_point_compressed_iter_x;
-        std::advance(neighbour_sample_loc_x_pair, dx);
-        int neighbour_x = neighbour_sample_loc_x_pair->first;
-        for (int dy: window) {
-            const auto& sampling_column = sorted_sample_loc.at(neighbour_x);
-            auto missing_point_compressed_iter_y = sampling_column.lower_bound(missing_dy);
-            if ((*missing_point_compressed_iter_y) != missing_dy) {
-                missing_point_compressed_iter_y--;
-            }
-            dist_to_begin = std::distance(sampling_column.begin(), missing_point_compressed_iter_y);
-            dist_to_end = std::distance(missing_point_compressed_iter_y, sampling_column.end());
-            if (dy >= dist_to_end || std::abs(dy) > dist_to_begin) {
-                continue;
-            }
-            std::advance(missing_point_compressed_iter_y, dy);
-            int neighbour_y = *missing_point_compressed_iter_y;
-            int neighbour_compressed_idx = compressed_loc_index_map[neighbour_x][neighbour_y];
-            util::Cost_Entry copy_entry = f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][neighbour_compressed_idx];
-            if (std::isnan(copy_entry.delay) || std::isnan(copy_entry.congestion)) {
-                continue;
-            }
-            neighbour_delay_sum += copy_entry.delay;
-            neighbour_cong_sum += copy_entry.congestion;
-            neighbour_num += 1;
-        }
+    int neighbour_x = OPEN;
+    int neighbour_y = OPEN;
+
+    if (missing_dx == 0 && missing_dy == 0) {
+        return util::Cost_Entry(0., 0.);
+    }
+    if (missing_dx < static_cast<int>(compressed_loc_index_map.dim_size(1))) {
+        neighbour_x = missing_dx + 1;
+    } else {
+        VTR_ASSERT(missing_dx != 0);
+        neighbour_x = missing_dx - 1;
     }
 
-    if (neighbour_num >= 3) {
-        return {neighbour_delay_sum / static_cast<float>(neighbour_num),
-                neighbour_cong_sum / static_cast<float>(neighbour_num)};
+    if (missing_dy < static_cast<int>(compressed_loc_index_map.dim_size(2))) {
+        neighbour_y = missing_dy + 1;
     } else {
+        VTR_ASSERT(missing_dy != 0);
+        neighbour_y = missing_dy - 1;
+    }
+
+    if (std::abs(missing_dx - neighbour_x) == 1) {
+        VTR_ASSERT(std::abs(missing_dy - neighbour_y) == 1);
         return get_nearby_cost_entry_compressed_lookahead(from_layer_num, missing_dx, missing_dy, to_layer_num, segment_index, chan_index);
+    } else {
+        std::array<int, 6> window = {-3, -2, -1, 1, 2, 3};
+        for (int dx : window) {
+            auto dist_to_begin = std::distance(sorted_sample_loc.begin(), missing_point_compressed_iter_x);
+            auto dist_to_end = std::distance(missing_point_compressed_iter_x, sorted_sample_loc.end());
+            if (dx >= dist_to_end || std::abs(dx) > dist_to_begin) {
+                continue;
+            }
+            auto neighbour_sample_loc_x_pair = missing_point_compressed_iter_x;
+            std::advance(neighbour_sample_loc_x_pair, dx);
+            neighbour_x = neighbour_sample_loc_x_pair->first;
+            for (int dy : window) {
+                const auto& sampling_column = sorted_sample_loc.at(neighbour_x);
+                auto missing_point_compressed_iter_y = sampling_column.lower_bound(missing_dy);
+                if ((*missing_point_compressed_iter_y) != missing_dy) {
+                    missing_point_compressed_iter_y--;
+                }
+                dist_to_begin = std::distance(sampling_column.begin(), missing_point_compressed_iter_y);
+                dist_to_end = std::distance(missing_point_compressed_iter_y, sampling_column.end());
+                if (dy >= dist_to_end || std::abs(dy) > dist_to_begin) {
+                    continue;
+                }
+                std::advance(missing_point_compressed_iter_y, dy);
+                neighbour_y = *missing_point_compressed_iter_y;
+                int neighbour_compressed_idx = compressed_loc_index_map[neighbour_x][neighbour_y];
+                util::Cost_Entry copy_entry = f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][neighbour_compressed_idx];
+                if (std::isnan(copy_entry.delay) || std::isnan(copy_entry.congestion)) {
+                    continue;
+                }
+                neighbour_delay_sum += copy_entry.delay;
+                neighbour_cong_sum += copy_entry.congestion;
+                neighbour_num += 1;
+            }
+        }
+
+        if (neighbour_num >= 3) {
+            return {neighbour_delay_sum / static_cast<float>(neighbour_num),
+                    neighbour_cong_sum / static_cast<float>(neighbour_num)};
+        } else {
+            return get_nearby_cost_entry_compressed_lookahead(from_layer_num, missing_dx, missing_dy, to_layer_num, segment_index, chan_index);
+        }
     }
 }
 
