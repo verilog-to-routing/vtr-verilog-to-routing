@@ -429,9 +429,6 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
                 continue;
             }
         }
-        if (dx >= dist_to_end || std::abs(dx) > dist_to_begin) {
-            continue;
-        }
         auto neighbour_sample_loc_x_pair = missing_point_compressed_iter_x;
         std::advance(neighbour_sample_loc_x_pair, dx);
         neighbour_x = neighbour_sample_loc_x_pair->first;
