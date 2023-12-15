@@ -230,11 +230,11 @@ static std::vector<SamplingRegion> get_sampling_regions(int region_length) {
     for (int x = 0; x < grid_width; x+=incr) {
         for (int y = 0; y < grid_height; y+=incr) {
             int step;
-            if (x < region_length && y < region_length) {
+            if (x < 2*region_length && y < 2*region_length) {
                 step = 1;
-            } else if (x < 2*region_length && y < 2*region_length) {
-                step = 2;
             } else if (x < 4*region_length && y < 4*region_length) {
+                step = 2;
+            } else if (x < 8*region_length && y < 8*region_length) {
                 step = 4;
             } else {
                 step = 8;
