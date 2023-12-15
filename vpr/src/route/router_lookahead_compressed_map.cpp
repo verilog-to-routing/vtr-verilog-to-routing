@@ -396,14 +396,14 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
     if (missing_dx == 0 && missing_dy == 0) {
         return util::Cost_Entry(0., 0.);
     }
-    if (missing_dx < static_cast<int>(compressed_loc_index_map.dim_size(1))) {
+    if (missing_dx < static_cast<int>(compressed_loc_index_map.dim_size(0))) {
         neighbour_x = missing_dx + 1;
     } else {
         VTR_ASSERT(missing_dx != 0);
         neighbour_x = missing_dx - 1;
     }
 
-    if (missing_dy < static_cast<int>(compressed_loc_index_map.dim_size(2))) {
+    if (missing_dy < static_cast<int>(compressed_loc_index_map.dim_size(1))) {
         neighbour_y = missing_dy + 1;
     } else {
         VTR_ASSERT(missing_dy != 0);
