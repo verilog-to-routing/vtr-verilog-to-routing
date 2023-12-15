@@ -420,6 +420,15 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
     for (int dx : window) {
         auto dist_to_begin = std::distance(sorted_sample_loc.begin(), missing_point_compressed_iter_x);
         auto dist_to_end = std::distance(missing_point_compressed_iter_x, sorted_sample_loc.end());
+        if (dx >= 0) {
+            if (dx >= dist_to_end) {
+                continue;
+            }
+        } else {
+            if (std::abs(dx) > dist_to_begin) {
+                continue;
+            }
+        }
         if (dx >= dist_to_end || std::abs(dx) > dist_to_begin) {
             continue;
         }
@@ -434,8 +443,14 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
             }
             dist_to_begin = std::distance(sampling_column.begin(), missing_point_compressed_iter_y);
             dist_to_end = std::distance(missing_point_compressed_iter_y, sampling_column.end());
-            if (dy >= dist_to_end || std::abs(dy) > dist_to_begin) {
-                continue;
+            if (dy >= 0) {
+                if (dy >= dist_to_end) {
+                    continue;
+                }
+            } else {
+                if (std::abs(dy) > dist_to_begin) {
+                    continue;
+                }
             }
             std::advance(missing_point_compressed_iter_y, dy);
             neighbour_y = *missing_point_compressed_iter_y;
