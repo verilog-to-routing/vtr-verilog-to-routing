@@ -396,25 +396,6 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
     if (missing_dx == 0 && missing_dy == 0) {
         return util::Cost_Entry(0., 0.);
     }
-    if (missing_dx < (static_cast<int>(compressed_loc_index_map.dim_size(0))-1)) {
-        neighbour_x = missing_dx + 1;
-    } else {
-        VTR_ASSERT(missing_dx != 0);
-        neighbour_x = missing_dx - 1;
-    }
-
-    if (missing_dy < (static_cast<int>(compressed_loc_index_map.dim_size(1))-1)) {
-        neighbour_y = missing_dy + 1;
-    } else {
-        VTR_ASSERT(missing_dy != 0);
-        neighbour_y = missing_dy - 1;
-    }
-
-    if (sample_locations.find(neighbour_x) != sample_locations.end()) {
-        if(sample_locations.at(neighbour_x).find(neighbour_y) != sample_locations.at(neighbour_x).end()) {
-            return get_nearby_cost_entry_compressed_lookahead(from_layer_num, missing_dx, missing_dy, to_layer_num, segment_index, chan_index);
-        }
-    }
 
     std::array<int, 6> window = {-3, -2, -1, 1, 2, 3};
     for (int dx : window) {
