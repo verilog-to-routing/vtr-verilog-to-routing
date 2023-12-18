@@ -18,6 +18,8 @@ jobs:
     # Prevents from running on forks where no custom runners are available
     if: ${{ github.repository_owner == 'verilog-to-routing' }}
 
+    timeout-minutes: 420
+    
     container: ubuntu:jammy
 
     runs-on: [self-hosted, Linux, X64]
