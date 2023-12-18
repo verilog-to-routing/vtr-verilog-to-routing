@@ -534,9 +534,31 @@ The [Koios benchmarks](https://github.com/verilog-to-routing/vtr-verilog-to-rout
 The are provided as synthesizable verilog and can be re-mapped to VTR supported architectures. They consist mostly of medium to large sized circuits from Deep Learning (DL).
 They can be used for FPGA architecture exploration for DL and also for tuning CAD tools.
 
-A typical approach to evaluating an algorithm change would be to run `koios` (or `koios_no_complex_dsp`) task from the nightly regression test (vtr_reg_nightly_test6) and the `koios` (or `koios_no_complex_dsp`) task from the weekly regression test (vtr_reg_weekly). The nightly test contains smaller benchmarks, whereas the large designs are in the weekly regression test. To measure QoR for the entire benchmark suite, both nightly and weekly tests should be run and the results should be concatenated.
+A typical approach to evaluating an algorithm change would be to run `koios_medium` (or `koios_medium_no_hb`) tasks from the nightly regression test (vtr_reg_nightly_test4), the `koios_large` (or `koios_large_no_hb`) and the `koios_proxy` (or `koios_proxy_no_hb`) tasks from the weekly regression test (vtr_reg_weekly). The nightly test contains smaller benchmarks, whereas the large designs are in the weekly regression test. To measure QoR for the entire benchmark suite, both nightly and weekly tests should be run and the results should be concatenated.
 
-The `koios` regression task runs these benchmarks with complex_dsp functionality enabled, whereas `koios_no_complex_dsp` regression task runs these benchmarks without complex_dsp functionality. Normally, only the `koios` tasks should be enough for QoR.
+For evaluating an algorithm change in the Odin frontend, run `koios_medium` (or `koios_medium_no_hb`) tasks from the nightly regression test (vtr_reg_nightly_test4_odin) and the `koios_large_odin` (or `koios_large_no_hb_odin`) tasks from the weekly regression test (vtr_reg_weekly).
+
+The `koios_medium`, `koios_large`, and `koios_proxy` regression tasks run these benchmarks with complex_dsp functionality enabled, whereas `koios_medium_no_hb`, `koios_large_no_hb` and `koios_proxy_no_hb` regression tasks run these benchmarks without complex_dsp functionality. Normally, only the `koios_medium`, `koios_large`, and `koios_proxy` tasks should be enough for QoR.
+
+The `koios_sv` and `koios_sv_no_hb` tasks utilize the System-Verilog parser in the Parmys frontend.
+
+The following table provides details on available Koios settings in VTR flow:
+| Suite         |Test Description      | Target | Complex DSP Features   | Config file   | Frontend   | Parser   |
+|---------------|----------------------|---------------|---------------|---------------|---------------|---------------|
+| Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_nightly_test4/koios_medium | Parmys | |
+| Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_nightly_test4/koios_medium_no_hb | Parmys | |
+| Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_nightly_test4_odin/koios_medium | Odin | |
+| Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_nightly_test4_odin/koios_medium_no_hb | Odin | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_large | Parmys | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_large_no_hb | Parmys | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_large_odin | Odin | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_large_no_hb_odin | Odin | |
+| Weekly        | Proxy designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_proxy | Parmys | |
+| Weekly        | Proxy designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_proxy_no_hb | Parmys | |
+| Weekly        | deepfreeze designs | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_sv | Parmys | System-Verilog |
+| Weekly        | deepfreeze designs | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_sv_no_hb | Parmys | System-Verilog |
+
+For more information refer to the [Koios benchmark home page](vtr_flow/benchmarks/verilog/koios/README.md).
 
 The following steps show a sequence of commands to run the `koios` tasks on the Koios benchmarks from both nightly and weekly regressions:
 
@@ -544,7 +566,7 @@ The following steps show a sequence of commands to run the `koios` tasks on the 
 #From the VTR root
 $ cd vtr_flow/tasks
 
-#Run the Koios benchmarks
+#Choose any config file from the table above and run the Koios benchmarks, for example:
 $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test4/koios_medium &
 $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/koios_large &
 
