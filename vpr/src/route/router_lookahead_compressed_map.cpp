@@ -52,11 +52,9 @@ struct SamplingRegion {
     }
 };
 
-static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampling_regions, int num_sampling_points);
+static int initialize_compressed_loc_structs(const int max_track_length);
 
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec);
-
-static std::vector<SamplingRegion> get_sampling_regions(int region_length);
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
@@ -82,55 +80,61 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
 
 static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num);
 
-static void initialize_compressed_loc_structs(std::vector<SamplingRegion>& sampling_regions, int num_sampling_points) {
-    std::sort(sampling_regions.begin(), sampling_regions.end(), [](const SamplingRegion& a, const SamplingRegion& b) {
-        VTR_ASSERT_DEBUG(a.width() == b.width() && a.height() == b.height());
-        VTR_ASSERT_DEBUG(a.height() != 0 && b.height() != 0);
-
-        if(a.y_max <= b.y_min) {
-            return true;
-        } else if (b.y_max <= a.y_min) {
-            return false;
-        } else{
-            VTR_ASSERT_DEBUG(a.y_min == b.y_min);
-            if (a.x_min < b.x_min) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    });
-
+static int initialize_compressed_loc_structs(const int max_track_length) {
     const auto& grid = g_vpr_ctx.device().grid;
     compressed_loc_index_map.resize({grid.width(), grid.height()}, OPEN);
 
+    int grid_width = static_cast<int>(grid.width());
+    int grid_height = static_cast<int>(grid.height());
+
     int sample_point_num = 0;
-    for (const auto& sample_region: sampling_regions) {
-        int step = sample_region.step;
-        int x_max = sample_region.x_max;
-        int y_max = sample_region.y_max;
-        int x_min = sample_region.x_min;
-        int y_min = sample_region.y_min;
-        for (int x = x_min; x <= x_max; x += step) {
-            int sample_x_max = std::min(x+step-1, x_max);
-            for (int y = y_min; y <= y_max; y += step) {
-                if (sample_locations.count(x) == 0) {
-                    sample_locations[x] = std::unordered_set<int>();
-                }
-                sample_locations[x].insert(y);
-
-                int sample_y_max = std::min(y+step-1, y_max);
-                for(int sample_x = x; sample_x <= sample_x_max; sample_x++) {
-                    for(int sample_y = y; sample_y <= sample_y_max; sample_y++) {
-                        compressed_loc_index_map[sample_x][sample_y] = sample_point_num;
-                    }
-                }
-
-                sample_point_num++;
-            }
+    for (int x = 0; x < grid_width;) {
+        int x_step = -1;
+        if (x < 2*max_track_length) {
+            x_step = 1;
+        } else if (x < 4*max_track_length) {
+            x_step = 2;
+        } else if (x < 8*max_track_length) {
+            x_step = 4;
+        } else {
+            x_step = 8;
         }
+        for (int y = 0; y < grid_height;) {
+            int y_step = -1;
+            if (y < 2*max_track_length) {
+                y_step = 1;
+            } else if (y < 4*max_track_length) {
+                y_step = 2;
+            } else if (y < 8*max_track_length) {
+                y_step = 4;
+            } else {
+                y_step = 8;
+            }
+
+            if (sample_locations.count(x) == 0) {
+                sample_locations[x] = std::unordered_set<int>();
+            }
+            sample_locations[x].insert(y);
+
+            int step = std::max(x_step, y_step);
+            int sample_region_x_max = std::min(x + step, grid_width);
+            int sample_region_y_max = std::min(y + step, grid_height);
+
+            for (int sample_x = x; sample_x < sample_region_x_max; sample_x++) {
+                for (int sample_y = y; sample_y < sample_region_y_max; sample_y++) {
+                    compressed_loc_index_map[sample_x][sample_y] = sample_point_num;
+
+                    sample_point_num++;
+                }
+            }
+
+
+            y += step;
+        }
+        x += x_step;
     }
-    VTR_ASSERT(sample_point_num == num_sampling_points);
+
+    return sample_point_num;
 }
 
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec)  {
@@ -151,21 +155,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     VTR_ASSERT(max_seg_lenght != std::numeric_limits<int>::min());
     VTR_ASSERT(min_seg_length != std::numeric_limits<int>::max());
 
-    auto sampling_regions = get_sampling_regions(max_seg_lenght);
-
-    int num_sampling_points = 0;
-    for (const auto& sampling_region : sampling_regions) {
-        int step = sampling_region.step;
-        int sampling_region_width = sampling_region.x_max - sampling_region.x_min + 1;
-        int sampling_region_height = sampling_region.y_max - sampling_region.y_min + 1;
-
-        int num_x = std::ceil(static_cast<float>(sampling_region_width) / static_cast<float>(step));
-        int num_y = std::ceil(static_cast<float>(sampling_region_height) / static_cast<float>(step));
-
-        num_sampling_points += (num_x * num_y);
-    }
-
-    initialize_compressed_loc_structs(sampling_regions, num_sampling_points);
+    int num_sampling_points = initialize_compressed_loc_structs(max_seg_lenght);
 
     f_compressed_wire_cost_map = t_compressed_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
                                                              2,
@@ -215,37 +205,6 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
             }
         }
     }
-}
-
-static std::vector<SamplingRegion> get_sampling_regions(int region_length) {
-
-    const auto& grid = g_vpr_ctx.device().grid;
-    std::vector<SamplingRegion> sampling_regions;
-
-
-    int grid_width = static_cast<int>(grid.width());
-    int grid_height = static_cast<int>(grid.height());
-
-    int incr = region_length+1;
-    for (int x = 0; x < grid_width; x+=incr) {
-        for (int y = 0; y < grid_height; y+=incr) {
-            int step;
-            if (x < 2*region_length && y < 2*region_length) {
-                step = 1;
-            } else if (x < 4*region_length && y < 4*region_length) {
-                step = 2;
-            } else if (x < 8*region_length && y < 8*region_length) {
-                step = 4;
-            } else {
-                step = 8;
-            }
-            int sample_region_max_x = std::min(grid_width-1, x+region_length);
-            int sample_region_max_y = std::min(grid_height-1, y+region_length);
-            sampling_regions.emplace_back(sample_region_max_x, sample_region_max_y, x, y, step);
-        }
-    }
-
-    return sampling_regions;
 }
 
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map) {
