@@ -29,6 +29,9 @@ If users want to use a different FPGA architecture file, they can replace the ma
 ## Proxy benchmarks
 In Koios 2.0, there are 8 synthetic/proxy benchmarks. These were generated using a framework that is present [here](https://github.com/UT-LCA/koios_proxy_benchmarks). To generate more benchmarks using this framework, use the generate_benchmark.py script.
 
+## SystemVerilog benchmarks
+In Koios, there are 3 system-verilog benchmarks. These are based on ARM FixyNN DeepFreeze and accelerate some layers of MobileNet.
+
 ## Regressions
 Koios benchmarks are tested by the following tasks in VTR:
 | Suite         |Test Description      | Target | Complex DSP Features   | Config file   | Frontend   | Parser   |
