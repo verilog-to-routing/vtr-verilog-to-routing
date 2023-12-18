@@ -132,12 +132,10 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
             for (int sample_x = x; sample_x < sample_region_x_max; sample_x++) {
                 for (int sample_y = y; sample_y < sample_region_y_max; sample_y++) {
                     compressed_loc_index_map[sample_x][sample_y] = sample_point_num;
-
-                    sample_point_num++;
                 }
             }
 
-
+            sample_point_num++;
             y += step;
         }
         x += x_step;
