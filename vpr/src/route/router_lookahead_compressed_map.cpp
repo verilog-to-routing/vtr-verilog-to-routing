@@ -28,30 +28,6 @@ std::unordered_map<int, std::unordered_set<int>> sample_locations;
 
 t_compressed_wire_cost_map f_compressed_wire_cost_map;
 
-
-struct SamplingRegion {
-    SamplingRegion() = default;
-    SamplingRegion(int x_max_, int y_max_, int x_min_, int y_min_, int step_)
-        : x_max(x_max_)
-        , y_max(y_max_)
-        , x_min(x_min_)
-        , y_min(y_min_)
-        , step(step_) {}
-    int x_max = OPEN;
-    int y_max = OPEN;
-    int x_min = OPEN;
-    int y_min = OPEN;
-    int step = OPEN;
-
-    int width() const {
-        return x_max - x_min;
-    }
-
-    int height() const {
-        return y_max - y_min;
-    }
-};
-
 static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& segment_inf_vec);
 
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec);
