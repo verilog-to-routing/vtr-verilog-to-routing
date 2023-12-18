@@ -78,22 +78,22 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
         if (x < 2*max_seg_lenght) {
             x_step = 1;
         } else if (x < 4*max_seg_lenght) {
-            x_step = 2;
+            x_step = 1;
         } else if (x < 8*max_seg_lenght) {
-            x_step = 4;
+            x_step = 1;
         } else {
-            x_step = 8;
+            x_step = 1;
         }
         for (int y = 0; y < grid_height;) {
             int y_step = -1;
             if (y < 2*max_seg_lenght) {
                 y_step = 1;
             } else if (y < 4*max_seg_lenght) {
-                y_step = 2;
+                y_step = 1;
             } else if (y < 8*max_seg_lenght) {
-                y_step = 4;
+                y_step = 1;
             } else {
-                y_step = 8;
+                y_step = 1;
             }
 
             if (sample_locations.count(x) == 0) {
