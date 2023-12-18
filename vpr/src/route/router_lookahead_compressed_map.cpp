@@ -52,7 +52,7 @@ struct SamplingRegion {
     }
 };
 
-static int initialize_compressed_loc_structs(const int max_track_length);
+static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& segment_inf_vec);
 
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec);
 
@@ -80,9 +80,18 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
 
 static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num);
 
-static int initialize_compressed_loc_structs(const int max_track_length) {
+static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& segment_inf_vec) {
     const auto& grid = g_vpr_ctx.device().grid;
     compressed_loc_index_map.resize({grid.width(), grid.height()}, OPEN);
+
+    int max_seg_lenght = std::numeric_limits<int>::min();
+
+    for (const auto& segment : segment_inf_vec) {
+        if (!segment.longline) {
+            max_seg_lenght = std::max(max_seg_lenght, segment.length);
+        }
+    }
+    VTR_ASSERT(max_seg_lenght != std::numeric_limits<int>::min());
 
     int grid_width = static_cast<int>(grid.width());
     int grid_height = static_cast<int>(grid.height());
@@ -90,22 +99,22 @@ static int initialize_compressed_loc_structs(const int max_track_length) {
     int sample_point_num = 0;
     for (int x = 0; x < grid_width;) {
         int x_step = -1;
-        if (x < 2*max_track_length) {
+        if (x < 2*max_seg_lenght) {
             x_step = 1;
-        } else if (x < 4*max_track_length) {
+        } else if (x < 4*max_seg_lenght) {
             x_step = 2;
-        } else if (x < 8*max_track_length) {
+        } else if (x < 8*max_seg_lenght) {
             x_step = 4;
         } else {
             x_step = 8;
         }
         for (int y = 0; y < grid_height;) {
             int y_step = -1;
-            if (y < 2*max_track_length) {
+            if (y < 2*max_seg_lenght) {
                 y_step = 1;
-            } else if (y < 4*max_track_length) {
+            } else if (y < 4*max_seg_lenght) {
                 y_step = 2;
-            } else if (y < 8*max_track_length) {
+            } else if (y < 8*max_seg_lenght) {
                 y_step = 4;
             } else {
                 y_step = 8;
@@ -143,19 +152,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
-    int max_seg_lenght = std::numeric_limits<int>::min();
-    int min_seg_length = std::numeric_limits<int>::max();
-
-    for (const auto& segment : segment_inf_vec) {
-        if (!segment.longline) {
-            max_seg_lenght = std::max(max_seg_lenght, segment.length);
-            min_seg_length = std::min(min_seg_length, segment.length);
-        }
-    }
-    VTR_ASSERT(max_seg_lenght != std::numeric_limits<int>::min());
-    VTR_ASSERT(min_seg_length != std::numeric_limits<int>::max());
-
-    int num_sampling_points = initialize_compressed_loc_structs(max_seg_lenght);
+    int num_sampling_points = initialize_compressed_loc_structs(segment_inf_vec);
 
     f_compressed_wire_cost_map = t_compressed_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
                                                              2,
