@@ -327,7 +327,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
         return util::Cost_Entry(0., 0.);
     }
 
-    std::array<int, 7> window = {-1, 0, 1};
+    std::array<int, 7> window = {-3, -2, -1, 0, 1, 2, 3};
     for (int dx : window) {
         auto dist_to_begin = std::distance(sorted_sample_loc.begin(), missing_point_compressed_iter_x);
         auto dist_to_end = std::distance(missing_point_compressed_iter_x, sorted_sample_loc.end());
