@@ -482,6 +482,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           t_rr_edge_info_set& created_rr_edges,
                           const int wire_to_ipin_switch,
                           const int wire_to_pin_between_dice_switch,
+                          const int delayless_switch,
                           const enum e_directionality directionality);
 
 /**
@@ -2188,6 +2189,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                   rr_edges_to_create,
                                   wire_to_ipin_switch,
                                   wire_to_pin_between_dice_switch,
+                                  delayless_switch,
                                   directionality);
 
                     //Create the actual CHAN->CHAN edges
@@ -2206,6 +2208,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                   rr_edges_to_create,
                                   wire_to_ipin_switch,
                                   wire_to_pin_between_dice_switch,
+                                  delayless_switch,
                                   directionality);
 
                     //Create the actual CHAN->CHAN edges
@@ -3105,6 +3108,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           t_rr_edge_info_set& rr_edges_to_create,
                           const int wire_to_ipin_switch,
                           const int wire_to_pin_between_dice_switch,
+                          const int delayless_switch,
                           const enum e_directionality directionality) {
     /* this function builds both x and y-directed channel segments, so set up our
      * coordinates based on channel type */
@@ -3187,7 +3191,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                                     opposite_chan_type, multi_layer_track_conn, seg_dimension, max_opposite_chan_width, grid,
                                     Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                     from_seg_details, to_seg_details, opposite_chan_details,
-                                    directionality,
+                                    directionality,delayless_switch,
                                     switch_block_conn, sb_conn_map);
             }
         }
@@ -3207,7 +3211,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                                     opposite_chan_type, multi_layer_track_conn, seg_dimension, max_opposite_chan_width, grid,
                                     Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                     from_seg_details, to_seg_details, opposite_chan_details,
-                                    directionality, switch_block_conn, sb_conn_map);
+                                    directionality, delayless_switch, switch_block_conn, sb_conn_map);
             }
         }
 
@@ -3239,7 +3243,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                                         chan_type, multi_layer_track_conn, seg_dimension, max_chan_width, grid,
                                         Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                         from_seg_details, to_seg_details, from_chan_details,
-                                        directionality,
+                                        directionality,delayless_switch,
                                         switch_block_conn, sb_conn_map);
                 }
             }

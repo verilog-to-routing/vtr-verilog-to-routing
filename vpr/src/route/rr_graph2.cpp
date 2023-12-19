@@ -128,6 +128,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const t_rr_type to_chan_type,
                                    vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
                                    const int switch_override,
+                                   const int delayless_switch,
                                    t_sb_connection_map* sb_conn_map,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    int& edge_count);
@@ -164,6 +165,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const e_side to_side,
                                  vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
                                  const int swtich_override,
+                                 const int delayless_switch,
                                  t_sb_connection_map* sb_conn_map,
                                  RRNodeId from_rr_node,
                                  t_rr_edge_info_set& rr_edges_to_create);
@@ -1919,6 +1921,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_chan_seg_details* to_seg_details,
                         const t_chan_details& to_chan_details,
                         const enum e_directionality directionality,
+                        const int delayless_switch,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         t_sb_connection_map* sb_conn_map) {
     int to_chan, to_sb;
@@ -2050,7 +2053,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (Direction::DEC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side, multi_layer_track_conn,
-                                                      switch_override,
+                                                      switch_override, delayless_switch,
                                                       sb_conn_map, from_rr_node, rr_edges_to_create);
                 }
             } else {
@@ -2088,7 +2091,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side, multi_layer_track_conn,
-                                                      switch_override,
+                                                      switch_override,delayless_switch,
                                                       sb_conn_map, from_rr_node, rr_edges_to_create);
                 }
             } else {
@@ -2235,6 +2238,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const t_rr_type to_chan_type,
                                    vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
                                    const int switch_override,
+                                   const int delayless_switch,
                                    t_sb_connection_map* sb_conn_map,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    int& edge_count) {
@@ -2320,7 +2324,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     src_switch = switch_override;
                 }
 
-                rr_edges_to_create.emplace_back(from_rr_node, track_to_chanx_node, src_switch, false);
+                rr_edges_to_create.emplace_back(from_rr_node, track_to_chanx_node, delayless_switch, false);
                 ++edge_count;
 
                 //we only add the following edge once for the first driver, otherwise we are adding the same edge multiple times
@@ -2329,7 +2333,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     rr_edges_to_create.emplace_back(track_to_chanx_node, diff_layer_chanx_node, src_switch_betwen_layers, false);
                     ++edge_count;
 
-                    rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, src_switch, false);
+                    rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, delayless_switch, false);
                     ++edge_count;
                 }
             }
@@ -2348,6 +2352,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const e_side to_side,
                                  vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
                                  const int switch_override,
+                                 const int delayless_switch,
                                  t_sb_connection_map* sb_conn_map,
                                  RRNodeId from_rr_node,
                                  t_rr_edge_info_set& rr_edges_to_create) {
@@ -2385,6 +2390,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                            to_chan_type,
                            multi_layer_track_conn,
                            switch_override,
+                           delayless_switch,
                            sb_conn_map,
                            rr_edges_to_create,
                            edge_count);
@@ -2405,6 +2411,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                to_chan_type,
                                multi_layer_track_conn,
                                switch_override,
+                               delayless_switch,
                                sb_conn_map,
                                rr_edges_to_create,
                                edge_count);
