@@ -1362,7 +1362,7 @@ static void run_dijkstra(RRNodeId start_node,
                     if (sample_locs.find(delta_x) == sample_locs.end()) {
                         store_this_pin = false;
                     } else {
-                        if (sample_locs.at(delta_x).find(delta_y) == sample_locs.at(delta_y).end()) {
+                        if (sample_locs.at(delta_x).find(delta_y) == sample_locs.at(delta_x).end()) {
                             store_this_pin = false;
                         }
                     }
