@@ -1351,24 +1351,24 @@ static void run_dijkstra(RRNodeId start_node,
             int ipin_y = rr_graph.node_ylow(curr_node);
             int ipin_layer = rr_graph.node_layer(curr_node);
 
-            bool store_this_pin = true;
-            if (!sample_all_locs) {
-                if (sample_locs.find(ipin_x) == sample_locs.end()) {
-                    store_this_pin = false;
-                } else {
-                    if (sample_locs.at(ipin_x).find(ipin_y) == sample_locs.at(ipin_x).end()) {
+            if (ipin_x >= start_x && ipin_y >= start_y) {
+                int delta_x, delta_y;
+                util::get_xy_deltas(start_node, curr_node, &delta_x, &delta_y);
+                delta_x = std::abs(delta_x);
+                delta_y = std::abs(delta_y);
+
+                bool store_this_pin = true;
+                if (!sample_all_locs) {
+                    if (sample_locs.find(ipin_x) == sample_locs.end()) {
                         store_this_pin = false;
+                    } else {
+                        if (sample_locs.at(ipin_x).find(ipin_y) == sample_locs.at(ipin_x).end()) {
+                            store_this_pin = false;
+                        }
                     }
                 }
-            }
 
-            if (store_this_pin) {
-                if (ipin_x >= start_x && ipin_y >= start_y) {
-                    int delta_x, delta_y;
-                    util::get_xy_deltas(start_node, curr_node, &delta_x, &delta_y);
-                    delta_x = std::abs(delta_x);
-                    delta_y = std::abs(delta_y);
-
+                if (store_this_pin) {
                     routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(util::e_representative_entry_method::SMALLEST,
                                                                                   current.delay,
                                                                                   current.congestion_upstream);
