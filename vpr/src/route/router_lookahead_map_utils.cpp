@@ -1359,10 +1359,10 @@ static void run_dijkstra(RRNodeId start_node,
 
                 bool store_this_pin = true;
                 if (!sample_all_locs) {
-                    if (sample_locs.find(ipin_x) == sample_locs.end()) {
+                    if (sample_locs.find(delta_x) == sample_locs.end()) {
                         store_this_pin = false;
                     } else {
-                        if (sample_locs.at(ipin_x).find(ipin_y) == sample_locs.at(ipin_x).end()) {
+                        if (sample_locs.at(delta_x).find(delta_y) == sample_locs.at(delta_y).end()) {
                             store_this_pin = false;
                         }
                     }
