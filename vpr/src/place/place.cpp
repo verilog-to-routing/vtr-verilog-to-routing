@@ -1923,27 +1923,21 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     bool cube_bb;
     const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    // If the FPGA has only layer, then we can only use cube bounding box
-    if (number_layers == 1) {
+    if (place_bb_mode == AUTO_BB) {
+        // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
+        // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
+        if (number_layers > 1 && inter_layer_connections_limited_to_opin(rr_graph)) {
+            cube_bb = false;
+        } else {
+            cube_bb = true;
+        }
+    } else if (place_bb_mode == CUBE_BB) {
+        // The user has specifically asked for CUBE_BB
         cube_bb = true;
     } else {
-        VTR_ASSERT(number_layers > 1);
-        if (place_bb_mode == AUTO_BB) {
-            // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
-            // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
-            if (inter_layer_connections_limited_to_opin(rr_graph)) {
-                cube_bb = false;
-            } else {
-                cube_bb = true;
-            }
-        } else if (place_bb_mode == CUBE_BB) {
-            // The user has specifically asked for CUBE_BB
-            cube_bb = true;
-        } else {
-            // The user has specifically asked for PER_LAYER_BB
-            VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
-            cube_bb = false;
-        }
+        // The user has specifically asked for PER_LAYER_BB
+        VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
+        cube_bb = false;
     }
 
     return cube_bb;
@@ -2886,19 +2880,19 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
     int y_src = place_ctx.block_locs[bnum].loc.y
                 + physical_tile_type(bnum)->pin_height_offset[pnum_src];
 
+    int layer_src = place_ctx.block_locs[bnum].loc.layer;
+
     x_src = max(min<int>(x_src, grid.width() - 2), 1);
     y_src = max(min<int>(y_src, grid.height() - 2), 1);
 
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        xmin[layer_num] = x_src;
-        ymin[layer_num] = y_src;
-        xmax[layer_num] = x_src;
-        ymax[layer_num] = y_src;
-        xmin_edge[layer_num] = 1;
-        ymin_edge[layer_num] = 1;
-        xmax_edge[layer_num] = 1;
-        ymax_edge[layer_num] = 1;
-    }
+    xmin[layer_src] = x_src;
+    ymin[layer_src] = y_src;
+    xmax[layer_src] = x_src;
+    ymax[layer_src] = y_src;
+    xmin_edge[layer_src] = 1;
+    ymin_edge[layer_src] = 1;
+    xmax_edge[layer_src] = 1;
+    ymax_edge[layer_src] = 1;
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
@@ -2921,30 +2915,42 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
         x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
         y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
 
-        if (x == xmin[layer]) {
-            xmin_edge[layer]++;
-        }
-        if (x == xmax[layer]) { /* Recall that xmin could equal xmax -- don't use else */
-            xmax_edge[layer]++;
-        } else if (x < xmin[layer]) {
+        if (xmin[layer] == OPEN) {
+            VTR_ASSERT_DEBUG(xmax[layer] == OPEN && ymin[layer] == OPEN && ymax[layer] == OPEN);
             xmin[layer] = x;
-            xmin_edge[layer] = 1;
-        } else if (x > xmax[layer]) {
-            xmax[layer] = x;
-            xmax_edge[layer] = 1;
-        }
-
-        if (y == ymin[layer]) {
-            ymin_edge[layer]++;
-        }
-        if (y == ymax[layer]) {
-            ymax_edge[layer]++;
-        } else if (y < ymin[layer]) {
             ymin[layer] = y;
-            ymin_edge[layer] = 1;
-        } else if (y > ymax[layer]) {
+            xmax[layer] = x;
             ymax[layer] = y;
+            xmin_edge[layer] = 1;
+            ymin_edge[layer] = 1;
+            xmax_edge[layer] = 1;
             ymax_edge[layer] = 1;
+        } else {
+            if (x == xmin[layer]) {
+                xmin_edge[layer]++;
+            }
+            if (x == xmax[layer]) { /* Recall that xmin could equal xmax -- don't use else */
+                xmax_edge[layer]++;
+            } else if (x < xmin[layer]) {
+                xmin[layer] = x;
+                xmin_edge[layer] = 1;
+            } else if (x > xmax[layer]) {
+                xmax[layer] = x;
+                xmax_edge[layer] = 1;
+            }
+
+            if (y == ymin[layer]) {
+                ymin_edge[layer]++;
+            }
+            if (y == ymax[layer]) {
+                ymax_edge[layer]++;
+            } else if (y < ymin[layer]) {
+                ymin[layer] = y;
+                ymin_edge[layer] = 1;
+            } else if (y > ymax[layer]) {
+                ymax[layer] = y;
+                ymax_edge[layer] = 1;
+            }
         }
     }
 
@@ -3191,10 +3197,17 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
     int src_y = place_ctx.block_locs[bnum].loc.y
                 + physical_tile_type(bnum)->pin_height_offset[pnum];
 
-    std::vector<int> xmin(num_layers, src_x);
-    std::vector<int> ymin(num_layers, src_y);
-    std::vector<int> xmax(num_layers, src_x);
-    std::vector<int> ymax(num_layers, src_y);
+    int src_layer = place_ctx.block_locs[bnum].loc.layer;
+
+    std::vector<int> xmin(num_layers, OPEN);
+    std::vector<int> ymin(num_layers, OPEN);
+    std::vector<int> xmax(num_layers, OPEN);
+    std::vector<int> ymax(num_layers, OPEN);
+
+    xmin[src_layer] = src_x;
+    ymin[src_layer] = src_y;
+    xmax[src_layer] = src_x;
+    ymax[src_layer] = src_y;
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
@@ -3206,16 +3219,25 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
 
         int layer_num = place_ctx.block_locs[bnum].loc.layer;
         num_sink_layer[layer_num]++;
-        if (x < xmin[layer_num]) {
-            xmin[layer_num] = x;
-        } else if (x > xmax[layer_num]) {
-            xmax[layer_num] = x;
-        }
 
-        if (y < ymin[layer_num]) {
+        if (xmin[layer_num] == OPEN) {
+            VTR_ASSERT_DEBUG(ymin[layer_num] == OPEN && xmax[layer_num] == OPEN && ymax[layer_num] == OPEN);
+            xmin[layer_num] = x;
             ymin[layer_num] = y;
-        } else if (y > ymax[layer_num]) {
+            xmax[layer_num] = x;
             ymax[layer_num] = y;
+        } else {
+            if (x < xmin[layer_num]) {
+                xmin[layer_num] = x;
+            } else if (x > xmax[layer_num]) {
+                xmax[layer_num] = x;
+            }
+
+            if (y < ymin[layer_num]) {
+                ymin[layer_num] = y;
+            } else if (y > ymax[layer_num]) {
+                ymax[layer_num] = y;
+            }
         }
     }
 
@@ -3227,6 +3249,9 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        if (num_sink_layer[layer_num] == 0) {
+            continue;
+        }
         bb_coord_new[layer_num].layer_num = layer_num;
         bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
         bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
