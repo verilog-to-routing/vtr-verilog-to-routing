@@ -28,6 +28,11 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                           const t_router_opts& router_opts,
                                           float* net_delay,
                                           int layer_num) {
+    std::string timer_string = vtr::string_fmt("Calculate Delay: %d -> %d Layer %d",
+                                               size_t(source_node),
+                                               size_t(sink_node),
+                                               layer_num);
+    vtr::ScopedStartFinishTimer timer(timer_string);
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
