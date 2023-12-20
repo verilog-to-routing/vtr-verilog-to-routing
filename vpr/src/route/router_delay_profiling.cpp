@@ -28,11 +28,6 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                           const t_router_opts& router_opts,
                                           float* net_delay,
                                           int layer_num) {
-    std::string timer_string = vtr::string_fmt("Calculate Delay: %d -> %d Layer %d",
-                                               size_t(source_node),
-                                               size_t(sink_node),
-                                               layer_num);
-    vtr::ScopedStartFinishTimer timer(timer_string);
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -88,6 +83,9 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
+    if (size_t(sink_node) == 778060 && size_t(source_node) == 778059) {
+        router_.set_router_debug(true);
+    }
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         tree.root(),
         sink_node,
@@ -95,6 +93,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         bounding_box,
         router_stats,
         conn_params);
+
+    router_.set_router_debug(false);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
