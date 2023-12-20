@@ -360,6 +360,14 @@ static float route_connection_delay(
     int sink_y,
     const t_router_opts& router_opts,
     bool measure_directconnect) {
+    std::string timer_string = vtr::string_fmt("Placer Calculate Delay: (%d,%d,%d) -> (%d,%d,%d)",
+                                               source_x,
+                                               source_y,
+                                               layer_num,
+                                               sink_x,
+                                               sink_y,
+                                               layer_num);
+    vtr::ScopedStartFinishTimer timer(timer_string);
     //Routes between the source and sink locations and calculates the delay
 
     float net_delay_value = IMPOSSIBLE_DELTA; /*set to known value for debug purposes */
