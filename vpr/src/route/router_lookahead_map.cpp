@@ -638,7 +638,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
     int neighbour_num = 0;
     float neighbour_delay_sum = 0;
     float neighbour_cong_sum = 0;
-    std::array<int, 7> window = {-3, -2, -1, 0, 1, 2, 3};
+    std::array<int, 3> window = {-1, 0, 1};
     for (int dx: window) {
         int neighbour_x = missing_dx + dx;
         if (neighbour_x < 0 || neighbour_x >= (int)f_wire_cost_map.dim_size(4)) {
