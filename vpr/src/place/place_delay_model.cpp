@@ -31,16 +31,7 @@ float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin
     int delta_x = std::abs(from_loc.x - to_loc.x);
     int delta_y = std::abs(from_loc.y - to_loc.y);
 
-    // TODO: This is compatible with the case that only OPINs are connected to other layers.
-    // Ideally, I should check whether OPINs are conneced or IPINs and use the correct layer.
-    // If both are connected, minimum should be taken. In the case that channels are also connected,
-    // I haven't thought about what to do.
-    float cross_layer_td = 0;
-    if (from_loc.layer_num != to_loc.layer_num) {
-        VTR_ASSERT(std::isfinite(cross_layer_delay_));
-        cross_layer_td = cross_layer_delay_;
-    }
-    return delays_[to_loc.layer_num][delta_x][delta_y] + cross_layer_td;
+    return delays_[from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
 }
 
 void DeltaDelayModel::dump_echo(std::string filepath) const {

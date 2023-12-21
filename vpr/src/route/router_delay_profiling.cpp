@@ -26,8 +26,7 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
 bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                           RRNodeId sink_node,
                                           const t_router_opts& router_opts,
-                                          float* net_delay,
-                                          int layer_num) {
+                                          float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -58,14 +57,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
-    // If layer num is not specified, it means the BB should cover all layers
-    if (layer_num == OPEN) {
-        bounding_box.layer_min = 0;
-        bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
-    } else {
-        bounding_box.layer_min = layer_num;
-        bounding_box.layer_max = layer_num;
-    }
+    bounding_box.layer_min = 0;
+    bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
