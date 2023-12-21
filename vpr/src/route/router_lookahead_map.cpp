@@ -539,6 +539,8 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    
+    min_global_cost_map(distance_based_min_cost);
 }
 
 void MapLookahead::compute_intra_tile() {
@@ -546,14 +548,11 @@ void MapLookahead::compute_intra_tile() {
     vtr::ScopedStartFinishTimer timer("Computing tile lookahead");
     VTR_ASSERT(inter_tile_pin_primitive_pin_delay.empty());
     VTR_ASSERT(tile_min_cost.empty());
-    VTR_ASSERT(distance_based_min_cost.empty());
 
     compute_tiles_lookahead(inter_tile_pin_primitive_pin_delay,
                             tile_min_cost,
                             det_routing_arch_,
                             g_vpr_ctx.device());
-
-    min_global_cost_map(distance_based_min_cost);
 }
 
 void MapLookahead::read(const std::string& file) {
