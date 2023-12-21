@@ -30,10 +30,13 @@ class RouterDelayProfiler {
                          const t_router_opts& router_opts,
                          float* net_delay);
 
+    float get_min_delay(int from_layer, int to_layer, int dx, int dy) const;
+
   private:
     const Netlist<>& net_list_;
     RouterStats router_stats_;
     ConnectionRouter<BinaryHeap> router_;
+    vtr::NdMatrix<float, 4> min_delays_;
     bool is_flat_;
 };
 

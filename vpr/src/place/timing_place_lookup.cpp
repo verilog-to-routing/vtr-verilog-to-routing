@@ -147,6 +147,8 @@ static vtr::NdMatrix<float, 4> compute_delta_delay_model(
     int longest_length,
     bool is_flat);
 
+static vtr::NdMatrix<float, 4> compute_simple_delay_model(RouterDelayProfiler& route_profiler);
+
 static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  t_physical_tile_type_ptr from_type,
                                                  int from_pin,
@@ -205,7 +207,9 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
     float min_cross_layer_delay = get_min_cross_layer_delay(arch_switch_inf,
                                                             segment_inf,
                                                             det_routing_arch->wire_to_arch_ipin_switch_between_dice);
-    if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
+    if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
+        place_delay_model = std::make_unique<SimpleDelayModel>(min_cross_layer_delay, is_flat);
+    } else if(placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
         place_delay_model = std::make_unique<DeltaDelayModel>(min_cross_layer_delay, is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
         place_delay_model = std::make_unique<OverrideDelayModel>(min_cross_layer_delay, is_flat);
@@ -255,6 +259,14 @@ void OverrideDelayModel::compute(
     base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, false);
 
     compute_override_delay_model(route_profiler, router_opts);
+}
+
+void SimpleDelayModel::compute(
+    RouterDelayProfiler& router,
+    const t_placer_opts& /*placer_opts*/,
+    const t_router_opts& /*router_opts*/,
+    int /*longest_length*/) {
+    delays_ = compute_simple_delay_model(router);
 }
 
 /******* File Accessible Functions **********/
@@ -1035,6 +1047,26 @@ static vtr::NdMatrix<float, 4> compute_delta_delay_model(
     fill_impossible_coordinates(delta_delays);
 
     verify_delta_delays(delta_delays);
+
+    return delta_delays;
+}
+
+static vtr::NdMatrix<float, 4> compute_simple_delay_model(RouterDelayProfiler& route_profiler) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    vtr::NdMatrix<float, 4> delta_delays({static_cast<unsigned long>(grid.get_num_layers()),
+                                          static_cast<unsigned long>(grid.get_num_layers()),
+                                          grid.width(),
+                                          grid.height()});
+    for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
+        for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
+            for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
+                for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
+                    float min_delay = route_profiler.get_min_delay(from_layer, to_layer, dx, dy);
+                    delta_delays[from_layer][to_layer][dx][dy] = min_delay;
+                }
+            }
+        }
+    }
 
     return delta_delays;
 }

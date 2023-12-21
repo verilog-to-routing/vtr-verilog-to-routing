@@ -217,3 +217,28 @@ class OverrideDelayModel : public PlaceDelayModel {
     static_assert(sizeof(t_override::delta_x) == sizeof(short), "Expect all t_override data members to be shorts");
     static_assert(sizeof(t_override::delta_y) == sizeof(short), "Expect all t_override data members to be shorts");
 };
+
+///@brief A simple delay model based on the distance (delta) between block locations.
+class SimpleDelayModel : public PlaceDelayModel {
+  public:
+    SimpleDelayModel(float min_cross_layer_delay,
+                    bool is_flat)
+        : cross_layer_delay_(min_cross_layer_delay)
+        , is_flat_(is_flat) {}
+
+    void compute(
+        RouterDelayProfiler& router,
+        const t_placer_opts& placer_opts,
+        const t_router_opts& router_opts,
+        int longest_length) override;
+    float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
+    void dump_echo(std::string /*filepath*/) const override {}
+
+    void read(const std::string& /*file*/) override {}
+    void write(const std::string& /*file*/) const override {}
+
+  private:
+    vtr::NdMatrix<float, 4> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
+    float cross_layer_delay_;
+    bool is_flat_;
+};

@@ -941,7 +941,9 @@ struct ParseRouterLookahead {
 struct ParsePlaceDelayModel {
     ConvertedValue<PlaceDelayModelType> from_str(std::string str) {
         ConvertedValue<PlaceDelayModelType> conv_value;
-        if (str == "delta")
+        if (str == "simple") {
+            conv_value.set_value(PlaceDelayModelType::SIMPLE);
+        } else if (str == "delta")
             conv_value.set_value(PlaceDelayModelType::DELTA);
         else if (str == "delta_override")
             conv_value.set_value(PlaceDelayModelType::DELTA_OVERRIDE);
@@ -956,6 +958,8 @@ struct ParsePlaceDelayModel {
     ConvertedValue<std::string> to_str(PlaceDelayModelType val) {
         ConvertedValue<std::string> conv_value;
         if (val == PlaceDelayModelType::DELTA)
+            conv_value.set_value("simple");
+        else if (val == PlaceDelayModelType::DELTA)
             conv_value.set_value("delta");
         else if (val == PlaceDelayModelType::DELTA_OVERRIDE)
             conv_value.set_value("delta_override");
@@ -968,7 +972,7 @@ struct ParsePlaceDelayModel {
     }
 
     std::vector<std::string> default_choices() {
-        return {"delta", "delta_override"};
+        return {"simple", "delta", "delta_override"};
     }
 };
 
@@ -2245,6 +2249,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "This option controls what information is considered and how"
             " the placement delay model is constructed.\n"
             "Valid options:\n"
+            " * 'simple' uses map router lookahead\n"
             " * 'delta' uses differences in position only\n"
             " * 'delta_override' uses differences in position with overrides for direct connects\n")
         .default_value("delta")
