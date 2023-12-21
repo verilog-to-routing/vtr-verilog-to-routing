@@ -29,8 +29,8 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
                         grid.height()});
     for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
         for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
-            for (int dx = 0; dx < grid.width(); ++dx) {
-                for (int dy = 0; dy < grid.height(); ++dy) {
+            for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
+                for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
                     float min_delay = lookahead->get_distance_min_delay(from_layer, to_layer, dx, dy);
                     min_delays_[from_layer][to_layer][dx][dy] = min_delay;
                 }
