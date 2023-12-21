@@ -845,8 +845,8 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(
                                    router_opts,
                                    measure_directconnect, allowed_types,
                                    is_flat);
-            for (size_t dx = 0; dx < sampled_delta_delays.dim_size(1); ++dx) {
-                for (size_t dy = 0; dy < sampled_delta_delays.dim_size(2); ++dy) {
+            for (size_t dx = 0; dx < sampled_delta_delays.dim_size(0); ++dx) {
+                for (size_t dy = 0; dy < sampled_delta_delays.dim_size(1); ++dy) {
                     delta_delays[from_layer_num][to_layer_num][dx][dy] = delay_reduce(sampled_delta_delays[dx][dy], placer_opts.delay_model_reducer);
                 }
             }
