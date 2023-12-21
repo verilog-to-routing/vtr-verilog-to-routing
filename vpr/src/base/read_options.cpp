@@ -957,7 +957,7 @@ struct ParsePlaceDelayModel {
 
     ConvertedValue<std::string> to_str(PlaceDelayModelType val) {
         ConvertedValue<std::string> conv_value;
-        if (val == PlaceDelayModelType::DELTA)
+        if (val == PlaceDelayModelType::SIMPLE)
             conv_value.set_value("simple");
         else if (val == PlaceDelayModelType::DELTA)
             conv_value.set_value("delta");
