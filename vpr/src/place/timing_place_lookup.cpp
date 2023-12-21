@@ -559,8 +559,14 @@ static void generic_compute_matrix_dijkstra_expansion(
             int delta_y = abs(sink_y - source_y);
             if (!found_matrix[delta_x][delta_y]) {
                 add_delay_to_matrix(&matrix, delta_x, delta_y, IMPOSSIBLE_DELTA);
-                VTR_LOG_WARN("Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to %g)\n",
-                             source_x, source_y, sink_x, sink_y, IMPOSSIBLE_DELTA);
+                VTR_LOG_WARN("Unable to route between blocks at (%d,%d,%d) and (%d,%d,%d) to characterize delay (setting to %g)\n",
+                             source_x,
+                             source_y,
+                             from_layer_num,
+                             sink_x, 
+                             sink_y,
+                             to_layer_num,
+                             IMPOSSIBLE_DELTA);
             }
         }
     }
