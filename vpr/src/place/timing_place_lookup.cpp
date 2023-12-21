@@ -1022,8 +1022,8 @@ static vtr::NdMatrix<float, 4> compute_simple_delay_model(RouterDelayProfiler& r
                                           grid.height()});
     for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
         for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
-            for (int dx = 0; dx < grid.width(); ++dx) {
-                for (int dy = 0; dy < grid.height(); ++dy) {
+            for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
+                for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
                     float min_delay = route_profiler.get_min_delay(from_layer, to_layer, dx, dy);
                     delta_delays[from_layer][to_layer][dx][dy] = min_delay;
                 }
