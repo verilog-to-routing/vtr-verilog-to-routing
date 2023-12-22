@@ -238,7 +238,7 @@ class SimpleDelayModel : public PlaceDelayModel {
     void write(const std::string& /*file*/) const override {}
 
   private:
-    vtr::NdMatrix<float, 4> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
+    vtr::NdMatrix<float, 5> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
     float cross_layer_delay_;
     bool is_flat_;
 };

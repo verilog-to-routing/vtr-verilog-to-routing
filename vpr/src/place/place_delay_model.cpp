@@ -157,7 +157,8 @@ float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pi
     int delta_x = std::abs(from_loc.x - to_loc.x);
     int delta_y = std::abs(from_loc.y - to_loc.y);
 
-    return delays_[from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
+    int from_tile_idx = g_vpr_ctx.device().grid.get_physical_type(from_loc)->index;
+    return delays_[from_tile_idx][from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
 }
 
 /**

@@ -23,16 +23,19 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           is_flat)
     , is_flat_(is_flat) {
     const auto& grid = g_vpr_ctx.device().grid;
-    min_delays_.resize({static_cast<unsigned long>(grid.get_num_layers()),
+    min_delays_.resize({g_vpr_ctx.device().physical_tile_types.size(),
+                        static_cast<unsigned long>(grid.get_num_layers()),
                         static_cast<unsigned long>(grid.get_num_layers()),
                         grid.width(),
                         grid.height()});
-    for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
-        for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
-            for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
-                for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
-                    float min_delay = lookahead->get_distance_min_delay(from_layer, to_layer, dx, dy);
-                    min_delays_[from_layer][to_layer][dx][dy] = min_delay;
+    for (int physical_tile_type_idx = 0; physical_tile_type_idx < static_cast<int>(g_vpr_ctx.device().physical_tile_types.size()); ++physical_tile_type_idx) {
+        for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
+            for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
+                for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
+                    for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
+                        float min_delay = lookahead->get_opin_distance_min_delay(physical_tile_type_idx, from_layer, to_layer, dx, dy);
+                        min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy] = min_delay;
+                    }
                 }
             }
         }
@@ -127,8 +130,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     return found_path;
 }
 
-float RouterDelayProfiler::get_min_delay(int from_layer, int to_layer, int dx, int dy) const {
-    return min_delays_[from_layer][to_layer][dx][dy];
+float RouterDelayProfiler::get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const {
+    return min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy];
 }
 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists

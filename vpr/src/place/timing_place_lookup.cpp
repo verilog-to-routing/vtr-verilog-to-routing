@@ -147,7 +147,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delay_model(
     int longest_length,
     bool is_flat);
 
-static vtr::NdMatrix<float, 4> compute_simple_delay_model(RouterDelayProfiler& route_profiler);
+static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler);
 
 static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  t_physical_tile_type_ptr from_type,
@@ -1051,18 +1051,27 @@ static vtr::NdMatrix<float, 4> compute_delta_delay_model(
     return delta_delays;
 }
 
-static vtr::NdMatrix<float, 4> compute_simple_delay_model(RouterDelayProfiler& route_profiler) {
+static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler) {
     const auto& grid = g_vpr_ctx.device().grid;
-    vtr::NdMatrix<float, 4> delta_delays({static_cast<unsigned long>(grid.get_num_layers()),
+    int num_physical_tile_types = static_cast<int>(g_vpr_ctx.device().physical_tile_types.size());
+    vtr::NdMatrix<float, 5> delta_delays({static_cast<unsigned long>(num_physical_tile_types),
+                                          static_cast<unsigned long>(grid.get_num_layers()),
                                           static_cast<unsigned long>(grid.get_num_layers()),
                                           grid.width(),
                                           grid.height()});
-    for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
-        for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
-            for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
-                for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
-                    float min_delay = route_profiler.get_min_delay(from_layer, to_layer, dx, dy);
-                    delta_delays[from_layer][to_layer][dx][dy] = min_delay;
+
+    for (int physical_tile_type_idx = 0; physical_tile_type_idx < num_physical_tile_types; ++physical_tile_type_idx) {
+        for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
+            for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
+                for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
+                    for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
+                        float min_delay = route_profiler.get_min_delay(physical_tile_type_idx,
+                                                                       from_layer,
+                                                                       to_layer,
+                                                                       dx,
+                                                                       dy);
+                        delta_delays[physical_tile_type_idx][from_layer][to_layer][dx][dy] = min_delay;
+                    }
                 }
             }
         }
