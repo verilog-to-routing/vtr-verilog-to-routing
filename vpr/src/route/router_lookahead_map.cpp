@@ -597,8 +597,8 @@ void MapLookahead::write_intra_cluster(const std::string& file) const {
                                          inter_tile_pin_primitive_pin_delay);
 }
 
-float MapLookahead::get_distance_min_delay(int from_layer, int to_layer, int dx, int dy) const {
-    return chann_distance_based_min_cost[from_layer][to_layer][dx][dy].delay;
+float MapLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const {
+    return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][dx][dy].delay;
 }
 
 /******** Function Definitions ********/
