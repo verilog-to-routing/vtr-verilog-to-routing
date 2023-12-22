@@ -45,10 +45,29 @@ void TaskResolver::takeFinished(std::vector<Task>& result)
     }
 }
 
+e_timing_report_detail TaskResolver::getDetailsLevelEnum(const std::string& pathDetailsLevelStr) const {
+    e_timing_report_detail detailesLevel = e_timing_report_detail::NETLIST;
+    if (pathDetailsLevelStr == "netlist") {
+        detailesLevel = e_timing_report_detail::NETLIST;
+    } else if (pathDetailsLevelStr == "aggregated") {
+        detailesLevel = e_timing_report_detail::AGGREGATED;
+    } else if (pathDetailsLevelStr == "detailed") {
+        detailesLevel = e_timing_report_detail::DETAILED_ROUTING;
+    } else if (pathDetailsLevelStr == "debug") {
+        detailesLevel = e_timing_report_detail::DEBUG;
+    } else {
+        std::cerr << "unhandled option" << pathDetailsLevelStr << std::endl;
+    }
+    return detailesLevel;
+}
+
 bool TaskResolver::update(ezgl::application* app)
 {
     bool process_task = false;
-    ServerContext& server_ctx = g_vpr_ctx.server_ctx();
+    const ServerContextPtr& server_ctx = g_vpr_ctx.server_ctx();
+    if (!server_ctx) {
+        return false;
+    }
     for (auto& task: m_tasks) {
         if (!task.isFinished()) {
             process_task = true;
@@ -60,33 +79,20 @@ bool TaskResolver::update(ezgl::application* app)
                 std::string detailsLevel = options.getString(OPTION_DETAILS_LEVEL);
                 bool isFlat = options.getBool(OPTION_IS_FLOAT_ROUTING, false);
                 if (!options.hasErrors()) {
-                    if (pathType != server_ctx.path_type()) {
-                        server_ctx.set_crit_path_index(-1);
-                    }
+                    server_ctx->set_crit_path_index(-1); // reset selection if path list options has changed
 
-                    server_ctx.set_path_type(pathType);
-                    server_ctx.set_critical_path_num(nCriticalPathNum);
-                    if (pathType == "setup") {
-                        auto paths = calcSetupCritPaths(nCriticalPathNum);
-                        server_ctx.set_crit_paths(paths);
-                    } else if (pathType == "hold") {
-                        auto hold_timing_info = server_ctx.hold_timing_info();
-                        if (hold_timing_info) {
-                            auto paths = calcHoldCritPaths(nCriticalPathNum, hold_timing_info);
-                            server_ctx.set_crit_paths(paths);
-                        } else {
-                            std::string msg{"cannot calculate hold critical path due to hold_timing_info nullptr"};
-                            std::cerr << msg << std::endl;
-                            task.fail(msg);
-                        }
-                    } else {
-                        std::string msg{"unknown path type " + pathType};
+                    server_ctx->set_path_type(pathType);
+                    server_ctx->set_critical_path_num(nCriticalPathNum);
+                    CritPathsResult crit_paths_result = calcCriticalPath(pathType, nCriticalPathNum, getDetailsLevelEnum(detailsLevel), isFlat);
+                    server_ctx->set_crit_paths(crit_paths_result.paths);
+                    if (crit_paths_result.report.empty()) {
+                        std::string msg{"Critical paths report is empty"};
                         std::cerr << msg << std::endl;
                         task.fail(msg);
                     }
-
+                    
                     if (!task.hasError()) {
-                        std::string msg{getPathsStr(server_ctx.crit_paths(), detailsLevel, isFlat)};
+                        std::string msg{crit_paths_result.report};
                         task.success(msg);
                     }
                 } else {
@@ -99,8 +105,8 @@ bool TaskResolver::update(ezgl::application* app)
                 int pathIndex = options.getInt(OPTION_PATH_INDEX, -1);
                 std::string highLightMode = options.getString(OPTION_HIGHTLIGHT_MODE);
                 if (!options.hasErrors()) {
-                    if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx.crit_paths().size()))) {
-                        server_ctx.set_crit_path_index(pathIndex);
+                    if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx->crit_paths().size()))) {
+                        server_ctx->set_crit_path_index(pathIndex);
 
                         // update gtk UI
                         GtkComboBox* toggle_crit_path = GTK_COMBO_BOX(app->get_object("ToggleCritPath"));
@@ -114,7 +120,7 @@ bool TaskResolver::update(ezgl::application* app)
                             task.fail(msg);
                         }                        
                     } else {
-                        std::string msg{"selectedIndex=" + std::to_string(pathIndex) + " is out of range [0-" + std::to_string(static_cast<int>(server_ctx.crit_paths().size())-1) + "]"};
+                        std::string msg{"selectedIndex=" + std::to_string(pathIndex) + " is out of range [0-" + std::to_string(static_cast<int>(server_ctx->crit_paths().size())-1) + "]"};
                         std::cerr << msg << std::endl;
                         task.fail(msg);
                     }

@@ -861,7 +861,6 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat);
 
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
-            g_vpr_ctx.server_ctx().set_hold_timing_info(timing_info);
         }
 
         if (router_opts.doRouting == STAGE_DO) {
@@ -1504,8 +1503,6 @@ void vpr_analysis(const Netlist<>& net_list,
         if (vpr_setup.PowerOpts.do_power) {
             vpr_power_estimation(vpr_setup, Arch, *timing_info, route_status);
         }
-
-        g_vpr_ctx.server_ctx().set_hold_timing_info(std::move(timing_info)); // grab timing_info for further usage
     }
 }
 

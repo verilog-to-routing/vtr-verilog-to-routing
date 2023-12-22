@@ -176,36 +176,39 @@ ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
 gboolean redraw_callback(gpointer data) {
-    // shortcuts
-    ezgl::application* app = static_cast<ezgl::application*>(data);
-    Server& server = g_vpr_ctx.server_ctx().server();
-    TaskResolver& task_resolver = g_vpr_ctx.server_ctx().task_resolver();
-    //
+    bool isRunning = false;
+    if (g_vpr_ctx.server_ctx()) {
+        // shortcuts
+        ezgl::application* app = static_cast<ezgl::application*>(data);
+        Server& server = g_vpr_ctx.server_ctx()->server();
+        TaskResolver& task_resolver = g_vpr_ctx.server_ctx()->task_resolver();
+        //
 
-    bool isRunning = !server.isStopped();
-    if (isRunning) {
-        if (!server.isStarted()) {
-            server.start();
-        }
+        isRunning = !server.isStopped();
+        if (isRunning) {
+            if (!server.isStarted()) {
+                server.start();
+            }
 
-        std::vector<Task> tasksBuff;
+            std::vector<Task> tasksBuff;
 
-        server.takeRecievedTasks(tasksBuff);
-        task_resolver.addTasks(tasksBuff);
+            server.takeRecievedTasks(tasksBuff);
+            task_resolver.addTasks(tasksBuff);
 
-        bool process_task = task_resolver.update(app);
+            bool process_task = task_resolver.update(app);
 
-        tasksBuff.clear();
-        task_resolver.takeFinished(tasksBuff);
+            tasksBuff.clear();
+            task_resolver.takeFinished(tasksBuff);
 
-        server.addSendTasks(tasksBuff);
+            server.addSendTasks(tasksBuff);
 
-        // Call the redraw method of the application if any of task was processed
-        if (process_task) {
-            app->refresh_drawing();
+            // Call the redraw method of the application if any of task was processed
+            if (process_task) {
+                app->refresh_drawing();
+            }
         }
     }
-
+    
     // Return TRUE to keep the timer running, or FALSE to stop it
     return isRunning;
 }
@@ -238,8 +241,7 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->is_flat = is_flat;
 
     if (server) {
-        g_vpr_ctx.server_ctx().set_enabled(true);
-        g_vpr_ctx.server_ctx().server().setPortNum(port_num);
+        g_vpr_ctx.create_server_ctx(port_num);
         g_timeout_add(100, redraw_callback, &application);
     }
 

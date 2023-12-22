@@ -951,24 +951,30 @@ void draw_crit_path(ezgl::renderer* g) {
         return; //No timing to draw
     }
 
-    if (g_vpr_ctx.server_ctx().is_enabled()) {
-        ServerContext& server_ctx = g_vpr_ctx.server_ctx(); // shortcut
+    if (g_vpr_ctx.server_ctx()) {
+        const ServerContextPtr& server_ctx = g_vpr_ctx.server_ctx(); // shortcut
 
-        auto paths = server_ctx.crit_paths();
+        auto paths = server_ctx->crit_paths();
 
         // check path index
-        if (server_ctx.crit_path_index() >= static_cast<int>(paths.size())) {
-            server_ctx.set_crit_path_index(-1);
+        if (server_ctx->crit_path_index() >= static_cast<int>(paths.size())) {
+            server_ctx->set_crit_path_index(-1);
         }
-        if (server_ctx.crit_path_index() != -1) {
-            tatum::TimingPath path = paths[server_ctx.crit_path_index()];
+        if (server_ctx->crit_path_index() != -1) {
+            tatum::TimingPath path = paths[server_ctx->crit_path_index()];
             draw_crit_path(path, g);
         }
     } else {
-        const int crit_path_index = 0;
-        auto paths = calcSetupCritPaths(1);
+        tatum::TimingPathCollector path_collector;
+
+        auto& timing_ctx = g_vpr_ctx.timing();
+
+        auto paths = path_collector.collect_worst_setup_timing_paths(
+            *timing_ctx.graph,
+            *(draw_state->setup_timing_info->setup_analyzer()), 1);
+
         if (paths.size()>0) {
-            auto path = paths[crit_path_index];
+            auto path = paths[0];
             draw_crit_path(path, g);
         }
     }

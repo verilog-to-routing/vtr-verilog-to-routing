@@ -565,9 +565,6 @@ struct NocContext : public Context {
 
 class ServerContext : public Context {
   public:
-    bool is_enabled() const { return is_enabled_; }
-    void set_enabled(bool is_enabled) { is_enabled_ = is_enabled; }
-
     const Server& server() const { return server_; }
     Server& server() { return server_; }
 
@@ -586,9 +583,6 @@ class ServerContext : public Context {
     void set_crit_path_index(int crit_path_index) { crit_path_index_ = crit_path_index; }
     int crit_path_index() const { return crit_path_index_; }
 
-    void set_hold_timing_info(const std::shared_ptr<SetupHoldTimingInfo>& hold_timing_info) { hold_timing_info_ = hold_timing_info; }
-    const std::shared_ptr<SetupHoldTimingInfo>& hold_timing_info() const { return hold_timing_info_; }
-
   private:
     bool is_enabled_ = false;
     Server server_;
@@ -598,8 +592,8 @@ class ServerContext : public Context {
     int critical_path_num_ = 1;
     std::string path_type_ = "setup";
     int crit_path_index_ = 0;
-    std::shared_ptr<SetupHoldTimingInfo> hold_timing_info_;
 };
+using ServerContextPtr = std::unique_ptr<ServerContext>;
 
 /**
  * @brief This object encapsulates VPR's state.
@@ -684,8 +678,14 @@ class VprContext : public Context {
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
 
-    const ServerContext& server_ctx() const { return server_ctx_; }
-    ServerContext& server_ctx() { return server_ctx_; }
+    void create_server_ctx(int port_num) {
+        server_ctx_ = std::make_unique<ServerContext>();
+        if (server_ctx_) {
+            server_ctx_->server().setPortNum(port_num);
+        }
+    }
+
+    const ServerContextPtr& server_ctx() const { return server_ctx_; }
 
   private:
     DeviceContext device_;
@@ -703,7 +703,7 @@ class VprContext : public Context {
     FloorplanningContext constraints_;
     NocContext noc_;
 
-    ServerContext server_ctx_;
+    ServerContextPtr server_ctx_;
 
     PackingMultithreadingContext packing_multithreading_;
 };

@@ -31,6 +31,7 @@ public:
     void stop();
 
 private:
+    bool m_debugLog = false;
     int m_portNum = -1;
     std::mutex m_portNumMutex;
 

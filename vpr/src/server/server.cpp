@@ -16,7 +16,9 @@ Server::Server()
 
 Server::~Server()
 {
-    std::cout << "~~~ th=" << std::this_thread::get_id() << " ~Server()" << std::endl;
+    if (m_debugLog) {
+        std::cout << "~~~ th=" << std::this_thread::get_id() << " ~Server()" << std::endl;
+    }
     stop();
 }
 
@@ -29,7 +31,9 @@ void Server::setPortNum(int portNum)
 void Server::start()
 {
     if (!m_isStarted.load()) {
-        std::cout << "~~~ th=" << std::this_thread::get_id() << " starting server" << std::endl;
+        if (m_debugLog) {
+            std::cout << "~~~ th=" << std::this_thread::get_id() << " starting server" << std::endl;
+        }
         m_isStarted.store(true);
         m_thread = std::thread(&Server::startListening, this);
     }
@@ -39,11 +43,17 @@ void Server::stop()
 {
     if (!m_isStopped.load()) {
         m_isStopped.store(true);
-        std::cout << "~~~ th=" << std::this_thread::get_id() << " stopping server, is stopped=" << m_isStopped.load() << std::endl;
+        if (m_debugLog) {
+            std::cout << "~~~ th=" << std::this_thread::get_id() << " stopping server, is stopped=" << m_isStopped.load() << std::endl;
+        }
         if (m_thread.joinable()) {
-            std::cout << "~~~ th=" << std::this_thread::get_id() << " join thread START" << std::endl;
+            if (m_debugLog) {
+                std::cout << "~~~ th=" << std::this_thread::get_id() << " join thread START" << std::endl;
+            }
             m_thread.join();
-            std::cout << "~~~ th=" << std::this_thread::get_id() << " join thread FINISHED" << std::endl;
+            if (m_debugLog) {
+                std::cout << "~~~ th=" << std::this_thread::get_id() << " join thread FINISHED" << std::endl;
+            }
         }
     }                
 }
@@ -96,7 +106,7 @@ void Server::startListening()
         perror("bind failed");
         exit(EXIT_FAILURE);
     } else {
-        std::cout << "~~~ th=" << std::this_thread::get_id() << " start listening port: " << m_portNum << std::endl;
+        std::cout << "th=" << std::this_thread::get_id() << " start listening port: " << m_portNum << std::endl;
     }
 
     // Put the server socket in a passive mode, where it waits for the client to approach the server to make a connection

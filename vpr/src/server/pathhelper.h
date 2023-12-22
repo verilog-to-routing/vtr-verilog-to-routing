@@ -6,12 +6,13 @@
 #include <memory>
 
 #include "tatum/report/TimingPath.hpp"
+#include "vpr_types.h"
 
-class SetupHoldTimingInfo;
+struct CritPathsResult {
+    std::vector<tatum::TimingPath> paths;
+    std::string report;
+};
 
-std::string getPathsStr(const std::vector<tatum::TimingPath>& paths, const std::string& detailesLevel, bool is_flat_routing);
-
-std::vector<tatum::TimingPath> calcSetupCritPaths(int numMax);
-std::vector<tatum::TimingPath> calcHoldCritPaths(int numMax, const std::shared_ptr<SetupHoldTimingInfo>& hold_timing_info);
+CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing);
 
 #endif

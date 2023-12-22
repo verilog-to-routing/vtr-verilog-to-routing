@@ -2,6 +2,7 @@
 #define TASKRESOLVER_H
 
 #include "task.h"
+#include "vpr_types.h"
 
 #include <vector>
 
@@ -26,6 +27,8 @@ public:
 
 private:
     std::vector<Task> m_tasks;
+
+    e_timing_report_detail getDetailsLevelEnum(const std::string& pathDetailsLevelStr) const ;
 };
 
 #endif
