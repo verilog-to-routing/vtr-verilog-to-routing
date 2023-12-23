@@ -167,6 +167,8 @@ def vtr_command_main(arg_list, prog=None):
             parse_single_test(collect_task_list(reg_test), calculate=True)
         elif args.display_qor:
             num_qor_failures = display_qor(reg_test)
+        elif reg_test.startswith("parmys"):
+            total_num_func_failures += run_parmys_test(args, reg_test)
         elif reg_test.startswith("odin"):
             total_num_func_failures += run_odin_test(args, reg_test)
         else:
@@ -246,6 +248,52 @@ def display_qor(reg_test):
                         row += [(values[1] % float(info[positions[key]])) + values[0]]
             table.add_row(row)
         print(table)
+    return 0
+
+
+def run_parmys_test(args, test_name):
+    """Run Parmys test with given test name"""
+    parmys_reg_script = [
+        str(paths.parmys_verify_path),
+        "--clean",
+        "-C",
+        str(paths.parmys_output_on_error_path),
+        "--nb_of_process",
+        str(args.j),
+        "--test",
+        "{}/regression_test/benchmark/".format(str(paths.parmys_path)),
+    ]
+    if test_name == "parmys_reg_koios":
+        parmys_reg_script[-1] += "suite/koios_medium_suite"
+    # if test_name == "odin_reg_full":
+    #     parmys_reg_script[-1] += "suite/full_suite"
+    # elif test_name == "odin_reg_syntax":
+    #     odin_reg_script[-1] += "task/syntax"
+    # elif test_name == "odin_reg_arch":
+    #     odin_reg_script[-1] += "task/arch_sweep"
+    # elif test_name == "odin_reg_operators":
+    #     odin_reg_script[-1] += "task/operators"
+    # elif test_name == "odin_reg":
+    #     odin_reg_script[-1] += "task/full"
+    # elif test_name == "odin_reg_basic":
+    #     odin_reg_script[-1] += "suite/light_suite"
+    # elif test_name == "odin_reg_strong":
+    #     odin_reg_script[-1] += "suite/heavy_suite"
+    else:
+        raise IOError("Test does not exist: {}".format(test_name))
+
+    parmys_root = str(Path(parmys_reg_script[0]).resolve().parent)
+
+    result = subprocess.call(parmys_reg_script, cwd=parmys_root)
+
+    assert result is not None
+    if result != 0:
+        # Error
+        print("FAILED test '{}'".format(test_name))
+        return 1
+
+    # Pass
+    print("PASSED test '{}'".format(test_name))
     return 0
 
 

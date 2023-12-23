@@ -65,7 +65,7 @@ def init_script_file(
         yosys_script_full_path,
         {
             "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
-            "TTT": str(vtr.paths.yosys_tcl_path),
+            # "TTT": str(vtr.paths.yosys_tcl_path),
             "ZZZ": output_netlist,
             "QQQ": architecture_file_path,
         },
