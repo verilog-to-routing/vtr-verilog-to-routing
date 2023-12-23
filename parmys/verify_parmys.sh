@@ -25,7 +25,7 @@ INPUT="$*"
 exec 0<&-
 
 WRAPPER_EXEC="${THIS_DIR}/exec_wrapper.sh"
-ODIN_EXEC="${VTR_DIR}/build/bin/yosys"
+YOSYS_EXEC="${VTR_DIR}/build/bin/yosys"
 
 
 BENCHMARK_DIR="${REGRESSION_DIR}/benchmark"
@@ -1039,7 +1039,7 @@ function sim() {
 					wrapper_command="${wrapper_command}
 										${DIR}/${synthesis_params_file_name}"
 
-					synthesis_command="${ODIN_EXEC} -c ${DIR}/synthesis.tcl"
+					synthesis_command="${YOSYS_EXEC} -c ${DIR}/synthesis.tcl"
 
 					_echo_args "${wrapper_command}"	\
 						> "${DIR}/${synthesis_wrapper_file_name}"
@@ -1081,7 +1081,7 @@ function sim() {
 										${DIR}/${techmap_params_file_name}"
 
 
-					techmap_command="${ODIN_EXEC}
+					techmap_command="${YOSYS_EXEC}
 										${_techmap_params}
 										${arch_cmd}
 										$(odin_file_type_arg ${input_file}) ${input_file}
@@ -1126,7 +1126,7 @@ function sim() {
 					wrapper_command="${wrapper_command}
 										${DIR}/${simulation_params_file_name}"
 
-					simulation_command="${ODIN_EXEC}
+					simulation_command="${YOSYS_EXEC}
 											${_simulation_params}
 											${arch_cmd}
 											$(odin_file_type_arg ${sim_blif_file}) ${sim_blif_file}
@@ -1636,9 +1636,9 @@ init_temp
 
 if [ "${_STATUS_ONLY}" == "off" ]
 then
-	if [ ! -x "${ODIN_EXEC}" ]
+	if [ ! -x "${YOSYS_EXEC}" ]
 	then
-		echo "Unable to find ${ODIN_EXEC}"
+		echo "Unable to find ${YOSYS_EXEC}"
 		_exit_with_code "-1"
 	fi
 
