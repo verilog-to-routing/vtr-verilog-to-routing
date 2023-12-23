@@ -1,0 +1,108 @@
+{
+    "buf/buf_indexed_port/no_arch": {
+        "test_name": "buf/buf_indexed_port/no_arch",
+        "verilog": "buf_indexed_port.vh",
+        "max_rss(MiB)": 11.8,
+        "exec_time(ms)": 3.6,
+        "elaboration_time(ms)": 0.4,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0,
+        "synthesis_time(ms)": 1.7,
+        "Pi": 2,
+        "Po": 2,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "buf/buf_wire/no_arch": {
+        "test_name": "buf/buf_wire/no_arch",
+        "verilog": "buf_wire.vh",
+        "max_rss(MiB)": 11.1,
+        "exec_time(ms)": 2.4,
+        "elaboration_time(ms)": 0.2,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0,
+        "synthesis_time(ms)": 0.9,
+        "Pi": 1,
+        "Po": 1,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "buf/range_buf_int_wide/no_arch": {
+        "test_name": "buf/range_buf_int_wide/no_arch",
+        "verilog": "range_buf_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "range_any_width_unary_test.v:12:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 2"
+        ]
+    },
+    "buf/range_buf_ultra_wide/no_arch": {
+        "test_name": "buf/range_buf_ultra_wide/no_arch",
+        "verilog": "range_buf_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "range_any_width_unary_test.v:12:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 2"
+        ]
+    },
+    "buf/range_buf_wide/no_arch": {
+        "test_name": "buf/range_buf_wide/no_arch",
+        "verilog": "range_buf_wide.vh",
+        "exit": 134,
+        "errors": [
+            "range_any_width_unary_test.v:12:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 2"
+        ]
+    },
+    "buf/replicate_buf_int_wide/no_arch": {
+        "test_name": "buf/replicate_buf_int_wide/no_arch",
+        "verilog": "replicate_buf_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "replicate_any_width_unary_test.v:12:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 2"
+        ]
+    },
+    "buf/replicate_buf_ultra_wide/no_arch": {
+        "test_name": "buf/replicate_buf_ultra_wide/no_arch",
+        "verilog": "replicate_buf_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "replicate_any_width_unary_test.v:12:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 2"
+        ]
+    },
+    "buf/replicate_buf_wide/no_arch": {
+        "test_name": "buf/replicate_buf_wide/no_arch",
+        "verilog": "replicate_buf_wide.vh",
+        "exit": 134,
+        "errors": [
+            "replicate_any_width_unary_test.v:12:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 2"
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "elaboration_time(ms)": -1,
+        "optimization_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

@@ -1,0 +1,115 @@
+{
+    "function_endfunction/function_call_function/no_arch": {
+        "test_name": "function_endfunction/function_call_function/no_arch",
+        "verilog": "function_call_function.v",
+        "exit": 134,
+        "errors": [
+            "function_call_function.v:22:1 [NETLIST] This output (simple_op.function_instance_0.function_instance_1^flip_one) must exist...must be an error"
+        ]
+    },
+    "function_endfunction/function_call_task_failure/no_arch": {
+        "test_name": "function_endfunction/function_call_task_failure/no_arch",
+        "verilog": "function_call_task_failure.v",
+        "exit": 134,
+        "errors": [
+            "function_call_task_failure.v:23:2 [AST] Function already has input with this name in"
+        ],
+        "warnings": [
+            "function_call_task_failure.v:11:8 [PARSE_TO_AST] error in parsing: (syntax error, unexpected '(', expecting '=')"
+        ]
+    },
+    "function_endfunction/function_input_failure/no_arch": {
+        "test_name": "function_endfunction/function_input_failure/no_arch",
+        "verilog": "function_input_failure.v",
+        "exit": 134,
+        "errors": [
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "function_input_failure.v:8:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected ')')"
+        ]
+    },
+    "function_endfunction/inside_port/no_arch": {
+        "test_name": "function_endfunction/inside_port/no_arch",
+        "verilog": "inside_port.v",
+        "exit": 134,
+        "errors": [
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "inside_port.v:9:2 [PARSE_TO_AST] error in parsing: (syntax error, unexpected ')', expecting ';' or ',')"
+        ]
+    },
+    "function_endfunction/multiple_inputs/no_arch": {
+        "test_name": "function_endfunction/multiple_inputs/no_arch",
+        "verilog": "multiple_inputs.v",
+        "max_rss(MiB)": 11.5,
+        "exec_time(ms)": 2.6,
+        "elaboration_time(ms)": 0.3,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0,
+        "synthesis_time(ms)": 1.2,
+        "Pi": 3,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 5,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
+    },
+    "function_endfunction/outside_port/no_arch": {
+        "test_name": "function_endfunction/outside_port/no_arch",
+        "verilog": "outside_port.v",
+        "max_rss(MiB)": 15.2,
+        "exec_time(ms)": 9.3,
+        "elaboration_time(ms)": 2.5,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0,
+        "synthesis_time(ms)": 8,
+        "Pi": 16,
+        "Po": 16,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "function_endfunction/time_control_failure/no_arch": {
+        "test_name": "function_endfunction/time_control_failure/no_arch",
+        "verilog": "time_control_failure.v",
+        "exit": 134,
+        "errors": [
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "time_control_failure.v:17:3 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vALWAYS)"
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "elaboration_time(ms)": -1,
+        "optimization_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

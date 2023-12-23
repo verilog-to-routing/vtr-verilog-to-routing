@@ -1,0 +1,95 @@
+{
+    "integer/integer_failure/no_arch": {
+        "test_name": "integer/integer_failure/no_arch",
+        "verilog": "integer_failure.v",
+        "exit": 134,
+        "errors": [
+            "integer_failure.v:3:1 [NETLIST] Input cannot be defined as a reg"
+        ],
+        "warnings": [
+            "integer_failure.v:3:1 [AST] Odin does not handle signed REG (a)",
+            "integer_failure.v:3:1 [AST] Odin does not handle signed INPUT (a)",
+            "integer_failure.v:3:1 [AST] Odin does not handle signed ports (a)",
+            "integer_failure.v:4:1 [AST] Odin does not handle signed REG (b)",
+            "integer_failure.v:4:1 [AST] Odin does not handle signed INPUT (b)",
+            "integer_failure.v:4:1 [AST] Odin does not handle signed ports (b)",
+            "integer_failure.v:6:1 [AST] Odin does not handle signed REG (c)",
+            "integer_failure.v:6:1 [AST] Odin does not handle signed OUTPUT (c)",
+            "integer_failure.v:6:1 [AST] Odin does not handle signed ports (c)"
+        ]
+    },
+    "integer/integer_outside/no_arch": {
+        "test_name": "integer/integer_outside/no_arch",
+        "verilog": "integer_outside.v",
+        "warnings": [
+            "integer_outside.v:3:1 [AST] Odin does not handle signed INPUT (a)",
+            "integer_outside.v:3:1 [AST] Odin does not handle signed ports (a)",
+            "integer_outside.v:4:1 [AST] Odin does not handle signed INPUT (b)",
+            "integer_outside.v:4:1 [AST] Odin does not handle signed ports (b)",
+            "integer_outside.v:8:1 [AST] Odin does not handle signed REG (c)"
+        ],
+        "elaboration_time(ms)": 0.7,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0.1,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "integer/integer_port/no_arch": {
+        "test_name": "integer/integer_port/no_arch",
+        "verilog": "integer_port.v",
+        "warnings": [
+            "integer_port.v:3:1 [AST] Odin does not handle signed INPUT (a)",
+            "integer_port.v:3:1 [AST] Odin does not handle signed ports (a)",
+            "integer_port.v:4:1 [AST] Odin does not handle signed INPUT (b)",
+            "integer_port.v:4:1 [AST] Odin does not handle signed ports (b)",
+            "integer_port.v:6:1 [AST] Odin does not handle signed REG (c)",
+            "integer_port.v:6:1 [AST] Odin does not handle signed OUTPUT (c)",
+            "integer_port.v:6:1 [AST] Odin does not handle signed ports (c)"
+        ],
+        "elaboration_time(ms)": 1.3,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0.1,
+        "Pi": 32,
+        "Po": 32,
+        "logic element": 33,
+        "Longest Path": 19,
+        "Average Path": 3,
+        "Estimated LUTs": 33,
+        "Total Node": 33
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "elaboration_time(ms)": -1,
+        "optimization_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

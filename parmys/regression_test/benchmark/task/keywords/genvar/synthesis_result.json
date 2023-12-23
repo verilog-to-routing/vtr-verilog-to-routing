@@ -1,0 +1,48 @@
+{
+    "genvar/generate_for/no_arch": {
+        "test_name": "genvar/generate_for/no_arch",
+        "verilog": "generate_for.v",
+        "warnings": [
+            "generate_for.v:7:1 [AST] Odin does not handle signed GENVAR (i)"
+        ],
+        "max_rss(MiB)": 12.3,
+        "exec_time(ms)": 2.6,
+        "elaboration_time(ms)": 0.5,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0,
+        "synthesis_time(ms)": 1.5,
+        "Po": 3,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "elaboration_time(ms)": -1,
+        "optimization_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

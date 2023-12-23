@@ -1,0 +1,58 @@
+[HOOKS]
+    filename = "hooks.py"
+
+[DEFAULT]
+    auto-hide = true
+    default = -1
+    # hide all the values if they match their default
+    hide-if = ${default}
+
+["exit"]
+    # if it is expected to fail, dont look for different failure
+    range = [ 1.0, 255.0 ]
+    regex = "Odin exited with code: (\d+)"
+    #default to an error code to catch this script failures
+    default = 50
+    # hide the exit code if it is 0 (success)
+    hide-if = 0
+
+["leaks"]
+    regex = [ 
+        # asan errors
+        "SUMMARY: AddressSanitizer:.* leaked in (\d)+", 
+        # valgrind errors
+        "==[\d]+== ERROR SUMMARY: (\d)+ errors" 
+        ]
+    default = 0
+    range = [ 1.0, 255.0 ]
+
+["errors"]
+    regex = [ 
+    	# Odin Error
+    	"(?:.*/([^/]+):)?[\s]*error(\[[^:]*\]): (.*)", 
+    	# Yosys Error
+    	"(?:.*/([^/]+):)?[\s]*ERROR: (.*)" 
+    	]
+    default = []
+
+["warnings"]
+    regex = "(?:.*/([^/]+):)?[\s]*warning(\[[^:]*\]): (.*)"
+    default = []
+
+["expectation"]
+    regex = "Expect::(.*)"
+    default = []
+
+["max_rss(MiB)"]
+    # Memory usage can be very off depending on the number of cores
+    range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 250 MiB as it is subject to noise
+    cutoff = 250.0
+    regex = "Odin II took .* \(max_rss (\d+|\d+.\d+) MiB\)"
+
+["exec_time(ms)"]
+    # timing can be very off due to how fast odin runs
+    range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 1 second as it is subject to noise
+    cutoff = 1000.0
+    regex = "Total time: (\d+|\d+.\d+)ms"

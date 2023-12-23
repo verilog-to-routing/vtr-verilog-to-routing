@@ -1,0 +1,22 @@
+["generic logic size"]
+    regex = "Using Lut input width of: (\d+)"
+    # use -1 since odin will report -1 if it couldnt get a lut size
+    default = -1
+
+["Longest Path"]
+    regex = "Longest path: (\d+)"
+    default = 0
+
+["Average Path"]
+    regex = "Average path: (\d+)"
+    default = 0
+
+["Estimated LUTs"]
+    regex = "Total estimated number of lut: (\d+)"
+    default = 0
+
+["Total Node"]
+    regex = "Total number of node: (\d+)"
+    default = 0
+
+    

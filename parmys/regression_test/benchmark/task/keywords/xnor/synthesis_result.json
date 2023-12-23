@@ -1,0 +1,114 @@
+{
+    "xnor/range_xnor_int_wide/no_arch": {
+        "test_name": "xnor/range_xnor_int_wide/no_arch",
+        "verilog": "range_xnor_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "range_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/range_xnor_ultra_wide/no_arch": {
+        "test_name": "xnor/range_xnor_ultra_wide/no_arch",
+        "verilog": "range_xnor_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "range_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/range_xnor_wide/no_arch": {
+        "test_name": "xnor/range_xnor_wide/no_arch",
+        "verilog": "range_xnor_wide.vh",
+        "exit": 134,
+        "errors": [
+            "range_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/replicate_xnor_int_wide/no_arch": {
+        "test_name": "xnor/replicate_xnor_int_wide/no_arch",
+        "verilog": "replicate_xnor_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "replicate_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/replicate_xnor_ultra_wide/no_arch": {
+        "test_name": "xnor/replicate_xnor_ultra_wide/no_arch",
+        "verilog": "replicate_xnor_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "replicate_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/replicate_xnor_wide/no_arch": {
+        "test_name": "xnor/replicate_xnor_wide/no_arch",
+        "verilog": "replicate_xnor_wide.vh",
+        "exit": 134,
+        "errors": [
+            "replicate_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/xnor_indexed_port/no_arch": {
+        "test_name": "xnor/xnor_indexed_port/no_arch",
+        "verilog": "xnor_indexed_port.vh",
+        "max_rss(MiB)": 31.2,
+        "exec_time(ms)": 8.2,
+        "elaboration_time(ms)": 0.7,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0,
+        "synthesis_time(ms)": 4.4,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "xnor/xnor_wire/no_arch": {
+        "test_name": "xnor/xnor_wire/no_arch",
+        "verilog": "xnor_wire.vh",
+        "max_rss(MiB)": 31.3,
+        "exec_time(ms)": 6.7,
+        "elaboration_time(ms)": 0.3,
+        "optimization_time(ms)": 0,
+        "techmap_time(ms)": 0,
+        "synthesis_time(ms)": 3.4,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "elaboration_time(ms)": -1,
+        "optimization_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

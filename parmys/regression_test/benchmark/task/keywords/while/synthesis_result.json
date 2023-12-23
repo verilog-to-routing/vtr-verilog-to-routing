@@ -1,0 +1,43 @@
+{
+    "while/while_loop/no_arch": {
+        "test_name": "while/while_loop/no_arch",
+        "verilog": "while_loop.v",
+        "exit": 134,
+        "errors": [
+            "while_loop.v:13:4 [AST] While statements are NOT supported"
+        ],
+        "warnings": [
+            "while_loop.v:6:1 [AST] Odin does not handle signed REG (i)"
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "elaboration_time(ms)": -1,
+        "optimization_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}
