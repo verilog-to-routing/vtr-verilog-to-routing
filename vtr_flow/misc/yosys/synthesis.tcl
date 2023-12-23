@@ -74,7 +74,7 @@ opt -fast -noff
 
 #autoname
 
-tee -o /dev/stdout stat
+stat
 
 hierarchy -check -auto-top -purge_lib
 
