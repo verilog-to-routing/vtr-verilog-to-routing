@@ -313,7 +313,8 @@
         "Total Cells": 420,
         "NOT": 88,
         "DFF_P": 144,
-        "adder": 184
+        "adder": 184,
+        "mult_32_32_64": 4
     },
     "micro/bm_arithmetic_unused_bits/k6_N10_40nm": {
         "test_name": "micro/bm_arithmetic_unused_bits/k6_N10_40nm",
@@ -406,7 +407,8 @@
         "OR": 4,
         "AND": 4,
         "NOT": 52,
-        "DFF_P": 144
+        "DFF_P": 144,
+        "mult_32_32_64": 4
     },
     "micro/bm_arithmetic_unused_bits/no_arch": {
         "test_name": "micro/bm_arithmetic_unused_bits/no_arch",
@@ -487,7 +489,9 @@
         "Public Wire Bits": 127,
         "Total Cells": 83,
         "AND": 24,
-        "DFF_P": 55
+        "DFF_P": 55,
+        "mult_8_7_15": 2,
+        "mult_8_8_16": 2
     },
     "micro/bm_base_multiply/k6_N10_40nm": {
         "test_name": "micro/bm_base_multiply/k6_N10_40nm",
@@ -562,7 +566,9 @@
         "Public Wire Bits": 127,
         "Total Cells": 83,
         "AND": 24,
-        "DFF_P": 55
+        "DFF_P": 55,
+        "mult_8_7_15": 2,
+        "mult_8_8_16": 2
     },
     "micro/bm_base_multiply/no_arch": {
         "test_name": "micro/bm_base_multiply/no_arch",
@@ -5144,7 +5150,8 @@
         "AND": 118,
         "NOT": 47,
         "DFF_P": 25,
-        "adder": 47
+        "adder": 47,
+        "mult_8_8_16": 1
     },
     "micro/bm_functional_test/k6_N10_40nm": {
         "test_name": "micro/bm_functional_test/k6_N10_40nm",
@@ -5213,7 +5220,8 @@
         "OR": 160,
         "AND": 119,
         "NOT": 49,
-        "DFF_P": 25
+        "DFF_P": 25,
+        "mult_8_8_16": 1
     },
     "micro/bm_functional_test/no_arch": {
         "test_name": "micro/bm_functional_test/no_arch",
@@ -5879,7 +5887,9 @@
         "Public Wires": 234,
         "Public Wire Bits": 234,
         "Total Cells": 73,
-        "DFF_P": 70
+        "DFF_P": 70,
+        "mult_8_8_16": 1,
+        "mult_9_9_18": 1
     },
     "micro/bm_match1_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match1_str_arch/k6_N10_40nm",
@@ -5941,7 +5951,9 @@
         "Public Wires": 234,
         "Public Wire Bits": 234,
         "Total Cells": 73,
-        "DFF_P": 70
+        "DFF_P": 70,
+        "mult_8_8_16": 1,
+        "mult_9_9_18": 1
     },
     "micro/bm_match1_str_arch/no_arch": {
         "test_name": "micro/bm_match1_str_arch/no_arch",
@@ -6003,7 +6015,8 @@
         "Public Wire Bits": 155,
         "Total Cells": 128,
         "DFF_P": 46,
-        "adder": 78
+        "adder": 78,
+        "mult_9_9_18": 4
     },
     "micro/bm_match2_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match2_str_arch/k6_N10_40nm",
@@ -6068,7 +6081,8 @@
         "MUX": 189,
         "XOR": 139,
         "AND": 5,
-        "DFF_P": 46
+        "DFF_P": 46,
+        "mult_9_9_18": 4
     },
     "micro/bm_match2_str_arch/no_arch": {
         "test_name": "micro/bm_match2_str_arch/no_arch",
@@ -6130,7 +6144,8 @@
         "Public Wire Bits": 110,
         "Total Cells": 97,
         "DFF_P": 46,
-        "adder": 50
+        "adder": 50,
+        "mult_9_9_18": 1
     },
     "micro/bm_match3_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match3_str_arch/k6_N10_40nm",
@@ -6195,7 +6210,8 @@
         "MUX": 114,
         "XOR": 86,
         "AND": 4,
-        "DFF_P": 46
+        "DFF_P": 46,
+        "mult_9_9_18": 1
     },
     "micro/bm_match3_str_arch/no_arch": {
         "test_name": "micro/bm_match3_str_arch/no_arch",
@@ -6257,7 +6273,10 @@
         "Public Wire Bits": 269,
         "Total Cells": 97,
         "DFF_P": 53,
-        "adder": 41
+        "adder": 41,
+        "mult_8_8_16": 1,
+        "mult_9_8_17": 1,
+        "mult_9_9_18": 1
     },
     "micro/bm_match4_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match4_str_arch/k6_N10_40nm",
@@ -6322,7 +6341,10 @@
         "MUX": 97,
         "XOR": 68,
         "AND": 2,
-        "DFF_P": 53
+        "DFF_P": 53,
+        "mult_8_8_16": 1,
+        "mult_9_8_17": 1,
+        "mult_9_9_18": 1
     },
     "micro/bm_match4_str_arch/no_arch": {
         "test_name": "micro/bm_match4_str_arch/no_arch",
@@ -6384,7 +6406,8 @@
         "Public Wire Bits": 146,
         "Total Cells": 158,
         "DFF_P": 46,
-        "adder": 106
+        "adder": 106,
+        "mult_9_9_18": 6
     },
     "micro/bm_match5_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match5_str_arch/k6_N10_40nm",
@@ -6449,7 +6472,8 @@
         "MUX": 264,
         "XOR": 192,
         "AND": 6,
-        "DFF_P": 46
+        "DFF_P": 46,
+        "mult_9_9_18": 6
     },
     "micro/bm_match5_str_arch/no_arch": {
         "test_name": "micro/bm_match5_str_arch/no_arch",
@@ -6511,7 +6535,8 @@
         "Public Wire Bits": 110,
         "Total Cells": 79,
         "DFF_P": 28,
-        "adder": 49
+        "adder": 49,
+        "mult_9_9_18": 2
     },
     "micro/bm_match6_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match6_str_arch/k6_N10_40nm",
@@ -6576,7 +6601,8 @@
         "MUX": 88,
         "XOR": 69,
         "AND": 3,
-        "DFF_P": 28
+        "DFF_P": 28,
+        "mult_9_9_18": 2
     },
     "micro/bm_match6_str_arch/no_arch": {
         "test_name": "micro/bm_match6_str_arch/no_arch",
@@ -7725,7 +7751,8 @@
         "Wire Bits": 16,
         "Public Wires": 16,
         "Public Wire Bits": 16,
-        "Total Cells": 2
+        "Total Cells": 2,
+        "mult_2_2_4": 2
     },
     "micro/multiply_hard_block/k6_N10_40nm": {
         "test_name": "micro/multiply_hard_block/k6_N10_40nm",
@@ -7767,7 +7794,8 @@
         "Wire Bits": 16,
         "Public Wires": 16,
         "Public Wire Bits": 16,
-        "Total Cells": 2
+        "Total Cells": 2,
+        "mult_2_2_4": 2
     },
     "micro/multiply_hard_block/no_arch": {
         "test_name": "micro/multiply_hard_block/no_arch",
@@ -8007,7 +8035,8 @@
         "Public Wires": 28,
         "Public Wire Bits": 28,
         "Total Cells": 11,
-        "adder": 10
+        "adder": 10,
+        "mult_4_3_7": 1
     },
     "micro/param_override/k6_N10_40nm": {
         "test_name": "micro/param_override/k6_N10_40nm",
@@ -8044,7 +8073,8 @@
         "Total Cells": 13,
         "MUX": 4,
         "XOR": 6,
-        "NOT": 2
+        "NOT": 2,
+        "mult_4_3_7": 1
     },
     "micro/param_override/no_arch": {
         "test_name": "micro/param_override/no_arch",
@@ -8419,6 +8449,161 @@
         "scff": 0,
         "single_port_ram": 0,
         "xadder": 0,
+        "mult_1_1_2": 0,
+        "mult_1_2_3": 0,
+        "mult_1_3_4": 0,
+        "mult_2_1_3": 0,
+        "mult_2_2_4": 0,
+        "mult_2_3_5": 0,
+        "mult_2_4_6": 0,
+        "mult_3_1_4": 0,
+        "mult_3_2_5": 0,
+        "mult_3_3_6": 0,
+        "mult_3_4_7": 0,
+        "mult_3_5_8": 0,
+        "mult_4_2_6": 0,
+        "mult_4_3_7": 0,
+        "mult_4_4_8": 0,
+        "mult_4_5_9": 0,
+        "mult_4_6_10": 0,
+        "mult_5_3_8": 0,
+        "mult_5_4_9": 0,
+        "mult_5_5_10": 0,
+        "mult_5_6_11": 0,
+        "mult_5_7_12": 0,
+        "mult_6_4_10": 0,
+        "mult_6_5_11": 0,
+        "mult_6_6_12": 0,
+        "mult_6_7_13": 0,
+        "mult_6_8_14": 0,
+        "mult_7_5_12": 0,
+        "mult_7_6_13": 0,
+        "mult_7_7_14": 0,
+        "mult_7_8_15": 0,
+        "mult_7_9_16": 0,
+        "mult_8_6_14": 0,
+        "mult_8_7_15": 0,
+        "mult_8_8_16": 0,
+        "mult_8_9_17": 0,
+        "mult_8_10_18": 0,
+        "mult_9_7_16": 0,
+        "mult_9_8_17": 0,
+        "mult_9_9_18": 0,
+        "mult_9_10_19": 0,
+        "mult_9_11_20": 0,
+        "mult_10_8_18": 0,
+        "mult_10_9_19": 0,
+        "mult_10_10_20": 0,
+        "mult_10_11_21": 0,
+        "mult_10_12_22": 0,
+        "mult_11_9_20": 0,
+        "mult_11_10_21": 0,
+        "mult_11_11_22": 0,
+        "mult_11_12_23": 0,
+        "mult_11_13_24": 0,
+        "mult_12_10_22": 0,
+        "mult_12_11_23": 0,
+        "mult_12_12_24": 0,
+        "mult_12_13_25": 0,
+        "mult_12_14_26": 0,
+        "mult_13_11_24": 0,
+        "mult_13_12_25": 0,
+        "mult_13_13_26": 0,
+        "mult_13_14_27": 0,
+        "mult_13_15_28": 0,
+        "mult_14_12_26": 0,
+        "mult_14_13_27": 0,
+        "mult_14_14_28": 0,
+        "mult_14_15_29": 0,
+        "mult_14_16_30": 0,
+        "mult_15_13_28": 0,
+        "mult_15_14_29": 0,
+        "mult_15_15_30": 0,
+        "mult_15_16_31": 0,
+        "mult_15_17_32": 0,
+        "mult_16_14_30": 0,
+        "mult_16_15_31": 0,
+        "mult_16_16_32": 0,
+        "mult_16_17_33": 0,
+        "mult_16_18_34": 0,
+        "mult_17_15_32": 0,
+        "mult_17_16_33": 0,
+        "mult_17_17_34": 0,
+        "mult_17_18_35": 0,
+        "mult_17_19_36": 0,
+        "mult_18_16_34": 0,
+        "mult_18_17_35": 0,
+        "mult_18_18_36": 0,
+        "mult_18_19_37": 0,
+        "mult_18_20_38": 0,
+        "mult_19_17_36": 0,
+        "mult_19_18_37": 0,
+        "mult_19_19_38": 0,
+        "mult_19_20_39": 0,
+        "mult_19_21_40": 0,
+        "mult_20_18_38": 0,
+        "mult_20_19_39": 0,
+        "mult_20_20_40": 0,
+        "mult_20_21_41": 0,
+        "mult_20_22_42": 0,
+        "mult_21_19_40": 0,
+        "mult_21_20_41": 0,
+        "mult_21_21_42": 0,
+        "mult_21_22_43": 0,
+        "mult_21_23_44": 0,
+        "mult_22_20_42": 0,
+        "mult_22_21_43": 0,
+        "mult_22_22_44": 0,
+        "mult_22_23_45": 0,
+        "mult_22_24_46": 0,
+        "mult_23_21_44": 0,
+        "mult_23_22_45": 0,
+        "mult_23_23_46": 0,
+        "mult_23_24_47": 0,
+        "mult_23_25_48": 0,
+        "mult_24_22_46": 0,
+        "mult_24_23_47": 0,
+        "mult_24_24_48": 0,
+        "mult_24_25_49": 0,
+        "mult_24_26_50": 0,
+        "mult_25_23_48": 0,
+        "mult_25_24_49": 0,
+        "mult_25_25_50": 0,
+        "mult_25_26_51": 0,
+        "mult_25_27_52": 0,
+        "mult_26_24_50": 0,
+        "mult_26_25_51": 0,
+        "mult_26_26_52": 0,
+        "mult_26_27_53": 0,
+        "mult_26_28_54": 0,
+        "mult_27_25_52": 0,
+        "mult_27_26_53": 0,
+        "mult_27_27_54": 0,
+        "mult_27_28_55": 0,
+        "mult_27_29_56": 0,
+        "mult_28_26_54": 0,
+        "mult_28_27_55": 0,
+        "mult_28_28_56": 0,
+        "mult_28_29_57": 0,
+        "mult_28_30_58": 0,
+        "mult_29_27_56": 0,
+        "mult_29_28_57": 0,
+        "mult_29_29_58": 0,
+        "mult_29_30_59": 0,
+        "mult_29_31_60": 0,
+        "mult_30_28_58": 0,
+        "mult_30_29_59": 0,
+        "mult_30_30_60": 0,
+        "mult_30_31_61": 0,
+        "mult_30_32_62": 0,
+        "mult_31_29_60": 0,
+        "mult_31_30_61": 0,
+        "mult_31_31_62": 0,
+        "mult_31_32_63": 0,
+        "mult_31_33_64": 0,
+        "mult_32_30_62": 0,
+        "mult_32_31_63": 0,
+        "mult_32_32_64": 0,
         "anyinit": 0,
         "fsm": 0,
         "mem_v2": 0,
