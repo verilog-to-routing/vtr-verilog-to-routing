@@ -9,6 +9,12 @@ setattr -mod -set keep_hierarchy 1 dual_port_ram
 
 puts "Using parmys as partial mapper"
 
+# QQQ arch file
+# XXX input files
+# YYY other args
+# CCC config file
+# ZZZ output file
+
 parmys_arch -a QQQ
 
 if {$env(PARSER) == "surelog" } {
@@ -60,9 +66,7 @@ techmap -map +/parmys/aldffe2dff.v
 
 opt -full
 
-#stat
-
-parmys -a QQQ -nopass -c odin_config.xml
+parmys -a QQQ -nopass -c CCC YYY
 
 opt -full
 
