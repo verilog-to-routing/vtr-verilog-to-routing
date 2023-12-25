@@ -1035,6 +1035,8 @@ function sim() {
 					sed -i "s@XXX@${input_file}@g" "${DIR}/synthesis.tcl"
 					sed -i "s@ZZZ@${generated_blif_file}@g" "${DIR}/synthesis.tcl"
 					sed -i "s@QQQ@${arches}@g" "${DIR}/synthesis.tcl"
+					sed -i "s@-c CCC@@g" "${DIR}/synthesis.tcl"
+					sed -i "s@YYY@${_synthesis_params}@g" "${DIR}/synthesis.tcl"
 
 					wrapper_command="${wrapper_command}
 										${DIR}/${synthesis_params_file_name}"
