@@ -31,12 +31,17 @@
     	# Odin Error
     	"(?:.*/([^/]+):)?[\s]*error(\[[^:]*\]): (.*)", 
     	# Yosys Error
-    	"(?:.*/([^/]+):)?[\s]*ERROR: (.*)" 
-    	]
+    	"(?:.*/([^/]+):)?[\s]*Error: (.*)" 
+        ]
     default = []
 
 ["warnings"]
-    regex = "(?:.*/([^/]+):)?[\s]*warning(\[[^:]*\]): (.*)"
+    regex = [
+        # Odin Warning
+        "(?:.*/([^/]+):)?[\s]*warning(\[[^:]*\]): (.*)",
+        # Yosys Warning
+    	"(?:.*/([^/]+):)?[\s]*Warning: (.*)" 
+        ]
     default = []
 
 ["expectation"]

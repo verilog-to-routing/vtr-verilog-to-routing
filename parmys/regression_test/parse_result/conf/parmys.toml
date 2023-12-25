@@ -1,0 +1,32 @@
+["Wires"]
+    regex = "Number of wires: (\d+)"
+    default = 0
+
+["Wire Bits"]
+    regex = "Number of wire bits: (\d+)"
+    default = 0
+
+["Public Wires"]
+    regex = "Number of public wires: (\d+)"
+    default = 0
+
+["Public Wire Bits"]
+    regex = "Number of public wire bits: (\d+)"
+    default = 0
+
+["Memories"]
+    regex = "Number of memories: (\d+)"
+    default = 0
+
+["Memory Bits"]
+    regex = "Number of memory bits: (\d+)"
+    default = 0
+
+["Processes"]
+    regex = "Number of processes: (\d+)"
+    default = 0
+
+["Total Cells"]
+    regex = "Number of cells: (\d+)"
+    default = 0
+    
