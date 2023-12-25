@@ -44,4 +44,5 @@
 #include cell_eval.toml
 #include cell_mem.toml
 #include arch_blocks.toml
+#include soft_mult.toml
 #include cell_internal.toml
