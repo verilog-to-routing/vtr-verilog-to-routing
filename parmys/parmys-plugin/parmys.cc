@@ -93,7 +93,7 @@ struct ParMYSPass : public Pass {
             nnet_t *output_net = (nnet_t *)output_nets_hash->get(input_pin->name);
 
             if (!output_net) {
-                log_error("Error: Could not hook up the pin %s: not available, related node: %s.", input_pin->name, node->name);
+                log_error("Could not hook up the pin %s: not available, related node: %s.", input_pin->name, node->name);
             }
             add_fanout_pin_to_net(output_net, input_pin);
         }
