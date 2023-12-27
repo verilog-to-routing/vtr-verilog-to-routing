@@ -52,7 +52,7 @@ def init_script_file(
     circuit_list,
     output_netlist,
     architecture_file_path,
-    odin_config_full_path
+    odin_config_full_path,
 ):
     """initializing the raw yosys script file"""
     # specify the input files type
@@ -229,7 +229,7 @@ def run(
         circuit_list,
         output_netlist.name,
         architecture_file_path,
-        odin_config_full_path
+        odin_config_full_path,
     )
 
     # set the parser
