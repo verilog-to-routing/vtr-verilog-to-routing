@@ -263,22 +263,20 @@ def run_parmys_test(args, test_name):
         "--test",
         "{}/regression_test/benchmark/".format(str(paths.parmys_path)),
     ]
-    if test_name == "parmys_reg_koios":
-        parmys_reg_script[-1] += "suite/koios_medium_suite"
-    # if test_name == "odin_reg_full":
-    #     parmys_reg_script[-1] += "suite/full_suite"
-    # elif test_name == "odin_reg_syntax":
-    #     odin_reg_script[-1] += "task/syntax"
-    # elif test_name == "odin_reg_arch":
-    #     odin_reg_script[-1] += "task/arch_sweep"
-    # elif test_name == "odin_reg_operators":
-    #     odin_reg_script[-1] += "task/operators"
-    # elif test_name == "odin_reg":
-    #     odin_reg_script[-1] += "task/full"
-    # elif test_name == "odin_reg_basic":
-    #     odin_reg_script[-1] += "suite/light_suite"
-    # elif test_name == "odin_reg_strong":
-    #     odin_reg_script[-1] += "suite/heavy_suite"
+    if test_name == "parmys_reg_full":
+        parmys_reg_script[-1] += "suite/full_suite"
+    elif test_name == "parmys_reg_syntax":
+        parmys_reg_script[-1] += "task/syntax"
+    elif test_name == "parmys_reg_arch":
+        parmys_reg_script[-1] += "task/arch_sweep"
+    elif test_name == "parmys_reg_operators":
+        parmys_reg_script[-1] += "task/operators"
+    elif test_name == "parmys_reg":
+        parmys_reg_script[-1] += "task/full"
+    elif test_name == "parmys_reg_basic":
+        parmys_reg_script[-1] += "suite/light_suite"
+    elif test_name == "parmys_reg_strong":
+        parmys_reg_script[-1] += "suite/heavy_suite"
     else:
         raise IOError("Test does not exist: {}".format(test_name))
 
