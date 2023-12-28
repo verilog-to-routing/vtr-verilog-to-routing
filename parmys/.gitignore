@@ -1,6 +1,7 @@
 regression_test/run*
 regression_test/benchmark/BLIF
 regression_test/latest
+regression_test/slpp*
 
 *.d
 *.o
