@@ -1035,8 +1035,15 @@ function sim() {
 					sed -i "s@XXX@${input_file}@g" "${DIR}/synthesis.tcl"
 					sed -i "s@ZZZ@${generated_blif_file}@g" "${DIR}/synthesis.tcl"
 					sed -i "s@QQQ@${arches}@g" "${DIR}/synthesis.tcl"
-					sed -i "s@-c CCC@@g" "${DIR}/synthesis.tcl"
+					sed -i "s@CCC@${DIR}/odin_config.xml@g" "${DIR}/synthesis.tcl"
 					sed -i "s@YYY@${_synthesis_params}@g" "${DIR}/synthesis.tcl"
+
+					cp "${VTR_DIR}/vtr_flow/misc/basic_odin_config_split.xml" "${DIR}/odin_config.xml"
+					sed -i "s@YYY@${_synthesis_params}@g" "${DIR}/odin_config.xml"
+					sed -i "s@ZZZ@${generated_blif_file}@g" "${DIR}/odin_config.xml"
+					sed -i "s@PPP@15@g" "${DIR}/odin_config.xml" #memory_addr_width
+					sed -i "s@MMM@3@g" "${DIR}/odin_config.xml" #min_hard_mult_size
+					sed -i "s@AAA@$1@g" "${DIR}/odin_config.xml" #min_hard_adder_size
 
 					wrapper_command="${wrapper_command}
 										${DIR}/${synthesis_params_file_name}"
