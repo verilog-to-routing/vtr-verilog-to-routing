@@ -42,7 +42,7 @@
 #include net.toml
 #include parmys.toml
 #include cell_eval.toml
-#include cell_mem.toml
+#include std_mem.toml
 #include arch_blocks.toml
 ["mult_x_y_z"]
     regex = "(mult_\d+_\d+_\d+ \d+)"
