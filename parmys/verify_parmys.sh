@@ -1043,9 +1043,9 @@ function sim() {
 					sed -i "s@QQQ@${arches}@g" "${DIR}/synthesis.tcl"
 					sed -i "s@YYY@${_synthesis_params}@g" "${DIR}/synthesis.tcl"
 
-					if [[ ${_synthesis_params} == *" -c "* ]] # config file provided by param
+					if [[ ${_synthesis_params} == *"-c "* ]] # config file provided by param
 					then
-						sed -i "s@-c CCC@@g" "${DIR}/synthesis.tcl"
+						sed -i "s@ -c CCC @@g" "${DIR}/synthesis.tcl"
 					else # default config file
 						sed -i "s@CCC@${DIR}/odin_config.xml@g" "${DIR}/synthesis.tcl"
 						cp "${VTR_DIR}/vtr_flow/misc/basic_odin_config_split.xml" "${DIR}/odin_config.xml"
