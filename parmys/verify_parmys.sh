@@ -15,7 +15,6 @@ source "${REG_LIB}/helper.sh"
 source "${REG_LIB}/conf_generate.sh"
 
 export EXIT_NAME="$0"
-export PARSER="default"
 
 ##############################################
 # grab the input args
@@ -933,6 +932,13 @@ function sim() {
 		circuit_file=$(basename "${circuit}")
 		input_file=""
         generated_blif_file=""
+
+		if [[ "${circuit_file}" == *.sv ]]
+		then
+			export PARSER="system-verilog"
+		else
+			export PARSER="default"
+		fi
 
 		case "${circuit_file}" in
 			*.blif)
