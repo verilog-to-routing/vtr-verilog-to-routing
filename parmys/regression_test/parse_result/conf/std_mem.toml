@@ -73,7 +73,7 @@
     default = []
     hide-if = ${default}
 
-["D latches with reset and reset"]
+["D latches with set and reset"]
     regex = "(\$$_DLATCHSR_[NP][NP][NP]_ \d+)"
     default = []
     hide-if = ${default}
