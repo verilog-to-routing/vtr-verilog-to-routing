@@ -30,7 +30,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "AND": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_and/k6_N10_40nm": {
         "test_name": "operators/binary_and/k6_N10_40nm",
@@ -63,7 +65,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "AND": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_and/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_and/k6_N10_mem32K_40nm",
@@ -96,7 +100,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "AND": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_and/no_arch": {
         "test_name": "operators/binary_and/no_arch",
@@ -127,7 +133,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "AND": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_equal/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -155,7 +163,9 @@
         "MUX": 1,
         "XOR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_equal/k6_N10_40nm": {
         "test_name": "operators/binary_equal/k6_N10_40nm",
@@ -183,7 +193,9 @@
         "MUX": 1,
         "XOR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_equal/k6_N10_mem32K_40nm",
@@ -211,7 +223,9 @@
         "MUX": 1,
         "XOR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_equal/no_arch": {
         "test_name": "operators/binary_equal/no_arch",
@@ -237,7 +251,9 @@
         "MUX": 1,
         "XOR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -270,7 +286,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "AND": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_and/k6_N10_40nm": {
         "test_name": "operators/binary_logical_and/k6_N10_40nm",
@@ -303,7 +321,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "AND": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_and/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_and/k6_N10_mem32K_40nm",
@@ -336,7 +356,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "AND": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_and/no_arch": {
         "test_name": "operators/binary_logical_and/no_arch",
@@ -367,7 +389,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "AND": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -401,7 +425,9 @@
         "MUX": 1,
         "XOR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_equal/k6_N10_40nm": {
         "test_name": "operators/binary_logical_equal/k6_N10_40nm",
@@ -435,7 +461,9 @@
         "MUX": 1,
         "XOR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_equal/k6_N10_mem32K_40nm",
@@ -469,7 +497,9 @@
         "MUX": 1,
         "XOR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_equal/no_arch": {
         "test_name": "operators/binary_logical_equal/no_arch",
@@ -501,7 +531,9 @@
         "MUX": 1,
         "XOR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -537,7 +569,9 @@
         "OR": 3,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_greater_equal_than/k6_N10_40nm": {
         "test_name": "operators/binary_logical_greater_equal_than/k6_N10_40nm",
@@ -573,7 +607,9 @@
         "OR": 3,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_greater_equal_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_greater_equal_than/k6_N10_mem32K_40nm",
@@ -609,7 +645,9 @@
         "OR": 3,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_greater_equal_than/no_arch": {
         "test_name": "operators/binary_logical_greater_equal_than/no_arch",
@@ -643,7 +681,9 @@
         "OR": 3,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -679,7 +719,9 @@
         "OR": 2,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_greater_than/k6_N10_40nm": {
         "test_name": "operators/binary_logical_greater_than/k6_N10_40nm",
@@ -715,7 +757,9 @@
         "OR": 2,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_greater_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_greater_than/k6_N10_mem32K_40nm",
@@ -751,7 +795,9 @@
         "OR": 2,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_greater_than/no_arch": {
         "test_name": "operators/binary_logical_greater_than/no_arch",
@@ -785,7 +831,9 @@
         "OR": 2,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -821,7 +869,9 @@
         "OR": 2,
         "AND": 1,
         "NOT": 2,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_less_equal_than/k6_N10_40nm": {
         "test_name": "operators/binary_logical_less_equal_than/k6_N10_40nm",
@@ -857,7 +907,9 @@
         "OR": 2,
         "AND": 1,
         "NOT": 2,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_less_equal_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_less_equal_than/k6_N10_mem32K_40nm",
@@ -893,7 +945,9 @@
         "OR": 2,
         "AND": 1,
         "NOT": 2,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_less_equal_than/no_arch": {
         "test_name": "operators/binary_logical_less_equal_than/no_arch",
@@ -927,7 +981,9 @@
         "OR": 2,
         "AND": 1,
         "NOT": 2,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -963,7 +1019,9 @@
         "OR": 1,
         "AND": 1,
         "NOT": 2,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_less_than/k6_N10_40nm": {
         "test_name": "operators/binary_logical_less_than/k6_N10_40nm",
@@ -999,7 +1057,9 @@
         "OR": 1,
         "AND": 1,
         "NOT": 2,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_less_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_less_than/k6_N10_mem32K_40nm",
@@ -1035,7 +1095,9 @@
         "OR": 1,
         "AND": 1,
         "NOT": 2,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_less_than/no_arch": {
         "test_name": "operators/binary_logical_less_than/no_arch",
@@ -1069,7 +1131,9 @@
         "OR": 1,
         "AND": 1,
         "NOT": 2,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_not_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1102,7 +1166,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_not_equal/k6_N10_40nm": {
         "test_name": "operators/binary_logical_not_equal/k6_N10_40nm",
@@ -1135,7 +1201,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_not_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_not_equal/k6_N10_mem32K_40nm",
@@ -1168,7 +1236,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_not_equal/no_arch": {
         "test_name": "operators/binary_logical_not_equal/no_arch",
@@ -1199,7 +1269,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1232,7 +1304,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "OR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_or/k6_N10_40nm": {
         "test_name": "operators/binary_logical_or/k6_N10_40nm",
@@ -1265,7 +1339,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "OR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_or/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_or/k6_N10_mem32K_40nm",
@@ -1298,7 +1374,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "OR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_logical_or/no_arch": {
         "test_name": "operators/binary_logical_or/no_arch",
@@ -1329,7 +1407,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "OR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_nand/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_nand/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1363,7 +1443,9 @@
         "MUX": 1,
         "AND": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_nand/k6_N10_40nm": {
         "test_name": "operators/binary_nand/k6_N10_40nm",
@@ -1397,7 +1479,9 @@
         "MUX": 1,
         "AND": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_nand/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_nand/k6_N10_mem32K_40nm",
@@ -1431,7 +1515,9 @@
         "MUX": 1,
         "AND": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_nand/no_arch": {
         "test_name": "operators/binary_nand/no_arch",
@@ -1463,7 +1549,9 @@
         "MUX": 1,
         "AND": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_nor/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_nor/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1497,7 +1585,9 @@
         "MUX": 1,
         "OR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_nor/k6_N10_40nm": {
         "test_name": "operators/binary_nor/k6_N10_40nm",
@@ -1531,7 +1621,9 @@
         "MUX": 1,
         "OR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_nor/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_nor/k6_N10_mem32K_40nm",
@@ -1565,7 +1657,9 @@
         "MUX": 1,
         "OR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_nor/no_arch": {
         "test_name": "operators/binary_nor/no_arch",
@@ -1597,7 +1691,9 @@
         "MUX": 1,
         "OR": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_not_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1624,7 +1720,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_not_equal/k6_N10_40nm": {
         "test_name": "operators/binary_not_equal/k6_N10_40nm",
@@ -1651,7 +1749,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_not_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_not_equal/k6_N10_mem32K_40nm",
@@ -1678,7 +1778,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_not_equal/no_arch": {
         "test_name": "operators/binary_not_equal/no_arch",
@@ -1703,7 +1805,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1736,7 +1840,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "OR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_or/k6_N10_40nm": {
         "test_name": "operators/binary_or/k6_N10_40nm",
@@ -1769,7 +1875,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "OR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_or/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_or/k6_N10_mem32K_40nm",
@@ -1802,7 +1910,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "OR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_or/no_arch": {
         "test_name": "operators/binary_or/no_arch",
@@ -1833,7 +1943,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "OR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_xnor/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_xnor/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1866,7 +1978,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XNOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_xnor/k6_N10_40nm": {
         "test_name": "operators/binary_xnor/k6_N10_40nm",
@@ -1899,7 +2013,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XNOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_xnor/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_xnor/k6_N10_mem32K_40nm",
@@ -1932,7 +2048,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XNOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_xnor/no_arch": {
         "test_name": "operators/binary_xnor/no_arch",
@@ -1963,7 +2081,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XNOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_xor/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_xor/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1996,7 +2116,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_xor/k6_N10_40nm": {
         "test_name": "operators/binary_xor/k6_N10_40nm",
@@ -2029,7 +2151,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_xor/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_xor/k6_N10_mem32K_40nm",
@@ -2062,7 +2186,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/binary_xor/no_arch": {
         "test_name": "operators/binary_xor/no_arch",
@@ -2093,7 +2219,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "XOR": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/clog2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/clog2/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2125,7 +2253,9 @@
         "Public Wire Bits": 6,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/clog2/k6_N10_40nm": {
         "test_name": "operators/clog2/k6_N10_40nm",
@@ -2157,7 +2287,9 @@
         "Public Wire Bits": 6,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/clog2/k6_N10_mem32K_40nm": {
         "test_name": "operators/clog2/k6_N10_mem32K_40nm",
@@ -2189,7 +2321,9 @@
         "Public Wire Bits": 6,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/clog2/no_arch": {
         "test_name": "operators/clog2/no_arch",
@@ -2219,7 +2353,9 @@
         "Public Wire Bits": 6,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/concat/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/concat/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2385,7 +2521,9 @@
         "Public Wire Bits": 18,
         "Total Cells": 17,
         "MUX": 8,
-        "DFF_P": 8,
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ],
         "pow": 1
     },
     "operators/eightbit_arithmetic_power/k6_N10_40nm": {
@@ -2418,7 +2556,9 @@
         "Public Wire Bits": 18,
         "Total Cells": 17,
         "MUX": 8,
-        "DFF_P": 8,
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ],
         "pow": 1
     },
     "operators/eightbit_arithmetic_power/k6_N10_mem32K_40nm": {
@@ -2451,7 +2591,9 @@
         "Public Wire Bits": 18,
         "Total Cells": 17,
         "MUX": 8,
-        "DFF_P": 8,
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ],
         "pow": 1
     },
     "operators/eightbit_arithmetic_power/no_arch": {
@@ -2482,7 +2624,9 @@
         "Public Wire Bits": 18,
         "Total Cells": 17,
         "MUX": 8,
-        "DFF_P": 8,
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ],
         "pow": 1
     },
     "operators/macromudule_test/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -3423,7 +3567,9 @@
         "OR": 75,
         "AND": 129,
         "NOT": 40,
-        "DFF_P": 8
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ]
     },
     "operators/twobits_arithmetic_div/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_div/k6_N10_40nm",
@@ -3453,7 +3599,9 @@
         "OR": 75,
         "AND": 129,
         "NOT": 40,
-        "DFF_P": 8
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ]
     },
     "operators/twobits_arithmetic_div/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_div/k6_N10_mem32K_40nm",
@@ -3483,7 +3631,9 @@
         "OR": 75,
         "AND": 129,
         "NOT": 40,
-        "DFF_P": 8
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ]
     },
     "operators/twobits_arithmetic_div/no_arch": {
         "test_name": "operators/twobits_arithmetic_div/no_arch",
@@ -3511,7 +3661,9 @@
         "OR": 75,
         "AND": 129,
         "NOT": 40,
-        "DFF_P": 8
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ]
     },
     "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3545,7 +3697,9 @@
         "Total Cells": 9,
         "MUX": 2,
         "NOT": 2,
-        "DFF_P": 2,
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ],
         "adder": 3
     },
     "operators/twobits_arithmetic_minus/k6_N10_40nm": {
@@ -3581,7 +3735,9 @@
         "XOR": 3,
         "OR": 1,
         "NOT": 3,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "operators/twobits_arithmetic_minus/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_minus/k6_N10_mem32K_40nm",
@@ -3616,7 +3772,9 @@
         "XOR": 3,
         "OR": 1,
         "NOT": 3,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "operators/twobits_arithmetic_minus/no_arch": {
         "test_name": "operators/twobits_arithmetic_minus/no_arch",
@@ -3649,7 +3807,9 @@
         "XOR": 3,
         "OR": 1,
         "NOT": 3,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "operators/twobits_arithmetic_mod/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_mod/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3679,7 +3839,9 @@
         "OR": 11,
         "AND": 14,
         "NOT": 13,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_mod/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_mod/k6_N10_40nm",
@@ -3709,7 +3871,9 @@
         "OR": 11,
         "AND": 14,
         "NOT": 13,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_mod/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_mod/k6_N10_mem32K_40nm",
@@ -3739,7 +3903,9 @@
         "OR": 11,
         "AND": 14,
         "NOT": 13,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_mod/no_arch": {
         "test_name": "operators/twobits_arithmetic_mod/no_arch",
@@ -3767,7 +3933,9 @@
         "OR": 11,
         "AND": 14,
         "NOT": 13,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3787,21 +3955,24 @@
         "synthesis_time(ms)": 1.1,
         "Pi": 6,
         "Po": 5,
-        "logic element": 1,
-        "Multiplier": 1,
+        "logic element": 5,
+        "Adder": 4,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 2,
-        "Wires": 19,
-        "Wire Bits": 19,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9,
+        "Wires": 27,
+        "Wire Bits": 27,
         "Public Wires": 11,
         "Public Wire Bits": 11,
-        "Total Cells": 9,
+        "Total Cells": 16,
         "MUX": 4,
-        "DFF_P": 4,
-        "mult_2_2_4": 1
+        "AND": 4,
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ],
+        "adder": 4
     },
     "operators/twobits_arithmetic_multiply/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_multiply/k6_N10_40nm",
@@ -3835,7 +4006,9 @@
         "MUX": 5,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "operators/twobits_arithmetic_multiply/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_multiply/k6_N10_mem32K_40nm",
@@ -3855,21 +4028,23 @@
         "synthesis_time(ms)": 1.6,
         "Pi": 6,
         "Po": 5,
-        "logic element": 1,
-        "Multiplier": 1,
+        "logic element": 10,
         "generic logic size": 6,
-        "Longest Path": 4,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 2,
-        "Wires": 19,
-        "Wire Bits": 19,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 10,
+        "Total Node": 10,
+        "Wires": 22,
+        "Wire Bits": 23,
         "Public Wires": 11,
         "Public Wire Bits": 11,
-        "Total Cells": 9,
-        "MUX": 4,
-        "DFF_P": 4,
-        "mult_2_2_4": 1
+        "Total Cells": 16,
+        "MUX": 5,
+        "XOR": 2,
+        "AND": 5,
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "operators/twobits_arithmetic_multiply/no_arch": {
         "test_name": "operators/twobits_arithmetic_multiply/no_arch",
@@ -3901,7 +4076,9 @@
         "MUX": 5,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "operators/twobits_arithmetic_plus/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_plus/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3934,7 +4111,9 @@
         "Public Wire Bits": 10,
         "Total Cells": 10,
         "MUX": 3,
-        "DFF_P": 3,
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ],
         "adder": 4
     },
     "operators/twobits_arithmetic_plus/k6_N10_40nm": {
@@ -3969,7 +4148,9 @@
         "MUX": 6,
         "XOR": 3,
         "AND": 1,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_plus/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_plus/k6_N10_mem32K_40nm",
@@ -4003,7 +4184,9 @@
         "MUX": 6,
         "XOR": 3,
         "AND": 1,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_plus/no_arch": {
         "test_name": "operators/twobits_arithmetic_plus/no_arch",
@@ -4035,7 +4218,9 @@
         "MUX": 6,
         "XOR": 3,
         "AND": 1,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4061,7 +4246,9 @@
         "Public Wire Bits": 11,
         "Total Cells": 9,
         "MUX": 4,
-        "DFF_P": 4,
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ],
         "pow": 1
     },
     "operators/twobits_arithmetic_power/k6_N10_40nm": {
@@ -4088,7 +4275,9 @@
         "Public Wire Bits": 11,
         "Total Cells": 9,
         "MUX": 4,
-        "DFF_P": 4,
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ],
         "pow": 1
     },
     "operators/twobits_arithmetic_power/k6_N10_mem32K_40nm": {
@@ -4115,7 +4304,9 @@
         "Public Wire Bits": 11,
         "Total Cells": 9,
         "MUX": 4,
-        "DFF_P": 4,
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ],
         "pow": 1
     },
     "operators/twobits_arithmetic_power/no_arch": {
@@ -4140,7 +4331,9 @@
         "Public Wire Bits": 11,
         "Total Cells": 9,
         "MUX": 4,
-        "DFF_P": 4,
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ],
         "pow": 1
     },
     "operators/twobits_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -4177,7 +4370,9 @@
         "OR": 4,
         "AND": 4,
         "NOT": 4,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_greater_equal_than/k6_N10_40nm": {
         "test_name": "operators/twobits_logical_greater_equal_than/k6_N10_40nm",
@@ -4213,7 +4408,9 @@
         "OR": 4,
         "AND": 4,
         "NOT": 4,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_greater_equal_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_logical_greater_equal_than/k6_N10_mem32K_40nm",
@@ -4249,7 +4446,9 @@
         "OR": 4,
         "AND": 4,
         "NOT": 4,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_greater_equal_than/no_arch": {
         "test_name": "operators/twobits_logical_greater_equal_than/no_arch",
@@ -4283,7 +4482,9 @@
         "OR": 4,
         "AND": 4,
         "NOT": 4,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4319,7 +4520,9 @@
         "OR": 3,
         "AND": 4,
         "NOT": 4,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_greater_than/k6_N10_40nm": {
         "test_name": "operators/twobits_logical_greater_than/k6_N10_40nm",
@@ -4355,7 +4558,9 @@
         "OR": 3,
         "AND": 4,
         "NOT": 4,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_greater_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_logical_greater_than/k6_N10_mem32K_40nm",
@@ -4391,7 +4596,9 @@
         "OR": 3,
         "AND": 4,
         "NOT": 4,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_greater_than/no_arch": {
         "test_name": "operators/twobits_logical_greater_than/no_arch",
@@ -4425,7 +4632,9 @@
         "OR": 3,
         "AND": 4,
         "NOT": 4,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4461,7 +4670,9 @@
         "OR": 3,
         "AND": 4,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_less_equal_than/k6_N10_40nm": {
         "test_name": "operators/twobits_logical_less_equal_than/k6_N10_40nm",
@@ -4497,7 +4708,9 @@
         "OR": 3,
         "AND": 4,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_less_equal_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_logical_less_equal_than/k6_N10_mem32K_40nm",
@@ -4533,7 +4746,9 @@
         "OR": 3,
         "AND": 4,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_less_equal_than/no_arch": {
         "test_name": "operators/twobits_logical_less_equal_than/no_arch",
@@ -4567,7 +4782,9 @@
         "OR": 3,
         "AND": 4,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4603,7 +4820,9 @@
         "OR": 2,
         "AND": 3,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_less_than/k6_N10_40nm": {
         "test_name": "operators/twobits_logical_less_than/k6_N10_40nm",
@@ -4639,7 +4858,9 @@
         "OR": 2,
         "AND": 3,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_less_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_logical_less_than/k6_N10_mem32K_40nm",
@@ -4675,7 +4896,9 @@
         "OR": 2,
         "AND": 3,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_logical_less_than/no_arch": {
         "test_name": "operators/twobits_logical_less_than/no_arch",
@@ -4709,7 +4932,9 @@
         "OR": 2,
         "AND": 3,
         "NOT": 3,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/unary_bitwise_bufnode/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unary_bitwise_bufnode/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4816,7 +5041,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/unary_bitwise_not/k6_N10_40nm": {
         "test_name": "operators/unary_bitwise_not/k6_N10_40nm",
@@ -4849,7 +5076,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/unary_bitwise_not/k6_N10_mem32K_40nm": {
         "test_name": "operators/unary_bitwise_not/k6_N10_mem32K_40nm",
@@ -4882,7 +5111,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/unary_bitwise_not/no_arch": {
         "test_name": "operators/unary_bitwise_not/no_arch",
@@ -4913,7 +5144,9 @@
         "Total Cells": 3,
         "MUX": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "operators/twobits_arithmetic_uminus/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_uminus/k6_N10_40nm",
@@ -4948,7 +5181,9 @@
         "XOR": 1,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_uminus/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_uminus/k6_N10_mem32K_40nm",
@@ -4983,7 +5218,9 @@
         "XOR": 1,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5018,7 +5255,9 @@
         "XOR": 1,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/twobits_arithmetic_uminus/no_arch": {
         "test_name": "operators/twobits_arithmetic_uminus/no_arch",
@@ -5051,7 +5290,9 @@
         "XOR": 1,
         "AND": 1,
         "NOT": 3,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "operators/signed_16bits_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_16bits_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -11642,135 +11883,21 @@
         "AND": 0,
         "NOT": 0,
         "BUF": 0,
-        "DLATCHSR_PPP": 0,
-        "DLATCHSR_PPN": 0,
-        "DLATCHSR_PNP": 0,
-        "DLATCHSR_PNN": 0,
-        "DLATCHSR_NPP": 0,
-        "DLATCHSR_NPN": 0,
-        "DLATCHSR_NNP": 0,
-        "DLATCHSR_NNN": 0,
-        "DLATCH_PP1": 0,
-        "DLATCH_PP0": 0,
-        "DLATCH_PN1": 0,
-        "DLATCH_PN0": 0,
-        "DLATCH_NP1": 0,
-        "DLATCH_NP0": 0,
-        "DLATCH_NN1": 0,
-        "DLATCH_NN0": 0,
-        "DLATCH_P": 0,
-        "DLATCH_N": 0,
-        "SDFFCE_PP1P": 0,
-        "SDFFCE_PP1N": 0,
-        "SDFFCE_PP0P": 0,
-        "SDFFCE_PP0N": 0,
-        "SDFFCE_PN1P": 0,
-        "SDFFCE_PN1N": 0,
-        "SDFFCE_PN0P": 0,
-        "SDFFCE_PN0N": 0,
-        "SDFFCE_NP1P": 0,
-        "SDFFCE_NP1N": 0,
-        "SDFFCE_NP0P": 0,
-        "SDFFCE_NP0N": 0,
-        "SDFFCE_NN1P": 0,
-        "SDFFCE_NN1N": 0,
-        "SDFFCE_NN0P": 0,
-        "SDFFCE_NN0N": 0,
-        "SDFFE_PP1P": 0,
-        "SDFFE_PP1N": 0,
-        "SDFFE_PP0P": 0,
-        "SDFFE_PP0N": 0,
-        "SDFFE_PN1P": 0,
-        "SDFFE_PN1N": 0,
-        "SDFFE_PN0P": 0,
-        "SDFFE_PN0N": 0,
-        "SDFFE_NP1P": 0,
-        "SDFFE_NP1N": 0,
-        "SDFFE_NP0P": 0,
-        "SDFFE_NP0N": 0,
-        "SDFFE_NN1P": 0,
-        "SDFFE_NN1N": 0,
-        "SDFFE_NN0P": 0,
-        "SDFFE_NN0N": 0,
-        "SDFF_PP1": 0,
-        "SDFF_PP0": 0,
-        "SDFF_PN1": 0,
-        "SDFF_PN0": 0,
-        "SDFF_NP1": 0,
-        "SDFF_NP0": 0,
-        "SDFF_NN1": 0,
-        "SDFF_NN0": 0,
-        "DFFSRE_PPPP": 0,
-        "DFFSRE_PPPN": 0,
-        "DFFSRE_PPNP": 0,
-        "DFFSRE_PPNN": 0,
-        "DFFSRE_PNPP": 0,
-        "DFFSRE_PNPN": 0,
-        "DFFSRE_PNNP": 0,
-        "DFFSRE_PNNN": 0,
-        "DFFSRE_NPPP": 0,
-        "DFFSRE_NPPN": 0,
-        "DFFSRE_NPNP": 0,
-        "DFFSRE_NPNN": 0,
-        "DFFSRE_NNPP": 0,
-        "DFFSRE_NNPN": 0,
-        "DFFSRE_NNNP": 0,
-        "DFFSRE_NNNN": 0,
-        "DFFSR_PPP": 0,
-        "DFFSR_PPN": 0,
-        "DFFSR_PNP": 0,
-        "DFFSR_PNN": 0,
-        "DFFSR_NPP": 0,
-        "DFFSR_NPN": 0,
-        "DFFSR_NNP": 0,
-        "DFFSR_NNN": 0,
-        "ALDFFE_PPP": 0,
-        "ALDFFE_PPN": 0,
-        "ALDFFE_PNP": 0,
-        "ALDFFE_PNN": 0,
-        "ALDFFE_NPP": 0,
-        "ALDFFE_NPN": 0,
-        "ALDFFE_NNP": 0,
-        "ALDFFE_NNN": 0,
-        "ALDFF_PP": 0,
-        "ALDFF_PN": 0,
-        "ALDFF_NP": 0,
-        "ALDFF_NN": 0,
-        "DFFE_PP1P": 0,
-        "DFFE_PP1N": 0,
-        "DFFE_PP0P": 0,
-        "DFFE_PP0N": 0,
-        "DFFE_PN1P": 0,
-        "DFFE_PN1N": 0,
-        "DFFE_PN0P": 0,
-        "DFFE_PN0N": 0,
-        "DFFE_NP1P": 0,
-        "DFFE_NP1N": 0,
-        "DFFE_NP0P": 0,
-        "DFFE_NP0N": 0,
-        "DFFE_NN1P": 0,
-        "DFFE_NN1N": 0,
-        "DFFE_NN0P": 0,
-        "DFFE_NN0N": 0,
-        "DFF_PP1": 0,
-        "DFF_PP0": 0,
-        "DFF_PN1": 0,
-        "DFF_PN0": 0,
-        "DFF_NP1": 0,
-        "DFF_NP0": 0,
-        "DFF_NN1": 0,
-        "DFF_NN0": 0,
-        "DFFE_PP": 0,
-        "DFFE_PN": 0,
-        "DFFE_NP": 0,
-        "DFFE_NN": 0,
-        "DFF_P": 0,
-        "DFF_N": 0,
-        "FF": 0,
-        "SR_PP": 0,
-        "SR_PN": 0,
-        "SR_NP": 0,
-        "SR_NN": 0,
+        "SR latches": [],
+        "FFs": [],
+        "DFFs": [],
+        "FFs with enable": [],
+        "FFs with reset": [],
+        "FFs with asynchronous reset and enable": [],
+        "FFs with asynchronous load": [],
+        "FFs with asynchronous load and enable": [],
+        "FFs with set and reset": [],
+        "FFs with asynchronous set and reset and enable": [],
+        "FFs with synchronous reset": [],
+        "FFs with synchronous reset and enable": [],
+        "D latches": [],
+        "D latches with reset": [],
+        "D latches with set and reset": [],
         "adder": 0,
         "addition_fp_16": 0,
         "addition_fp_32": 0,
@@ -11838,161 +11965,7 @@
         "scff": 0,
         "single_port_ram": 0,
         "xadder": 0,
-        "mult_1_1_2": 0,
-        "mult_1_2_3": 0,
-        "mult_1_3_4": 0,
-        "mult_2_1_3": 0,
-        "mult_2_2_4": 0,
-        "mult_2_3_5": 0,
-        "mult_2_4_6": 0,
-        "mult_3_1_4": 0,
-        "mult_3_2_5": 0,
-        "mult_3_3_6": 0,
-        "mult_3_4_7": 0,
-        "mult_3_5_8": 0,
-        "mult_4_2_6": 0,
-        "mult_4_3_7": 0,
-        "mult_4_4_8": 0,
-        "mult_4_5_9": 0,
-        "mult_4_6_10": 0,
-        "mult_5_3_8": 0,
-        "mult_5_4_9": 0,
-        "mult_5_5_10": 0,
-        "mult_5_6_11": 0,
-        "mult_5_7_12": 0,
-        "mult_6_4_10": 0,
-        "mult_6_5_11": 0,
-        "mult_6_6_12": 0,
-        "mult_6_7_13": 0,
-        "mult_6_8_14": 0,
-        "mult_7_5_12": 0,
-        "mult_7_6_13": 0,
-        "mult_7_7_14": 0,
-        "mult_7_8_15": 0,
-        "mult_7_9_16": 0,
-        "mult_8_6_14": 0,
-        "mult_8_7_15": 0,
-        "mult_8_8_16": 0,
-        "mult_8_9_17": 0,
-        "mult_8_10_18": 0,
-        "mult_9_7_16": 0,
-        "mult_9_8_17": 0,
-        "mult_9_9_18": 0,
-        "mult_9_10_19": 0,
-        "mult_9_11_20": 0,
-        "mult_10_8_18": 0,
-        "mult_10_9_19": 0,
-        "mult_10_10_20": 0,
-        "mult_10_11_21": 0,
-        "mult_10_12_22": 0,
-        "mult_11_9_20": 0,
-        "mult_11_10_21": 0,
-        "mult_11_11_22": 0,
-        "mult_11_12_23": 0,
-        "mult_11_13_24": 0,
-        "mult_12_10_22": 0,
-        "mult_12_11_23": 0,
-        "mult_12_12_24": 0,
-        "mult_12_13_25": 0,
-        "mult_12_14_26": 0,
-        "mult_13_11_24": 0,
-        "mult_13_12_25": 0,
-        "mult_13_13_26": 0,
-        "mult_13_14_27": 0,
-        "mult_13_15_28": 0,
-        "mult_14_12_26": 0,
-        "mult_14_13_27": 0,
-        "mult_14_14_28": 0,
-        "mult_14_15_29": 0,
-        "mult_14_16_30": 0,
-        "mult_15_13_28": 0,
-        "mult_15_14_29": 0,
-        "mult_15_15_30": 0,
-        "mult_15_16_31": 0,
-        "mult_15_17_32": 0,
-        "mult_16_14_30": 0,
-        "mult_16_15_31": 0,
-        "mult_16_16_32": 0,
-        "mult_16_17_33": 0,
-        "mult_16_18_34": 0,
-        "mult_17_15_32": 0,
-        "mult_17_16_33": 0,
-        "mult_17_17_34": 0,
-        "mult_17_18_35": 0,
-        "mult_17_19_36": 0,
-        "mult_18_16_34": 0,
-        "mult_18_17_35": 0,
-        "mult_18_18_36": 0,
-        "mult_18_19_37": 0,
-        "mult_18_20_38": 0,
-        "mult_19_17_36": 0,
-        "mult_19_18_37": 0,
-        "mult_19_19_38": 0,
-        "mult_19_20_39": 0,
-        "mult_19_21_40": 0,
-        "mult_20_18_38": 0,
-        "mult_20_19_39": 0,
-        "mult_20_20_40": 0,
-        "mult_20_21_41": 0,
-        "mult_20_22_42": 0,
-        "mult_21_19_40": 0,
-        "mult_21_20_41": 0,
-        "mult_21_21_42": 0,
-        "mult_21_22_43": 0,
-        "mult_21_23_44": 0,
-        "mult_22_20_42": 0,
-        "mult_22_21_43": 0,
-        "mult_22_22_44": 0,
-        "mult_22_23_45": 0,
-        "mult_22_24_46": 0,
-        "mult_23_21_44": 0,
-        "mult_23_22_45": 0,
-        "mult_23_23_46": 0,
-        "mult_23_24_47": 0,
-        "mult_23_25_48": 0,
-        "mult_24_22_46": 0,
-        "mult_24_23_47": 0,
-        "mult_24_24_48": 0,
-        "mult_24_25_49": 0,
-        "mult_24_26_50": 0,
-        "mult_25_23_48": 0,
-        "mult_25_24_49": 0,
-        "mult_25_25_50": 0,
-        "mult_25_26_51": 0,
-        "mult_25_27_52": 0,
-        "mult_26_24_50": 0,
-        "mult_26_25_51": 0,
-        "mult_26_26_52": 0,
-        "mult_26_27_53": 0,
-        "mult_26_28_54": 0,
-        "mult_27_25_52": 0,
-        "mult_27_26_53": 0,
-        "mult_27_27_54": 0,
-        "mult_27_28_55": 0,
-        "mult_27_29_56": 0,
-        "mult_28_26_54": 0,
-        "mult_28_27_55": 0,
-        "mult_28_28_56": 0,
-        "mult_28_29_57": 0,
-        "mult_28_30_58": 0,
-        "mult_29_27_56": 0,
-        "mult_29_28_57": 0,
-        "mult_29_29_58": 0,
-        "mult_29_30_59": 0,
-        "mult_29_31_60": 0,
-        "mult_30_28_58": 0,
-        "mult_30_29_59": 0,
-        "mult_30_30_60": 0,
-        "mult_30_31_61": 0,
-        "mult_30_32_62": 0,
-        "mult_31_29_60": 0,
-        "mult_31_30_61": 0,
-        "mult_31_31_62": 0,
-        "mult_31_32_63": 0,
-        "mult_31_33_64": 0,
-        "mult_32_30_62": 0,
-        "mult_32_31_63": 0,
-        "mult_32_32_64": 0,
+        "mult_x_y_z": [],
         "anyinit": 0,
         "fsm": 0,
         "mem_v2": 0,

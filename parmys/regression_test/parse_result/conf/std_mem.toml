@@ -38,7 +38,7 @@
     default = []
     hide-if = ${default}
 
-["FFs with set and reset)"]
+["FFs with set and reset"]
     regex = "(\$$_DFFSR_[NP][NP][NP]_ \d+)"
     default = []
     hide-if = ${default}

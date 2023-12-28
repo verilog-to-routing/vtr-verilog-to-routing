@@ -306,15 +306,17 @@
         "Average Path": 4,
         "Estimated LUTs": 160,
         "Total Node": 288,
-        "Wires": 1625,
-        "Wire Bits": 1625,
+        "Wires": 1657,
+        "Wire Bits": 1657,
         "Public Wires": 1001,
         "Public Wire Bits": 1001,
         "Total Cells": 420,
         "NOT": 88,
-        "DFF_P": 144,
+        "DFFs": [
+            "$_DFF_P_ 144"
+        ],
         "adder": 184,
-        "mult_32_32_64": 4
+        "multiply": 4
     },
     "micro/bm_arithmetic_unused_bits/k6_N10_40nm": {
         "test_name": "micro/bm_arithmetic_unused_bits/k6_N10_40nm",
@@ -360,7 +362,9 @@
         "OR": 4,
         "AND": 1314,
         "NOT": 52,
-        "DFF_P": 144
+        "DFFs": [
+            "$_DFF_P_ 144"
+        ]
     },
     "micro/bm_arithmetic_unused_bits/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_arithmetic_unused_bits/k6_N10_mem32K_40nm",
@@ -397,8 +401,8 @@
         "Average Path": 4,
         "Estimated LUTs": 394,
         "Total Node": 368,
-        "Wires": 1737,
-        "Wire Bits": 1909,
+        "Wires": 1769,
+        "Wire Bits": 1941,
         "Public Wires": 913,
         "Public Wire Bits": 913,
         "Total Cells": 876,
@@ -407,8 +411,10 @@
         "OR": 4,
         "AND": 4,
         "NOT": 52,
-        "DFF_P": 144,
-        "mult_32_32_64": 4
+        "DFFs": [
+            "$_DFF_P_ 144"
+        ],
+        "multiply": 4
     },
     "micro/bm_arithmetic_unused_bits/no_arch": {
         "test_name": "micro/bm_arithmetic_unused_bits/no_arch",
@@ -452,7 +458,9 @@
         "OR": 4,
         "AND": 1314,
         "NOT": 52,
-        "DFF_P": 144
+        "DFFs": [
+            "$_DFF_P_ 144"
+        ]
     },
     "micro/bm_base_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_base_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -483,15 +491,16 @@
         "Average Path": 4,
         "Estimated LUTs": 40,
         "Total Node": 12,
-        "Wires": 198,
-        "Wire Bits": 198,
+        "Wires": 424,
+        "Wire Bits": 424,
         "Public Wires": 127,
         "Public Wire Bits": 127,
         "Total Cells": 83,
         "AND": 24,
-        "DFF_P": 55,
-        "mult_8_7_15": 2,
-        "mult_8_8_16": 2
+        "DFFs": [
+            "$_DFF_P_ 55"
+        ],
+        "multiply": 4
     },
     "micro/bm_base_multiply/k6_N10_40nm": {
         "test_name": "micro/bm_base_multiply/k6_N10_40nm",
@@ -529,7 +538,9 @@
         "MUX": 538,
         "XOR": 386,
         "AND": 226,
-        "DFF_P": 54
+        "DFFs": [
+            "$_DFF_P_ 54"
+        ]
     },
     "micro/bm_base_multiply/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_base_multiply/k6_N10_mem32K_40nm",
@@ -560,15 +571,16 @@
         "Average Path": 4,
         "Estimated LUTs": 29,
         "Total Node": 12,
-        "Wires": 198,
-        "Wire Bits": 198,
+        "Wires": 424,
+        "Wire Bits": 424,
         "Public Wires": 127,
         "Public Wire Bits": 127,
         "Total Cells": 83,
         "AND": 24,
-        "DFF_P": 55,
-        "mult_8_7_15": 2,
-        "mult_8_8_16": 2
+        "DFFs": [
+            "$_DFF_P_ 55"
+        ],
+        "multiply": 4
     },
     "micro/bm_base_multiply/no_arch": {
         "test_name": "micro/bm_base_multiply/no_arch",
@@ -604,7 +616,9 @@
         "MUX": 538,
         "XOR": 386,
         "AND": 226,
-        "DFF_P": 54
+        "DFFs": [
+            "$_DFF_P_ 54"
+        ]
     },
     "micro/bm_dag1_log/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_dag1_log/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -720,7 +734,9 @@
         "XOR": 4,
         "OR": 4,
         "AND": 5,
-        "DFF_P": 8
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ]
     },
     "micro/bm_dag1_log_mod/k6_N10_40nm": {
         "test_name": "micro/bm_dag1_log_mod/k6_N10_40nm",
@@ -758,7 +774,9 @@
         "XOR": 4,
         "OR": 4,
         "AND": 5,
-        "DFF_P": 8
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ]
     },
     "micro/bm_dag1_log_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag1_log_mod/k6_N10_mem32K_40nm",
@@ -796,7 +814,9 @@
         "XOR": 4,
         "OR": 4,
         "AND": 5,
-        "DFF_P": 8
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ]
     },
     "micro/bm_dag1_log_mod/no_arch": {
         "test_name": "micro/bm_dag1_log_mod/no_arch",
@@ -832,7 +852,9 @@
         "XOR": 4,
         "OR": 4,
         "AND": 5,
-        "DFF_P": 8
+        "DFFs": [
+            "$_DFF_P_ 8"
+        ]
     },
     "micro/bm_dag1_log/no_arch": {
         "test_name": "micro/bm_dag1_log/no_arch",
@@ -1005,7 +1027,9 @@
         "XOR": 4,
         "OR": 3,
         "AND": 6,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag1_mod/k6_N10_40nm": {
         "test_name": "micro/bm_dag1_mod/k6_N10_40nm",
@@ -1049,7 +1073,9 @@
         "XOR": 4,
         "OR": 3,
         "AND": 6,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag1_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag1_mod/k6_N10_mem32K_40nm",
@@ -1093,7 +1119,9 @@
         "XOR": 4,
         "OR": 3,
         "AND": 6,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag1_mod/no_arch": {
         "test_name": "micro/bm_dag1_mod/no_arch",
@@ -1135,7 +1163,9 @@
         "XOR": 4,
         "OR": 3,
         "AND": 6,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag2_log/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_dag2_log/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1250,7 +1280,9 @@
         "Total Cells": 14,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_dag2_log_mod/k6_N10_40nm": {
         "test_name": "micro/bm_dag2_log_mod/k6_N10_40nm",
@@ -1287,7 +1319,9 @@
         "Total Cells": 14,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_dag2_log_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag2_log_mod/k6_N10_mem32K_40nm",
@@ -1324,7 +1358,9 @@
         "Total Cells": 14,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_dag2_log_mod/no_arch": {
         "test_name": "micro/bm_dag2_log_mod/no_arch",
@@ -1359,7 +1395,9 @@
         "Total Cells": 14,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_dag2_log/no_arch": {
         "test_name": "micro/bm_dag2_log/no_arch",
@@ -1525,7 +1563,9 @@
         "Total Cells": 14,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_dag2_mod/k6_N10_40nm": {
         "test_name": "micro/bm_dag2_mod/k6_N10_40nm",
@@ -1562,7 +1602,9 @@
         "Total Cells": 14,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_dag2_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag2_mod/k6_N10_mem32K_40nm",
@@ -1599,7 +1641,9 @@
         "Total Cells": 14,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_dag2_mod/no_arch": {
         "test_name": "micro/bm_dag2_mod/no_arch",
@@ -1634,7 +1678,9 @@
         "Total Cells": 14,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_dag3_log/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_dag3_log/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1753,7 +1799,9 @@
         "XOR": 8,
         "OR": 5,
         "AND": 9,
-        "DFF_P": 12
+        "DFFs": [
+            "$_DFF_P_ 12"
+        ]
     },
     "micro/bm_dag3_log_mod/k6_N10_40nm": {
         "test_name": "micro/bm_dag3_log_mod/k6_N10_40nm",
@@ -1791,7 +1839,9 @@
         "XOR": 8,
         "OR": 5,
         "AND": 9,
-        "DFF_P": 12
+        "DFFs": [
+            "$_DFF_P_ 12"
+        ]
     },
     "micro/bm_dag3_log_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag3_log_mod/k6_N10_mem32K_40nm",
@@ -1829,7 +1879,9 @@
         "XOR": 8,
         "OR": 5,
         "AND": 9,
-        "DFF_P": 12
+        "DFFs": [
+            "$_DFF_P_ 12"
+        ]
     },
     "micro/bm_dag3_log_mod/no_arch": {
         "test_name": "micro/bm_dag3_log_mod/no_arch",
@@ -1865,7 +1917,9 @@
         "XOR": 8,
         "OR": 5,
         "AND": 9,
-        "DFF_P": 12
+        "DFFs": [
+            "$_DFF_P_ 12"
+        ]
     },
     "micro/bm_dag3_log/no_arch": {
         "test_name": "micro/bm_dag3_log/no_arch",
@@ -2092,7 +2146,9 @@
         "OR": 5,
         "AND": 6,
         "NOT": 2,
-        "DFF_P": 12,
+        "DFFs": [
+            "$_DFF_P_ 12"
+        ],
         "adder": 6
     },
     "micro/bm_dag3_lpm_log_mod/k6_N10_40nm": {
@@ -2132,7 +2188,9 @@
         "OR": 5,
         "AND": 6,
         "NOT": 4,
-        "DFF_P": 12
+        "DFFs": [
+            "$_DFF_P_ 12"
+        ]
     },
     "micro/bm_dag3_lpm_log_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag3_lpm_log_mod/k6_N10_mem32K_40nm",
@@ -2171,7 +2229,9 @@
         "OR": 5,
         "AND": 6,
         "NOT": 4,
-        "DFF_P": 12
+        "DFFs": [
+            "$_DFF_P_ 12"
+        ]
     },
     "micro/bm_dag3_lpm_log_mod/no_arch": {
         "test_name": "micro/bm_dag3_lpm_log_mod/no_arch",
@@ -2208,7 +2268,9 @@
         "OR": 5,
         "AND": 6,
         "NOT": 4,
-        "DFF_P": 12
+        "DFFs": [
+            "$_DFF_P_ 12"
+        ]
     },
     "micro/bm_dag3_lpm_log/no_arch": {
         "test_name": "micro/bm_dag3_lpm_log/no_arch",
@@ -2270,7 +2332,9 @@
         "Public Wire Bits": 22,
         "Total Cells": 65,
         "NOT": 6,
-        "DFF_P": 14,
+        "DFFs": [
+            "$_DFF_P_ 14"
+        ],
         "adder": 45
     },
     "micro/bm_dag3_lpm_mod/k6_N10_40nm": {
@@ -2310,7 +2374,9 @@
         "OR": 1,
         "AND": 4,
         "NOT": 16,
-        "DFF_P": 14
+        "DFFs": [
+            "$_DFF_P_ 14"
+        ]
     },
     "micro/bm_dag3_lpm_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag3_lpm_mod/k6_N10_mem32K_40nm",
@@ -2349,7 +2415,9 @@
         "OR": 1,
         "AND": 4,
         "NOT": 16,
-        "DFF_P": 14
+        "DFFs": [
+            "$_DFF_P_ 14"
+        ]
     },
     "micro/bm_dag3_lpm_mod/no_arch": {
         "test_name": "micro/bm_dag3_lpm_mod/no_arch",
@@ -2386,7 +2454,9 @@
         "OR": 1,
         "AND": 4,
         "NOT": 16,
-        "DFF_P": 14
+        "DFFs": [
+            "$_DFF_P_ 14"
+        ]
     },
     "micro/bm_dag3_lpm/no_arch": {
         "test_name": "micro/bm_dag3_lpm/no_arch",
@@ -2455,7 +2525,9 @@
         "XOR": 6,
         "OR": 3,
         "AND": 5,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag3_mod/k6_N10_40nm": {
         "test_name": "micro/bm_dag3_mod/k6_N10_40nm",
@@ -2499,7 +2571,9 @@
         "XOR": 6,
         "OR": 3,
         "AND": 5,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag3_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag3_mod/k6_N10_mem32K_40nm",
@@ -2543,7 +2617,9 @@
         "XOR": 6,
         "OR": 3,
         "AND": 5,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag3_mod/no_arch": {
         "test_name": "micro/bm_dag3_mod/no_arch",
@@ -2585,7 +2661,9 @@
         "XOR": 6,
         "OR": 3,
         "AND": 5,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag4_mod/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_dag4_mod/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2629,7 +2707,9 @@
         "XOR": 4,
         "OR": 3,
         "AND": 6,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag4_mod/k6_N10_40nm": {
         "test_name": "micro/bm_dag4_mod/k6_N10_40nm",
@@ -2673,7 +2753,9 @@
         "XOR": 4,
         "OR": 3,
         "AND": 6,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag4_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_dag4_mod/k6_N10_mem32K_40nm",
@@ -2717,7 +2799,9 @@
         "XOR": 4,
         "OR": 3,
         "AND": 6,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_dag4_mod/no_arch": {
         "test_name": "micro/bm_dag4_mod/no_arch",
@@ -2759,7 +2843,9 @@
         "XOR": 4,
         "OR": 3,
         "AND": 6,
-        "DFF_P": 13
+        "DFFs": [
+            "$_DFF_P_ 13"
+        ]
     },
     "micro/bm_DL_16_1_mux/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_16_1_mux/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3126,7 +3212,9 @@
         "Public Wires": 4,
         "Public Wire Bits": 4,
         "Total Cells": 2,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_2_cascaded_flip_flops/k6_N10_40nm": {
         "test_name": "micro/bm_DL_2_cascaded_flip_flops/k6_N10_40nm",
@@ -3155,7 +3243,9 @@
         "Public Wires": 4,
         "Public Wire Bits": 4,
         "Total Cells": 2,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_2_cascaded_flip_flops/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_DL_2_cascaded_flip_flops/k6_N10_mem32K_40nm",
@@ -3184,7 +3274,9 @@
         "Public Wires": 4,
         "Public Wire Bits": 4,
         "Total Cells": 2,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_2_cascaded_flip_flops/no_arch": {
         "test_name": "micro/bm_DL_2_cascaded_flip_flops/no_arch",
@@ -3211,7 +3303,9 @@
         "Public Wires": 4,
         "Public Wire Bits": 4,
         "Total Cells": 2,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_4_16_encoder/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_4_16_encoder/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3583,7 +3677,9 @@
         "Public Wire Bits": 11,
         "Total Cells": 8,
         "MUX": 4,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "micro/bm_DL_4_bit_shift_register/k6_N10_40nm": {
         "test_name": "micro/bm_DL_4_bit_shift_register/k6_N10_40nm",
@@ -3613,7 +3709,9 @@
         "Public Wire Bits": 11,
         "Total Cells": 8,
         "MUX": 4,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "micro/bm_DL_4_bit_shift_register/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_DL_4_bit_shift_register/k6_N10_mem32K_40nm",
@@ -3643,7 +3741,9 @@
         "Public Wire Bits": 11,
         "Total Cells": 8,
         "MUX": 4,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "micro/bm_DL_4_bit_shift_register/no_arch": {
         "test_name": "micro/bm_DL_4_bit_shift_register/no_arch",
@@ -3671,7 +3771,9 @@
         "Public Wire Bits": 11,
         "Total Cells": 8,
         "MUX": 4,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "micro/bm_DL_74381_ALU/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_74381_ALU/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4202,7 +4304,9 @@
         "Public Wire Bits": 4,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/bm_DL_Dff_w_synch_reset/k6_N10_40nm": {
         "test_name": "micro/bm_DL_Dff_w_synch_reset/k6_N10_40nm",
@@ -4232,7 +4336,9 @@
         "Public Wire Bits": 4,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/bm_DL_Dff_w_synch_reset/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_DL_Dff_w_synch_reset/k6_N10_mem32K_40nm",
@@ -4262,7 +4368,9 @@
         "Public Wire Bits": 4,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/bm_DL_Dff_w_synch_reset/no_arch": {
         "test_name": "micro/bm_DL_Dff_w_synch_reset/no_arch",
@@ -4290,7 +4398,9 @@
         "Public Wire Bits": 4,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/bm_DL_D_flipflop/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_D_flipflop/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4319,7 +4429,9 @@
         "Public Wires": 3,
         "Public Wire Bits": 3,
         "Total Cells": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/bm_DL_D_flipflop/k6_N10_40nm": {
         "test_name": "micro/bm_DL_D_flipflop/k6_N10_40nm",
@@ -4348,7 +4460,9 @@
         "Public Wires": 3,
         "Public Wire Bits": 3,
         "Total Cells": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/bm_DL_D_flipflop/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_DL_D_flipflop/k6_N10_mem32K_40nm",
@@ -4377,7 +4491,9 @@
         "Public Wires": 3,
         "Public Wire Bits": 3,
         "Total Cells": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/bm_DL_D_flipflop/no_arch": {
         "test_name": "micro/bm_DL_D_flipflop/no_arch",
@@ -4404,7 +4520,9 @@
         "Public Wires": 3,
         "Public Wire Bits": 3,
         "Total Cells": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/bm_DL_four_bit_adder_continuous_assign/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_four_bit_adder_continuous_assign/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4557,7 +4675,9 @@
         "Total Cells": 4,
         "OR": 1,
         "AND": 1,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_logic_w_Dff2/k6_N10_40nm": {
         "test_name": "micro/bm_DL_logic_w_Dff2/k6_N10_40nm",
@@ -4588,7 +4708,9 @@
         "Total Cells": 4,
         "OR": 1,
         "AND": 1,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_logic_w_Dff2/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_DL_logic_w_Dff2/k6_N10_mem32K_40nm",
@@ -4619,7 +4741,9 @@
         "Total Cells": 4,
         "OR": 1,
         "AND": 1,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_logic_w_Dff2/no_arch": {
         "test_name": "micro/bm_DL_logic_w_Dff2/no_arch",
@@ -4648,7 +4772,9 @@
         "Total Cells": 4,
         "OR": 1,
         "AND": 1,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_logic_w_Dff/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_logic_w_Dff/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4679,7 +4805,9 @@
         "Total Cells": 4,
         "OR": 1,
         "AND": 1,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_logic_w_Dff/k6_N10_40nm": {
         "test_name": "micro/bm_DL_logic_w_Dff/k6_N10_40nm",
@@ -4710,7 +4838,9 @@
         "Total Cells": 4,
         "OR": 1,
         "AND": 1,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_logic_w_Dff/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_DL_logic_w_Dff/k6_N10_mem32K_40nm",
@@ -4741,7 +4871,9 @@
         "Total Cells": 4,
         "OR": 1,
         "AND": 1,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_logic_w_Dff/no_arch": {
         "test_name": "micro/bm_DL_logic_w_Dff/no_arch",
@@ -4770,7 +4902,9 @@
         "Total Cells": 4,
         "OR": 1,
         "AND": 1,
-        "DFF_P": 2
+        "DFFs": [
+            "$_DFF_P_ 2"
+        ]
     },
     "micro/bm_DL_structural_logic2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_structural_logic2/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5009,7 +5143,9 @@
         "OR": 256,
         "AND": 310,
         "NOT": 133,
-        "DFF_P": 335,
+        "DFFs": [
+            "$_DFF_P_ 335"
+        ],
         "adder": 98
     },
     "micro/bm_expr_all_mod/k6_N10_40nm": {
@@ -5045,7 +5181,9 @@
         "OR": 258,
         "AND": 311,
         "NOT": 135,
-        "DFF_P": 335
+        "DFFs": [
+            "$_DFF_P_ 335"
+        ]
     },
     "micro/bm_expr_all_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_expr_all_mod/k6_N10_mem32K_40nm",
@@ -5080,7 +5218,9 @@
         "OR": 258,
         "AND": 311,
         "NOT": 135,
-        "DFF_P": 335
+        "DFFs": [
+            "$_DFF_P_ 335"
+        ]
     },
     "micro/bm_expr_all_mod/no_arch": {
         "test_name": "micro/bm_expr_all_mod/no_arch",
@@ -5113,7 +5253,9 @@
         "OR": 258,
         "AND": 311,
         "NOT": 135,
-        "DFF_P": 335
+        "DFFs": [
+            "$_DFF_P_ 335"
+        ]
     },
     "micro/bm_functional_test/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_functional_test/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5139,8 +5281,8 @@
         "Average Path": 3,
         "Estimated LUTs": 201,
         "Total Node": 94,
-        "Wires": 298,
-        "Wire Bits": 760,
+        "Wires": 354,
+        "Wire Bits": 816,
         "Public Wires": 105,
         "Public Wire Bits": 105,
         "Total Cells": 470,
@@ -5149,9 +5291,11 @@
         "OR": 158,
         "AND": 118,
         "NOT": 47,
-        "DFF_P": 25,
+        "DFFs": [
+            "$_DFF_P_ 25"
+        ],
         "adder": 47,
-        "mult_8_8_16": 1
+        "multiply": 1
     },
     "micro/bm_functional_test/k6_N10_40nm": {
         "test_name": "micro/bm_functional_test/k6_N10_40nm",
@@ -5185,7 +5329,9 @@
         "OR": 160,
         "AND": 198,
         "NOT": 49,
-        "DFF_P": 25
+        "DFFs": [
+            "$_DFF_P_ 25"
+        ]
     },
     "micro/bm_functional_test/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_functional_test/k6_N10_mem32K_40nm",
@@ -5210,8 +5356,8 @@
         "Average Path": 3,
         "Estimated LUTs": 221,
         "Total Node": 126,
-        "Wires": 334,
-        "Wire Bits": 828,
+        "Wires": 390,
+        "Wire Bits": 884,
         "Public Wires": 89,
         "Public Wire Bits": 89,
         "Total Cells": 578,
@@ -5220,8 +5366,10 @@
         "OR": 160,
         "AND": 119,
         "NOT": 49,
-        "DFF_P": 25,
-        "mult_8_8_16": 1
+        "DFFs": [
+            "$_DFF_P_ 25"
+        ],
+        "multiply": 1
     },
     "micro/bm_functional_test/no_arch": {
         "test_name": "micro/bm_functional_test/no_arch",
@@ -5253,7 +5401,9 @@
         "OR": 160,
         "AND": 198,
         "NOT": 49,
-        "DFF_P": 25
+        "DFFs": [
+            "$_DFF_P_ 25"
+        ]
     },
     "micro/bm_if_collapse/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_if_collapse/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5289,7 +5439,9 @@
         "OR": 6,
         "AND": 3,
         "NOT": 6,
-        "DFF_P": 9
+        "DFFs": [
+            "$_DFF_P_ 9"
+        ]
     },
     "micro/bm_if_collapse/k6_N10_40nm": {
         "test_name": "micro/bm_if_collapse/k6_N10_40nm",
@@ -5325,7 +5477,9 @@
         "OR": 6,
         "AND": 3,
         "NOT": 6,
-        "DFF_P": 9
+        "DFFs": [
+            "$_DFF_P_ 9"
+        ]
     },
     "micro/bm_if_collapse/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_if_collapse/k6_N10_mem32K_40nm",
@@ -5361,7 +5515,9 @@
         "OR": 6,
         "AND": 3,
         "NOT": 6,
-        "DFF_P": 9
+        "DFFs": [
+            "$_DFF_P_ 9"
+        ]
     },
     "micro/bm_if_collapse/no_arch": {
         "test_name": "micro/bm_if_collapse/no_arch",
@@ -5395,7 +5551,9 @@
         "OR": 6,
         "AND": 3,
         "NOT": 6,
-        "DFF_P": 9
+        "DFFs": [
+            "$_DFF_P_ 9"
+        ]
     },
     "micro/bm_if_common/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_if_common/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5431,7 +5589,9 @@
         "OR": 6,
         "AND": 3,
         "NOT": 6,
-        "DFF_P": 9
+        "DFFs": [
+            "$_DFF_P_ 9"
+        ]
     },
     "micro/bm_if_common/k6_N10_40nm": {
         "test_name": "micro/bm_if_common/k6_N10_40nm",
@@ -5467,7 +5627,9 @@
         "OR": 6,
         "AND": 3,
         "NOT": 6,
-        "DFF_P": 9
+        "DFFs": [
+            "$_DFF_P_ 9"
+        ]
     },
     "micro/bm_if_common/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_if_common/k6_N10_mem32K_40nm",
@@ -5503,7 +5665,9 @@
         "OR": 6,
         "AND": 3,
         "NOT": 6,
-        "DFF_P": 9
+        "DFFs": [
+            "$_DFF_P_ 9"
+        ]
     },
     "micro/bm_if_common/no_arch": {
         "test_name": "micro/bm_if_common/no_arch",
@@ -5537,7 +5701,9 @@
         "OR": 6,
         "AND": 3,
         "NOT": 6,
-        "DFF_P": 9
+        "DFFs": [
+            "$_DFF_P_ 9"
+        ]
     },
     "micro/bm_if_reset/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_if_reset/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5571,7 +5737,9 @@
         "Total Cells": 9,
         "MUX": 2,
         "AND": 4,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "micro/bm_if_reset/k6_N10_40nm": {
         "test_name": "micro/bm_if_reset/k6_N10_40nm",
@@ -5605,7 +5773,9 @@
         "Total Cells": 9,
         "MUX": 2,
         "AND": 4,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "micro/bm_if_reset/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_if_reset/k6_N10_mem32K_40nm",
@@ -5639,7 +5809,9 @@
         "Total Cells": 9,
         "MUX": 2,
         "AND": 4,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "micro/bm_if_reset/no_arch": {
         "test_name": "micro/bm_if_reset/no_arch",
@@ -5671,7 +5843,9 @@
         "Total Cells": 9,
         "MUX": 2,
         "AND": 4,
-        "DFF_P": 3
+        "DFFs": [
+            "$_DFF_P_ 3"
+        ]
     },
     "micro/bm_lpm_all/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_lpm_all/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5882,14 +6056,15 @@
         "Average Path": 3,
         "Estimated LUTs": 30,
         "Total Node": 6,
-        "Wires": 252,
-        "Wire Bits": 252,
+        "Wires": 380,
+        "Wire Bits": 380,
         "Public Wires": 234,
         "Public Wire Bits": 234,
         "Total Cells": 73,
-        "DFF_P": 70,
-        "mult_8_8_16": 1,
-        "mult_9_9_18": 1
+        "DFFs": [
+            "$_DFF_P_ 70"
+        ],
+        "multiply": 3
     },
     "micro/bm_match1_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match1_str_arch/k6_N10_40nm",
@@ -5921,7 +6096,9 @@
         "MUX": 1608,
         "XOR": 1157,
         "AND": 695,
-        "DFF_P": 70
+        "DFFs": [
+            "$_DFF_P_ 70"
+        ]
     },
     "micro/bm_match1_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_match1_str_arch/k6_N10_mem32K_40nm",
@@ -5946,14 +6123,15 @@
         "Average Path": 3,
         "Estimated LUTs": 19,
         "Total Node": 6,
-        "Wires": 252,
-        "Wire Bits": 252,
+        "Wires": 380,
+        "Wire Bits": 380,
         "Public Wires": 234,
         "Public Wire Bits": 234,
         "Total Cells": 73,
-        "DFF_P": 70,
-        "mult_8_8_16": 1,
-        "mult_9_9_18": 1
+        "DFFs": [
+            "$_DFF_P_ 70"
+        ],
+        "multiply": 3
     },
     "micro/bm_match1_str_arch/no_arch": {
         "test_name": "micro/bm_match1_str_arch/no_arch",
@@ -5983,7 +6161,9 @@
         "MUX": 1608,
         "XOR": 1157,
         "AND": 695,
-        "DFF_P": 70
+        "DFFs": [
+            "$_DFF_P_ 70"
+        ]
     },
     "micro/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -6009,14 +6189,16 @@
         "Average Path": 5,
         "Estimated LUTs": 20,
         "Total Node": 85,
-        "Wires": 338,
-        "Wire Bits": 338,
+        "Wires": 554,
+        "Wire Bits": 554,
         "Public Wires": 155,
         "Public Wire Bits": 155,
         "Total Cells": 128,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "adder": 78,
-        "mult_9_9_18": 4
+        "multiply": 4
     },
     "micro/bm_match2_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match2_str_arch/k6_N10_40nm",
@@ -6048,7 +6230,9 @@
         "MUX": 949,
         "XOR": 679,
         "AND": 365,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "micro/bm_match2_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_match2_str_arch/k6_N10_mem32K_40nm",
@@ -6073,16 +6257,18 @@
         "Average Path": 5,
         "Estimated LUTs": 154,
         "Total Node": 148,
-        "Wires": 452,
-        "Wire Bits": 515,
+        "Wires": 668,
+        "Wire Bits": 731,
         "Public Wires": 155,
         "Public Wire Bits": 155,
         "Total Cells": 383,
         "MUX": 189,
         "XOR": 139,
         "AND": 5,
-        "DFF_P": 46,
-        "mult_9_9_18": 4
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
+        "multiply": 4
     },
     "micro/bm_match2_str_arch/no_arch": {
         "test_name": "micro/bm_match2_str_arch/no_arch",
@@ -6112,7 +6298,9 @@
         "MUX": 949,
         "XOR": 679,
         "AND": 365,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "micro/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -6138,14 +6326,16 @@
         "Average Path": 3,
         "Estimated LUTs": 20,
         "Total Node": 54,
-        "Wires": 228,
-        "Wire Bits": 228,
+        "Wires": 282,
+        "Wire Bits": 282,
         "Public Wires": 110,
         "Public Wire Bits": 110,
         "Total Cells": 97,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "adder": 50,
-        "mult_9_9_18": 1
+        "multiply": 1
     },
     "micro/bm_match3_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match3_str_arch/k6_N10_40nm",
@@ -6177,7 +6367,9 @@
         "MUX": 304,
         "XOR": 221,
         "AND": 94,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "micro/bm_match3_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_match3_str_arch/k6_N10_mem32K_40nm",
@@ -6202,16 +6394,18 @@
         "Average Path": 3,
         "Estimated LUTs": 101,
         "Total Node": 92,
-        "Wires": 294,
-        "Wire Bits": 332,
+        "Wires": 348,
+        "Wire Bits": 386,
         "Public Wires": 110,
         "Public Wire Bits": 110,
         "Total Cells": 251,
         "MUX": 114,
         "XOR": 86,
         "AND": 4,
-        "DFF_P": 46,
-        "mult_9_9_18": 1
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
+        "multiply": 1
     },
     "micro/bm_match3_str_arch/no_arch": {
         "test_name": "micro/bm_match3_str_arch/no_arch",
@@ -6241,7 +6435,9 @@
         "MUX": 304,
         "XOR": 221,
         "AND": 94,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "micro/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -6267,16 +6463,16 @@
         "Average Path": 3,
         "Estimated LUTs": 25,
         "Total Node": 47,
-        "Wires": 351,
-        "Wire Bits": 351,
+        "Wires": 516,
+        "Wire Bits": 516,
         "Public Wires": 269,
         "Public Wire Bits": 269,
         "Total Cells": 97,
-        "DFF_P": 53,
+        "DFFs": [
+            "$_DFF_P_ 53"
+        ],
         "adder": 41,
-        "mult_8_8_16": 1,
-        "mult_9_8_17": 1,
-        "mult_9_9_18": 1
+        "multiply": 3
     },
     "micro/bm_match4_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match4_str_arch/k6_N10_40nm",
@@ -6308,7 +6504,9 @@
         "MUX": 598,
         "XOR": 425,
         "AND": 241,
-        "DFF_P": 53
+        "DFFs": [
+            "$_DFF_P_ 53"
+        ]
     },
     "micro/bm_match4_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_match4_str_arch/k6_N10_mem32K_40nm",
@@ -6333,18 +6531,18 @@
         "Average Path": 3,
         "Estimated LUTs": 89,
         "Total Node": 82,
-        "Wires": 405,
-        "Wire Bits": 436,
+        "Wires": 570,
+        "Wire Bits": 601,
         "Public Wires": 269,
         "Public Wire Bits": 269,
         "Total Cells": 223,
         "MUX": 97,
         "XOR": 68,
         "AND": 2,
-        "DFF_P": 53,
-        "mult_8_8_16": 1,
-        "mult_9_8_17": 1,
-        "mult_9_9_18": 1
+        "DFFs": [
+            "$_DFF_P_ 53"
+        ],
+        "multiply": 3
     },
     "micro/bm_match4_str_arch/no_arch": {
         "test_name": "micro/bm_match4_str_arch/no_arch",
@@ -6374,7 +6572,9 @@
         "MUX": 598,
         "XOR": 425,
         "AND": 241,
-        "DFF_P": 53
+        "DFFs": [
+            "$_DFF_P_ 53"
+        ]
     },
     "micro/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -6400,14 +6600,16 @@
         "Average Path": 5,
         "Estimated LUTs": 20,
         "Total Node": 115,
-        "Wires": 466,
-        "Wire Bits": 466,
+        "Wires": 790,
+        "Wire Bits": 790,
         "Public Wires": 146,
         "Public Wire Bits": 146,
         "Total Cells": 158,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "adder": 106,
-        "mult_9_9_18": 6
+        "multiply": 6
     },
     "micro/bm_match5_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match5_str_arch/k6_N10_40nm",
@@ -6439,7 +6641,9 @@
         "MUX": 1404,
         "XOR": 1002,
         "AND": 547,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "micro/bm_match5_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_match5_str_arch/k6_N10_mem32K_40nm",
@@ -6464,16 +6668,18 @@
         "Average Path": 5,
         "Estimated LUTs": 207,
         "Total Node": 203,
-        "Wires": 628,
-        "Wire Bits": 716,
+        "Wires": 952,
+        "Wire Bits": 1040,
         "Public Wires": 146,
         "Public Wire Bits": 146,
         "Total Cells": 514,
         "MUX": 264,
         "XOR": 192,
         "AND": 6,
-        "DFF_P": 46,
-        "mult_9_9_18": 6
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
+        "multiply": 6
     },
     "micro/bm_match5_str_arch/no_arch": {
         "test_name": "micro/bm_match5_str_arch/no_arch",
@@ -6503,7 +6709,9 @@
         "MUX": 1404,
         "XOR": 1002,
         "AND": 547,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "micro/bm_match6_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_match6_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -6529,14 +6737,16 @@
         "Average Path": 4,
         "Estimated LUTs": 12,
         "Total Node": 53,
-        "Wires": 226,
-        "Wire Bits": 226,
+        "Wires": 334,
+        "Wire Bits": 334,
         "Public Wires": 110,
         "Public Wire Bits": 110,
         "Total Cells": 79,
-        "DFF_P": 28,
+        "DFFs": [
+            "$_DFF_P_ 28"
+        ],
         "adder": 49,
-        "mult_9_9_18": 2
+        "multiply": 2
     },
     "micro/bm_match6_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match6_str_arch/k6_N10_40nm",
@@ -6568,7 +6778,9 @@
         "MUX": 468,
         "XOR": 339,
         "AND": 184,
-        "DFF_P": 28
+        "DFFs": [
+            "$_DFF_P_ 28"
+        ]
     },
     "micro/bm_match6_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_match6_str_arch/k6_N10_mem32K_40nm",
@@ -6593,16 +6805,18 @@
         "Average Path": 4,
         "Estimated LUTs": 97,
         "Total Node": 93,
-        "Wires": 264,
-        "Wire Bits": 288,
+        "Wires": 372,
+        "Wire Bits": 396,
         "Public Wires": 110,
         "Public Wire Bits": 110,
         "Total Cells": 190,
         "MUX": 88,
         "XOR": 69,
         "AND": 3,
-        "DFF_P": 28,
-        "mult_9_9_18": 2
+        "DFFs": [
+            "$_DFF_P_ 28"
+        ],
+        "multiply": 2
     },
     "micro/bm_match6_str_arch/no_arch": {
         "test_name": "micro/bm_match6_str_arch/no_arch",
@@ -6632,7 +6846,9 @@
         "MUX": 468,
         "XOR": 339,
         "AND": 184,
-        "DFF_P": 28
+        "DFFs": [
+            "$_DFF_P_ 28"
+        ]
     },
     "micro/bm_mod/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_mod/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -6662,7 +6878,9 @@
         "Public Wire Bits": 101,
         "Total Cells": 66,
         "AND": 33,
-        "DFF_P": 33
+        "DFFs": [
+            "$_DFF_P_ 33"
+        ]
     },
     "micro/bm_mod/k6_N10_40nm": {
         "test_name": "micro/bm_mod/k6_N10_40nm",
@@ -6692,7 +6910,9 @@
         "Public Wire Bits": 101,
         "Total Cells": 66,
         "AND": 33,
-        "DFF_P": 33
+        "DFFs": [
+            "$_DFF_P_ 33"
+        ]
     },
     "micro/bm_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_mod/k6_N10_mem32K_40nm",
@@ -6722,7 +6942,9 @@
         "Public Wire Bits": 101,
         "Total Cells": 66,
         "AND": 33,
-        "DFF_P": 33
+        "DFFs": [
+            "$_DFF_P_ 33"
+        ]
     },
     "micro/bm_mod/no_arch": {
         "test_name": "micro/bm_mod/no_arch",
@@ -6750,7 +6972,9 @@
         "Public Wire Bits": 101,
         "Total Cells": 66,
         "AND": 33,
-        "DFF_P": 33
+        "DFFs": [
+            "$_DFF_P_ 33"
+        ]
     },
     "micro/bm_my_D_latch1/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_my_D_latch1/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -6990,7 +7214,9 @@
         "MUX": 6,
         "OR": 48,
         "NOT": 21,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_stmt_all_mod/k6_N10_40nm": {
         "test_name": "micro/bm_stmt_all_mod/k6_N10_40nm",
@@ -7022,7 +7248,9 @@
         "MUX": 6,
         "OR": 48,
         "NOT": 21,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_stmt_all_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_stmt_all_mod/k6_N10_mem32K_40nm",
@@ -7054,7 +7282,9 @@
         "MUX": 6,
         "OR": 48,
         "NOT": 21,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_stmt_all_mod/no_arch": {
         "test_name": "micro/bm_stmt_all_mod/no_arch",
@@ -7084,7 +7314,9 @@
         "MUX": 6,
         "OR": 48,
         "NOT": 21,
-        "DFF_P": 7
+        "DFFs": [
+            "$_DFF_P_ 7"
+        ]
     },
     "micro/bm_stmt_compare_padding/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_stmt_compare_padding/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7116,7 +7348,9 @@
         "MUX": 4,
         "OR": 25,
         "NOT": 12,
-        "DFF_P": 6
+        "DFFs": [
+            "$_DFF_P_ 6"
+        ]
     },
     "micro/bm_stmt_compare_padding/k6_N10_40nm": {
         "test_name": "micro/bm_stmt_compare_padding/k6_N10_40nm",
@@ -7148,7 +7382,9 @@
         "MUX": 4,
         "OR": 25,
         "NOT": 12,
-        "DFF_P": 6
+        "DFFs": [
+            "$_DFF_P_ 6"
+        ]
     },
     "micro/bm_stmt_compare_padding/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_stmt_compare_padding/k6_N10_mem32K_40nm",
@@ -7180,7 +7416,9 @@
         "MUX": 4,
         "OR": 25,
         "NOT": 12,
-        "DFF_P": 6
+        "DFFs": [
+            "$_DFF_P_ 6"
+        ]
     },
     "micro/bm_stmt_compare_padding/no_arch": {
         "test_name": "micro/bm_stmt_compare_padding/no_arch",
@@ -7210,7 +7448,9 @@
         "MUX": 4,
         "OR": 25,
         "NOT": 12,
-        "DFF_P": 6
+        "DFFs": [
+            "$_DFF_P_ 6"
+        ]
     },
     "micro/bm_tester/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_tester/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7242,7 +7482,9 @@
         "MUX": 4,
         "OR": 47,
         "NOT": 19,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "micro/bm_tester/k6_N10_40nm": {
         "test_name": "micro/bm_tester/k6_N10_40nm",
@@ -7274,7 +7516,9 @@
         "MUX": 4,
         "OR": 47,
         "NOT": 19,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "micro/bm_tester/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_tester/k6_N10_mem32K_40nm",
@@ -7306,7 +7550,9 @@
         "MUX": 4,
         "OR": 47,
         "NOT": 19,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "micro/bm_tester/no_arch": {
         "test_name": "micro/bm_tester/no_arch",
@@ -7336,7 +7582,9 @@
         "MUX": 4,
         "OR": 47,
         "NOT": 19,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "micro/case_generate/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/case_generate/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7438,7 +7686,9 @@
         "Public Wire Bits": 4,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/ff/k6_N10_40nm": {
         "test_name": "micro/ff/k6_N10_40nm",
@@ -7470,7 +7720,9 @@
         "Public Wire Bits": 4,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/ff/k6_N10_mem32K_40nm": {
         "test_name": "micro/ff/k6_N10_mem32K_40nm",
@@ -7502,7 +7754,9 @@
         "Public Wire Bits": 4,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/ff/no_arch": {
         "test_name": "micro/ff/no_arch",
@@ -7532,7 +7786,9 @@
         "Public Wire Bits": 4,
         "Total Cells": 2,
         "MUX": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/generate/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/generate/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7564,7 +7820,9 @@
         "Total Cells": 50,
         "MUX": 16,
         "AND": 1,
-        "DFF_P": 16,
+        "DFFs": [
+            "$_DFF_P_ 16"
+        ],
         "adder": 17
     },
     "micro/generate/k6_N10_40nm": {
@@ -7597,7 +7855,9 @@
         "MUX": 1,
         "AND": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/generate/k6_N10_mem32K_40nm": {
         "test_name": "micro/generate/k6_N10_mem32K_40nm",
@@ -7629,7 +7889,9 @@
         "MUX": 1,
         "AND": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/generate/no_arch": {
         "test_name": "micro/generate/no_arch",
@@ -7659,7 +7921,9 @@
         "MUX": 1,
         "AND": 1,
         "NOT": 1,
-        "DFF_P": 1
+        "DFFs": [
+            "$_DFF_P_ 1"
+        ]
     },
     "micro/if_generate/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/if_generate/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7742,17 +8006,20 @@
         "synthesis_time(ms)": 1.5,
         "Pi": 8,
         "Po": 8,
-        "Multiplier": 2,
+        "logic element": 8,
+        "Adder": 8,
         "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Total Node": 2,
-        "Wires": 16,
-        "Wire Bits": 16,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 16,
+        "Wires": 32,
+        "Wire Bits": 32,
         "Public Wires": 16,
         "Public Wire Bits": 16,
-        "Total Cells": 2,
-        "mult_2_2_4": 2
+        "Total Cells": 16,
+        "AND": 8,
+        "adder": 8
     },
     "micro/multiply_hard_block/k6_N10_40nm": {
         "test_name": "micro/multiply_hard_block/k6_N10_40nm",
@@ -7785,17 +8052,20 @@
         "synthesis_time(ms)": 1.3,
         "Pi": 8,
         "Po": 8,
-        "Multiplier": 2,
+        "logic element": 18,
         "generic logic size": 6,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Total Node": 2,
-        "Wires": 16,
-        "Wire Bits": 16,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 18,
+        "Total Node": 18,
+        "Wires": 24,
+        "Wire Bits": 26,
         "Public Wires": 16,
         "Public Wire Bits": 16,
-        "Total Cells": 2,
-        "mult_2_2_4": 2
+        "Total Cells": 18,
+        "MUX": 2,
+        "XOR": 4,
+        "AND": 12
     },
     "micro/multiply_hard_block/no_arch": {
         "test_name": "micro/multiply_hard_block/no_arch",
@@ -8030,17 +8300,20 @@
         "Longest Path": 7,
         "Average Path": 3,
         "Total Node": 11,
-        "Wires": 45,
-        "Wire Bits": 45,
+        "Wires": 110,
+        "Wire Bits": 110,
         "Public Wires": 28,
         "Public Wire Bits": 28,
         "Total Cells": 11,
         "adder": 10,
-        "mult_4_3_7": 1
+        "multiply": 1
     },
     "micro/param_override/k6_N10_40nm": {
         "test_name": "micro/param_override/k6_N10_40nm",
         "exit": 1,
+        "errors": [
+            "BUF_NODE"
+        ],
         "max_rss(MiB)": 22.7,
         "exec_time(ms)": 21.3,
         "elaboration_time(ms)": 3.9,
@@ -8066,19 +8339,22 @@
         "Average Path": 3,
         "Estimated LUTs": 14,
         "Total Node": 15,
-        "Wires": 37,
-        "Wire Bits": 37,
+        "Wires": 102,
+        "Wire Bits": 102,
         "Public Wires": 28,
         "Public Wire Bits": 28,
         "Total Cells": 13,
         "MUX": 4,
         "XOR": 6,
         "NOT": 2,
-        "mult_4_3_7": 1
+        "multiply": 1
     },
     "micro/param_override/no_arch": {
         "test_name": "micro/param_override/no_arch",
         "exit": 1,
+        "errors": [
+            "BUF_NODE"
+        ],
         "max_rss(MiB)": 20.2,
         "exec_time(ms)": 12.1,
         "elaboration_time(ms)": 3.8,
@@ -8253,135 +8529,21 @@
         "AND": 0,
         "NOT": 0,
         "BUF": 0,
-        "DLATCHSR_PPP": 0,
-        "DLATCHSR_PPN": 0,
-        "DLATCHSR_PNP": 0,
-        "DLATCHSR_PNN": 0,
-        "DLATCHSR_NPP": 0,
-        "DLATCHSR_NPN": 0,
-        "DLATCHSR_NNP": 0,
-        "DLATCHSR_NNN": 0,
-        "DLATCH_PP1": 0,
-        "DLATCH_PP0": 0,
-        "DLATCH_PN1": 0,
-        "DLATCH_PN0": 0,
-        "DLATCH_NP1": 0,
-        "DLATCH_NP0": 0,
-        "DLATCH_NN1": 0,
-        "DLATCH_NN0": 0,
-        "DLATCH_P": 0,
-        "DLATCH_N": 0,
-        "SDFFCE_PP1P": 0,
-        "SDFFCE_PP1N": 0,
-        "SDFFCE_PP0P": 0,
-        "SDFFCE_PP0N": 0,
-        "SDFFCE_PN1P": 0,
-        "SDFFCE_PN1N": 0,
-        "SDFFCE_PN0P": 0,
-        "SDFFCE_PN0N": 0,
-        "SDFFCE_NP1P": 0,
-        "SDFFCE_NP1N": 0,
-        "SDFFCE_NP0P": 0,
-        "SDFFCE_NP0N": 0,
-        "SDFFCE_NN1P": 0,
-        "SDFFCE_NN1N": 0,
-        "SDFFCE_NN0P": 0,
-        "SDFFCE_NN0N": 0,
-        "SDFFE_PP1P": 0,
-        "SDFFE_PP1N": 0,
-        "SDFFE_PP0P": 0,
-        "SDFFE_PP0N": 0,
-        "SDFFE_PN1P": 0,
-        "SDFFE_PN1N": 0,
-        "SDFFE_PN0P": 0,
-        "SDFFE_PN0N": 0,
-        "SDFFE_NP1P": 0,
-        "SDFFE_NP1N": 0,
-        "SDFFE_NP0P": 0,
-        "SDFFE_NP0N": 0,
-        "SDFFE_NN1P": 0,
-        "SDFFE_NN1N": 0,
-        "SDFFE_NN0P": 0,
-        "SDFFE_NN0N": 0,
-        "SDFF_PP1": 0,
-        "SDFF_PP0": 0,
-        "SDFF_PN1": 0,
-        "SDFF_PN0": 0,
-        "SDFF_NP1": 0,
-        "SDFF_NP0": 0,
-        "SDFF_NN1": 0,
-        "SDFF_NN0": 0,
-        "DFFSRE_PPPP": 0,
-        "DFFSRE_PPPN": 0,
-        "DFFSRE_PPNP": 0,
-        "DFFSRE_PPNN": 0,
-        "DFFSRE_PNPP": 0,
-        "DFFSRE_PNPN": 0,
-        "DFFSRE_PNNP": 0,
-        "DFFSRE_PNNN": 0,
-        "DFFSRE_NPPP": 0,
-        "DFFSRE_NPPN": 0,
-        "DFFSRE_NPNP": 0,
-        "DFFSRE_NPNN": 0,
-        "DFFSRE_NNPP": 0,
-        "DFFSRE_NNPN": 0,
-        "DFFSRE_NNNP": 0,
-        "DFFSRE_NNNN": 0,
-        "DFFSR_PPP": 0,
-        "DFFSR_PPN": 0,
-        "DFFSR_PNP": 0,
-        "DFFSR_PNN": 0,
-        "DFFSR_NPP": 0,
-        "DFFSR_NPN": 0,
-        "DFFSR_NNP": 0,
-        "DFFSR_NNN": 0,
-        "ALDFFE_PPP": 0,
-        "ALDFFE_PPN": 0,
-        "ALDFFE_PNP": 0,
-        "ALDFFE_PNN": 0,
-        "ALDFFE_NPP": 0,
-        "ALDFFE_NPN": 0,
-        "ALDFFE_NNP": 0,
-        "ALDFFE_NNN": 0,
-        "ALDFF_PP": 0,
-        "ALDFF_PN": 0,
-        "ALDFF_NP": 0,
-        "ALDFF_NN": 0,
-        "DFFE_PP1P": 0,
-        "DFFE_PP1N": 0,
-        "DFFE_PP0P": 0,
-        "DFFE_PP0N": 0,
-        "DFFE_PN1P": 0,
-        "DFFE_PN1N": 0,
-        "DFFE_PN0P": 0,
-        "DFFE_PN0N": 0,
-        "DFFE_NP1P": 0,
-        "DFFE_NP1N": 0,
-        "DFFE_NP0P": 0,
-        "DFFE_NP0N": 0,
-        "DFFE_NN1P": 0,
-        "DFFE_NN1N": 0,
-        "DFFE_NN0P": 0,
-        "DFFE_NN0N": 0,
-        "DFF_PP1": 0,
-        "DFF_PP0": 0,
-        "DFF_PN1": 0,
-        "DFF_PN0": 0,
-        "DFF_NP1": 0,
-        "DFF_NP0": 0,
-        "DFF_NN1": 0,
-        "DFF_NN0": 0,
-        "DFFE_PP": 0,
-        "DFFE_PN": 0,
-        "DFFE_NP": 0,
-        "DFFE_NN": 0,
-        "DFF_P": 0,
-        "DFF_N": 0,
-        "FF": 0,
-        "SR_PP": 0,
-        "SR_PN": 0,
-        "SR_NP": 0,
-        "SR_NN": 0,
+        "SR latches": [],
+        "FFs": [],
+        "DFFs": [],
+        "FFs with enable": [],
+        "FFs with reset": [],
+        "FFs with asynchronous reset and enable": [],
+        "FFs with asynchronous load": [],
+        "FFs with asynchronous load and enable": [],
+        "FFs with set and reset": [],
+        "FFs with asynchronous set and reset and enable": [],
+        "FFs with synchronous reset": [],
+        "FFs with synchronous reset and enable": [],
+        "D latches": [],
+        "D latches with reset": [],
+        "D latches with set and reset": [],
         "adder": 0,
         "addition_fp_16": 0,
         "addition_fp_32": 0,
@@ -8449,161 +8611,7 @@
         "scff": 0,
         "single_port_ram": 0,
         "xadder": 0,
-        "mult_1_1_2": 0,
-        "mult_1_2_3": 0,
-        "mult_1_3_4": 0,
-        "mult_2_1_3": 0,
-        "mult_2_2_4": 0,
-        "mult_2_3_5": 0,
-        "mult_2_4_6": 0,
-        "mult_3_1_4": 0,
-        "mult_3_2_5": 0,
-        "mult_3_3_6": 0,
-        "mult_3_4_7": 0,
-        "mult_3_5_8": 0,
-        "mult_4_2_6": 0,
-        "mult_4_3_7": 0,
-        "mult_4_4_8": 0,
-        "mult_4_5_9": 0,
-        "mult_4_6_10": 0,
-        "mult_5_3_8": 0,
-        "mult_5_4_9": 0,
-        "mult_5_5_10": 0,
-        "mult_5_6_11": 0,
-        "mult_5_7_12": 0,
-        "mult_6_4_10": 0,
-        "mult_6_5_11": 0,
-        "mult_6_6_12": 0,
-        "mult_6_7_13": 0,
-        "mult_6_8_14": 0,
-        "mult_7_5_12": 0,
-        "mult_7_6_13": 0,
-        "mult_7_7_14": 0,
-        "mult_7_8_15": 0,
-        "mult_7_9_16": 0,
-        "mult_8_6_14": 0,
-        "mult_8_7_15": 0,
-        "mult_8_8_16": 0,
-        "mult_8_9_17": 0,
-        "mult_8_10_18": 0,
-        "mult_9_7_16": 0,
-        "mult_9_8_17": 0,
-        "mult_9_9_18": 0,
-        "mult_9_10_19": 0,
-        "mult_9_11_20": 0,
-        "mult_10_8_18": 0,
-        "mult_10_9_19": 0,
-        "mult_10_10_20": 0,
-        "mult_10_11_21": 0,
-        "mult_10_12_22": 0,
-        "mult_11_9_20": 0,
-        "mult_11_10_21": 0,
-        "mult_11_11_22": 0,
-        "mult_11_12_23": 0,
-        "mult_11_13_24": 0,
-        "mult_12_10_22": 0,
-        "mult_12_11_23": 0,
-        "mult_12_12_24": 0,
-        "mult_12_13_25": 0,
-        "mult_12_14_26": 0,
-        "mult_13_11_24": 0,
-        "mult_13_12_25": 0,
-        "mult_13_13_26": 0,
-        "mult_13_14_27": 0,
-        "mult_13_15_28": 0,
-        "mult_14_12_26": 0,
-        "mult_14_13_27": 0,
-        "mult_14_14_28": 0,
-        "mult_14_15_29": 0,
-        "mult_14_16_30": 0,
-        "mult_15_13_28": 0,
-        "mult_15_14_29": 0,
-        "mult_15_15_30": 0,
-        "mult_15_16_31": 0,
-        "mult_15_17_32": 0,
-        "mult_16_14_30": 0,
-        "mult_16_15_31": 0,
-        "mult_16_16_32": 0,
-        "mult_16_17_33": 0,
-        "mult_16_18_34": 0,
-        "mult_17_15_32": 0,
-        "mult_17_16_33": 0,
-        "mult_17_17_34": 0,
-        "mult_17_18_35": 0,
-        "mult_17_19_36": 0,
-        "mult_18_16_34": 0,
-        "mult_18_17_35": 0,
-        "mult_18_18_36": 0,
-        "mult_18_19_37": 0,
-        "mult_18_20_38": 0,
-        "mult_19_17_36": 0,
-        "mult_19_18_37": 0,
-        "mult_19_19_38": 0,
-        "mult_19_20_39": 0,
-        "mult_19_21_40": 0,
-        "mult_20_18_38": 0,
-        "mult_20_19_39": 0,
-        "mult_20_20_40": 0,
-        "mult_20_21_41": 0,
-        "mult_20_22_42": 0,
-        "mult_21_19_40": 0,
-        "mult_21_20_41": 0,
-        "mult_21_21_42": 0,
-        "mult_21_22_43": 0,
-        "mult_21_23_44": 0,
-        "mult_22_20_42": 0,
-        "mult_22_21_43": 0,
-        "mult_22_22_44": 0,
-        "mult_22_23_45": 0,
-        "mult_22_24_46": 0,
-        "mult_23_21_44": 0,
-        "mult_23_22_45": 0,
-        "mult_23_23_46": 0,
-        "mult_23_24_47": 0,
-        "mult_23_25_48": 0,
-        "mult_24_22_46": 0,
-        "mult_24_23_47": 0,
-        "mult_24_24_48": 0,
-        "mult_24_25_49": 0,
-        "mult_24_26_50": 0,
-        "mult_25_23_48": 0,
-        "mult_25_24_49": 0,
-        "mult_25_25_50": 0,
-        "mult_25_26_51": 0,
-        "mult_25_27_52": 0,
-        "mult_26_24_50": 0,
-        "mult_26_25_51": 0,
-        "mult_26_26_52": 0,
-        "mult_26_27_53": 0,
-        "mult_26_28_54": 0,
-        "mult_27_25_52": 0,
-        "mult_27_26_53": 0,
-        "mult_27_27_54": 0,
-        "mult_27_28_55": 0,
-        "mult_27_29_56": 0,
-        "mult_28_26_54": 0,
-        "mult_28_27_55": 0,
-        "mult_28_28_56": 0,
-        "mult_28_29_57": 0,
-        "mult_28_30_58": 0,
-        "mult_29_27_56": 0,
-        "mult_29_28_57": 0,
-        "mult_29_29_58": 0,
-        "mult_29_30_59": 0,
-        "mult_29_31_60": 0,
-        "mult_30_28_58": 0,
-        "mult_30_29_59": 0,
-        "mult_30_30_60": 0,
-        "mult_30_31_61": 0,
-        "mult_30_32_62": 0,
-        "mult_31_29_60": 0,
-        "mult_31_30_61": 0,
-        "mult_31_31_62": 0,
-        "mult_31_32_63": 0,
-        "mult_31_33_64": 0,
-        "mult_32_30_62": 0,
-        "mult_32_31_63": 0,
-        "mult_32_32_64": 0,
+        "mult_x_y_z": [],
         "anyinit": 0,
         "fsm": 0,
         "mem_v2": 0,

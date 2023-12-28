@@ -36,7 +36,9 @@
         "MUX": 269,
         "XOR": 194,
         "AND": 158,
-        "DFF_P": 55,
+        "DFFs": [
+            "$_DFF_P_ 55"
+        ],
         "multiply": 2
     },
     "mults_auto_half/bm_base_multiply/k6_N10_40nm": {
@@ -75,7 +77,9 @@
         "MUX": 538,
         "XOR": 386,
         "AND": 226,
-        "DFF_P": 54
+        "DFFs": [
+            "$_DFF_P_ 54"
+        ]
     },
     "mults_auto_half/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_half/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -108,7 +112,9 @@
         "MUX": 1418,
         "XOR": 1022,
         "AND": 604,
-        "DFF_P": 70,
+        "DFFs": [
+            "$_DFF_P_ 70"
+        ],
         "multiply": 1
     },
     "mults_auto_half/bm_match1_str_arch/k6_N10_40nm": {
@@ -141,7 +147,9 @@
         "MUX": 1608,
         "XOR": 1157,
         "AND": 695,
-        "DFF_P": 70
+        "DFFs": [
+            "$_DFF_P_ 70"
+        ]
     },
     "mults_auto_half/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_half/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -175,7 +183,9 @@
         "MUX": 380,
         "XOR": 270,
         "AND": 182,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "adder": 78,
         "multiply": 2
     },
@@ -209,7 +219,9 @@
         "MUX": 949,
         "XOR": 679,
         "AND": 365,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "mults_auto_half/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_half/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -242,7 +254,9 @@
         "MUX": 190,
         "XOR": 135,
         "AND": 91,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "adder": 50
     },
     "mults_auto_half/bm_match3_str_arch/k6_N10_40nm": {
@@ -275,7 +289,9 @@
         "MUX": 304,
         "XOR": 221,
         "AND": 94,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "mults_auto_half/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_half/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -309,7 +325,9 @@
         "MUX": 311,
         "XOR": 222,
         "AND": 150,
-        "DFF_P": 53,
+        "DFFs": [
+            "$_DFF_P_ 53"
+        ],
         "adder": 41,
         "multiply": 1
     },
@@ -343,7 +361,9 @@
         "MUX": 598,
         "XOR": 425,
         "AND": 241,
-        "DFF_P": 53
+        "DFFs": [
+            "$_DFF_P_ 53"
+        ]
     },
     "mults_auto_half/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_half/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -377,7 +397,9 @@
         "MUX": 570,
         "XOR": 405,
         "AND": 271,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "adder": 106,
         "multiply": 3
     },
@@ -411,7 +433,9 @@
         "MUX": 1404,
         "XOR": 1002,
         "AND": 547,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "mults_auto_half/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_half/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -491,7 +515,9 @@
         "Total Cells": 16,
         "MUX": 4,
         "AND": 4,
-        "DFF_P": 4,
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ],
         "adder": 4
     },
     "mults_auto_half/twobits_arithmetic_multiply/k6_N10_40nm": {
@@ -526,7 +552,9 @@
         "MUX": 5,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "mults_auto_half/bm_base_multiply/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_half/bm_base_multiply/k6_frac_N10_mem32K_40nm",
@@ -562,7 +590,9 @@
         "MUX": 269,
         "XOR": 194,
         "AND": 158,
-        "DFF_P": 55,
+        "DFFs": [
+            "$_DFF_P_ 55"
+        ],
         "multiply": 2
     },
     "mults_auto_half/bm_base_multiply/k6_N10_mem32K_40nm": {
@@ -599,7 +629,9 @@
         "MUX": 269,
         "XOR": 194,
         "AND": 158,
-        "DFF_P": 55,
+        "DFFs": [
+            "$_DFF_P_ 55"
+        ],
         "multiply": 2
     },
     "mults_auto_half/bm_match1_str_arch/k6_frac_N10_mem32K_40nm": {
@@ -630,7 +662,9 @@
         "MUX": 1418,
         "XOR": 1022,
         "AND": 604,
-        "DFF_P": 70,
+        "DFFs": [
+            "$_DFF_P_ 70"
+        ],
         "multiply": 1
     },
     "mults_auto_half/bm_match1_str_arch/k6_N10_mem32K_40nm": {
@@ -661,7 +695,9 @@
         "MUX": 1418,
         "XOR": 1022,
         "AND": 604,
-        "DFF_P": 70,
+        "DFFs": [
+            "$_DFF_P_ 70"
+        ],
         "multiply": 1
     },
     "mults_auto_half/bm_match2_str_arch/k6_frac_N10_mem32K_40nm": {
@@ -692,7 +728,9 @@
         "MUX": 569,
         "XOR": 409,
         "AND": 188,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "multiply": 2
     },
     "mults_auto_half/bm_match2_str_arch/k6_N10_mem32K_40nm": {
@@ -723,7 +761,9 @@
         "MUX": 569,
         "XOR": 409,
         "AND": 188,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "multiply": 2
     },
     "mults_auto_half/bm_match3_str_arch/k6_frac_N10_mem32K_40nm": {
@@ -753,7 +793,9 @@
         "MUX": 304,
         "XOR": 221,
         "AND": 94,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "mults_auto_half/bm_match3_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_half/bm_match3_str_arch/k6_N10_mem32K_40nm",
@@ -782,7 +824,9 @@
         "MUX": 304,
         "XOR": 221,
         "AND": 94,
-        "DFF_P": 46
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ]
     },
     "mults_auto_half/bm_match4_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_half/bm_match4_str_arch/k6_frac_N10_mem32K_40nm",
@@ -812,7 +856,9 @@
         "MUX": 408,
         "XOR": 290,
         "AND": 152,
-        "DFF_P": 53,
+        "DFFs": [
+            "$_DFF_P_ 53"
+        ],
         "multiply": 1
     },
     "mults_auto_half/bm_match4_str_arch/k6_N10_mem32K_40nm": {
@@ -843,7 +889,9 @@
         "MUX": 408,
         "XOR": 290,
         "AND": 152,
-        "DFF_P": 53,
+        "DFFs": [
+            "$_DFF_P_ 53"
+        ],
         "multiply": 1
     },
     "mults_auto_half/bm_match5_str_arch/k6_frac_N10_mem32K_40nm": {
@@ -874,7 +922,9 @@
         "MUX": 834,
         "XOR": 597,
         "AND": 277,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "multiply": 3
     },
     "mults_auto_half/bm_match5_str_arch/k6_N10_mem32K_40nm": {
@@ -905,7 +955,9 @@
         "MUX": 834,
         "XOR": 597,
         "AND": 277,
-        "DFF_P": 46,
+        "DFFs": [
+            "$_DFF_P_ 46"
+        ],
         "multiply": 3
     },
     "mults_auto_half/multiply_hard_block/k6_frac_N10_mem32K_40nm": {
@@ -983,7 +1035,9 @@
         "MUX": 5,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "mults_auto_half/twobits_arithmetic_multiply/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_half/twobits_arithmetic_multiply/k6_N10_mem32K_40nm",
@@ -1014,7 +1068,9 @@
         "MUX": 5,
         "XOR": 2,
         "AND": 5,
-        "DFF_P": 4
+        "DFFs": [
+            "$_DFF_P_ 4"
+        ]
     },
     "DEFAULT": {
         "test_name": "n/a",
@@ -1073,135 +1129,21 @@
         "AND": 0,
         "NOT": 0,
         "BUF": 0,
-        "DLATCHSR_PPP": 0,
-        "DLATCHSR_PPN": 0,
-        "DLATCHSR_PNP": 0,
-        "DLATCHSR_PNN": 0,
-        "DLATCHSR_NPP": 0,
-        "DLATCHSR_NPN": 0,
-        "DLATCHSR_NNP": 0,
-        "DLATCHSR_NNN": 0,
-        "DLATCH_PP1": 0,
-        "DLATCH_PP0": 0,
-        "DLATCH_PN1": 0,
-        "DLATCH_PN0": 0,
-        "DLATCH_NP1": 0,
-        "DLATCH_NP0": 0,
-        "DLATCH_NN1": 0,
-        "DLATCH_NN0": 0,
-        "DLATCH_P": 0,
-        "DLATCH_N": 0,
-        "SDFFCE_PP1P": 0,
-        "SDFFCE_PP1N": 0,
-        "SDFFCE_PP0P": 0,
-        "SDFFCE_PP0N": 0,
-        "SDFFCE_PN1P": 0,
-        "SDFFCE_PN1N": 0,
-        "SDFFCE_PN0P": 0,
-        "SDFFCE_PN0N": 0,
-        "SDFFCE_NP1P": 0,
-        "SDFFCE_NP1N": 0,
-        "SDFFCE_NP0P": 0,
-        "SDFFCE_NP0N": 0,
-        "SDFFCE_NN1P": 0,
-        "SDFFCE_NN1N": 0,
-        "SDFFCE_NN0P": 0,
-        "SDFFCE_NN0N": 0,
-        "SDFFE_PP1P": 0,
-        "SDFFE_PP1N": 0,
-        "SDFFE_PP0P": 0,
-        "SDFFE_PP0N": 0,
-        "SDFFE_PN1P": 0,
-        "SDFFE_PN1N": 0,
-        "SDFFE_PN0P": 0,
-        "SDFFE_PN0N": 0,
-        "SDFFE_NP1P": 0,
-        "SDFFE_NP1N": 0,
-        "SDFFE_NP0P": 0,
-        "SDFFE_NP0N": 0,
-        "SDFFE_NN1P": 0,
-        "SDFFE_NN1N": 0,
-        "SDFFE_NN0P": 0,
-        "SDFFE_NN0N": 0,
-        "SDFF_PP1": 0,
-        "SDFF_PP0": 0,
-        "SDFF_PN1": 0,
-        "SDFF_PN0": 0,
-        "SDFF_NP1": 0,
-        "SDFF_NP0": 0,
-        "SDFF_NN1": 0,
-        "SDFF_NN0": 0,
-        "DFFSRE_PPPP": 0,
-        "DFFSRE_PPPN": 0,
-        "DFFSRE_PPNP": 0,
-        "DFFSRE_PPNN": 0,
-        "DFFSRE_PNPP": 0,
-        "DFFSRE_PNPN": 0,
-        "DFFSRE_PNNP": 0,
-        "DFFSRE_PNNN": 0,
-        "DFFSRE_NPPP": 0,
-        "DFFSRE_NPPN": 0,
-        "DFFSRE_NPNP": 0,
-        "DFFSRE_NPNN": 0,
-        "DFFSRE_NNPP": 0,
-        "DFFSRE_NNPN": 0,
-        "DFFSRE_NNNP": 0,
-        "DFFSRE_NNNN": 0,
-        "DFFSR_PPP": 0,
-        "DFFSR_PPN": 0,
-        "DFFSR_PNP": 0,
-        "DFFSR_PNN": 0,
-        "DFFSR_NPP": 0,
-        "DFFSR_NPN": 0,
-        "DFFSR_NNP": 0,
-        "DFFSR_NNN": 0,
-        "ALDFFE_PPP": 0,
-        "ALDFFE_PPN": 0,
-        "ALDFFE_PNP": 0,
-        "ALDFFE_PNN": 0,
-        "ALDFFE_NPP": 0,
-        "ALDFFE_NPN": 0,
-        "ALDFFE_NNP": 0,
-        "ALDFFE_NNN": 0,
-        "ALDFF_PP": 0,
-        "ALDFF_PN": 0,
-        "ALDFF_NP": 0,
-        "ALDFF_NN": 0,
-        "DFFE_PP1P": 0,
-        "DFFE_PP1N": 0,
-        "DFFE_PP0P": 0,
-        "DFFE_PP0N": 0,
-        "DFFE_PN1P": 0,
-        "DFFE_PN1N": 0,
-        "DFFE_PN0P": 0,
-        "DFFE_PN0N": 0,
-        "DFFE_NP1P": 0,
-        "DFFE_NP1N": 0,
-        "DFFE_NP0P": 0,
-        "DFFE_NP0N": 0,
-        "DFFE_NN1P": 0,
-        "DFFE_NN1N": 0,
-        "DFFE_NN0P": 0,
-        "DFFE_NN0N": 0,
-        "DFF_PP1": 0,
-        "DFF_PP0": 0,
-        "DFF_PN1": 0,
-        "DFF_PN0": 0,
-        "DFF_NP1": 0,
-        "DFF_NP0": 0,
-        "DFF_NN1": 0,
-        "DFF_NN0": 0,
-        "DFFE_PP": 0,
-        "DFFE_PN": 0,
-        "DFFE_NP": 0,
-        "DFFE_NN": 0,
-        "DFF_P": 0,
-        "DFF_N": 0,
-        "FF": 0,
-        "SR_PP": 0,
-        "SR_PN": 0,
-        "SR_NP": 0,
-        "SR_NN": 0,
+        "SR latches": [],
+        "FFs": [],
+        "DFFs": [],
+        "FFs with enable": [],
+        "FFs with reset": [],
+        "FFs with asynchronous reset and enable": [],
+        "FFs with asynchronous load": [],
+        "FFs with asynchronous load and enable": [],
+        "FFs with set and reset": [],
+        "FFs with asynchronous set and reset and enable": [],
+        "FFs with synchronous reset": [],
+        "FFs with synchronous reset and enable": [],
+        "D latches": [],
+        "D latches with reset": [],
+        "D latches with set and reset": [],
         "adder": 0,
         "addition_fp_16": 0,
         "addition_fp_32": 0,
@@ -1269,161 +1211,7 @@
         "scff": 0,
         "single_port_ram": 0,
         "xadder": 0,
-        "mult_1_1_2": 0,
-        "mult_1_2_3": 0,
-        "mult_1_3_4": 0,
-        "mult_2_1_3": 0,
-        "mult_2_2_4": 0,
-        "mult_2_3_5": 0,
-        "mult_2_4_6": 0,
-        "mult_3_1_4": 0,
-        "mult_3_2_5": 0,
-        "mult_3_3_6": 0,
-        "mult_3_4_7": 0,
-        "mult_3_5_8": 0,
-        "mult_4_2_6": 0,
-        "mult_4_3_7": 0,
-        "mult_4_4_8": 0,
-        "mult_4_5_9": 0,
-        "mult_4_6_10": 0,
-        "mult_5_3_8": 0,
-        "mult_5_4_9": 0,
-        "mult_5_5_10": 0,
-        "mult_5_6_11": 0,
-        "mult_5_7_12": 0,
-        "mult_6_4_10": 0,
-        "mult_6_5_11": 0,
-        "mult_6_6_12": 0,
-        "mult_6_7_13": 0,
-        "mult_6_8_14": 0,
-        "mult_7_5_12": 0,
-        "mult_7_6_13": 0,
-        "mult_7_7_14": 0,
-        "mult_7_8_15": 0,
-        "mult_7_9_16": 0,
-        "mult_8_6_14": 0,
-        "mult_8_7_15": 0,
-        "mult_8_8_16": 0,
-        "mult_8_9_17": 0,
-        "mult_8_10_18": 0,
-        "mult_9_7_16": 0,
-        "mult_9_8_17": 0,
-        "mult_9_9_18": 0,
-        "mult_9_10_19": 0,
-        "mult_9_11_20": 0,
-        "mult_10_8_18": 0,
-        "mult_10_9_19": 0,
-        "mult_10_10_20": 0,
-        "mult_10_11_21": 0,
-        "mult_10_12_22": 0,
-        "mult_11_9_20": 0,
-        "mult_11_10_21": 0,
-        "mult_11_11_22": 0,
-        "mult_11_12_23": 0,
-        "mult_11_13_24": 0,
-        "mult_12_10_22": 0,
-        "mult_12_11_23": 0,
-        "mult_12_12_24": 0,
-        "mult_12_13_25": 0,
-        "mult_12_14_26": 0,
-        "mult_13_11_24": 0,
-        "mult_13_12_25": 0,
-        "mult_13_13_26": 0,
-        "mult_13_14_27": 0,
-        "mult_13_15_28": 0,
-        "mult_14_12_26": 0,
-        "mult_14_13_27": 0,
-        "mult_14_14_28": 0,
-        "mult_14_15_29": 0,
-        "mult_14_16_30": 0,
-        "mult_15_13_28": 0,
-        "mult_15_14_29": 0,
-        "mult_15_15_30": 0,
-        "mult_15_16_31": 0,
-        "mult_15_17_32": 0,
-        "mult_16_14_30": 0,
-        "mult_16_15_31": 0,
-        "mult_16_16_32": 0,
-        "mult_16_17_33": 0,
-        "mult_16_18_34": 0,
-        "mult_17_15_32": 0,
-        "mult_17_16_33": 0,
-        "mult_17_17_34": 0,
-        "mult_17_18_35": 0,
-        "mult_17_19_36": 0,
-        "mult_18_16_34": 0,
-        "mult_18_17_35": 0,
-        "mult_18_18_36": 0,
-        "mult_18_19_37": 0,
-        "mult_18_20_38": 0,
-        "mult_19_17_36": 0,
-        "mult_19_18_37": 0,
-        "mult_19_19_38": 0,
-        "mult_19_20_39": 0,
-        "mult_19_21_40": 0,
-        "mult_20_18_38": 0,
-        "mult_20_19_39": 0,
-        "mult_20_20_40": 0,
-        "mult_20_21_41": 0,
-        "mult_20_22_42": 0,
-        "mult_21_19_40": 0,
-        "mult_21_20_41": 0,
-        "mult_21_21_42": 0,
-        "mult_21_22_43": 0,
-        "mult_21_23_44": 0,
-        "mult_22_20_42": 0,
-        "mult_22_21_43": 0,
-        "mult_22_22_44": 0,
-        "mult_22_23_45": 0,
-        "mult_22_24_46": 0,
-        "mult_23_21_44": 0,
-        "mult_23_22_45": 0,
-        "mult_23_23_46": 0,
-        "mult_23_24_47": 0,
-        "mult_23_25_48": 0,
-        "mult_24_22_46": 0,
-        "mult_24_23_47": 0,
-        "mult_24_24_48": 0,
-        "mult_24_25_49": 0,
-        "mult_24_26_50": 0,
-        "mult_25_23_48": 0,
-        "mult_25_24_49": 0,
-        "mult_25_25_50": 0,
-        "mult_25_26_51": 0,
-        "mult_25_27_52": 0,
-        "mult_26_24_50": 0,
-        "mult_26_25_51": 0,
-        "mult_26_26_52": 0,
-        "mult_26_27_53": 0,
-        "mult_26_28_54": 0,
-        "mult_27_25_52": 0,
-        "mult_27_26_53": 0,
-        "mult_27_27_54": 0,
-        "mult_27_28_55": 0,
-        "mult_27_29_56": 0,
-        "mult_28_26_54": 0,
-        "mult_28_27_55": 0,
-        "mult_28_28_56": 0,
-        "mult_28_29_57": 0,
-        "mult_28_30_58": 0,
-        "mult_29_27_56": 0,
-        "mult_29_28_57": 0,
-        "mult_29_29_58": 0,
-        "mult_29_30_59": 0,
-        "mult_29_31_60": 0,
-        "mult_30_28_58": 0,
-        "mult_30_29_59": 0,
-        "mult_30_30_60": 0,
-        "mult_30_31_61": 0,
-        "mult_30_32_62": 0,
-        "mult_31_29_60": 0,
-        "mult_31_30_61": 0,
-        "mult_31_31_62": 0,
-        "mult_31_32_63": 0,
-        "mult_31_33_64": 0,
-        "mult_32_30_62": 0,
-        "mult_32_31_63": 0,
-        "mult_32_32_64": 0,
+        "mult_x_y_z": [],
         "anyinit": 0,
         "fsm": 0,
         "mem_v2": 0,
