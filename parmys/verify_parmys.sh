@@ -1064,7 +1064,7 @@ function sim() {
 					_echo_args "${wrapper_command}"	\
 						> "${DIR}/${synthesis_wrapper_file_name}"
 
-					_echo_args "${synthesis_command}; echo \"Odin exited with code: \$?\";" \
+					_echo_args "${synthesis_command}; echo \"Yosys exited with code: \$?\";" \
 						> "${DIR}/${synthesis_params_file_name}"
 
 					chmod +x "${DIR}/${synthesis_params_file_name}"
