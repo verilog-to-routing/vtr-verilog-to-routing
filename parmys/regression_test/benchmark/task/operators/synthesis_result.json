@@ -3,8 +3,8 @@
         "test_name": "operators/binary_and/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_and.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_and.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_and.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_and.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -38,8 +38,8 @@
         "test_name": "operators/binary_and/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_and.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_and.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_and.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_and.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -73,8 +73,8 @@
         "test_name": "operators/binary_and/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_and.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_and.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_and.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_and.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -107,8 +107,8 @@
     "operators/binary_and/no_arch": {
         "test_name": "operators/binary_and/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_and.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_and.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_and.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_and.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -141,8 +141,8 @@
         "test_name": "operators/binary_equal/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_equal.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_equal.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -171,8 +171,8 @@
         "test_name": "operators/binary_equal/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_equal.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_equal.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -201,8 +201,8 @@
         "test_name": "operators/binary_equal/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_equal.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_equal.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -230,8 +230,8 @@
     "operators/binary_equal/no_arch": {
         "test_name": "operators/binary_equal/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_equal.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_equal.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -259,8 +259,8 @@
         "test_name": "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_and.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_and.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_and.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_and.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -294,8 +294,8 @@
         "test_name": "operators/binary_logical_and/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_and.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_and.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_and.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_and.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -329,8 +329,8 @@
         "test_name": "operators/binary_logical_and/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_and.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_and.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_and.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_and.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -363,8 +363,8 @@
     "operators/binary_logical_and/no_arch": {
         "test_name": "operators/binary_logical_and/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_and.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_and.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_and.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_and.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -397,8 +397,8 @@
         "test_name": "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_equal.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_equal.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -433,8 +433,8 @@
         "test_name": "operators/binary_logical_equal/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_equal.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_equal.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -469,8 +469,8 @@
         "test_name": "operators/binary_logical_equal/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_equal.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_equal.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -504,8 +504,8 @@
     "operators/binary_logical_equal/no_arch": {
         "test_name": "operators/binary_logical_equal/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_equal.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_equal.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -539,8 +539,8 @@
         "test_name": "operators/binary_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_equal_than.v:23.17-23.38.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_equal_than.v:25.22-25.33.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_equal_than.v:23.17-23.38.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_equal_than.v:25.22-25.33.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -577,8 +577,8 @@
         "test_name": "operators/binary_logical_greater_equal_than/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_equal_than.v:23.17-23.38.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_equal_than.v:25.22-25.33.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_equal_than.v:23.17-23.38.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_equal_than.v:25.22-25.33.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -615,8 +615,8 @@
         "test_name": "operators/binary_logical_greater_equal_than/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_equal_than.v:23.17-23.38.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_equal_than.v:25.22-25.33.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_equal_than.v:23.17-23.38.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_equal_than.v:25.22-25.33.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -652,8 +652,8 @@
     "operators/binary_logical_greater_equal_than/no_arch": {
         "test_name": "operators/binary_logical_greater_equal_than/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_equal_than.v:23.17-23.38.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_equal_than.v:25.22-25.33.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_equal_than.v:23.17-23.38.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_equal_than.v:25.22-25.33.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -689,8 +689,8 @@
         "test_name": "operators/binary_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_than.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_than.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -727,8 +727,8 @@
         "test_name": "operators/binary_logical_greater_than/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_than.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_than.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -765,8 +765,8 @@
         "test_name": "operators/binary_logical_greater_than/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_than.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_than.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -802,8 +802,8 @@
     "operators/binary_logical_greater_than/no_arch": {
         "test_name": "operators/binary_logical_greater_than/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_than.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_greater_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_than.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_greater_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -839,8 +839,8 @@
         "test_name": "operators/binary_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_equal_than.v:21.25-21.46.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_equal_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_equal_than.v:21.25-21.46.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_equal_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -877,8 +877,8 @@
         "test_name": "operators/binary_logical_less_equal_than/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_equal_than.v:21.25-21.46.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_equal_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_equal_than.v:21.25-21.46.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_equal_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -915,8 +915,8 @@
         "test_name": "operators/binary_logical_less_equal_than/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_equal_than.v:21.25-21.46.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_equal_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_equal_than.v:21.25-21.46.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_equal_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -952,8 +952,8 @@
     "operators/binary_logical_less_equal_than/no_arch": {
         "test_name": "operators/binary_logical_less_equal_than/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_equal_than.v:21.25-21.46.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_equal_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_equal_than.v:21.25-21.46.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_equal_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -989,8 +989,8 @@
         "test_name": "operators/binary_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_than.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_than.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1027,8 +1027,8 @@
         "test_name": "operators/binary_logical_less_than/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_than.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_than.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1065,8 +1065,8 @@
         "test_name": "operators/binary_logical_less_than/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_than.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_than.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1102,8 +1102,8 @@
     "operators/binary_logical_less_than/no_arch": {
         "test_name": "operators/binary_logical_less_than/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_than.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_less_than.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_than.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_less_than.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1139,8 +1139,8 @@
         "test_name": "operators/binary_logical_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_not_equal.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_not_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_not_equal.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_not_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1174,8 +1174,8 @@
         "test_name": "operators/binary_logical_not_equal/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_not_equal.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_not_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_not_equal.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_not_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1209,8 +1209,8 @@
         "test_name": "operators/binary_logical_not_equal/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_not_equal.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_not_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_not_equal.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_not_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1243,8 +1243,8 @@
     "operators/binary_logical_not_equal/no_arch": {
         "test_name": "operators/binary_logical_not_equal/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_not_equal.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_not_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_not_equal.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_not_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1277,8 +1277,8 @@
         "test_name": "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_or.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_or.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_or.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_or.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1312,8 +1312,8 @@
         "test_name": "operators/binary_logical_or/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_or.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_or.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_or.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_or.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1347,8 +1347,8 @@
         "test_name": "operators/binary_logical_or/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_or.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_or.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_or.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_or.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1381,8 +1381,8 @@
     "operators/binary_logical_or/no_arch": {
         "test_name": "operators/binary_logical_or/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_or.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_logical_or.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_or.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_logical_or.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1415,8 +1415,8 @@
         "test_name": "operators/binary_nand/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nand.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nand.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nand.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nand.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1451,8 +1451,8 @@
         "test_name": "operators/binary_nand/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nand.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nand.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nand.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nand.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1487,8 +1487,8 @@
         "test_name": "operators/binary_nand/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nand.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nand.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nand.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nand.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1522,8 +1522,8 @@
     "operators/binary_nand/no_arch": {
         "test_name": "operators/binary_nand/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nand.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nand.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nand.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nand.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1557,8 +1557,8 @@
         "test_name": "operators/binary_nor/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nor.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nor.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1593,8 +1593,8 @@
         "test_name": "operators/binary_nor/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nor.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nor.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1629,8 +1629,8 @@
         "test_name": "operators/binary_nor/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nor.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nor.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1664,8 +1664,8 @@
     "operators/binary_nor/no_arch": {
         "test_name": "operators/binary_nor/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nor.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_nor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nor.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_nor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1699,8 +1699,8 @@
         "test_name": "operators/binary_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_not_equal.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_not_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_not_equal.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_not_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1728,8 +1728,8 @@
         "test_name": "operators/binary_not_equal/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_not_equal.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_not_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_not_equal.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_not_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1757,8 +1757,8 @@
         "test_name": "operators/binary_not_equal/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_not_equal.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_not_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_not_equal.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_not_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1785,8 +1785,8 @@
     "operators/binary_not_equal/no_arch": {
         "test_name": "operators/binary_not_equal/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_not_equal.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_not_equal.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_not_equal.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_not_equal.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1813,8 +1813,8 @@
         "test_name": "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_or.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_or.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_or.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_or.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1848,8 +1848,8 @@
         "test_name": "operators/binary_or/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_or.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_or.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_or.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_or.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1883,8 +1883,8 @@
         "test_name": "operators/binary_or/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_or.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_or.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_or.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_or.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1917,8 +1917,8 @@
     "operators/binary_or/no_arch": {
         "test_name": "operators/binary_or/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_or.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_or.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_or.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_or.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1951,8 +1951,8 @@
         "test_name": "operators/binary_xnor/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xnor.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xnor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xnor.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xnor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -1986,8 +1986,8 @@
         "test_name": "operators/binary_xnor/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xnor.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xnor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xnor.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xnor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2021,8 +2021,8 @@
         "test_name": "operators/binary_xnor/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xnor.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xnor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xnor.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xnor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2055,8 +2055,8 @@
     "operators/binary_xnor/no_arch": {
         "test_name": "operators/binary_xnor/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xnor.v:21.25-21.44.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xnor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xnor.v:21.25-21.44.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xnor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2089,8 +2089,8 @@
         "test_name": "operators/binary_xor/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xor.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xor.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2124,8 +2124,8 @@
         "test_name": "operators/binary_xor/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xor.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xor.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2159,8 +2159,8 @@
         "test_name": "operators/binary_xor/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xor.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xor.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2193,8 +2193,8 @@
     "operators/binary_xor/no_arch": {
         "test_name": "operators/binary_xor/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xor.v:21.25-21.43.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/binary_xor.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xor.v:21.25-21.43.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/binary_xor.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2227,8 +2227,8 @@
         "test_name": "operators/clog2/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/clog2.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/clog2.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/clog2.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/clog2.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2261,8 +2261,8 @@
         "test_name": "operators/clog2/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/clog2.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/clog2.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/clog2.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/clog2.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2295,8 +2295,8 @@
         "test_name": "operators/clog2/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/clog2.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/clog2.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/clog2.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/clog2.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2328,8 +2328,8 @@
     "operators/clog2/no_arch": {
         "test_name": "operators/clog2/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/clog2.v:21.25-21.45.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/clog2.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/clog2.v:21.25-21.45.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/clog2.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -2361,7 +2361,7 @@
         "test_name": "operators/concat/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\result' is assigned in a block at regression_test/benchmark/verilog//operators/concat.v:35.2-35.25.",
+            "wire '\\result' is assigned in a block at regression_test/benchmark/verilog/operators/concat.v:35.2-35.25.",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
@@ -2395,7 +2395,7 @@
         "test_name": "operators/concat/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\result' is assigned in a block at regression_test/benchmark/verilog//operators/concat.v:35.2-35.25.",
+            "wire '\\result' is assigned in a block at regression_test/benchmark/verilog/operators/concat.v:35.2-35.25.",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
@@ -2429,7 +2429,7 @@
         "test_name": "operators/concat/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\result' is assigned in a block at regression_test/benchmark/verilog//operators/concat.v:35.2-35.25.",
+            "wire '\\result' is assigned in a block at regression_test/benchmark/verilog/operators/concat.v:35.2-35.25.",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
@@ -2462,7 +2462,7 @@
     "operators/concat/no_arch": {
         "test_name": "operators/concat/no_arch",
         "warnings": [
-            "wire '\\result' is assigned in a block at regression_test/benchmark/verilog//operators/concat.v:35.2-35.25.",
+            "wire '\\result' is assigned in a block at regression_test/benchmark/verilog/operators/concat.v:35.2-35.25.",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
             "Ignoring module mksteep_comp because it contains processes (run 'proc' command first).",
@@ -2495,8 +2495,8 @@
         "test_name": "operators/eightbit_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog//operators/eightbit_arithmetic_power.v:15.12-15.22.",
-            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog//operators/eightbit_arithmetic_power.v:16.18-16.23.",
+            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/operators/eightbit_arithmetic_power.v:15.12-15.22.",
+            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/operators/eightbit_arithmetic_power.v:16.18-16.23.",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first).",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first).",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first)."
@@ -2530,8 +2530,8 @@
         "test_name": "operators/eightbit_arithmetic_power/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog//operators/eightbit_arithmetic_power.v:15.12-15.22.",
-            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog//operators/eightbit_arithmetic_power.v:16.18-16.23.",
+            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/operators/eightbit_arithmetic_power.v:15.12-15.22.",
+            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/operators/eightbit_arithmetic_power.v:16.18-16.23.",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first).",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first).",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first)."
@@ -2565,8 +2565,8 @@
         "test_name": "operators/eightbit_arithmetic_power/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog//operators/eightbit_arithmetic_power.v:15.12-15.22.",
-            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog//operators/eightbit_arithmetic_power.v:16.18-16.23.",
+            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/operators/eightbit_arithmetic_power.v:15.12-15.22.",
+            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/operators/eightbit_arithmetic_power.v:16.18-16.23.",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first).",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first).",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first)."
@@ -2599,8 +2599,8 @@
     "operators/eightbit_arithmetic_power/no_arch": {
         "test_name": "operators/eightbit_arithmetic_power/no_arch",
         "warnings": [
-            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog//operators/eightbit_arithmetic_power.v:15.12-15.22.",
-            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog//operators/eightbit_arithmetic_power.v:16.18-16.23.",
+            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/operators/eightbit_arithmetic_power.v:15.12-15.22.",
+            "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/operators/eightbit_arithmetic_power.v:16.18-16.23.",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first).",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first).",
             "Ignoring module eightbit_arithmetic_power because it contains processes (run 'proc' command first)."
@@ -3249,8 +3249,8 @@
         "test_name": "operators/string_test_concat/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3274,8 +3274,8 @@
         "test_name": "operators/string_test_concat/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3299,8 +3299,8 @@
         "test_name": "operators/string_test_concat/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3323,8 +3323,8 @@
     "operators/string_test_concat/no_arch": {
         "test_name": "operators/string_test_concat/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3347,8 +3347,8 @@
         "test_name": "operators/string_test_concat_replicate/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat_replicate.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat_replicate.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat_replicate.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat_replicate.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3372,8 +3372,8 @@
         "test_name": "operators/string_test_concat_replicate/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat_replicate.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat_replicate.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat_replicate.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat_replicate.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3397,8 +3397,8 @@
         "test_name": "operators/string_test_concat_replicate/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat_replicate.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat_replicate.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat_replicate.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat_replicate.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3421,8 +3421,8 @@
     "operators/string_test_concat_replicate/no_arch": {
         "test_name": "operators/string_test_concat_replicate/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat_replicate.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test_concat_replicate.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat_replicate.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test_concat_replicate.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3445,8 +3445,8 @@
         "test_name": "operators/string_test/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3470,8 +3470,8 @@
         "test_name": "operators/string_test/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3495,8 +3495,8 @@
         "test_name": "operators/string_test/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3519,8 +3519,8 @@
     "operators/string_test/no_arch": {
         "test_name": "operators/string_test/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/string_test.v:8.5-8.41.",
-            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog//operators/string_test.v:9.5-9.23.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/string_test.v:8.5-8.41.",
+            "wire '\\tmp' is assigned in a block at regression_test/benchmark/verilog/operators/string_test.v:9.5-9.23.",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first).",
             "Ignoring module top because it contains processes (run 'proc' command first)."
@@ -3543,8 +3543,8 @@
         "test_name": "operators/twobits_arithmetic_div/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_div.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_div.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_div.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_div.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3575,8 +3575,8 @@
         "test_name": "operators/twobits_arithmetic_div/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_div.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_div.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_div.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_div.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3607,8 +3607,8 @@
         "test_name": "operators/twobits_arithmetic_div/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_div.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_div.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_div.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_div.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3638,8 +3638,8 @@
     "operators/twobits_arithmetic_div/no_arch": {
         "test_name": "operators/twobits_arithmetic_div/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_div.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_div.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_div.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_div.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3669,8 +3669,8 @@
         "test_name": "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_minus.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_minus.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_minus.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_minus.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3706,8 +3706,8 @@
         "test_name": "operators/twobits_arithmetic_minus/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_minus.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_minus.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_minus.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_minus.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3743,8 +3743,8 @@
         "test_name": "operators/twobits_arithmetic_minus/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_minus.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_minus.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_minus.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_minus.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3779,8 +3779,8 @@
     "operators/twobits_arithmetic_minus/no_arch": {
         "test_name": "operators/twobits_arithmetic_minus/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_minus.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_minus.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_minus.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_minus.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3815,8 +3815,8 @@
         "test_name": "operators/twobits_arithmetic_mod/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_mod.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_mod.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_mod.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_mod.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3847,8 +3847,8 @@
         "test_name": "operators/twobits_arithmetic_mod/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_mod.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_mod.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_mod.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_mod.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3879,8 +3879,8 @@
         "test_name": "operators/twobits_arithmetic_mod/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_mod.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_mod.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_mod.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_mod.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3910,8 +3910,8 @@
     "operators/twobits_arithmetic_mod/no_arch": {
         "test_name": "operators/twobits_arithmetic_mod/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_mod.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_mod.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_mod.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_mod.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3941,8 +3941,8 @@
         "test_name": "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_multiply.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_multiply.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_multiply.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_multiply.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -3978,8 +3978,8 @@
         "test_name": "operators/twobits_arithmetic_multiply/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_multiply.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_multiply.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_multiply.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_multiply.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4014,8 +4014,8 @@
         "test_name": "operators/twobits_arithmetic_multiply/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_multiply.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_multiply.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_multiply.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_multiply.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4049,8 +4049,8 @@
     "operators/twobits_arithmetic_multiply/no_arch": {
         "test_name": "operators/twobits_arithmetic_multiply/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_multiply.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_multiply.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_multiply.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_multiply.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4084,8 +4084,8 @@
         "test_name": "operators/twobits_arithmetic_plus/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_plus.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_plus.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_plus.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_plus.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4120,8 +4120,8 @@
         "test_name": "operators/twobits_arithmetic_plus/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_plus.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_plus.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_plus.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_plus.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4156,8 +4156,8 @@
         "test_name": "operators/twobits_arithmetic_plus/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_plus.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_plus.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_plus.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_plus.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4191,8 +4191,8 @@
     "operators/twobits_arithmetic_plus/no_arch": {
         "test_name": "operators/twobits_arithmetic_plus/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_plus.v:22.25-22.37.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_plus.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_plus.v:22.25-22.37.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_plus.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4226,8 +4226,8 @@
         "test_name": "operators/twobits_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_power.v:22.25-22.38.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_power.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_power.v:22.25-22.38.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_power.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4255,8 +4255,8 @@
         "test_name": "operators/twobits_arithmetic_power/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_power.v:22.25-22.38.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_power.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_power.v:22.25-22.38.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_power.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4284,8 +4284,8 @@
         "test_name": "operators/twobits_arithmetic_power/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_power.v:22.25-22.38.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_power.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_power.v:22.25-22.38.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_power.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4312,8 +4312,8 @@
     "operators/twobits_arithmetic_power/no_arch": {
         "test_name": "operators/twobits_arithmetic_power/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_power.v:22.25-22.38.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_power.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_power.v:22.25-22.38.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_power.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4340,8 +4340,8 @@
         "test_name": "operators/twobits_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_equal_than.v:24.17-24.32.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_equal_than.v:26.22-26.33.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_equal_than.v:24.17-24.32.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_equal_than.v:26.22-26.33.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4378,8 +4378,8 @@
         "test_name": "operators/twobits_logical_greater_equal_than/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_equal_than.v:24.17-24.32.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_equal_than.v:26.22-26.33.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_equal_than.v:24.17-24.32.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_equal_than.v:26.22-26.33.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4416,8 +4416,8 @@
         "test_name": "operators/twobits_logical_greater_equal_than/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_equal_than.v:24.17-24.32.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_equal_than.v:26.22-26.33.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_equal_than.v:24.17-24.32.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_equal_than.v:26.22-26.33.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4453,8 +4453,8 @@
     "operators/twobits_logical_greater_equal_than/no_arch": {
         "test_name": "operators/twobits_logical_greater_equal_than/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_equal_than.v:24.17-24.32.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_equal_than.v:26.22-26.33.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_equal_than.v:24.17-24.32.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_equal_than.v:26.22-26.33.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4490,8 +4490,8 @@
         "test_name": "operators/twobits_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_than.v:22.25-22.39.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_than.v:22.25-22.39.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4528,8 +4528,8 @@
         "test_name": "operators/twobits_logical_greater_than/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_than.v:22.25-22.39.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_than.v:22.25-22.39.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4566,8 +4566,8 @@
         "test_name": "operators/twobits_logical_greater_than/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_than.v:22.25-22.39.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_than.v:22.25-22.39.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4603,8 +4603,8 @@
     "operators/twobits_logical_greater_than/no_arch": {
         "test_name": "operators/twobits_logical_greater_than/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_than.v:22.25-22.39.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_greater_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_than.v:22.25-22.39.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_greater_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4640,8 +4640,8 @@
         "test_name": "operators/twobits_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_equal_than.v:22.25-22.40.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_equal_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_equal_than.v:22.25-22.40.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_equal_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4678,8 +4678,8 @@
         "test_name": "operators/twobits_logical_less_equal_than/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_equal_than.v:22.25-22.40.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_equal_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_equal_than.v:22.25-22.40.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_equal_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4716,8 +4716,8 @@
         "test_name": "operators/twobits_logical_less_equal_than/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_equal_than.v:22.25-22.40.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_equal_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_equal_than.v:22.25-22.40.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_equal_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4753,8 +4753,8 @@
     "operators/twobits_logical_less_equal_than/no_arch": {
         "test_name": "operators/twobits_logical_less_equal_than/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_equal_than.v:22.25-22.40.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_equal_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_equal_than.v:22.25-22.40.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_equal_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4790,8 +4790,8 @@
         "test_name": "operators/twobits_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_than.v:22.25-22.39.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_than.v:22.25-22.39.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4828,8 +4828,8 @@
         "test_name": "operators/twobits_logical_less_than/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_than.v:22.25-22.39.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_than.v:22.25-22.39.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4866,8 +4866,8 @@
         "test_name": "operators/twobits_logical_less_than/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_than.v:22.25-22.39.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_than.v:22.25-22.39.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -4903,8 +4903,8 @@
     "operators/twobits_logical_less_than/no_arch": {
         "test_name": "operators/twobits_logical_less_than/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_than.v:22.25-22.39.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_logical_less_than.v:23.25-23.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_than.v:22.25-22.39.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_logical_less_than.v:23.25-23.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -5014,8 +5014,8 @@
         "test_name": "operators/unary_bitwise_not/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/unary_bitwise_not.v:21.25-21.34.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/unary_bitwise_not.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/unary_bitwise_not.v:21.25-21.34.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/unary_bitwise_not.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -5049,8 +5049,8 @@
         "test_name": "operators/unary_bitwise_not/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/unary_bitwise_not.v:21.25-21.34.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/unary_bitwise_not.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/unary_bitwise_not.v:21.25-21.34.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/unary_bitwise_not.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -5084,8 +5084,8 @@
         "test_name": "operators/unary_bitwise_not/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/unary_bitwise_not.v:21.25-21.34.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/unary_bitwise_not.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/unary_bitwise_not.v:21.25-21.34.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/unary_bitwise_not.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -5118,8 +5118,8 @@
     "operators/unary_bitwise_not/no_arch": {
         "test_name": "operators/unary_bitwise_not/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/unary_bitwise_not.v:21.25-21.34.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/unary_bitwise_not.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/unary_bitwise_not.v:21.25-21.34.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/unary_bitwise_not.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -5152,8 +5152,8 @@
         "test_name": "operators/twobits_arithmetic_uminus/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_uminus.v:21.25-21.35.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_uminus.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_uminus.v:21.25-21.35.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_uminus.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -5189,8 +5189,8 @@
         "test_name": "operators/twobits_arithmetic_uminus/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_uminus.v:21.25-21.35.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_uminus.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_uminus.v:21.25-21.35.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_uminus.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -5226,8 +5226,8 @@
         "test_name": "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_uminus.v:21.25-21.35.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_uminus.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_uminus.v:21.25-21.35.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_uminus.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
@@ -5262,8 +5262,8 @@
     "operators/twobits_arithmetic_uminus/no_arch": {
         "test_name": "operators/twobits_arithmetic_uminus/no_arch",
         "warnings": [
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_uminus.v:21.25-21.35.",
-            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog//operators/twobits_arithmetic_uminus.v:22.25-22.36.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_uminus.v:21.25-21.35.",
+            "wire '\\out' is assigned in a block at regression_test/benchmark/verilog/operators/twobits_arithmetic_uminus.v:22.25-22.36.",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first).",
             "Ignoring module simple_op because it contains processes (run 'proc' command first)."
