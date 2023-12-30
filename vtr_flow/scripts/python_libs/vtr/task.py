@@ -46,7 +46,8 @@ class TaskConfig:
         script_params_list_add=None,
         pass_requirements_file=None,
         sdc_dir=None,
-        noc_traffic_list_add=None,
+        noc_traffic_list_type="outer_product",
+        noc_traffic_list_add=[None],
         noc_traffics_dir=None,
         place_constr_dir=None,
         qor_parse_file=None,
@@ -71,6 +72,7 @@ class TaskConfig:
         self.script_params_list_add = script_params_list_add
         self.pass_requirements_file = pass_requirements_file
         self.sdc_dir = sdc_dir
+        self.noc_traffic_list_type = noc_traffic_list_type
         self.noc_traffics = noc_traffic_list_add
         self.noc_traffic_dir = noc_traffics_dir
         self.place_constr_dir = place_constr_dir
@@ -203,6 +205,7 @@ def load_task_config(config_file) -> TaskConfig:
             "script_params_common",
             "pass_requirements_file",
             "sdc_dir",
+            "noc_traffic_list_type",
             "noc_traffics_dir",
             "place_constr_dir",
             "qor_parse_file",
@@ -473,56 +476,41 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
     """
     jobs = []
     for config in configs:
-        for arch, circuit in itertools.product(config.archs, config.circuits):
-            noc_traffic = []
-            if config.noc_traffics:
-                noc_traffics = config.noc_traffics
-            else:
-                noc_traffics = [None]
-            for noc_traffic in noc_traffics:
-                golden_results = load_parse_results(
-                    str(PurePath(config.config_dir).joinpath("golden_results.txt"))
-                )
-                abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
-                abs_circuit_filepath = resolve_vtr_source_file(config, circuit, config.circuit_dir)
-                work_dir = get_work_dir_addr(arch, circuit, noc_traffic)
+        if config.noc_traffic_list_type == "outer_product":
+            combinations = list(itertools.product(config.circuits, config.noc_traffics))
+        elif config.noc_traffic_list_type == "per_circuit":
+            assert len(config.circuits) == len(config.noc_traffics)
+            combinations = [(circuit, noc_traffic) for circuit, noc_traffic in zip(config.circuits, config.noc_traffics)]
+        else:
+            assert False, "Invalid noc_traffic_list_type"
 
-                run_dir = (
-                    str(
-                        Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir)))
-                        / work_dir
-                    )
-                    if after_run
-                    else str(
-                        Path(get_next_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir
-                    )
-                )
+        combinations = [(arch, circuit, noc_traffic) for arch in config.archs for circuit, noc_traffic in combinations]
 
-                includes, parse_cmd, second_parse_cmd, qor_parse_command, cmd = create_cmd(
-                    abs_circuit_filepath, abs_arch_filepath, config, args, circuit, noc_traffic
-                )
+        for arch, circuit, noc_traffic in combinations:
+            golden_results = load_parse_results(
+                str(PurePath(config.config_dir).joinpath("golden_results.txt"))
+            )
+            abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
+            abs_circuit_filepath = resolve_vtr_source_file(config, circuit, config.circuit_dir)
+            work_dir = get_work_dir_addr(arch, circuit, noc_traffic)
 
-                if config.script_params_list_add:
-                    for value in config.script_params_list_add:
-                        jobs.append(
-                            create_job(
-                                args,
-                                config,
-                                circuit,
-                                includes,
-                                arch,
-                                noc_traffic,
-                                value,
-                                cmd,
-                                parse_cmd,
-                                second_parse_cmd,
-                                qor_parse_command,
-                                work_dir,
-                                run_dir,
-                                golden_results,
-                            )
-                        )
-                else:
+            run_dir = (
+                str(
+                    Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir)))
+                    / work_dir
+                )
+                if after_run
+                else str(
+                    Path(get_next_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir
+                )
+            )
+
+            includes, parse_cmd, second_parse_cmd, qor_parse_command, cmd = create_cmd(
+                abs_circuit_filepath, abs_arch_filepath, config, args, circuit, noc_traffic
+            )
+
+            if config.script_params_list_add:
+                for value in config.script_params_list_add:
                     jobs.append(
                         create_job(
                             args,
@@ -531,7 +519,7 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
                             includes,
                             arch,
                             noc_traffic,
-                            None,
+                            value,
                             cmd,
                             parse_cmd,
                             second_parse_cmd,
@@ -541,6 +529,25 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
                             golden_results,
                         )
                     )
+            else:
+                jobs.append(
+                    create_job(
+                        args,
+                        config,
+                        circuit,
+                        includes,
+                        arch,
+                        noc_traffic,
+                        None,
+                        cmd,
+                        parse_cmd,
+                        second_parse_cmd,
+                        qor_parse_command,
+                        work_dir,
+                        run_dir,
+                        golden_results,
+                    )
+                )
 
     return jobs
 
