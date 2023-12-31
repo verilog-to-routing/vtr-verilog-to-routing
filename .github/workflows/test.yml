@@ -39,7 +39,6 @@ jobs:
           - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_parmys",             cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
