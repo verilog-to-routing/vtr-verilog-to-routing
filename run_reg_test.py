@@ -151,12 +151,9 @@ def vtr_command_main(arg_list, prog=None):
     for reg_test in args.reg_test:
         num_func_failures = 0
         num_qor_failures = 0
-        if args.parse:
+        if args.parse or args.check_golden:
             tests_run = True
             num_qor_failures = parse_single_test(collect_task_list(reg_test))
-        elif args.check_golden:
-            tests_run = True
-            num_qor_failures = parse_single_test(collect_task_list(reg_test), check=True)
         elif args.create_golden:
             # Create golden results
             num_qor_failures = 0
