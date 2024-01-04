@@ -78,15 +78,17 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,
  * channels, while darker colours (e.g. blue) correspond to lower utilization.*/
 void draw_routing_util(ezgl::renderer* g);
 
-/* Draws the critical path if Crit. Path (in the GUI) is selected. Each stage between primitive
- * pins is shown in a different colour.
+/* Draws the critical path when selected in the GUI or requested by the client in server mode.
+ */
+void draw_crit_path(ezgl::renderer* g);
+
+/* Draws the concrete critical path helper function.
+ * Each stage between primitive pins is shown in a different colour.
  * User can toggle between two different visualizations:
  * a) during placement, critical path only shown as flylines
  * b) during routing, critical path is shown by both flylines and routed net connections.
  */
-void draw_crit_path(ezgl::renderer* g);
-
-void draw_crit_path(const tatum::TimingPath& path, ezgl::renderer* g);
+void draw_concrete_crit_path(const tatum::TimingPath& path, ezgl::renderer* g);
 
 /* Draws critical path shown as flylines. Takes in start and end coordinates, time delay, & renderer.*/
 void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g);

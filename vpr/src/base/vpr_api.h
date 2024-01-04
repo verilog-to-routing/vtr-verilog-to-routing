@@ -132,6 +132,7 @@ void vpr_analysis(const Netlist<>& net_list,
 ///@brief Create the device (grid + rr graph)
 void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch, bool is_flat);
 
+/// @brief Show resource usage
 void vpr_show_resource_usage(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 
 ///@brief Create the device grid

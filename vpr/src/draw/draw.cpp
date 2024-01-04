@@ -63,8 +63,8 @@
 #include "ui_setup.h"
 #include "buttons.h"
 
-#include "server.h"
-#include "taskresolver.h"
+#include "gateio.h"
+#include "serverupdate.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
@@ -175,44 +175,6 @@ ezgl::point2d point_1(0, 0);
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
-gboolean redraw_callback(gpointer data) {
-    bool isRunning = false;
-    if (g_vpr_ctx.server_ctx()) {
-        // shortcuts
-        ezgl::application* app = static_cast<ezgl::application*>(data);
-        Server& server = g_vpr_ctx.server_ctx()->server();
-        TaskResolver& task_resolver = g_vpr_ctx.server_ctx()->task_resolver();
-        //
-
-        isRunning = !server.isStopped();
-        if (isRunning) {
-            if (!server.isStarted()) {
-                server.start();
-            }
-
-            std::vector<Task> tasksBuff;
-
-            server.takeRecievedTasks(tasksBuff);
-            task_resolver.addTasks(tasksBuff);
-
-            bool process_task = task_resolver.update(app);
-
-            tasksBuff.clear();
-            task_resolver.takeFinished(tasksBuff);
-
-            server.addSendTasks(tasksBuff);
-
-            // Call the redraw method of the application if any of task was processed
-            if (process_task) {
-                app->refresh_drawing();
-            }
-        }
-    }
-    
-    // Return TRUE to keep the timer running, or FALSE to stop it
-    return isRunning;
-}
-
 #endif // NO_GRAPHICS
 
 /********************** Subroutine definitions ******************************/
@@ -223,7 +185,7 @@ void init_graphics_state(bool show_graphics_val,
                          bool save_graphics,
                          std::string graphics_commands,
                          bool is_flat,
-                         bool server,
+                         bool enable_server,
                          int port_num) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
@@ -240,11 +202,14 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->graphics_commands = graphics_commands;
     draw_state->is_flat = is_flat;
 
-    if (server) {
-        g_vpr_ctx.create_server_ctx(port_num);
-        g_timeout_add(100, redraw_callback, &application);
+    if (enable_server) {
+        /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
+        server::GateIO& gate_io = g_vpr_ctx.mutable_server().mutable_gateIO();
+        if (!gate_io.isRunning()) {
+            gate_io.start(port_num);
+            g_timeout_add(/*interval_ms*/ 100, server::update, &application);
+        }
     }
-
 #else
     //Suppress unused parameter warnings
     (void)show_graphics_val;

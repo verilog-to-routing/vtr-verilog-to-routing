@@ -16,8 +16,13 @@
 #include <sstream>
 #include <cassert>
 
+namespace server {
+    
 namespace {
 
+/** 
+ * @brief helper function to calculate the setup critical path with specified parameters.
+ */
 CritPathsResult generate_setup_timing_report(const SetupTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts, bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -33,6 +38,9 @@ CritPathsResult generate_setup_timing_report(const SetupTimingInfo& timing_info,
     return CritPathsResult{paths, ss.str()};
 }
 
+/** 
+ * @brief helper function to calculate the hold critical path with specified parameters.
+ */
 CritPathsResult generate_hold_timing_report(const HoldTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts, bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -50,11 +58,13 @@ CritPathsResult generate_hold_timing_report(const HoldTimingInfo& timing_info, c
 
 } // namespace
 
+/** 
+ * @brief Unified helper function to calculate the critical path with specified parameters.
+ */
 CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing) 
 {
     // shortcuts
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& timing_ctx = g_vpr_ctx.timing();
 
     //Load the net delays
     const Netlist<>& router_net_list = is_flat_routing ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
@@ -83,3 +93,4 @@ CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_tim
     return CritPathsResult{std::vector<tatum::TimingPath>(), ""};
 }
 
+} // namespace server

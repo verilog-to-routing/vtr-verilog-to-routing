@@ -1,4 +1,4 @@
-#include "server.h"
+#include "gateio.h"
 #include "telegramparser.h"
 
 #include <regex>
@@ -8,57 +8,39 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-Server::Server()
+namespace server {
+
+GateIO::GateIO()
 {
-    m_isStarted.store(false);
-    m_isStopped.store(false);
+    m_isRunning.store(false);
 }
 
-Server::~Server()
+GateIO::~GateIO()
 {
-    if (m_debugLog) {
-        std::cout << "~~~ th=" << std::this_thread::get_id() << " ~Server()" << std::endl;
-    }
     stop();
 }
 
-void Server::setPortNum(int portNum)
+void GateIO::start(int portNum)
 {
-    std::unique_lock<std::mutex> lock(m_portNumMutex);
-    m_portNum = portNum;
-}
-
-void Server::start()
-{
-    if (!m_isStarted.load()) {
-        if (m_debugLog) {
-            std::cout << "~~~ th=" << std::this_thread::get_id() << " starting server" << std::endl;
-        }
-        m_isStarted.store(true);
-        m_thread = std::thread(&Server::startListening, this);
+    if (!m_isRunning.load()) {
+        m_portNum = portNum;
+        std::cout << "th=" << std::this_thread::get_id() << " starting server" << std::endl;
+        m_isRunning.store(true);
+        m_thread = std::thread(&GateIO::startListening, this);
     }
 }
 
-void Server::stop()
+void GateIO::stop()
 {
-    if (!m_isStopped.load()) {
-        m_isStopped.store(true);
-        if (m_debugLog) {
-            std::cout << "~~~ th=" << std::this_thread::get_id() << " stopping server, is stopped=" << m_isStopped.load() << std::endl;
-        }
+    if (m_isRunning.load()) {
+        m_isRunning.store(false);
         if (m_thread.joinable()) {
-            if (m_debugLog) {
-                std::cout << "~~~ th=" << std::this_thread::get_id() << " join thread START" << std::endl;
-            }
             m_thread.join();
-            if (m_debugLog) {
-                std::cout << "~~~ th=" << std::this_thread::get_id() << " join thread FINISHED" << std::endl;
-            }
         }
     }                
 }
 
-void Server::takeRecievedTasks(std::vector<Task>& tasks)
+void GateIO::takeRecievedTasks(std::vector<Task>& tasks)
 {
     tasks.clear();
     std::unique_lock<std::mutex> lock(m_receivedTasksMutex);
@@ -68,7 +50,7 @@ void Server::takeRecievedTasks(std::vector<Task>& tasks)
     std::swap(tasks, m_receivedTasks);
 }
 
-void Server::addSendTasks(const std::vector<Task>& tasks)
+void GateIO::addSendTasks(const std::vector<Task>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_sendTasksMutex);
     for (const Task& task: tasks) {
@@ -77,7 +59,7 @@ void Server::addSendTasks(const std::vector<Task>& tasks)
     }
 }
 
-void Server::startListening()
+void GateIO::startListening()
 {
     int server_socket;
     int client_socket = -1;
@@ -124,7 +106,7 @@ void Server::startListening()
     bool connectionProblemDetected = false;
 
     // Event loop
-    while(!m_isStopped.load()) {
+    while(m_isRunning.load()) {
         if (connectionProblemDetected || client_socket < 0) {
             int flags = fcntl(client_socket, F_GETFL, 0);
             fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
@@ -193,9 +175,9 @@ void Server::startListening()
                 std::string message{frame.to_string()};
                 std::cout << "Received: " << message << std::endl;
 
-                int jobId = telegramparser::extractJobId(message);
-                int cmd = telegramparser::extractCmd(message);
-                std::string options = telegramparser::extractOptions(message);
+                int jobId = TelegramParser::extractJobId(message);
+                int cmd = TelegramParser::extractCmd(message);
+                std::string options = TelegramParser::extractOptions(message);
                 std::cout << "server: jobId=" << jobId << ", cmd=" << cmd << ", options=" << options << std::endl;
                 if ((jobId != -1) && (cmd != -1)) {
                     std::unique_lock<std::mutex> lock(m_receivedTasksMutex);
@@ -218,3 +200,5 @@ void Server::startListening()
 
     close(server_socket);
 }
+
+} // namespace server

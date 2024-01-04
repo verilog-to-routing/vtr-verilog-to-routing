@@ -32,12 +32,9 @@
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
-
-#include "server.h"
+#include "gateio.h"
 #include "taskresolver.h"
 #include "tatum/report/TimingPath.hpp"
-
-class SetupHoldTimingInfo;
 
 
 /**
@@ -563,13 +560,19 @@ struct NocContext : public Context {
     NocRouting* noc_flows_router;
 };
 
+/**
+ * @brief State relating to server mode
+ *
+ * This should contain only data structures that
+ * related to server state.
+ */
 class ServerContext : public Context {
   public:
-    const Server& server() const { return server_; }
-    Server& server() { return server_; }
+    const server::GateIO& gateIO() const { return gate_io_; }
+    server::GateIO& mutable_gateIO() { return gate_io_; }
 
-    const TaskResolver& task_resolver() const { return task_resolver_; }
-    TaskResolver& task_resolver() { return task_resolver_; }
+    const server::TaskResolver& task_resolver() const { return task_resolver_; }
+    server::TaskResolver& mutable_task_resolver() { return task_resolver_; }
 
     void set_crit_paths(const std::vector<tatum::TimingPath>& crit_paths) { crit_paths_ = crit_paths; }
     const std::vector<tatum::TimingPath>& crit_paths() const { return crit_paths_; }
@@ -584,16 +587,41 @@ class ServerContext : public Context {
     int crit_path_index() const { return crit_path_index_; }
 
   private:
-    bool is_enabled_ = false;
-    Server server_;
-    TaskResolver task_resolver_;
+    server::GateIO gate_io_;
+    server::TaskResolver task_resolver_;
 
+    /**
+     * @brief Stores the critical path items.
+     *
+     * This value is used when rendering the critical path by the selected index.
+     * Once calculated upon request, it provides the value for a specific critical path
+     * to be rendered upon user request.
+     */
     std::vector<tatum::TimingPath> crit_paths_;
+
+    /**
+     * @brief Stores the number of critical paths items.
+     *
+     * This value is used to generate a critical path report with a certain number of items,
+     * which will be sent back to the client upon request.
+     */
     int critical_path_num_ = 1;
+
+    /**
+     * @brief Stores the critical path type.
+     *
+     * This value is used to generate a specific type of critical path report and send
+     * it back to the client upon request.
+     */
     std::string path_type_ = "setup";
+
+    /**
+     * @brief Stores the last selected critical path index.
+     *
+     * This value is used to render the selected critical path upon client request.
+     */
     int crit_path_index_ = 0;
 };
-using ServerContextPtr = std::unique_ptr<ServerContext>;
 
 /**
  * @brief This object encapsulates VPR's state.
@@ -678,14 +706,8 @@ class VprContext : public Context {
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
 
-    void create_server_ctx(int port_num) {
-        server_ctx_ = std::make_unique<ServerContext>();
-        if (server_ctx_) {
-            server_ctx_->server().setPortNum(port_num);
-        }
-    }
-
-    const ServerContextPtr& server_ctx() const { return server_ctx_; }
+    const ServerContext& server() const { return server_; }
+    ServerContext& mutable_server() { return server_; }
 
   private:
     DeviceContext device_;
@@ -703,7 +725,7 @@ class VprContext : public Context {
     FloorplanningContext constraints_;
     NocContext noc_;
 
-    ServerContextPtr server_ctx_;
+    ServerContext server_;
 
     PackingMultithreadingContext packing_multithreading_;
 };

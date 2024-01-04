@@ -3,8 +3,10 @@
 
 #include <glib.h>
 
-gint get_item_count(gpointer combo_box);
+/**
+ * @brief Helper function to retrieve the index of an item by its text.
+ * Returns -1 if the item with the specified text is absent.
+ */
+gint get_item_index_by_text(gpointer combo_box, const gchar* target_item);
 
-gint get_item_index_by_text(gpointer combo_box, gchar* target_item);
-
-#endif
+#endif // GTKCOMBOBOXHELPER_H

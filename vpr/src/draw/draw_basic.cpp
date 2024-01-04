@@ -37,8 +37,6 @@
 #include "route_export.h"
 #include "tatum/report/TimingPathCollector.hpp"
 
-#include "pathhelper.h"
-
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
 #endif
@@ -934,11 +932,7 @@ void draw_routing_util(ezgl::renderer* g) {
     draw_state->color_map = std::move(cmap);
 }
 
-/* Draws the critical path if Crit. Path (in the GUI) is selected. Each stage between primitive
- * pins is shown in a different colour.
- * User can toggle between two different visualizations:
- * a) during placement, critical path only shown as flylines
- * b) during routing, critical path is shown by both flylines and routed net connections.
+/* Draws the critical path when selected in the GUI or requested by the client in server mode.
  */
 void draw_crit_path(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -951,18 +945,22 @@ void draw_crit_path(ezgl::renderer* g) {
         return; //No timing to draw
     }
 
-    if (g_vpr_ctx.server_ctx()) {
-        const ServerContextPtr& server_ctx = g_vpr_ctx.server_ctx(); // shortcut
+    if (g_vpr_ctx.server().gateIO().isRunning()) {
+        const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
+        const auto& paths = server_ctx.crit_paths();
 
-        auto paths = server_ctx->crit_paths();
+        const int index = server_ctx.crit_path_index(); // shortcut
 
-        // check path index
-        if (server_ctx->crit_path_index() >= static_cast<int>(paths.size())) {
-            server_ctx->set_crit_path_index(-1);
-        }
-        if (server_ctx->crit_path_index() != -1) {
-            tatum::TimingPath path = paths[server_ctx->crit_path_index()];
-            draw_crit_path(path, g);
+        /* check critical path index bounds and render critical path,
+         * otherwise, resets selected critical path index with value -1.
+         */
+        if ((index >= 0) && (index < static_cast<int>(paths.size()))) {
+            tatum::TimingPath path = paths[index];
+            draw_concrete_crit_path(path, g);
+        } else {
+            if (index != -1) {
+                g_vpr_ctx.mutable_server().set_crit_path_index(-1);
+            }
         }
     } else {
         tatum::TimingPathCollector path_collector;
@@ -975,12 +973,18 @@ void draw_crit_path(ezgl::renderer* g) {
 
         if (paths.size()>0) {
             auto path = paths[0];
-            draw_crit_path(path, g);
+            draw_concrete_crit_path(path, g);
         }
     }
 }
 
-void draw_crit_path(const tatum::TimingPath& path, ezgl::renderer* g) {
+/* Draws the concrete critical path helper function.
+ * Each stage between primitive pins is shown in a different colour.
+ * User can toggle between two different visualizations:
+ * a) during placement, critical path only shown as flylines
+ * b) during routing, critical path is shown by both flylines and routed net connections.
+ */
+void draw_concrete_crit_path(const tatum::TimingPath& path, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //Walk through the timing path drawing each edge

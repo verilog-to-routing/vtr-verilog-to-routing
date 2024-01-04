@@ -3,12 +3,23 @@
 
 #include <string>
 
-namespace telegramparser {
+namespace server {
 
-int extractJobId(const std::string& message);
-int extractCmd(const std::string& message);
-std::string extractOptions(const std::string& message);
+/**
+ * @brief Dummy JSON parser using regular expressions.
+ * 
+ * This module provides helper methods to extract values such as "id", "cmd", or "options" 
+ * from a JSON schema structured as follows: {id: num, cmd: enum, options: string}.
+ * The regular expressions implemented in this parser aim to retrieve specific fields' values 
+ * from a given JSON structure, facilitating data extraction and manipulation.
+ */
+class TelegramParser {
+public:
+    static int extractJobId(const std::string& message);
+    static int extractCmd(const std::string& message);
+    static std::string extractOptions(const std::string& message);
+};
 
-} // telegramparser
+} // namespace server
 
-#endif
+#endif // TELEGRAMPARSER_H

@@ -1280,11 +1280,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
-    stage_grp.add_argument<bool, ParseOnOff>(args.is_server_enabled, "--server")
-        .help("Run server mode")
+    stage_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
+        .help("Run in server mode")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
-        
+
     stage_grp.add_argument<int>(args.server_port_num, "--port")
         .help("Server port number")
         .default_value("60555")

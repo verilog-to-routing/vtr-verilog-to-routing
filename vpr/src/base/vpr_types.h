@@ -1776,8 +1776,9 @@ struct t_TokenPair {
 
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
+/// @brief Stores settings for VPR server mode
 struct t_server_opts {
-    bool is_enabled = false;
+    bool is_server_mode_enabled = false;
     int port_num = -1;
 };
 

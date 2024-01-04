@@ -10,6 +10,14 @@ namespace ezgl {
     class application;
 }
 
+namespace server {
+
+/**
+ * @brief Resolve server task.
+ * 
+ * Process and resolve server task, store result and status for processed task.
+*/
+
 class TaskResolver {
 public:
     TaskResolver()=default;
@@ -17,10 +25,14 @@ public:
 
     int tasksNum() const { return m_tasks.size(); }
 
-    void addTasks(const std::vector<Task>&);
+    /* add tasks to process */
     void addTask(Task);
+    void addTasks(const std::vector<Task>&);
 
+    /* process tasks */
     bool update(ezgl::application*);
+
+    /* extract finished tasks */
     void takeFinished(std::vector<Task>&);
 
     const std::vector<Task>& tasks() const { return m_tasks; }
@@ -28,7 +40,12 @@ public:
 private:
     std::vector<Task> m_tasks;
 
-    e_timing_report_detail getDetailsLevelEnum(const std::string& pathDetailsLevelStr) const ;
+    void processGetPathListTask(ezgl::application*, Task&);
+    void processDrawCriticalPathTask(ezgl::application*, Task&);
+
+    e_timing_report_detail getDetailsLevelEnum(const std::string& pathDetailsLevelStr) const;
 };
 
-#endif
+} // namespace server
+
+#endif // TASKRESOLVER_H

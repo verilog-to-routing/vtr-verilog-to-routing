@@ -1,7 +1,12 @@
 #include "gtkcomboboxhelper.h"
 #include <gtk/gtk.h>
 
-gint get_item_count(gpointer combo_box) {
+namespace {
+
+/**
+ * @brief Helper function to retrieve the count of items in a GTK combobox.
+ */
+gint get_items_count(gpointer combo_box) {
     GtkComboBoxText* combo = GTK_COMBO_BOX_TEXT(combo_box);
 
     // Get the model of the combo box
@@ -12,7 +17,13 @@ gint get_item_count(gpointer combo_box) {
     return count;
 }
 
-gint get_item_index_by_text(gpointer combo_box, gchar* target_item) {
+} // namespace
+
+/**
+ * @brief Helper function to retrieve the index of an item by its text.
+ * Returns -1 if the item with the specified text is absent.
+ */
+gint get_item_index_by_text(gpointer combo_box, const gchar* target_item) {
     gint result_index = -1;
     GtkComboBoxText* combo = GTK_COMBO_BOX_TEXT(combo_box);
 
@@ -21,7 +32,7 @@ gint get_item_index_by_text(gpointer combo_box, gchar* target_item) {
 
     gchar* current_item_text = nullptr;
 
-    for (gint index=0; index<get_item_count(combo_box); ++index) {
+    for (gint index=0; index<get_items_count(combo_box); ++index) {
         GtkTreeIter iter;
 
         // Check if the index is within bounds

@@ -7,6 +7,16 @@
 #include <vector>
 #include <unordered_map>
 
+namespace server {
+    
+/** 
+ * @brief Option class Parser
+ * 
+ * Parse the string of options in the format "TYPE:KEY1:VALUE1;TYPE:KEY2:VALUE2", 
+ * for example "int:path_num:11;string:path_type:debug;int:details_level:3;bool:is_flat_routing:0".
+ * It provides a simple interface to check value presence and access them.
+*/
+
 class TelegramOptions {
 private:
     enum {
@@ -22,14 +32,15 @@ private:
     };
 
 public:
-    TelegramOptions(const std::string& data) {
+    TelegramOptions(const std::string& data, const std::vector<std::string>& expectedKeys) {
+        // parse data string
         std::vector<std::string> options = splitString(data, ';');
         for (const std::string& optionStr: options) {
             std::vector<std::string> fragments = splitString(optionStr, ':');
             if (fragments.size() == TOTAL_INDEXES_NUM) {
                 std::string name = fragments[INDEX_NAME];
                 Option option{fragments[INDEX_TYPE], fragments[INDEX_VALUE]};
-                if (validateType(option.type)) {
+                if (isDataTypeSupported(option.type)) {
                     m_options[name] = option;
                 } else {
                     m_errors.emplace_back("bad type for option [" + optionStr + "]");
@@ -38,22 +49,14 @@ public:
                 m_errors.emplace_back("bad option [" + optionStr + "]");
             }
         }
+
+        // check keys presense
+        checkKeysPresence(expectedKeys);
     }
 
     ~TelegramOptions() {}
 
     bool hasErrors() const { return !m_errors.empty(); }
-
-    bool validateNamePresence(const std::vector<std::string>& names) {
-        bool result = true;
-        for (const std::string& name: names) {
-            if (m_options.find(name) == m_options.end()) {
-                m_errors.emplace_back("cannot find required option " + name);
-                result = false;
-            }
-        }
-        return result;
-    }
 
     std::string getString(const std::string& name) {
         std::string result;
@@ -109,10 +112,23 @@ private:
         return tokens;
     }
 
-    bool validateType(const std::string& type) {
+    bool isDataTypeSupported(const std::string& type) {
         static std::set<std::string> supportedTypes{"int", "string", "bool"};
         return supportedTypes.count(type) != 0;
     }
+
+    bool checkKeysPresence(const std::vector<std::string>& keys) {
+        bool result = true;
+        for (const std::string& key: keys) {
+            if (m_options.find(key) == m_options.end()) {
+                m_errors.emplace_back("cannot find required option " + key);
+                result = false;
+            }
+        }
+        return result;
+    }
 };
 
-#endif
+} // namespace server
+
+#endif // TELEGRAMOPTIONS_H

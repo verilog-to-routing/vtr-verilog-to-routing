@@ -755,7 +755,7 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
 }
 
 static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {
-    ServerOpts->is_enabled = Options.is_server_enabled;
+    ServerOpts->is_server_mode_enabled = Options.is_server_mode_enabled;
     ServerOpts->port_num = Options.server_port_num;
 }
 

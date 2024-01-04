@@ -100,7 +100,7 @@ void TimingReporter::report_timing_setup(std::ostream& os,
 }
 
 void TimingReporter::report_timing_setup(std::vector<tatum::TimingPath>& paths,
-                                         std::ostream& os, 
+                                         std::ostream& os,
                                          const SetupTimingAnalyzer& setup_analyzer,
                                          size_t npaths) const {
     paths = path_collector_.collect_worst_setup_timing_paths(timing_graph_, setup_analyzer, npaths);
@@ -124,7 +124,7 @@ void TimingReporter::report_timing_hold(std::ostream& os,
 }
 
 void TimingReporter::report_timing_hold(std::vector<tatum::TimingPath>& paths,
-                                         std::ostream& os, 
+                                         std::ostream& os,
                                          const HoldTimingAnalyzer& hold_analyzer,
                                          size_t npaths) const {
     paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths);

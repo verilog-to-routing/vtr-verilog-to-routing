@@ -7,6 +7,14 @@
 
 #include "serverconsts.h"
 
+namespace server {
+
+/**
+ * @brief Implements the server task.
+ * 
+ * This structure aids in encapsulating the client request, request result, and result status.
+ * It generates a JSON data structure to be sent back to the client as a response.
+ */
 class Task {
 public:
     Task(int jobId, int cmd, const std::string& options = ""):
@@ -66,4 +74,6 @@ private:
     bool m_hasError = false;
 };
 
-#endif
+} // namespace server
+
+#endif // TASK_H

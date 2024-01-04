@@ -2,9 +2,9 @@
 
 #include <regex>
 
-namespace telegramparser {
+namespace server {
 
-int extractJobId(const std::string& message)
+int TelegramParser::extractJobId(const std::string& message)
 {
     static std::regex pattern("\"JOB_ID\":\"(\\d+)\"");
     std::smatch match;
@@ -16,7 +16,7 @@ int extractJobId(const std::string& message)
     return -1;
 }
 
-int extractCmd(const std::string& message)
+int TelegramParser::extractCmd(const std::string& message)
 {
     static std::regex pattern("\"CMD\":\"(\\d+)\"");
     std::smatch match;
@@ -28,7 +28,7 @@ int extractCmd(const std::string& message)
     return -1;
 }
 
-std::string extractOptions(const std::string& message)
+std::string TelegramParser::extractOptions(const std::string& message)
 {
     static std::regex pattern("\"OPTIONS\":\"(.*?)\"");
     std::smatch match;
@@ -40,4 +40,4 @@ std::string extractOptions(const std::string& message)
     return "";
 }
 
-} // telegramparser
+} // namespace server
