@@ -52,6 +52,7 @@ def init_script_file(
     circuit_list,
     output_netlist,
     architecture_file_path,
+    odin_config_full_path,
 ):
     """initializing the raw yosys script file"""
     # specify the input files type
@@ -65,7 +66,8 @@ def init_script_file(
         yosys_script_full_path,
         {
             "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
-            "TTT": str(vtr.paths.yosys_tcl_path),
+            # "TTT": str(vtr.paths.yosys_tcl_path),
+            "CCC": odin_config_full_path,
             "ZZZ": output_netlist,
             "QQQ": architecture_file_path,
         },
@@ -205,13 +207,6 @@ def run(
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
 
-    init_script_file(
-        yosys_script_full_path,
-        circuit_list,
-        output_netlist.name,
-        architecture_file_path,
-    )
-
     odin_base_config = str(vtr.paths.odin_cfg_path)
 
     # Copy the config file
@@ -227,6 +222,14 @@ def run(
         vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
         min_hard_adder_size,
+    )
+
+    init_script_file(
+        yosys_script_full_path,
+        circuit_list,
+        output_netlist.name,
+        architecture_file_path,
+        odin_config_full_path,
     )
 
     # set the parser

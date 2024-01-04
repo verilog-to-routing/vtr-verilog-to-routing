@@ -1,0 +1,15 @@
+	<config>
+		<inputs>
+		<!-- Leave empty to be able to test with config-->
+		</inputs>
+		<output>
+		<!-- Leave empty to be able to test with config-->
+		</output>
+		<optimizations>
+			<!-- This is where the optimization flags go -->
+			<mix_soft_hard_blocks mults_ratio="0.5"></mix_soft_hard_blocks>
+		</optimizations>
+		<debug_outputs>
+		<!-- Leave empty to be able to test with config-->
+		</debug_outputs>
+	</config>
