@@ -583,9 +583,6 @@ void MapLookahead::read_intra_cluster(const std::string& file) {
                                 &tile,
                                 inter_tile_pin_primitive_pin_delay);
     }
-
-    // The information about chann_distance_based_min_cost is not stored in the file, thus it needs to be computed
-    min_chann_global_cost_map(chann_distance_based_min_cost);
 }
 
 void MapLookahead::write(const std::string& file) const {
