@@ -93,7 +93,7 @@ struct ParMYSPass : public Pass {
             nnet_t *output_net = (nnet_t *)output_nets_hash->get(input_pin->name);
 
             if (!output_net) {
-                log_error("Error: Could not hook up the pin %s: not available, related node: %s.", input_pin->name, node->name);
+                log_error("Could not hook up the pin %s: not available, related node: %s.", input_pin->name, node->name);
             }
             add_fanout_pin_to_net(output_net, input_pin);
         }
@@ -884,7 +884,9 @@ struct ParMYSPass : public Pass {
         for (argidx = 1; argidx < args.size(); argidx++) {
             if (args[argidx] == "-a" && argidx + 1 < args.size()) {
                 arch_file_path = args[++argidx];
-                flag_arch_file = true;
+                if (arch_file_path != "no_arch") {
+                    flag_arch_file = true;
+                }
                 continue;
             }
             if (args[argidx] == "-c" && argidx + 1 < args.size()) {
@@ -963,7 +965,7 @@ struct ParMYSPass : public Pass {
                 XmlReadArch(arch_file_path.c_str(), false, &Arch, physical_tile_types, logical_block_types);
                 set_physical_lut_size(logical_block_types);
             } catch (vtr::VtrError &vtr_error) {
-                log_error("Odin Failed to load architecture file: %s with exit code%d at line: %ld\n", vtr_error.what(), ERROR_PARSE_ARCH,
+                log_error("Parmys Failed to load architecture file: %s with exit code%d at line: %ld\n", vtr_error.what(), ERROR_PARSE_ARCH,
                           vtr_error.line());
             }
         }
