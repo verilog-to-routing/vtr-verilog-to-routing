@@ -51,6 +51,11 @@ class CompressedMapLookahead : public RouterLookahead {
     void write_intra_cluster(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write_intra_cluster unimplemented");
     }
+
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::get_distance_min_delay unimplemented");
+        return -1.;
+    }
 };
 
 // This is a 5D array that stores estimates of the cost to reach a location at a particular distance away from the current location.
