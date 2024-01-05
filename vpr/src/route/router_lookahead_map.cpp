@@ -564,6 +564,9 @@ void MapLookahead::read(const std::string& file) {
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+
+    min_chann_global_cost_map(chann_distance_based_min_cost);
+    min_opin_distance_cost_map(src_opin_delays, opin_distance_based_min_cost);
 }
 
 void MapLookahead::read_intra_cluster(const std::string& file) {
@@ -583,9 +586,6 @@ void MapLookahead::read_intra_cluster(const std::string& file) {
                                 &tile,
                                 inter_tile_pin_primitive_pin_delay);
     }
-
-    // The information about chann_distance_based_min_cost is not stored in the file, thus it needs to be computed
-    min_chann_global_cost_map(chann_distance_based_min_cost);
 }
 
 void MapLookahead::write(const std::string& file) const {
@@ -1513,14 +1513,43 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
             for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
                 for (int dx = 0; dx < width; dx++) {
                     for (int dy = 0; dy < height; dy++) {
-                        float expected_delay_cost = std::numeric_limits<float>::infinity();
-                        float expected_cong_cost = std::numeric_limits<float>::infinity();
                         util::Cost_Entry min_cost(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
                         for (const auto& tile_opin_map : src_opin_delays[from_layer_num][tile_type_idx]) {
-                            std::tie(expected_delay_cost, expected_cong_cost) = get_cost_from_src_opin(tile_opin_map,
-                                                                                                       dx,
-                                                                                                       dy,
-                                                                                                       to_layer_num);
+                            float expected_delay_cost = std::numeric_limits<float>::infinity();
+                            float expected_cong_cost = std::numeric_limits<float>::infinity();
+
+                            for (const auto& layer_src_opin_delay_map : tile_opin_map) {
+                                float layer_expected_delay_cost = std::numeric_limits<float>::infinity();
+                                float layer_expected_cong_cost = std::numeric_limits<float>::infinity();
+                                if (layer_src_opin_delay_map.empty()) {
+                                    layer_expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
+                                    layer_expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
+                                } else {
+                                    for (const auto& kv : layer_src_opin_delay_map) {
+                                        const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
+                                        if (reachable_wire_inf.wire_rr_type == SINK) {
+                                            continue;
+                                        }
+                                        Cost_Entry wire_cost_entry;
+
+                                        wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type,
+                                                                              reachable_wire_inf.wire_seg_index,
+                                                                              reachable_wire_inf.layer_number,
+                                                                              dx,
+                                                                              dy,
+                                                                              to_layer_num);
+
+                                        float this_delay_cost = reachable_wire_inf.delay + wire_cost_entry.delay;
+                                        float this_cong_cost = reachable_wire_inf.congestion + wire_cost_entry.congestion;
+
+                                        layer_expected_delay_cost = std::min(layer_expected_delay_cost, this_delay_cost);
+                                        layer_expected_cong_cost = std::min(layer_expected_cong_cost, this_cong_cost);
+                                    }
+                                }
+                                expected_delay_cost = std::min(expected_delay_cost, layer_expected_delay_cost);
+                                expected_cong_cost = std::min(expected_cong_cost, layer_expected_cong_cost);
+                            }
+
                             if (expected_delay_cost < min_cost.delay) {
                                 min_cost.delay = expected_delay_cost;
                                 min_cost.congestion = expected_cong_cost;
