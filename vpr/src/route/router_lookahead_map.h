@@ -19,7 +19,8 @@ class MapLookahead : public RouterLookahead {
     // Lookup table to store the minimum cost to reach to a primitive pin from the root-level IPINs
     std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
     // Lookup table to store the minimum cost for each dx and dy
-    vtr::NdMatrix<util::Cost_Entry, 3> distance_based_min_cost; // [layer_num][dx][dy] -> cost
+    vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
+    vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
 
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
@@ -34,6 +35,7 @@ class MapLookahead : public RouterLookahead {
     void read_intra_cluster(const std::string& file) override;
     void write(const std::string& file_name) const override;
     void write_intra_cluster(const std::string& file) const override;
+    float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override;
 };
 
 /* provides delay/congestion estimates to travel specified distances
