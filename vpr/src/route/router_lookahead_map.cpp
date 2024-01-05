@@ -564,6 +564,9 @@ void MapLookahead::read(const std::string& file) {
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+
+    min_chann_global_cost_map(chann_distance_based_min_cost);
+    min_opin_distance_cost_map(src_opin_delays, opin_distance_based_min_cost);
 }
 
 void MapLookahead::read_intra_cluster(const std::string& file) {
