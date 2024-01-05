@@ -11,7 +11,6 @@ archs_dir=arch/
 # Add circuits to list to sweep
 circuit_list_add=verilog/multiclock_output_and_latch.v
 circuit_list_add=verilog/multiclock_reader_writer.v
-circuit_list_add=verilog/multiclock_separate_and_latch.v
 
 # Add architectures to list to sweep
 arch_list_add=timing/k6_frac_N10_frac_chain_mem32K_htree0_40nm.xml
