@@ -218,7 +218,8 @@ class OverrideDelayModel : public PlaceDelayModel {
     static_assert(sizeof(t_override::delta_y) == sizeof(short), "Expect all t_override data members to be shorts");
 };
 
-///@brief A simple delay model based on the distance (delta) between block locations.
+///@brief A simple delay model based on the information stored in router lookahead
+///  This is in contrast to other placement delay models that get the cost of getting from one location to another by running the router
 class SimpleDelayModel : public PlaceDelayModel {
   public:
     SimpleDelayModel(float min_cross_layer_delay,
