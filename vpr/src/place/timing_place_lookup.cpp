@@ -143,6 +143,11 @@ static vtr::NdMatrix<float, 3> compute_delta_delay_model(
     int longest_length,
     bool is_flat);
 
+/**
+ * @brief Use the information in the router lookahead to fill the delay matrix instead of running the router
+ * @param route_profiler
+ * @return The delay matrix that contain the minimum cost between two locations
+ */
 static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler);
 
 static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
@@ -1019,6 +1024,8 @@ static vtr::NdMatrix<float, 3> compute_delta_delay_model(
 static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler) {
     const auto& grid = g_vpr_ctx.device().grid;
     int num_physical_tile_types = static_cast<int>(g_vpr_ctx.device().physical_tile_types.size());
+    // Initializing the delay matrix to [num_physical_types][num_layers][num_layers][width][height]
+    // The second index related to the layer that the source location is on and the third index is for the sink layer
     vtr::NdMatrix<float, 5> delta_delays({static_cast<unsigned long>(num_physical_tile_types),
                                           static_cast<unsigned long>(grid.get_num_layers()),
                                           static_cast<unsigned long>(grid.get_num_layers()),
