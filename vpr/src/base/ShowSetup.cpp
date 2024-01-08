@@ -737,6 +737,12 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
 }
 
 static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
+    if (PackerOpts.external_attraction_file.empty()) {
+        VTR_LOG("external_attraction_file: None used\n");
+    } else {
+        VTR_LOG("external_attraction_file: %s\n", PackerOpts.external_attraction_file.c_str());
+    }
+
     VTR_LOG("PackerOpts.allow_unrelated_clustering: ");
     if (PackerOpts.allow_unrelated_clustering == e_unrelated_clustering::ON) {
         VTR_LOG("true\n");

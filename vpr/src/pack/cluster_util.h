@@ -139,10 +139,14 @@ bool check_cluster_legality(const int& verbosity,
 bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb);
 
 void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
-                                         std::map<AtomBlockId, float>& gain,
+                                         const std::map<AtomBlockId, float>& gain,
                                          t_pb* pb,
+                                         const ClusterBlockId cluster_index,
                                          int max_queue_size,
-                                         AttractionInfo& attraction_groups);
+                                         AttractionInfo& attraction_groups,
+                                         const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                                         float external_attraction_default_weight,
+                                         float external_attraction_default_value);
 
 void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
                                               t_pb* pb);
@@ -228,6 +232,9 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       const ClusterBlockId clb_index,
                       const int detailed_routing_stage,
                       AttractionInfo& attraction_groups,
+                      const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                      float external_attraction_default_weight,
+                      float external_attraction_default_value,
                       vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                       bool allow_unrelated_clustering,
                       const int& high_fanout_threshold,
@@ -256,7 +263,8 @@ void store_cluster_info_and_free(const t_packer_opts& packer_opts,
                                  const t_logical_block_type_ptr logic_block_type,
                                  const t_pb_type* le_pb_type,
                                  std::vector<int>& le_count,
-                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets);
+                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                 const int verbosity);
 
 void free_data_and_requeue_used_mols_if_illegal(const ClusterBlockId& clb_index,
                                                 const int& savedseedindex,
@@ -319,7 +327,8 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const int high_fanout_net_threshold,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
-                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input);
+                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
+                          const int verbosity);
 
 void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        t_pb_graph_node** primitives_list,
@@ -344,6 +353,9 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
 
 t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            AttractionInfo& attraction_groups,
+                                           const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                                           float external_attraction_default_weight,
+                                           float external_attraction_default_value,
                                            const enum e_gain_type gain_mode,
                                            t_cluster_placement_stats* cluster_placement_stats_ptr,
                                            vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -354,18 +366,29 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
+                                                                const ClusterBlockId cluster_index,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups);
+                                                                AttractionInfo& attraction_groups,
+                                                                const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                                                                float external_attraction_default_weight,
+                                                                float external_attraction_default_value);
 
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
+                                                                const ClusterBlockId cluster_index,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups);
+                                                                AttractionInfo& attraction_groups,
+                                                                const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                                                                float external_attraction_default_weight,
+                                                                float external_attraction_default_value);
 
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                                                          t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                          AttractionInfo& attraction_groups,
+                                                         const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                                                         float external_attraction_default_weight,
+                                                         float external_attraction_default_value,
                                                          const int feasible_block_array_size,
                                                          ClusterBlockId clb_index,
                                                          std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
@@ -376,12 +399,27 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 const ClusterBlockId cluster_index,
                                                                 int transitive_fanout_threshold,
                                                                 const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups);
+                                                                AttractionInfo& attraction_groups,
+                                                                const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                                                                float external_attraction_default_weight,
+                                                                float external_attraction_default_value);
+
+void add_cluster_molecule_candidates_by_external_attraction_data(t_pb* cur_pb,
+                                                                 const ClusterBlockId cluster_index,
+                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                 const int feasible_block_array_size,
+                                                                 AttractionInfo& attraction_groups,
+                                                                 const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                                                                 float external_attraction_default_weight,
+                                                                 float external_attraction_default_value);
 
 bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, t_cluster_placement_stats* cluster_placement_stats_ptr);
 
 t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           AttractionInfo& attraction_groups,
+                                          const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data,
+                                          float external_attraction_default_weight,
+                                          float external_attraction_default_value,
                                           const bool allow_unrelated_clustering,
                                           const bool prioritize_transitive_connectivity,
                                           const int transitive_fanout_threshold,
@@ -409,7 +447,7 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
 
 t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::vector<AtomBlockId> seed_atoms);
 
-float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures);
+float get_molecule_gain(t_pack_molecule* molecule, const ClusterBlockId cluster_index, const std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, const std::unordered_map<AtomBlockId, std::map<AtomBlockId, double>>& external_atom_attraction_data, float external_attraction_default_weight, float external_attraction_default_value, int num_molecule_failures);
 
 int compare_molecule_gain(const void* a, const void* b);
 int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
@@ -452,4 +490,7 @@ bool cleanup_pb(t_pb* pb);
 void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size);
 
 void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup);
+
+// Helper functions for load external attraction data
+void load_external_attraction_data(const std::string& attraction_file, const int verbosity);
 #endif

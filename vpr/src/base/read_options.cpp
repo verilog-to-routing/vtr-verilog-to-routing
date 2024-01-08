@@ -1847,6 +1847,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<std::string>(args.external_attraction_file, "--external_attraction_file")
+        .help("Whether to use external attraction data from a file")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<bool, ParseOnOff>(args.use_attraction_groups, "--use_attraction_groups")
         .help("Whether attraction groups are used to make it easier to pack primitives in the same floorplan region together.")
         .default_value("on")

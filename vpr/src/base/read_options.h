@@ -99,6 +99,7 @@ struct t_options {
     argparse::ArgValue<int> pack_feasible_block_array_size;
     argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
+    argparse::ArgValue<std::string> external_attraction_file;
     argparse::ArgValue<bool> use_attraction_groups;
     argparse::ArgValue<int> pack_num_moves;
     argparse::ArgValue<std::string> pack_move_type;

@@ -1,0 +1,28 @@
+<attraction_data>
+    <attraction>
+        <src name="$add~0^ADD~0-0[0]"></src>
+        <dst_list>
+            <dst name="$dff~4^Q~0" score="-100"></dst>
+            <dst name="$add~1^ADD~1-0[0]" score="100"></dst>
+        </dst_list>
+    </attraction>
+    <attraction>
+        <src name="$add~1^ADD~1-0[0]"></src>
+        <dst_list>
+            <dst name="$add~0^ADD~0-0[0]" score="100"></dst>
+        </dst_list>
+    </attraction>
+    <attraction>
+        <src name="$dff~4^Q~0"></src>
+        <dst_list>
+            <dst name="$add~0^ADD~0-0[0]" score="-100"></dst>
+            <dst name="$dff~4^Q~5" score="100"></dst>
+        </dst_list>
+    </attraction>
+    <attraction>
+        <src name="$dff~4^Q~5"></src>
+        <dst_list>
+            <dst name="$dff~4^Q~0" score="100"></dst>
+        </dst_list>
+    </attraction>
+</attraction_data>

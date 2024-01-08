@@ -148,6 +148,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    const auto& cl_helper_ctx = g_vpr_ctx.cl_helper();
 
     helper_ctx.enable_pin_feasibility_filter = packer_opts.enable_pin_feasibility_filter;
     helper_ctx.feasible_block_array_size = packer_opts.feasible_block_array_size;
@@ -173,6 +174,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     vtr::vector<ClusterBlockId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_ctx.nlist.blocks().size());
 
     istart = nullptr;
+
+    // load external attraction data
+    load_external_attraction_data(packer_opts.external_attraction_file, verbosity);
+
+    // clear up to data clustering decision (This should be a clean start for clustering)
+    helper_ctx.incomplete_cluster_to_atoms_lookup.clear();
 
     /* determine bound on cluster size and primitive input size */
     helper_ctx.max_cluster_size = 0;
@@ -292,7 +299,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  high_fanout_threshold,
                                  *timing_info,
                                  attraction_groups,
-                                 net_output_feeds_driving_block_input);
+                                 net_output_feeds_driving_block_input,
+                                 verbosity);
             helper_ctx.total_clb_num++;
 
             if (packer_opts.timing_driven) {
@@ -304,6 +312,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,
+                                                     cl_helper_ctx.external_atom_attraction_data,
+                                                     packer_opts.external_attraction_default_weight,
+                                                     packer_opts.external_attraction_default_value,
                                                      allow_unrelated_clustering,
                                                      packer_opts.prioritize_transitive_connectivity,
                                                      packer_opts.transitive_fanout_threshold,
@@ -350,6 +361,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  clb_index,
                                  detailed_routing_stage,
                                  attraction_groups,
+                                 cl_helper_ctx.external_atom_attraction_data,
+                                 packer_opts.external_attraction_default_weight,
+                                 packer_opts.external_attraction_default_value,
                                  clb_inter_blk_nets,
                                  allow_unrelated_clustering,
                                  high_fanout_threshold,
@@ -369,7 +383,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
             if (is_cluster_legal) {
                 istart = save_cluster_routing_and_pick_new_seed(packer_opts, helper_ctx.total_clb_num, seed_atoms, num_blocks_hill_added, clustering_data.intra_lb_routing, seedindex, cluster_stats, router_data);
-                store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets);
+                store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets, verbosity);
             } else {
                 free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, num_used_type_instances, helper_ctx.total_clb_num, seedindex);
             }
@@ -385,6 +399,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     //check_floorplan_regions(floorplan_regions_overfull);
     floorplan_regions_overfull = floorplan_constraints_regions_overfull();
+
+    // clear up to data clustering decision (No one should use incomplete_cluster_to_atoms_lookup after this point)
+    helper_ctx.incomplete_cluster_to_atoms_lookup.clear();
 
     return num_used_type_instances;
 }
