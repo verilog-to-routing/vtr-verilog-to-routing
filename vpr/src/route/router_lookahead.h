@@ -36,6 +36,8 @@ class RouterLookahead {
     // May be unimplemented, in which case method should throw an exception.
     virtual void write_intra_cluster(const std::string& file) const = 0;
 
+    // Retrieve the minimum distance to a point on the "to_layer," which is dx and dy away, across
+    // all the OPINs on the physical tile identified by "physical_tile_idx."
     virtual float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const = 0;
 
     virtual ~RouterLookahead() {}
