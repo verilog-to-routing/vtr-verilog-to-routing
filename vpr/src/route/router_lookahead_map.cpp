@@ -113,12 +113,18 @@ static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<i
                                     t_physical_tile_type_ptr physical_tile,
                                     const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay);
 
-/***
- * @brief Iterate over the first and second dimension of f_wire_cost_map to get the minimum cost for each dx and dy_
+/**
+ * @brief Iterate over the first (channel type) and second (segment type) dimensions of f_wire_cost_map to get the minimum cost for each dx and dy_
  * @param internal_opin_global_cost_map This map is populated in this function. [dx][dy] -> cost
  */
 static void min_chann_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 4>& distance_min_cost);
 
+/**
+ * @brief // Given the src/opin map of each physical tile type, iterate over all OPINs/sources of a type and create
+ * the minimum cost map across all of them for each tile type.
+ * @param src_opin_delays
+ * @param distance_min_cost
+ */
 static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_delays, vtr::NdMatrix<util::Cost_Entry, 5>& distance_min_cost);
 
 // Read the file and fill intra_tile_pin_primitive_pin_delay and tile_min_cost

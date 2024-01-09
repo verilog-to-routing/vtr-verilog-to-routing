@@ -20,7 +20,7 @@ class MapLookahead : public RouterLookahead {
     std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
     // Lookup table to store the minimum cost for each dx and dy
     vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
-    vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
+    vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost; // [physical_tile_idx][from_layer_num][to_layer_num][dx][dy] -> cost
 
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
