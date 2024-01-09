@@ -103,7 +103,7 @@ class Cost_Entry {
         , congestion(set_congestion)
         , fill(set_fill) {}
     bool valid() const {
-        return std::isfinite(delay) && std::isfinite(congestion);
+        return !(std::isnan(delay) || std::isnan(congestion));
     }
 
     bool operator==(const Cost_Entry& other) const {
