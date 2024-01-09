@@ -1976,7 +1976,7 @@ The ``<segment>`` tag and its contents are described below.
         .. note:: ``longline`` is only supported on with ``bidir`` routing
 
     :opt_param res_type:
-        Specifies whether the segment belongs to the general or global routing network. If this tag is not specified, the resource type for
+        Specifies whether the segment belongs to the general or a clock routing network. If this tag is not specified, the resource type for
         the segment is considered to be GENERAL.
   
     :req_param freq:
@@ -2096,6 +2096,7 @@ Specifing a Clock Architecture
 
 The element ``<clocknetworks>`` contains three sub-elements that collectively describe the clock architecture: the wiring parameters ``<metal_layers>``, the clock distribution ``<clock_network>``, and the clock connectivity ``<clock_routing>``.
 
+    .. note:: The clock network architecture defined in this structure is assigned the fixed default name ``"clock_network"``. When the user wants to specify a net to be routed through the defined clock architecture using a :ref:`global routing constraints file <global_routing_constraints>`, the network name attribute in the constraint tag must be set to ``"clock_network"``.
 
 .. _clock_arch_example:
 
