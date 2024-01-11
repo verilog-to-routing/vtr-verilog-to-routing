@@ -136,7 +136,10 @@ void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, Task& tas
         const int pathIndex = options.getInt(OPTION_PATH_INDEX, -1);
         const std::string highLightMode = options.getString(OPTION_HIGHTLIGHT_MODE);
 
-        if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx.crit_paths().size()))) {
+        if (pathIndex == -1) {
+            server_ctx.set_crit_path_index(-1); // clear selection
+            task.success();
+        } else if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx.crit_paths().size()))) {
             // set critical path index for rendering
             server_ctx.set_crit_path_index(pathIndex);
 
