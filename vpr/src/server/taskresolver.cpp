@@ -139,7 +139,8 @@ void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, Task& tas
         if (pathIndex == -1) {
             server_ctx.set_crit_path_index(-1); // clear selection
             task.success();
-        } else if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx.crit_paths().size()))) {
+        }
+        else if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx.crit_paths().size()))) {
             // set critical path index for rendering
             server_ctx.set_crit_path_index(pathIndex);
 

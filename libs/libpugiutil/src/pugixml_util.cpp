@@ -9,12 +9,9 @@ namespace pugiutil {
 loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded with file contents
                   const std::string filename) { //Filename to load from
     //store the position of last '.' in the file name
-    size_t position = filename.find_last_of(".");
-    std::string result = "";
-    if(position != std::string::npos) {
-        //store the characters after the '.' from the file_name string
-        result = filename.substr(position);
-    }
+    int position = filename.find_last_of(".");
+    //store the characters after the '.' from the file_name string
+    std::string result = filename.substr(position);
     if (result == ".xmle") {
         Decryption E1(filename);
         std::string fn_file = E1.getDecryptedContent();
