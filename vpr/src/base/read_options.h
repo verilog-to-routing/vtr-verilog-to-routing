@@ -57,7 +57,6 @@ struct t_options {
     /* General options */
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
-    argparse::ArgValue<bool> show_resource_usage_only_mode;
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
