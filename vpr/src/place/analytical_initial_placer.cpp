@@ -207,6 +207,166 @@ static inline void QP_clique_formulation(const AtomNetlist& netlist,
     VTR_LOG("Clique HPWL = %f\n", hpwl);
 }
 
+static inline void QP_star_formulation(const AtomNetlist& netlist, 
+                                       std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                       size_t num_moveable_nodes,
+                                       std::vector<t_node_pos> &node_locs) {
+    size_t num_nets = 0;
+    for (AtomNetId net_id : netlist.nets()) {
+        if (net_is_ignored_for_placement(netlist, net_id))
+            continue;
+        num_nets++;
+    }
+    Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_moveable_nodes + num_nets, num_moveable_nodes + num_nets);
+    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes + num_nets);
+    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes + num_nets);
+    size_t net_num = 0;
+    for (AtomNetId net_id : netlist.nets()) {
+        if (net_is_ignored_for_placement(netlist, net_id))
+            continue;
+        int num_pins = netlist.net_pins(net_id).size();
+        VTR_ASSERT(num_pins > 1);
+        // Using the weight from FastPlace
+        double w = static_cast<double>(num_pins) / static_cast<double>(num_pins - 1);
+        size_t star_node_id = num_moveable_nodes + net_num;
+        for (AtomPinId pin_id : netlist.net_pins(net_id)) {
+            AtomBlockId blk_id = netlist.pin_block(pin_id);
+            size_t node_id = block_id_to_node_id[blk_id];
+            // Note: the star node is always moveable
+            if (is_moveable_node(node_id, num_moveable_nodes)) {
+                A(star_node_id, star_node_id) += w;
+                A(node_id, node_id) += w;
+                A(star_node_id, node_id) -= w;
+                A(node_id, star_node_id) -= w;
+            } else {
+                A(star_node_id, star_node_id) += w;
+                b_x(star_node_id) += w * node_locs[node_id].x;
+                b_y(star_node_id) += w * node_locs[node_id].y;
+            }
+        }
+        net_num++;
+    }
+
+    Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+
+    // Solve using a sparse solver
+    Eigen::VectorXd x, y;
+    {
+        vtr::ScopedStartFinishTimer timer("Star Initial Placement");
+        Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg;
+        cg.compute(A_sparse);
+        x = cg.solve(b_x);
+        y = cg.solve(b_y);
+    }
+    for (size_t node_id = 0; node_id < num_moveable_nodes; node_id++) {
+        node_locs[node_id].x = x[node_id];
+        node_locs[node_id].y = y[node_id];
+    }
+
+    // Compute the HPWL
+    double hpwl = get_HPWL(netlist, block_id_to_node_id, node_locs);
+    VTR_LOG("Star HPWL = %f\n", hpwl);
+}
+
+static inline void QP_hybrid_formulation(const AtomNetlist& netlist, 
+                                         std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                         size_t num_moveable_nodes,
+                                         std::vector<t_node_pos> &node_locs) {
+    size_t num_star_nodes = 0;
+    for (AtomNetId net_id : netlist.nets()) {
+        if (net_is_ignored_for_placement(netlist, net_id))
+            continue;
+        if (netlist.net_pins(net_id).size() > 3)
+            num_star_nodes++;
+    }
+    Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_moveable_nodes + num_star_nodes, num_moveable_nodes + num_star_nodes);
+    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes + num_star_nodes);
+    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes + num_star_nodes);
+    size_t star_node_offset = 0;
+    for (AtomNetId net_id : netlist.nets()) {
+        if (net_is_ignored_for_placement(netlist, net_id))
+            continue;
+        int num_pins = netlist.net_pins(net_id).size();
+        VTR_ASSERT(num_pins > 1);
+        if (num_pins > 3) {
+            // FIXME: THIS WAS DIRECTLY COPIED FROM THE STAR FORMULATION. MOVE TO OWN FUNCTION.
+            //          (with the exeption of the star node offset).
+            // Using the weight from FastPlace
+            double w = static_cast<double>(num_pins) / static_cast<double>(num_pins - 1);
+            size_t star_node_id = num_moveable_nodes + star_node_offset;
+            for (AtomPinId pin_id : netlist.net_pins(net_id)) {
+                AtomBlockId blk_id = netlist.pin_block(pin_id);
+                size_t node_id = block_id_to_node_id[blk_id];
+                // Note: the star node is always moveable
+                if (is_moveable_node(node_id, num_moveable_nodes)) {
+                    A(star_node_id, star_node_id) += w;
+                    A(node_id, node_id) += w;
+                    A(star_node_id, node_id) -= w;
+                    A(node_id, star_node_id) -= w;
+                } else {
+                    A(star_node_id, star_node_id) += w;
+                    b_x(star_node_id) += w * node_locs[node_id].x;
+                    b_y(star_node_id) += w * node_locs[node_id].y;
+                }
+            }
+            star_node_offset++;
+        } else {
+            // FIXME: THIS WAS DIRECTLY COPIED FROM THE CLIQUE FORMULATION. MOVE TO OWN FUNCTION.
+            // Using the weight from FastPlace
+            double w = 1.0 / static_cast<double>(num_pins - 1);
+
+            for (int ipin = 0; ipin < num_pins; ipin++) {
+                // FIXME: Is it possible for two pins to be connected to the same block?
+                //        I am wondering if this doesnt matter because it would appear as tho
+                //        this block really wants to be connected lol.
+                for (int jpin = ipin + 1; jpin < num_pins; jpin++) {
+                    AtomBlockId first_block_id = netlist.net_pin_block(net_id, ipin);
+                    AtomBlockId second_block_id = netlist.net_pin_block(net_id, jpin);
+                    size_t first_node_id = block_id_to_node_id[first_block_id];
+                    size_t second_node_id = block_id_to_node_id[second_block_id];
+                    // Make sure that the first node is moveable. This makes creating the connection easier.
+                    if (!is_moveable_node(first_node_id, num_moveable_nodes)) {
+                        if (!is_moveable_node(second_node_id, num_moveable_nodes)) {
+                            continue;
+                        }
+                        std::swap(first_node_id, second_node_id);
+                    }
+                    if (is_moveable_node(second_node_id, num_moveable_nodes)) {
+                        A(first_node_id, first_node_id) += w;
+                        A(second_node_id, second_node_id) += w;
+                        A(first_node_id, second_node_id) -= w;
+                        A(second_node_id, first_node_id) -= w;
+                    } else {
+                        A(first_node_id, first_node_id) += w;
+                        b_x(first_node_id) += w * node_locs[second_node_id].x;
+                        b_y(first_node_id) += w * node_locs[second_node_id].y;
+                    }
+                }
+            }
+        }
+    }
+
+    Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+
+    // Solve using a sparse solver
+    Eigen::VectorXd x, y;
+    {
+        vtr::ScopedStartFinishTimer timer("Hybrid Initial Placement");
+        Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg;
+        cg.compute(A_sparse);
+        x = cg.solve(b_x);
+        y = cg.solve(b_y);
+    }
+    for (size_t node_id = 0; node_id < num_moveable_nodes; node_id++) {
+        node_locs[node_id].x = x[node_id];
+        node_locs[node_id].y = y[node_id];
+    }
+
+    // Compute the HPWL
+    double hpwl = get_HPWL(netlist, block_id_to_node_id, node_locs);
+    VTR_LOG("Hybrid HPWL = %f\n", hpwl);
+}
+
 namespace analytical_placement {
 
 bool initial_place() {
@@ -309,6 +469,8 @@ bool initial_place() {
     }
 
     QP_clique_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
+    QP_star_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
+    QP_hybrid_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
 
     return true;
 }
