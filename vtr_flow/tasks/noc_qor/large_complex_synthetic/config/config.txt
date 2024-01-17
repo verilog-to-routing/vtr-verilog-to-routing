@@ -1,0 +1,89 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/noc/Synthetic_Designs/blif_files/
+
+# Path to directory of architectures to use
+archs_dir=arch/noc/mesh_noc_topology
+
+# Path to directory of NoC Traffic Patterns to use
+noc_traffics_dir=benchmarks/noc/Synthetic_Designs/traffic_flow_files/
+
+# Traffic flow files are added per circuit
+noc_traffic_list_type=per_circuit
+
+# Add circuits and traffic flows to list to sweep
+circuit_list_add=complex_16_noc_1D_chain.blif
+noc_traffic_list_add=complex_16_noc_1D_chain.flows
+
+circuit_list_add=complex_32_noc_clique.blif
+noc_traffic_list_add=complex_32_noc_clique.flows
+
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_noc_star.flows
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_noc_star_no_constraints.flows
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_star_12_latency_constraints.flows
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_star_24_latency_constraints.flows
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_star_2_bandwdiths.flows
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_star_31_latency_constraints.flows
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_star_3_bandwdiths.flows
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_star_4_bandwdiths.flows
+circuit_list_add=complex_32_noc_star.blif
+noc_traffic_list_add=complex_32_star_4_latency_constraints.flows
+
+circuit_list_add=complex_64_noc_clique.blif
+noc_traffic_list_add=complex_64_noc_clique.flows
+
+circuit_list_add=complex_64_noc_nearest_neighbor.blif
+noc_traffic_list_add=complex_64_noc_nearest_neighbor.flows
+
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_12_latency_constraints.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_24_latency_constraints.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_2_bandwidths.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_3_bandwidths.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_40_latency_constraints.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_4_bandwidths.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_4_latency_constraints.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_58_latency_constraints.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_5_bandwidths.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_63_latency_constraints.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_6_bandwidths.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star.flows
+circuit_list_add=complex_64_noc_star.blif
+noc_traffic_list_add=complex_64_noc_star_no_constraints.flows
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing_with_a_embedded_10X10_mesh_noc_topology.xml
+
+# Parse info and how to parse
+parse_file=vpr_noc.txt
+
+# How to parse QoR info
+qor_parse_file=qor_noc_spec.txt
+
+# Pass requirements
+#pass_requirements_file=
+
+# Script parameters
+script_params_common =-starting_stage vpr --noc on --noc_routing_algorithm xy_routing --device "EP4SE820"
