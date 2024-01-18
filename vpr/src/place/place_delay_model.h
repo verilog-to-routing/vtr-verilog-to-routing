@@ -239,7 +239,7 @@ class SimpleDelayModel : public PlaceDelayModel {
     void write(const std::string& /*file*/) const override {}
 
   private:
-    // [physical_type_idx][from_layer_num][to_layer_num][dx][dy
+    // [physical_type_idx][from_layer_num][to_layer_num][dx][dy]
     vtr::NdMatrix<float, 5> delays_; // [0..num_physical_type-1][0..num_layers-1][0..num_layers-1][0..max_dx][0..max_dy]
     float cross_layer_delay_;
     bool is_flat_;

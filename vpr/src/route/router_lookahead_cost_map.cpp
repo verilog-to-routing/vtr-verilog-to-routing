@@ -342,6 +342,7 @@ std::vector<std::pair<int, int>> CostMap::list_empty() const {
 }
 
 static void assign_min_entry(util::Cost_Entry* dst, const util::Cost_Entry& src) {
+    // The values in src is only being assigned to dst if they are valid
     if (!std::isnan(src.delay)) {
         if (std::isnan(dst->delay)) {
             dst->delay = src.delay;
