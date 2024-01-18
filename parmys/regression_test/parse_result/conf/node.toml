@@ -1,0 +1,22 @@
+["Latch Drivers"]
+    regex = "Number of <(?:CLOCK_NODE|CLK)> node: (\d+)"
+    default = 0
+
+["Pi"]
+    regex = "Number of <(?:INPUT_NODE|IN)> node: (\d+)"
+    default = 0
+
+["Po"]
+    regex = "Number of <(?:OUTPUT_NODE|OUT)> node: (\d+)"
+    default = 0
+
+["logic element"]
+    regex = "Number of <(?:GENERIC|GEN)> node: (\d+)"
+    default = 0
+
+["latch"]
+    regex = "Number of <(?:FF_NODE|FF)> node: (\d+)"
+    default = 0
+
+#include hard_blocks.toml
+
