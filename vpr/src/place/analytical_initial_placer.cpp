@@ -19,58 +19,6 @@
 
 namespace {
 
-// Compressed Column Form of a matrix 
-// UMFPACK_QuickStart.pdf
-// https://en.wikipedia.org/wiki/Sparse_matrix
-// NOTE: The matrix is symettric, so we can literally do either form, they should be identical
-struct csc_matrix {
-    int32_t *Ap;
-    int32_t *Ai;
-    double *Ax;
-    csc_matrix(const vtr::NdMatrix<double, 2> &dense_matrix) {
-        // The dense matrix is m by n with nz non-zero entries.
-        size_t m = dense_matrix.dim_size(0);
-        size_t n = dense_matrix.dim_size(1);
-
-        // Ap is of length (n + 1)
-        Ap = new int32_t[n + 1];
-
-        // Count the number of non-zero entries
-        size_t nz = 0;
-        for (size_t i = 0; i < m; i++) {
-            for (size_t j = 0; j < n; j++) {
-                if (dense_matrix[i][j] != 0.0)
-                    nz++;
-            }
-        }
-
-        // Ai and Ax are both of length nz
-        Ai = new int32_t[nz];
-        Ax = new double[nz];
-
-        // Populate the sparse matrix representation.
-        // FIXME: Is this iteration direction bad? We may be able to do it in row major since it is symmetric.
-        size_t nonzero_index = 0;
-        for (size_t c = 0; c < n; c++) {
-            Ap[c] = nonzero_index;
-            for (size_t r = 0; r < m; r++) {
-                if (dense_matrix[r][c] != 0.0) {
-                    Ax[nonzero_index] = dense_matrix[r][c];
-                    Ai[nonzero_index] = r;
-                    nonzero_index++;
-                }
-            }
-        }
-        Ap[n] = nonzero_index;
-    }
-
-    ~csc_matrix() {
-        delete[] Ap;
-        delete[] Ai;
-        delete[] Ax;
-    }
-};
-
 // t_pl_loc stores positions as integers. Created my own node type for now.
 struct t_node_pos {
     double x = UNKNOWN_POS;
@@ -127,22 +75,15 @@ static inline double get_HPWL(const AtomNetlist& netlist,
     return hpwl;
 }
 
-// TODO: There are a lot of parameters. Perhaps this can be made a member method of a class.
-static inline void QP_clique_formulation(const AtomNetlist& netlist, 
-                                         std::map<AtomBlockId, size_t> &block_id_to_node_id,
-                                         size_t num_moveable_nodes,
-                                         std::vector<t_node_pos> &node_locs) {
-    // Create a 2D matrix of zeros.
-    // FIXME: This uses WAY too much memory since the matrix is known to be sparse.
-    //        should be stored in the sparse form somehow.
-    Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_moveable_nodes, num_moveable_nodes);
-    // printf("Matrix initialized to size: %zu, %zu\n", T.rows(), T.cols());
-    // printf("Element (1, 1) = %f\n", T(1,1));
-    // vtr::NdMatrix<double, 2> A({num_moveable_nodes, num_moveable_nodes}, 0.0);
-    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes);
-    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes);
-    // std::vector<double> b_x(num_moveable_nodes, 0.0);
-    // std::vector<double> b_y(num_moveable_nodes, 0.0);
+static inline void populate_clique_matrix(Eigen::SparseMatrix<double> &A_sparse,
+                                          Eigen::VectorXd &b_x,
+                                          Eigen::VectorXd &b_y,
+                                          const AtomNetlist& netlist, 
+                                          std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                          size_t num_moveable_nodes,
+                                          std::vector<t_node_pos> &node_locs) {
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(num_moveable_nodes * netlist.nets().size());
 
     for (AtomNetId net_id : netlist.nets()) {
         if (net_is_ignored_for_placement(netlist, net_id))
@@ -170,12 +111,12 @@ static inline void QP_clique_formulation(const AtomNetlist& netlist,
                     std::swap(first_node_id, second_node_id);
                 }
                 if (is_moveable_node(second_node_id, num_moveable_nodes)) {
-                    A(first_node_id, first_node_id) += w;
-                    A(second_node_id, second_node_id) += w;
-                    A(first_node_id, second_node_id) -= w;
-                    A(second_node_id, first_node_id) -= w;
+                    tripletList.emplace_back(first_node_id, first_node_id, w);
+                    tripletList.emplace_back(second_node_id, second_node_id, w);
+                    tripletList.emplace_back(first_node_id, second_node_id, -w);
+                    tripletList.emplace_back(second_node_id, first_node_id, -w);
                 } else {
-                    A(first_node_id, first_node_id) += w;
+                    tripletList.emplace_back(first_node_id, first_node_id, w);
                     b_x(first_node_id) += w * node_locs[second_node_id].x;
                     b_y(first_node_id) += w * node_locs[second_node_id].y;
                 }
@@ -183,20 +124,35 @@ static inline void QP_clique_formulation(const AtomNetlist& netlist,
         }
     }
 
-    // Convert the matrix A into sparse form
-    // FIXME: See above. Ideally things should just be in the sparse form.
-    // csc_matrix A_sparse = csc_matrix(A);
-    Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+    A_sparse.setFromTriplets(tripletList.begin(), tripletList.end());
+}
+
+// TODO: There are a lot of parameters. Perhaps this can be made a member method of a class.
+static inline void QP_clique_formulation(const AtomNetlist& netlist, 
+                                         std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                         size_t num_moveable_nodes,
+                                         std::vector<t_node_pos> &node_locs) {
+    vtr::ScopedStartFinishTimer timer("Clique Initial Placement");
+    // Create the sparse matrix and the b vectors and populate them.
+    Eigen::SparseMatrix<double> A_sparse(num_moveable_nodes, num_moveable_nodes);
+    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes);
+    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes);
+    populate_clique_matrix(A_sparse, b_x, b_y, netlist, block_id_to_node_id, num_moveable_nodes, node_locs);
+
+    VTR_LOG("NNZ for sparse matrix A: %zu\n", A_sparse.nonZeros());
+    VTR_LOG("Sparsity is around: %.2f%\n", static_cast<float>(A_sparse.nonZeros()) * 100.0 / static_cast<float>(num_moveable_nodes * num_moveable_nodes));
 
     // Solve using a sparse solver
     Eigen::VectorXd x, y;
     {
-        vtr::ScopedStartFinishTimer timer("Clique Initial Placement");
+        // vtr::ScopedStartFinishTimer timer("Clique Initial Placement");
         Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg;
         cg.compute(A_sparse);
         x = cg.solve(b_x);
         y = cg.solve(b_y);
     }
+
+    // Store the result.
     for (size_t node_id = 0; node_id < num_moveable_nodes; node_id++) {
         node_locs[node_id].x = x[node_id];
         node_locs[node_id].y = y[node_id];
@@ -207,19 +163,16 @@ static inline void QP_clique_formulation(const AtomNetlist& netlist,
     VTR_LOG("Clique HPWL = %f\n", hpwl);
 }
 
-static inline void QP_star_formulation(const AtomNetlist& netlist, 
-                                       std::map<AtomBlockId, size_t> &block_id_to_node_id,
-                                       size_t num_moveable_nodes,
-                                       std::vector<t_node_pos> &node_locs) {
-    size_t num_nets = 0;
-    for (AtomNetId net_id : netlist.nets()) {
-        if (net_is_ignored_for_placement(netlist, net_id))
-            continue;
-        num_nets++;
-    }
-    Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_moveable_nodes + num_nets, num_moveable_nodes + num_nets);
-    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes + num_nets);
-    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes + num_nets);
+static inline void populate_star_matrix(Eigen::SparseMatrix<double> &A_sparse,
+                                        Eigen::VectorXd &b_x,
+                                        Eigen::VectorXd &b_y,
+                                        const AtomNetlist& netlist, 
+                                        std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                        size_t num_moveable_nodes,
+                                        std::vector<t_node_pos> &node_locs) {
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(num_moveable_nodes * netlist.nets().size());
+
     size_t net_num = 0;
     for (AtomNetId net_id : netlist.nets()) {
         if (net_is_ignored_for_placement(netlist, net_id))
@@ -234,12 +187,12 @@ static inline void QP_star_formulation(const AtomNetlist& netlist,
             size_t node_id = block_id_to_node_id[blk_id];
             // Note: the star node is always moveable
             if (is_moveable_node(node_id, num_moveable_nodes)) {
-                A(star_node_id, star_node_id) += w;
-                A(node_id, node_id) += w;
-                A(star_node_id, node_id) -= w;
-                A(node_id, star_node_id) -= w;
+                tripletList.emplace_back(star_node_id, star_node_id, w);
+                tripletList.emplace_back(node_id, node_id, w);
+                tripletList.emplace_back(star_node_id, node_id, -w);
+                tripletList.emplace_back(node_id, star_node_id, -w);
             } else {
-                A(star_node_id, star_node_id) += w;
+                tripletList.emplace_back(star_node_id, star_node_id, w);
                 b_x(star_node_id) += w * node_locs[node_id].x;
                 b_y(star_node_id) += w * node_locs[node_id].y;
             }
@@ -247,12 +200,33 @@ static inline void QP_star_formulation(const AtomNetlist& netlist,
         net_num++;
     }
 
-    Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+    A_sparse.setFromTriplets(tripletList.begin(), tripletList.end());
+}
+
+static inline void QP_star_formulation(const AtomNetlist& netlist, 
+                                       std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                       size_t num_moveable_nodes,
+                                       std::vector<t_node_pos> &node_locs) {
+    vtr::ScopedStartFinishTimer timer("Star Initial Placement");
+    // Create the sparse matrix and the b vectors and populate them.
+    size_t num_nets = 0;
+    for (AtomNetId net_id : netlist.nets()) {
+        if (net_is_ignored_for_placement(netlist, net_id))
+            continue;
+        num_nets++;
+    }
+    Eigen::SparseMatrix<double> A_sparse(num_moveable_nodes + num_nets, num_moveable_nodes + num_nets);
+    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes + num_nets);
+    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes + num_nets);
+    populate_star_matrix(A_sparse, b_x, b_y, netlist, block_id_to_node_id, num_moveable_nodes, node_locs);
+
+    VTR_LOG("NNZ for sparse matrix A: %zu\n", A_sparse.nonZeros());
+    VTR_LOG("Sparsity is around: %.2f%\n", static_cast<float>(A_sparse.nonZeros()) * 100.0 / static_cast<float>((num_moveable_nodes + num_nets) * (num_moveable_nodes + num_nets)));
 
     // Solve using a sparse solver
     Eigen::VectorXd x, y;
     {
-        vtr::ScopedStartFinishTimer timer("Star Initial Placement");
+        // vtr::ScopedStartFinishTimer timer("Star Initial Placement");
         Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg;
         cg.compute(A_sparse);
         x = cg.solve(b_x);
@@ -268,20 +242,16 @@ static inline void QP_star_formulation(const AtomNetlist& netlist,
     VTR_LOG("Star HPWL = %f\n", hpwl);
 }
 
-static inline void QP_hybrid_formulation(const AtomNetlist& netlist, 
-                                         std::map<AtomBlockId, size_t> &block_id_to_node_id,
-                                         size_t num_moveable_nodes,
-                                         std::vector<t_node_pos> &node_locs) {
-    size_t num_star_nodes = 0;
-    for (AtomNetId net_id : netlist.nets()) {
-        if (net_is_ignored_for_placement(netlist, net_id))
-            continue;
-        if (netlist.net_pins(net_id).size() > 3)
-            num_star_nodes++;
-    }
-    Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_moveable_nodes + num_star_nodes, num_moveable_nodes + num_star_nodes);
-    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes + num_star_nodes);
-    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes + num_star_nodes);
+static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
+                                          Eigen::VectorXd &b_x,
+                                          Eigen::VectorXd &b_y,
+                                          const AtomNetlist& netlist, 
+                                          std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                          size_t num_moveable_nodes,
+                                          std::vector<t_node_pos> &node_locs) {
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(num_moveable_nodes * netlist.nets().size());
+
     size_t star_node_offset = 0;
     for (AtomNetId net_id : netlist.nets()) {
         if (net_is_ignored_for_placement(netlist, net_id))
@@ -299,12 +269,12 @@ static inline void QP_hybrid_formulation(const AtomNetlist& netlist,
                 size_t node_id = block_id_to_node_id[blk_id];
                 // Note: the star node is always moveable
                 if (is_moveable_node(node_id, num_moveable_nodes)) {
-                    A(star_node_id, star_node_id) += w;
-                    A(node_id, node_id) += w;
-                    A(star_node_id, node_id) -= w;
-                    A(node_id, star_node_id) -= w;
+                    tripletList.emplace_back(star_node_id, star_node_id, w);
+                    tripletList.emplace_back(node_id, node_id, w);
+                    tripletList.emplace_back(star_node_id, node_id, -w);
+                    tripletList.emplace_back(node_id, star_node_id, -w);
                 } else {
-                    A(star_node_id, star_node_id) += w;
+                    tripletList.emplace_back(star_node_id, star_node_id, w);
                     b_x(star_node_id) += w * node_locs[node_id].x;
                     b_y(star_node_id) += w * node_locs[node_id].y;
                 }
@@ -332,12 +302,12 @@ static inline void QP_hybrid_formulation(const AtomNetlist& netlist,
                         std::swap(first_node_id, second_node_id);
                     }
                     if (is_moveable_node(second_node_id, num_moveable_nodes)) {
-                        A(first_node_id, first_node_id) += w;
-                        A(second_node_id, second_node_id) += w;
-                        A(first_node_id, second_node_id) -= w;
-                        A(second_node_id, first_node_id) -= w;
+                        tripletList.emplace_back(first_node_id, first_node_id, w);
+                        tripletList.emplace_back(second_node_id, second_node_id, w);
+                        tripletList.emplace_back(first_node_id, second_node_id, -w);
+                        tripletList.emplace_back(second_node_id, first_node_id, -w);
                     } else {
-                        A(first_node_id, first_node_id) += w;
+                        tripletList.emplace_back(first_node_id, first_node_id, w);
                         b_x(first_node_id) += w * node_locs[second_node_id].x;
                         b_y(first_node_id) += w * node_locs[second_node_id].y;
                     }
@@ -346,12 +316,33 @@ static inline void QP_hybrid_formulation(const AtomNetlist& netlist,
         }
     }
 
-    Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+    A_sparse.setFromTriplets(tripletList.begin(), tripletList.end());
+}
+
+static inline void QP_hybrid_formulation(const AtomNetlist& netlist, 
+                                         std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                         size_t num_moveable_nodes,
+                                         std::vector<t_node_pos> &node_locs) {
+    vtr::ScopedStartFinishTimer timer("Hybrid Initial Placement");
+    size_t num_star_nodes = 0;
+    for (AtomNetId net_id : netlist.nets()) {
+        if (net_is_ignored_for_placement(netlist, net_id))
+            continue;
+        if (netlist.net_pins(net_id).size() > 3)
+            num_star_nodes++;
+    }
+    Eigen::SparseMatrix<double> A_sparse(num_moveable_nodes + num_star_nodes, num_moveable_nodes + num_star_nodes);
+    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes + num_star_nodes);
+    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes + num_star_nodes);
+    populate_hybrid_matrix(A_sparse, b_x, b_y, netlist, block_id_to_node_id, num_moveable_nodes, node_locs);
+
+    VTR_LOG("NNZ for sparse matrix A: %zu\n", A_sparse.nonZeros());
+    VTR_LOG("Sparsity is around: %.2f%\n", static_cast<float>(A_sparse.nonZeros()) * 100.0 / static_cast<float>((num_moveable_nodes + num_star_nodes) * (num_moveable_nodes + num_star_nodes)));
 
     // Solve using a sparse solver
     Eigen::VectorXd x, y;
     {
-        vtr::ScopedStartFinishTimer timer("Hybrid Initial Placement");
+        // vtr::ScopedStartFinishTimer timer("Hybrid Initial Placement");
         Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg;
         cg.compute(A_sparse);
         x = cg.solve(b_x);
@@ -633,7 +624,7 @@ bool initial_place() {
     QP_clique_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
     QP_star_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
     QP_hybrid_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
-    QP_b2b_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
+    // QP_b2b_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
 
     return true;
 }
