@@ -367,6 +367,168 @@ static inline void QP_hybrid_formulation(const AtomNetlist& netlist,
     VTR_LOG("Hybrid HPWL = %f\n", hpwl);
 }
 
+static inline void initial_place_uniform(std::vector<t_node_pos> &node_locs, size_t num_moveable_nodes) {
+    size_t square_side = sqrt(num_moveable_nodes) + 1;
+    double device_width = g_vpr_ctx.device().grid.width();
+    double device_height = g_vpr_ctx.device().grid.height();
+    for (size_t node_id = 0; node_id < num_moveable_nodes; node_id++) {
+        node_locs[node_id].x = (device_width / static_cast<double>(square_side)) * (node_id % square_side);
+        node_locs[node_id].y = (device_height / static_cast<double>(square_side)) * (node_id / square_side);
+    }
+}
+
+static inline void QP_b2b_formulation(const AtomNetlist& netlist, 
+                                      std::map<AtomBlockId, size_t> &block_id_to_node_id,
+                                      size_t num_moveable_nodes,
+                                      std::vector<t_node_pos> &node_locs) {
+    // Seed the b2b formulation with an initial placement.
+    // initial_place_uniform(node_locs, num_moveable_nodes);
+    QP_hybrid_formulation(netlist, block_id_to_node_id, num_moveable_nodes, node_locs);
+
+    double old_hpwl = get_HPWL(netlist, block_id_to_node_id, node_locs);
+    double delta_hpwl = std::numeric_limits<double>::infinity();
+    double total_time = 0.0;
+    size_t num_iter = 0;
+    while (delta_hpwl > 1e-2 && num_iter < 5) {
+        Eigen::MatrixXd A_x = Eigen::MatrixXd::Zero(num_moveable_nodes, num_moveable_nodes);
+        Eigen::MatrixXd A_y = Eigen::MatrixXd::Zero(num_moveable_nodes, num_moveable_nodes);
+        Eigen::VectorXd b_x = Eigen::VectorXd::Zero(num_moveable_nodes);
+        Eigen::VectorXd b_y = Eigen::VectorXd::Zero(num_moveable_nodes);
+        auto connect_nodes = [&](size_t node_id, size_t bound_node_id, int num_pins, bool is_x) {
+            // TODO: move into assert. I think this is when the bounds are the same node.
+            if (node_id == bound_node_id)
+                return;
+            VTR_ASSERT(num_pins > 1);
+            if (!is_moveable_node(node_id, num_moveable_nodes)) {
+                if (!is_moveable_node(bound_node_id, num_moveable_nodes))
+                    return;
+                std::swap(node_id, bound_node_id);
+            }
+            double epsilon = 1e-6;
+            double dist = 0.0;
+            if (is_x)
+                dist = std::max(std::abs(node_locs[node_id].x - node_locs[bound_node_id].x), epsilon);
+            else
+                dist = std::max(std::abs(node_locs[node_id].y - node_locs[bound_node_id].y), epsilon);
+            // Using the weight from Kraftwerk2
+            double w = (2.0 / static_cast<double>(num_pins - 1)) * (1.0 / dist);
+            if (is_moveable_node(bound_node_id, num_moveable_nodes)) {
+                if (is_x) {
+                    A_x(node_id, node_id) += w;
+                    A_x(bound_node_id, bound_node_id) += w;
+                    A_x(node_id, bound_node_id) -= w;
+                    A_x(bound_node_id, node_id) -= w;
+                } else {
+                    A_y(node_id, node_id) += w;
+                    A_y(bound_node_id, bound_node_id) += w;
+                    A_y(node_id, bound_node_id) -= w;
+                    A_y(bound_node_id, node_id) -= w;
+                }
+            } else {
+                if (is_x) {
+                    A_x(node_id, node_id) += w;
+                    b_x(node_id) += w * node_locs[bound_node_id].x;
+                } else {
+                    A_y(node_id, node_id) += w;
+                    b_y(node_id) += w * node_locs[bound_node_id].y;
+                }
+            }
+        };
+
+        for (AtomNetId net_id : netlist.nets()) {
+            if (net_is_ignored_for_placement(netlist, net_id))
+                continue;
+            int num_pins = netlist.net_pins(net_id).size();
+            VTR_ASSERT(num_pins > 1);
+            // Get the upper and lower bound block_ids
+            double min_x = std::numeric_limits<double>::max();
+            double max_x = std::numeric_limits<float>::lowest();
+            double min_y = std::numeric_limits<double>::max();
+            double max_y = std::numeric_limits<float>::lowest();
+            size_t lb_x_id = 0;
+            size_t lb_y_id = 0;
+            size_t ub_x_id = 0;
+            size_t ub_y_id = 0;
+            for (AtomPinId pin_id : netlist.net_pins(net_id)) {
+                AtomBlockId blk_id = netlist.pin_block(pin_id);
+                size_t node_id = block_id_to_node_id[blk_id];
+                const t_node_pos &node_loc = node_locs[node_id];
+                if (node_loc.x < min_x) {
+                    min_x = node_loc.x;
+                    lb_x_id = node_id;
+                }
+                if (node_loc.x > max_x) {
+                    max_x = node_loc.x;
+                    ub_x_id = node_id;
+                }
+                if (node_loc.y < min_y) {
+                    min_y = node_loc.y;
+                    lb_y_id = node_id;
+                }
+                if (node_loc.y > max_y) {
+                    max_y = node_loc.y;
+                    ub_y_id = node_id;
+                }
+            }
+            VTR_ASSERT(min_x <= max_x);
+            VTR_ASSERT(min_y <= max_y);
+
+            // Connect the interior nodes
+            for (AtomPinId pin_id : netlist.net_pins(net_id)) {
+                AtomBlockId blk_id = netlist.pin_block(pin_id);
+                size_t node_id = block_id_to_node_id[blk_id];
+                if (node_id != lb_x_id && node_id != ub_x_id) {
+                    connect_nodes(node_id, lb_x_id, num_pins, true);
+                    connect_nodes(node_id, ub_x_id, num_pins, true);
+                }
+                if (node_id != lb_y_id && node_id != ub_y_id) {
+                    connect_nodes(node_id, lb_y_id, num_pins, false);
+                    connect_nodes(node_id, ub_y_id, num_pins, false);
+                }
+            }
+            // Connect the bounds nodes together
+            connect_nodes(lb_x_id, ub_x_id, num_pins, true);
+            connect_nodes(lb_y_id, ub_y_id, num_pins, false);
+        }
+
+        Eigen::SparseMatrix<double> A_x_sparse = A_x.sparseView();
+        Eigen::SparseMatrix<double> A_y_sparse = A_y.sparseView();
+
+        // Solve using a sparse solver
+        Eigen::VectorXd x, y;
+        Eigen::VectorXd x_guess(num_moveable_nodes);
+        Eigen::VectorXd y_guess(num_moveable_nodes);
+        for (size_t node_id = 0; node_id < num_moveable_nodes; node_id++) {
+            x_guess(node_id) = node_locs[node_id].x;
+            y_guess(node_id) = node_locs[node_id].y;
+        }
+        {
+            vtr::ScopedStartFinishTimer timer("B2B Initial Placement iteration");
+            Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg;
+            cg.compute(A_x_sparse);
+            x = cg.solveWithGuess(b_x, x_guess);
+            cg.compute(A_y_sparse);
+            y = cg.solveWithGuess(b_y, y_guess);
+            total_time += timer.elapsed_sec();
+        }
+        for (size_t node_id = 0; node_id < num_moveable_nodes; node_id++) {
+            node_locs[node_id].x = x[node_id];
+            node_locs[node_id].y = y[node_id];
+        }
+
+        // Compute the HPWL
+        double new_hpwl = get_HPWL(netlist, block_id_to_node_id, node_locs);
+        VTR_LOG("delta_hpwl = %f\n", new_hpwl - old_hpwl);
+        delta_hpwl = std::abs(new_hpwl - old_hpwl);
+        old_hpwl = new_hpwl;
+        num_iter++;
+    }
+
+    VTR_LOG("B2B total time spent calculating: %.2f seconds\n", total_time);
+    VTR_LOG("Num iter: %zu\n", num_iter);
+    VTR_LOG("B2B HPWL = %f\n", old_hpwl);
+}
+
 namespace analytical_placement {
 
 bool initial_place() {
@@ -471,6 +633,7 @@ bool initial_place() {
     QP_clique_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
     QP_star_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
     QP_hybrid_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
+    QP_b2b_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
 
     return true;
 }
