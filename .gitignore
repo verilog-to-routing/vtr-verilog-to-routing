@@ -39,6 +39,14 @@ vtr_flow/benchmarks/titan_blif/titan_new
 
 
 #
+# NoC MLP benchmarks
+#
+#   We ignore blif and vqm files because of thier large size/
+#
+vtr_flow/benchmarks/noc/Large_Designs/MLP/**/*.vqm
+vtr_flow/benchmarks/noc/Large_Designs/MLP/**/*.blif
+
+#
 # ISPD benchmarks
 #
 #   We ignore the ISPD netlists because of thier large size.
