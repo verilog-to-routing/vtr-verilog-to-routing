@@ -148,9 +148,13 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                 source_file = os.path.join(root, file)
                 relative_path = os.path.relpath(source_file, tmp_source_blif_dir)
                 destination_file = os.path.join(mlp_benchmarks_dir, relative_path)
-                print(source_file, destination_file)
                 os.makedirs(os.path.dirname(destination_file), exist_ok=True)
                 shutil.copy2(source_file, destination_file)   
+
+        # Create symbolic links to blif files
+        find_and_link_files(mlp_benchmarks_dir, ".blif", "blif_files")
+        # Create symbolic links to traffic flow files
+        find_and_link_files(mlp_benchmarks_dir, ".flows", "traffic_flow_files")
 
     finally:
         # Clean-up
@@ -158,6 +162,29 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
 
     print("Done")
 
+
+def find_and_link_files(base_path, target_extension, link_folder_name):
+    """
+    Finds files with a given extension and make symbolic links to them
+    """
+
+    # Create a folder to store symbolic links
+    link_folder_path = os.path.join(base_path, link_folder_name)
+    os.makedirs(link_folder_path, exist_ok=True)
+
+    # Walk through all subdirectories
+    for root, dirs, files in os.walk(base_path):
+        if root == link_folder_path:
+            continue
+
+        for file in files:
+            if file.endswith(target_extension):
+                # Get the full path of the file
+                file_path = os.path.join(root, file)
+
+                # Create symbolic link in the link folder
+                link_name = os.path.join(link_folder_path, file)
+                os.symlink(file_path, link_name)
 
 
 if __name__ == "__main__":
