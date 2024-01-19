@@ -48,6 +48,8 @@ vtr_flow/benchmarks/noc/Large_Designs/MLP/**/*.vqm
 vtr_flow/benchmarks/noc/Large_Designs/MLP/**/*.blif
 vtr_flow/benchmarks/noc/Large_Designs/MLP/blif_files/*
 vtr_flow/benchmarks/noc/Large_Designs/MLP/traffic_flow_files/*
+MLP_Benchmark_Netlist_Files_blif.tar.gz
+MLP_Benchmark_Netlist_Files_vqm_blif.tar.gz
 
 #
 # ISPD benchmarks

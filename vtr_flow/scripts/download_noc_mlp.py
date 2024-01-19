@@ -10,6 +10,7 @@ import textwrap
 import tarfile
 import tempfile
 import shutil
+import errno
 
 
 class DownloadError(Exception):
@@ -78,7 +79,7 @@ def main():
             print("Found existing {} (skipping download and extraction)".format(tar_gz_filename))
         else:
             print("Downloading {}".format(tar_gz_url))
-            # download_url(tar_gz_filename, tar_gz_url)
+            download_url(tar_gz_filename, tar_gz_url)
 
             print("Extracting {}".format(tar_gz_filename))
             extract_to_vtr_flow_dir(args, tar_gz_filename)
@@ -184,7 +185,14 @@ def find_and_link_files(base_path, target_extension, link_folder_name):
 
                 # Create symbolic link in the link folder
                 link_name = os.path.join(link_folder_path, file)
-                os.symlink(file_path, link_name)
+                try:
+                    os.symlink(file_path, link_name)
+                except OSError as e:
+                    if e.errno == errno.EEXIST:
+                        os.remove(link_name)
+                        os.symlink(file_path, link_name)
+                else:
+                    raise e
 
 
 if __name__ == "__main__":
