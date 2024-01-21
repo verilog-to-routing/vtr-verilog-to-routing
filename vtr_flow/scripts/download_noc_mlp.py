@@ -25,7 +25,7 @@ class ExtractionError(Exception):
     pass
 
 
-TITAN_URL_MIRRORS = {"eecg": "https://www.eecg.utoronto.ca/~vaughn/titan/"}
+URL_MIRRORS = {"eecg": "https://www.eecg.utoronto.ca/~vaughn/titan/"}
 
 
 def parse_args():
@@ -34,7 +34,7 @@ def parse_args():
                     Download and extract a MLP NoC benchmarks into a
                     VTR-style directory structure.
 
-                    If a previous matching titan release tar.gz file is found
+                    If a previous matching tar.gz file is found
                     does nothing (unless --force is specified).
                   """
     )
@@ -44,8 +44,8 @@ def parse_args():
         "--vtr_flow_dir",
         required=True,
         help="The 'vtr_flow' directory under the VTR tree. "
-        "If specified this will extract the titan release, "
-        "placing benchmarks under vtr_flow/benchmarks/titan ",
+        "If specified this will extract benchmarks files, "
+        "placing them under vtr_flow/benchmarks/noc/Large_Designs/MLP ",
     )
     parser.add_argument(
         "--force",
@@ -73,7 +73,7 @@ def main():
         else:
             tar_gz_filename = "MLP_Benchmark_Netlist_Files_blif" + ".tar.gz"
 
-        tar_gz_url = urllib.parse.urljoin(TITAN_URL_MIRRORS["eecg"], tar_gz_filename)
+        tar_gz_url = urllib.parse.urljoin(URL_MIRRORS["eecg"], tar_gz_filename)
 
         if not args.force and os.path.isfile(tar_gz_filename):
             print("Found existing {} (skipping download and extraction)".format(tar_gz_filename))
@@ -88,7 +88,7 @@ def main():
         print("Failed to download:", e)
         sys.exit(1)
     except ExtractionError as e:
-        print("Failed to extract titan release:", e)
+        print("Failed to extract NoC MLP benchmarks release:", e)
         sys.exit(3)
 
     sys.exit(0)
@@ -121,7 +121,6 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
     """
 
     # Reference directories
-    # arch_dir = os.path.join(args.vtr_flow_dir, "arch")
     benchmarks_dir = os.path.join(args.vtr_flow_dir, "benchmarks")
     mlp_benchmarks_dir = os.path.join(benchmarks_dir, "noc/Large_Designs/MLP")
 
