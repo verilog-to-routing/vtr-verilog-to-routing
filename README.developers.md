@@ -386,16 +386,20 @@ The following are key QoR metrics which should be used to evaluate the impact of
 
 Implementation Quality Metrics:
 
-| Metric                      | Meaning                                                                  | Sensitivity |
-|-----------------------------|--------------------------------------------------------------------------|-------------|
-| num_pre_packed_blocks       | Number of primitive netlist blocks (after tech. mapping, before packing) | Low         |
-| num_post_packed_blocks      | Number of Clustered Blocks (after packing)                               | Medium      |
-| device_grid_tiles           | FPGA size in grid tiles                                                  | Low-Medium  |
-| min_chan_width              | The minimum routable channel width                                       | Medium\*    |
-| crit_path_routed_wirelength | The routed wirelength at the relaxed channel width                       | Medium      |
-| critical_path_delay         | The critical path delay at the relaxed channel width                     | Medium-High |
+| Metric                          | Meaning                                                                      | Sensitivity |
+|---------------------------------|------------------------------------------------------------------------------|-------------|
+| num_pre_packed_blocks           | Number of primitive netlist blocks (after tech. mapping, before packing)     | Low         |
+| num_post_packed_blocks          | Number of Clustered Blocks (after packing)                                   | Medium      |
+| device_grid_tiles               | FPGA size in grid tiles                                                      | Low-Medium  |
+| min_chan_width                  | The minimum routable channel width                                           | Medium\*    |
+| crit_path_routed_wirelength     | The routed wirelength at the relaxed channel width                           | Medium      |
+| NoC_agg_bandwidth\**            | The total link bandwidth utilized by all traffic flows                       | Low         |
+| NoC_latency\**                  | The total time of traffic flow data transfer (summed over all traffic flows) | Low         |
+| NoC_latency_constraints_cost\** | The total number of traffic flow latency constraints                         | Low           |
 
 \* By default, VPR attempts to find the minimum routable channel width; it then performs routing at a relaxed (e.g. 1.3x minimum) channel width. At minimum channel width routing congestion can distort the true timing/wirelength characteristics. Combined with the fact that most FPGA architectures are built with an abundance of routing, post-routing metrics are usually only evaluated at the relaxed channel width.
+
+\** NoC-related metrics are only reported when --noc option is enabled.
 
 Run-time/Memory Usage Metrics:
 
@@ -493,7 +497,7 @@ k6_frac_N10_frac_chain_mem32K_40nm.xml	boundtop.v        	common       	9f591f6-
 k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v   	common       	9f591f6-dirty	success   	     	363                	493                  	270                 	247                   	10          	10           	17     	99    	130        	1           0       	1792                 	1.86527       	-194.602            	-1.86527            	46            	1562             	13                                    	1438                       	20                               	2.4542             	-226.033 	-2.4542  	0       	0       	3.92691e+06           	1.4642e+06           	259806.                          	2598.06                             	333135.                     	3331.35                        	0.03           	0.01          	-1          	-1          	-1      	0.46     	0.31      	0.94                     	0.09                	2.59                 	62684      	8672        	32940
 ```
 
-### Example: Titan Benchmarks QoR Measurements
+### Example: Titan Benchmarks QoR Measurement
 
 The [Titan benchmarks](https://docs.verilogtorouting.org/en/latest/vtr/benchmarks/#titan-benchmarks) are a group of large benchmark circuits from a wide range of applications, which are compatible with the VTR project.
 The are typically used as post-technology mapped netlists which have been pre-synthesized with Quartus.
@@ -511,7 +515,7 @@ $ make get_titan_benchmarks
 #Move to the task directory
 $ cd vtr_flow/tasks
 
-#Run the VTR benchmarks
+#Run the Titan benchmarks
 $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test2/titan_quick_qor
 
 #Several days later... they complete
@@ -526,6 +530,44 @@ stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif       	0208312     	
 stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif 	0208312     	success   	     	92813              	91974                	54564               	4170                  	77          	57           	-1     	173   	137        	-1          -1      	3213593              	7.87734       	-534295             	-7.87734            	1527941          	43                               	0                     	0                    	9.64428e+07       	21973.8              	9.06977            	-625483     -9.06977 	0       	0       	327.38   	338.65    	364.46              	3690032    	-1          	-1
 stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	0208312     	success   	     	127088             	94088                	62912               	3776                  	128         	95           	-1     	326   	681        	-1          -1      	4875541              	8.77339       	-166097             	-8.77339            	998408           	16                               	0                     	0                    	2.66512e+08       	21917.1              	9.36528            	-187552     -9.36528 	0       	0       	110.03   	214.16    	189.83              	5048580    	-1          	-1
 stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif  	0208312     	success   	     	140214             	108592               	67410               	5444                  	121         	90           	-1     	111   	151        	-1          -1      	5221059              	8.16972       	-454610             	-8.16972            	1518597          	15                               	0                     	0                    	2.38657e+08       	21915.3              	9.34704            	-531231     -9.34704 	0       	0       	211.12   	364.32    	490.24              	6356252    	-1          	-1
+```
+
+### Example: NoC Benchmarks QoR Measurements
+NoC benchmarks currently include synthetic and MLP benchmarks. Synthetic benchmarks have various NoC traffic patters,
+bandwidth utilization, and latency requirements. High-quality NoC router placement solutions for these benchmarks are
+known. By comparing the known solutions with NoC router placement results, the developer can evaluate the sanity of 
+the NoC router placement algorithm. MLP benchmarks are the only realistic netlists included in this benchmark set.
+
+Based on the number of NoC routers in a synthetic benchmark, it is run on one of two different architectures. All MLP
+benchmarks are run on an FPGA architecture with 16 NoC routers. Post-technology mapped netlists (blif files)
+for synthetic benchmarks are added to the VTR project. However, MLP blif files are very large and should be downloaded
+separately.
+
+Since NoC benchmarks target different FPGA architectures, they are run as different circuits. A typical way to run all
+NoC benchmarks is to run a task list and gather QoR data form different tasks:
+
+#### Running and Integrating the NoC Benchmarks with VTR
+```shell
+#From the VTR root
+
+#Download and integrate NoC MLP benchmarks into the VTR source tree
+$ make get_noc_mlp_benchmarks
+
+#Move to the task directory
+$ cd vtr_flow
+
+#Run the VTR benchmarks
+$ scripts/run_vtr_task.py -l tasks/noc_qor/task_list.txt
+
+#Several days later... they complete
+
+#NoC benchmarks are run as several different tasks. Therefore, QoR results should be gathered from multiple directories,
+#one for each task.
+$ head -5 tasks/noc_qor/large_complex_synthetic/latest/parse_results.txt
+$ head -5 tasks/noc_qor/large_simple_synthetic/latest/parse_results.txt
+$ head -5 tasks/noc_qor/small_complex_synthetic/latest/parse_results.txt
+$ head -5 tasks/noc_qor/small_simple_synthetic/latest/parse_results.txt
+$ head -5 tasks/noc_qor/MLP/latest/parse_results.txt
 ```
 
 ### Example: Koios Benchmarks QoR Measurement
