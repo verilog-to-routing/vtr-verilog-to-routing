@@ -185,14 +185,14 @@ def find_and_link_files(base_path, target_extension, link_folder_name):
 
                 # Create symbolic link in the link folder
                 link_name = os.path.join(link_folder_path, file)
+                file_relative_path = os.path.relpath(file_path, start=link_folder_path)
+
                 try:
-                    os.symlink(file_path, link_name)
+                    os.symlink(file_relative_path, link_name)
                 except OSError as e:
                     if e.errno == errno.EEXIST:
                         os.remove(link_name)
-                        os.symlink(file_path, link_name)
-                else:
-                    raise e
+                        os.symlink(file_relative_path, link_name)
 
 
 if __name__ == "__main__":
