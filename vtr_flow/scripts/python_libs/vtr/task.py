@@ -47,7 +47,7 @@ class TaskConfig:
         pass_requirements_file=None,
         sdc_dir=None,
         noc_traffic_list_type="outer_product",
-        noc_traffic_list_add=[None],
+        noc_traffic_list_add=None,
         noc_traffics_dir=None,
         place_constr_dir=None,
         qor_parse_file=None,
@@ -73,7 +73,7 @@ class TaskConfig:
         self.pass_requirements_file = pass_requirements_file
         self.sdc_dir = sdc_dir
         self.noc_traffic_list_type = noc_traffic_list_type
-        self.noc_traffics = noc_traffic_list_add
+        self.noc_traffics = [None] if noc_traffic_list_add is None else noc_traffic_list_add
         self.noc_traffic_dir = noc_traffics_dir
         self.place_constr_dir = place_constr_dir
         self.qor_parse_file = qor_parse_file
@@ -480,11 +480,15 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
             combinations = list(itertools.product(config.circuits, config.noc_traffics))
         elif config.noc_traffic_list_type == "per_circuit":
             assert len(config.circuits) == len(config.noc_traffics)
-            combinations = [(circuit, noc_traffic) for circuit, noc_traffic in zip(config.circuits, config.noc_traffics)]
+            combinations = zip(config.circuits, config.noc_traffics)
         else:
             assert False, "Invalid noc_traffic_list_type"
 
-        combinations = [(arch, circuit, noc_traffic) for arch in config.archs for circuit, noc_traffic in combinations]
+        combinations = [
+            (arch, circ, traffic_flow)
+            for arch in config.archs
+            for circ, traffic_flow in combinations
+        ]
 
         for arch, circuit, noc_traffic in combinations:
             golden_results = load_parse_results(

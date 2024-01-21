@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
+
+"""
+    Module for downloading and extracting NoC MLP benchmarks
+"""
+
 import sys
 import os
 import argparse
+import urllib.request
 import urllib.parse
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
+import urllib.error
 import math
 import textwrap
 import tarfile
@@ -12,23 +17,19 @@ import tempfile
 import shutil
 import errno
 
-
-class DownloadError(Exception):
-    pass
-
-
-class ChecksumError(Exception):
-    pass
-
-
 class ExtractionError(Exception):
-    pass
+    """
+    Raised when extracting the downlaoded file fails
+    """
 
 
 URL_MIRRORS = {"eecg": "https://www.eecg.utoronto.ca/~vaughn/titan/"}
 
 
 def parse_args():
+    """
+    Parses command line arguments
+    """
     description = textwrap.dedent(
         """
                     Download and extract a MLP NoC benchmarks into a
@@ -38,7 +39,8 @@ def parse_args():
                     does nothing (unless --force is specified).
                   """
     )
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                     description=description)
 
     parser.add_argument(
         "--vtr_flow_dir",
@@ -64,6 +66,9 @@ def parse_args():
 
 
 def main():
+    """
+    main() implementation
+    """
 
     args = parse_args()
 
@@ -83,10 +88,6 @@ def main():
 
             print("Extracting {}".format(tar_gz_filename))
             extract_to_vtr_flow_dir(args, tar_gz_filename)
-
-    except DownloadError as e:
-        print("Failed to download:", e)
-        sys.exit(1)
     except ExtractionError as e:
         print("Failed to extract NoC MLP benchmarks release:", e)
         sys.exit(3)
@@ -124,17 +125,11 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
     benchmarks_dir = os.path.join(args.vtr_flow_dir, "benchmarks")
     mlp_benchmarks_dir = os.path.join(benchmarks_dir, "noc/Large_Designs/MLP")
 
-
     if not args.force:
         # Check that all expected directories exist
-        expected_dirs = [
-            args.vtr_flow_dir,
-            benchmarks_dir,
-            mlp_benchmarks_dir,
-        ]
-        for dir in expected_dirs:
-            if not os.path.isdir(dir):
-                raise ExtractionError("{} should be a directory".format(dir))
+        for directory in [args.vtr_flow_dir, benchmarks_dir, mlp_benchmarks_dir]:
+            if not os.path.isdir(directory):
+                raise ExtractionError("{} should be a directory".format(directory))
 
     # Create a temporary working directory
     tmpdir = tempfile.mkdtemp(suffix="download_NoC_MLP", dir= os.path.abspath("."))
@@ -143,13 +138,13 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
         with tarfile.open(tar_gz_filename, "r:gz") as tar:
             tar.extractall(tmpdir)
         tmp_source_blif_dir = os.path.join(tmpdir, "MLP_Benchmark_Netlist_Files")
-        for root, dirs, files in os.walk(tmp_source_blif_dir):
+        for root, _, files in os.walk(tmp_source_blif_dir):
             for file in files:
                 source_file = os.path.join(root, file)
                 relative_path = os.path.relpath(source_file, tmp_source_blif_dir)
                 destination_file = os.path.join(mlp_benchmarks_dir, relative_path)
                 os.makedirs(os.path.dirname(destination_file), exist_ok=True)
-                shutil.copy2(source_file, destination_file)   
+                shutil.copy2(source_file, destination_file)
 
         # Create symbolic links to blif files
         find_and_link_files(mlp_benchmarks_dir, ".blif", "blif_files")
@@ -173,7 +168,7 @@ def find_and_link_files(base_path, target_extension, link_folder_name):
     os.makedirs(link_folder_path, exist_ok=True)
 
     # Walk through all subdirectories
-    for root, dirs, files in os.walk(base_path):
+    for root, _, files in os.walk(base_path):
         if root == link_folder_path:
             continue
 
