@@ -568,6 +568,8 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
             }
         }
     }
+    connect_nodes(netlist->gnd_node, 0, node[count-1], 0);
+    connect_nodes(netlist->vcc_node, 0, node[count-1], sizea);
     node[count - 1]->output_pins[0] = allocate_npin();
     // Pad outputs with a unique and descriptive name to avoid collisions.
     node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
