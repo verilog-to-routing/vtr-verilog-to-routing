@@ -56,6 +56,19 @@ const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
     return link_storage[id];
 }
 
+NocLinkId  NocStorage::get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const {
+    NocLinkId link_id = NocLinkId::INVALID();
+
+    for (const auto& link : link_storage) {
+        if (link.get_source_router() == src_router && link.get_sink_router() == dst_router) {
+            link_id = link.get_link_id();
+            break;
+        }
+    }
+
+    return link_id;
+}
+
 NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
     return link_storage[id];
 }

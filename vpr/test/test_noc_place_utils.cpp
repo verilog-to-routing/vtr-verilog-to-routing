@@ -906,9 +906,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     double delta_aggr_band_cost = 0.;
     double delta_laten_cost = 0.;
+    double delta_cong_cost = 0.;
 
     // call the test function
-    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, delta_cong_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_bandwidth_costs += delta_aggr_band_cost;
@@ -998,9 +999,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // reset the delta costs
     delta_aggr_band_cost = 0.;
     delta_laten_cost = 0.;
+    delta_cong_cost = 0.;
 
     // call the test function
-    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, delta_cong_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_bandwidth_costs += delta_aggr_band_cost;
@@ -1062,9 +1064,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // reset the delta costs
     delta_aggr_band_cost = 0.;
     delta_laten_cost = 0.;
+    delta_cong_cost = 0.;
 
     // call the test function
-    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, delta_cong_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_bandwidth_costs += delta_aggr_band_cost;

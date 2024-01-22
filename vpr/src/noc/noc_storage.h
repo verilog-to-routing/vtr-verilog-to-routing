@@ -270,6 +270,19 @@ class NocStorage {
     const NocLink& get_single_noc_link(NocLinkId id) const;
 
     /**
+     * @brief Given source and sink router identifiers, this function
+     * finds a link connecting these routers and returns it identifier.
+     * If such a link does not exist, an invalid id is returned.
+     *
+     * @param src_router The unique router identifier for the source router.
+     * @param dst_router The unique router identifier for the destination router.
+     * @return A link identifier (NocLinkId) that connects the source router
+     * to the destination router. NocLinkId::INVALID() is such a link is not
+     * found.
+     */
+    NocLinkId  get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const;
+
+    /**
      * @brief Given a unique link identifier, get the corresponding link
      * within the NoC. The link can be modified, so the intended use
      * of this function is tis to retrieve a link to modify it.
