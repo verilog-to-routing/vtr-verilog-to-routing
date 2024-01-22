@@ -139,11 +139,9 @@ void commit_noc_costs();
  * within the NoC. Used to get the current traffic flow information.
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
- * @param placed_cluster_block_locations A datastructure that identifies the
- * placed grid locations of all cluster blocks.
  * @return std::vector<NocLinkId>& The found route for the traffic flow.
  */
-std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model, NocTrafficFlows& noc_traffic_flows_storage, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations);
+std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model, NocTrafficFlows& noc_traffic_flows_storage, NocRouting& noc_flows_router);
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -188,12 +186,10 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  * to route traffic flows within the NoC.  
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
- * @param placed_cluster_block_locations A datastructure that identifies the
- * placed grid locations of all cluster blocks.
  * @param updated_traffic_flows Keeps track of traffic flows that have been
  * re-routed. Used to prevent re-routing the same traffic flow multiple times.
  */
-void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
+void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical
@@ -223,10 +219,8 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
  * to route traffic flows within the NoC.
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
- * @param placed_cluster_block_locations A datastructure that identifies the
- * placed grid locations of all cluster blocks.
  */
-void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations);
+void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router);
 
 /**
  * @brief Recompute the NoC costs (aggregate bandwidth and latency) by
