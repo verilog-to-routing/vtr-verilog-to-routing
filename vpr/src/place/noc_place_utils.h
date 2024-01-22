@@ -39,12 +39,6 @@ struct TrafficFlowPlaceCost {
     double latency = -1;
 };
 
-struct NocDeltaCost {
-    double aggregate_bandwidth_delta_c = 0.0;
-    double latency_delta_c = 0.0;
-    double congestion_delta_c = 0.0;
-};
-
 /**
  * @brief Routes all the traffic flows within the NoC and updates the link usage
  * for all links. This should be called after initial placement, where all the 

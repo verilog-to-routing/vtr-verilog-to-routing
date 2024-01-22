@@ -73,6 +73,19 @@ void t_placer_costs::update_norm_factors() {
     }
 }
 
+/**
+ * @brief Accumulates NoC cost difference terms
+ *
+ * @param noc_delta_cost NoC cost difference if the swap is accepted
+ */
+t_placer_costs& t_placer_costs::operator+=(const NocDeltaCost& noc_delta_cost) {
+    noc_aggregate_bandwidth_cost += noc_delta_cost.aggregate_bandwidth_delta_c;
+    noc_latency_cost += noc_delta_cost.latency_delta_c;
+    noc_congestion_cost += noc_delta_cost.congestion_delta_c;
+
+    return *this;
+}
+
 ///@brief Constructor: Initialize all annealing state variables and macros.
 t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
                                      float first_t,

@@ -223,8 +223,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
                 costs.cost += delta_cost;
                 commit_move_blocks(blocks_affected);
                 commit_noc_costs();
-                costs.noc_aggregate_bandwidth_cost += noc_delta_c.aggregate_bandwidth_delta_c;
-                costs.noc_latency_cost += noc_delta_c.latency_delta_c;
+                costs += noc_delta_c;
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
                     checkpoint.save_checkpoint(costs.cost);
                 }

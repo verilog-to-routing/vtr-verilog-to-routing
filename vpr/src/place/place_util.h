@@ -12,6 +12,12 @@
 #include "vtr_vector_map.h"
 #include "globals.h"
 
+struct NocDeltaCost {
+    double aggregate_bandwidth_delta_c = 0.0;
+    double latency_delta_c = 0.0;
+    double congestion_delta_c = 0.0;
+};
+
 /**
  * @brief Data structure that stores different cost values in the placer.
  *
@@ -33,6 +39,17 @@
  *   @param bb_cost_norm The normalization factor for the wiring cost.
  *   @param timing_cost_norm The normalization factor for the timing cost, which
  *              is upper-bounded by the value of MAX_INV_TIMING_COST.
+ *
+ *   @param noc_aggregate_bandwidth_cost The aggregate NoC bandwidth cost
+ *   @param noc_aggregate_bandwidth_cost_norm The normalization factor for
+ *   the aggregate bandwidth cost
+ *   @param noc_latency_cost The NoC latency cost,
+ *   calculated as the sum of latencies experienced by each traffic flow
+ *   @param noc_latency_cost_norm The normalization factor for the latency cost
+ *   @param noc_congestion_cost The NoC congestion cost, i.e. how over-utilized
+ *   NoC links are
+ *   @param noc_congestion_cost_norm The normalization factor for the NoC
+ *   congestion cost
  *
  *   @param MAX_INV_TIMING_COST Stops inverse timing cost from going to infinity
  *              with very lax timing constraints, which avoids multiplying by a
@@ -65,6 +82,7 @@ class t_placer_costs {
 
   public: //Mutator
     void update_norm_factors();
+    t_placer_costs& operator+=(const NocDeltaCost& noc_delta_cost);
 
   private:
     double MAX_INV_TIMING_COST = 1.e12;

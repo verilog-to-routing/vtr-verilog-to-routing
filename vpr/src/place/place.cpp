@@ -1813,9 +1813,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
             if (noc_opts.noc) {
                 commit_noc_costs();
-
-                costs->noc_aggregate_bandwidth_cost += noc_delta_c.aggregate_bandwidth_delta_c;
-                costs->noc_latency_cost += noc_delta_c.latency_delta_c;
+                *costs += noc_delta_c;
             }
 
             //Highlights the new block when manual move is selected.
