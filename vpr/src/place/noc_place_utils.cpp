@@ -69,10 +69,10 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
     costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
 }
 
-void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, double& noc_congestion_delta_c, const t_noc_opts& noc_opts) {
-    VTR_ASSERT_SAFE(noc_aggregate_bandwidth_delta_c == 0.);
-    VTR_ASSERT_SAFE(noc_latency_delta_c == 0.);
-    VTR_ASSERT_SAFE(noc_congestion_delta_c == 0.);
+void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, NocDeltaCost& delta_c, const t_noc_opts& noc_opts) {
+    VTR_ASSERT_SAFE(delta_c.aggregate_bandwidth_delta_c == 0.);
+    VTR_ASSERT_SAFE(delta_c.latency_delta_c == 0.);
+    VTR_ASSERT_SAFE(delta_c.congestion_delta_c == 0.);
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
     NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
@@ -106,14 +106,14 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
         proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
         proposed_traffic_flow_costs[traffic_flow_id].latency = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
 
-        noc_aggregate_bandwidth_delta_c += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
-        noc_latency_delta_c += proposed_traffic_flow_costs[traffic_flow_id].latency - traffic_flow_costs[traffic_flow_id].latency;
+        delta_c.aggregate_bandwidth_delta_c += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
+        delta_c.latency_delta_c += proposed_traffic_flow_costs[traffic_flow_id].latency - traffic_flow_costs[traffic_flow_id].latency;
     }
 
     for (const auto& link_id : affected_noc_links) {
         const auto& link = noc_ctx.noc_model.get_single_noc_link(link_id);
         proposed_link_congestion_costs[link] = calculate_link_congestion_cost(link, noc_opts);
-        noc_congestion_delta_c += proposed_link_congestion_costs[link] - link_congestion_costs[link];
+        delta_c.congestion_delta_c += proposed_link_congestion_costs[link] - link_congestion_costs[link];
     }
 }
 

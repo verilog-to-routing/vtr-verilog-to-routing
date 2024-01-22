@@ -1754,15 +1754,14 @@ static e_move_result try_swap(const t_annealing_state* state,
             delta_c = bb_delta_c * costs->bb_cost_norm;
         }
 
-        double noc_aggregate_bandwidth_delta_c = 0; // change in the NoC aggregate bandwidth cost
-        double noc_latency_delta_c = 0;             // change in the NoC latency cost
-        double noc_congestion_delta_c = 0.;
+
+        NocDeltaCost noc_delta_c {0.0, 0.0, 0.0}; // change in NoC cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_congestion_delta_c, noc_opts);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
 
             // Include the NoC delta costs in the total cost change for this swap
-            delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c * costs->noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);
+            delta_c = delta_c + noc_placement_weighting * (noc_delta_c.latency_delta_c * costs->noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
@@ -1815,8 +1814,8 @@ static e_move_result try_swap(const t_annealing_state* state,
             if (noc_opts.noc) {
                 commit_noc_costs();
 
-                costs->noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
-                costs->noc_latency_cost += noc_latency_delta_c;
+                costs->noc_aggregate_bandwidth_cost += noc_delta_c.aggregate_bandwidth_delta_c;
+                costs->noc_latency_cost += noc_delta_c.latency_delta_c;
             }
 
             //Highlights the new block when manual move is selected.
