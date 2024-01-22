@@ -6,6 +6,7 @@ This directory contains architecture files for 3D FPGAs. The architectures are d
 - Contains architecture files based on the [k6FracN10LB_mem20K_complexDSP_customSB_22nm](../COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.clustered.xml) architecture, utilized in Koios benchmarks.
 - Inside the architecture file, the fabric with multiple sizes based on the sector size is defined.
 - Routing resource and switch delays in this architecture are configured for 7 nm technology. The inter-die connection delay is 73 ps.
+- The empty blocks in the middle of the fabric at the base die, which have the chess pattern, represent the through-silicon via (TSV) holes used to deliver power and ground to the upper die.
 - Detailed information on how these delays are obtained can be found in the paper "Into the Third Dimension: Architecture Exploration Tools for 3D Reconfigurable Acceleration Devices," presented at FPT '23.
 - **Architectures:**
    - `3d_full_OPIN_inter_die_k6FracN10LB_mem20k_complexDSP_customSB_7nm.xml`
