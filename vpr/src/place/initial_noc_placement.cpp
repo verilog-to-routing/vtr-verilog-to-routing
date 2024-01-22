@@ -160,6 +160,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     // Initialize NoC-related costs
     costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
     costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
+    costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs, noc_opts);
 
@@ -213,7 +214,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
             double noc_aggregate_bandwidth_delta_c = 0.0;
             double noc_latency_delta_c = 0.0;
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
+            double noc_congestion_delta_c = 0.0;
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_congestion_delta_c, noc_opts);
             double delta_cost = (noc_opts.noc_placement_weighting) * (noc_latency_delta_c * costs.noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs.noc_aggregate_bandwidth_cost_norm);
 
             double prob = starting_prob - i_move * prob_step;

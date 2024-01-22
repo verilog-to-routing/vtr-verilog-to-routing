@@ -810,6 +810,7 @@ void try_place(const Netlist<>& net_list,
         // get the costs associated with the NoC
         costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
         costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
+        costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
 
         // initialize all the noc normalization factors
         update_noc_normalization_factors(costs);
@@ -1755,9 +1756,10 @@ static e_move_result try_swap(const t_annealing_state* state,
 
         double noc_aggregate_bandwidth_delta_c = 0; // change in the NoC aggregate bandwidth cost
         double noc_latency_delta_c = 0;             // change in the NoC latency cost
+        double noc_congestion_delta_c = 0.;
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_congestion_delta_c, noc_opts);
 
             // Include the NoC delta costs in the total cost change for this swap
             delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c * costs->noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);

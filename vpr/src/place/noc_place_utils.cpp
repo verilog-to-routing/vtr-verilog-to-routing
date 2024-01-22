@@ -7,6 +7,10 @@ static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, p
 
 /* Keeps track of traffic flows that have been updated at each attempted placement move*/
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
+
+static vtr::vector<NocLinkId , double> link_congestion_costs, proposed_link_congestion_costs;
+
+static std::unordered_set<NocLinkId> affected_noc_links;
 /*********************************************************** *****************************/
 
 /**
@@ -20,6 +24,8 @@ static std::vector<NocTrafficFlowId> affected_traffic_flows;
  * selected NoC router is fixed/
  */
 static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from, t_logical_block_type_ptr& cluster_from_type);
+
+static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links, std::vector<NocLinkId>& curr_links);
 
 void initial_noc_routing(void) {
     // need to update the link usages within after routing all the traffic flows
@@ -60,11 +66,13 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
     // Initialize traffic_flow_costs
     costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
     costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
+    costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
 }
 
-void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts) {
+void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, double& noc_congestion_delta_c, const t_noc_opts& noc_opts) {
     VTR_ASSERT_SAFE(noc_aggregate_bandwidth_delta_c == 0.);
     VTR_ASSERT_SAFE(noc_latency_delta_c == 0.);
+    VTR_ASSERT_SAFE(noc_congestion_delta_c == 0.);
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
     NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
@@ -74,6 +82,7 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
     std::unordered_set<NocTrafficFlowId> updated_traffic_flows;
 
     affected_traffic_flows.clear();
+    affected_noc_links.clear();
 
     // go through the moved blocks and process them only if they are NoC routers
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
@@ -99,6 +108,12 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
 
         noc_aggregate_bandwidth_delta_c += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
         noc_latency_delta_c += proposed_traffic_flow_costs[traffic_flow_id].latency - traffic_flow_costs[traffic_flow_id].latency;
+    }
+
+    for (const auto& link_id : affected_noc_links) {
+        const auto& link = noc_ctx.noc_model.get_single_noc_link(link_id);
+        proposed_link_congestion_costs[link] = calculate_link_congestion_cost(link, noc_opts);
+        noc_congestion_delta_c += proposed_link_congestion_costs[link] - link_congestion_costs[link];
     }
 }
 
@@ -157,17 +172,33 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_block_router_id, Noc
     // get all the associated traffic flows for the logical router cluster block
     const std::vector<NocTrafficFlowId>* assoc_traffic_flows = noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(moved_block_router_id);
 
+//    std::unordered_set<NocLinkId> prev_route_links, curr_route_links;
+
     // now check if there are any associated traffic flows
     if (assoc_traffic_flows != nullptr) {
         // There are traffic flows associated to the current router block so process them
         for (auto& traffic_flow_id : *assoc_traffic_flows) {
             // first check to see whether we have already re-routed the current traffic flow and only re-route it if we haven't already.
             if (updated_traffic_flows.find(traffic_flow_id) == updated_traffic_flows.end()) {
+                // get all links for this flow route before it is rerouted
+                // The returned const std::vector<NocLinkId>& is copied so that we can modify (sort) it
+                std::vector<NocLinkId> prev_traffic_flow_links = noc_traffic_flows_storage.get_traffic_flow_route(traffic_flow_id);
+
                 // now update the current traffic flow by re-routing it based on the new locations of its src and destination routers
                 re_route_traffic_flow(traffic_flow_id, noc_traffic_flows_storage, noc_model, noc_flows_router);
 
                 // now make sure we don't update this traffic flow a second time by adding it to the group of updated traffic flows
                 updated_traffic_flows.insert(traffic_flow_id);
+
+                // get all links for this flow route after it is rerouted
+                std::vector<NocLinkId> curr_traffic_flow_links = noc_traffic_flows_storage.get_traffic_flow_route(traffic_flow_id);
+
+                // find links that appear in the old route or the new one, but not both of them
+                // these are the links whose bandwidth utilization is affected by rerouting
+                auto unique_links = find_affected_links_by_flow_reroute(prev_traffic_flow_links, curr_traffic_flow_links);
+
+                // update the static data structure to remember which links were affected by router swap
+                affected_noc_links.insert(unique_links.begin(), unique_links.end());
 
                 // update global datastructures to indicate that the current traffic flow was affected due to router cluster blocks being swapped
                 affected_traffic_flows.push_back(traffic_flow_id);
@@ -256,6 +287,13 @@ void update_noc_normalization_factors(t_placer_costs& costs) {
     costs.noc_aggregate_bandwidth_cost_norm = std::min(1 / costs.noc_aggregate_bandwidth_cost, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
     costs.noc_latency_cost_norm = std::min(1 / costs.noc_latency_cost, MAX_INV_NOC_LATENCY_COST);
 
+    // to avoid division by zero
+    if (costs.noc_congestion_cost > 0.0) {
+        costs.noc_congestion_cost_norm = std::min(1 / costs.noc_congestion_cost, MAX_INV_NOC_CONGESTION_COST);
+    } else {
+        costs.noc_congestion_cost_norm = MAX_INV_NOC_CONGESTION_COST;
+    }
+
     return;
 }
 
@@ -267,7 +305,7 @@ double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opt
 
 double comp_noc_aggregate_bandwidth_cost(void) {
     // used to get traffic flow route information
-    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+    auto& noc_ctx = g_vpr_ctx.noc();
     // datastructure that stores all the traffic flow routes
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
@@ -293,7 +331,7 @@ double comp_noc_aggregate_bandwidth_cost(void) {
 
 double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
     // used to get traffic flow route information
-    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+    auto& noc_ctx = g_vpr_ctx.noc();
     // datastructure that stores all the traffic flow routes
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
@@ -310,11 +348,31 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
         // store the calculated latency for the current traffic flow in local datastructures (this also initializes them)
         traffic_flow_costs[traffic_flow_id].latency = curr_traffic_flow_latency_cost;
 
-        // accumulate the aggregate bandwidth cost
+        // accumulate the latency cost
         noc_latency_cost += curr_traffic_flow_latency_cost;
     }
 
     return noc_latency_cost;
+}
+
+double comp_noc_congestion_cost(const t_noc_opts& noc_opts) {
+    // Used to access NoC links
+    auto& noc_ctx = g_vpr_ctx.noc();
+
+    double congestion_cost = 0.;
+
+    // Iterate over all NoC links
+    for (const auto& link : noc_ctx.noc_model.get_noc_links()) {
+        double link_congestion_cost = calculate_link_congestion_cost(link, noc_opts);
+
+        // store the congestion cost for this link in static data structures (this also initializes them)
+        link_congestion_costs[link] = link_congestion_cost;
+
+        // accumulate the congestion cost
+        congestion_cost += link_congestion_cost;
+    }
+
+    return congestion_cost;
 }
 
 int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance, const t_noc_opts& noc_opts) {
@@ -413,6 +471,15 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
 
     // scale the latency cost by its priority to indicate its importance
     return (single_traffic_flow_latency_cost * traffic_flow_info.traffic_flow_priority);
+}
+
+double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc_opts) {
+    double congested_bw_ratio, congestion_cost;
+
+    congested_bw_ratio = link.get_congested_bandwidth_ratio();
+    congestion_cost = noc_opts.noc_congestion_weighting * congested_bw_ratio;
+
+    return congestion_cost;
 }
 
 int get_number_of_traffic_flows_with_latency_cons_met(void) {
@@ -606,4 +673,25 @@ void write_noc_placement_file(const std::string& file_name) {
     noc_placement_file.close();
 
     return;
+}
+
+static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links, std::vector<NocLinkId>& curr_links) {
+    // Sort both link containers
+    std::sort(prev_links.begin(), prev_links.end());
+    std::sort(curr_links.begin(), curr_links.end());
+
+    // stores links that appear either in prev_links or curr_links but not both of them
+    std::vector<NocLinkId> unique_links;
+
+    // find links that are unique to prev_links
+    std::set_difference(prev_links.begin(), prev_links.end(),
+                        curr_links.begin(), curr_links.end(),
+                        std::back_inserter(unique_links));
+
+    // find links that are unique to curr_links
+    std::set_difference(curr_links.begin(), curr_links.end(),
+                        prev_links.begin(), prev_links.end(),
+                        std::back_inserter(unique_links));
+
+    return unique_links;
 }

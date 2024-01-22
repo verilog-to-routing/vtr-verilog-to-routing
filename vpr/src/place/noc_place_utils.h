@@ -19,6 +19,9 @@ constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
 // we expect the latency costs to be in the pico-second range, and we don't expect it to go lower than that. So if the latency costs go below the pico-second range we trim the normalization value to be no higher than 1/ps
 // This should be updated if the delays become lower
 constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
+// the congestion cost for a link is measured as the proportion of the overloaded BW to the link capacity
+// We assume that when a link congested, it is overloaded with at least 0.1% of its BW capacity
+constexpr double MAX_INV_NOC_CONGESTION_COST = 1.e3;
 
 // we don't expect the noc_latency cost to ever go below 1 pico second.
 // So this value represents the lowest possible latency cost.
@@ -100,7 +103,7 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
  * NoC latency cost caused by a placer move is stored
  * here.
  */
-void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts);
+void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, double& noc_congestion_delta_c, const t_noc_opts& noc_opts);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -302,6 +305,8 @@ double comp_noc_aggregate_bandwidth_cost(void);
  */
 double comp_noc_latency_cost(const t_noc_opts& noc_opts);
 
+double comp_noc_congestion_cost(const t_noc_opts& noc_opts);
+
 /**
  * @brief Given a placement state the NoC costs are re-computed
  * from scratch and compared to the current NoC placement costs.
@@ -368,6 +373,8 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
  * @return THe computed latency for the provided traffic flow
  */
 double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts);
+
+double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc_opts);
 
 /**
  * @brief Goes through all the traffic flows and determines whether the

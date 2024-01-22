@@ -100,11 +100,14 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y, i
 
 void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
-    double link_bandwidth = get_noc_link_bandwidth();
-    link_storage.emplace_back(source, sink, link_bandwidth);
 
-    // the newly added link was added to the back of the list, so we can get the id as the last element in the list
-    NocLinkId added_link_id((int)link_storage.size() - 1);
+    // the new link will be added to the back of the list,
+    // so we can use the total number of links added so far as id
+    NocLinkId added_link_id((int)link_storage.size());
+
+    double link_bandwidth = get_noc_link_bandwidth();
+    link_storage.emplace_back(added_link_id, source, sink, link_bandwidth);
+
     router_link_list[source].push_back(added_link_id);
 
     return;
