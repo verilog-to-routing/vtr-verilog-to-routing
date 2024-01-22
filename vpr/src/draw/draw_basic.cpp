@@ -245,8 +245,13 @@ void drawnets(ezgl::renderer* g) {
      * blocks (or sub blocks in the case of IOs).                                */
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue; /* Don't draw */
+        }
+
+        if ((int)cluster_ctx.clb_nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
+            continue;
+        }
 
         b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
 
@@ -254,7 +259,7 @@ void drawnets(ezgl::renderer* g) {
         driver_block_layer_num = place_ctx.block_locs[b1].loc.layer;
 
         //To only show nets that are connected to currently active layers on the screen
-        if (draw_state->draw_layer_display[driver_block_layer_num].visible == false) {
+        if (!draw_state->draw_layer_display[driver_block_layer_num].visible) {
             continue; /* Don't draw */
         }
 
