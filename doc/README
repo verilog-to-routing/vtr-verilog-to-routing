@@ -4,7 +4,7 @@ Overview
 The VTR documentation is generated using sphinx, a python based documentation generator.
 
 The documentation itself is written in re-structured text (files ending in .rst), which
-is a lightwieght mark-up language for text documents.
+is a lightweight mark-up language for text documents.
 
 Currently VTR's documenation is automatically built by https://readthedocs.org/projects/vtr/ and is served at:
 
@@ -36,7 +36,7 @@ from the main documentation directory (i.e. <vtr_root>/doc).
 
 This will produce the output html in the _build directory.
 
-You can then view the resulting documention with the web-browser of your choice.
+You can then view the resulting documentation with the web-browser of your choice.
 For instance:
 
     $ firefox _build/html/index.html

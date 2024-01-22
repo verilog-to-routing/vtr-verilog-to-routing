@@ -12,7 +12,9 @@ Benchmark Structure:
 		|---<Benchmark>.flows - Is the NoC traffic flows file associated with the given benchmark
 					(A benchmark can have multiple traffic flows files)
 		|---verilog	      - Contains design files needed to generate the netlist file for the benchmark
-	|---shared_verilog	      - Contains design files needed by all benchmarks to generate thier netlist files
+	|---shared_verilog	      - Contains design files needed by all benchmarks to generate their netlist files
+	|---blif_files	          - Contains symbolic links to all .blif files that exist in this directory
+    |---flow_files	          - Contains symbolic links to all .flow files that exist in this directory
 
 Running the benchmarks:
 	Pre-requisite
@@ -20,7 +22,7 @@ Running the benchmarks:
 		- Set 'VTR_ROOT' as environment variable pointing to the location of the VTR source tree
 		- Ensure python version 3.6.9 or higher is installed
 		- Copy over the netlist files from 'https://drive.google.com/drive/folders/135QhmfgUaGnK2ZEfbfEXtdm1BfS7YoG7?usp=sharing'.
-	          The file structure in the previous link is similiar to structure found in '$VTR_ROOT/vtr_flow/benchmarks/noc/Large_Designs/MLP'.
+	          The file structure in the previous link is similar to structure found in '$VTR_ROOT/vtr_flow/benchmarks/noc/Large_Designs/MLP'.
 		  Place the netlist files in the appropriate folder locations.
 	
 	Running single instance:
@@ -48,7 +50,7 @@ Running the benchmarks:
 		  -vpr_executable $VTR_ROOT/build/vpr/vpr --device EP4SE820 -flow_file $VTR_ROOT/vtr_flow/benchmarks/noc/Large_Designs/MLP/MLP_1/mlp_1.flows \
 		  -noc_routing_algorithm xy_routing -number_of_seeds 5 -number_of_threads 1 -route
 
-	        - The above command will generate an output file in the run directory that contains all the place and route metrics. This is a txt file with a name which matches the
+	        - The above command will generate an output file in the run directory that contains all the place and route metrics. This is a txt file with a name which matches
 		  the flows file provided. So for the command shown above the output file is 'mlp_1.txt'
 
 	Special benchmarks:
@@ -64,8 +66,13 @@ Running the benchmarks:
 			  of the NoC routers needs to be locked. A 
 			- To run a single instance of this benchmark, pass in the following command line parameter and its value to the command shown above:
 			  '--fix_clusters $VTR_ROOT/vtr_flow/benchmarks/noc/Large_Designs/MLP/MLP_2_phase_optimization/MLP_2_phase_optimization_step_2/MLP_two_phase_optimization_step_two_constraints.place'
-			- To run the benchmarkusing the automated script just pass in the following command line parameter and its value to the script command above:
+			- To run the benchmarking the automated script just pass in the following command line parameter and its value to the script command above:
 			  '-fix_clusters $VTR_ROOT/vtr_flow/benchmarks/noc/Large_Designs/MLP/MLP_2_phase_optimization/MLP_2_phase_optimization_step_2/MLP_two_phase_optimization_step_two_constraints.place'
+
+	Running VTR tasks:
+        - All synthetic benchmarks can be run as VTR tasks. Example tasks are provided in vtr_flow/tasks/noc_qor
+        - Instructions on how to run VTR tasks to measure QoR for NoC benchmarks in available in VTR Developer Guide.
+
 	Expected run time:
 		- These benchmarks are quite large so the maximum expected run time for a single run is a few hours
 		- To speed up the run time with multiple VPR runs the thread count can be increased from 1. Set thread count equal to number seeds for fastest run time.

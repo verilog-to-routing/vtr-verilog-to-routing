@@ -8,7 +8,9 @@ Benchmark Structure:
 		|---<Benchmark>.flows - Is the NoC traffic flows file associated with the given benchmark
 					(A benchmark can have multiple traffic flows files)
 		|---verilog	      - Contains design files needed to generate the netlist file for the benchmark
-	|---shared_verilog	      - Contains design files needed by all benchmarks to generate thier netlist files
+	|---shared_verilog	      - Contains design files needed by all benchmarks to generate their netlist files
+	|---blif_files	          - Contains symbolic links to all .blif files that exist in this directory
+	|---flow_files	          - Contains symbolic links to all .flow files that exist in this directory
 
 Running the benchmarks:
 	Pre-requisite
@@ -42,7 +44,11 @@ Running the benchmarks:
 		  -noc_routing_algorithm xy_routing -noc_swap_percentage 40 -number_of_seeds 5 -number_of_threads 1
 
 	        - The above command will generate an output file in the run directory that contains all the place and route metrics. This is a txt file with a name which matches the
-		  the flows file provided. So for the command shown above the outout file is 'complex_2_noc_1D_chain.txt'
+		    flows file provided. So for the command shown above the output file is 'complex_2_noc_1D_chain.txt'
+
+    Running VTR tasks:
+        - All synthetic benchmarks can be run as VTR tasks. Example tasks are provided in vtr_flow/tasks/noc_qor
+        - Instructions on how to run VTR tasks to measure QoR for NoC benchmarks in available in VTR Developer Guide.
 
 	Expected run time:
 		- These benchmarks are quite small so the maximum expected run time for a single run is ~30 minutes
