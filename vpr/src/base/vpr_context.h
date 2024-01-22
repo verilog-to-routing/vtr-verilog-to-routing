@@ -344,6 +344,11 @@ struct ClusteringHelperContext : public Context {
     // the utilization of external input/output pins during packing (between 0 and 1)
     t_ext_pin_util_targets target_external_pin_util;
 
+    // During clustering, a block is related to un-clustered primitives with nets.
+    // This relation has three types: low fanout, high fanout, and trasitive
+    // high_fanout_thresholds stores the threshold for nets to a block type to be considered high fanout
+    t_pack_high_fanout_thresholds high_fanout_thresholds;
+
     // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;

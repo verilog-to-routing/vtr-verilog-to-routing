@@ -9,6 +9,18 @@ static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, p
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
+/**
+ * @brief Randomly select a moveable NoC router cluster blocks
+ *
+ * @param b_from The cluster block ID of the selected NoC router
+ * @param from The current location of the selected NoC router
+ * @param cluster_from_type Block type of the selected block
+ * @return bool True if a block was selected successfully.
+ * False if there are no NoC routers in the netlist or the
+ * selected NoC router is fixed/
+ */
+static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from, t_logical_block_type_ptr& cluster_from_type);
+
 void initial_noc_routing(void) {
     // need to get placement information about where the router cluster blocks are placed on the device
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -249,6 +261,12 @@ void update_noc_normalization_factors(t_placer_costs& costs) {
     return;
 }
 
+double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts) {
+    double noc_cost;
+    noc_cost = (noc_opts.noc_placement_weighting) * ((costs.noc_aggregate_bandwidth_cost * costs.noc_aggregate_bandwidth_cost_norm) + (costs.noc_latency_cost * costs.noc_latency_cost_norm));
+    return noc_cost;
+}
+
 double comp_noc_aggregate_bandwidth_cost(void) {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
@@ -463,35 +481,57 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
     return (vtr::irand(99) < user_supplied_noc_router_swap_percentage) ? true : false;
 }
 
-e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from, t_logical_block_type_ptr& cluster_from_type) {
     // need to access all the router cluster blocks in the design
     auto& noc_ctx = g_vpr_ctx.noc();
+    //
+    auto& place_ctx = g_vpr_ctx.placement();
+    //
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
     // get a reference to the collection of router cluster blocks in the design
     const std::vector<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
 
-    // if there are no router cluster blocks to swap then abort
+    // if there are no router cluster blocks, return false
     if (router_clusters.empty()) {
-        return e_create_move::ABORT;
+        return false;
     }
 
-    int number_of_router_blocks = router_clusters.size();
+    const int number_of_router_blocks = router_clusters.size();
 
     //randomly choose a router block to move
-    int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
-    ClusterBlockId b_from = router_clusters[random_cluster_block_index];
-
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
+    b_from = router_clusters[random_cluster_block_index];
 
     //check if the block is movable
     if (place_ctx.block_locs[b_from].is_fixed) {
-        return e_create_move::ABORT;
+        return false;
     }
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
-    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    from = place_ctx.block_locs[b_from].loc;
+    cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
+
+    return true;
+}
+
+e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+    // block ID for the randomly selected router cluster
+    ClusterBlockId b_from;
+    // current location of the randomly selected router cluster
+    t_pl_loc from;
+    // logical block type of the randomly selected router cluster
+    t_logical_block_type_ptr cluster_from_type;
+    bool random_select_success = false;
+
+    // Randomly select a router cluster
+    random_select_success = select_random_router_cluster(b_from, from, cluster_from_type);
+
+    // If a random router cluster could not be selected, no move can be proposed
+    if (!random_select_success) {
+        return e_create_move::ABORT;
+    }
 
     // now choose a compatible block to swap with
     t_pl_loc to;
@@ -510,7 +550,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
     return create_move;
 }
 
-void write_noc_placement_file(std::string file_name) {
+void write_noc_placement_file(const std::string& file_name) {
     // we need the clustered netlist to get the names of all the NoC router cluster blocks
     auto& cluster_ctx = g_vpr_ctx.clustering();
     // we need to the placement context to determine the final placed locations of the NoC router cluster blocks

@@ -27,6 +27,15 @@ int NocRouter::get_router_layer_position(void) const {
     return router_layer_position;
 }
 
+t_physical_tile_loc NocRouter::get_router_physical_location(void) const {
+    const int x = get_router_grid_position_x();
+    const int y = get_router_grid_position_y();
+    const int layer = get_router_layer_position();
+    t_physical_tile_loc phy_loc{x, y, layer};
+
+    return phy_loc;
+}
+
 ClusterBlockId NocRouter::get_router_block_ref(void) const {
     return router_block_ref;
 }
