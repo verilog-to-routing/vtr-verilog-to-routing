@@ -1388,35 +1388,34 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     }
 
     if (noc_opts.noc) {
-        double new_noc_aggregate_bandwidth_cost = 0.;
-        double new_noc_latency_cost = 0.;
-        recompute_noc_costs(new_noc_aggregate_bandwidth_cost, new_noc_latency_cost);
+        NocCostTerms new_noc_cost{0.0, 0.0, 0.0};
+        recompute_noc_costs(new_noc_cost);
 
         if (fabs(
-                new_noc_aggregate_bandwidth_cost
+                new_noc_cost.aggregate_bandwidth
                 - costs->noc_aggregate_bandwidth_cost)
             > costs->noc_aggregate_bandwidth_cost * ERROR_TOL) {
             std::string msg = vtr::string_fmt(
-                "in recompute_costs_from_scratch: new_noc_aggregate_bandwidth_cost = %g, old noc_aggregate_bandwidth_cost = %g, ERROR_TOL = %g\n",
-                new_noc_aggregate_bandwidth_cost, costs->noc_aggregate_bandwidth_cost, ERROR_TOL);
+                "in recompute_costs_from_scratch: new_noc_cost.aggregate_bandwidth = %g, old noc_aggregate_bandwidth_cost = %g, ERROR_TOL = %g\n",
+                new_noc_cost.aggregate_bandwidth, costs->noc_aggregate_bandwidth_cost, ERROR_TOL);
             VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
         }
-        costs->noc_aggregate_bandwidth_cost = new_noc_aggregate_bandwidth_cost;
+        costs->noc_aggregate_bandwidth_cost = new_noc_cost.aggregate_bandwidth;
 
         // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
         // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
-        if (new_noc_latency_cost > MIN_EXPECTED_NOC_LATENCY_COST) {
+        if (new_noc_cost.latency > MIN_EXPECTED_NOC_LATENCY_COST) {
             if (fabs(
-                    new_noc_latency_cost
+                    new_noc_cost.latency
                     - costs->noc_latency_cost)
                 > costs->noc_latency_cost * ERROR_TOL) {
                 std::string msg = vtr::string_fmt(
-                    "in recompute_costs_from_scratch: new_noc_latency_cost = %g, old noc_latency_cost = %g, ERROR_TOL = %g\n",
-                    new_noc_latency_cost, costs->noc_latency_cost, ERROR_TOL);
+                    "in recompute_costs_from_scratch: new_noc_cost.latency = %g, old noc_latency_cost = %g, ERROR_TOL = %g\n",
+                    new_noc_cost.latency, costs->noc_latency_cost, ERROR_TOL);
                 VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
             }
         }
-        costs->noc_latency_cost = new_noc_latency_cost;
+        costs->noc_latency_cost = new_noc_cost.latency;
     }
 }
 
@@ -1755,13 +1754,13 @@ static e_move_result try_swap(const t_annealing_state* state,
         }
 
 
-        NocDeltaCost noc_delta_c {0.0, 0.0, 0.0}; // change in NoC cost
+        NocCostTerms noc_delta_c {0.0, 0.0, 0.0}; // change in NoC cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
             find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
 
             // Include the NoC delta costs in the total cost change for this swap
-            delta_c = delta_c + noc_placement_weighting * (noc_delta_c.latency_delta_c * costs->noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);
+            delta_c = delta_c + noc_placement_weighting * (noc_delta_c.latency * costs->noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth * costs->noc_aggregate_bandwidth_cost_norm);
         }
 
         /* 1 -> move accepted, 0 -> rejected. */

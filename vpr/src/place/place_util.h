@@ -12,10 +12,10 @@
 #include "vtr_vector_map.h"
 #include "globals.h"
 
-struct NocDeltaCost {
-    double aggregate_bandwidth_delta_c = 0.0;
-    double latency_delta_c = 0.0;
-    double congestion_delta_c = 0.0;
+struct NocCostTerms {
+    double aggregate_bandwidth = 0.0;
+    double latency = 0.0;
+    double congestion = 0.0;
 };
 
 /**
@@ -82,7 +82,7 @@ class t_placer_costs {
 
   public: //Mutator
     void update_norm_factors();
-    t_placer_costs& operator+=(const NocDeltaCost& noc_delta_cost);
+    t_placer_costs& operator+=(const NocCostTerms& noc_delta_cost);
 
   private:
     double MAX_INV_TIMING_COST = 1.e12;

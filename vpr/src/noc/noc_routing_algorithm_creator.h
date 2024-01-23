@@ -39,7 +39,7 @@ class NocRoutingAlgorithmCreator {
      * NoC routing algorithm
      * @return NocRouting* A reference to the created NoC routing algorithm
      */
-    NocRouting* create_routing_algorithm(std::string routing_algorithm_name);
+    NocRouting* create_routing_algorithm(const std::string& routing_algorithm_name);
 };
 
 #endif

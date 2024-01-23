@@ -78,10 +78,10 @@ void t_placer_costs::update_norm_factors() {
  *
  * @param noc_delta_cost NoC cost difference if the swap is accepted
  */
-t_placer_costs& t_placer_costs::operator+=(const NocDeltaCost& noc_delta_cost) {
-    noc_aggregate_bandwidth_cost += noc_delta_cost.aggregate_bandwidth_delta_c;
-    noc_latency_cost += noc_delta_cost.latency_delta_c;
-    noc_congestion_cost += noc_delta_cost.congestion_delta_c;
+t_placer_costs& t_placer_costs::operator+=(const NocCostTerms& noc_delta_cost) {
+    noc_aggregate_bandwidth_cost += noc_delta_cost.aggregate_bandwidth;
+    noc_latency_cost += noc_delta_cost.latency;
+    noc_congestion_cost += noc_delta_cost.congestion;
 
     return *this;
 }

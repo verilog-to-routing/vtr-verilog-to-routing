@@ -2,7 +2,7 @@
 #include "noc_routing_algorithm_creator.h"
 #include "vpr_error.h"
 
-NocRouting* NocRoutingAlgorithmCreator::create_routing_algorithm(std::string routing_algorithm_name) {
+NocRouting* NocRoutingAlgorithmCreator::create_routing_algorithm(const std::string& routing_algorithm_name) {
     NocRouting* noc_routing_algorithm = nullptr;
 
     if (routing_algorithm_name == "xy_routing") {

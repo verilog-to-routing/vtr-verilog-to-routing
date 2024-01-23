@@ -597,8 +597,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     golden_traffic_flow_latency_costs.resize(noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows());
 
     // stores the change in bandwidth and latency costs from the test function
-    double test_noc_bandwidth_costs = 0;
-    double test_noc_latency_costs = 0;
+    NocCostTerms test_noc_costs{0.0, 0.0, 0.0};
 
     // we need to route all the traffic flows based on their initial positions
     for (int traffic_flow_number = 0; traffic_flow_number < number_of_created_traffic_flows; traffic_flow_number++) {
@@ -640,8 +639,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number] = (noc_opts.noc_latency_constraints_weighting * (std::max(0., curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency))) + (noc_opts.noc_latency_weighting * curr_traffic_flow_latency);
         golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number] *= curr_traffic_flow.traffic_flow_priority;
 
-        test_noc_bandwidth_costs += golden_traffic_flow_bandwidth_costs[(NocTrafficFlowId)traffic_flow_number];
-        test_noc_latency_costs += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
+        test_noc_costs.aggregate_bandwidth += golden_traffic_flow_bandwidth_costs[(NocTrafficFlowId)traffic_flow_number];
+        test_noc_costs.latency += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
     }
 
     // initialize noc placement structs
@@ -772,14 +771,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
             }
         }
 
-        NocDeltaCost delta_cost {0.0, 0.0, 0.0};
+        NocCostTerms delta_cost {0.0, 0.0, 0.0};
 
         // call the test function
         find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
         // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-        test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth_delta_c;
-        test_noc_latency_costs += delta_cost.latency_delta_c;
+        test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
+        test_noc_costs.latency += delta_cost.latency;
 
         // need this function to update the local datastructures that store all the traffic flow costs
         commit_noc_costs();
@@ -902,14 +901,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
     }
 
-    NocDeltaCost delta_cost {0.0, 0.0, 0.0};
+    NocCostTerms delta_cost {0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth_delta_c;
-    test_noc_latency_costs += delta_cost.latency_delta_c;
+    test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
+    test_noc_costs.latency += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -993,14 +992,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     }
 
     // reset the delta costs
-    delta_cost = NocDeltaCost {0.0, 0.0, 0.0};
+    delta_cost = NocCostTerms {0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth_delta_c;
-    test_noc_latency_costs += delta_cost.latency_delta_c;
+    test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
+    test_noc_costs.latency += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -1056,14 +1055,14 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // we don't have to calculate the costs or update bandwidths because the swapped router blocks do not have any associated traffic flows //
 
     // reset the delta costs
-    delta_cost = NocDeltaCost {0.0, 0.0, 0.0};
+    delta_cost = NocCostTerms {0.0, 0.0, 0.0};
 
     // call the test function
     find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
-    test_noc_bandwidth_costs += delta_cost.aggregate_bandwidth_delta_c;
-    test_noc_latency_costs += delta_cost.latency_delta_c;
+    test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
+    test_noc_costs.latency += delta_cost.latency;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -1090,22 +1089,22 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     }
 
     // now check whether the expected noc costs that we manually calculated above match the noc costs found through the test function (we allow for a tolerance of difference)
-    REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_latency_costs));
-    REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_bandwidth_costs));
+    REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_costs.latency));
+    REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_costs.aggregate_bandwidth));
 
     // now test the recompute cost function //
     // The recompute cost function just adds up all traffic flow costs, so it match the expected noc costs that we manually calculated above by summing up all the expected individual traffic flow costs. //
 
     // start by resetting the test cost variables
-    test_noc_bandwidth_costs = 0.;
-    test_noc_latency_costs = 0.;
+    test_noc_costs.aggregate_bandwidth = 0.;
+    test_noc_costs.latency = 0.;
 
     // now execute the test function
-    recompute_noc_costs(test_noc_bandwidth_costs, test_noc_latency_costs);
+    recompute_noc_costs(test_noc_costs);
 
     // now verify
-    REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_latency_costs));
-    REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_bandwidth_costs));
+    REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_costs.latency));
+    REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_costs.aggregate_bandwidth));
 
     // delete local datastructures
     free_noc_placement_structs();

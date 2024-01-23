@@ -105,7 +105,7 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
  * NoC latency cost caused by a placer move is stored
  * here.
  */
-void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, NocDeltaCost& delta_c, const t_noc_opts& noc_opts);
+void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, NocCostTerms& delta_c, const t_noc_opts& noc_opts);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -136,6 +136,12 @@ void commit_noc_costs();
  * First, the hard routers blocks that represent the placed location of
  * the router cluster blocks are identified. Then the traffic flow
  * is routed and updated.
+ *
+ * Note that this function does not update the link bandwidth utilization.
+ * update_traffic_flow_link_usage() should be called after this function
+ * to update the link utilization for the new route. If the flow is re-routed
+ * because either its source or destination are moved, update_traffic_flow_link_usage()
+ * should be used to reduce the bandwidth utilization for the old route.
  * 
  * @param traffic_flow_id Represents the traffic flow that needs to be routed
  * @param noc_model Contains all the links and routers within the NoC. Used
@@ -146,7 +152,7 @@ void commit_noc_costs();
  * flows within the NoC.
  * @return std::vector<NocLinkId>& The found route for the traffic flow.
  */
-std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model, NocTrafficFlows& noc_traffic_flows_storage, NocRouting& noc_flows_router);
+std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model, NocTrafficFlows& noc_traffic_flows_storage, NocRouting& noc_flows_router);
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -255,7 +261,7 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
  * @param new_noc_latency_cost Will store the newly computed
  * NoC latency cost for the current placement state.
  */
-void recompute_noc_costs(double& new_noc_aggregate_bandwidth_cost, double& new_noc_latency_cost);
+void recompute_noc_costs(NocCostTerms& new_cost);
 
 /**
  * @brief Updates all the cost normalization factors relevant to the NoC.
