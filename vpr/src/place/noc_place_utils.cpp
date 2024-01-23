@@ -326,12 +326,6 @@ void update_noc_normalization_factors(t_placer_costs& costs) {
     return;
 }
 
-double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts) {
-    double noc_cost;
-    noc_cost = (noc_opts.noc_placement_weighting) * ((costs.noc_aggregate_bandwidth_cost * costs.noc_aggregate_bandwidth_cost_norm) + (costs.noc_latency_cost * costs.noc_latency_cost_norm));
-    return noc_cost;
-}
-
 double comp_noc_aggregate_bandwidth_cost(void) {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.noc();
@@ -532,6 +526,22 @@ double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc
     congestion_cost = noc_opts.noc_congestion_weighting * congested_bw_ratio;
 
     return congestion_cost;
+}
+
+double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& norm_factors, const t_noc_opts& noc_opts) {
+    double cost = 0.0;
+
+    /* NoC's contribution to the placement cost is a weighted sum over:
+     * 1) Traffic flow latency costs
+     * 2) Traffic flow aggregate bandwidth costs
+     * 3) Link congestion costs
+     */
+    cost = noc_opts.noc_placement_weighting * (
+               cost_terms.latency * norm_factors.noc_latency_cost_norm +
+               cost_terms.aggregate_bandwidth * norm_factors.noc_aggregate_bandwidth_cost_norm +
+               cost_terms.congestion * norm_factors.noc_congestion_cost_norm);
+
+    return cost;
 }
 
 int get_number_of_traffic_flows_with_latency_cons_met(void) {

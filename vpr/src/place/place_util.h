@@ -12,7 +12,16 @@
 #include "vtr_vector_map.h"
 #include "globals.h"
 
+// forward declaration of t_placer_costs so that it can be used an argument
+// in NocCostTerms constructor
+class t_placer_costs;
+
 struct NocCostTerms {
+  public:
+    NocCostTerms() = delete;
+    explicit NocCostTerms(const t_placer_costs& costs);
+    NocCostTerms(double agg_bw, double lat, double congest);
+
     double aggregate_bandwidth = 0.0;
     double latency = 0.0;
     double congestion = 0.0;

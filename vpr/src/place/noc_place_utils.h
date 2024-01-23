@@ -276,17 +276,6 @@ void recompute_noc_costs(NocCostTerms& new_cost);
 void update_noc_normalization_factors(t_placer_costs& costs);
 
 /**
- * @brief Calculates total NoC cost.
- *
- *  @param costs Contains latency and aggregate bandwidth costs
- *  along with their corresponding normalization factors.
- *  @param noc_opts Contains NoC placement weighting factor.
- *
- * @return Calculated total NoC cost.
- */
-double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts);
-
-/**
  * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
  * and initializes local variables that keep track of the traffic flow 
  * aggregate bandwidths cost.
@@ -383,6 +372,8 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
 double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts);
 
 double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc_opts);
+
+double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& norm_factors, const t_noc_opts& noc_opts);
 
 /**
  * @brief Goes through all the traffic flows and determines whether the

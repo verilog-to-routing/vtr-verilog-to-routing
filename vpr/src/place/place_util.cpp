@@ -171,7 +171,7 @@ bool t_annealing_state::outer_loop_update(float success_rate,
                                           const t_annealing_sched& annealing_sched) {
 #ifndef NO_GRAPHICS
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->list_of_breakpoints.size() != 0) {
+    if (!draw_state->list_of_breakpoints.empty()) {
         /* Update temperature in the current information variable. */
         get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
     }
@@ -384,7 +384,7 @@ void zero_initialize_grid_blocks() {
                 place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
                 auto tile = device_ctx.grid.get_physical_type({i, j, layer_num});
 
-                for (auto sub_tile : tile->sub_tiles) {
+                for (const auto& sub_tile : tile->sub_tiles) {
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {
@@ -517,7 +517,7 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
 
         /*
          * analytical placement approach do not need to make sure whether location could accommodate more blocks
-         * since overused locations will be spreaded by legalizer afterward.
+         * since overused locations will be spread by legalizer afterward.
          * floorplan constraint is not supported by analytical placement yet, 
          * hence, if macro_can_be_placed is called from analytical placer, no further actions are required. 
          */
@@ -560,3 +560,13 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
 
     return (mac_can_be_placed);
 }
+
+NocCostTerms::NocCostTerms(const t_placer_costs& costs)
+    : aggregate_bandwidth(costs.noc_aggregate_bandwidth_cost)
+    , latency(costs.noc_latency_cost)
+    , congestion(costs.noc_congestion_cost) {}
+
+NocCostTerms::NocCostTerms(double agg_bw, double lat, double congest)
+    : aggregate_bandwidth(agg_bw)
+    , latency(lat)
+    , congestion(congest) {}

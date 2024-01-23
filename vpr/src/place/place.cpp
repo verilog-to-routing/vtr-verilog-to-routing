@@ -1605,7 +1605,6 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
-    double noc_placement_weighting = noc_opts.noc_placement_weighting;
 
     PlaceCritParams crit_params;
     crit_params.crit_exponent = state->crit_exponent;
@@ -1760,7 +1759,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
 
             // Include the NoC delta costs in the total cost change for this swap
-            delta_c = delta_c + noc_placement_weighting * (noc_delta_c.latency * costs->noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth * costs->noc_aggregate_bandwidth_cost_norm);
+            delta_c += calculate_noc_cost(noc_delta_c, *costs, noc_opts);
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
@@ -2280,8 +2279,8 @@ static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_
     }
 
     if (noc_opts.noc) {
-        // in noc mode we include noc aggregate bandwidth and noc latency
-        total_cost += calculate_noc_cost(*costs, noc_opts);
+        // in noc mode we include noc agggregate bandwidth and noc latency
+        total_cost += calculate_noc_cost(NocCostTerms(*costs), *costs, noc_opts);
     }
 
     return total_cost;

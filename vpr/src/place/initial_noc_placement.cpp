@@ -162,7 +162,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
     costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
     update_noc_normalization_factors(costs);
-    costs.cost = calculate_noc_cost(costs, noc_opts);
+    costs.cost = calculate_noc_cost(NocCostTerms(costs), costs, noc_opts);
 
     // Maximum distance in each direction that a router can travel in a move
     // It is assumed that NoC routers are organized in a square grid.
@@ -214,7 +214,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
             NocCostTerms noc_delta_c {0.0, 0.0, 0.0};
             find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
-            double delta_cost = (noc_opts.noc_placement_weighting) * (noc_delta_c.latency * costs.noc_latency_cost_norm + noc_delta_c.aggregate_bandwidth * costs.noc_aggregate_bandwidth_cost_norm);
+            double delta_cost = calculate_noc_cost(noc_delta_c, costs, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
             bool move_accepted = accept_noc_swap(delta_cost, prob);
