@@ -423,8 +423,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     std::for_each(temp_noc_link_storage.begin(), temp_noc_link_storage.end(), [](NocLink& link) {link.set_bandwidth_usage(0.0); });
 
     // need to create a temporary noc routing algorithm
-    NocRoutingAlgorithmCreator routing_algorithm_factory;
-    NocRouting* temp_noc_routing_algorithm = routing_algorithm_factory.create_routing_algorithm(noc_opts.noc_routing_algorithm);
+    std::unique_ptr<NocRouting> temp_noc_routing_algorithm = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_opts.noc_routing_algorithm);
 
     // stores a temporarily found route for a traffic flow
     std::vector<NocLinkId> temp_found_noc_route;
@@ -495,9 +494,6 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
             cost_check.congestion, costs.noc_congestion_cost);
         error++;
     }
-
-    // delete the temporary routing algorithm
-    delete temp_noc_routing_algorithm;
 
     return error;
 }

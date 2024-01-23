@@ -564,7 +564,7 @@ void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name) {
     // newly created routing algorithm to it
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
-    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator().create_routing_algorithm(noc_routing_algorithm_name);
+    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_routing_algorithm_name);
     return;
 }
 
@@ -1208,10 +1208,7 @@ static void free_routing() {
 /**
  * @brief handles the deletion of NoC related datastructures.
  */
-static void free_noc() {
-    auto& noc_ctx = g_vpr_ctx.mutable_noc();
-    delete noc_ctx.noc_flows_router;
-}
+static void free_noc() {}
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
