@@ -11,7 +11,10 @@ archs_dir=arch/noc/mesh_noc_topology
 # Path to directory of NoC Traffic Patterns to use
 noc_traffics_dir=benchmarks/noc/Synthetic_Designs/traffic_flow_files/
 
-# Traffic flow files are added per circuit
+# Traffic flow files are added per circuit.
+# By default, the task performs a cartesian product between circuits and traffic flow files.
+# Since each circuit is compatible with specific traffic flow files, we need to specify
+# traffic flow files for each circuit separately.
 noc_traffic_list_type=per_circuit
 
 # Add circuits and traffic flows to list to sweep
