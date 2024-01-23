@@ -53,6 +53,7 @@ void initial_noc_routing(void) {
 }
 
 void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs) {
+    // used to access NoC links and modify them
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
     // Zero out bandwidth usage for all links
@@ -103,28 +104,53 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
         // get the current traffic flow info
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
+        // calculate the new aggregate bandwidth and latency costs for the affected traffic flow
+        // store them in case the proposed swap is reverted
         proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
         proposed_traffic_flow_costs[traffic_flow_id].latency = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
 
+        // compute how much the aggregate bandwidth and latency costs change with this swap
         delta_c.aggregate_bandwidth_delta_c += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
         delta_c.latency_delta_c += proposed_traffic_flow_costs[traffic_flow_id].latency - traffic_flow_costs[traffic_flow_id].latency;
     }
 
+    // Iterate over all affected links and calculate their new congestion cost and store it in case the swap is reverted
     for (const auto& link_id : affected_noc_links) {
+        // get the affected link
         const auto& link = noc_ctx.noc_model.get_single_noc_link(link_id);
+
+        // calculate the new congestion cost for the link and store it for possible reversion
         proposed_link_congestion_costs[link] = calculate_link_congestion_cost(link, noc_opts);
+
+        // compute how much the congestion cost changes with this swap
         delta_c.congestion_delta_c += proposed_link_congestion_costs[link] - link_congestion_costs[link];
     }
 }
 
 void commit_noc_costs() {
+    // used to access NoC links
+    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+
+    // Iterate over all the traffic flows affected by the proposed router swap
     for (auto& traffic_flow_id : affected_traffic_flows) {
         // update the traffic flow costs
         traffic_flow_costs[traffic_flow_id] = proposed_traffic_flow_costs[traffic_flow_id];
 
         // reset the proposed traffic flows costs
-        proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = -1;
-        proposed_traffic_flow_costs[traffic_flow_id].latency = -1;
+        proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = INVALID_NOC_COST_TERM;
+        proposed_traffic_flow_costs[traffic_flow_id].latency = INVALID_NOC_COST_TERM;
+    }
+
+    // Iterate over all the NoC links whose bandwidth utilization was affected by the proposed move
+    for(auto link_id : affected_noc_links) {
+        // get the affected link
+        const auto& link = noc_ctx.noc_model.get_single_noc_link(link_id);
+
+        // commit the new link congestion cost
+        link_congestion_costs[link] = proposed_link_congestion_costs[link];
+
+        // invalidate the proposed link congestion flow costs
+        proposed_link_congestion_costs[link] = INVALID_NOC_COST_TERM;
     }
 
     return;
@@ -521,8 +547,13 @@ void allocate_and_load_noc_placement_structs(void) {
 
     int number_of_traffic_flows = noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows();
 
-    traffic_flow_costs.resize(number_of_traffic_flows);
-    proposed_traffic_flow_costs.resize(number_of_traffic_flows);
+    traffic_flow_costs.resize(number_of_traffic_flows, {INVALID_NOC_COST_TERM, INVALID_NOC_COST_TERM});
+    proposed_traffic_flow_costs.resize(number_of_traffic_flows, {INVALID_NOC_COST_TERM, INVALID_NOC_COST_TERM});
+
+    int number_of_noc_links = noc_ctx.noc_model.get_number_of_noc_links();
+
+    link_congestion_costs.resize(number_of_noc_links, INVALID_NOC_COST_TERM);
+    proposed_link_congestion_costs.resize(number_of_noc_links, INVALID_NOC_COST_TERM);
 
     return;
 }
@@ -531,6 +562,10 @@ void free_noc_placement_structs(void) {
     vtr::release_memory(traffic_flow_costs);
     vtr::release_memory(proposed_traffic_flow_costs);
     vtr::release_memory(affected_traffic_flows);
+
+    vtr::release_memory(link_congestion_costs);
+    vtr::release_memory(proposed_link_congestion_costs);
+    vtr::release_memory(affected_noc_links);
 
     return;
 }

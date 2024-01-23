@@ -27,6 +27,8 @@ constexpr double MAX_INV_NOC_CONGESTION_COST = 1.e3;
 // So this value represents the lowest possible latency cost.
 constexpr double MIN_EXPECTED_NOC_LATENCY_COST = 1.e-12;
 
+constexpr double INVALID_NOC_COST_TERM = -1.0;
+
 /**
  * @brief Each traffic flow cost consists of two components:
  *        1) traffic flow aggregate bandwidth (sum over all used links of the traffic flow bandwidth)
@@ -35,8 +37,8 @@ constexpr double MIN_EXPECTED_NOC_LATENCY_COST = 1.e-12;
  *        traffic flow cost.
  */
 struct TrafficFlowPlaceCost {
-    double aggregate_bandwidth = -1;
-    double latency = -1;
+    double aggregate_bandwidth = INVALID_NOC_COST_TERM;
+    double latency = INVALID_NOC_COST_TERM;
 };
 
 /**
