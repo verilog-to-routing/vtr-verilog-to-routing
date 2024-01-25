@@ -19,13 +19,15 @@ constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
 // we expect the latency costs to be in the pico-second range, and we don't expect it to go lower than that. So if the latency costs go below the pico-second range we trim the normalization value to be no higher than 1/ps
 // This should be updated if the delays become lower
 constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
-// the congestion cost for a link is measured as the proportion of the overloaded BW to the link capacity
-// We assume that when a link congested, it is overloaded with at least 0.1% of its BW capacity
-constexpr double MAX_INV_NOC_CONGESTION_COST = 1.e3;
-
 // we don't expect the noc_latency cost to ever go below 1 pico second.
 // So this value represents the lowest possible latency cost.
 constexpr double MIN_EXPECTED_NOC_LATENCY_COST = 1.e-12;
+// the congestion cost for a link is measured as the proportion of the overloaded BW to the link capacity
+// We assume that when a link congested, it is overloaded with at least 0.1% of its BW capacity
+constexpr double MAX_INV_NOC_CONGESTION_COST = 1.e3;
+// If a link is overloaded by less than 0.1% of the link bandwidth capacity,
+// we assume it is not congested.
+constexpr double MIN_EXPECTED_NOC_CONGESTION_COST = 1.e-3;
 
 constexpr double INVALID_NOC_COST_TERM = -1.0;
 
@@ -382,6 +384,12 @@ double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& 
  * @return The total number of traffic flows with latency constraints being met
  */
 int get_number_of_traffic_flows_with_latency_cons_met(void);
+
+int get_number_of_congested_noc_links(void);
+
+std::vector<NocLink> get_top_n_congested_links(int n);
+
+std::vector<double> get_top_n_congestion_ratios(int n);
 
 /**
  * @brief There are a number of static datastructures which are local

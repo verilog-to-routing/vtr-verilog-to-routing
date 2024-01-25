@@ -578,6 +578,40 @@ int get_number_of_traffic_flows_with_latency_cons_met(void) {
     return count_of_achieved_latency_cons;
 }
 
+int get_number_of_congested_noc_links(void) {
+    // get NoC links
+    auto& noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();
+
+    int num_congested_links = 0;
+
+    // Iterate over all NoC links and count the congested ones
+    for (const auto& link : noc_links) {
+      double congested_bw_ratio = link.get_congested_bandwidth_ratio();
+
+      if (congested_bw_ratio > MIN_EXPECTED_NOC_CONGESTION_COST) {
+            num_congested_links++;
+      }
+    }
+
+    return num_congested_links;
+}
+
+std::vector<NocLink> get_top_n_congested_links(int n) {
+    // get NoC links
+    vtr::vector<NocLinkId, NocLink> noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();
+
+    // Sort links based on their congested bandwidth ration in descending order
+    // stable_sort is used to make sure the order is the same across different machines/compilers
+    // Note that when the vector is sorted, indexing it with NocLinkId does return the corresponding link
+    std::stable_sort(noc_links.begin(), noc_links.end(), [](const NocLink& l1, const NocLink& l2) {
+                         return l1.get_congested_bandwidth_ratio() > l2.get_congested_bandwidth_ratio();
+                     });
+
+    int pick_n = std::min((int)noc_links.size(), n);
+
+    return std::vector<NocLink>{noc_links.begin(), noc_links.begin() + pick_n};
+}
+
 void allocate_and_load_noc_placement_structs(void) {
     auto& noc_ctx = g_vpr_ctx.noc();
 

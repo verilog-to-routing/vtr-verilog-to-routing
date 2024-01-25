@@ -830,7 +830,16 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
             costs.bb_cost, costs.timing_cost);
     if (noc_opts.noc) {
-        VTR_LOG("Initial noc placement costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
+        VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, "
+            "noc_latency_cost: %g, "
+            "noc_latency_constraints_cost: %d, "
+            "noc_congestion_cost: %g, "
+            "n_congested_links: %d \n",
+            costs.noc_aggregate_bandwidth_cost,
+            costs.noc_latency_cost,
+            get_number_of_traffic_flows_with_latency_cons_met(),
+            costs.noc_congestion_cost_norm,
+            get_number_of_congested_noc_links());
     }
     if (placer_opts.place_algorithm.is_timing_driven()) {
         VTR_LOG(
@@ -864,7 +873,16 @@ void try_place(const Netlist<>& net_list,
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
     if (noc_opts.noc) {
         sprintf(msg,
-                "\nInitial noc placement costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g ", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
+                "\nInitial NoC Placement Costs. noc_aggregate_bandwidth_cost: %g "
+                "noc_latency_cost: %g "
+                "noc_latency_constraints_cost: %d "
+                "noc_congestion_cost: %g "
+                "n_congested_links: %d",
+                costs.noc_aggregate_bandwidth_cost,
+                costs.noc_latency_cost,
+                get_number_of_traffic_flows_with_latency_cons_met(),
+                costs.noc_congestion_cost_norm,
+                get_number_of_congested_noc_links());
     }
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
@@ -1173,8 +1191,27 @@ void try_place(const Netlist<>& net_list,
     // print the noc costs info
     if (noc_opts.noc) {
         sprintf(msg,
-                "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g noc_latency_constraints_cost: %d", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, get_number_of_traffic_flows_with_latency_cons_met());
-        VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, noc_latency_constraints_cost: %d, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, get_number_of_traffic_flows_with_latency_cons_met());
+                "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g "
+                "noc_latency_cost: %g "
+                "noc_latency_constraints_cost: %d "
+                "noc_congestion_cost: %g "
+                "n_congested_links: %d",
+                costs.noc_aggregate_bandwidth_cost,
+                costs.noc_latency_cost,
+                get_number_of_traffic_flows_with_latency_cons_met(),
+                costs.noc_congestion_cost_norm,
+                get_number_of_congested_noc_links());
+
+        VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, "
+            "noc_latency_cost: %g, "
+            "noc_latency_constraints_cost: %d, "
+            "noc_congestion_cost: %g, "
+            "n_congested_links: %d \n",
+            costs.noc_aggregate_bandwidth_cost,
+            costs.noc_latency_cost,
+            get_number_of_traffic_flows_with_latency_cons_met(),
+            costs.noc_congestion_cost_norm,
+            get_number_of_congested_noc_links());
     }
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics

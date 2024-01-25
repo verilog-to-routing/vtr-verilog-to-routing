@@ -128,6 +128,12 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
 
 void NocStorage::set_noc_link_bandwidth(double link_bandwidth) {
     noc_link_bandwidth = link_bandwidth;
+
+    // Iterate over all links and set their bandwidth
+    for (auto& link : link_storage) {
+        link.set_bandwidth(noc_link_bandwidth);
+    }
+
     return;
 }
 
