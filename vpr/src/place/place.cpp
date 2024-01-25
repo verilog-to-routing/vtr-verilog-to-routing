@@ -834,11 +834,13 @@ void try_place(const Netlist<>& net_list,
             "noc_latency_cost: %g, "
             "noc_latency_constraints_cost: %d, "
             "noc_congestion_cost: %g, "
+            "accum_congested_ratio: %g, "
             "n_congested_links: %d \n",
             costs.noc_aggregate_bandwidth_cost,
             costs.noc_latency_cost,
             get_number_of_traffic_flows_with_latency_cons_met(),
-            costs.noc_congestion_cost_norm,
+            costs.noc_congestion_cost,
+            get_total_congestion_bandwidth_ratio(),
             get_number_of_congested_noc_links());
     }
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -877,11 +879,13 @@ void try_place(const Netlist<>& net_list,
                 "noc_latency_cost: %g "
                 "noc_latency_constraints_cost: %d "
                 "noc_congestion_cost: %g "
+                "accum_congested_ratio: %g, "
                 "n_congested_links: %d",
                 costs.noc_aggregate_bandwidth_cost,
                 costs.noc_latency_cost,
                 get_number_of_traffic_flows_with_latency_cons_met(),
-                costs.noc_congestion_cost_norm,
+                costs.noc_congestion_cost,
+                get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
     }
     //Draw the initial placement
@@ -1195,22 +1199,26 @@ void try_place(const Netlist<>& net_list,
                 "noc_latency_cost: %g "
                 "noc_latency_constraints_cost: %d "
                 "noc_congestion_cost: %g "
+                "accum_congested_ratio: %g, "
                 "n_congested_links: %d",
                 costs.noc_aggregate_bandwidth_cost,
                 costs.noc_latency_cost,
                 get_number_of_traffic_flows_with_latency_cons_met(),
-                costs.noc_congestion_cost_norm,
+                costs.noc_congestion_cost,
+                get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
 
         VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, "
             "noc_latency_cost: %g, "
             "noc_latency_constraints_cost: %d, "
             "noc_congestion_cost: %g, "
+            "accum_congested_ratio: %g, "
             "n_congested_links: %d \n",
             costs.noc_aggregate_bandwidth_cost,
             costs.noc_latency_cost,
             get_number_of_traffic_flows_with_latency_cons_met(),
-            costs.noc_congestion_cost_norm,
+            costs.noc_congestion_cost,
+            get_total_congestion_bandwidth_ratio(),
             get_number_of_congested_noc_links());
     }
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);

@@ -596,6 +596,21 @@ int get_number_of_congested_noc_links(void) {
     return num_congested_links;
 }
 
+double get_total_congestion_bandwidth_ratio(void) {
+    // get NoC links
+    auto& noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();
+
+    double accum_congestion_ratio = 0.0;
+
+    // Iterate over all NoC links and count the congested ones
+    for (const auto& link : noc_links) {
+      double congested_bw_ratio = link.get_congested_bandwidth_ratio();
+      accum_congestion_ratio += congested_bw_ratio;
+    }
+
+    return accum_congestion_ratio;
+}
+
 std::vector<NocLink> get_top_n_congested_links(int n) {
     // get NoC links
     vtr::vector<NocLinkId, NocLink> noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();

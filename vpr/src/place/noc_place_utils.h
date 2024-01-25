@@ -387,6 +387,8 @@ int get_number_of_traffic_flows_with_latency_cons_met(void);
 
 int get_number_of_congested_noc_links(void);
 
+double get_total_congestion_bandwidth_ratio(void);
+
 std::vector<NocLink> get_top_n_congested_links(int n);
 
 std::vector<double> get_top_n_congestion_ratios(int n);
