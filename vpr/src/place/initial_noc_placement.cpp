@@ -41,6 +41,16 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
  */
 static void noc_routers_anneal(const t_noc_opts& noc_opts);
 
+/**
+ * @brief Check whether normalization factors need to be updated.
+ *
+ *   @param costs Most recent NoC cost terms.
+ *   @param old_costs NoC cost terms from the last time normalization
+ *   factors were updated.
+ */
+static bool is_renormalization_needed(const t_placer_costs& costs,
+                                      const t_placer_costs& old_costs);
+
 static bool accept_noc_swap(double delta_cost, double prob) {
     if (delta_cost <= 0.0) {
         return true;
@@ -56,6 +66,40 @@ static bool accept_noc_swap(double delta_cost, double prob) {
     } else {
         return false;
     }
+}
+
+static bool is_renormalization_needed(const t_placer_costs& costs,
+                                      const t_placer_costs& old_costs) {
+    constexpr double COST_DIFF_TOLERANCE = 0.1;
+    bool renormalization_needed = false;
+    double cost_diff;
+
+    cost_diff = fabs(costs.noc_aggregate_bandwidth_cost - old_costs.noc_aggregate_bandwidth_cost);
+    // aggregate bandwidth has changed significantly
+    if (cost_diff > costs.noc_aggregate_bandwidth_cost * COST_DIFF_TOLERANCE) {
+        renormalization_needed = true;
+    }
+
+    cost_diff = (fabs(costs.noc_latency_cost - old_costs.noc_latency_cost));
+    // if latency cost only considers latency constraints, it might become zero
+    // a transition from zero or to zero cost necessitates renormalization
+    if ((costs.noc_latency_cost == 0.0 && old_costs.noc_latency_cost != 0.0) ||
+        (costs.noc_latency_cost != 0.0 && old_costs.noc_latency_cost == 0.0)) {
+        renormalization_needed = true;
+    } else if (cost_diff > costs.noc_latency_cost * COST_DIFF_TOLERANCE) {
+        renormalization_needed = true;
+    }
+
+    cost_diff = (fabs(costs.noc_congestion_cost - old_costs.noc_congestion_cost));
+    // a transition from zero or to zero cost necessitates renormalization
+    if ((costs.noc_congestion_cost == 0.0 && old_costs.noc_congestion_cost != 0.0) ||
+        (costs.noc_congestion_cost != 0.0 && old_costs.noc_congestion_cost == 0.0)) {
+        renormalization_needed = true;
+    } else if (cost_diff > costs.noc_congestion_cost * COST_DIFF_TOLERANCE) {
+        renormalization_needed = true;
+    }
+
+    return renormalization_needed;
 }
 
 static void place_constrained_noc_router(ClusterBlockId router_blk_id) {
@@ -156,6 +200,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
     // Only NoC related costs are considered
     t_placer_costs costs;
+    // NoC costs from the last time normalization factors were updated
+    t_placer_costs old_costs;
 
     // Initialize NoC-related costs
     costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
@@ -163,6 +209,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(NocCostTerms(costs), costs, noc_opts);
+    old_costs = costs;
 
     // Maximum distance in each direction that a router can travel in a move
     // It is assumed that NoC routers are organized in a square grid.
@@ -179,10 +226,15 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     // the constant factor above 35000.
     // Get all the router clusters and figure out how many of them exist
     const int num_router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist().size();
-    const int N_MOVES = num_router_clusters * 35000;
+    const int N_MOVES_PER_ROUTER = 35000;
+    const int N_MOVES = num_router_clusters * N_MOVES_PER_ROUTER;
+
+    const int RENORMALIZATION_LIM = 1024;
+    int renormalization_cnt = 0;
 
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
+
 
     // The checkpoint stored the placement with the lowest cost.
     NoCPlacementCheckpoint checkpoint;
@@ -199,6 +251,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
      * Range limit and the probability of accepting swaps with positive delta cost
      * decrease linearly as more swaps are evaluated. Late in the annealing,
      * NoC routers are swapped only with their neighbors as the range limit approaches 1.
+     *
+     * After each RENORMALIZATION_LIM accepted moves, if NoC cost terms have changed
+     * significantly, I update the normalization factors and re-compute the total cost.
      */
 
     // Generate and evaluate router moves
@@ -224,9 +279,21 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
                 commit_move_blocks(blocks_affected);
                 commit_noc_costs();
                 costs += noc_delta_c;
+                // check if the current placement is better than the stored checkpoint
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
                     checkpoint.save_checkpoint(costs.cost);
                 }
+
+                renormalization_cnt++;
+                if (renormalization_cnt == RENORMALIZATION_LIM) {
+                    renormalization_cnt = 0;
+                    if (is_renormalization_needed(costs, old_costs)) {
+                        update_noc_normalization_factors(costs);
+                        costs.cost = calculate_noc_cost(NocCostTerms(costs), costs, noc_opts);
+                        old_costs = costs;
+                    }
+                }
+
             } else { // The proposed move is rejected
                 revert_move_blocks(blocks_affected);
                 revert_noc_traffic_flow_routes(blocks_affected);

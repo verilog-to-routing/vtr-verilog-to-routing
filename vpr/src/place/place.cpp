@@ -999,7 +999,7 @@ void try_place(const Netlist<>& net_list,
                 }
             }
 
-            //move the appropoiate move_generator to be the current used move generator
+            //move the appropriate move_generator to be the current used move generator
             assign_current_move_generator(move_generator, move_generator2,
                                           agent_state, placer_opts, false, current_move_generator);
 
