@@ -471,6 +471,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // setting the NoC parameters
     noc_ctx.noc_model.set_noc_link_latency(1);
     noc_ctx.noc_model.set_noc_router_latency(1);
+    noc_ctx.noc_model.set_noc_link_bandwidth(1);
     // needs to be the same as above
     double router_latency = noc_ctx.noc_model.get_noc_router_latency();
     double link_latency = noc_ctx.noc_model.get_noc_link_latency();
@@ -1699,12 +1700,17 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         // we need to make the aggregate bandwidth cost and latency cost be a value that is larger or smaller than the tolerance value
         costs.noc_aggregate_bandwidth_cost += (costs.noc_aggregate_bandwidth_cost * error_tolerance * 2);
         costs.noc_latency_cost -= (costs.noc_latency_cost * error_tolerance * 2);
+        if (costs.noc_congestion_cost == 0) {
+            costs.noc_congestion_cost += MIN_EXPECTED_NOC_CONGESTION_COST * error_tolerance * 2;
+        } else {
+            costs.noc_congestion_cost += costs.noc_congestion_cost * error_tolerance * 2;
+        }
 
         // run the test function
         int error = check_noc_placement_costs(costs, error_tolerance, noc_opts);
 
-        // we expect error to be 2 here, meaning the found costs are not within the tolerance range
-        REQUIRE(error == 2);
+        // we expect error to be 3 here, meaning the found costs are not within the tolerance range
+        REQUIRE(error == 3);
     }
     // need to delete local noc routing algorithm
     delete routing_algorithm;
