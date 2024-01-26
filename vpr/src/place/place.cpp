@@ -577,7 +577,7 @@ void try_place(const Netlist<>& net_list,
 
     auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
-    int tot_iter, moves_since_cost_recompute, width_fac, num_connections,
+    int tot_iter, moves_since_cost_recompute, num_connections,
         outer_crit_iter_count, inner_recompute_limit;
     float first_crit_exponent, first_rlim, first_t;
     int first_move_lim;
@@ -592,7 +592,6 @@ void try_place(const Netlist<>& net_list,
     t_placer_statistics stats;
 
     t_placement_checkpoint placement_checkpoint;
-    t_graph_type graph_directionality;
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
@@ -650,16 +649,6 @@ void try_place(const Netlist<>& net_list,
     //create the move generator based on the chosen strategy
     create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
 
-    width_fac = placer_opts.place_chan_width;
-
-    if (router_opts.route_type == GLOBAL) {
-        graph_directionality = GRAPH_BIDIR;
-    } else {
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-    }
-
-    init_chan(width_fac, chan_width_dist, graph_directionality);
-
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
     vtr::ScopedStartFinishTimer timer("Placement");
@@ -692,6 +681,7 @@ void try_place(const Netlist<>& net_list,
         place_sync_external_block_connections(block_id);
     }
 
+    const int width_fac = placer_opts.place_chan_width;
     init_draw_coords((float)width_fac);
 
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
