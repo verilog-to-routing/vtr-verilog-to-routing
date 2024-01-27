@@ -32,6 +32,7 @@ if (${WITH_PARMYS})
                 GIT_REPOSITORY https://github.com/chipsalliance/Surelog.git
                 GIT_TAG v1.71
                 GIT_PROGRESS TRUE
+                GIT_SHALLOW TRUE
 
                 # setting source, build and install directories
                 SOURCE_DIR "${SURELOG_SOURCE_DIR}"
@@ -49,7 +50,7 @@ if (${WITH_PARMYS})
                 LOG_BUILD ON
                 LOG_UPDATE ON
                 LOG_INSTALL ON
-                LOG_CONFIGURE ON
+                LOG_CONFIGURE OFF
                 LOG_OUTPUT_ON_FAILURE ON
 
                 # dependency
@@ -63,6 +64,7 @@ if (${WITH_PARMYS})
                 GIT_REPOSITORY https://github.com/chipsalliance/yosys-f4pga-plugins.git
                 GIT_TAG v1.20230808
                 GIT_PROGRESS TRUE
+                GIT_SHALLOW TRUE
 
                 # setting source, build and install directories
                 SOURCE_DIR "${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}"
@@ -82,7 +84,7 @@ if (${WITH_PARMYS})
                 LOG_BUILD ON
                 LOG_UPDATE ON
                 LOG_INSTALL ON
-                LOG_CONFIGURE ON
+                LOG_CONFIGURE OFF
                 LOG_OUTPUT_ON_FAILURE ON
 
                 # dependency

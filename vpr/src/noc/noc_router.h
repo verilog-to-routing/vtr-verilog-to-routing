@@ -87,6 +87,12 @@ class NocRouter {
     int get_router_layer_position(void) const;
 
     /**
+     * @brief Gets the physical location where the the physical router is located
+     * @return t_physical_tile_loc that contains x-y coordinates and the layer number
+     */
+    t_physical_tile_loc get_router_physical_location(void) const;
+
+    /**
      * @brief Gets the unique id of the router block that is current placed on the physical router
      * @return A ClusterBlockId that identifies a router block in the clustered netlist
      */

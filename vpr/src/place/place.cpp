@@ -665,9 +665,8 @@ void try_place(const Netlist<>& net_list,
     vtr::ScopedStartFinishTimer timer("Placement");
 
     initial_placement(placer_opts,
-                      placer_opts.pad_loc_type,
                       placer_opts.constraints_file.c_str(),
-                      noc_opts.noc);
+                      noc_opts);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr,
@@ -848,6 +847,7 @@ void try_place(const Netlist<>& net_list,
         print_histogram(
             create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
+
     size_t num_macro_members = 0;
     for (auto& macro : g_vpr_ctx.placement().pl_macros) {
         num_macro_members += macro.members.size();
@@ -1512,16 +1512,9 @@ static float starting_t(const t_annealing_state* state,
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
-    float init_temp = 0.0;
-
-    /* We use a constructive initial placement and a low starting temperature 
-     * by default, but that can cause problems with NoCs as the initial logical
-     * locations are random. Use a higher starting T in that case.*/
-    if (noc_opts.noc) {
-        init_temp = 20. * std_dev;
-    } else {
-        init_temp = std_dev / 64;
-    }
+    // Improved initial placement uses a fast SA for NoC routers and centroid placement
+    // for other blocks. The temperature is reduced to prevent SA from destroying the initial placement
+    float init_temp = std_dev / 64;
 
     return init_temp;
 }
@@ -2289,8 +2282,8 @@ static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_
     }
 
     if (noc_opts.noc) {
-        // in noc mode we include noc agggregate bandwidth and noc latency
-        total_cost += (noc_opts.noc_placement_weighting) * ((costs->noc_aggregate_bandwidth_cost * costs->noc_aggregate_bandwidth_cost_norm) + (costs->noc_latency_cost * costs->noc_latency_cost_norm));
+        // in noc mode we include noc aggregate bandwidth and noc latency
+        total_cost += calculate_noc_cost(*costs, noc_opts);
     }
 
     return total_cost;

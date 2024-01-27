@@ -1,0 +1,557 @@
+["anyinit"]
+    regex = "\$$anyinit (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["fsm"]
+    regex = "\$$fsm (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["mem_v2"]
+    regex = "\$$mem_v2 (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["mem"]
+    regex = "\$$mem (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["meminit_v2"]
+    regex = "\$$meminit_v2 (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["meminit"]
+    regex = "\$$meminit (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["memwr_v2"]
+    regex = "\$$memwr_v2 (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["memwr"]
+    regex = "\$$memwr (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["memrd_v2"]
+    regex = "\$$memrd_v2 (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["memrd"]
+    regex = "\$$memrd (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["dlatchsr"]
+    regex = "\$$dlatchsr (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["adlatch"]
+    regex = "\$$adlatch (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["dlatch"]
+    regex = "\$$dlatch (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["sdffce"]
+    regex = "\$$sdffce (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["sdffe"]
+    regex = "\$$sdffe (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["sdff"]
+    regex = "\$$sdff (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["aldffe"]
+    regex = "\$$aldffe (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["aldff"]
+    regex = "\$$aldff (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["adffe"]
+    regex = "\$$adffe (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["adff"]
+    regex = "\$$adff (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["dffsre"]
+    regex = "\$$dffsre (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["dffsr"]
+    regex = "\$$dffsr (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["dffe"]
+    regex = "\$$dffe (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["dff"]
+    regex = "\$$dff (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["ff"]
+    regex = "\$$ff (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["sr"]
+    regex = "\$$sr (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["print"]
+    regex = "\$$print (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["specrule"]
+    regex = "\$$specrule (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["specify3"]
+    regex = "\$$specify3 (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["specify2"]
+    regex = "\$$specify2 (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["equiv"]
+    regex = "\$$equiv (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["allseq"]
+    regex = "\$$allseq (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["allconst"]
+    regex = "\$$allconst (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["anyseq"]
+    regex = "\$$anyseq (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["anyconst"]
+    regex = "\$$anyconst (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["initstate"]
+    regex = "\$$initstate (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["cover"]
+    regex = "\$$cover (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["fair"]
+    regex = "\$$fair (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["live"]
+    regex = "\$$live (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["assume"]
+    regex = "\$$assume (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["assert"]
+    regex = "\$$assert (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["tribuf"]
+    regex = "\$$tribuf (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["fa"]
+    regex = "\$$fa (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["alu"]
+    regex = "\$$alu (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["lcu"]
+    regex = "\$$lcu (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["demux"]
+    regex = "\$$demux (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["bmux"]
+    regex = "\$$bmux (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["bwmux"]
+    regex = "\$$bwmux (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["pmux"]
+    regex = "\$$pmux (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["mux"]
+    regex = "\$$mux (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["bweqx"]
+    regex = "\$$bweqx (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["macc"]
+    regex = "\$$macc (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["concat"]
+    regex = "\$$concat (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["logic_or"]
+    regex = "\$$logic_or (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["logic_and"]
+    regex = "\$$logic_and (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["pow"]
+    regex = "\$$pow (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["modfloor"]
+    regex = "\$$modfloor (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["divfloor"]
+    regex = "\$$divfloor (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["mod"]
+    regex = "\$$mod (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["div"]
+    regex = "\$$div (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["mul"]
+    regex = "\$$mul (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["sub"]
+    regex = "\$$sub (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["add"]
+    regex = "\$$add (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["gt"]
+    regex = "\$$gt (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["ge"]
+    regex = "\$$ge (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["nex"]
+    regex = "\$$nex (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["eqx"]
+    regex = "\$$eqx (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["ne"]
+    regex = "\$$ne (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["eq"]
+    regex = "\$$eq (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["le"]
+    regex = "\$$le (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["lt"]
+    regex = "\$$lt (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["shiftx"]
+    regex = "\$$shiftx (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["shift"]
+    regex = "\$$shift (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["sshr"]
+    regex = "\$$sshr (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["sshl"]
+    regex = "\$$sshl (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["shr"]
+    regex = "\$$shr (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["shl"]
+    regex = "\$$shl (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["xnor"]
+    regex = "\$$xnor (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["xor"]
+    regex = "\$$xor (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["or"]
+    regex = "\$$or (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["and"]
+    regex = "\$$and (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["sop"]
+    regex = "\$$sop (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["lut"]
+    regex = "\$$lut (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["slice"]
+    regex = "\$$slice (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["logic_not"]
+    regex = "\$$logic_not (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["reduce_bool"]
+    regex = "\$$reduce_bool (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["reduce_xnor"]
+    regex = "\$$reduce_xnor (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["reduce_xor"]
+    regex = "\$$reduce_xor (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["reduce_or"]
+    regex = "\$$reduce_or (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["reduce_and"]
+    regex = "\$$reduce_and (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["neg"]
+    regex = "\$$neg (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["pos"]
+    regex = "\$$pos (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0
+
+["not"]
+    regex = "\$$not (\d+)"
+    range = [ 0.0, 0.0 ]
+    default = 0
+    hide-if = 0

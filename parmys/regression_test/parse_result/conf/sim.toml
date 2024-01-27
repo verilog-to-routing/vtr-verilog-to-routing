@@ -1,0 +1,23 @@
+#include head.toml
+
+["generated_blif"]
+    regex = "BLIF: (.+)"
+    default = "n/a"
+
+#include basic.toml
+
+["simulation_time(ms)"]
+    regex = "Simulation time: (\d+|\d+.\d+)ms"
+    # timing can be very off due to how fast odin runs
+    range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 1 second as it is subject to noise
+    cutoff = 1000.0
+    default = -1
+
+["test_coverage(%)"]
+    regex = "Coverage: .* \((\d+|\d+.\d+)%\)"
+    range = [ 0.9, 1.1 ]
+    default = -1
+
+#include node.toml
+#include net.toml

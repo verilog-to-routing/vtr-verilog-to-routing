@@ -31,6 +31,16 @@ The official VTR release is available from:
 
     https://verilogtorouting.org/download
 
+VTR Docker Image
+~~~~~~~~~~~~~~~~
+A docker image for VTR is available. This image provides all the required packages and python libraries required. However, this ease to compile and run comes at the cost of some runtime increase (<10%). To pull and run the docker image of latest VTR repository, you can run the following commands:
+
+.. code-block:: bash
+
+    > sudo docker pull mohamedelgammal/vtr-master:latest
+    > sudo docker run -it mohamedelgammal/vtr-master:latest
+
+
 Release
 ~~~~~~~
 

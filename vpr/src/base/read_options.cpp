@@ -31,6 +31,7 @@ t_options read_options(int argc, const char** argv) {
 
 struct ParseOnOff {
     ConvertedValue<bool> from_str(std::string str) {
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
         ConvertedValue<bool> conv_value;
         if (str == "on")
             conv_value.set_value(true);
@@ -42,7 +43,6 @@ struct ParseOnOff {
             conv_value.set_error(msg.str());
         }
         return conv_value;
-        ;
     }
 
     ConvertedValue<std::string> to_str(bool val) {
@@ -2441,9 +2441,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_grp.add_argument(args.flat_routing, "--flat_routing")
+    route_grp.add_argument<bool, ParseOnOff>(args.flat_routing, "--flat_routing")
         .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
-        .default_value("false")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.has_choking_spot, "--has_choking_spot")
@@ -2823,7 +2823,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
             "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
-        .default_value("40")
+        .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
