@@ -156,8 +156,6 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
     // Only NoC related costs are considered
     t_placer_costs costs;
-    // NoC costs from the last time normalization factors were updated
-    t_placer_costs old_costs;
 
     // Initialize NoC-related costs
     costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
@@ -165,7 +163,6 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(NocCostTerms(costs), costs, noc_opts);
-    old_costs = costs;
 
     // Maximum distance in each direction that a router can travel in a move
     // It is assumed that NoC routers are organized in a square grid.
