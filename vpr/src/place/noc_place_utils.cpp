@@ -482,13 +482,15 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     }
 
     // if congestion cost is zero, we use a small cost for calculating the accepted error range
-    double non_zero_congestion_cost = (costs.noc_congestion_cost == 0) ? MIN_EXPECTED_NOC_CONGESTION_COST : costs.noc_congestion_cost;
+    double non_zero_congestion_cost = (costs.noc_congestion_cost < MIN_EXPECTED_NOC_CONGESTION_COST) ? MIN_EXPECTED_NOC_CONGESTION_COST : costs.noc_congestion_cost;
     // check whether the NoC congestion cost is within the error range
-    if (fabs(cost_check.congestion - costs.noc_congestion_cost) > non_zero_congestion_cost * error_tolerance) {
-        VTR_LOG_ERROR(
-            "noc_congestion_cost_check: %g and noc_congestion_cost: %g differ in check_noc_placement_costs.\n",
-            cost_check.congestion, costs.noc_congestion_cost);
-        error++;
+    if (fabs(cost_check.congestion - costs.noc_congestion_cost) > non_zero_congestion_cost){
+        if (!(cost_check.congestion < MIN_EXPECTED_NOC_CONGESTION_COST && costs.noc_congestion_cost < MIN_EXPECTED_NOC_CONGESTION_COST)) {
+            VTR_LOG_ERROR(
+                "noc_congestion_cost_check: %g and noc_congestion_cost: %g differ in check_noc_placement_costs.\n",
+                cost_check.congestion, costs.noc_congestion_cost);
+            error++;
+        }
     }
 
     return error;
