@@ -39,6 +39,12 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     // the grid width will be the size of the noc mesh
     noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
 
+    // set NoC link bandwidth
+    // dist_2 is used to generate traffic flow bandwidths.
+    // Setting the NoC link bandwidth to max() / 5 makes link congestion more likely to happen
+    const double noc_link_bandwidth = dist_2.max() / 5;
+    noc_ctx.noc_model.set_noc_link_bandwidth(noc_link_bandwidth);
+
     // individual router parameters
     int curr_router_id;
     int router_grid_position_x;
@@ -146,7 +152,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
-    NocRouting* routing_algorithm = new XYRouting();
+    auto routing_algorithm = std::make_unique<XYRouting>();
 
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
@@ -187,12 +193,13 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     for (int link_number = 0; link_number < number_of_links; link_number++) {
         NocLinkId current_link_id = (NocLinkId)link_number;
         const NocLink& current_link = noc_ctx.noc_model.get_single_noc_link(current_link_id);
+        double golden_congested_bandwidth = std::max(golden_link_bandwidths[current_link_id] - noc_link_bandwidth, 0.0);
+        double golden_congested_bw_ratio = golden_congested_bandwidth / noc_link_bandwidth;
 
         REQUIRE(golden_link_bandwidths[current_link_id] == current_link.get_bandwidth_usage());
+        REQUIRE(golden_congested_bandwidth == current_link.get_congested_bandwidth());
+        REQUIRE(golden_congested_bw_ratio == current_link.get_congested_bandwidth_ratio());
     }
-
-    // delete the local routing algorithm
-    delete routing_algorithm;
 }
 TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     // setup random number generation
@@ -1668,6 +1675,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
 
+        // get the current traffic flow route
         auto& traffic_flow_route = golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number];
         double traffic_flow_bandwidth = curr_traffic_flow.traffic_flow_bandwidth;
 

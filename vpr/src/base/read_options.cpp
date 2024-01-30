@@ -2823,7 +2823,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "Controls the importance of reducing the congestion of the NoC links."
             "This value can be >=0, where 0 would mean the congestion has no relevance to placement, a value of 1 would mean the congestion is weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by reducing the link congestions.")
-        .default_value("0.05")
+        .default_value("0.00")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
