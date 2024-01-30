@@ -507,14 +507,17 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     t_noc_opts noc_opts;
     noc_opts.noc_latency_constraints_weighting = dist_3(double_engine);
     noc_opts.noc_latency_weighting = dist_3(double_engine);
+    noc_opts.noc_congestion_weighting = dist_3(double_engine);
 
     // setting the NoC parameters
     noc_ctx.noc_model.set_noc_link_latency(1);
     noc_ctx.noc_model.set_noc_router_latency(1);
     noc_ctx.noc_model.set_noc_link_bandwidth(1);
+
     // needs to be the same as above
     double router_latency = noc_ctx.noc_model.get_noc_router_latency();
     double link_latency = noc_ctx.noc_model.get_noc_link_latency();
+    double link_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth();
 
     // keeps track of which hard router each cluster block is placed
     vtr::vector<ClusterBlockId, NocRouterId> router_where_cluster_is_placed;
@@ -622,7 +625,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
-    NocRouting* routing_algorithm = new XYRouting();
+    auto routing_algorithm = std::make_unique<XYRouting>();
 
     // store the traffic flow routes found
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> golden_traffic_flow_routes;
@@ -632,6 +635,9 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     vtr::vector<NocTrafficFlowId, double> golden_traffic_flow_latency_costs;
     golden_traffic_flow_bandwidth_costs.resize(noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows());
     golden_traffic_flow_latency_costs.resize(noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows());
+    // store link congestion costs
+    vtr::vector<NocLinkId, double> golden_link_congestion_costs;
+    golden_link_congestion_costs.resize(noc_ctx.noc_model.get_number_of_noc_links());
 
     // stores the change in bandwidth and latency costs from the test function
     NocCostTerms test_noc_costs{0.0, 0.0, 0.0};
@@ -680,12 +686,20 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         test_noc_costs.latency += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
     }
 
+    // initialize golden congestion cost for all links
+    for (const auto& link : noc_ctx.noc_model.get_noc_links()) {
+        auto link_id = link.get_link_id();
+        golden_link_congestion_costs[link_id] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link_id] - link_bandwidth, 0.0);
+        test_noc_costs.congestion += golden_link_congestion_costs[link_id];
+    }
+
     // initialize noc placement structs
     allocate_and_load_noc_placement_structs();
 
-    // We need to run these functions as they initialize local variables needed to run the test function within this unit test. we assume thi is correct
+    // We need to run these functions as they initialize local variables needed to run the test function within this unit test. we assume this is correct
     comp_noc_aggregate_bandwidth_cost();
     comp_noc_latency_cost(noc_opts);
+    comp_noc_congestion_cost(noc_opts);
 
     // datastructure that keeps track of moved blocks during placement
     t_pl_blocks_to_be_moved blocks_affected(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST);
@@ -753,6 +767,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
                 // go through the current traffic flow and reduce the bandwidths of the links
                 for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
                     golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
+                    golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
                 }
 
                 // re-route the traffic flow
@@ -761,6 +776,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
                 // go through the current traffic flow and increase the bandwidths of the links
                 for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
                     golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
+                    golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
                 }
 
                 // update the costs now
@@ -785,6 +801,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
                 // go through the current traffic flow and reduce the bandwidths of the links
                 for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
                     golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
+                    golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
                 }
 
                 // re-route the traffic flow
@@ -793,6 +810,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
                 // go through the current traffic flow and increase the bandwidths of the links
                 for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
                     golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
+                    golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
                 }
 
                 // update the costs now
@@ -813,9 +831,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         // call the test function
         find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_cost, noc_opts);
 
-        // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
+        // update the test total noc bandwidth, latency, and congestion costs based on the cost changes found by the test functions
         test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
         test_noc_costs.latency += delta_cost.latency;
+        test_noc_costs.congestion += delta_cost.congestion;
 
         // need this function to update the local datastructures that store all the traffic flow costs
         commit_noc_costs();
@@ -890,6 +909,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         // go through the current traffic flow and reduce the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
             golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
+            golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // re-route the traffic flow
@@ -898,6 +918,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         // go through the current traffic flow and increase the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
             golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
+            golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // update the costs now
@@ -918,6 +939,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         // go through the current traffic flow and reduce the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
             golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
+            golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // re-route the traffic flow
@@ -926,6 +948,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         // go through the current traffic flow and increase the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
             golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
+            golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // update the costs now
@@ -946,6 +969,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
     test_noc_costs.latency += delta_cost.latency;
+    test_noc_costs.congestion += delta_cost.congestion;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -1008,6 +1032,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         // go through the current traffic flow and reduce the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
             golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
+            golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // re-route the traffic flow
@@ -1016,6 +1041,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         // go through the current traffic flow and increase the bandwidths of the links
         for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
             golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
+            golden_link_congestion_costs[link] = noc_opts.noc_congestion_weighting * std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // update the costs now
@@ -1037,6 +1063,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
     test_noc_costs.latency += delta_cost.latency;
+    test_noc_costs.congestion += delta_cost.congestion;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -1100,6 +1127,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
     test_noc_costs.aggregate_bandwidth += delta_cost.aggregate_bandwidth;
     test_noc_costs.latency += delta_cost.latency;
+    test_noc_costs.congestion += delta_cost.congestion;
 
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs();
@@ -1112,22 +1140,32 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     for (int link_number = 0; link_number < number_of_links; link_number++) {
         NocLinkId current_link_id = (NocLinkId)link_number;
         const NocLink& current_link = noc_ctx.noc_model.get_single_noc_link(current_link_id);
+        double golden_link_bandwidth = golden_link_bandwidths[current_link_id];
+        double golden_link_congested_bandwidth = std::max(golden_link_bandwidths[current_link_id] - link_bandwidth, 0.0);
+        double golden_link_congested_bandwidth_ratio = golden_link_congested_bandwidth / link_bandwidth;
 
-        REQUIRE(golden_link_bandwidths[current_link_id] == current_link.get_bandwidth_usage());
+        REQUIRE(golden_link_bandwidth == current_link.get_bandwidth_usage());
+        REQUIRE(golden_link_congested_bandwidth == current_link.get_congested_bandwidth());
+        REQUIRE(golden_link_congested_bandwidth_ratio == current_link.get_congested_bandwidth_ratio());
     }
 
-    // now find the total expected noc aggregate bandwidth and latency cost
+    // now find the total expected noc aggregate bandwidth, latency, and congestion cost
     double golden_total_noc_aggr_bandwidth_cost = 0.;
     double golden_total_noc_latency_cost = 0.;
+    double golden_total_noc_congestion_cost = 0.;
 
     for (int traffic_flow_number = 0; traffic_flow_number < number_of_created_traffic_flows; traffic_flow_number++) {
         golden_total_noc_aggr_bandwidth_cost += golden_traffic_flow_bandwidth_costs[(NocTrafficFlowId)traffic_flow_number];
         golden_total_noc_latency_cost += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
     }
 
+    golden_total_noc_congestion_cost = std::accumulate(golden_link_congestion_costs.begin(), golden_link_congestion_costs.end(), 0.0);
+
     // now check whether the expected noc costs that we manually calculated above match the noc costs found through the test function (we allow for a tolerance of difference)
     REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_costs.aggregate_bandwidth));
     REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_costs.latency));
+    std::cout << golden_total_noc_congestion_cost << " " <<  test_noc_costs.congestion << std::endl;
+    REQUIRE(vtr::isclose(golden_total_noc_congestion_cost, test_noc_costs.congestion));
 
     // now test the recompute cost function //
     // The recompute cost function just adds up all traffic flow costs, so it match the expected noc costs that we manually calculated above by summing up all the expected individual traffic flow costs. //
@@ -1135,6 +1173,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // start by resetting the test cost variables
     test_noc_costs.aggregate_bandwidth = 0.;
     test_noc_costs.latency = 0.;
+    test_noc_costs.congestion = 0.;
 
     // now execute the test function
     recompute_noc_costs(test_noc_costs);
@@ -1142,13 +1181,12 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // now verify
     REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_costs.aggregate_bandwidth));
     REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_costs.latency));
+    REQUIRE(vtr::isclose(golden_total_noc_congestion_cost, test_noc_costs.congestion));
 
     // delete local datastructures
     free_noc_placement_structs();
-
-    // need to delete local noc routing algorithm
-    delete routing_algorithm;
 }
+
 TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     // creating local parameters needed for the test
     t_placer_costs costs;
