@@ -1195,6 +1195,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     SECTION("Test case where the bandwidth cost is 0") {
         costs.noc_aggregate_bandwidth_cost = 0.;
         costs.noc_latency_cost = 1.;
+        costs.noc_congestion_cost = 1.;
 
         // run the test function
         update_noc_normalization_factors(costs);
@@ -1206,6 +1207,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     SECTION("Test case where the latency cost is 0") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 0.;
+        costs.noc_congestion_cost = 1.;
 
         // run the test function
         update_noc_normalization_factors(costs);
@@ -1217,6 +1219,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     SECTION("Test case where the bandwidth cost is an expected value") {
         costs.noc_aggregate_bandwidth_cost = 1.e9;
         costs.noc_latency_cost = 0.;
+        costs.noc_congestion_cost = 1.;
 
         // run the test function
         update_noc_normalization_factors(costs);
@@ -1228,6 +1231,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     SECTION("Test case where the latency cost is an expected value") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 50.e-12;
+        costs.noc_congestion_cost = 1.;
 
         // run the test function
         update_noc_normalization_factors(costs);
@@ -1239,6 +1243,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     SECTION("Test case where the latency cost is lower than the smallest expected value") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 999.e-15;
+        costs.noc_congestion_cost = 1.;
 
         // run the test function
         update_noc_normalization_factors(costs);
@@ -1246,6 +1251,41 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
         // verify the latency normalized cost
         // this should not be trimmed
         REQUIRE(costs.noc_latency_cost_norm == 1.e12);
+    }
+    SECTION("Test case where the congestion cost is zero") {
+        costs.noc_aggregate_bandwidth_cost = 1.;
+        costs.noc_latency_cost = 1.;
+        costs.noc_congestion_cost = 0.;
+
+        // run the test function
+        update_noc_normalization_factors(costs);
+
+        // verify the congestion normalization factor
+        // this should not be infinite
+        REQUIRE(costs.noc_congestion_cost_norm == 1.e3);
+    }
+    SECTION("Test case where the congestion cost is lower than the smallest expected value") {
+        costs.noc_aggregate_bandwidth_cost = 1.;
+        costs.noc_latency_cost = 1.;
+        costs.noc_congestion_cost = 999.e-15;
+
+        // run the test function
+        update_noc_normalization_factors(costs);
+
+        // verify the congestion normalization factor
+        // this should not be infinite
+        REQUIRE(costs.noc_congestion_cost_norm == 1.e3);
+    }
+    SECTION("Test case where the congestion cost is an expected value") {
+        costs.noc_aggregate_bandwidth_cost = 1.;
+        costs.noc_latency_cost = 1.;
+        costs.noc_congestion_cost = 1.e2;
+
+        // run the test function
+        update_noc_normalization_factors(costs);
+
+        // verify the congestion normalization factor
+        REQUIRE(costs.noc_congestion_cost_norm == 1.e-2);
     }
 }
 TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
@@ -1284,10 +1324,12 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     t_noc_opts noc_opts;
     noc_opts.noc_latency_constraints_weighting = dist_3(double_engine);
     noc_opts.noc_latency_weighting = dist_3(double_engine);
+    noc_opts.noc_congestion_weighting = dist_3(double_engine);
 
     // setting the NoC parameters
     noc_ctx.noc_model.set_noc_link_latency(1);
     noc_ctx.noc_model.set_noc_router_latency(1);
+    noc_ctx.noc_model.set_noc_link_bandwidth(1);
 
     // keeps track of which hard router each cluster block is placed
     vtr::vector<ClusterBlockId, NocRouterId> router_where_cluster_is_placed;
@@ -1375,7 +1417,9 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         int traffic_flow_priority = dist_1(rand_num_gen);
 
         // create and add the traffic flow
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency_constraint, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name,
+                                                                  source_router_for_traffic_flow, sink_router_for_traffic_flow,
+                                                                  traffic_flow_bandwidth_usage, traffic_flow_latency_constraint, traffic_flow_priority);
 
         number_of_created_traffic_flows++;
 
@@ -1392,7 +1436,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
-    NocRouting* routing_algorithm = new XYRouting();
+    auto routing_algorithm = std::make_unique<XYRouting>();
 
     // store the traffic flow routes found
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> golden_traffic_flow_routes;
@@ -1409,6 +1453,8 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         // route it
         routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
     }
+
+    const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> initial_golden_traffic_flow_routes = golden_traffic_flow_routes;
 
     // assume this works
     // this is needed to set up the global noc packet router and also global datastructures
@@ -1567,9 +1613,15 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         const NocLink& current_link = noc_ctx.noc_model.get_single_noc_link(current_link_id);
 
         REQUIRE(golden_link_bandwidths[current_link_id] == current_link.get_bandwidth_usage());
+
     }
 
-    delete routing_algorithm;
+    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
+        auto traffic_flow_id = (NocTrafficFlowId)traffic_flow_number;
+        const auto& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_traffic_flow_route(traffic_flow_id);
+        const auto& golden_traffic_flow_route = initial_golden_traffic_flow_routes[traffic_flow_id];
+        REQUIRE(traffic_flow_route == golden_traffic_flow_route);
+    }
 }
 TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     // setup random number generation
