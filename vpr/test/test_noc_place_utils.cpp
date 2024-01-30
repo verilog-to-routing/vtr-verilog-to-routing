@@ -128,7 +128,9 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         double traffic_flow_bandwidth_usage = (double)dist_2(rand_num_gen);
 
         // create and add the traffic flow
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name,
+                                                                  source_router_for_traffic_flow, sink_router_for_traffic_flow,
+                                                                  traffic_flow_bandwidth_usage, traffic_flow_latency, traffic_flow_priority);
 
         number_of_created_traffic_flows++;
 
@@ -309,7 +311,9 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         int traffic_flow_priority = dist_1(rand_num_gen);
 
         // create and add the traffic flow
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency_constraint, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name,
+                                                                  source_router_for_traffic_flow, sink_router_for_traffic_flow,
+                                                                  traffic_flow_bandwidth_usage, traffic_flow_latency_constraint, traffic_flow_priority);
 
         number_of_created_traffic_flows++;
 
@@ -564,7 +568,9 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         int traffic_flow_priority = dist_1(rand_num_gen);
 
         // create and add the traffic flow
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency_constraint, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name,
+                                                                  source_router_for_traffic_flow, sink_router_for_traffic_flow,
+                                                                  traffic_flow_bandwidth_usage, traffic_flow_latency_constraint, traffic_flow_priority);
 
         number_of_created_traffic_flows++;
 
@@ -1523,22 +1529,20 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     int router_grid_position_y;
 
     // setting the NoC parameters
-    noc_ctx.noc_model.set_noc_link_latency(1);
-    noc_ctx.noc_model.set_noc_router_latency(1);
-
-    double link_latency = 1;
-    double router_latency = 1;
+    const double link_latency = 1.0;
+    const double router_latency = 1.0;
+    const double link_bandwidth = 1.0;
+    noc_ctx.noc_model.set_noc_link_latency(link_latency);
+    noc_ctx.noc_model.set_noc_router_latency(router_latency);
+    noc_ctx.noc_model.set_noc_link_bandwidth(link_bandwidth);
 
     // noc options used in this test
     // we create these randomly
     t_noc_opts noc_opts;
     noc_opts.noc_latency_constraints_weighting = dist_3(double_engine);
     noc_opts.noc_latency_weighting = dist_3(double_engine);
+    noc_opts.noc_congestion_weighting = dist_3(double_engine);
     noc_opts.noc_routing_algorithm = "xy_routing";
-
-    // setting the NoC parameters
-    noc_ctx.noc_model.set_noc_link_latency(1);
-    noc_ctx.noc_model.set_noc_router_latency(1);
 
     // keeps track of which hard router each cluster block is placed
     vtr::vector<ClusterBlockId, NocRouterId> router_where_cluster_is_placed;
@@ -1580,6 +1584,11 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
                 noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
             }
         }
+    }
+
+    // initialize NoC link bandwidth usage
+    for (auto& noc_link : noc_ctx.noc_model.get_mutable_noc_links()) {
+        noc_link.set_bandwidth_usage(0.0);
     }
 
     // now we need to create router cluster blocks and passing them to placed at a router hard block as an initial position
@@ -1626,7 +1635,9 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         int traffic_flow_priority = dist_1(rand_num_gen);
 
         // create and add the traffic flow
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency_constraint, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name,
+                                                                  source_router_for_traffic_flow, sink_router_for_traffic_flow,
+                                                                  traffic_flow_bandwidth_usage, traffic_flow_latency_constraint, traffic_flow_priority);
 
         number_of_created_traffic_flows++;
 
@@ -1643,7 +1654,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
-    NocRouting* routing_algorithm = new XYRouting();
+    auto routing_algorithm = std::make_unique<XYRouting>();
 
     // store the traffic flow routes found
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> golden_traffic_flow_routes;
@@ -1657,14 +1668,26 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
 
+        auto& traffic_flow_route = golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number];
+        double traffic_flow_bandwidth = curr_traffic_flow.traffic_flow_bandwidth;
+
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, traffic_flow_route, noc_ctx.noc_model);
+
+        // update link bandwidth utilization
+        for (auto link_id : traffic_flow_route) {
+            auto& noc_link = noc_ctx.noc_model.get_single_mutable_noc_link(link_id);
+            double curr_link_bw_util = noc_link.get_bandwidth_usage();
+            curr_link_bw_util += traffic_flow_bandwidth;
+            noc_link.set_bandwidth_usage(curr_link_bw_util);
+        }
     }
 
     // variables below store the expected noc costs (latency and bandwidth)
     t_placer_costs costs;
     costs.noc_aggregate_bandwidth_cost = 0.;
     costs.noc_latency_cost = 0.;
+    costs.noc_congestion_cost = 0.;
 
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
@@ -1672,17 +1695,27 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         double curr_bandwidth_cost = 0.;
         double curr_latency_cost = 0.;
 
+        // get the traffic flow route
+        const auto& golden_traffic_flow_route = golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number];
+
         // calculate the bandwidth cost
-        curr_bandwidth_cost = golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number].size() * curr_traffic_flow.traffic_flow_bandwidth;
+        curr_bandwidth_cost = golden_traffic_flow_route.size() * curr_traffic_flow.traffic_flow_bandwidth;
         curr_bandwidth_cost *= curr_traffic_flow.traffic_flow_priority;
 
-        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number].size() + 1)) + (link_latency * golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number].size());
+        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_route.size() + 1)) + (link_latency * golden_traffic_flow_route.size());
 
+        // calculate the latency cost
         curr_latency_cost = (noc_opts.noc_latency_constraints_weighting * (std::max(0., curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency))) + (noc_opts.noc_latency_weighting * curr_traffic_flow_latency);
         curr_latency_cost *= curr_traffic_flow.traffic_flow_priority;
 
         costs.noc_aggregate_bandwidth_cost += curr_bandwidth_cost;
         costs.noc_latency_cost += curr_latency_cost;
+    }
+
+    // calculate the congestion cost
+    for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
+        double curr_congestion_cost = noc_opts.noc_congestion_weighting * noc_link.get_congested_bandwidth_ratio();
+        costs.noc_congestion_cost += curr_congestion_cost;
     }
 
     // this defines the error tolerance that is allowed between the golden noc costs and the costs found by the test function: check_noc_placement_costs
@@ -1712,7 +1745,5 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         // we expect error to be 3 here, meaning the found costs are not within the tolerance range
         REQUIRE(error == 3);
     }
-    // need to delete local noc routing algorithm
-    delete routing_algorithm;
 }
 } // namespace
