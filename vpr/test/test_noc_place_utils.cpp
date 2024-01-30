@@ -201,6 +201,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         REQUIRE(golden_congested_bw_ratio == current_link.get_congested_bandwidth_ratio());
     }
 }
+
 TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     // setup random number generation
     std::random_device device;
@@ -225,6 +226,12 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     // store the reference to device grid with
     // the grid width will be the size of the noc mesh
     noc_ctx.noc_model.set_device_grid_spec((int)MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST, 0);
+
+    // set NoC link bandwidth
+    // dist_2 is used to generate traffic flow bandwidths.
+    // Setting the NoC link bandwidth to max() / 5 makes link congestion more likely to happen
+    const double noc_link_bandwidth = dist_2.max() / 5;
+    noc_ctx.noc_model.set_noc_link_bandwidth(noc_link_bandwidth);
 
     // individual router parameters
     int curr_router_id;
@@ -341,7 +348,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     noc_ctx.noc_flows_router = std::make_unique<XYRouting>();
 
     // create a local routing algorithm for the unit test
-    NocRouting* routing_algorithm = new XYRouting();
+    auto routing_algorithm = std::make_unique<XYRouting>();
 
     // route all the traffic flows locally
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
@@ -393,9 +400,6 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
 
         // release the cost calculator datastructures
         free_noc_placement_structs();
-
-        // need to delete the local routing algorithm
-        delete routing_algorithm;
     }
 
     SECTION("test_comp_noc_latency_cost") {
@@ -427,18 +431,43 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
             golden_total_noc_latency_costs += current_latency_cost;
         }
 
-        // run the test function and get the bandwidth calculated
+        // run the test function and get the latency cost calculated
         double found_latency_cost = comp_noc_latency_cost(noc_opts);
 
-        // compare the test function bandwidth cost to the golden value
+        // compare the test function latency cost to the golden value
         // since we are comparing double numbers we allow a tolerance of difference
         REQUIRE(vtr::isclose(golden_total_noc_latency_costs, found_latency_cost));
 
         // release the cost calculator datastructures
         free_noc_placement_structs();
+    }
 
-        // need to delete the local routing algorithm
-        delete routing_algorithm;
+    SECTION("test_comp_noc_congestion_cost") {
+        //initialize all the cost calculator datastructures
+        allocate_and_load_noc_placement_structs();
+
+        // create the noc options
+        t_noc_opts noc_opts;
+        noc_opts.noc_congestion_weighting = dist_3(double_engine);
+
+        // create local variable to store the latency cost
+        double golden_total_noc_congestion_costs = 0.;
+
+        for (const auto& link : noc_ctx.noc_model.get_noc_links()) {
+            double congested_bw_ratio = link.get_congested_bandwidth_ratio();
+
+            golden_total_noc_congestion_costs += noc_opts.noc_congestion_weighting * congested_bw_ratio;
+        }
+
+        // run the test function to get the congestion cost
+        double found_congestion_cost = comp_noc_congestion_cost(noc_opts);
+
+        // compare the test function congestion cost to the golden value
+        // since we are comparing double numbers we allow a tolerance of difference
+        REQUIRE(vtr::isclose(golden_total_noc_congestion_costs, found_congestion_cost));
+
+        // release the cost calculator datastructures
+        free_noc_placement_structs();
     }
 }
 
