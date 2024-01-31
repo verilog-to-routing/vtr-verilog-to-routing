@@ -53,14 +53,12 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     std::mt19937 rand_generator;
     rand_generator.seed(seed);
 
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& rr_graph_builder = device_ctx.rr_graph_builder;
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
     RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.layer, switch_location.x, switch_location.y);
-    {
-        auto& mut_device_ctx = g_vpr_ctx.mutable_device();
-        mut_device_ctx.virtual_clock_network_root_idx = size_t(virtual_clock_network_root_idx);
-    }
+    rr_graph_builder.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
     auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, CHANX);
@@ -97,6 +95,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     auto& rr_graph_builder = device_ctx.rr_graph_builder;
     auto& node_lookup = device_ctx.rr_graph_builder.node_lookup();
     auto& rr_rc_data = device_ctx.rr_rc_data;
+    auto& arch = device_ctx.arch;
     rr_graph_builder.emplace_back();
     RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
 
@@ -110,6 +109,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     int ptc = max_ptc + 1;
 
     rr_graph_builder.set_node_type(node_index, SINK);
+    rr_graph_builder.set_node_name(node_index, arch->default_clock_network_name);
     rr_graph_builder.set_node_class_num(node_index, ptc);
     rr_graph_builder.set_node_coordinates(node_index, x, y, x, y);
     rr_graph_builder.set_node_layer(node_index, layer);

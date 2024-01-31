@@ -8,6 +8,6 @@
 #include "vtr_vector.h"
 
 ///@brief Used to print vpr's floorplanning constraints to an echo file "vpr_constraints.echo"
-void echo_constraints(char* filename, VprConstraints constraints);
+void echo_constraints(char* filename, UserPlaceConstraints constraints);
 
 #endif

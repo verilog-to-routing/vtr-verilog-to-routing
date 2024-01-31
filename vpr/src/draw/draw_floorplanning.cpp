@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "atom_netlist.h"
 #include "draw_floorplanning.h"
-#include "vpr_constraints.h"
+#include "user_place_constraints.h"
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
