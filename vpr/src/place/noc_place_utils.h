@@ -107,7 +107,9 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
  * NoC latency cost caused by a placer move is stored
  * here.
  */
-void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, NocCostTerms& delta_c, const t_noc_opts& noc_opts);
+void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
+                                                    NocCostTerms& delta_c,
+                                                    const t_noc_opts& noc_opts);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -154,7 +156,10 @@ void commit_noc_costs();
  * flows within the NoC.
  * @return std::vector<NocLinkId>& The found route for the traffic flow.
  */
-std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id, const NocStorage& noc_model, NocTrafficFlows& noc_traffic_flows_storage, NocRouting& noc_flows_router);
+std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
+                                           const NocStorage& noc_model,
+                                           NocTrafficFlows& noc_traffic_flows_storage,
+                                           NocRouting& noc_flows_router);
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -202,7 +207,10 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  * @param updated_traffic_flows Keeps track of traffic flows that have been
  * re-routed. Used to prevent re-routing the same traffic flow multiple times.
  */
-void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
+void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
+                                       NocTrafficFlows& noc_traffic_flows_storage,
+                                       NocStorage& noc_model, NocRouting& noc_flows_router,
+                                       std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical
@@ -233,7 +241,10 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
  */
-void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting& noc_flows_router);
+void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
+                           NocTrafficFlows& noc_traffic_flows_storage,
+                           NocStorage& noc_model,
+                           NocRouting& noc_flows_router);
 
 /**
  * @brief Recompute the NoC costs (aggregate bandwidth and latency) by
@@ -369,13 +380,44 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
  * @param traffic_flow_info Contains the traffic flow priority.
  * @param noc_opts Contains the user provided weightings of the traffic flow 
  * latency and its constraint parameters for the cost calculation.
- * @return THe computed latency for the provided traffic flow
+ * @return The computed latency for the provided traffic flow
  */
-double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts);
+double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route,
+                                           const NocStorage& noc_model,
+                                           const t_noc_traffic_flow& traffic_flow_info,
+                                           const t_noc_opts& noc_opts);
 
+/**
+ * @brief Determines the congestion cost a NoC link. The cost
+ * is calculating by measuring how much the current bandwidth
+ * going through the link exceeds the link's bandwidth capacity.
+ *
+ * @param link The NoC link for which the congestion cost is
+ * to be computed
+ * @param noc_opts Contains the user provided weighting factor to
+ * specify the importance of congestion costs compared to other
+ * NoC-related cost terms.
+ * @return The computed congestion cost for the given NoC link.
+ */
 double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc_opts);
 
-double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& norm_factors, const t_noc_opts& noc_opts);
+/**
+ * @brief Computes a weighted average of NoC cost term to determine
+ * NoC's contribution to the total placement cost.
+ *
+ * @param cost_terms Different NoC-related cost terms.
+ * @param norm_factors Normalization factors used to scale
+ * different NoC-related cost term so that they have similar
+ * ranges.
+ * @param noc_opts Contains noc_placement_weighting factor
+ * to specify the contribution of NoC-related cost to the
+ * total placement cost.
+ * @return  The computed total NoC-related contribution to the
+ * total placement cost.
+ */
+double calculate_noc_cost(const NocCostTerms& cost_terms,
+                          const t_placer_costs& norm_factors,
+                          const t_noc_opts& noc_opts);
 
 /**
  * @brief Goes through all the traffic flows and determines whether the
@@ -385,12 +427,37 @@ double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& 
  */
 int get_number_of_traffic_flows_with_latency_cons_met(void);
 
+/**
+ * @brief Goes through all NoC links and counts the congested ones.
+ *
+ * @return The total number of congested NoC links.
+ */
 int get_number_of_congested_noc_links(void);
 
+/**
+ * @brief Goes through all NoC links and determines whether they
+ * are congested or not. Then adds up the congestion ratio of all
+ * congested links.
+ *
+ * @return The total congestion ratio
+ */
 double get_total_congestion_bandwidth_ratio(void);
 
+/**
+ * @brief Goes through all NoC links and determines whether they
+ * are congested or not. Then finds n links that are most congested.
+ *
+ * @return n links with highest congestion ratio
+ */
 std::vector<NocLink> get_top_n_congested_links(int n);
 
+
+/**
+ * @brief Goes through all NoC links and determines whether they
+ * are congested or not. Then finds n links that are most congested.
+ *
+ * @return n highest congestion ratios
+ */
 std::vector<double> get_top_n_congestion_ratios(int n);
 
 /**

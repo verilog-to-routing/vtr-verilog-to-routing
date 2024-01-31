@@ -16,6 +16,15 @@
 // in NocCostTerms constructor
 class t_placer_costs;
 
+/**
+ * @brief Data structure that stores different cost terms for NoC placement.
+ *
+ *   @param aggregate_bandwidth The total used bandwidth used in the NoC.
+ *   @param latency A weighted average between aggregate latency and
+ *   latency overruns.
+ *   @param congestion The sum of congestion divided by available bandwidth
+ *   over all NoC links.
+ */
 struct NocCostTerms {
   public:
     NocCostTerms() = delete;
