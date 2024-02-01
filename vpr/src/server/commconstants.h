@@ -14,6 +14,7 @@ constexpr const char* OPTION_PATH_NUM = "path_num";
 constexpr const char* OPTION_PATH_TYPE = "path_type";
 constexpr const char* OPTION_DETAILS_LEVEL = "details_level";
 constexpr const char* OPTION_IS_FLOAT_ROUTING = "is_flat_routing";
+constexpr const char* OPTION_PATH_INDEX = "path_index";
 constexpr const char* OPTION_PATH_ELEMENTS = "path_elements";
 constexpr const char* OPTION_HIGHTLIGHT_MODE = "hight_light_mode";
 constexpr const char* OPTION_DRAW_PATH_CONTOUR = "draw_path_contour";

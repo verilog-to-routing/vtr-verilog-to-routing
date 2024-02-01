@@ -38,7 +38,7 @@ gint get_item_index_by_text(gpointer combo_box, const gchar* target_item) {
         // Check if the index is within bounds
         if (gtk_tree_model_iter_nth_child(model, &iter, NULL, index)) {
             gtk_tree_model_get(model, &iter, 0, &current_item_text, -1);
-            if (g_strcasecmp(target_item, current_item_text) == 0) {
+            if (g_ascii_strcasecmp(target_item, current_item_text) == 0) {
                 result_index = index;
                 break;
             }

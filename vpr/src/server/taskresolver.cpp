@@ -1,5 +1,6 @@
 #include "taskresolver.h"
 
+#include "commconstants.h"
 #include "globals.h"
 #include "pathhelper.h"
 #include "telegramoptions.h"
@@ -83,6 +84,7 @@ bool TaskResolver::update(ezgl::application* app)
                     has_processed_task = true;
                     break;
                 }
+                default: break;
             }           
         }
     }
@@ -90,7 +92,7 @@ bool TaskResolver::update(ezgl::application* app)
     return has_processed_task;
 }
 
-void TaskResolver::processGetPathListTask(ezgl::application* app, Task& task)
+void TaskResolver::processGetPathListTask(ezgl::application*, Task& task)
 {
     TelegramOptions options{task.options(), {comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLOAT_ROUTING}};
     if (!options.hasErrors()) {
@@ -129,12 +131,12 @@ void TaskResolver::processGetPathListTask(ezgl::application* app, Task& task)
 
 void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, Task& task)
 {
-    TelegramOptions options{task.options(), {OPTION_PATH_INDEX, OPTION_HIGHTLIGHT_MODE}};
+    TelegramOptions options{task.options(), {comm::OPTION_PATH_INDEX, comm::OPTION_HIGHTLIGHT_MODE}};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
-        const int pathIndex = options.getInt(OPTION_PATH_INDEX, -1);
-        const std::string highLightMode = options.getString(OPTION_HIGHTLIGHT_MODE);
+        const int pathIndex = options.getInt(comm::OPTION_PATH_INDEX, -1);
+        const std::string highLightMode = options.getString(comm::OPTION_HIGHTLIGHT_MODE);
 
         if (pathIndex == -1) {
             server_ctx.set_crit_path_index(-1); // clear selection

@@ -159,7 +159,7 @@ void GateIO::startListening()
                     std::memset(data, 0, sizeof(data));
                     ssize_t bytes_received = recv(client_socket, data, sizeof(data), 0);
                     if (bytes_received > 0) {
-                        m_telegramBuff.append(comm::ByteArray{data, bytes_received});
+                        m_telegramBuff.append(comm::ByteArray{data, static_cast<std::size_t>(bytes_received)});
                     } else if (bytes_received == 0) {
                         std::cout << "Connection closed\n";
                         connectionProblemDetected = true;
