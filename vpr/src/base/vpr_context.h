@@ -36,7 +36,6 @@
 #include "taskresolver.h"
 #include "tatum/report/TimingPath.hpp"
 
-
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *

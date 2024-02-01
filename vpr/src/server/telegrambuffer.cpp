@@ -2,17 +2,15 @@
 #include "commconstants.h"
 
 namespace comm {
-    
-void TelegramBuffer::append(const ByteArray& bytes)
-{
+
+void TelegramBuffer::append(const ByteArray& bytes) {
     m_rawBuffer.append(bytes);
 }
 
-std::vector<ByteArray> TelegramBuffer::takeFrames()
-{
+std::vector<ByteArray> TelegramBuffer::takeFrames() {
     std::vector<ByteArray> result;
     ByteArray candidate;
-    for (unsigned char b: m_rawBuffer) {
+    for (unsigned char b : m_rawBuffer) {
         if (b == TELEGRAM_FRAME_DELIMETER) {
             if (!candidate.empty()) {
                 result.push_back(candidate);

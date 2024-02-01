@@ -16,9 +16,11 @@ namespace server {
  * It generates a JSON data structure to be sent back to the client as a response.
  */
 class Task {
-public:
-    Task(int jobId, int cmd, const std::string& options = ""):
-        m_jobId(jobId), m_cmd(cmd), m_options(options) {}
+  public:
+    Task(int jobId, int cmd, const std::string& options = "")
+        : m_jobId(jobId)
+        , m_cmd(cmd)
+        , m_options(options) {}
 
     int jobId() const { return m_jobId; }
     int cmd() const { return m_cmd; }
@@ -48,8 +50,7 @@ public:
         m_isFinished = true;
     }
 
-    std::string toJsonStr() const
-    {
+    std::string toJsonStr() const {
         std::stringstream ss;
         ss << "{";
 
@@ -65,7 +66,7 @@ public:
         return ss.str();
     }
 
-private:
+  private:
     int m_jobId = -1;
     int m_cmd = -1;
     std::string m_options;

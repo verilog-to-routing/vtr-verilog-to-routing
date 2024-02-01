@@ -1,8 +1,7 @@
 #include "convertutils.h"
 #include <sstream>
 
-std::optional<int> tryConvertToInt(const std::string& str)
-{
+std::optional<int> tryConvertToInt(const std::string& str) {
     std::optional<int> result;
 
     std::istringstream iss(str);
@@ -16,4 +15,3 @@ std::optional<int> tryConvertToInt(const std::string& str)
     }
     return result;
 }
-

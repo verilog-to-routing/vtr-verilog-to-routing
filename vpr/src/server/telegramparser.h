@@ -13,14 +13,14 @@ namespace comm {
  * from a JSON schema structured as follows: {JOB_ID:num, CMD:enum, OPTIONS:string}.
  */
 class TelegramParser {
-public:
+  public:
     static std::optional<int> tryExtractFieldJobId(const std::string& message);
     static std::optional<int> tryExtractFieldCmd(const std::string& message);
     static std::optional<std::string> tryExtractFieldOptions(const std::string& message);
     static std::optional<std::string> tryExtractFieldData(const std::string& message);
     static std::optional<int> tryExtractFieldStatus(const std::string& message);
 
-private:
+  private:
     static std::optional<std::string> tryExtractJsonValueStr(const std::string& jsonString, const std::string& key);
 };
 

@@ -971,7 +971,7 @@ void draw_crit_path(ezgl::renderer* g) {
             *timing_ctx.graph,
             *(draw_state->setup_timing_info->setup_analyzer()), 1);
 
-        if (paths.size()>0) {
+        if (paths.size() > 0) {
             auto path = paths[0];
             draw_concrete_crit_path(path, g);
         }

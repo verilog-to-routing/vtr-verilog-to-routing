@@ -10,7 +10,7 @@
 #include <map>
 
 namespace server {
-    
+
 /** 
  * @brief Option class Parser
  * 
@@ -20,9 +20,9 @@ namespace server {
 */
 
 class TelegramOptions {
-private:
+  private:
     enum {
-        INDEX_TYPE=0,
+        INDEX_TYPE = 0,
         INDEX_NAME,
         INDEX_VALUE,
         TOTAL_INDEXES_NUM
@@ -33,11 +33,11 @@ private:
         std::string value;
     };
 
-public:
+  public:
     TelegramOptions(const std::string& data, const std::vector<std::string>& expectedKeys) {
         // parse data string
         std::vector<std::string> options = splitString(data, ';');
-        for (const std::string& optionStr: options) {
+        for (const std::string& optionStr : options) {
             std::vector<std::string> fragments = splitString(optionStr, ':');
             if (fragments.size() == TOTAL_INDEXES_NUM) {
                 std::string name = fragments[INDEX_NAME];
@@ -65,14 +65,14 @@ public:
         std::string dataStr = getString(name);
         if (!dataStr.empty()) {
             std::vector<std::string> pathes = splitString(dataStr, '|');
-            for (const std::string& path: pathes) {
+            for (const std::string& path : pathes) {
                 std::vector<std::string> pathStruct = splitString(path, '#');
                 if (pathStruct.size() == 2) {
                     std::string pathIndexStr = pathStruct[0];
                     std::string pathElementIndexesStr = pathStruct[1];
                     std::vector<std::string> pathElementIndexes = splitString(pathElementIndexesStr, ',');
                     std::set<std::size_t> elements;
-                    for (const std::string& pathElementIndex: pathElementIndexes) {
+                    for (const std::string& pathElementIndex : pathElementIndexes) {
                         if (std::optional<int> optValue = tryConvertToInt(pathElementIndex.c_str())) {
                             elements.insert(optValue.value());
                         }
@@ -114,21 +114,19 @@ public:
         }
     }
 
-    std::string errorsStr() const { 
+    std::string errorsStr() const {
         std::string result;
-        for (const std::string& error: m_errors) {
+        for (const std::string& error : m_errors) {
             result += error + ";";
         }
-        return result; 
+        return result;
     }
 
-private:
+  private:
     std::unordered_map<std::string, Option> m_options;
     std::vector<std::string> m_errors;
 
-
-    std::vector<std::string> splitString(const std::string& input, char delimiter)
-    {
+    std::vector<std::string> splitString(const std::string& input, char delimiter) {
         std::vector<std::string> tokens;
         std::istringstream tokenStream(input);
         std::string token;
@@ -147,7 +145,7 @@ private:
 
     bool checkKeysPresence(const std::vector<std::string>& keys) {
         bool result = true;
-        for (const std::string& key: keys) {
+        for (const std::string& key : keys) {
             if (m_options.find(key) == m_options.end()) {
                 m_errors.emplace_back("cannot find required option " + key);
                 result = false;

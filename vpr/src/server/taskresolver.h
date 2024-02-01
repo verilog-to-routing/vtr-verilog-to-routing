@@ -7,7 +7,7 @@
 #include <vector>
 
 namespace ezgl {
-    class application;
+class application;
 }
 
 namespace server {
@@ -19,9 +19,9 @@ namespace server {
 */
 
 class TaskResolver {
-public:
-    TaskResolver()=default;
-    ~TaskResolver()=default;
+  public:
+    TaskResolver() = default;
+    ~TaskResolver() = default;
 
     int tasksNum() const { return m_tasks.size(); }
 
@@ -37,7 +37,7 @@ public:
 
     const std::vector<Task>& tasks() const { return m_tasks; }
 
-private:
+  private:
     std::vector<Task> m_tasks;
 
     void processGetPathListTask(ezgl::application*, Task&);

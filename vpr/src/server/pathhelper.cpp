@@ -17,7 +17,7 @@
 #include <cassert>
 
 namespace server {
-    
+
 namespace {
 
 /** 
@@ -61,8 +61,7 @@ CritPathsResult generate_hold_timing_report(const HoldTimingInfo& timing_info, c
 /** 
  * @brief Unified helper function to calculate the critical path with specified parameters.
  */
-CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing) 
-{
+CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing) {
     // shortcuts
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -76,8 +75,8 @@ CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_tim
 
     //Do final timing analysis
     auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat_routing);
-    
-    e_timing_update_type timing_update_type = e_timing_update_type::AUTO;     // FULL, INCREMENTAL, AUTO
+
+    e_timing_update_type timing_update_type = e_timing_update_type::AUTO; // FULL, INCREMENTAL, AUTO
     auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, timing_update_type);
     timing_info->update();
 

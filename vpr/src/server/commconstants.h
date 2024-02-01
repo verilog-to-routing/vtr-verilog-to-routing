@@ -27,10 +27,10 @@ constexpr const char* KEY_HOLD_PATH_LIST = "hold";
 //
 
 enum CMD {
-    CMD_GET_PATH_LIST_ID=0,
+    CMD_GET_PATH_LIST_ID = 0,
     CMD_DRAW_PATH_ID
 };
 
 } // namespace comm
 
-#endif 
+#endif

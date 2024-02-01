@@ -28,9 +28,8 @@ namespace server {
  * - The gateio runs in a separate thread to ensure smooth IO behavior.
  * - The socket is initialized in a non-blocking mode to function properly in a multithreaded environment.
 */
-class GateIO
-{
-public:
+class GateIO {
+  public:
     explicit GateIO();
     ~GateIO();
 
@@ -42,7 +41,7 @@ public:
     void start(int portNum);
     void stop();
 
-private:
+  private:
     int m_portNum = -1;
 
     std::atomic<bool> m_isRunning; // is true when started
@@ -63,4 +62,3 @@ private:
 } // namespace server
 
 #endif // GATEIO_H
-

@@ -10,18 +10,15 @@
 
 namespace server {
 
-GateIO::GateIO()
-{
+GateIO::GateIO() {
     m_isRunning.store(false);
 }
 
-GateIO::~GateIO()
-{
+GateIO::~GateIO() {
     stop();
 }
 
-void GateIO::start(int portNum)
-{
+void GateIO::start(int portNum) {
     if (!m_isRunning.load()) {
         m_portNum = portNum;
         std::cout << "th=" << std::this_thread::get_id() << " starting server" << std::endl;
@@ -30,37 +27,33 @@ void GateIO::start(int portNum)
     }
 }
 
-void GateIO::stop()
-{
+void GateIO::stop() {
     if (m_isRunning.load()) {
         m_isRunning.store(false);
         if (m_thread.joinable()) {
             m_thread.join();
         }
-    }                
+    }
 }
 
-void GateIO::takeRecievedTasks(std::vector<Task>& tasks)
-{
+void GateIO::takeRecievedTasks(std::vector<Task>& tasks) {
     tasks.clear();
     std::unique_lock<std::mutex> lock(m_receivedTasksMutex);
     if (m_receivedTasks.size() > 0) {
-        std::cout << "take " << m_receivedTasks.size() << " num of received tasks"<< std::endl;
+        std::cout << "take " << m_receivedTasks.size() << " num of received tasks" << std::endl;
     }
     std::swap(tasks, m_receivedTasks);
 }
 
-void GateIO::addSendTasks(const std::vector<Task>& tasks)
-{
+void GateIO::addSendTasks(const std::vector<Task>& tasks) {
     std::unique_lock<std::mutex> lock(m_sendTasksMutex);
-    for (const Task& task: tasks) {
+    for (const Task& task : tasks) {
         std::cout << "addSendTasks id=" << task.jobId() << std::endl;
         m_sendTasks.push_back(task);
     }
 }
 
-void GateIO::startListening()
-{
+void GateIO::startListening() {
     int server_socket;
     int client_socket = -1;
     struct sockaddr_in address;
@@ -84,7 +77,7 @@ void GateIO::startListening()
     address.sin_port = htons(m_portNum);
 
     // Bind the socket to the network address and port
-    if (bind(server_socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    if (bind(server_socket, (struct sockaddr*)&address, sizeof(address)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     } else {
@@ -106,11 +99,11 @@ void GateIO::startListening()
     bool connectionProblemDetected = false;
 
     // Event loop
-    while(m_isRunning.load()) {
+    while (m_isRunning.load()) {
         if (connectionProblemDetected || client_socket < 0) {
             int flags = fcntl(client_socket, F_GETFL, 0);
             fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
-            client_socket = accept(server_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+            client_socket = accept(server_socket, (struct sockaddr*)&address, (socklen_t*)&addrlen);
             if (client_socket > 0) {
                 std::cout << "accept client" << std::endl;
             }
@@ -121,7 +114,7 @@ void GateIO::startListening()
             // Handle sending
             {
                 std::unique_lock<std::mutex> lock(m_sendTasksMutex);
-                for (const Task& task: m_sendTasks) {
+                for (const Task& task : m_sendTasks) {
                     std::string response = task.toJsonStr();
                     response += static_cast<unsigned char>(comm::TELEGRAM_FRAME_DELIMETER);
                     std::cout << "sending" << response << "to client" << std::endl;
@@ -171,7 +164,7 @@ void GateIO::startListening()
             }
 
             auto frames = m_telegramBuff.takeFrames();
-            for (const comm::ByteArray& frame: frames) {
+            for (const comm::ByteArray& frame : frames) {
                 // Process received data
                 std::string message{frame.to_string()};
                 std::cout << "Received: " << message << std::endl;

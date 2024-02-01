@@ -11,13 +11,12 @@
 
 namespace server {
 
-void TaskResolver::addTask(Task task)
-{
+void TaskResolver::addTask(Task task) {
     // pre-process task before adding, where we could quickly detect failure scenario
-    for (auto& t: m_tasks) {
+    for (auto& t : m_tasks) {
         if (t.cmd() == task.cmd()) {
             if (t.options() == task.options()) {
-                std::string msg = "similar task is already in execution, reject new task: " + t.info()+ " and waiting for old task: " + task.info() + " execution";
+                std::string msg = "similar task is already in execution, reject new task: " + t.info() + " and waiting for old task: " + task.info() + " execution";
                 task.fail(msg);
             } else {
                 // case when task has same jobId but different options
@@ -33,16 +32,14 @@ void TaskResolver::addTask(Task task)
     m_tasks.push_back(std::move(task));
 }
 
-void TaskResolver::addTasks(const std::vector<Task>& tasks)
-{
-    for (const Task& task: tasks) {
+void TaskResolver::addTasks(const std::vector<Task>& tasks) {
+    for (const Task& task : tasks) {
         addTask(task);
     }
 }
 
-void TaskResolver::takeFinished(std::vector<Task>& result)
-{
-    for (auto it=m_tasks.begin(); it != m_tasks.end();) {
+void TaskResolver::takeFinished(std::vector<Task>& result) {
+    for (auto it = m_tasks.begin(); it != m_tasks.end();) {
         Task task = *it;
         if (task.isFinished()) {
             result.push_back(std::move(task));
@@ -69,32 +66,31 @@ e_timing_report_detail TaskResolver::getDetailsLevelEnum(const std::string& path
     return detailesLevel;
 }
 
-bool TaskResolver::update(ezgl::application* app)
-{
+bool TaskResolver::update(ezgl::application* app) {
     bool has_processed_task = false;
-    for (auto& task: m_tasks) {
+    for (auto& task : m_tasks) {
         if (!task.isFinished()) {
-            switch(task.cmd()) {
+            switch (task.cmd()) {
                 case comm::CMD_GET_PATH_LIST_ID: {
                     processGetPathListTask(app, task);
                     has_processed_task = true;
                     break;
-                } 
+                }
                 case comm::CMD_DRAW_PATH_ID: {
                     processDrawCriticalPathTask(app, task);
                     has_processed_task = true;
                     break;
                 }
-                default: break;
-            }           
+                default:
+                    break;
+            }
         }
     }
 
     return has_processed_task;
 }
 
-void TaskResolver::processGetPathListTask(ezgl::application*, Task& task)
-{
+void TaskResolver::processGetPathListTask(ezgl::application*, Task& task) {
     TelegramOptions options{task.options(), {comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLOAT_ROUTING}};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
@@ -130,8 +126,7 @@ void TaskResolver::processGetPathListTask(ezgl::application*, Task& task)
     }
 }
 
-void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, Task& task)
-{
+void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, Task& task) {
     TelegramOptions options{task.options(), {comm::OPTION_PATH_INDEX, comm::OPTION_HIGHTLIGHT_MODE}};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
@@ -142,8 +137,7 @@ void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, Task& tas
         if (pathIndex == -1) {
             server_ctx.set_crit_path_index(-1); // clear selection
             task.success();
-        }
-        else if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx.crit_paths().size()))) {
+        } else if ((pathIndex >= 0) && (pathIndex < static_cast<int>(server_ctx.crit_paths().size()))) {
             // set critical path index for rendering
             server_ctx.set_crit_path_index(pathIndex);
 
@@ -157,9 +151,9 @@ void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, Task& tas
                 std::string msg{"cannot find ToggleCritPath qcombobox index for item " + highLightMode};
                 std::cerr << msg << std::endl;
                 task.fail(msg);
-            }                        
+            }
         } else {
-            std::string msg{"selectedIndex=" + std::to_string(pathIndex) + " is out of range [0-" + std::to_string(static_cast<int>(server_ctx.crit_paths().size())-1) + "]"};
+            std::string msg{"selectedIndex=" + std::to_string(pathIndex) + " is out of range [0-" + std::to_string(static_cast<int>(server_ctx.crit_paths().size()) - 1) + "]"};
             std::cerr << msg << std::endl;
             task.fail(msg);
         }

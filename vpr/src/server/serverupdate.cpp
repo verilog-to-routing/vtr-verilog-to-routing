@@ -33,7 +33,7 @@ gboolean update(gpointer data) {
             app->refresh_drawing();
         }
     }
-    
+
     // Return TRUE to keep the timer running, or FALSE to stop it
     return isRunning;
 }
