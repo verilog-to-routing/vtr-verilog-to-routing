@@ -6,6 +6,7 @@
 #include "telegramoptions.h"
 #include "telegramparser.h"
 #include "gtkcomboboxhelper.h"
+
 #include <ezgl/application.hpp>
 
 namespace server {
