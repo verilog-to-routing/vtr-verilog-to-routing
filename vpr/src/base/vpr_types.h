@@ -1496,6 +1496,7 @@ struct t_noc_opts {
     std::string noc_flows_file;               ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
     std::string noc_routing_algorithm;        ///<controls the routing algorithm used to route packets within the NoC
     double noc_placement_weighting;           ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
+    double noc_aggregate_bandwidth_weighting;
     double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow contraints range:[0-inf)
     double noc_latency_weighting;             ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
     double noc_congestion_weighting;          ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)

@@ -395,6 +395,8 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
  */
 double calculate_link_congestion_cost(const NocLink& link);
 
+void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts);
+
 /**
  * @brief Computes a weighted average of NoC cost term to determine
  * NoC's contribution to the total placement cost.

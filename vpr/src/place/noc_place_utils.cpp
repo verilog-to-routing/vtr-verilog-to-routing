@@ -586,6 +586,17 @@ double calculate_link_congestion_cost(const NocLink& link) {
     return congested_bw_ratio;
 }
 
+void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts) {
+
+    double weighting_factor_sum = noc_opts.noc_latency_weighting +
+                                  noc_opts.noc_latency_constraints_weighting +
+                                  noc_opts.noc_congestion_weighting;
+
+    VTR_ASSERT(weighting_factor_sum <= 1.0 && weighting_factor_sum >= 0.0);
+
+    noc_opts.noc_aggregate_bandwidth_weighting = 1.0 - weighting_factor_sum;
+}
+
 double calculate_noc_cost(const NocCostTerms& cost_terms,
                           const NocCostTerms& norm_factors,
                           const t_noc_opts& noc_opts) {
@@ -597,8 +608,8 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
      * 3) Link congestion costs
      */
     cost = noc_opts.noc_placement_weighting * (
-               cost_terms.aggregate_bandwidth * norm_factors.aggregate_bandwidth +
-               cost_terms.latency * norm_factors.latency * noc_opts.noc_latency_constraints_weighting +
+               cost_terms.aggregate_bandwidth * norm_factors.aggregate_bandwidth * noc_opts.noc_aggregate_bandwidth_weighting +
+               cost_terms.latency * norm_factors.latency * noc_opts.noc_latency_weighting +
                cost_terms.latency_overrun * norm_factors.latency_overrun * noc_opts.noc_latency_constraints_weighting +
                cost_terms.congestion * norm_factors.congestion * noc_opts.noc_congestion_weighting);
 

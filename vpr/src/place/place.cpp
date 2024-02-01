@@ -656,6 +656,10 @@ void try_place(const Netlist<>& net_list,
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
+    if (noc_opts.noc) {
+        normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
+    }
+
     initial_placement(placer_opts,
                       placer_opts.constraints_file.c_str(),
                       noc_opts);
