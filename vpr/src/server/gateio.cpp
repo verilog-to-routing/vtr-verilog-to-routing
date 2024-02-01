@@ -123,7 +123,7 @@ void GateIO::startListening()
                 std::unique_lock<std::mutex> lock(m_sendTasksMutex);
                 for (const Task& task: m_sendTasks) {
                     std::string response = task.toJsonStr();
-                    response += static_cast<unsigned char>(TELEGRAM_FRAME_DELIMETER);
+                    response += static_cast<unsigned char>(comm::TELEGRAM_FRAME_DELIMETER);
                     std::cout << "sending" << response << "to client" << std::endl;
                     send(client_socket, response.c_str(), response.length(), 0);
                 }
@@ -155,10 +155,11 @@ void GateIO::startListening()
             } else {
                 if (FD_ISSET(client_socket, &readfds)) {
                     // Data is available; proceed with recv
-                    char data[1024];
+                    char data[2048];
+                    std::memset(data, 0, sizeof(data));
                     ssize_t bytes_received = recv(client_socket, data, sizeof(data), 0);
                     if (bytes_received > 0) {
-                        m_telegramBuff.append(ByteArray{data});
+                        m_telegramBuff.append(comm::ByteArray{data, bytes_received});
                     } else if (bytes_received == 0) {
                         std::cout << "Connection closed\n";
                         connectionProblemDetected = true;
@@ -170,18 +171,17 @@ void GateIO::startListening()
             }
 
             auto frames = m_telegramBuff.takeFrames();
-            for (const ByteArray& frame: frames) {
+            for (const comm::ByteArray& frame: frames) {
                 // Process received data
                 std::string message{frame.to_string()};
                 std::cout << "Received: " << message << std::endl;
-
-                int jobId = TelegramParser::extractJobId(message);
-                int cmd = TelegramParser::extractCmd(message);
-                std::string options = TelegramParser::extractOptions(message);
-                std::cout << "server: jobId=" << jobId << ", cmd=" << cmd << ", options=" << options << std::endl;
-                if ((jobId != -1) && (cmd != -1)) {
+                std::optional<int> jobIdOpt = comm::TelegramParser::tryExtractFieldJobId(message);
+                std::optional<int> cmdOpt = comm::TelegramParser::tryExtractFieldCmd(message);
+                std::optional<std::string> optionsOpt = comm::TelegramParser::tryExtractFieldOptions(message);
+                if (jobIdOpt && cmdOpt && optionsOpt) {
+                    std::cout << "server: jobId=" << jobIdOpt.value() << ", cmd=" << cmdOpt.value() << ", options=" << optionsOpt.value() << std::endl;
                     std::unique_lock<std::mutex> lock(m_receivedTasksMutex);
-                    m_receivedTasks.emplace_back(jobId, cmd, options);
+                    m_receivedTasks.emplace_back(jobIdOpt.value(), cmdOpt.value(), optionsOpt.value());
                 }
             }
 

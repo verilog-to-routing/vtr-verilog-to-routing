@@ -5,7 +5,7 @@
 #include <sstream>
 #include <iostream>
 
-#include "serverconsts.h"
+#include "commconstants.h"
 
 namespace server {
 
@@ -53,12 +53,12 @@ public:
         std::stringstream ss;
         ss << "{";
 
-        ss << "\"" << KEY_JOB_ID << "\":\"" << m_jobId << "\",";
-        ss << "\"" << KEY_CMD << "\":\"" << m_cmd << "\",";
-        ss << "\"" << KEY_OPTIONS << "\":\"" << m_options << "\",";
-        ss << "\"" << KEY_DATA << "\":\"" << m_result << "\",";
+        ss << "\"" << comm::KEY_JOB_ID << "\":\"" << m_jobId << "\",";
+        ss << "\"" << comm::KEY_CMD << "\":\"" << m_cmd << "\",";
+        ss << "\"" << comm::KEY_OPTIONS << "\":\"" << m_options << "\",";
+        ss << "\"" << comm::KEY_DATA << "\":\"" << m_result << "\",";
         int status = m_hasError ? 0 : 1;
-        ss << "\"" << KEY_STATUS << "\":\"" << status << "\"";
+        ss << "\"" << comm::KEY_STATUS << "\":\"" << status << "\"";
 
         ss << "}";
 

@@ -5,43 +5,41 @@
 #include <string>
 #include <cstring>
 
-namespace server {
+namespace comm {
 
 /** 
- * @brief Implements dynamic bytes array with simple interface.
+ * @brief ByteArray as a simple wrapper over std::vector<unsigned char>
 */
-class ByteArray {
+class ByteArray : public std::vector<unsigned char> {
 public:
     static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
     ByteArray(const char* data)
-        : m_data(reinterpret_cast<const unsigned char*>(data),
-                 reinterpret_cast<const unsigned char*>(data + strlen(data)))
+        : std::vector<unsigned char>(reinterpret_cast<const unsigned char*>(data),
+                                     reinterpret_cast<const unsigned char*>(data + std::strlen(data)))
+    {}
+
+    ByteArray(const char* data, std::size_t size)
+        : std::vector<unsigned char>(reinterpret_cast<const unsigned char*>(data),
+                                     reinterpret_cast<const unsigned char*>(data + size))
     {}
     ByteArray(std::size_t sizeHint = DEFAULT_SIZE_HINT) {
-        m_data.reserve(sizeHint);
+        this->reserve(sizeHint);
     }
 
     void append(const ByteArray& appendix) {
-        for (unsigned char b: appendix.data()) {
-            m_data.push_back(b);
+        for (unsigned char b: appendix) {
+            this->push_back(b);
         }
     }
 
     void append(unsigned char b) {
-        m_data.push_back(b);
+        this->push_back(b);
     }
 
     std::string to_string() const {
-        return std::string(reinterpret_cast<const char*>(m_data.data()), m_data.size());
+        return std::string(reinterpret_cast<const char*>(this->data()), this->size());
     }
-
-    bool empty() const { return m_data.empty(); }
-    const std::vector<unsigned char>& data() const { return m_data; }
-    void clear() { m_data.clear(); }
-
-private:
-    std::vector<unsigned char> m_data;
 };
 
 /** 
@@ -67,6 +65,6 @@ private:
     ByteArray m_rawBuffer;
 };
 
-} // namespace server 
+} // namespace comm 
 
 #endif // TELEGRAMBUFFER_H

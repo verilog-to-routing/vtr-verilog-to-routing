@@ -2,24 +2,28 @@
 #define TELEGRAMPARSER_H
 
 #include <string>
+#include <optional>
 
-namespace server {
+namespace comm {
 
 /**
  * @brief Dummy JSON parser using regular expressions.
- * 
- * This module provides helper methods to extract values such as "id", "cmd", or "options" 
- * from a JSON schema structured as follows: {id: num, cmd: enum, options: string}.
- * The regular expressions implemented in this parser aim to retrieve specific fields' values 
- * from a given JSON structure, facilitating data extraction and manipulation.
+ *
+ * This module provides helper methods to extract values for a keys as "JOB_ID", "CMD", or "OPTIONS" 
+ * from a JSON schema structured as follows: {JOB_ID:num, CMD:enum, OPTIONS:string}.
  */
 class TelegramParser {
 public:
-    static int extractJobId(const std::string& message);
-    static int extractCmd(const std::string& message);
-    static std::string extractOptions(const std::string& message);
+    static std::optional<int> tryExtractFieldJobId(const std::string& message);
+    static std::optional<int> tryExtractFieldCmd(const std::string& message);
+    static std::optional<std::string> tryExtractFieldOptions(const std::string& message);
+    static std::optional<std::string> tryExtractFieldData(const std::string& message);
+    static std::optional<int> tryExtractFieldStatus(const std::string& message);
+
+private:
+    static std::optional<std::string> tryExtractJsonValueStr(const std::string& jsonString, const std::string& key);
 };
 
-} // namespace server
+} // namespace comm
 
 #endif // TELEGRAMPARSER_H

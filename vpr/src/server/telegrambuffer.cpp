@@ -1,7 +1,7 @@
 #include "telegrambuffer.h"
-#include "serverconsts.h"
+#include "commconstants.h"
 
-namespace server {
+namespace comm {
     
 void TelegramBuffer::append(const ByteArray& bytes)
 {
@@ -12,7 +12,7 @@ std::vector<ByteArray> TelegramBuffer::takeFrames()
 {
     std::vector<ByteArray> result;
     ByteArray candidate;
-    for (unsigned char b: m_rawBuffer.data()) {
+    for (unsigned char b: m_rawBuffer) {
         if (b == TELEGRAM_FRAME_DELIMETER) {
             if (!candidate.empty()) {
                 result.push_back(candidate);
@@ -26,4 +26,4 @@ std::vector<ByteArray> TelegramBuffer::takeFrames()
     return result;
 }
 
-} // namespace server
+} // namespace comm

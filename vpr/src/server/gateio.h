@@ -55,7 +55,7 @@ private:
     std::vector<Task> m_sendTasks; // task to client (reponses)
     std::mutex m_sendTasksMutex;
 
-    TelegramBuffer m_telegramBuff;
+    comm::TelegramBuffer m_telegramBuff;
 
     void startListening(); // thread worker function
 };

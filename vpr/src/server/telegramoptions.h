@@ -1,6 +1,8 @@
 #ifndef TELEGRAMOPTIONS_H
 #define TELEGRAMOPTIONS_H
 
+#include <convertutils.h>
+
 #include <sstream>
 #include <iostream>
 #include <set>
@@ -58,6 +60,34 @@ public:
 
     bool hasErrors() const { return !m_errors.empty(); }
 
+    std::map<std::size_t, std::set<std::size_t>> getMapOfSets(const std::string& name) {
+        std::map<std::size_t, std::set<std::size_t>> result;
+        std::string dataStr = getString(name);
+        if (!dataStr.empty()) {
+            std::vector<std::string> pathes = splitString(dataStr, '|');
+            for (const std::string& path: pathes) {
+                std::vector<std::string> pathStruct = splitString(path, '#');
+                if (pathStruct.size() == 2) {
+                    std::string pathIndexStr = pathStruct[0];
+                    std::string pathElementIndexesStr = pathStruct[1];
+                    std::vector<std::string> pathElementIndexes = splitString(pathElementIndexesStr, ',');
+                    std::set<std::size_t> elements;
+                    for (const std::string& pathElementIndex: pathElementIndexes) {
+                        if (std::optional<int> optValue = tryConvertToInt(pathElementIndex.c_str())) {
+                            elements.insert(optValue.value());
+                        }
+                    }
+                    if (std::optional<int> optPathIndex = tryConvertToInt(pathIndexStr.c_str())) {
+                        result[optPathIndex.value()] = elements;
+                    }
+                } else {
+                    m_errors.emplace_back("wrong path data structure = " + path);
+                }
+            }
+        }
+        return result;
+    }
+
     std::string getString(const std::string& name) {
         std::string result;
         if (auto it = m_options.find(name); it != m_options.end()) {
@@ -66,24 +96,22 @@ public:
         return result;
     }
 
-    int getInt(const std::string& name, int defaultValue) {
-        int result = defaultValue;
-        try {
-            result = std::atoi(m_options[name].value.c_str());
-        } catch(...) {
+    int getInt(const std::string& name, int failValue) {
+        if (std::optional<int> opt = tryConvertToInt(m_options[name].value)) {
+            return opt.value();
+        } else {
             m_errors.emplace_back("cannot get int value for option " + name);
+            return failValue;
         }
-        return result;
     }
 
-    bool getBool(const std::string& name, bool defaultValue) {
-        bool result = defaultValue;
-        try {
-            result = std::atoi(m_options[name].value.c_str());
-        } catch(...) {
+    bool getBool(const std::string& name, bool failValue) {
+        if (std::optional<int> opt = tryConvertToInt(m_options[name].value)) {
+            return opt.value();
+        } else {
             m_errors.emplace_back("cannot get bool value for option " + name);
+            return failValue;
         }
-        return result;
     }
 
     std::string errorsStr() const { 

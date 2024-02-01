@@ -73,12 +73,12 @@ bool TaskResolver::update(ezgl::application* app)
     for (auto& task: m_tasks) {
         if (!task.isFinished()) {
             switch(task.cmd()) {
-                case CMD_GET_PATH_LIST_ID: {
+                case comm::CMD_GET_PATH_LIST_ID: {
                     processGetPathListTask(app, task);
                     has_processed_task = true;
                     break;
                 } 
-                case CMD_DRAW_PATH_ID: {
+                case comm::CMD_DRAW_PATH_ID: {
                     processDrawCriticalPathTask(app, task);
                     has_processed_task = true;
                     break;
@@ -92,17 +92,17 @@ bool TaskResolver::update(ezgl::application* app)
 
 void TaskResolver::processGetPathListTask(ezgl::application* app, Task& task)
 {
-    TelegramOptions options{task.options(), {OPTION_PATH_NUM, OPTION_PATH_TYPE, OPTION_DETAILS_LEVEL, OPTION_IS_FLOAT_ROUTING}};
+    TelegramOptions options{task.options(), {comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLOAT_ROUTING}};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
         server_ctx.set_crit_path_index(-1); // reset selection if path list options has changed
 
         // read options
-        const int nCriticalPathNum = options.getInt(OPTION_PATH_NUM, 1);
-        const std::string pathType = options.getString(OPTION_PATH_TYPE);
-        const std::string detailsLevel = options.getString(OPTION_DETAILS_LEVEL);
-        const bool isFlat = options.getBool(OPTION_IS_FLOAT_ROUTING, false);
+        const int nCriticalPathNum = options.getInt(comm::OPTION_PATH_NUM, 1);
+        const std::string pathType = options.getString(comm::OPTION_PATH_TYPE);
+        const std::string detailsLevel = options.getString(comm::OPTION_DETAILS_LEVEL);
+        const bool isFlat = options.getBool(comm::OPTION_IS_FLOAT_ROUTING, false);
 
         // calculate critical path depending on options and store result in server context
         CritPathsResult crit_paths_result = calcCriticalPath(pathType, nCriticalPathNum, getDetailsLevelEnum(detailsLevel), isFlat);
