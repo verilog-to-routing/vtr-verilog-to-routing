@@ -1,24 +1,19 @@
 #include "convertutils.h"
+#include <sstream>
 
 std::optional<int> tryConvertToInt(const std::string& str)
 {
     std::optional<int> result;
 
-    char* endptr; // To store the end of the conversion
-    errno = 0; // Set errno to 0 before the call
-    int candidate = std::strtol(str.c_str(), &endptr, 10);
-
-    // Check for conversion errors
-    if (errno != 0) {
-        return result;
+    std::istringstream iss(str);
+    int intValue;
+    if (iss >> intValue) {
+        // Check if there are no any characters left in the stream
+        char remaining;
+        if (!(iss >> remaining)) {
+            result = intValue;
+        }
     }
-
-    // Check if there were any non-numeric characters
-    if (endptr == str.c_str()) {
-        return result;
-    }
-
-    result = candidate;
     return result;
 }
 
