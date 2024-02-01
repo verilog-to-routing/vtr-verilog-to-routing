@@ -79,16 +79,16 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
     initial_noc_routing();
 
     // Initialize traffic_flow_costs
-    costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
-    costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
-    costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
+    costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();
+    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = comp_noc_latency_cost();
+    costs.noc_cost_terms.congestion = comp_noc_congestion_cost();
 }
 
 void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
-                                                    NocCostTerms& delta_c,
-                                                    const t_noc_opts& noc_opts) {
+                                                    NocCostTerms& delta_c) {
     VTR_ASSERT_SAFE(delta_c.aggregate_bandwidth == 0.);
     VTR_ASSERT_SAFE(delta_c.latency == 0.);
+    VTR_ASSERT(delta_c.latency_overrun == 0.);
     VTR_ASSERT_SAFE(delta_c.congestion == 0.);
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
@@ -122,11 +122,13 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
 
         // calculate the new aggregate bandwidth and latency costs for the affected traffic flow
         proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
-        proposed_traffic_flow_costs[traffic_flow_id].latency = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
+        std::tie(proposed_traffic_flow_costs[traffic_flow_id].latency,
+                 proposed_traffic_flow_costs[traffic_flow_id].latency_overrun) = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow);
 
         // compute how much the aggregate bandwidth and latency costs change with this swap
         delta_c.aggregate_bandwidth += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
         delta_c.latency += proposed_traffic_flow_costs[traffic_flow_id].latency - traffic_flow_costs[traffic_flow_id].latency;
+        delta_c.latency_overrun += proposed_traffic_flow_costs[traffic_flow_id].latency_overrun - traffic_flow_costs[traffic_flow_id].latency_overrun;
     }
 
     // Iterate over all affected links and calculate their new congestion cost and store it
@@ -135,7 +137,7 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
         const auto& link = noc_ctx.noc_model.get_single_noc_link(link_id);
 
         // calculate the new congestion cost for the link and store it
-        proposed_link_congestion_costs[link] = calculate_link_congestion_cost(link, noc_opts);
+        proposed_link_congestion_costs[link] = calculate_link_congestion_cost(link);
 
         // compute how much the congestion cost changes with this swap
         delta_c.congestion += proposed_link_congestion_costs[link] - link_congestion_costs[link];
@@ -154,6 +156,7 @@ void commit_noc_costs() {
         // reset the proposed traffic flows costs
         proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = INVALID_NOC_COST_TERM;
         proposed_traffic_flow_costs[traffic_flow_id].latency = INVALID_NOC_COST_TERM;
+        proposed_traffic_flow_costs[traffic_flow_id].latency_overrun = INVALID_NOC_COST_TERM;
     }
 
     // Iterate over all the NoC links whose bandwidth utilization was affected by the proposed move
@@ -321,12 +324,13 @@ void recompute_noc_costs(NocCostTerms& new_cost) {
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // reset the cost variables first
-    new_cost = NocCostTerms{0.0, 0.0, 0.0};
+    new_cost = NocCostTerms{0.0, 0.0, 0.0, 0.0};
 
     // go through the costs of all the traffic flows and add them up to recompute the total costs associated with the NoC
     for (const auto& traffic_flow_id : noc_ctx.noc_traffic_flows_storage.get_all_traffic_flow_id()) {
         new_cost.aggregate_bandwidth += traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
         new_cost.latency += traffic_flow_costs[traffic_flow_id].latency;
+        new_cost.latency_overrun += traffic_flow_costs[traffic_flow_id].latency_overrun;
     }
 
     // Iterate over all NoC links and accumulate their congestion costs
@@ -339,14 +343,23 @@ void recompute_noc_costs(NocCostTerms& new_cost) {
 
 void update_noc_normalization_factors(t_placer_costs& costs) {
     //Prevent the norm factors from going to infinity
-    costs.noc_aggregate_bandwidth_cost_norm = std::min(1 / costs.noc_aggregate_bandwidth_cost, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
-    costs.noc_latency_cost_norm = std::min(1 / costs.noc_latency_cost, MAX_INV_NOC_LATENCY_COST);
+    costs.noc_cost_norm_factors.aggregate_bandwidth = std::min(1 / costs.noc_cost_terms.aggregate_bandwidth, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
+    costs.noc_cost_norm_factors.latency = std::min(1 / costs.noc_cost_terms.latency, MAX_INV_NOC_LATENCY_COST);
 
-    // to avoid division by zero
-    if (costs.noc_congestion_cost > 0.0) {
-        costs.noc_congestion_cost_norm = std::min(1 / costs.noc_congestion_cost, MAX_INV_NOC_CONGESTION_COST);
+    // to avoid division by zero and negative numbers
+    // latency overrun cost may take very small negative values due to round-off error
+    if (costs.noc_cost_terms.latency_overrun > 0.0) {
+        costs.noc_cost_norm_factors.latency_overrun = std::min(1 / costs.noc_cost_terms.latency_overrun, MAX_INV_NOC_LATENCY_COST);
     } else {
-        costs.noc_congestion_cost_norm = MAX_INV_NOC_CONGESTION_COST;
+        costs.noc_cost_norm_factors.latency_overrun = MAX_INV_NOC_LATENCY_COST;
+    }
+
+    // to avoid division by zero and negative numbers
+    // congestion cost may take very small negative values due to round-off error
+    if (costs.noc_cost_terms.congestion > 0.0) {
+        costs.noc_cost_norm_factors.congestion = std::min(1 / costs.noc_cost_terms.congestion, MAX_INV_NOC_CONGESTION_COST);
+    } else {
+        costs.noc_cost_norm_factors.congestion = MAX_INV_NOC_CONGESTION_COST;
     }
 
     return;
@@ -378,13 +391,13 @@ double comp_noc_aggregate_bandwidth_cost(void) {
     return noc_aggregate_bandwidth_cost;
 }
 
-double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
+std::pair<double, double> comp_noc_latency_cost() {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.noc();
     // datastructure that stores all the traffic flow routes
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
-    double noc_latency_cost = 0.;
+    std::pair<double, double> noc_latency_cost_terms{0.0, 0.0};
 
     // now go through each traffic flow route and calculate its
     // latency. Then store this in local data structures and accumulate it.
@@ -392,19 +405,21 @@ double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
         const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage.get_traffic_flow_route(traffic_flow_id);
 
-        double curr_traffic_flow_latency_cost = calculate_traffic_flow_latency_cost(curr_traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
+        auto [curr_traffic_flow_latency, curr_traffic_flow_latency_overrun] = calculate_traffic_flow_latency_cost(curr_traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow);
 
-        // store the calculated latency for the current traffic flow in local datastructures (this also initializes them)
-        traffic_flow_costs[traffic_flow_id].latency = curr_traffic_flow_latency_cost;
+        // store the calculated latency cost terms for the current traffic flow in local datastructures (this also initializes them)
+        traffic_flow_costs[traffic_flow_id].latency = curr_traffic_flow_latency;
+        traffic_flow_costs[traffic_flow_id].latency_overrun = curr_traffic_flow_latency_overrun;
 
-        // accumulate the latency cost
-        noc_latency_cost += curr_traffic_flow_latency_cost;
+        // accumulate the latency cost terms
+        noc_latency_cost_terms.first += curr_traffic_flow_latency;
+        noc_latency_cost_terms.second += curr_traffic_flow_latency_overrun;
     }
 
-    return noc_latency_cost;
+    return noc_latency_cost_terms;
 }
 
-double comp_noc_congestion_cost(const t_noc_opts& noc_opts) {
+double comp_noc_congestion_cost() {
     // Used to access NoC links
     auto& noc_ctx = g_vpr_ctx.noc();
 
@@ -412,7 +427,7 @@ double comp_noc_congestion_cost(const t_noc_opts& noc_opts) {
 
     // Iterate over all NoC links
     for (const auto& link : noc_ctx.noc_model.get_noc_links()) {
-        double link_congestion_cost = calculate_link_congestion_cost(link, noc_opts);
+        double link_congestion_cost = calculate_link_congestion_cost(link);
 
         // store the congestion cost for this link in static data structures (this also initializes them)
         link_congestion_costs[link] = link_congestion_cost;
@@ -426,7 +441,7 @@ double comp_noc_congestion_cost(const t_noc_opts& noc_opts) {
 
 int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance, const t_noc_opts& noc_opts) {
     int error = 0;
-    NocCostTerms cost_check{0.0, 0.0, 0.0};
+    NocCostTerms cost_check{0.0, 0.0, 0.0, 0.0};
 
     // get current router block locations
     auto& place_ctx = g_vpr_ctx.placement();
@@ -468,8 +483,9 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         double current_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth_cost(temp_found_noc_route, curr_traffic_flow);
         cost_check.aggregate_bandwidth += current_flow_aggregate_bandwidth_cost;
 
-        double current_flow_latency_cost = calculate_traffic_flow_latency_cost(temp_found_noc_route, noc_model, curr_traffic_flow, noc_opts);
-        cost_check.latency += current_flow_latency_cost;
+        auto [curr_traffic_flow_latency_cost, curr_traffic_flow_latency_overrun_cost] = calculate_traffic_flow_latency_cost(temp_found_noc_route, noc_model, curr_traffic_flow);
+        cost_check.latency += curr_traffic_flow_latency_cost;
+        cost_check.latency_overrun += curr_traffic_flow_latency_overrun_cost;
 
         // increase bandwidth utilization for the links that constitute the current flow's route
         for (auto& link_id : temp_found_noc_route) {
@@ -485,24 +501,35 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
 
     // Iterate over all NoC links and accumulate congestion cost
     for(const auto& link : temp_noc_link_storage) {
-        cost_check.congestion += calculate_link_congestion_cost(link, noc_opts);
+        cost_check.congestion += calculate_link_congestion_cost(link);
     }
 
     // check whether the aggregate bandwidth placement cost is within the error tolerance
-    if (fabs(cost_check.aggregate_bandwidth - costs.noc_aggregate_bandwidth_cost) > costs.noc_aggregate_bandwidth_cost * error_tolerance) {
+    if (fabs(cost_check.aggregate_bandwidth - costs.noc_cost_terms.aggregate_bandwidth) > costs.noc_cost_terms.aggregate_bandwidth * error_tolerance) {
         VTR_LOG_ERROR(
             "noc_aggregate_bandwidth_cost_check: %g and noc_aggregate_bandwidth_cost: %g differ in check_noc_placement_costs.\n",
-            cost_check.aggregate_bandwidth, costs.noc_aggregate_bandwidth_cost);
+            cost_check.aggregate_bandwidth, costs.noc_cost_terms.aggregate_bandwidth);
         error++;
     }
 
     // only check the recomputed cost if it is above our expected latency cost threshold of 1 pico-second, otherwise there is no point in checking it
     if (cost_check.latency > MIN_EXPECTED_NOC_LATENCY_COST) {
         // check whether the latency placement cost is within the error tolerance
-        if (fabs(cost_check.latency - costs.noc_latency_cost) > costs.noc_latency_cost * error_tolerance) {
+        if (fabs(cost_check.latency - costs.noc_cost_terms.latency) > costs.noc_cost_terms.latency * error_tolerance) {
             VTR_LOG_ERROR(
                 "noc_latency_cost_check: %g and noc_latency_cost: %g differ in check_noc_placement_costs.\n",
-                cost_check.latency, costs.noc_latency_cost);
+                cost_check.latency, costs.noc_cost_terms.latency);
+            error++;
+        }
+    }
+
+    // only check the recomputed cost if it is above our expected latency cost threshold of 1 pico-second, otherwise there is no point in checking it
+    if (cost_check.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST) {
+        // check whether the latency overrun placement cost is within the error tolerance
+        if (fabs(cost_check.latency_overrun - costs.noc_cost_terms.latency_overrun) > costs.noc_cost_terms.latency_overrun * error_tolerance) {
+            VTR_LOG_ERROR(
+                "noc_latency_overrun_cost_check: %g and noc_latency_overrun_cost: %g differ in check_noc_placement_costs.\n",
+                cost_check.latency_overrun, costs.noc_cost_terms.latency_overrun);
             error++;
         }
     }
@@ -510,10 +537,10 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     // check the recomputed congestion cost only if it is higher than the minimum expected value
     if (cost_check.congestion > MIN_EXPECTED_NOC_CONGESTION_COST) {
         // check whether the NoC congestion cost is within the error range
-        if (fabs(cost_check.congestion - costs.noc_congestion_cost) > costs.noc_congestion_cost * error_tolerance) {
+        if (fabs(cost_check.congestion - costs.noc_cost_terms.congestion) > costs.noc_cost_terms.congestion * error_tolerance) {
             VTR_LOG_ERROR(
                 "noc_congestion_cost_check: %g and noc_congestion_cost: %g differ in check_noc_placement_costs.\n",
-                cost_check.congestion, costs.noc_congestion_cost);
+                cost_check.congestion, costs.noc_cost_terms.congestion);
             error++;
         }
     }
@@ -528,7 +555,9 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
     return (traffic_flow_info.traffic_flow_priority * traffic_flow_info.traffic_flow_bandwidth * num_of_links_in_traffic_flow);
 }
 
-double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts) {
+std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route,
+                                                              const NocStorage& noc_model,
+                                                              const t_noc_traffic_flow& traffic_flow_info) {
     // there will always be one more router than links in a traffic flow
     int num_of_links_in_traffic_flow = traffic_flow_route.size();
     int num_of_routers_in_traffic_flow = num_of_links_in_traffic_flow + 1;
@@ -538,26 +567,28 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
     double noc_link_latency = noc_model.get_noc_link_latency();
     double noc_router_latency = noc_model.get_noc_router_latency();
 
-    // calculate the traffic flow_latency
+    // calculate the traffic flow latency
     double latency = (noc_link_latency * num_of_links_in_traffic_flow) + (noc_router_latency * num_of_routers_in_traffic_flow);
 
-    // calculate the cost
-    double single_traffic_flow_latency_cost = (noc_opts.noc_latency_constraints_weighting * std::max(0., latency - max_latency)) + (noc_opts.noc_latency_weighting * latency);
+    // calculate the traffic flow latency overrun
+    double latency_overrun = std::max(latency - max_latency, 0.);
 
     // scale the latency cost by its priority to indicate its importance
-    return (single_traffic_flow_latency_cost * traffic_flow_info.traffic_flow_priority);
+    latency *= traffic_flow_info.traffic_flow_priority;
+    latency_overrun *= traffic_flow_info.traffic_flow_priority;
+
+    return {latency, latency_overrun};
 }
 
-double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc_opts) {
-    double congested_bw_ratio, congestion_cost;
+double calculate_link_congestion_cost(const NocLink& link) {
+    double congested_bw_ratio = link.get_congested_bandwidth_ratio();
 
-    congested_bw_ratio = link.get_congested_bandwidth_ratio();
-    congestion_cost = noc_opts.noc_congestion_weighting * congested_bw_ratio;
-
-    return congestion_cost;
+    return congested_bw_ratio;
 }
 
-double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& norm_factors, const t_noc_opts& noc_opts) {
+double calculate_noc_cost(const NocCostTerms& cost_terms,
+                          const NocCostTerms& norm_factors,
+                          const t_noc_opts& noc_opts) {
     double cost = 0.0;
 
     /* NoC's contribution to the placement cost is a weighted sum over:
@@ -566,9 +597,10 @@ double calculate_noc_cost(const NocCostTerms& cost_terms, const t_placer_costs& 
      * 3) Link congestion costs
      */
     cost = noc_opts.noc_placement_weighting * (
-               cost_terms.latency * norm_factors.noc_latency_cost_norm +
-               cost_terms.aggregate_bandwidth * norm_factors.noc_aggregate_bandwidth_cost_norm +
-               cost_terms.congestion * norm_factors.noc_congestion_cost_norm);
+               cost_terms.aggregate_bandwidth * norm_factors.aggregate_bandwidth +
+               cost_terms.latency * norm_factors.latency * noc_opts.noc_latency_constraints_weighting +
+               cost_terms.latency_overrun * norm_factors.latency_overrun * noc_opts.noc_latency_constraints_weighting +
+               cost_terms.congestion * norm_factors.congestion * noc_opts.noc_congestion_weighting);
 
     return cost;
 }
@@ -692,7 +724,7 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
      * we now only swap router blocks for the percentage of time the user
      * supplied.
      * */
-    return (vtr::irand(99) < user_supplied_noc_router_swap_percentage) ? true : false;
+    return (vtr::irand(99) < user_supplied_noc_router_swap_percentage);
 }
 
 static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from, t_logical_block_type_ptr& cluster_from_type) {

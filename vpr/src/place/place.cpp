@@ -15,6 +15,7 @@
 #include "vtr_random.h"
 #include "vtr_geometry.h"
 #include "vtr_time.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -536,9 +537,7 @@ static void print_place_status(const t_annealing_state& state,
                                float sWNS,
                                size_t tot_moves,
                                bool noc_enabled,
-                               float noc_agg_bw,
-                               float noc_agg_latency,
-                               float noc_cong);
+                               const NocCostTerms& noc_cost_terms);
 
 static void print_resources_utilization();
 
@@ -802,9 +801,9 @@ void try_place(const Netlist<>& net_list,
 
     if (noc_opts.noc) {
         // get the costs associated with the NoC
-        costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
-        costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
-        costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
+        costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();
+        std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = comp_noc_latency_cost();
+        costs.noc_cost_terms.congestion = comp_noc_congestion_cost();
 
         // initialize all the noc normalization factors
         update_noc_normalization_factors(costs);
@@ -832,11 +831,11 @@ void try_place(const Netlist<>& net_list,
             "noc_congestion_cost: %g, "
             "accum_congested_ratio: %g, "
             "n_congested_links: %d \n",
-            calculate_noc_cost(NocCostTerms(costs), costs, noc_opts),
-            costs.noc_aggregate_bandwidth_cost,
-            costs.noc_latency_cost,
+            calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
+            costs.noc_cost_terms.aggregate_bandwidth,
+            costs.noc_cost_terms.latency,
             get_number_of_traffic_flows_with_latency_cons_met(),
-            costs.noc_congestion_cost,
+            costs.noc_cost_terms.congestion,
             get_total_congestion_bandwidth_ratio(),
             get_number_of_congested_noc_links());
     }
@@ -880,11 +879,11 @@ void try_place(const Netlist<>& net_list,
                 "noc_congestion_cost: %g "
                 "accum_congested_ratio: %g, "
                 "n_congested_links: %d",
-                calculate_noc_cost(NocCostTerms(costs), costs, noc_opts),
-                costs.noc_aggregate_bandwidth_cost,
-                costs.noc_latency_cost,
+                calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
+                costs.noc_cost_terms.aggregate_bandwidth,
+                costs.noc_cost_terms.latency,
                 get_number_of_traffic_flows_with_latency_cons_met(),
-                costs.noc_congestion_cost,
+                costs.noc_cost_terms.congestion,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
     }
@@ -1033,8 +1032,7 @@ void try_place(const Netlist<>& net_list,
 
             print_place_status(state, stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, tot_iter,
-                               noc_opts.noc, costs.noc_aggregate_bandwidth_cost,
-                               costs.noc_latency_cost, costs.noc_congestion_cost);
+                               noc_opts.noc, costs.noc_cost_terms);
 
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
@@ -1106,8 +1104,7 @@ void try_place(const Netlist<>& net_list,
 
         print_place_status(state, stats, temperature_timer.elapsed_sec(),
                            critical_path.delay(), sTNS, sWNS, tot_iter,
-                           noc_opts.noc, costs.noc_aggregate_bandwidth_cost,
-                           costs.noc_latency_cost, costs.noc_congestion_cost);
+                           noc_opts.noc, costs.noc_cost_terms);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
 
@@ -1201,33 +1198,33 @@ void try_place(const Netlist<>& net_list,
         sprintf(msg,
                 "\nNoC Placement Costs. "
                 "noc cost: %g, "
-                "noc_aggregate_bandwidth_cost: %g "
-                "noc_latency_cost: %g "
-                "noc_latency_constraints_cost: %d "
-                "noc_congestion_cost: %g "
+                "noc_aggregate_bandwidth_cost: %g, "
+                "noc_latency_cost: %g, "
+                "noc_latency_constraints_cost: %d, "
+                "noc_congestion_cost: %g, "
                 "accum_congested_ratio: %g, "
-                "n_congested_links: %d",
-                calculate_noc_cost(NocCostTerms(costs), costs, noc_opts),
-                costs.noc_aggregate_bandwidth_cost,
-                costs.noc_latency_cost,
+                "n_congested_links: %d \n",
+                calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
+                costs.noc_cost_terms.aggregate_bandwidth,
+                costs.noc_cost_terms.latency,
                 get_number_of_traffic_flows_with_latency_cons_met(),
-                costs.noc_congestion_cost,
+                costs.noc_cost_terms.congestion,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
 
         VTR_LOG("\nNoC Placement Costs. "
             "noc cost: %g, "
-            "noc_aggregate_bandwidth_cost: %g "
+            "noc_aggregate_bandwidth_cost: %g, "
             "noc_latency_cost: %g, "
             "noc_latency_constraints_cost: %d, "
             "noc_congestion_cost: %g, "
             "accum_congested_ratio: %g, "
             "n_congested_links: %d \n",
-            calculate_noc_cost(NocCostTerms(costs), costs, noc_opts),
-            costs.noc_aggregate_bandwidth_cost,
-            costs.noc_latency_cost,
+            calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
+            costs.noc_cost_terms.aggregate_bandwidth,
+            costs.noc_cost_terms.latency,
             get_number_of_traffic_flows_with_latency_cons_met(),
-            costs.noc_congestion_cost,
+            costs.noc_cost_terms.congestion,
             get_total_congestion_bandwidth_ratio(),
             get_number_of_congested_noc_links());
     }
@@ -1414,63 +1411,63 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                          const PlaceDelayModel* delay_model,
                                          const PlacerCriticalities* criticalities,
                                          t_placer_costs* costs) {
+    auto check_and_print_cost = [](double new_cost,
+                                   double old_cost,
+                                   const std::string& cost_name) {
+        if (!vtr::isclose(new_cost, old_cost, ERROR_TOL, 0.)) {
+            std::string msg = vtr::string_fmt(
+                "in recompute_costs_from_scratch: new_%s = %g, old %s = %g, ERROR_TOL = %g\n",
+                cost_name.c_str(), new_cost, cost_name.c_str(), old_cost, ERROR_TOL);
+            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+        }
+    };
+
     double new_bb_cost = recompute_bb_cost();
-    if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
-        std::string msg = vtr::string_fmt(
-            "in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
-            new_bb_cost, costs->bb_cost);
-        VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
-    }
+    check_and_print_cost(new_bb_cost, costs->bb_cost, "bb_cost");
     costs->bb_cost = new_bb_cost;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
         comp_td_costs(delay_model, *criticalities, &new_timing_cost);
-        if (fabs(
-                new_timing_cost
-                - costs->timing_cost)
-            > costs->timing_cost * ERROR_TOL) {
-            std::string msg = vtr::string_fmt(
-                "in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
-                new_timing_cost, costs->timing_cost, ERROR_TOL);
-            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
-        }
+        check_and_print_cost(new_timing_cost, costs->timing_cost, "timing_cost");
         costs->timing_cost = new_timing_cost;
     } else {
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
-
         costs->cost = new_bb_cost * costs->bb_cost_norm;
     }
 
     if (noc_opts.noc) {
-        NocCostTerms new_noc_cost{0.0, 0.0, 0.0};
+        NocCostTerms new_noc_cost;
         recompute_noc_costs(new_noc_cost);
 
-        if (fabs(
-                new_noc_cost.aggregate_bandwidth
-                - costs->noc_aggregate_bandwidth_cost)
-            > costs->noc_aggregate_bandwidth_cost * ERROR_TOL) {
-            std::string msg = vtr::string_fmt(
-                "in recompute_costs_from_scratch: new_noc_cost.aggregate_bandwidth = %g, old noc_aggregate_bandwidth_cost = %g, ERROR_TOL = %g\n",
-                new_noc_cost.aggregate_bandwidth, costs->noc_aggregate_bandwidth_cost, ERROR_TOL);
-            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
-        }
-        costs->noc_aggregate_bandwidth_cost = new_noc_cost.aggregate_bandwidth;
+        check_and_print_cost(new_noc_cost.aggregate_bandwidth,
+                             costs->noc_cost_terms.aggregate_bandwidth,
+                             "noc_aggregate_bandwidth");
+        costs->noc_cost_terms.aggregate_bandwidth = new_noc_cost.aggregate_bandwidth;
 
         // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
         // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
         if (new_noc_cost.latency > MIN_EXPECTED_NOC_LATENCY_COST) {
-            if (fabs(
-                    new_noc_cost.latency
-                    - costs->noc_latency_cost)
-                > costs->noc_latency_cost * ERROR_TOL) {
-                std::string msg = vtr::string_fmt(
-                    "in recompute_costs_from_scratch: new_noc_cost.latency = %g, old noc_latency_cost = %g, ERROR_TOL = %g\n",
-                    new_noc_cost.latency, costs->noc_latency_cost, ERROR_TOL);
-                VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
-            }
+            check_and_print_cost(new_noc_cost.latency,
+                                 costs->noc_cost_terms.latency,
+                                 "noc_latency_cost");
         }
-        costs->noc_latency_cost = new_noc_cost.latency;
+        costs->noc_cost_terms.latency = new_noc_cost.latency;
+
+        if (new_noc_cost.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST) {
+            check_and_print_cost(new_noc_cost.latency_overrun,
+                                 costs->noc_cost_terms.latency_overrun,
+                                 "noc_latency_overrun_cost");
+        }
+        costs->noc_cost_terms.latency_overrun = new_noc_cost.latency_overrun;
+
+        if (new_noc_cost.congestion > MIN_EXPECTED_NOC_CONGESTION_COST) {
+            check_and_print_cost(new_noc_cost.congestion,
+                                 costs->noc_cost_terms.congestion,
+                                 "noc_congestion_cost");
+        }
+        costs->noc_cost_terms.congestion = new_noc_cost.congestion;
+
     }
 }
 
@@ -1808,13 +1805,13 @@ static e_move_result try_swap(const t_annealing_state* state,
         }
 
 
-        NocCostTerms noc_delta_c {0.0, 0.0, 0.0}; // change in NoC cost
+        NocCostTerms noc_delta_c; // change in NoC cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
 
             // Include the NoC delta costs in the total cost change for this swap
-            delta_c += calculate_noc_cost(noc_delta_c, *costs, noc_opts);
+            delta_c += calculate_noc_cost(noc_delta_c, costs->noc_cost_norm_factors, noc_opts);
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
@@ -2335,7 +2332,7 @@ static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_
 
     if (noc_opts.noc) {
         // in noc mode we include noc aggregate bandwidth and noc latency
-        total_cost += calculate_noc_cost(NocCostTerms(*costs), *costs, noc_opts);
+        total_cost += calculate_noc_cost(costs->noc_cost_terms, costs->noc_cost_norm_factors, noc_opts);
     }
 
     return total_cost;
@@ -4227,13 +4224,13 @@ static void print_place_status_header(bool noc_enabled) {
             "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
     } else {
         VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- ---------\n");
+            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- ---------  ---------\n");
         VTR_LOG(
-            "Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha Agg. BW  Agg. Lat NoC Cong.\n");
+            "Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha Agg. BW  Agg. Lat Lat Over. NoC Cong.\n");
         VTR_LOG(
-            "      (sec)                                          (ns)       (ns)     (ns)                                                   (bps)     (ns)            \n");
+            "      (sec)                                          (ns)       (ns)     (ns)                                                   (bps)     (ns)     (ns)             \n");
         VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- ---------\n");
+            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- --------- ---------\n");
     }
 
 }
@@ -4246,9 +4243,7 @@ static void print_place_status(const t_annealing_state& state,
                                float sWNS,
                                size_t tot_moves,
                                bool noc_enabled,
-                               float noc_agg_bw,
-                               float noc_agg_latency,
-                               float noc_cong) {
+                               const NocCostTerms& noc_cost_terms) {
     VTR_LOG(
         "%4zu %6.1f %7.1e "
         "%7.3f %10.2f %-10.5g "
@@ -4265,8 +4260,10 @@ static void print_place_status(const t_annealing_state& state,
 
     if (noc_enabled) {
         VTR_LOG(
-            " %7.2e %7.2e %8.2f",
-            noc_agg_bw, noc_agg_latency, noc_cong);
+            " %7.2e %7.2e"
+            " %8.2e %8.2f",
+            noc_cost_terms.aggregate_bandwidth, noc_cost_terms.latency,
+            noc_cost_terms.latency_overrun, noc_cost_terms.congestion);
     }
 
     VTR_LOG("\n");

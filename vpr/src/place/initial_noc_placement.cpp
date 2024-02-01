@@ -158,11 +158,11 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     t_placer_costs costs;
 
     // Initialize NoC-related costs
-    costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
-    costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
-    costs.noc_congestion_cost = comp_noc_congestion_cost(noc_opts);
+    costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();
+    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = comp_noc_latency_cost();
+    costs.noc_cost_terms.congestion = comp_noc_congestion_cost();
     update_noc_normalization_factors(costs);
-    costs.cost = calculate_noc_cost(NocCostTerms(costs), costs, noc_opts);
+    costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
 
     // Maximum distance in each direction that a router can travel in a move
     // It is assumed that NoC routers are organized in a square grid.
@@ -214,9 +214,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
         if (create_move_outcome != e_create_move::ABORT) {
             apply_move_blocks(blocks_affected);
 
-            NocCostTerms noc_delta_c {0.0, 0.0, 0.0};
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, noc_opts);
-            double delta_cost = calculate_noc_cost(noc_delta_c, costs, noc_opts);
+            NocCostTerms noc_delta_c;
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
+            double delta_cost = calculate_noc_cost(noc_delta_c, costs.noc_cost_norm_factors, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
             bool move_accepted = accept_noc_swap(delta_cost, prob);

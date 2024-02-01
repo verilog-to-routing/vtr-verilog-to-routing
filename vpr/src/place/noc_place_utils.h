@@ -41,6 +41,7 @@ constexpr double INVALID_NOC_COST_TERM = -1.0;
 struct TrafficFlowPlaceCost {
     double aggregate_bandwidth = INVALID_NOC_COST_TERM;
     double latency = INVALID_NOC_COST_TERM;
+    double latency_overrun = INVALID_NOC_COST_TERM;
 };
 
 /**
@@ -108,8 +109,7 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
  * here.
  */
 void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
-                                                    NocCostTerms& delta_c,
-                                                    const t_noc_opts& noc_opts);
+                                                    NocCostTerms& delta_c);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -313,9 +313,9 @@ double comp_noc_aggregate_bandwidth_cost(void);
  * 
  * @return double The latency cost of the NoC.
  */
-double comp_noc_latency_cost(const t_noc_opts& noc_opts);
+std::pair<double, double> comp_noc_latency_cost();
 
-double comp_noc_congestion_cost(const t_noc_opts& noc_opts);
+double comp_noc_congestion_cost();
 
 /**
  * @brief Given a placement state the NoC costs are re-computed
@@ -378,14 +378,11 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
  * @param noc_model Contains noc information such as the router and link
  * latencies.
  * @param traffic_flow_info Contains the traffic flow priority.
- * @param noc_opts Contains the user provided weightings of the traffic flow 
- * latency and its constraint parameters for the cost calculation.
- * @return The computed latency for the provided traffic flow
+ * @return The computed latency cost terms for the given traffic flow.
  */
-double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route,
-                                           const NocStorage& noc_model,
-                                           const t_noc_traffic_flow& traffic_flow_info,
-                                           const t_noc_opts& noc_opts);
+std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route,
+                                                              const NocStorage& noc_model,
+                                                              const t_noc_traffic_flow& traffic_flow_info);
 
 /**
  * @brief Determines the congestion cost a NoC link. The cost
@@ -394,12 +391,9 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
  *
  * @param link The NoC link for which the congestion cost is
  * to be computed
- * @param noc_opts Contains the user provided weighting factor to
- * specify the importance of congestion costs compared to other
- * NoC-related cost terms.
  * @return The computed congestion cost for the given NoC link.
  */
-double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc_opts);
+double calculate_link_congestion_cost(const NocLink& link);
 
 /**
  * @brief Computes a weighted average of NoC cost term to determine
@@ -416,7 +410,7 @@ double calculate_link_congestion_cost(const NocLink& link, const t_noc_opts& noc
  * total placement cost.
  */
 double calculate_noc_cost(const NocCostTerms& cost_terms,
-                          const t_placer_costs& norm_factors,
+                          const NocCostTerms& norm_factors,
                           const t_noc_opts& noc_opts);
 
 /**

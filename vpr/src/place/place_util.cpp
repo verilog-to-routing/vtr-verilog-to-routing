@@ -79,9 +79,7 @@ void t_placer_costs::update_norm_factors() {
  * @param noc_delta_cost NoC cost difference if the swap is accepted
  */
 t_placer_costs& t_placer_costs::operator+=(const NocCostTerms& noc_delta_cost) {
-    noc_aggregate_bandwidth_cost += noc_delta_cost.aggregate_bandwidth;
-    noc_latency_cost += noc_delta_cost.latency;
-    noc_congestion_cost += noc_delta_cost.congestion;
+    noc_cost_terms += noc_delta_cost;
 
     return *this;
 }
@@ -561,12 +559,24 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
     return (mac_can_be_placed);
 }
 
-NocCostTerms::NocCostTerms(const t_placer_costs& costs)
-    : aggregate_bandwidth(costs.noc_aggregate_bandwidth_cost)
-    , latency(costs.noc_latency_cost)
-    , congestion(costs.noc_congestion_cost) {}
-
-NocCostTerms::NocCostTerms(double agg_bw, double lat, double congest)
+NocCostTerms::NocCostTerms(double agg_bw, double lat, double lat_overrun, double congest)
     : aggregate_bandwidth(agg_bw)
     , latency(lat)
+    , latency_overrun(lat_overrun)
     , congestion(congest) {}
+
+NocCostTerms::NocCostTerms()
+    : aggregate_bandwidth(0)
+    , latency(0)
+    , latency_overrun(0)
+    , congestion(0) {}
+
+NocCostTerms& NocCostTerms::operator+=(const NocCostTerms& noc_delta_cost) {
+    aggregate_bandwidth += noc_delta_cost.aggregate_bandwidth;
+    latency += noc_delta_cost.latency;
+    latency_overrun += noc_delta_cost.latency_overrun;
+    congestion += noc_delta_cost.congestion;
+
+    return *this;
+}
+

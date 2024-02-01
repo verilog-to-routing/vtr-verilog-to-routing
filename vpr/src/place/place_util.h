@@ -27,12 +27,15 @@ class t_placer_costs;
  */
 struct NocCostTerms {
   public:
-    NocCostTerms() = delete;
-    explicit NocCostTerms(const t_placer_costs& costs);
-    NocCostTerms(double agg_bw, double lat, double congest);
+    NocCostTerms();
+    NocCostTerms(const NocCostTerms&) = default;
+    NocCostTerms(double agg_bw, double lat, double lat_overrun, double congest);
+    NocCostTerms& operator=(const NocCostTerms& other) = default;
+    NocCostTerms& operator+=(const NocCostTerms& noc_delta_cost);
 
     double aggregate_bandwidth = 0.0;
     double latency = 0.0;
+    double latency_overrun = 0.0;
     double congestion = 0.0;
 };
 
@@ -86,17 +89,14 @@ class t_placer_costs {
     double timing_cost = 0.;
     double bb_cost_norm = 0.;
     double timing_cost_norm = 0.;
-    double noc_aggregate_bandwidth_cost = 0.;
-    double noc_aggregate_bandwidth_cost_norm = 0.;
-    double noc_latency_cost = 0.;
-    double noc_latency_cost_norm = 0.;
-    double noc_congestion_cost = 0.;
-    double noc_congestion_cost_norm = 0.;
+
+    NocCostTerms noc_cost_terms;
+    NocCostTerms noc_cost_norm_factors;
 
   public: //Constructor
     t_placer_costs(t_place_algorithm algo)
         : place_algorithm(algo) {}
-    t_placer_costs() {}
+    t_placer_costs() = default;
 
   public: //Mutator
     void update_norm_factors();
