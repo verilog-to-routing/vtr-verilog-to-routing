@@ -3,6 +3,7 @@
 #include "initial_placement.h"
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
+#include "vtr_math.h"
 
 /**
  * @brief Evaluates whether a NoC router swap should be accepted or not.
@@ -32,7 +33,8 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id);
  *   NoC routers.
  *   @param seed Used for shuffling NoC routers.
  */
-static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers, int seed);
+static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
+                                       int seed);
 
 /**
  * @brief Runs a simulated annealing optimizer for NoC routers.
@@ -40,6 +42,16 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
  *   @param noc_opts Contains weighting factors for NoC cost terms.
  */
 static void noc_routers_anneal(const t_noc_opts& noc_opts);
+
+/**
+ * @brief Check whether normalization factors need to be updated.
+ *
+ *   @param costs Most recent NoC cost terms.
+ *   @param old_costs NoC cost terms from the last time normalization
+ *   factors were updated.
+ */
+static bool is_renormalization_needed(const t_placer_costs& costs,
+                                      const t_placer_costs& old_costs);
 
 static bool accept_noc_swap(double delta_cost, double prob) {
     if (delta_cost <= 0.0) {
@@ -56,6 +68,46 @@ static bool accept_noc_swap(double delta_cost, double prob) {
     } else {
         return false;
     }
+}
+
+static bool is_renormalization_needed(const t_placer_costs& costs,
+                                      const t_placer_costs& old_costs) {
+    constexpr double COST_DIFF_TOLERANCE = 0.1;
+    bool renormalization_needed = false;
+
+    // aggregate bandwidth has changed significantly
+    renormalization_needed |= !vtr::isclose(costs.noc_cost_terms.aggregate_bandwidth,
+                                            old_costs.noc_cost_terms.aggregate_bandwidth,
+                                            COST_DIFF_TOLERANCE,
+                                            0.);
+
+    // latency cost has changed significantly
+    renormalization_needed |= !vtr::isclose(costs.noc_cost_terms.latency,
+                                            old_costs.noc_cost_terms.latency,
+                                            COST_DIFF_TOLERANCE,
+                                            0.);
+
+    // if both old and new latency overrun costs are too small, ignore their difference
+    // Too small latency overrun costs are the result of round-off error
+    if (costs.noc_cost_terms.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST ||
+        old_costs.noc_cost_terms.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST) {
+        renormalization_needed |= !vtr::isclose(costs.noc_cost_terms.latency_overrun,
+                                                old_costs.noc_cost_terms.latency_overrun,
+                                                COST_DIFF_TOLERANCE,
+                                                0.);
+    }
+
+    // if both old and new congestion costs are too small, ignore their difference
+    // Too small congestion costs are the result of round-off error
+    if (costs.noc_cost_terms.congestion > MIN_EXPECTED_NOC_CONGESTION_COST ||
+        old_costs.noc_cost_terms.congestion > MIN_EXPECTED_NOC_CONGESTION_COST) {
+        renormalization_needed |= !vtr::isclose(costs.noc_cost_terms.congestion,
+                                                old_costs.noc_cost_terms.congestion,
+                                                COST_DIFF_TOLERANCE,
+                                                0.);
+    }
+
+    return renormalization_needed;
 }
 
 static void place_constrained_noc_router(ClusterBlockId router_blk_id) {
@@ -156,6 +208,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
     // Only NoC related costs are considered
     t_placer_costs costs;
+    // NoC costs from the last time normalization factors were updated
+    t_placer_costs old_costs;
 
     // Initialize NoC-related costs
     costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();
@@ -163,6 +217,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     costs.noc_cost_terms.congestion = comp_noc_congestion_cost();
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
+    old_costs = costs;
+
 
     // Maximum distance in each direction that a router can travel in a move
     // It is assumed that NoC routers are organized in a square grid.
@@ -181,6 +237,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     const int num_router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist().size();
     const int N_MOVES_PER_ROUTER = 35000;
     const int N_MOVES = num_router_clusters * N_MOVES_PER_ROUTER;
+
+    const int RENORMALIZATION_LIM = 1024;
+    int renormalization_cnt = 0;
 
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
@@ -201,6 +260,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
      * Range limit and the probability of accepting swaps with positive delta cost
      * decrease linearly as more swaps are evaluated. Late in the annealing,
      * NoC routers are swapped only with their neighbors as the range limit approaches 1.
+     *
+     * After each RENORMALIZATION_LIM accepted moves, if NoC cost terms have changed
+     * significantly, I update the normalization factors and re-compute the total cost.
      */
 
     // Generate and evaluate router moves
@@ -230,6 +292,17 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
                     checkpoint.save_checkpoint(costs.cost);
                 }
+
+                renormalization_cnt++;
+                if (renormalization_cnt == RENORMALIZATION_LIM) {
+                    renormalization_cnt = 0;
+                    if (is_renormalization_needed(costs, old_costs)) {
+                        update_noc_normalization_factors(costs);
+                        costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
+                        old_costs = costs;
+                    }
+                }
+
             } else { // The proposed move is rejected
                 revert_move_blocks(blocks_affected);
                 revert_noc_traffic_flow_routes(blocks_affected);
