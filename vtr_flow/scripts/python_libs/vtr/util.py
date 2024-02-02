@@ -8,6 +8,7 @@ import time
 import subprocess
 import argparse
 import csv
+import os
 
 from collections import OrderedDict
 from pathlib import PurePath
@@ -145,12 +146,15 @@ class CommandRunner:
         try:
             # Call the command
             stderr = None if self._valgrind else subprocess.STDOUT
+            modified_environ = os.environ.copy()
+            modified_environ['PWD'] = str(temp_dir)
             proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,  # We grab stdout
                 stderr=stderr,  # stderr redirected to stderr
                 universal_newlines=True,  # Lines always end in \n
                 cwd=str(temp_dir),  # Where to run the command
+                env=modified_environ
             )
 
             # Read the output line-by-line and log it
