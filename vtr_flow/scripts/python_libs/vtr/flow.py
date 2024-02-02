@@ -1,6 +1,7 @@
 """
     Module to run the VTR flow. This module calls other modules that then access the tools like VPR.
 """
+import os
 import shutil
 from pathlib import Path
 from collections import OrderedDict
@@ -36,6 +37,7 @@ def run(
     circuit_file,
     power_tech_file=None,
     include_files=None,
+    include_temp_files=None,
     start_stage=VtrStage.PARMYS,
     end_stage=VtrStage.VPR,
     command_runner=vtr.CommandRunner(),
@@ -176,7 +178,7 @@ def run(
     shutil.copy(str(circuit_file), str(circuit_copy))
     shutil.copy(str(architecture_file), str(architecture_copy))
 
-    # Check whether any inclulde is specified
+    # Check whether any include is specified
     if include_files:
         # Verify include files are Paths or convert them to Path + check that they exist
         # Copy include files to the run directory
@@ -184,6 +186,17 @@ def run(
             include_file = vtr.util.verify_file(include, "Circuit")
             include_copy = temp_dir / include_file.name
             shutil.copy(str(include), str(include_copy))
+
+
+    # Check whether any include is specified
+    if include_temp_files:
+        # Verify include files are Paths or convert them to Path + check that they exist
+        # Copy temp include files to the run directory
+        for include_temp in include_temp_files:
+            include_temp_file = vtr.util.verify_file(include_temp, "Temporary Include")
+            include_temp_copy = temp_dir / include_temp_file.name
+            shutil.copy(str(include_temp), str(include_temp_copy))
+
 
     # There are multiple potential paths for the netlist to reach a tool
     # We initialize it here to the user specified circuit and let downstream
@@ -383,6 +396,15 @@ def run(
             temp_dir,
             power_tech_file,
         )
+
+    # Check whether any temporary include is specified
+    if include_temp_files:
+        # Verify temp include files are Paths or convert them to Path + check that they exist
+        # Then find
+        for include_temp in include_temp_files:
+            include_temp_file = vtr.util.verify_file(include_temp, "Temporary Include")
+            include_temp_copy = temp_dir / include_temp_file.name
+            os.remove(str(include_temp_copy))
 
 
 # pylint: enable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements

@@ -155,6 +155,14 @@ def vtr_command_argparser(prog=None):
         help="List of include files to a benchmark circuit (pass to VTR"
         + " frontends as a benchmark design set)",
     )
+    parser.add_argument(
+        "-include_temp",
+        nargs="*",
+        default=None,
+        dest="include_temp_list_file",
+        help="List of include files to be copied to the working directory"
+             + " and be removed when the task is done)",
+    )
 
     #
     # Power arguments
@@ -561,6 +569,7 @@ def vtr_command_main(arg_list, prog=None):
             Path(args.circuit_file),
             power_tech_file=args.power_tech,
             include_files=args.include_list_file,
+            include_temp_files=args.include_temp_list_file,
             temp_dir=temp_dir,
             start_stage=args.start,
             end_stage=args.end,

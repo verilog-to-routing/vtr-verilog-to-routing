@@ -39,6 +39,8 @@ class TaskConfig:
         parse_file,
         includes_dir=None,
         include_list_add=None,
+        include_temp_dir=None,
+        include_temp_list_add=None,
         second_parse_file=None,
         script_path=None,
         script_params=None,
@@ -64,6 +66,8 @@ class TaskConfig:
         self.archs = arch_list_add
         self.include_dir = includes_dir
         self.includes = include_list_add
+        self.include_temp_dir = include_temp_dir
+        self.include_temps = include_temp_list_add
         self.parse_file = parse_file
         self.second_parse_file = second_parse_file
         self.script_path = script_path
@@ -97,6 +101,7 @@ class Job:
         arch,
         circuit,
         include,
+        include_temp,
         script_params,
         work_dir,
         run_command,
@@ -108,6 +113,7 @@ class Job:
         self._arch = arch
         self._circuit = circuit
         self._include = include
+        self._include_temp = include_temp
         self._script_params = script_params
         self._run_command = run_command
         self._parse_command = parse_command
@@ -138,6 +144,12 @@ class Job:
         return the list of include files (.v/.vh) of the job.
         """
         return self._include
+
+    def include_temp(self):
+        """
+        return the list of temporary include files of the job.
+        """
+        return self._include_temp
 
     def script_params(self):
         """
@@ -197,6 +209,7 @@ def load_task_config(config_file) -> TaskConfig:
         [
             "circuits_dir",
             "includes_dir",
+            "include_temp_dir",
             "archs_dir",
             "additional_files",
             "parse_file",
@@ -264,6 +277,7 @@ def load_task_config(config_file) -> TaskConfig:
 
     check_required_fields(config_file, required_keys, key_values)
     check_include_fields(config_file, key_values)
+    check_include_temp_fields(config_file, key_values)
 
     # Useful meta-data about the config
     config_dir = str(Path(config_file).parent)
@@ -300,6 +314,18 @@ def check_include_fields(config_file, key_values):
                 )
             )
 
+def check_include_temp_fields(config_file, key_values):
+    """
+    Check that include_temp_dir was specified if some files to temporarily include
+    in the designs (include_temp_list_add) was specified.
+    """
+    if "include_temp_list_add" in key_values:
+        if "include_temp_dir" not in key_values:
+            raise VtrError(
+                "Missing required key '{key}' in config file {file}".format(
+                    key="include_temp_dir", file=config_file
+                )
+            )
 
 def shorten_task_names(configs, common_task_prefix):
     """
@@ -376,6 +402,17 @@ def create_cmd(
             includes.append(abs_include_filepath)
 
         cmd += includes
+
+    # Resolve and collect all include_temp paths in the config file
+    # as -include_temp ["include_temp1", "include_temp2", ..]
+    include_temps = []
+    if config.include_temps:
+        cmd += ["-include_temp"]
+        for include_temp in config.include_temps:
+            abs_include_filepath = resolve_vtr_source_file(config, include_temp, config.include_temp_dir)
+            include_temps.append(abs_include_filepath)
+
+        cmd += include_temps
 
     # Check if additional architectural data files are present
     if config.additional_files_list_add:
@@ -466,7 +503,7 @@ def create_cmd(
             resolve_vtr_source_file(config, noc_traffic, config.noc_traffic_dir),
         ]
 
-    return includes, parse_cmd, second_parse_cmd, qor_parse_command, cmd
+    return includes, include_temps, parse_cmd, second_parse_cmd, qor_parse_command, cmd
 
 
 # pylint: disable=too-many-branches
@@ -509,7 +546,7 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
                 )
             )
 
-            includes, parse_cmd, second_parse_cmd, qor_parse_command, cmd = create_cmd(
+            includes, include_temps, parse_cmd, second_parse_cmd, qor_parse_command, cmd = create_cmd(
                 abs_circuit_filepath, abs_arch_filepath, config, args, circuit, noc_traffic
             )
 
@@ -521,6 +558,7 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
                             config,
                             circuit,
                             includes,
+                            include_temps,
                             arch,
                             noc_traffic,
                             value,
@@ -540,6 +578,7 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
                         config,
                         circuit,
                         includes,
+                        include_temps,
                         arch,
                         noc_traffic,
                         None,
@@ -561,6 +600,7 @@ def create_job(
     config,
     circuit,
     include,
+    include_temp,
     arch,
     noc_flow,
     param,
@@ -658,6 +698,7 @@ def create_job(
         arch,
         circuit,
         include,
+        include_temp,
         param_string,
         work_dir + "/" + param_string,
         current_cmd,
