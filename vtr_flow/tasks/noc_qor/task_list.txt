@@ -1,0 +1,5 @@
+noc_qor/small_complex_synthetic
+noc_qor/small_simple_synthetic
+noc_qor/large_simple_synthetic
+noc_qor/large_complex_synthetic
+noc_qor/MLP/
