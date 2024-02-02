@@ -828,17 +828,19 @@ void try_place(const Netlist<>& net_list,
             costs.bb_cost, costs.timing_cost);
     if (noc_opts.noc) {
         VTR_LOG("NoC Placement Costs. "
-            "noc cost: %g, "
-            "noc_aggregate_bandwidth_cost: %g, "
-            "noc_latency_cost: %g, "
-            "noc_latency_constraints_cost: %d, "
-            "noc_congestion_cost: %g, "
+            "cost: %g, "
+            "aggregate_bandwidth_cost: %g, "
+            "latency_cost: %g, "
+            "n_met_latency_constraints: %d, "
+            "latency_overrun_cost: %g, "
+            "congestion_cost: %g, "
             "accum_congested_ratio: %g, "
             "n_congested_links: %d \n",
             calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
             costs.noc_cost_terms.aggregate_bandwidth,
             costs.noc_cost_terms.latency,
             get_number_of_traffic_flows_with_latency_cons_met(),
+            costs.noc_cost_terms.latency_overrun,
             costs.noc_cost_terms.congestion,
             get_total_congestion_bandwidth_ratio(),
             get_number_of_congested_noc_links());
@@ -876,20 +878,25 @@ void try_place(const Netlist<>& net_list,
     if (noc_opts.noc) {
         sprintf(msg,
                 "\nInitial NoC Placement Costs. "
-                "noc cost: %g, "
-                "noc_aggregate_bandwidth_cost: %g "
-                "noc_latency_cost: %g "
-                "noc_latency_constraints_cost: %d "
-                "noc_congestion_cost: %g "
+                "cost: %g, "
+                "aggregate_bandwidth_cost: %g, "
+                "latency_cost: %g, "
+                "n_met_latency_constraints: %d, "
+                "latency_overrun_cost: %g, "
+                "congestion_cost: %g, "
                 "accum_congested_ratio: %g, "
-                "n_congested_links: %d",
+                "n_congested_links: %d \n",
                 calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
                 costs.noc_cost_terms.aggregate_bandwidth,
                 costs.noc_cost_terms.latency,
                 get_number_of_traffic_flows_with_latency_cons_met(),
+                costs.noc_cost_terms.latency_overrun,
                 costs.noc_cost_terms.congestion,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
+
+
+
     }
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
@@ -1201,33 +1208,37 @@ void try_place(const Netlist<>& net_list,
     if (noc_opts.noc) {
         sprintf(msg,
                 "\nNoC Placement Costs. "
-                "noc cost: %g, "
-                "noc_aggregate_bandwidth_cost: %g, "
-                "noc_latency_cost: %g, "
-                "noc_latency_constraints_cost: %d, "
-                "noc_congestion_cost: %g, "
+                "cost: %g, "
+                "aggregate_bandwidth_cost: %g, "
+                "latency_cost: %g, "
+                "n_met_latency_constraints: %d, "
+                "latency_overrun_cost: %g, "
+                "congestion_cost: %g, "
                 "accum_congested_ratio: %g, "
                 "n_congested_links: %d \n",
                 calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
                 costs.noc_cost_terms.aggregate_bandwidth,
                 costs.noc_cost_terms.latency,
                 get_number_of_traffic_flows_with_latency_cons_met(),
+                costs.noc_cost_terms.latency_overrun,
                 costs.noc_cost_terms.congestion,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
 
         VTR_LOG("\nNoC Placement Costs. "
-            "noc cost: %g, "
-            "noc_aggregate_bandwidth_cost: %g, "
-            "noc_latency_cost: %g, "
-            "noc_latency_constraints_cost: %d, "
-            "noc_congestion_cost: %g, "
+            "cost: %g, "
+            "aggregate_bandwidth_cost: %g, "
+            "latency_cost: %g, "
+            "n_met_latency_constraints: %d, "
+            "latency_overrun_cost: %g, "
+            "congestion_cost: %g, "
             "accum_congested_ratio: %g, "
             "n_congested_links: %d \n",
             calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
             costs.noc_cost_terms.aggregate_bandwidth,
             costs.noc_cost_terms.latency,
             get_number_of_traffic_flows_with_latency_cons_met(),
+            costs.noc_cost_terms.latency_overrun,
             costs.noc_cost_terms.congestion,
             get_total_congestion_bandwidth_ratio(),
             get_number_of_congested_noc_links());
