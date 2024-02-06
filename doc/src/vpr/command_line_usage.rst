@@ -1120,6 +1120,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. seealso:: :ref:`timing_driven_router_options`
 
+.. option:: --flat_routing {on | off}
+
+    If this option is enabled, the *run-flat* router is used instead of the *two-stage* router.
+    This means that during the routing stage, all nets, both intra- and inter-cluster, are routed directly from one primitive pin to another primitive pin.
+    This increases routing time but can improve routing quality by re-arranging LUT inputs and exposing additional optimization opportunities in architectures with local intra-cluster routing that is not a full crossbar.
+
+    **Default:** ``OFF`
+
 .. option:: --max_router_iterations <int>
 
     The number of iterations of a Pathfinder-based router that will be executed before a circuit is declared unrouteable (if it hasn’t routed successfully yet) at a given channel width.
