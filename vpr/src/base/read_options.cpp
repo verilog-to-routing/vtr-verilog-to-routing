@@ -2795,7 +2795,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n"
             "This can be used with any NoC topology\n")
         .default_value("bfs_routing")
-        .choices({"xy_routing", "bfs_routing", "west_first_routing", "north_last_routing"})
+        .choices({"xy_routing", "bfs_routing", "west_first_routing", "north_last_routing", "negative_first_routing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_placement_weighting, "--noc_placement_weighting")

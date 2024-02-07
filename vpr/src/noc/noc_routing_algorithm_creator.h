@@ -25,12 +25,13 @@
 #include "bfs_routing.h"
 #include "west_first_routing.h"
 #include "north_last_routing.h"
+#include "negative_first_routing.h"
 
 class NocRoutingAlgorithmCreator {
   public:
     // nothing to do in the constructor and destructor
-    NocRoutingAlgorithmCreator() {}
-    ~NocRoutingAlgorithmCreator() {}
+    NocRoutingAlgorithmCreator() = default;
+    ~NocRoutingAlgorithmCreator() = default;
 
     /**
      * @brief Given a string that identifies a NoC routing algorithm, this 
