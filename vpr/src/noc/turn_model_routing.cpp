@@ -45,9 +45,6 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id, NocRouterId dst_rou
      */
     std::unordered_set<NocRouterId> visited_routers;
 
-    std::cout << "Source: (" << src_router.get_router_grid_position_x() << ", " << src_router.get_router_grid_position_y() << ")" <<
-        "Dest: (" << dst_router.get_router_grid_position_x() << ", " << dst_router.get_router_grid_position_y() << ")" << std::endl;
-
     // The route is terminated when we reach at the destination router
     while (curr_router_id != dst_router_id) {
         // get the current router (the last one added to the route)
@@ -79,8 +76,6 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id, NocRouterId dst_rou
         }
 
     }
-
-    std::cout << std::endl;
 }
 
 NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id, const t_physical_tile_loc& curr_router_position, TurnModelRouting::Direction next_step_direction, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model) {

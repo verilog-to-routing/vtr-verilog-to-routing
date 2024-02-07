@@ -72,16 +72,16 @@ TurnModelRouting::Direction WestFirstRouting::select_next_direction(const std::v
      */
 
     // compute the hash value
-    size_t hash_val = get_hash_value(src_router_id, dst_router_id, curr_router_id, traffic_flow_id);
+    uint32_t hash_val = get_hash_value(src_router_id, dst_router_id, curr_router_id, traffic_flow_id);
     // get the maximum value that can be represented by size_t
-    const size_t max_size_t_val = std::numeric_limits<size_t>::max();
+    const size_t max_size_t_val = std::numeric_limits<uint32_t>::max();
 
     // get the distance from the current router to the destination in each coordination
     int delta_x = abs(dst_router_pos.x - curr_router_pos.x);
     int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
 
     // compute the probability of going to the right direction
-    size_t east_probability = delta_x * (max_size_t_val / (delta_x + delta_y));
+    uint32_t east_probability = delta_x * (max_size_t_val / (delta_x + delta_y));
 
     if (hash_val < east_probability) { // sometimes turn right
         return TurnModelRouting::Direction::RIGHT;
