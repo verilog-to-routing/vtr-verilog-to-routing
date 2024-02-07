@@ -60,46 +60,6 @@ static bool accept_noc_swap(double delta_cost, double prob) {
     }
 }
 
-static bool is_renormalization_needed(const t_placer_costs& costs,
-                                      const t_placer_costs& old_costs) {
-    constexpr double COST_DIFF_TOLERANCE = 0.1;
-    bool renormalization_needed = false;
-
-    // aggregate bandwidth has changed significantly
-    renormalization_needed |= !vtr::isclose(costs.noc_cost_terms.aggregate_bandwidth,
-                                            old_costs.noc_cost_terms.aggregate_bandwidth,
-                                            COST_DIFF_TOLERANCE,
-                                            0.);
-
-    // latency cost has changed significantly
-    renormalization_needed |= !vtr::isclose(costs.noc_cost_terms.latency,
-                                            old_costs.noc_cost_terms.latency,
-                                            COST_DIFF_TOLERANCE,
-                                            0.);
-
-    // if both old and new latency overrun costs are too small, ignore their difference
-    // Too small latency overrun costs are the result of round-off error
-    if (costs.noc_cost_terms.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST ||
-        old_costs.noc_cost_terms.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST) {
-        renormalization_needed |= !vtr::isclose(costs.noc_cost_terms.latency_overrun,
-                                                old_costs.noc_cost_terms.latency_overrun,
-                                                COST_DIFF_TOLERANCE,
-                                                0.);
-    }
-
-    // if both old and new congestion costs are too small, ignore their difference
-    // Too small congestion costs are the result of round-off error
-    if (costs.noc_cost_terms.congestion > MIN_EXPECTED_NOC_CONGESTION_COST ||
-        old_costs.noc_cost_terms.congestion > MIN_EXPECTED_NOC_CONGESTION_COST) {
-        renormalization_needed |= !vtr::isclose(costs.noc_cost_terms.congestion,
-                                                old_costs.noc_cost_terms.congestion,
-                                                COST_DIFF_TOLERANCE,
-                                                0.);
-    }
-
-    return renormalization_needed;
-}
-
 static void place_constrained_noc_router(ClusterBlockId router_blk_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
