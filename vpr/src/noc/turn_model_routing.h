@@ -24,15 +24,22 @@ class TurnModelRouting : public NocRouting {
         INVALID      /*!< Invalid direction*/
     };
 
+    size_t get_hash_value(NocRouterId src_router_id, NocRouterId dst_router_id, NocRouterId curr_router_id, NocTrafficFlowId traffic_flow_id);
+
+    TurnModelRouting::Direction select_vertical_direction(const std::vector<TurnModelRouting::Direction>& directions);
+
+    TurnModelRouting::Direction select_horizontal_direction(const std::vector<TurnModelRouting::Direction>& directions);
+
+    TurnModelRouting::Direction select_direction_other_than(const std::vector<TurnModelRouting::Direction>& directions,
+                                                            TurnModelRouting::Direction other_than);
+
+  private:
     NocLinkId move_to_next_router(NocRouterId& curr_router_id,
                                   const t_physical_tile_loc& curr_router_position,
                                   TurnModelRouting::Direction next_step_direction,
                                   std::unordered_set<NocRouterId>& visited_routers,
                                   const NocStorage& noc_model);
 
-    size_t get_hash_value(NocRouterId src_router_id, NocRouterId dst_router_id, NocRouterId curr_router_id, NocTrafficFlowId traffic_flow_id);
-
-  private:
     inline uint32_t murmur_32_scramble(uint32_t k);
 
     uint32_t murmur3_32(const std::vector<uint32_t>& key, uint32_t seed);
