@@ -11,7 +11,8 @@ std::unique_ptr<NocRouting> NocRoutingAlgorithmCreator::create_routing_algorithm
         noc_routing_algorithm = std::make_unique<BFSRouting>();
     } else if (routing_algorithm_name == "west_first_routing") {
         noc_routing_algorithm = std::make_unique<WestFirstRouting>();
-        std::cout << "Creating west_first algorithm" << std::endl;
+    } else if (routing_algorithm_name == "north_last_routing") {
+        noc_routing_algorithm = std::make_unique<NorthLastRouting>();
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "The provided NoC routing algorithm '%s' is not supported.", routing_algorithm_name.c_str());
     }
