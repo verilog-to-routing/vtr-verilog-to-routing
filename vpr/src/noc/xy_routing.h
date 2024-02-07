@@ -116,7 +116,8 @@ class XYRouting : public TurnModelRouting {
 
     // internally used helper functions
   private:
-    const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId curr_router_id,
+    const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
+                                                                         NocRouterId curr_router_id,
                                                                          NocRouterId dst_router_id,
                                                                          const NocStorage& noc_model) override;
 
