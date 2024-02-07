@@ -319,8 +319,6 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
  * @param wire_to_ipin_arch_sw_id
  * @return
  */
-float get_min_cross_layer_delay(const std::vector<t_arch_switch_inf>& arch_switch_inf,
-                                const std::vector<t_segment_inf>& segment_inf,
-                                const int wire_to_ipin_arch_sw_id);
+float get_min_cross_layer_delay();
 
 #endif
