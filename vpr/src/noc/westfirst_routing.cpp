@@ -1,5 +1,7 @@
 #include "westfirst_routing.h"
 
+WestFirstRouting::~WestFirstRouting() = default;
+
 const std::vector<TurnModelRouting::Direction>& WestFirstRouting::get_legal_directions(NocRouterId curr_router_id,
                                                                                        NocRouterId dst_router_id,
                                                                                        const NocStorage& noc_model) {
