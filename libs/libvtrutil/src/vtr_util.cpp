@@ -26,7 +26,7 @@ static int cont;                 /* line continued? (used by strtok)*/
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const char* text, const std::string delims) {
+std::vector<std::string> split(const char* text, const std::string& delims) {
     if (text) {
         std::string text_str(text);
         return split(text_str, delims);
@@ -39,7 +39,7 @@ std::vector<std::string> split(const char* text, const std::string delims) {
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const std::string& text, const std::string delims) {
+std::vector<std::string> split(const std::string& text, const std::string& delims) {
     std::vector<std::string> tokens;
 
     std::string curr_tok;
@@ -102,7 +102,7 @@ std::string replace_all(const std::string& input, const std::string& search, con
 }
 
 ///@brief Retruns true if str starts with prefix
-bool starts_with(std::string str, std::string prefix) {
+bool starts_with(const std::string& str, const std::string& prefix) {
     return str.find(prefix) == 0;
 }
 
@@ -125,7 +125,7 @@ std::string string_fmt(const char* fmt, ...) {
 
 ///@brief Returns a std::string formatted using a printf-style format string taking an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
-    // We need to copy the args so we don't change them before the true formating
+    // We need to copy the args so we don't change them before the true formatting
     va_list va_args_copy;
     va_copy(va_args_copy, args);
 
@@ -461,8 +461,8 @@ bool file_exists(const char* filename) {
  *
  * Returns true if the extension is correct, and false otherwise.
  */
-bool check_file_name_extension(std::string file_name,
-                               std::string file_extension) {
+bool check_file_name_extension(const std::string& file_name,
+                               const std::string& file_extension) {
     auto ext = std::filesystem::path(file_name).extension();
     return ext == file_extension;
 }
