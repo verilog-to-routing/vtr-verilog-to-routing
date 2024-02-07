@@ -40,7 +40,8 @@ class TurnModelRouting : public NocRouting {
     template<class T>
     inline void hash_combine(std::size_t& seed, T const& v);
 
-    virtual const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId curr_router_id,
+    virtual const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
+                                                                                 NocRouterId curr_router_id,
                                                                                  NocRouterId dst_router_id,
                                                                                  const NocStorage& noc_model) = 0;
 
