@@ -72,6 +72,7 @@ Running the benchmarks:
 	Running VTR tasks:
         - All synthetic benchmarks can be run as VTR tasks. Example tasks are provided in vtr_flow/tasks/noc_qor
         - Instructions on how to run VTR tasks to measure QoR for NoC benchmarks in available in VTR Developer Guide.
+        - Link to VTR Developer Guide: https://docs.verilogtorouting.org/en/latest/README.developers/#example-noc-benchmarks-qor-measurements
 
 	Expected run time:
 		- These benchmarks are quite large so the maximum expected run time for a single run is a few hours

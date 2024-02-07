@@ -395,7 +395,7 @@ Implementation Quality Metrics:
 | crit_path_routed_wirelength     | The routed wirelength at the relaxed channel width                           | Medium      |
 | NoC_agg_bandwidth\**            | The total link bandwidth utilized by all traffic flows                       | Low         |
 | NoC_latency\**                  | The total time of traffic flow data transfer (summed over all traffic flows) | Low         |
-| NoC_latency_constraints_cost\** | The total number of traffic flow latency constraints                         | Low           |
+| NoC_latency_constraints_cost\** | Total number of traffic flows that meet their latency constraints            | Low         |
 
 \* By default, VPR attempts to find the minimum routable channel width; it then performs routing at a relaxed (e.g. 1.3x minimum) channel width. At minimum channel width routing congestion can distort the true timing/wirelength characteristics. Combined with the fact that most FPGA architectures are built with an abundance of routing, post-routing metrics are usually only evaluated at the relaxed channel width.
 

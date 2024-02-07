@@ -476,6 +476,11 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
     """
     jobs = []
     for config in configs:
+        # A task usually runs the CAD flow for a cartesian product of circuits and architectures.
+        # NoC traffic flow files might need to be specified per circuit. If this is the case,
+        # circuits and traffic flow files are paired. Otherwise, a cartesian product is performed
+        # between circuits and traffic flow files. In both cases, the result is cartesian multiplied
+        # with given architectures.
         if config.noc_traffic_list_type == "outer_product":
             combinations = list(itertools.product(config.circuits, config.noc_traffics))
         elif config.noc_traffic_list_type == "per_circuit":
