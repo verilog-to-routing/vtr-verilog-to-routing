@@ -29,7 +29,6 @@ class PlaceDelayModel;
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
-                                                               const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                                                t_chan_width_dist chan_width_dist,
                                                                const t_placer_opts& place_opts,
                                                                const t_router_opts& router_opts,
@@ -144,8 +143,13 @@ class OverrideDelayModel : public PlaceDelayModel {
 
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
-    /* Minimum delay of cross-layer connections */
+    /**
+     * @brief Minimum delay of cross-layer connections
+     */
     float cross_layer_delay_;
+    /**
+     * @brief
+     */
     bool is_flat_;
 
     void compute_override_delay_model(RouterDelayProfiler& router,

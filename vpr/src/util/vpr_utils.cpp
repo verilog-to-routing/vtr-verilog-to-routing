@@ -2511,7 +2511,6 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
 
 float get_min_cross_layer_delay() {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-    const auto& rr_switch_inf = g_vpr_ctx.device().rr_graph.rr_switch();
     float min_delay = std::numeric_limits<float>::max();
 
 
