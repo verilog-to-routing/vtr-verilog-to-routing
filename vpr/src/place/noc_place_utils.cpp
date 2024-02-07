@@ -194,7 +194,7 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
 
     // route the current traffic flow
     std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow_id);
-    noc_flows_router.route_flow(source_router_block_id, sink_router_block_id, curr_traffic_flow_route, noc_model);
+    noc_flows_router.route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, curr_traffic_flow_route, noc_model);
 
     return curr_traffic_flow_route;
 }
@@ -477,7 +477,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         NocRouterId sink_router_block_id = noc_model.get_router_at_grid_location(placed_cluster_block_locations[logical_sink_router_block_id].loc);
 
         // route the current traffic flow
-        temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, temp_found_noc_route, noc_model);
+        temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, temp_found_noc_route, noc_model);
 
         // now calculate the costs associated to the current traffic flow and accumulate it to find the total cost of the NoC placement
         double current_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth_cost(temp_found_noc_route, curr_traffic_flow);

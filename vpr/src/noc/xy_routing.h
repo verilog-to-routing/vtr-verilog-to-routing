@@ -82,21 +82,10 @@
  * 
  */
 
-#include "noc_routing.h"
+#include "turn_model_routing.h"
 
-/**
- * @brief This enum describes the all the possible
- * directions the XY routing algorithm can choose
- * to travel.
- */
-enum class RouteDirection {
-    LEFT,  /*!< Moving towards the negative X-axis*/
-    RIGHT, /*!< Moving towards the positive X-axis*/
-    UP,    /*!< Moving towards the positive Y-axis*/
-    DOWN   /*!< Moving towards the negative Y-axis*/
-};
 
-class XYRouting : public NocRouting {
+class XYRouting : public TurnModelRouting {
   public:
     ~XYRouting() override;
 
@@ -113,6 +102,7 @@ class XYRouting : public NocRouting {
      * @param sink_router_id The destination router of a traffic flow.
      * Identifies the ending point of the route within the NoC.This represents a 
      * physical router on the FPGA.
+     * @param traffic_flow_id The unique ID for the traffic flow being routed.
      * @param flow_route Stores the path returned by this function
      * as a series of NoC links found by 
      * a NoC routing algorithm between two routers in a traffic flow.
@@ -122,10 +112,20 @@ class XYRouting : public NocRouting {
      * @param noc_model A model of the NoC. This is used to traverse the
      * NoC and find a route between the two routers.
      */
-    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
+//    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
 
     // internally used helper functions
   private:
+    const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId curr_router_id,
+                                                                         NocRouterId dst_router_id,
+                                                                         const NocStorage& noc_model) override;
+
+    TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
+                                                      NocRouterId src_router_id,
+                                                      NocRouterId dst_router_id,
+                                                      NocRouterId curr_router_id,
+                                                      NocTrafficFlowId traffic_flow_id,
+                                                      const NocStorage& noc_model) override;
     /**
      * @brief Based on the position of the current router the algorithm is
      * visiting, this function determines the next direction to travel. 
@@ -140,7 +140,7 @@ class XYRouting : public NocRouting {
      * that is currently being visited on the FPGA
      * @return RouteDirection The direction to travel next
      */
-    RouteDirection get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position);
+//    RouteDirection get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position);
 
     /**
      * @brief Given the direction to travel next, this function determines
@@ -166,7 +166,11 @@ class XYRouting : public NocRouting {
      * @return true A suitable link was found that we can traverse next
      * @return false No suitable link was found that could be traversed
      */
-    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
+//    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
+
+  private:
+    const std::vector<TurnModelRouting::Direction> x_axis_directions {TurnModelRouting::Direction::LEFT, TurnModelRouting::Direction::RIGHT};
+    const std::vector<TurnModelRouting::Direction> y_axis_directions {TurnModelRouting::Direction::UP, TurnModelRouting::Direction::DOWN};
 };
 
 #endif

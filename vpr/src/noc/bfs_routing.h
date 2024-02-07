@@ -41,6 +41,7 @@ class BFSRouting : public NocRouting {
      * @param sink_router_id The destination router of a traffic flow.
      * Identifies the ending point of the route within the NoC.This represents a 
      * physical router on the FPGA.
+     * @param traffic_flow_id The unique ID for the traffic flow being routed.
      * @param flow_route Stores the path returned by this fuction
      * as a series of NoC links found by 
      * a NoC routing algorithm between two routers in a traffic flow.
@@ -50,7 +51,7 @@ class BFSRouting : public NocRouting {
      * @param noc_model A model of the NoC. This is used to traverse the
      * NoC and find a route between the two routers.
      */
-    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
+    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
 
     // internally used helper functions
   private:
