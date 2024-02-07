@@ -2513,8 +2513,7 @@ float get_min_cross_layer_delay() {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     float min_delay = std::numeric_limits<float>::max();
 
-
-    for (const auto& driver_node: rr_graph.nodes()) {
+    for (const auto& driver_node : rr_graph.nodes()) {
         for (size_t edge_id = 0; edge_id < rr_graph.num_edges(driver_node); edge_id++) {
             const auto& sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
             if (rr_graph.node_layer(driver_node) != rr_graph.node_layer(sink_node)) {

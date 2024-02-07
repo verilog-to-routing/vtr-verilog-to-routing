@@ -18,7 +18,7 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(const t_det
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
         return std::make_unique<MapLookahead>(det_routing_arch, is_flat);
     } else if (router_lookahead_type == e_router_lookahead::COMPRESSED_MAP) {
-      return std::make_unique<CompressedMapLookahead>(det_routing_arch, is_flat);
+        return std::make_unique<CompressedMapLookahead>(det_routing_arch, is_flat);
     } else if (router_lookahead_type == e_router_lookahead::EXTENDED_MAP) {
         return std::make_unique<ExtendedMapLookahead>(is_flat);
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {

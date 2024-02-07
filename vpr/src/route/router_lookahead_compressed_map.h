@@ -68,8 +68,8 @@ class CompressedMapLookahead : public RouterLookahead {
 //   an index. That index should be used here.
 
 typedef vtr::NdMatrix<util::Cost_Entry, 5> t_compressed_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][compressed_idx]
-                                                            //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
-                                                            // The first index is the layer number that the node under consideration is on, and the forth index
-                                                            // is the layer number that the target node is on.
+                                                                       //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
+                                                                       // The first index is the layer number that the node under consideration is on, and the forth index
+                                                                       // is the layer number that the target node is on.
 
 #endif //VTR_ROUTER_LOOKAHEAD_SPARSE_MAP_H

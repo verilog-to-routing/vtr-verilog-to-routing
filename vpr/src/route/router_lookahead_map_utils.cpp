@@ -47,9 +47,9 @@ static void run_dijkstra(RRNodeId start_node,
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
-                                vtr::vector<RRNodeId, float>& node_visited_costs,
-                                vtr::vector<RRNodeId, bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry>& pq);
+                                       vtr::vector<RRNodeId, float>& node_visited_costs,
+                                       vtr::vector<RRNodeId, bool>& node_expanded,
+                                       std::priority_queue<util::PQ_Entry>& pq);
 
 static void adjust_rr_position(const RRNodeId rr, int& x, int& y);
 
@@ -58,7 +58,6 @@ static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y);
 static void adjust_rr_wire_position(const RRNodeId rr, int& x, int& y);
 
 static void adjust_rr_src_sink_position(const RRNodeId rr, int& x, int& y);
-
 
 // Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
 // These are used when finding all the delays to get to the IPINs of all the different tile types
@@ -658,7 +657,6 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
 
-
     //Start sampling at the lower left non-corner
     int ref_x = 1;
     int ref_y = 1;
@@ -707,8 +705,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
         for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
             /* get the rr node index from which to start routing */
             RRNodeId start_node = get_start_node(from_layer_num, sample_x, sample_y,
-                                                       target_x, target_y, //non-corner upper right
-                                                       chan_type, segment_inf.seg_index, track_offset);
+                                                 target_x, target_y, //non-corner upper right
+                                                 chan_type, segment_inf.seg_index, track_offset);
 
             if (!start_node) {
                 continue;
@@ -745,7 +743,6 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
             }
         }
     }
-
 
     //Finally, now that we have a list of sample locations, run a Djikstra flood from
     //each sample location to profile the routing network from this type
@@ -850,7 +847,6 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
 void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func) {
     VTR_ASSERT(vtr::check_file_name_extension(file_name, ".csv"));
     const auto& grid = g_vpr_ctx.device().grid;
-    
 
     int num_layers = grid.get_num_layers();
     int grid_width = static_cast<int>(grid.width());
@@ -897,7 +893,6 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
         }
     }
 }
-
 
 } // namespace util
 
@@ -1383,9 +1378,9 @@ static void run_dijkstra(RRNodeId start_node,
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
-                                vtr::vector<RRNodeId, float>& node_visited_costs,
-                                vtr::vector<RRNodeId, bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry>& pq) {
+                                       vtr::vector<RRNodeId, float>& node_visited_costs,
+                                       vtr::vector<RRNodeId, bool>& node_expanded,
+                                       std::priority_queue<util::PQ_Entry>& pq) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -1413,7 +1408,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         }
 
         util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
-                             parent_entry.R_upstream, parent_entry.congestion_upstream, false);
+                                   parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
         //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
 

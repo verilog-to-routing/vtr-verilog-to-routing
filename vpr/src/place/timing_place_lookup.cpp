@@ -205,7 +205,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
         place_delay_model = std::make_unique<SimpleDelayModel>();
-    } else if(placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
+    } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
         place_delay_model = std::make_unique<DeltaDelayModel>(min_cross_layer_delay, is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
         place_delay_model = std::make_unique<OverrideDelayModel>(min_cross_layer_delay, is_flat);

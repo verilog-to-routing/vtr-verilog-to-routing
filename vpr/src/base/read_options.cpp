@@ -932,8 +932,8 @@ struct ParseRouterLookahead {
         } else if (val == e_router_lookahead::COMPRESSED_MAP) {
             conv_value.set_value("compressed_map");
         } else {
-                VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
-                conv_value.set_value("extended_map");
+            VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
+            conv_value.set_value("extended_map");
         }
         return conv_value;
     }

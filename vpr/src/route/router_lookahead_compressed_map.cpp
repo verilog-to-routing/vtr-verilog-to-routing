@@ -75,22 +75,22 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
     int sample_point_num = 0;
     for (int x = 0; x < grid_width;) {
         int x_step = -1;
-        if (x < 2*max_seg_lenght) {
+        if (x < 2 * max_seg_lenght) {
             x_step = 1;
-        } else if (x < 4*max_seg_lenght) {
+        } else if (x < 4 * max_seg_lenght) {
             x_step = 2;
-        } else if (x < 8*max_seg_lenght) {
+        } else if (x < 8 * max_seg_lenght) {
             x_step = 4;
         } else {
             x_step = 8;
         }
         for (int y = 0; y < grid_height;) {
             int y_step = -1;
-            if (y < 2*max_seg_lenght) {
+            if (y < 2 * max_seg_lenght) {
                 y_step = 1;
-            } else if (y < 4*max_seg_lenght) {
+            } else if (y < 4 * max_seg_lenght) {
                 y_step = 2;
-            } else if (y < 8*max_seg_lenght) {
+            } else if (y < 8 * max_seg_lenght) {
                 y_step = 4;
             } else {
                 y_step = 8;
@@ -120,7 +120,7 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
     return sample_point_num;
 }
 
-static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec)  {
+static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -167,11 +167,11 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
                 }
 
                 /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
-                     * cost map */
+                 * cost map */
                 set_compressed_lookahead_map_costs(from_layer_num, segment_inf.seg_index, chan_type, routing_cost_map);
 
                 /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
-                     * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
+                 * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
                 fill_in_missing_compressed_lookahead_entries(sorted_sample_loc, segment_inf.seg_index, chan_type);
             }
         }
@@ -198,8 +198,7 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
                 int compressed_idx = compressed_loc_index_map[ix][iy];
                 VTR_ASSERT(compressed_idx != OPEN);
 
-                f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][compressed_idx] =
-                    expansion_cost_entry.get_representative_cost_entry(util::e_representative_entry_method::SMALLEST);
+                f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][compressed_idx] = expansion_cost_entry.get_representative_cost_entry(util::e_representative_entry_method::SMALLEST);
             }
         }
     }
@@ -397,8 +396,6 @@ static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_ty
     return f_compressed_wire_cost_map[from_layer_num][chan_index][seg_index][to_layer_num][compressed_idx];
 }
 
-
-
 /******** Interface class member function definitions ********/
 CompressedMapLookahead::CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
     : det_routing_arch_(det_routing_arch)
@@ -425,9 +422,9 @@ float CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId 
 }
 
 std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node,
-                                                    RRNodeId to_node,
-                                                    const t_conn_cost_params& params,
-                                                    float /* R_upstream */) const {
+                                                                            RRNodeId to_node,
+                                                                            const t_conn_cost_params& params,
+                                                                            float /* R_upstream */) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -513,7 +510,6 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
     }
 
     return std::make_pair(expected_delay_cost, expected_cong_cost);
-
 }
 
 void CompressedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {

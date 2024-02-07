@@ -181,7 +181,6 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
 }
 
 float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -526,16 +525,15 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 }
 
                 /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
-                     * cost map */
+                 * cost map */
                 set_lookahead_map_costs(from_layer_num, segment_inf.seg_index, chan_type, routing_cost_map);
 
                 /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
-                     * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
+                 * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
                 fill_in_missing_lookahead_entries(segment_inf.seg_index, chan_type);
             }
         }
     }
-
 }
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
@@ -551,8 +549,7 @@ static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_
             for (unsigned iy = 0; iy < routing_cost_map.dim_size(2); iy++) {
                 util::Expansion_Cost_Entry& expansion_cost_entry = routing_cost_map[to_layer][ix][iy];
 
-                f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][ix][iy] =
-                    expansion_cost_entry.get_representative_cost_entry(util::e_representative_entry_method::SMALLEST);
+                f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][ix][iy] = expansion_cost_entry.get_representative_cost_entry(util::e_representative_entry_method::SMALLEST);
             }
         }
     }
@@ -651,12 +648,12 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
     float neighbour_delay_sum = 0;
     float neighbour_cong_sum = 0;
     std::array<int, 3> window = {-1, 0, 1};
-    for (int dx: window) {
+    for (int dx : window) {
         int neighbour_x = missing_dx + dx;
         if (neighbour_x < 0 || neighbour_x >= (int)f_wire_cost_map.dim_size(4)) {
             continue;
         }
-        for (int dy: window) {
+        for (int dy : window) {
             int neighbour_y = missing_dy + dy;
             if (neighbour_y < 0 || neighbour_y >= (int)f_wire_cost_map.dim_size(5)) {
                 continue;
@@ -772,9 +769,9 @@ static void min_chann_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 4>& distan
     int width = (int)g_vpr_ctx.device().grid.width();
     int height = (int)g_vpr_ctx.device().grid.height();
     distance_min_cost.resize({static_cast<unsigned long>(num_layers),
-                               static_cast<unsigned long>(num_layers),
-                               static_cast<unsigned long>(width),
-                               static_cast<unsigned long>(height)});
+                              static_cast<unsigned long>(num_layers),
+                              static_cast<unsigned long>(width),
+                              static_cast<unsigned long>(height)});
 
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
