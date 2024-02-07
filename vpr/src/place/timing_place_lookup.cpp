@@ -202,11 +202,10 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
-    float min_cross_layer_delay = get_min_cross_layer_delay(arch_switch_inf,
-                                                            segment_inf,
-                                                            det_routing_arch->wire_to_arch_ipin_switch_between_dice);
+    float min_cross_layer_delay = get_min_cross_layer_delay();
+
     if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
-        place_delay_model = std::make_unique<SimpleDelayModel>(min_cross_layer_delay, is_flat);
+        place_delay_model = std::make_unique<SimpleDelayModel>();
     } else if(placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
         place_delay_model = std::make_unique<DeltaDelayModel>(min_cross_layer_delay, is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {

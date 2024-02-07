@@ -222,10 +222,7 @@ class OverrideDelayModel : public PlaceDelayModel {
 ///  This is in contrast to other placement delay models that get the cost of getting from one location to another by running the router
 class SimpleDelayModel : public PlaceDelayModel {
   public:
-    SimpleDelayModel(float min_cross_layer_delay,
-                    bool is_flat)
-        : cross_layer_delay_(min_cross_layer_delay)
-        , is_flat_(is_flat) {}
+    SimpleDelayModel() {}
 
     void compute(
         RouterDelayProfiler& router,
@@ -239,8 +236,14 @@ class SimpleDelayModel : public PlaceDelayModel {
     void write(const std::string& /*file*/) const override {}
 
   private:
-    // [physical_type_idx][from_layer_num][to_layer_num][dx][dy]
+    /**
+     * @brief The matrix to store the minimum delay between different points on different layers.
+     *
+     *The matrix used to store delay information is a 5D matrix. This data structure stores the minimum delay for each tile type on each layer to other layers
+     *for each dx and dy. We decided to separate the delay for each physical type on each die to accommodate cases where the connectivity of a physical type differs
+     *on each layer. Additionally, instead of using d_layer, we distinguish between the destination layer to handle scenarios where connectivity between layers
+     *is not uniform. For example, if the number of inter-layer connections between layer 1 and 2 differs from the number of connections between layer 0 and 1.
+     *One might argue that this variability could also occur for dx and dy. However, we are operating under the assumption that the FPGA fabric architecture is regular.
+     */
     vtr::NdMatrix<float, 5> delays_; // [0..num_physical_type-1][0..num_layers-1][0..num_layers-1][0..max_dx][0..max_dy]
-    float cross_layer_delay_;
-    bool is_flat_;
 };
