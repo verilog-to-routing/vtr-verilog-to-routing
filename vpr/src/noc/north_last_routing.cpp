@@ -1,8 +1,9 @@
-#include "westfirst_routing.h"
 
-WestFirstRouting::~WestFirstRouting() = default;
+#include "north_last_routing.h"
 
-const std::vector<TurnModelRouting::Direction>& WestFirstRouting::get_legal_directions(NocRouterId curr_router_id,
+NorthLastRouting::~NorthLastRouting() = default;
+
+const std::vector<TurnModelRouting::Direction>& NorthLastRouting::get_legal_directions(NocRouterId curr_router_id,
                                                                                        NocRouterId dst_router_id,
                                                                                        const NocStorage& noc_model) {
     // get current and destination NoC routers
@@ -16,30 +17,39 @@ const std::vector<TurnModelRouting::Direction>& WestFirstRouting::get_legal_dire
     // clear returned legal directions from the previous call
     returned_legal_direction.clear();
 
-    /* In west-first routing, the two turns to the west are prohibited.
-     * Therefore, if the destination is at the west of the current router,
-     * we must travel in that direction until we reach the same x-coordinate
-     * as the destination router. Otherwise, we can move south, north,
-     * and east adaptively.
+    /* In north-last routing, when we start moving in the north direction
+     * we can no longer turn. Therefore, moving toward north is permissible
+     * only when by keeping moving northward we arrive at the destination.
+     * Therefore, moving north is legal only when we are at same column
+     * as the destination and the destination router is located above
+     * the current router. To find legal directions, we first check
+     * whether moving east, west, or south moves us closer to the
+     * destination (i.e. keeps us on a minimal route). If so, moving
+     * north is illegal. Otherwise, travelling northward is the only
+     * legal option.
      */
+
+    // check if the destination is at the west/east of the current router
     if (dst_router_pos.x < curr_router_pos.x) {
         returned_legal_direction.push_back(TurnModelRouting::Direction::LEFT);
-    } else { // to the east or the same column
-        if (dst_router_pos.x > curr_router_pos.x) { // not the same column
-            returned_legal_direction.push_back(TurnModelRouting::Direction::RIGHT);
-        }
+    } else if (dst_router_pos.x > curr_router_pos.x) {
+        returned_legal_direction.push_back(TurnModelRouting::Direction::RIGHT);
+    }
 
-        if (dst_router_pos.y > curr_router_pos.y) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
-        } else if (dst_router_pos.y < curr_router_pos.y) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
-        }
+    // check if the destination router is at the south of the current router
+    if (dst_router_pos.y < curr_router_pos.y) {
+        returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+    }
+
+    // consider north only when none of other directions are legal
+    if (returned_legal_direction.empty() && dst_router_pos.y > curr_router_pos.y) {
+        returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
     }
 
     return returned_legal_direction;
 }
 
-TurnModelRouting::Direction WestFirstRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
+TurnModelRouting::Direction NorthLastRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
                                                                     NocRouterId src_router_id,
                                                                     NocRouterId dst_router_id,
                                                                     NocRouterId curr_router_id,
@@ -58,17 +68,10 @@ TurnModelRouting::Direction WestFirstRouting::select_next_direction(const std::v
         return legal_directions[0];
     }
 
-    /*
-     * If the function has not already returned,
-     * the destination router is either to NE or SE of
-     * the current router. Therefore, we have two
-     * directions to choose from. A hash value is generated
-     * based on the source, current, and destination router IDs
-     * along with the traffic flow ID. Then, we select one direction
-     * by flipping a biased coin. For example if
-     * 1) dst_router_pos.x - curr_router_pos.x = 2
-     * 2) dst_router_pos.y - curr_router_pos.y = 8
-     * We take the UP direction with 80% chance, and RIGHT with 20%.
+    /* If the function reaches this point,
+     * the destination routed is located at SE or SW of
+     * the current router. We adopt a similar approach to
+     * WestFirstRouting to select between south and west/east.
      */
 
     // compute the hash value
@@ -80,15 +83,15 @@ TurnModelRouting::Direction WestFirstRouting::select_next_direction(const std::v
     int delta_x = abs(dst_router_pos.x - curr_router_pos.x);
     int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
 
-    // compute the probability of going to the right direction
-    uint32_t east_probability = delta_x * (max_uint32_t_val / (delta_x + delta_y));
+    // compute the probability of going to the down (south) direction
+    uint32_t east_probability = delta_y * (max_uint32_t_val / (delta_x + delta_y));
 
-    if (hash_val < east_probability) { // sometimes turn right
-        return TurnModelRouting::Direction::RIGHT;
+    if (hash_val < east_probability) { // sometimes turn south
+        return TurnModelRouting::Direction::DOWN;
     }
-    else { // if turning right was rejected, take the other option (north or south)
+    else { // if turning south was rejected, take the other option (east/west)
         for (const auto& direction : legal_directions) {
-            if (direction != TurnModelRouting::Direction::RIGHT) {
+            if (direction != TurnModelRouting::Direction::DOWN) {
                 return direction;
             }
         }
