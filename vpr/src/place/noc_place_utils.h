@@ -524,5 +524,22 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
  * information.
  * 
  */
+
 void write_noc_placement_file(const std::string& file_name);
+
+/**
+ * @brief This function checks whether the routing configuration for NoC traffic flows
+ * can cause a deadlock in NoC. Assume we create a graph where NoC routers are vertices,
+ * and traffic flow routes represent edges. This graph is a sub-graph of the NoC topology
+ * as it contain a subset of its edges. If such a graph contains a cycle, we can argue
+ * that deadlock is possible.
+ *
+ * This functions performs a DFS over the mentioned graph and tries to find out whether
+ * the graph has any back edges, i.e. whether a node points to one of its ancestors
+ * during depth-first search traversal.
+ *
+ * @return bool Indicates whether NoC traffic flow routes form a cycle.
+ */
+bool noc_routing_has_cycle();
+
 #endif

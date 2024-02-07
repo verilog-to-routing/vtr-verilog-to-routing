@@ -202,9 +202,9 @@ static void place_all_blocks(const t_placer_opts& placer_opts, vtr::vector<Clust
  * throws an error indicating that initial placement can not be done with the current device size or
  * floorplanning constraints. 
  */
-static void check_initial_placement_legality();
+static void check_initial_placement_legality(const t_noc_opts& noc_opts);
 
-static void check_initial_placement_legality() {
+static void check_initial_placement_legality(const t_noc_opts& noc_opts) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -222,6 +222,15 @@ static void check_initial_placement_legality() {
                         "%d blocks could not be placed during initial placement; no spaces were available for them on the grid.\n"
                         "If VPR was run with floorplan constraints, the constraints may be too tight.\n",
                         unplaced_blocks);
+    }
+
+    if (noc_opts.noc) {
+        bool has_cycle = noc_routing_has_cycle();
+        if (has_cycle) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                            "At least one cycle was found in NoC routing configuration. This may cause a deadlock"
+                            "when packets wait on each other in a cycle.\n");
+        }
     }
 }
 
@@ -1123,8 +1132,8 @@ void initial_placement(const t_placer_opts& placer_opts,
     //Place all blocks
     place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file);
 
-    //if any blocks remain unplaced, print an error
-    check_initial_placement_legality();
+    // ensure all blocks are placed and that NoC routing has no cycles
+    check_initial_placement_legality(noc_opts);
 
     //#ifdef VERBOSE
     //    VTR_LOG("At end of initial_placement.\n");
