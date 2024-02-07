@@ -3,14 +3,23 @@
 TurnModelRouting::~TurnModelRouting() = default;
 
 size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id, NocRouterId dst_router_id, NocRouterId curr_router_id, NocTrafficFlowId traffic_flow_id) {
-    std::size_t seed = 0;
+    // clear inputs from the last time this function was called
+    inputs_to_murmur3_hahser.clear();
 
-    hash_combine(seed, src_router_id);
-    hash_combine(seed, dst_router_id);
-    hash_combine(seed, curr_router_id);
-    hash_combine(seed, traffic_flow_id);
+    // used to cast vtr::StrongId types to uint32_t
+    auto cast_to_uint32 = [](const auto& input) {
+        return static_cast<uint32_t>(static_cast<size_t>(input));
+    };
 
-    return seed;
+    // insert IDs into the vector
+    inputs_to_murmur3_hahser.push_back(cast_to_uint32(src_router_id));
+    inputs_to_murmur3_hahser.push_back(cast_to_uint32(dst_router_id));
+    inputs_to_murmur3_hahser.push_back(cast_to_uint32(curr_router_id));
+    inputs_to_murmur3_hahser.push_back(cast_to_uint32(traffic_flow_id));
+
+    uint32_t hash_val = murmur3_32(inputs_to_murmur3_hahser, 0);
+
+    return hash_val;
 }
 
 void TurnModelRouting::route_flow(NocRouterId src_router_id, NocRouterId dst_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) {
@@ -35,6 +44,9 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id, NocRouterId dst_rou
      * visited.
      */
     std::unordered_set<NocRouterId> visited_routers;
+
+    std::cout << "Source: (" << src_router.get_router_grid_position_x() << ", " << src_router.get_router_grid_position_y() << ")" <<
+        "Dest: (" << dst_router.get_router_grid_position_x() << ", " << dst_router.get_router_grid_position_y() << ")" << std::endl;
 
     // The route is terminated when we reach at the destination router
     while (curr_router_id != dst_router_id) {
@@ -67,6 +79,8 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id, NocRouterId dst_rou
         }
 
     }
+
+    std::cout << std::endl;
 }
 
 NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id, const t_physical_tile_loc& curr_router_position, TurnModelRouting::Direction next_step_direction, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model) {
@@ -146,4 +160,35 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id, con
     }
 
     return next_link;
+}
+
+uint32_t TurnModelRouting::murmur_32_scramble(uint32_t k) {
+    k *= 0xcc9e2d51;
+    k = (k << 15) | (k >> 17);
+    k *= 0x1b873593;
+    return k;
+}
+
+uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t seed) {
+    uint32_t h = seed;
+
+    for (uint32_t k : key) {
+
+        h ^= murmur_32_scramble(k);
+        h = (h << 13) | (h >> 19);
+        h = h * 5 + 0xe6546b64;
+    }
+
+    // A swap is *not* necessary here because the preceding loop already
+    // places the low bytes in the low places according to whatever endianness
+    // we use. Swaps only apply when the memory is copied in a chunk.
+//    h ^= murmur_32_scramble(0);
+    /* Finalize. */
+    h ^= key.size() * 4;
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+    return h;
 }

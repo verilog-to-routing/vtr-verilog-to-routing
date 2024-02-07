@@ -33,7 +33,11 @@ class TurnModelRouting : public NocRouting {
     size_t get_hash_value(NocRouterId src_router_id, NocRouterId dst_router_id, NocRouterId curr_router_id, NocTrafficFlowId traffic_flow_id);
 
   private:
-    template <class T>
+    inline uint32_t murmur_32_scramble(uint32_t k);
+
+    uint32_t murmur3_32(const std::vector<uint32_t>& key, uint32_t seed);
+
+    template<class T>
     inline void hash_combine(std::size_t& seed, T const& v);
 
     virtual const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId curr_router_id,
@@ -52,6 +56,9 @@ class TurnModelRouting : public NocRouting {
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector
     // each time it is called
     std::vector<TurnModelRouting::Direction> returned_legal_direction{4};
+
+  private:
+    std::vector<uint32_t> inputs_to_murmur3_hahser{4};
 
 };
 
