@@ -36,7 +36,7 @@ TurnModelRouting::Direction XYRouting::select_next_direction(const std::vector<T
     const auto curr_router_pos = curr_router.get_router_physical_location();
     const auto dst_router_pos = dst_router.get_router_physical_location();
 
-    // indicated whether the next direction and moves us
+    // indicates whether the next direction that moves us
     // closer to the destination router is found among
     // legal directions
     bool found_next_direction = false;

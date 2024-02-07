@@ -2,6 +2,7 @@
 #define VTR_TURN_MODEL_ROUTING_H
 
 #include "noc_routing.h"
+#include <limits>
 
 class TurnModelRouting : public NocRouting {
   public:
@@ -38,11 +39,18 @@ class TurnModelRouting : public NocRouting {
                                                                                  const NocStorage& noc_model) = 0;
 
     virtual TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                                   NocRouterId src_router_id,
-                                                                   NocRouterId dst_router_id,
-                                                                   NocRouterId curr_router_id,
-                                                                   NocTrafficFlowId traffic_flow_id,
-                                                                   const NocStorage& noc_model) = 0;
+                                                              NocRouterId src_router_id,
+                                                              NocRouterId dst_router_id,
+                                                              NocRouterId curr_router_id,
+                                                              NocTrafficFlowId traffic_flow_id,
+                                                              const NocStorage& noc_model)
+        = 0;
+
+  protected:
+    // get_legal_directions() return a reference to this vector to avoid allocating a new vector
+    // each time it is called
+    std::vector<TurnModelRouting::Direction> returned_legal_direction{4};
+
 };
 
 template<class T>
