@@ -512,7 +512,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
     if ((flag == 1 && count == 1) || configuration.adder_cin_global)
         connect_nodes(netlist->vcc_node, 0, node[0], node[0]->num_input_pins - 1);
     else
-        connect_nodes(netlist->pad_node, 0, node[0], node[0]->num_input_pins - 1);
+        connect_nodes(netlist->gnd_node, 0, node[0], node[0]->num_input_pins - 1);
 
     // for normal subtraction: if any input pins beside intial cin is NULL, it should connect to unconn
     // for unary subtraction: the first number should has the number of a input pins connected to gnd. The others are as same as normal subtraction
