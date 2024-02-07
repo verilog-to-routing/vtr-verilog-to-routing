@@ -2802,21 +2802,21 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design."
             "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength, a value of 1 would mean noc placement is considered equal to timing and wirelength and a value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
-        .default_value("0.6")
+        .default_value("5.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_constraints_weighting")
         .help(
             "Controls the importance of meeting all the NoC traffic flow latency constraints."
             "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement, a value of 1 would mean the latency constraints are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by meeting the latency constraints of the traffic flows.")
-        .default_value("1")
+        .default_value("0.6")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_latency_weighting, "--noc_latency_weighting")
         .help(
             "Controls the importance of reducing the latencies of the NoC traffic flows."
             "This value can be >=0, where 0 would mean the latencies have no relevance to placement, a value of 1 would mean the latencies  are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by reducing the latencies of the traffic flows.")
-        .default_value("0.05")
+        .default_value("0.02")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_congestion_weighting, "--noc_congestion_weighting")
