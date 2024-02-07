@@ -191,7 +191,20 @@ The SymbiFlow benchmarks can be downloaded and extracted by running the followin
     cd $VTR_ROOT
     make get_symbiflow_benchmarks
 
-Once downloaded and extracted, benchmarks are provided as post-synthesized eblif files under: ::
+Once downloaded and extracted, benchmarks are provided as post-synthesized blif files under: ::
 
     $VTR_ROOT/vtr_flow/benchmarks/symbiflow
 
+.. _noc_benchmarks:
+
+NoC Benchmarks
+----------------
+NoC benchmarks are composed of synthetic and MLP benchmarks and target NoC-enhanced FPGA architectures. Synthetic
+benchmarks include a wide variety of traffic flow patters and are divided into two groups: 1) simple and 2) complex
+benchmarks. As their names imply, simple benchmarks use very simple and small logic modules connected to NoC routers,
+while complex benchmarks implement more complicated functionalities like encryption. These benchmarks do not come from
+real application domains. On the other hand, MLP benchmarks include modules that perform matrix-vector multiplication
+and move data. Pre-synthesized netlists for the synthetic benchmarks are added to VTR project, but MLP netlists should
+be downloaded separately.
+
+.. note:: The NoC MLP benchmarks are not included with the VTR release (due to their size). However they can be downloaded and extracted by running ``make get_noc_mlp_benchmarks`` from the root of the VTR tree.  They can also be `downloaded manually <https://www.eecg.utoronto.ca/~vaughn/titan/>`_.

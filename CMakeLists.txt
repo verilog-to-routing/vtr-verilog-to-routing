@@ -342,6 +342,14 @@ add_custom_target(get_titan_benchmarks
     COMMENT "Downloading (~1GB) and extracting Titan benchmarks (~10GB) into VTR source tree.")
 
 #
+# NoC MLP Benchmarks
+#
+add_custom_target(get_noc_mlp_benchmarks
+        COMMAND ./vtr_flow/scripts/download_noc_mlp.py --vtr_flow_dir ./vtr_flow
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Downloading (~100MB) and extracting NoC MLP benchmarks (~3.2GB) into VTR source tree.")
+
+#
 # ISPD Benchmarks
 #
 add_custom_target(get_ispd_benchmarks

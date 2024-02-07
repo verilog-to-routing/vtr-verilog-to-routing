@@ -271,6 +271,17 @@ void recompute_noc_costs(double& new_noc_aggregate_bandwidth_cost, double& new_n
 void update_noc_normalization_factors(t_placer_costs& costs);
 
 /**
+ * @brief Calculates total NoC cost.
+ *
+ *  @param costs Contains latency and aggregate bandwidth costs
+ *  along with their corresponding normalization factors.
+ *  @param noc_opts Contains NoC placement weighting factor.
+ *
+ * @return Calculated total NoC cost.
+ */
+double calculate_noc_cost(const t_placer_costs& costs, const t_noc_opts& noc_opts);
+
+/**
  * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
  * and initializes local variables that keep track of the traffic flow 
  * aggregate bandwidths cost.
@@ -407,13 +418,17 @@ void free_noc_placement_structs(void);
 bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
 
 /**
- * @brief Generates a placement move by choosing two router cluster blocks to 
- * swap. First, a random router cluster block is chosen and then another router
- * cluster block is chosen that can be swapped with the initial block such that
- * the distance travelled by either block does not exceed rlim. 
+ * @brief Generates a placement move by first choosing a random router cluster
+ * and then choosing a random physical router where the selected router cluster
+ * can be moved to. If the selected physical router is already occupied,
+ * the proposed move requires swapping two router clusters. If the selected
+ * physical router is empty, the proposed move only requires changing the location
+ * of the random router cluster. The range in which the physical router is selected
+ * is limited such that them maximum distance travelled by the random router cluster
+ * does not exceed rlim.
  * 
- * @param blocks_affected The two router cluster blocks that are proposed to be
- * swapped
+ * @param blocks_affected Contains one or two router clusters that are proposed
+ * to be moved or swapped.
  * @param rlim The maximum distance in the x and y direction that a router 
  * cluster block can travel (this is within the compressed block space) 
  * @return e_create_move Result of proposing the move
@@ -436,5 +451,5 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
  * information.
  * 
  */
-void write_noc_placement_file(std::string file_name);
+void write_noc_placement_file(const std::string& file_name);
 #endif
