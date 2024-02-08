@@ -7,6 +7,7 @@
 class ChannelDependencyGraph {
   public:
     ChannelDependencyGraph() = delete;
+
     ChannelDependencyGraph(size_t n_links,
                            const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes);
 

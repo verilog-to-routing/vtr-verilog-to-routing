@@ -31,6 +31,18 @@ ChannelDependencyGraph::ChannelDependencyGraph(size_t n_links,
             prev_link_id = cur_link_id;
         }
     }
+
+    // remove repetitive neighbors
+    for (auto& neighboring_nodes : adjacency_list_) {
+        // sort neighbors so that repetitive nodes are put beside each other
+        std::sort(neighboring_nodes.begin(), neighboring_nodes.end());
+
+        // remove consecutive duplicates
+        auto it = std::unique(neighboring_nodes.begin(), neighboring_nodes.end());
+
+        // erase the elements from the iterator to the end
+        neighboring_nodes.erase(it, neighboring_nodes.end());
+    }
 }
 
 bool ChannelDependencyGraph::has_cycles() {

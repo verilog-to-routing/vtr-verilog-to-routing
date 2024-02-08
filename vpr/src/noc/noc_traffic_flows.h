@@ -14,7 +14,8 @@
  * retrieve information about them.  
  * 
  * The class also associates traffic flows to their logical source routers 
- * (start point) and logical sink routers (end point). This is useful if one wants to find traffic flows based on just the source or sink logical router.
+ * (start point) and logical sink routers (end point). This is useful if one
+ * wants to find traffic flows based on just the source or sink logical router.
  * The routes for the traffic flows are expected to change throughout placement
  * as routers will be moved within the chip. Therefore this class provides
  * a datastructure to keep track of which flows have been updated (re-routed).
