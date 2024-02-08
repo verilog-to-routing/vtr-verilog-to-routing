@@ -812,7 +812,7 @@ RRNodeId RRGraph::create_node(const t_rr_type& type) {
     node_ptc_nums_.push_back(-1);
     node_cost_indices_.push_back(-1);
     node_directions_.push_back(Direction::NONE);
-    node_sides_.push_back(NUM_SIDES);
+    node_sides_.push_back(NUM_2D_SIDES);
     node_Rs_.push_back(0.);
     node_Cs_.push_back(0.);
 
@@ -1133,7 +1133,7 @@ void RRGraph::build_fast_node_lookup() const {
         if (node_type(node) == OPIN || node_type(node) == IPIN) {
             iside = node_side(node);
         } else {
-            iside = NUM_SIDES;
+            iside = NUM_2D_SIDES;
         }
 
         if (iside >= node_lookup_[x][y][itype][ptc].size()) {

@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/sara/Desktop/rr_3d/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/sara/Desktop/rr_3d/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: aad09e42e426be6012c2f65ddb636cd0
  */
 
 #include <functional>
@@ -1577,7 +1577,7 @@ template<std::size_t N>
 constexpr const char *lookup_switch_type[] = {"UXSD_INVALID", "mux", "tristate", "pass_gate", "short", "buffer"};
 constexpr const char *lookup_pin_type[] = {"UXSD_INVALID", "OPEN", "OUTPUT", "INPUT"};
 constexpr const char *lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "SOURCE", "SINK", "OPIN", "IPIN"};
-constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR"};
+constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR", "NONE"};
 constexpr const char *lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM", "RIGHT_LEFT", "RIGHT_BOTTOM", "RIGHT_BOTTOM_LEFT", "TOP_RIGHT", "TOP_BOTTOM", "TOP_LEFT", "TOP_RIGHT_BOTTOM", "TOP_RIGHT_LEFT", "TOP_BOTTOM_LEFT", "TOP_RIGHT_BOTTOM_LEFT", "BOTTOM_LEFT"};
 
 /* Lexers(string->token functions) for enums. */
@@ -1771,6 +1771,14 @@ inline enum_node_type lex_enum_node_type(const char *in, bool throw_on_invalid, 
 inline enum_node_direction lex_enum_node_direction(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
 	unsigned int len = strlen(in);
 	switch(len){
+	case 4:
+		switch(*((triehash_uu32*)&in[0])){
+		case onechar('N', 0, 32) | onechar('O', 8, 32) | onechar('N', 16, 32) | onechar('E', 24, 32):
+			return enum_node_direction::NONE;
+		break;
+		default: break;
+		}
+		break;
 	case 6:
 		switch(*((triehash_uu32*)&in[0])){
 		case onechar('B', 0, 32) | onechar('I', 8, 32) | onechar('_', 16, 32) | onechar('D', 24, 32):

@@ -36,6 +36,8 @@ class RouterLookahead {
     // May be unimplemented, in which case method should throw an exception.
     virtual void write_intra_cluster(const std::string& file) const = 0;
 
+    virtual float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const = 0;
+
     virtual ~RouterLookahead() {}
 };
 
@@ -92,6 +94,11 @@ class ClassicLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write_intra_cluster unimplemented");
     }
 
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::get_distance_min_delay unimplemented");
+        return -1.;
+    }
+
   private:
     float classic_wire_lookahead_cost(RRNodeId node, RRNodeId target_node, float criticality, float R_upstream) const;
 };
@@ -122,6 +129,11 @@ class NoOpLookahead : public RouterLookahead {
 
     void write_intra_cluster(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "write_intra_cluster not supported for NoOpLookahead");
+    }
+
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::get_distance_min_delay unimplemented");
+        return -1.;
     }
 };
 

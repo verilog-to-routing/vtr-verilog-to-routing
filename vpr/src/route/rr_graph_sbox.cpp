@@ -24,8 +24,8 @@
  *                   BOTTOM (CHANY)                                        */
 
 /* [0..3][0..3][0..nodes_per_chan-1].  Structure below is indexed as:       *
- * [from_side][to_side][from_track].  That yields an integer vector (ivec)  *
- * of the tracks to which from_track connects in the proper to_location.    *
+ * [from_side][to_side][from_tracks].  That yields an integer vector (ivec)  *
+ * of the tracks to which from_tracks connects in the proper to_location.    *
  * For simple switch boxes this is overkill, but it will allow complicated  *
  * switch boxes with Fs > 3, etc. without trouble.                          */
 
@@ -40,8 +40,8 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
 
     vtr::NdMatrix<std::vector<int>, 3> switch_block_conn({4, 4, (size_t)nodes_per_chan->max});
 
-    for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-        for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+    for (e_side from_side : TOTAL_2D_SIDES) {
+        for (e_side to_side : TOTAL_2D_SIDES) {
             int from_chan_width = (from_side == TOP || from_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
             int to_chan_width = (to_side == TOP || to_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
             for (int from_track = 0; from_track < from_chan_width; from_track++) {
@@ -95,7 +95,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
                                   const enum e_switch_block_type switch_block_type,
                                   const int from_chan_width,
                                   const int to_chan_width) {
-    /* This routine returns the track number to which the from_track should     *
+    /* This routine returns the track number to which the from_tracks should     *
      * connect.  It supports three simple, Fs = 3, switch blocks.               */
 
     int to_track = SBOX_ERROR; /* Can check to see if it's not set later. */

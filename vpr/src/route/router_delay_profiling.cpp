@@ -21,13 +21,31 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
           is_flat)
-    , is_flat_(is_flat) {}
+    , is_flat_(is_flat) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    min_delays_.resize({g_vpr_ctx.device().physical_tile_types.size(),
+                        static_cast<unsigned long>(grid.get_num_layers()),
+                        static_cast<unsigned long>(grid.get_num_layers()),
+                        grid.width(),
+                        grid.height()});
+    for (int physical_tile_type_idx = 0; physical_tile_type_idx < static_cast<int>(g_vpr_ctx.device().physical_tile_types.size()); ++physical_tile_type_idx) {
+        for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
+            for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
+                for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
+                    for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
+                        float min_delay = lookahead->get_opin_distance_min_delay(physical_tile_type_idx, from_layer, to_layer, dx, dy);
+                        min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy] = min_delay;
+                    }
+                }
+            }
+        }
+    }
+}
 
 bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                           RRNodeId sink_node,
                                           const t_router_opts& router_opts,
-                                          float* net_delay,
-                                          int layer_num) {
+                                          float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -58,14 +76,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
-    // If layer num is not specified, it means the BB should cover all layers
-    if (layer_num == OPEN) {
-        bounding_box.layer_min = 0;
-        bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
-    } else {
-        bounding_box.layer_min = layer_num;
-        bounding_box.layer_max = layer_num;
-    }
+    bounding_box.layer_min = 0;
+    bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
@@ -83,6 +95,9 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
+    if (size_t(sink_node) == 778060 && size_t(source_node) == 14) {
+        router_.set_router_debug(true);
+    }
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         tree.root(),
         sink_node,
@@ -90,6 +105,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         bounding_box,
         router_stats,
         conn_params);
+
+    router_.set_router_debug(false);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
@@ -111,6 +128,10 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     router_.reset_path_costs();
 
     return found_path;
+}
+
+float RouterDelayProfiler::get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const {
+    return min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy];
 }
 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists

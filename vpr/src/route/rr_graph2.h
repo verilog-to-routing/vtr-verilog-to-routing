@@ -29,6 +29,22 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_y,
                                     bool is_flat);
 
+/**
+ * @brief allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs
+ *
+ *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
+ *  @param nodes_per_chan number of tracks per channel (x, y)
+ *  @param grid device grid
+ *  @param extra_nodes_per_switchblock keeps how many extra length-0 CHANX node is required for each unique (x,y) location within the grid.
+ *  Number of these extra nodes are exactly the same for all layers. Hence, we only keep it for one layer. ([0..grid.width-1][0..grid.height-1)
+ *  @param index RRNodeId that should be assigned to add a new RR node to the RR graph
+ */
+void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                              const t_chan_width* nodes_per_chan,
+                                              const DeviceGrid& grid,
+                                              const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
+                                              int* index);
+
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          t_physical_tile_type_ptr physical_tile,
                                          int layer,
@@ -61,7 +77,19 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
                       int y,
                       t_rr_type rr_type,
                       int ptc,
-                      e_side side = NUM_SIDES);
+                      e_side side = NUM_2D_SIDES);
+/**
+ * @brief goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
+ *
+ *  @param multi_layer_track_conn 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..), extracted from the architecture file
+ *  @param sb_conn_map switch block permutation map
+ *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
+ *
+ * @return number of die-crossing connection for each unique (x, y) location within the grid ([0..grid.width-1][0..grid.height-1])
+ */
+vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
+                                                               t_sb_connection_map* sb_conn_map,
+                                                               RRGraphBuilder& rr_graph_builder);
 
 int find_average_rr_node_index(int device_width,
                                int device_height,
@@ -177,6 +205,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_rr_type from_type,
                         const int to_seg,
                         const t_rr_type to_type,
+                        vtr::NdMatrix<t_inter_die_switchblock_edge, 5>& multi_layer_track_conn,
                         const int chan_len,
                         const int max_chan_width,
                         const DeviceGrid& grid,
@@ -188,6 +217,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_chan_seg_details* to_seg_details,
                         const t_chan_details& to_chan_details,
                         const enum e_directionality directionality,
+                        const int delayless_switch,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         t_sb_connection_map* sb_conn_map);
 
