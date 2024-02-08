@@ -8,6 +8,7 @@
 #include "move_transactions.h"
 #include "vtr_log.h"
 #include "noc_routing_algorithm_creator.h"
+#include "channel_dependency_graph.h"
 #include "move_utils.h"
 #include "vtr_random.h"
 #include "place_constraints.h"

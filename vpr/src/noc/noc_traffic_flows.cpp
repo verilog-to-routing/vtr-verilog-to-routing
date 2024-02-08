@@ -44,6 +44,10 @@ std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTraff
     return traffic_flow_routes[traffic_flow_id];
 }
 
+const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& NocTrafficFlows::get_all_traffic_flow_routes() const {
+    return traffic_flow_routes;
+}
+
 const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netlist(void) const {
     return router_cluster_in_netlist;
 }
