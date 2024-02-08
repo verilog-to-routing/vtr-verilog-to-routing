@@ -26,6 +26,14 @@ static constexpr float PENALTY_FACTOR = 1.f;
 ///@brief Minimum penalty cost that is added when penalizing a delta outside the segment bounding box.
 static constexpr float PENALTY_MIN = 1e-12f;
 
+/**
+ * @brief Store the minimum delay and congestion between `min_cost` and `new_cost` in `min_cost`.
+ * @attention The cost in either min_cost or new_cost can be invalid.
+ * @param min_cost
+ * @param new_cost
+ */
+static void assign_min_entry(util::Cost_Entry& min_cost, const util::Cost_Entry& new_cost);
+
 // also known as the L1 norm
 static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b) {
     return abs(b.x() - a.x()) + abs(b.y() - a.y());
@@ -341,21 +349,21 @@ std::vector<std::pair<int, int>> CostMap::list_empty() const {
     return results;
 }
 
-static void assign_min_entry(util::Cost_Entry* dst, const util::Cost_Entry& src) {
+static void assign_min_entry(util::Cost_Entry& min_cost, const util::Cost_Entry& new_cost) {
     // The values in src is only being assigned to dst if they are valid
-    if (!std::isnan(src.delay)) {
-        if (std::isnan(dst->delay)) {
-            dst->delay = src.delay;
+    if (!std::isnan(new_cost.delay)) {
+        if (std::isnan(min_cost.delay)) {
+            min_cost.delay = new_cost.delay;
         } else {
-            dst->delay = std::min(dst->delay, src.delay);
+            min_cost.delay = std::min(min_cost.delay, new_cost.delay);
         }
     }
 
-    if (!std::isnan(src.congestion)) {
-        if (std::isnan(dst->congestion)) {
-            dst->congestion = src.congestion;
+    if (!std::isnan(new_cost.congestion)) {
+        if (std::isnan(min_cost.congestion)) {
+            min_cost.congestion = new_cost.congestion;
         } else {
-            dst->congestion = std::min(dst->congestion, src.congestion);
+            min_cost.congestion = std::min(min_cost.congestion, new_cost.congestion);
         }
     }
 }
@@ -384,11 +392,11 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
             int yp = cy + oy;
             int yn = cy - oy;
             if (bounds.contains(vtr::Point<int>(x, yp))) {
-                assign_min_entry(&min_entry, matrix[x][yp]);
+                assign_min_entry(min_entry, matrix[x][yp]);
                 in_bounds = true;
             }
             if (bounds.contains(vtr::Point<int>(x, yn))) {
-                assign_min_entry(&min_entry, matrix[x][yn]);
+                assign_min_entry(min_entry, matrix[x][yn]);
                 in_bounds = true;
             }
         }

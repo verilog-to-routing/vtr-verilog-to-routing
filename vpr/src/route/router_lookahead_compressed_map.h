@@ -2,8 +2,8 @@
 // Created by amin on 11/27/23.
 //
 
-#ifndef VTR_ROUTER_LOOKAHEAD_SPARSE_MAP_H
-#define VTR_ROUTER_LOOKAHEAD_SPARSE_MAP_H
+#ifndef VTR_ROUTER_LOOKAHEAD_COMPRESSED_MAP_H
+#define VTR_ROUTER_LOOKAHEAD_COMPRESSED_MAP_H
 
 #include <string>
 #include <limits>
@@ -72,4 +72,4 @@ typedef vtr::NdMatrix<util::Cost_Entry, 5> t_compressed_wire_cost_map; //[0..num
                                                                        // The first index is the layer number that the node under consideration is on, and the forth index
                                                                        // is the layer number that the target node is on.
 
-#endif //VTR_ROUTER_LOOKAHEAD_SPARSE_MAP_H
+#endif //VTR_ROUTER_LOOKAHEAD_COMPRESSED_MAP_H

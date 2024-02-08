@@ -50,6 +50,8 @@
 #    include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
+const int VALID_NEIGHBOR_NUMBER = 3;
+
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
  * calculated */
@@ -142,6 +144,18 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
 
+/**
+ * @brief Fill in the missing entry in router lookahead map
+ * If there is a missing entry in the router lookahead, search among its neighbors in a 3x3 window. If there are `VALID_NEIGHBOR_NUMBER` valid entries,
+ * take the average of them and fill in the missing entry.
+ * @param from_layer_num The layer num of the source node
+ * @param missing_dx Dx of the missing input
+ * @param missing_dy Dy of the missing input
+ * @param to_layer_num The layer num of the destination point
+ * @param segment_index The segment index of the source node
+ * @param chan_index The channel index of the source node
+ * @return The cost for the missing entry
+ */
 static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_num,
                                                                 int missing_dx,
                                                                 int missing_dy,
@@ -641,13 +655,14 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
                                                                 int to_layer_num,
                                                                 int segment_index,
                                                                 int chan_index) {
+    // Make sure that the given loaction doesn't have a valid entry
     VTR_ASSERT(std::isnan(f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_dx][missing_dy].delay));
     VTR_ASSERT(std::isnan(f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_dx][missing_dy].congestion));
 
-    int neighbour_num = 0;
-    float neighbour_delay_sum = 0;
-    float neighbour_cong_sum = 0;
-    std::array<int, 3> window = {-1, 0, 1};
+    int neighbour_num = 0; // Number of neighbours with valid entry
+    float neighbour_delay_sum = 0; // Acc of valid delay costs
+    float neighbour_cong_sum = 0; // Acc of valid congestion costs
+    std::array<int, 3> window = {-1, 0, 1}; // Average window size
     for (int dx : window) {
         int neighbour_x = missing_dx + dx;
         if (neighbour_x < 0 || neighbour_x >= (int)f_wire_cost_map.dim_size(4)) {
@@ -668,10 +683,12 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
         }
     }
 
-    if (neighbour_num >= 3) {
+    // Store the average only if there are enough number of neighbours with valid entry
+    if (neighbour_num >= VALID_NEIGHBOR_NUMBER) {
         return {neighbour_delay_sum / static_cast<float>(neighbour_num),
                 neighbour_cong_sum / static_cast<float>(neighbour_num)};
     } else {
+        // If there are not enough neighbours with valid entry, retrieve to the previous way of getting the missing cost
         return get_nearby_cost_entry(from_layer_num, missing_dx, missing_dy, to_layer_num, segment_index, chan_index);
     }
 }
