@@ -735,6 +735,7 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_flows_file = Options.noc_flows_file;
     NocOpts->noc_routing_algorithm = Options.noc_routing_algorithm;
     NocOpts->noc_placement_weighting = Options.noc_placement_weighting;
+    NocOpts->noc_aggregate_bandwidth_weighting = Options.noc_agg_bandwidth_weighting;
     NocOpts->noc_latency_constraints_weighting = Options.noc_latency_constraints_weighting;
     NocOpts->noc_latency_weighting = Options.noc_latency_weighting;
     NocOpts->noc_congestion_weighting = Options.noc_congestion_weighting;

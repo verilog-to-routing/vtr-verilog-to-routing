@@ -153,6 +153,7 @@ struct t_options {
     argparse::ArgValue<std::string> noc_flows_file;
     argparse::ArgValue<std::string> noc_routing_algorithm;
     argparse::ArgValue<double> noc_placement_weighting;
+    argparse::ArgValue<double> noc_agg_bandwidth_weighting;
     argparse::ArgValue<double> noc_latency_constraints_weighting;
     argparse::ArgValue<double> noc_latency_weighting;
     argparse::ArgValue<double> noc_congestion_weighting;

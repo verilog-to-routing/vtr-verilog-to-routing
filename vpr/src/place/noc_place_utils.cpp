@@ -577,14 +577,17 @@ double calculate_link_congestion_cost(const NocLink& link) {
 }
 
 void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts) {
-
+    // calculate the sum of all weighting factors
     double weighting_factor_sum = noc_opts.noc_latency_weighting +
                                   noc_opts.noc_latency_constraints_weighting +
-                                  noc_opts.noc_congestion_weighting;
+                                  noc_opts.noc_congestion_weighting +
+                                  noc_opts.noc_aggregate_bandwidth_weighting;
 
-    VTR_ASSERT(weighting_factor_sum <= 1.0 && weighting_factor_sum >= 0.0);
-
-    noc_opts.noc_aggregate_bandwidth_weighting = 1.0 - weighting_factor_sum;
+    // Normalize weighting factor so they add up to 1
+    noc_opts.noc_aggregate_bandwidth_weighting /= weighting_factor_sum;
+    noc_opts.noc_latency_weighting /= weighting_factor_sum;
+    noc_opts.noc_latency_constraints_weighting /= weighting_factor_sum;
+    noc_opts.noc_congestion_weighting /= weighting_factor_sum;
 }
 
 double calculate_noc_cost(const NocCostTerms& cost_terms,
