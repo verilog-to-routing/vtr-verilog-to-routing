@@ -112,7 +112,13 @@ class DeltaDelayModel : public PlaceDelayModel {
 
   private:
     vtr::NdMatrix<float, 3> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
+    /**
+     * @brief The minimum delay of inter-layer connections
+     */
     float cross_layer_delay_;
+    /**
+     * @brief Indicates whether the router is a two-stage or run-flat
+     */
     bool is_flat_;
 };
 
@@ -148,7 +154,7 @@ class OverrideDelayModel : public PlaceDelayModel {
      */
     float cross_layer_delay_;
     /**
-     * @brief
+     * @brief Indicates whether the router is a two-stage or run-flat
      */
     bool is_flat_;
 
