@@ -659,9 +659,9 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
     VTR_ASSERT(std::isnan(f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_dx][missing_dy].delay));
     VTR_ASSERT(std::isnan(f_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_dx][missing_dy].congestion));
 
-    int neighbour_num = 0; // Number of neighbours with valid entry
-    float neighbour_delay_sum = 0; // Acc of valid delay costs
-    float neighbour_cong_sum = 0; // Acc of valid congestion costs
+    int neighbour_num = 0;                  // Number of neighbours with valid entry
+    float neighbour_delay_sum = 0;          // Acc of valid delay costs
+    float neighbour_cong_sum = 0;           // Acc of valid congestion costs
     std::array<int, 3> window = {-1, 0, 1}; // Average window size
     for (int dx : window) {
         int neighbour_x = missing_dx + dx;
