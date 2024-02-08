@@ -2509,22 +2509,18 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
     }
 }
 
-float get_min_cross_layer_delay(const std::vector<t_arch_switch_inf>& arch_switch_inf,
-                                const std::vector<t_segment_inf>& segment_inf,
-                                const int wire_to_ipin_arch_sw_id) {
+float get_min_cross_layer_delay() {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     float min_delay = std::numeric_limits<float>::max();
 
-    // Check whether the inter-layer switch type for connection block is defined. If it is,
-    // get the delay of it.
-    if (wire_to_ipin_arch_sw_id != OPEN) {
-        min_delay = arch_switch_inf[wire_to_ipin_arch_sw_id].Tdel();
-    }
-
-    // Iterate over inter-layer switch types of segments to find the minimum delay
-    for (const auto& seg_inf : segment_inf) {
-        int cross_layer_sw_arch_id = seg_inf.arch_opin_between_dice_switch;
-        if (cross_layer_sw_arch_id != OPEN) {
-            min_delay = std::min(min_delay, arch_switch_inf[cross_layer_sw_arch_id].Tdel());
+    for (const auto& driver_node : rr_graph.nodes()) {
+        for (size_t edge_id = 0; edge_id < rr_graph.num_edges(driver_node); edge_id++) {
+            const auto& sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
+            if (rr_graph.node_layer(driver_node) != rr_graph.node_layer(sink_node)) {
+                int i_switch = rr_graph.edge_switch(driver_node, edge_id);
+                float edge_delay = rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
+                min_delay = std::min(min_delay, edge_delay);
+            }
         }
     }
 
