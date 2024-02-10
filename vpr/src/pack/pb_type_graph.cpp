@@ -49,7 +49,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_type* pb_type,
                                     const int index,
                                     bool load_power_structures,
-                                    int& pin_count_in_cluster);
+                                    int& pin_count_in_cluster,
+                                    int& primitive_num);
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node);
 
@@ -147,12 +148,14 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
         if (type.pb_type) {
             type.pb_graph_head = new t_pb_graph_node();
             int pin_count_in_cluster = 0;
+            int primitive_num = 0;
             alloc_and_load_pb_graph(type.pb_graph_head,
                                     nullptr,
                                     type.pb_type,
                                     0,
                                     load_power_structures,
-                                    pin_count_in_cluster);
+                                    pin_count_in_cluster,
+                                    primitive_num);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
@@ -225,7 +228,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_type* pb_type,
                                     const int index,
                                     bool load_power_structures,
-                                    int& pin_count_in_cluster) {
+                                    int& pin_count_in_cluster,
+                                    int& primitive_num) {
     int i, j, k, i_input, i_output, i_clockport;
 
     pb_graph_node->placement_index = index;
@@ -235,8 +239,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->num_input_ports = 0;
     pb_graph_node->num_output_ports = 0;
     pb_graph_node->num_clock_ports = 0;
-
-    pb_graph_node->total_primitive_count = 0;
 
     /* Generate ports for pb graph node */
     for (i = 0; i < pb_type->num_ports; i++) {
@@ -341,6 +343,11 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         pb_graph_node->pb_node_power->transistor_cnt_pb_children = 0.;
     }
 
+    if (pb_graph_node->is_primitive()) {
+        pb_graph_node->primitive_num = primitive_num;
+        primitive_num++;
+    }
+
     /* Allocate and load child nodes for each mode and create interconnect in each mode */
 
     pb_graph_node->child_pb_graph_nodes = (t_pb_graph_node***)vtr::calloc(pb_type->num_modes, sizeof(t_pb_graph_node**));
@@ -355,7 +362,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                         &pb_type->modes[i].pb_type_children[j],
                                         k,
                                         load_power_structures,
-                                        pin_count_in_cluster);
+                                        pin_count_in_cluster,
+                                        primitive_num);
             }
         }
     }
@@ -369,17 +377,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                          pb_graph_node->child_pb_graph_nodes[i],
                                          &pb_type->modes[i],
                                          load_power_structures);
-    }
-
-    // update the total number of primitives of that type
-    if (pb_graph_node->is_primitive()) {
-        int total_count = 1;
-        auto pb_node = pb_graph_node;
-        while (!pb_node->is_root()) {
-            total_count *= pb_node->pb_type->num_pb;
-            pb_node = pb_node->parent_pb_graph_node;
-        }
-        pb_graph_node->total_primitive_count = total_count;
     }
 }
 
@@ -532,8 +529,8 @@ static void add_primitive_logical_classes(t_logical_block_type* logical_block) {
             }
             num_added_classes += add_port_logical_classes(logical_block, pb_graph_pins, num_ports, num_pins);
         }
-        logical_block->pb_graph_node_class_range.insert(std::make_pair(pb_graph_node, t_class_range(first_class_num,
-                                                                                                    first_class_num + num_added_classes - 1)));
+        logical_block->primitive_pb_graph_node_class_range.insert(std::make_pair(pb_graph_node, t_class_range(first_class_num,
+                                                                                                              first_class_num + num_added_classes - 1)));
     }
 }
 

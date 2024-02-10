@@ -524,6 +524,39 @@ bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_bl
     return capacity_compatible && is_tile_compatible(physical_tile, logical_block);
 }
 
+bool is_atom_compatible(t_logical_block_type_ptr logical_block, const t_pb_graph_node* atom_pb_graph_node, int loc_primitive_num) {
+    VTR_ASSERT(loc_primitive_num != OPEN);
+    const t_pb_graph_node* loc_pb_graph_node = nullptr;
+
+    // Check whether the atom
+    const t_pb_graph_node* parent_pb_graph_node = atom_pb_graph_node->parent_pb_graph_node;
+    while (parent_pb_graph_node->parent_pb_graph_node != nullptr) {
+        parent_pb_graph_node = parent_pb_graph_node->parent_pb_graph_node;
+    }
+
+    if (logical_block->pb_graph_head != parent_pb_graph_node) {
+        return false;
+    }
+    /**
+     * Iterate over the data structure that maps primitive_pb_graph_node to their respective class range,
+     * and retrieve the primitive_pb_graph_node from that map. If the primitive number assigned to that
+     * primitive_pb_graph_node is equal to loc_primitive_num, then we have found the desired primitive_pb_graph_node.
+     */
+    for (const auto& primitive_node_class_pair : logical_block->primitive_pb_graph_node_class_range) {
+        const auto& primitive_node = primitive_node_class_pair.first;
+        VTR_ASSERT_SAFE(primitive_node->primitive_num != OPEN);
+        if (primitive_node->primitive_num == loc_primitive_num) {
+            loc_pb_graph_node = primitive_node;
+            break;
+        }
+    }
+    VTR_ASSERT_SAFE(loc_pb_graph_node != nullptr);
+    if (loc_pb_graph_node->pb_type == atom_pb_graph_node->pb_type)
+        return true;
+    else
+        return false;
+}
+
 int get_physical_pin_at_sub_tile_location(t_physical_tile_type_ptr physical_tile,
                                           t_logical_block_type_ptr logical_block,
                                           int sub_tile_capacity,
@@ -965,7 +998,7 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr /*
                                                      const t_pb_graph_node* pb_graph_node) {
     VTR_ASSERT(pb_graph_node->is_primitive());
 
-    t_class_range class_range = logical_block->pb_graph_node_class_range.at(pb_graph_node);
+    t_class_range class_range = logical_block->primitive_pb_graph_node_class_range.at(pb_graph_node);
     int logical_block_class_offset = sub_tile->primitive_class_range[sub_tile_relative_cap].at(logical_block).low;
 
     class_range.low += logical_block_class_offset;

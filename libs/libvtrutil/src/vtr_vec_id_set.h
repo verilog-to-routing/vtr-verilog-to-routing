@@ -2,6 +2,7 @@
 #define VTR_SET_H
 
 #include <vector>
+#include <algorithm>
 
 namespace vtr {
 

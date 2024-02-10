@@ -99,7 +99,9 @@ enum class ScreenUpdatePriority {
 
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
+constexpr auto EMPTY_PRIMITIVE_BLOCK_ID = AtomBlockId(-1);
 constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
+constexpr auto INVALID_PRIMITIVE_BLOCK_ID = AtomBlockId(-2);
 
 /*
  * Files
@@ -791,7 +793,7 @@ struct t_pl_loc {
     }
 
     friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
+        return std::tie(lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
     }
 
     friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
@@ -807,6 +809,40 @@ struct hash<t_pl_loc> {
         vtr::hash_combine(seed, v.y);
         vtr::hash_combine(seed, v.sub_tile);
         vtr::hash_combine(seed, v.layer);
+        return seed;
+    }
+};
+} // namespace std
+
+struct t_pl_atom_loc {
+    t_pl_atom_loc() = default;
+    t_pl_atom_loc(int primitive_id_, int x_, int y_, int sub_tile_, int layer_)
+        : primitive_id(primitive_id_)
+        , x(x_)
+        , y(y_)
+        , sub_tile(sub_tile_)
+        , layer(layer_) {}
+
+    int primitive_id = OPEN;
+    int x = OPEN;
+    int y = OPEN;
+    int sub_tile = OPEN;
+    int layer = OPEN;
+};
+
+inline bool operator==(const t_pl_atom_loc& lhs, const t_pl_atom_loc& rhs) {
+    return std::tie(lhs.primitive_id, lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.primitive_id, rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
+}
+
+namespace std {
+template<>
+struct hash<t_pl_atom_loc> {
+    std::size_t operator()(const t_pl_atom_loc& v) const noexcept {
+        std::size_t seed = std::hash<int>{}(v.x);
+        vtr::hash_combine(seed, v.y);
+        vtr::hash_combine(seed, v.sub_tile);
+        vtr::hash_combine(seed, v.layer);
+        vtr::hash_combine(seed, v.primitive_id);
         return seed;
     }
 };
@@ -875,6 +911,8 @@ class GridBlock {
     inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
         return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
     }
+
+    AtomBlockId block_at_location(const t_pl_atom_loc& loc) const;
 
     inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
         return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
@@ -1273,6 +1311,7 @@ struct t_placer_opts {
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
 
+    bool place_re_cluster;
     int placer_debug_block;
     int placer_debug_net;
 
@@ -1904,5 +1943,11 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
  * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
  */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
+
+struct pair_hash {
+    std::size_t operator()(const std::pair<ClusterBlockId, ClusterBlockId>& p) const noexcept {
+        return std::hash<ClusterBlockId>()(p.first) ^ (std::hash<ClusterBlockId>()(p.second) << 1);
+    }
+};
 
 #endif
