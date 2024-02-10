@@ -171,21 +171,21 @@ void ClusteredNetlistStats::write(OutputFormat fmt, std::ostream& output) const 
     }
 }
 
-void writeClusteredNetlistStats(std::string block_usage_filename) {
+void writeClusteredNetlistStats(const std::string& block_usage_filename) {
     const auto stats = ClusteredNetlistStats();
 
     // Print out the human readable version to stdout
 
     stats.write(ClusteredNetlistStats::OutputFormat::HumanReadable, std::cout);
 
-    if (block_usage_filename.size() > 0) {
+    if (!block_usage_filename.empty()) {
         ClusteredNetlistStats::OutputFormat fmt;
 
-        if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".json")) {
+        if (vtr::check_file_name_extension(block_usage_filename, ".json")) {
             fmt = ClusteredNetlistStats::OutputFormat::JSON;
-        } else if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".xml")) {
+        } else if (vtr::check_file_name_extension(block_usage_filename, ".xml")) {
             fmt = ClusteredNetlistStats::OutputFormat::XML;
-        } else if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".txt")) {
+        } else if (vtr::check_file_name_extension(block_usage_filename, ".txt")) {
             fmt = ClusteredNetlistStats::OutputFormat::HumanReadable;
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown extension on output %s", block_usage_filename.c_str());
