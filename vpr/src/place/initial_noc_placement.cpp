@@ -240,7 +240,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     }
 
     if (checkpoint.get_cost() < costs.cost) {
-        checkpoint.restore_checkpoint(noc_opts, costs);
+        checkpoint.restore_checkpoint(costs);
     }
 }
 

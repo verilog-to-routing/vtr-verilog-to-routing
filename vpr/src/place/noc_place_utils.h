@@ -70,10 +70,9 @@ void initial_noc_routing(void);
  * traffic flow routes, and static variable in noc_place_utils.cpp are no
  * longer valid and need to be re-initialized.
  *
- * @param noc_opts NoC-related options used to calculated NoC costs
  * @param costs Used to get aggregate bandwidth and latency costs.
  */
-void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs);
+void reinitialize_noc_routing(t_placer_costs& costs);
 
 /**
  * @brief Goes through all the cluster blocks that were moved

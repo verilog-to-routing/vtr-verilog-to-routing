@@ -66,7 +66,7 @@ void initial_noc_routing(void) {
     return;
 }
 
-void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs) {
+void reinitialize_noc_routing(t_placer_costs& costs) {
     // used to access NoC links and modify them
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
