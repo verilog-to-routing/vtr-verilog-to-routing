@@ -39,7 +39,7 @@ include_list_add=hard_block_include.v
 parse_file=vpr_standard.txt
 
 # How to parse QoR info
-qor_parse_file=qor_fixed_chan_width.txt
+qor_parse_file=qor_standard.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
