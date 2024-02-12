@@ -386,6 +386,11 @@ struct PlacementContext : public Context {
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
 
+    ///@brief Stores ClusterBlockId of all movable clustered blocks.
+    std::vector<ClusterBlockId> movable_blocks;
+
+    std::unordered_map<int, std::vector<ClusterBlockId>> movable_blocks_per_type;
+
     /**
      * @brief Compressed grid space for each block type
      *
