@@ -371,7 +371,7 @@ void zero_initialize_grid_blocks() {
                 place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
                 auto tile = device_ctx.grid.get_physical_type({i, j, layer_num});
 
-                for (auto sub_tile : tile->sub_tiles) {
+                for (const auto& sub_tile : tile->sub_tiles) {
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {

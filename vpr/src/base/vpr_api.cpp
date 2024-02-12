@@ -251,7 +251,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which VPR_ERRORs
      * are demoted to VTR_LOG_WARNs
      */
-    for (std::string func_name : vtr::split(options->disable_errors, std::string(":"))) {
+    for (const std::string& func_name : vtr::split(options->disable_errors, std::string(":"))) {
         map_error_activation_status(func_name);
     }
 
@@ -272,7 +272,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     set_noisy_warn_log_file(warn_log_file);
-    for (std::string func_name : vtr::split(warn_functions, std::string(":"))) {
+    for (const std::string& func_name : vtr::split(warn_functions, std::string(":"))) {
         add_warnings_to_suppress(func_name);
     }
 
@@ -598,7 +598,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         check_netlist(packer_opts.pack_verbosity);
 
         /* Output the netlist stats to console and optionally to file. */
-        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage.c_str());
+        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
 
         // print the total number of used physical blocks for each
         // physical block type after finishing the packing stage
@@ -1427,13 +1427,13 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc,
+            netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc,
                            vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist
         if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
-            merged_netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc, vpr_setup.AnalysisOpts);
+            merged_netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc, vpr_setup.AnalysisOpts);
         }
 
         //Do power analysis
