@@ -12,22 +12,23 @@ bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) {
     return false;
 }
 
-void setup_routing_resources(int itry,
-                             ParentNetId net_id,
-                             const Netlist<>& net_list,
-                             unsigned num_sinks,
-                             int min_incremental_reroute_fanout,
-                             CBRR& connections_inf,
-                             const t_router_opts& router_opts,
-                             bool ripup_high_fanout_nets) {
+void setup_net(int itry,
+               ParentNetId net_id,
+               const Netlist<>& net_list,
+               CBRR& connections_inf,
+               const t_router_opts& router_opts,
+               float worst_neg_slack) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* "tree" points to this net's spot in the global context here, so re-initializing it etc. changes the global state */
     vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
 
+    bool ripup_high_fanout_nets = check_hold(router_opts, worst_neg_slack);
+    int num_sinks = net_list.net_sinks(net_id).size();
+
     // for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
     // otherwise, we incrementally reroute by reusing legal parts of the previous iteration
-    if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1 || ripup_high_fanout_nets) {
+    if (num_sinks < router_opts.min_incremental_reroute_fanout || itry == 1 || ripup_high_fanout_nets) {
         profiling::net_rerouted();
 
         /* rip up the whole net */
@@ -58,9 +59,6 @@ void setup_routing_resources(int itry,
          * prune() depends on global occ, so we can't subtract before pruning
          * OPT: to skip this copy, return a "diff" from RouteTree::prune */
         RouteTree tree2 = tree.value();
-
-        // Skip this check if RCV is enabled, as RCV can use another method to cause reroutes
-        VTR_ASSERT_SAFE(should_route_net(net_id, connections_inf, true) || router_opts.routing_budgets_algorithm == YOYO);
 
         // Prune the copy (using congestion data before subtraction)
         vtr::optional<RouteTree&> pruned_tree2 = tree2.prune(connections_inf);
@@ -136,17 +134,25 @@ void update_rr_route_inf_from_tree(const RouteTreeNode& rt_node) {
     }
 }
 
-bool should_route_net(ParentNetId net_id,
+bool should_route_net(const Netlist<>& net_list,
+                      ParentNetId net_id,
                       CBRR& connections_inf,
+                      route_budgets& budgeting_inf,
+                      float worst_negative_slack,
                       bool if_force_reroute) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    if (!route_ctx.route_trees[net_id]) {
-        /* No routing yet. */
+    if (route_ctx.net_status.is_fixed(net_id)) /* Skip pre-routed nets */
+        return false;
+    if (net_list.net_is_ignored(net_id)) /* Skip ignored nets */
+        return false;
+
+    if (!route_ctx.route_trees[net_id]) /* No routing yet */
         return true;
-    }
+    if (worst_negative_slack != 0 && budgeting_inf.if_set() && budgeting_inf.get_should_reroute(net_id)) /* Reroute for hold */
+        return true;
 
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
 
@@ -331,8 +337,11 @@ void update_net_delays_from_route_tree(float* net_delay,
                                        NetPinTimingInvalidator* pin_timing_invalidator) {
     auto& route_ctx = g_vpr_ctx.routing();
     const RouteTree& tree = route_ctx.route_trees[inet].value();
+    auto& is_isink_reached = tree.get_is_isink_reached();
 
     for (unsigned int isink = 1; isink < net_list.net_pins(inet).size(); isink++) {
+        if (!is_isink_reached.get(isink))
+            continue;
         update_net_delay_from_isink(net_delay, tree, isink, net_list, inet, timing_info, pin_timing_invalidator);
     }
 }

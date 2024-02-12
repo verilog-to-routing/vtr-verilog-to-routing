@@ -174,6 +174,8 @@ struct ParseRouterAlgorithm {
         ConvertedValue<e_router_algorithm> conv_value;
         if (str == "parallel")
             conv_value.set_value(PARALLEL);
+        else if (str == "parallel_decomp")
+            conv_value.set_value(PARALLEL_DECOMP);
         else if (str == "timing_driven")
             conv_value.set_value(TIMING_DRIVEN);
         else {
@@ -2403,10 +2405,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_grp.add_argument<e_router_algorithm, ParseRouterAlgorithm>(args.RouterAlgorithm, "--router_algorithm")
         .help(
             "Specifies the router algorithm to use.\n"
-            " * parallel: [experimental] timing_driven but multithreaded\n"
-            " * timing_driven: focuses on routability and circuit speed\n")
+            " * timing driven: focuses on routability and circuit speed [default]\n"
+            " * parallel: timing_driven with nets in different regions of the chip routed in parallel\n"
+            " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n")
         .default_value("timing_driven")
-        .choices({"parallel", "timing_driven"})
+        .choices({"parallel", "parallel_decomp", "timing_driven"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
