@@ -9,17 +9,14 @@
 #include "draw_global.h"
 #include "place_constraints.h"
 
-/* File-scope routines */
+/**
+ * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
+ *
+ * The container at each grid block location should have a length equal to the
+ * subtile capacity of that block. Unused subtile would be marked EMPTY_BLOCK_ID.
+ */
 static GridBlock init_grid_blocks();
 
-/**
- * @brief Initialize the placer's block-grid dual direction mapping.
- *
- * Forward direction - block to grid: place_ctx.block_locs.
- * Reverse direction - grid to block: place_ctx.grid_blocks.
- *
- * Initialize both of them to empty states.
- */
 void init_placement_context() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -32,12 +29,6 @@ void init_placement_context() {
     place_ctx.grid_blocks = init_grid_blocks();
 }
 
-/**
- * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
- *
- * The container at each grid block location should have a length equal to the
- * subtile capacity of that block. Unused subtile would be marked EMPTY_BLOCK_ID.
- */
 static GridBlock init_grid_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
     int num_layers = device_ctx.grid.get_num_layers();
@@ -56,12 +47,6 @@ static GridBlock init_grid_blocks() {
     return grid_blocks;
 }
 
-/**
- * @brief Mutator: updates the norm factors in the outer loop iteration.
- *
- * At each temperature change we update these values to be used
- * for normalizing the trade-off between timing and wirelength (bb)
- */
 void t_placer_costs::update_norm_factors() {
     if (place_algorithm.is_timing_driven()) {
         bb_cost_norm = 1 / bb_cost;
@@ -73,11 +58,6 @@ void t_placer_costs::update_norm_factors() {
     }
 }
 
-/**
- * @brief Accumulates NoC cost difference terms
- *
- * @param noc_delta_cost NoC cost difference if the swap is accepted
- */
 t_placer_costs& t_placer_costs::operator+=(const NocCostTerms& noc_delta_cost) {
     noc_cost_terms += noc_delta_cost;
 
@@ -116,20 +96,6 @@ t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
     UPPER_RLIM = std::max(grid.width() - 1, grid.height() - 1);
 }
 
-/**
- * @brief Get the initial limit for inner loop block move attempt limit.
- *
- * There are two ways to scale the move limit.
- * e_place_effort_scaling::CIRCUIT
- *      scales the move limit proportional to num_blocks ^ (4/3)
- * e_place_effort_scaling::DEVICE_CIRCUIT
- *      scales the move limit proportional to device_size ^ (2/3) * num_blocks ^ (2/3)
- *
- * The second method is almost identical to the first one when the device
- * is highly utilized (device_size ~ num_blocks). For low utilization devices
- * (device_size >> num_blocks), the search space is larger, so the second method
- * performs more moves to ensure better optimization.
- */
 int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -153,16 +119,6 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
     return move_lim;
 }
 
-/**
- * @brief Update the annealing state according to the annealing schedule selected.
- *
- *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
- *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
- *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
- *                See doc/src/vpr/dusty_sa.rst for more details.
- *
- * @return True->continues the annealing. False->exits the annealing.
- */
 bool t_annealing_state::outer_loop_update(float success_rate,
                                           const t_placer_costs& costs,
                                           const t_placer_opts& placer_opts,
@@ -248,33 +204,12 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     return true;
 }
 
-/**
- * @brief Update the range limiter to keep acceptance prob. near 0.44.
- *
- * Use a floating point rlim to allow gradual transitions at low temps.
- * The range is bounded by 1 (FINAL_RLIM) and the grid size (UPPER_RLIM).
- */
 void t_annealing_state::update_rlim(float success_rate) {
     rlim *= (1. - 0.44 + success_rate);
     rlim = std::min(rlim, UPPER_RLIM);
     rlim = std::max(rlim, FINAL_RLIM);
 }
 
-/**
- * @brief Update the criticality exponent.
- *
- * When rlim shrinks towards the FINAL_RLIM value (indicating
- * that we are fine-tuning a more optimized placement), we can
- * focus more on a smaller number of critical connections.
- * To achieve this, we make the crit_exponent sharper, so that
- * critical connections would become more critical than before.
- *
- * We calculate how close rlim is to its final value comparing
- * to its initial value. Then, we apply the same scaling factor
- * on the crit_exponent so that it lands on the suitable value
- * between td_place_exp_first and td_place_exp_last. The scaling
- * factor is calculated and applied linearly.
- */
 void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
     /* If rlim == FINAL_RLIM, then scale == 0. */
     float scale = 1 - (rlim - FINAL_RLIM) * INVERSE_DELTA_RLIM;
@@ -284,11 +219,6 @@ void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
                     + placer_opts.td_place_exp_first;
 }
 
-/**
- * @brief Update the move limit based on the success rate.
- *
- * The value is bounded between 1 and move_lim_max.
- */
 void t_annealing_state::update_move_lim(float success_target, float success_rate) {
     move_lim = move_lim_max * (success_target / success_rate);
     move_lim = std::min(move_lim, move_lim_max);
@@ -330,13 +260,6 @@ void t_placer_statistics::calc_iteration_stats(const t_placer_costs& costs, int 
     std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
 }
 
-/**
- * @brief Returns the standard deviation of data set x.
- *
- * There are n sample points, sum_x_squared is the summation over n of x^2 and av_x
- * is the average x. All operations are done in double precision, since round off
- * error can be a problem in the initial temp. std_dev calculation for big circuits.
- */
 double get_std_dev(int n, double sum_x_squared, double av_x) {
     double std_dev;
     if (n <= 1) {
@@ -396,15 +319,6 @@ void zero_initialize_grid_blocks() {
     }
 }
 
-/**
- * @brief Builds (alloc and load) legal_pos that holds all the legal locations for placement
- *
- *   @param legal_pos
- *              a lookup of all subtiles by sub_tile type
- *              legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations 
- *              of the proper tile type and sub_tile type
- *
- */
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
