@@ -30,7 +30,7 @@
  * in the NoC. They can be thought of as edges in a graph. Links
  * have a source router where they exit from and sink router where
  * they enter. It is important to note that the links are not
- * bi-directional, the legal way to traverse a link is from the
+ * bi-directional; the legal way to traverse a link is from the
  * source router of the link to the sink router.
  * 
  */
@@ -271,8 +271,10 @@ class NocStorage {
 
     /**
      * @brief Given source and sink router identifiers, this function
-     * finds a link connecting these routers and returns it identifier.
+     * finds a link connecting these routers and returns its identifier.
      * If such a link does not exist, an invalid id is returned.
+     * The function is not optimized for performance as it has a complexity
+     * of O(N_links).
      *
      * @param src_router The unique router identifier for the source router.
      * @param dst_router The unique router identifier for the destination router.

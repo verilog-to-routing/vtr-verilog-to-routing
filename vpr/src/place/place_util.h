@@ -18,12 +18,18 @@ class t_placer_costs;
 
 /**
  * @brief Data structure that stores different cost terms for NoC placement.
+ * This data structure can also be used to store normalization and weighting
+ * factors for NoC-related cost terms.
  *
- *   @param aggregate_bandwidth The total used bandwidth used in the NoC.
- *   @param latency A weighted average between aggregate latency and
- *   latency overruns.
- *   @param congestion The sum of congestion divided by available bandwidth
- *   over all NoC links.
+ *   @param aggregate_bandwidth The aggregate NoC bandwidth cost. This is
+ *   computed by summing all used link bandwidths.
+ *   @param latency The NoC latency cost, calculated as the sum of latencies
+ *   experienced by each traffic flow.
+ *   @param latency_overrun Sum of latency overrun for traffic flows that have
+ *   a latency constraint.
+ *   @param congestion The NoC congestion cost, i.e. how over-utilized
+ *   NoC links are. This is computed by dividing over-utilized bandwidth
+ *   by link bandwidth, and summing all computed ratios.
  */
 struct NocCostTerms {
   public:
@@ -61,22 +67,14 @@ struct NocCostTerms {
  *   @param timing_cost_norm The normalization factor for the timing cost, which
  *              is upper-bounded by the value of MAX_INV_TIMING_COST.
  *
- *   @param noc_aggregate_bandwidth_cost The aggregate NoC bandwidth cost
- *   @param noc_aggregate_bandwidth_cost_norm The normalization factor for
- *   the aggregate bandwidth cost
- *   @param noc_latency_cost The NoC latency cost,
- *   calculated as the sum of latencies experienced by each traffic flow
- *   @param noc_latency_cost_norm The normalization factor for the latency cost
- *   @param noc_congestion_cost The NoC congestion cost, i.e. how over-utilized
- *   NoC links are
- *   @param noc_congestion_cost_norm The normalization factor for the NoC
- *   congestion cost
+ *   @param noc_cost_terms NoC-related cost terms
+ *   @param noc_cost_norm_factors Normalization factors for NoC-related cost terms.
  *
  *   @param MAX_INV_TIMING_COST Stops inverse timing cost from going to infinity
  *              with very lax timing constraints, which avoids multiplying by a
  *              gigantic timing_cost_norm when auto-normalizing. The exact value
  *              of this cost has relatively little impact, but should be large
- *              enough to not affect the timing costs computatation for normal 
+ *              enough to not affect the timing costs computation for normal
  *              constraints.
  *
  *   @param place_algorithm Determines how the member values are updated upon
@@ -94,7 +92,7 @@ class t_placer_costs {
     NocCostTerms noc_cost_norm_factors;
 
   public: //Constructor
-    t_placer_costs(t_place_algorithm algo)
+    explicit t_placer_costs(t_place_algorithm algo)
         : place_algorithm(algo) {}
     t_placer_costs() = default;
 

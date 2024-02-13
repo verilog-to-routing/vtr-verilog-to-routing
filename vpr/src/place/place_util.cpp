@@ -431,7 +431,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
                             continue;
                         }
                         // If this is the anchor position of a block, add it to the legal_pos.
-                        // Otherwise don't, so large blocks aren't added multiple times.
+                        // Otherwise, don't, so large blocks aren't added multiple times.
                         if (device_ctx.grid.get_width_offset({i, j, layer_num}) == 0 && device_ctx.grid.get_height_offset({i, j, layer_num}) == 0) {
                             int itype = tile->index;
                             int isub_tile = sub_tile.index;

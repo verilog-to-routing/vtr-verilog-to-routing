@@ -86,9 +86,12 @@ void reinitialize_noc_routing(t_placer_costs& costs) {
 
 void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
                                                     NocCostTerms& delta_c) {
+    /* For speed, delta_c is passed by reference instead of being returned.
+     * We expect delta cost terms to be zero to ensure correctness.
+     */
     VTR_ASSERT_SAFE(delta_c.aggregate_bandwidth == 0.);
     VTR_ASSERT_SAFE(delta_c.latency == 0.);
-    VTR_ASSERT(delta_c.latency_overrun == 0.);
+    VTR_ASSERT_SAFE(delta_c.latency_overrun == 0.);
     VTR_ASSERT_SAFE(delta_c.congestion == 0.);
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
@@ -230,7 +233,7 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_block_router_id,
             // first check to see whether we have already re-routed the current traffic flow and only re-route it if we haven't already.
             if (updated_traffic_flows.find(traffic_flow_id) == updated_traffic_flows.end()) {
                 // get all links for this flow route before it is rerouted
-                // The returned const std::vector<NocLinkId>& is copied so that we can modify (sort) it
+                // The returned const std::vector<NocLinkId>& is copied so that we can modify (sort) it in find_affected_links_by_flow_reroute()
                 std::vector<NocLinkId> prev_traffic_flow_links = noc_traffic_flows_storage.get_traffic_flow_route(traffic_flow_id);
 
                 // now update the current traffic flow by re-routing it based on the new locations of its src and destination routers
@@ -603,9 +606,16 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
     double cost = 0.0;
 
     /* NoC's contribution to the placement cost is a weighted sum over:
-     * 1) Traffic flow latency costs
-     * 2) Traffic flow aggregate bandwidth costs
-     * 3) Link congestion costs
+     * 1) Traffic flow aggregate bandwidth cost
+     * 2) Traffic flow latency cost
+     * 3) Traffic flow latency overrun cost
+     * 4) Link congestion cost
+     *
+     * Since NoC-related cost terms have different scales, they are
+     * rescaled by multiplying each cost term with its corresponding
+     * normalization factor. Then, a weighted sum over normalized cost terms
+     * is computed. Weighting factors determine the contribution of each
+     * normalized term to the sum.
      */
     cost = noc_opts.noc_placement_weighting * (
                cost_terms.aggregate_bandwidth * norm_factors.aggregate_bandwidth * noc_opts.noc_aggregate_bandwidth_weighting +
