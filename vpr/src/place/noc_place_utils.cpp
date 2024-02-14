@@ -16,7 +16,7 @@ static std::unordered_set<NocLinkId> affected_noc_links;
 /*********************************************************** *****************************/
 
 /**
- * @brief Randomly select a moveable NoC router cluster blocks
+ * @brief Randomly select a movable NoC router cluster blocks
  *
  * @param b_from The cluster block ID of the selected NoC router
  * @param from The current location of the selected NoC router
