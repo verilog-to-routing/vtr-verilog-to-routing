@@ -5,6 +5,7 @@
 #include <climits>
 #include <cstdlib>
 #include <cmath>
+#include <algorithm>
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -425,7 +426,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
  * is used to determine if the channel width should be rounded to an
  * even number.
  */
-t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_type graph_directionality) {
+t_chan_width init_chan(int cfactor, const t_chan_width_dist& chan_width_dist, t_graph_type graph_directionality) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
 
@@ -460,19 +461,15 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_t
         }
     }
 
-    chan_width.max = 0;
-    chan_width.x_max = chan_width.y_max = INT_MIN;
-    chan_width.x_min = chan_width.y_min = INT_MAX;
-    for (size_t i = 0; i < grid.height(); ++i) {
-        chan_width.x_max = std::max(chan_width.x_max, chan_width.x_list[i]);
-        chan_width.x_min = std::min(chan_width.x_min, chan_width.x_list[i]);
-    }
-    chan_width.max = std::max(chan_width.max, chan_width.x_max);
-    for (size_t i = 0; i < grid.width(); ++i) {
-        chan_width.y_max = std::max(chan_width.y_max, chan_width.y_list[i]);
-        chan_width.y_min = std::min(chan_width.y_min, chan_width.y_list[i]);
-    }
-    chan_width.max = std::max(chan_width.max, chan_width.y_max);
+    auto minmax = std::minmax_element(chan_width.x_list.begin(), chan_width.x_list.end());
+    chan_width.x_min = *minmax.first;
+    chan_width.x_max = *minmax.second;
+
+    minmax = std::minmax_element(chan_width.y_list.begin(), chan_width.y_list.end());
+    chan_width.y_min = *minmax.first;
+    chan_width.y_max = *minmax.second;
+
+    chan_width.max = std::max(chan_width.x_max, chan_width.y_max);
 
 #ifdef VERBOSE
     VTR_LOG("\n");
