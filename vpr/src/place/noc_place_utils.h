@@ -36,6 +36,8 @@ constexpr double INVALID_NOC_COST_TERM = -1.0;
  * @brief Each traffic flow cost consists of two components:
  *        1) traffic flow aggregate bandwidth (sum over all used links of the traffic flow bandwidth)
  *        2) traffic flow latency (currently unloaded/best-case latency of the flow)
+ *        3) traffic flow latency overrun (how much the latency is higher than the
+ *        latency constraint for a traffic flow.
  *        NoC placement code will keep an array-of-struct to easily access each
  *        traffic flow cost.
  */
@@ -71,10 +73,9 @@ void initial_noc_routing(void);
  * traffic flow routes, and static variable in noc_place_utils.cpp are no
  * longer valid and need to be re-initialized.
  *
- * @param noc_opts NoC-related options used to calculated NoC costs
  * @param costs Used to get aggregate bandwidth and latency costs.
  */
-void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs);
+void reinitialize_noc_routing(t_placer_costs& costs);
 
 /**
  * @brief Goes through all the cluster blocks that were moved
@@ -380,6 +381,9 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
  * latencies.
  * @param traffic_flow_info Contains the traffic flow priority.
  * @return The computed latency cost terms for the given traffic flow.
+ * The first element is the total latency experience by the traffic flow.
+ * The second one specifies how much the experienced latency exceeds the
+ * latency constraint set for this traffic flow.
  */
 std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route,
                                                               const NocStorage& noc_model,
@@ -396,6 +400,15 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
  */
 double calculate_link_congestion_cost(const NocLink& link);
 
+/**
+ * @brief The user passes weighting factors for aggregate latency
+ * and latency overrun terms. The weighting factor for aggregate
+ * bandwidth is computed by subtracting two user-provided weighting
+ * factor from 1. The computed aggregate bandwidth weighting factor
+ * is stored in noc_opts argument.
+ *
+ * @param noc_opts Contains weighting factors.
+ */
 void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts);
 
 /**
@@ -426,6 +439,8 @@ int get_number_of_traffic_flows_with_latency_cons_met(void);
 
 /**
  * @brief Goes through all NoC links and counts the congested ones.
+ * A congested NoC link is a link whose used bandwidth exceeds its
+ * bandwidth capacity.
  *
  * @return The total number of congested NoC links.
  */

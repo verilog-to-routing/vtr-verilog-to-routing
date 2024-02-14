@@ -146,8 +146,16 @@ class CommandRunner:
         try:
             # Call the command
             stderr = None if self._valgrind else subprocess.STDOUT
+
+            # capnproto accesses PWD environment variable to learn about
+            # the current working directory. However, subprocess.Popen()
+            # changes the working directory without updating this variable.
+            # This can cause issues when a VTR task passes router lookahead
+            # or RR graph files to VPR. PWD environment variable is updated
+            # manually to prevent capnproto from throwing exceptions.
             modified_environ = os.environ.copy()
             modified_environ['PWD'] = str(temp_dir)
+
             proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,  # We grab stdout

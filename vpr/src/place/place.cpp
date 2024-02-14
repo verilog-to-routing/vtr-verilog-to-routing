@@ -621,7 +621,6 @@ void try_place(const Netlist<>& net_list,
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(net_list,
-                                                          device_ctx.arch_switch_inf,
                                                           chan_width_dist,
                                                           placer_opts,
                                                           router_opts,

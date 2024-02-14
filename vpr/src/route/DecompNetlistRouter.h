@@ -1,27 +1,30 @@
 #pragma once
 
-/** @file Parallel case for NetlistRouter. Builds a \ref PartitionTree from the
- * netlist according to net bounding boxes. Tree nodes are then routed in parallel
- * using tbb::task_group. Each task routes the nets inside a node serially and then adds
- * its child nodes to the task queue. This approach is serially equivalent & deterministic,
- * but it can reduce QoR in congested cases [0].
- *
- * Note that the parallel router does not support graphical router breakpoints.
- *
- * [0]: F. Koşar, "A net-decomposing parallel FPGA router", MS thesis, UofT ECE, 2023 */
+/** @file Parallel and net-decomposing case for NetlistRouter. Works like
+ * \see ParallelNetlistRouter, but tries to "decompose" nets and assign them to
+ * the next level of the partition tree where possible. */
 #include "netlist_routers.h"
 
 #include <tbb/task_group.h>
 
-/** Parallel impl for NetlistRouter.
- * Holds enough context members to glue together ConnectionRouter and net routing functions,
- * such as \ref route_net. Keeps the members in thread-local storage where needed,
- * i.e. ConnectionRouters and RouteIterResults-es.
- * See \ref route_net. */
+/** Maximum number of iterations for net decomposition
+ * 5 is found experimentally: higher values get more speedup on initial iters but # of iters increases */
+const int MAX_DECOMP_ITER = 5;
+
+/** Maximum # of decomposition for a net: 2 means one net gets divided down to <4 virtual nets.
+ * Higher values are more aggressive: better thread utilization but worse congestion resolving */
+const int MAX_DECOMP_DEPTH = 2;
+
+/** Minimum # of fanouts of a net to consider decomp. */
+const int MIN_DECOMP_SINKS = 8;
+
+/** Minimum # of fanouts of a virtual net to consider decomp. */
+const int MIN_DECOMP_SINKS_VNET = 8;
+
 template<typename HeapType>
-class ParallelNetlistRouter : public NetlistRouter {
+class DecompNetlistRouter : public NetlistRouter {
   public:
-    ParallelNetlistRouter(
+    DecompNetlistRouter(
         const Netlist<>& net_list,
         const RouterLookahead* router_lookahead,
         const t_router_opts& router_opts,
@@ -45,17 +48,33 @@ class ParallelNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat) {}
-    ~ParallelNetlistRouter() {}
+        , _is_flat(is_flat)
+        , _net_known_samples(net_list.nets().size())
+        , _is_decomp_disabled(net_list.nets().size()) {}
+    ~DecompNetlistRouter() {}
 
     /** Run a single iteration of netlist routing for this->_net_list. This usually means calling
      * \ref route_net for each net, which will handle other global updates.
      * \return RouteIterResults for this iteration. */
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
+    /** Set RCV enable flag for all routers managed by this netlist router.
+     * Net decomposition does not work with RCV, so calling this fn with x=true is a fatal error. */
     void set_rcv_enabled(bool x);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
+    /** Should we decompose this net? */
+    bool should_decompose_net(ParentNetId net_id, const PartitionTreeNode& node);
+    /** Get a bitset with sinks to route before net decomposition */
+    vtr::dynamic_bitset<> get_decomposition_mask(ParentNetId net_id, const PartitionTreeNode& node);
+    /** Get a bitset with sinks to route before virtual net decomposition */
+    vtr::dynamic_bitset<> get_vnet_decomposition_mask(const VirtualNet& vnet, const PartitionTreeNode& node);
+    /** Decompose and route a regular net. Output the resulting vnets to \p left and \p right.
+     * \return Success status: true if routing is successful and left and right now contain valid virtual nets: false otherwise. */
+    bool decompose_and_route_net(ParentNetId net_id, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right);
+    /** Decompose and route a virtual net. Output the resulting vnets to \p left and \p right.
+     * \return Success status: true if routing is successful and left and right now contain valid virtual nets: false otherwise. */
+    bool decompose_and_route_vnet(VirtualNet& vnet, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right);
     /** A single task to route nets inside a PartitionTree node and add tasks for its child nodes to task group \p g. */
     void route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node);
 
@@ -95,6 +114,13 @@ class ParallelNetlistRouter : public NetlistRouter {
     int _itry;
     float _pres_fac;
     float _worst_neg_slack;
+
+    /** Sinks to be always sampled for decomposition for each net: [0.._net_list.size()-1]
+     * (i.e. when routing fails after decomposition for a sink, sample it on next iteration) */
+    vtr::vector<ParentNetId, vtr::dynamic_bitset<>> _net_known_samples;
+
+    /** Is decomposition disabled for this net? [0.._net_list.size()-1] */
+    vtr::vector<ParentNetId, bool> _is_decomp_disabled;
 };
 
-#include "ParallelNetlistRouter.tpp"
+#include "DecompNetlistRouter.tpp"

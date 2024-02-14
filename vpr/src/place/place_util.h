@@ -18,12 +18,18 @@ class t_placer_costs;
 
 /**
  * @brief Data structure that stores different cost terms for NoC placement.
+ * This data structure can also be used to store normalization and weighting
+ * factors for NoC-related cost terms.
  *
- *   @param aggregate_bandwidth The total used bandwidth used in the NoC.
- *   @param latency A weighted average between aggregate latency and
- *   latency overruns.
- *   @param congestion The sum of congestion divided by available bandwidth
- *   over all NoC links.
+ *   @param aggregate_bandwidth The aggregate NoC bandwidth cost. This is
+ *   computed by summing all used link bandwidths.
+ *   @param latency The NoC latency cost, calculated as the sum of latencies
+ *   experienced by each traffic flow.
+ *   @param latency_overrun Sum of latency overrun for traffic flows that have
+ *   a latency constraint.
+ *   @param congestion The NoC congestion cost, i.e. how over-utilized
+ *   NoC links are. This is computed by dividing over-utilized bandwidth
+ *   by link bandwidth, and summing all computed ratios.
  */
 struct NocCostTerms {
   public:
@@ -61,22 +67,14 @@ struct NocCostTerms {
  *   @param timing_cost_norm The normalization factor for the timing cost, which
  *              is upper-bounded by the value of MAX_INV_TIMING_COST.
  *
- *   @param noc_aggregate_bandwidth_cost The aggregate NoC bandwidth cost
- *   @param noc_aggregate_bandwidth_cost_norm The normalization factor for
- *   the aggregate bandwidth cost
- *   @param noc_latency_cost The NoC latency cost,
- *   calculated as the sum of latencies experienced by each traffic flow
- *   @param noc_latency_cost_norm The normalization factor for the latency cost
- *   @param noc_congestion_cost The NoC congestion cost, i.e. how over-utilized
- *   NoC links are
- *   @param noc_congestion_cost_norm The normalization factor for the NoC
- *   congestion cost
+ *   @param noc_cost_terms NoC-related cost terms
+ *   @param noc_cost_norm_factors Normalization factors for NoC-related cost terms.
  *
  *   @param MAX_INV_TIMING_COST Stops inverse timing cost from going to infinity
  *              with very lax timing constraints, which avoids multiplying by a
  *              gigantic timing_cost_norm when auto-normalizing. The exact value
  *              of this cost has relatively little impact, but should be large
- *              enough to not affect the timing costs computatation for normal 
+ *              enough to not affect the timing costs computation for normal
  *              constraints.
  *
  *   @param place_algorithm Determines how the member values are updated upon
@@ -94,12 +92,24 @@ class t_placer_costs {
     NocCostTerms noc_cost_norm_factors;
 
   public: //Constructor
-    t_placer_costs(t_place_algorithm algo)
+    explicit t_placer_costs(t_place_algorithm algo)
         : place_algorithm(algo) {}
     t_placer_costs() = default;
 
   public: //Mutator
+    /**
+    * @brief Mutator: updates the norm factors in the outer loop iteration.
+    *
+    * At each temperature change we update these values to be used
+    * for normalizing the trade-off between timing and wirelength (bb)
+    */
     void update_norm_factors();
+
+    /**
+    * @brief Accumulates NoC cost difference terms
+    *
+    * @param noc_delta_cost Cost difference for NoC-related costs terms
+    */
     t_placer_costs& operator+=(const NocCostTerms& noc_delta_cost);
 
   private:
@@ -182,14 +192,52 @@ class t_annealing_state {
                       int num_layers);
 
   public: //Mutator
+    /**
+    * @brief Update the annealing state according to the annealing schedule selected.
+    *
+    *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
+    *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
+    *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
+    *                See doc/src/vpr/dusty_sa.rst for more details.
+    *
+    * @return True->continues the annealing. False->exits the annealing.
+    */
     bool outer_loop_update(float success_rate,
                            const t_placer_costs& costs,
                            const t_placer_opts& placer_opts,
                            const t_annealing_sched& annealing_sched);
 
   private: //Mutator
+    /**
+    * @brief Update the range limiter to keep acceptance prob. near 0.44.
+    *
+    * Use a floating point rlim to allow gradual transitions at low temps.
+    * The range is bounded by 1 (FINAL_RLIM) and the grid size (UPPER_RLIM).
+    */
     inline void update_rlim(float success_rate);
+
+    /**
+    * @brief Update the criticality exponent.
+    *
+    * When rlim shrinks towards the FINAL_RLIM value (indicating
+    * that we are fine-tuning a more optimized placement), we can
+    * focus more on a smaller number of critical connections.
+    * To achieve this, we make the crit_exponent sharper, so that
+    * critical connections would become more critical than before.
+    *
+    * We calculate how close rlim is to its final value comparing
+    * to its initial value. Then, we apply the same scaling factor
+    * on the crit_exponent so that it lands on the suitable value
+    * between td_place_exp_first and td_place_exp_last. The scaling
+    * factor is calculated and applied linearly.
+    */
     inline void update_crit_exponent(const t_placer_opts& placer_opts);
+
+    /**
+    * @brief Update the move limit based on the success rate.
+    *
+    * The value is bounded between 1 and move_lim_max.
+    */
     inline void update_move_lim(float success_target, float success_rate);
 };
 
@@ -247,13 +295,39 @@ class t_placer_statistics {
     void single_swap_update(const t_placer_costs& costs);
 };
 
-///@brief Initialize the placer's block-grid dual direction mapping.
+/**
+ * @brief Initialize the placer's block-grid dual direction mapping.
+ *
+ * Forward direction - block to grid: place_ctx.block_locs.
+ * Reverse direction - grid to block: place_ctx.grid_blocks.
+ *
+ * Initialize both of them to empty states.
+ */
 void init_placement_context();
 
-///@brief Get the initial limit for inner loop block move attempt limit.
+/**
+ * @brief Get the initial limit for inner loop block move attempt limit.
+ *
+ * There are two ways to scale the move limit.
+ * e_place_effort_scaling::CIRCUIT
+ *      scales the move limit proportional to num_blocks ^ (4/3)
+ * e_place_effort_scaling::DEVICE_CIRCUIT
+ *      scales the move limit proportional to device_size ^ (2/3) * num_blocks ^ (2/3)
+ *
+ * The second method is almost identical to the first one when the device
+ * is highly utilized (device_size ~ num_blocks). For low utilization devices
+ * (device_size >> num_blocks), the search space is larger, so the second method
+ * performs more moves to ensure better optimization.
+ */
 int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched);
 
-///@brief Returns the standard deviation of data set x.
+/**
+ * @brief Returns the standard deviation of data set x.
+ *
+ * There are n sample points, sum_x_squared is the summation over n of x^2 and av_x
+ * is the average x. All operations are done in double precision, since round off
+ * error can be a problem in the initial temp. std_dev calculation for big circuits.
+ */
 double get_std_dev(int n, double sum_x_squared, double av_x);
 
 ///@brief Initialize usage to 0 and blockID to EMPTY_BLOCK_ID for all place_ctx.grid_block locations
@@ -262,7 +336,15 @@ void zero_initialize_grid_blocks();
 ///@brief a utility to calculate grid_blocks given the updated block_locs (used in restore_checkpoint)
 void load_grid_blocks_from_block_locs();
 
-///@brief Builds legal_pos structure. legal_pos[type->index] is an array that gives every legal value of (x,y,z) that can accommodate a block.
+/**
+ * @brief Builds (alloc and load) legal_pos that holds all the legal locations for placement
+ *
+ *   @param legal_pos
+ *              a lookup of all subtiles by sub_tile type
+ *              legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations
+ *              of the proper tile type and sub_tile type
+ *
+ */
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
 
 ///@brief Performs error checking to see if location is legal for block type, and sets the location and grid usage of the block if it is legal.

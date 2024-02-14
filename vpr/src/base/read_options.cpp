@@ -174,6 +174,8 @@ struct ParseRouterAlgorithm {
         ConvertedValue<e_router_algorithm> conv_value;
         if (str == "parallel")
             conv_value.set_value(PARALLEL);
+        else if (str == "parallel_decomp")
+            conv_value.set_value(PARALLEL_DECOMP);
         else if (str == "timing_driven")
             conv_value.set_value(TIMING_DRIVEN);
         else {
@@ -901,12 +903,15 @@ struct ParseRouteBBUpdate {
 };
 
 struct ParseRouterLookahead {
-    ConvertedValue<e_router_lookahead> from_str(const std::string& str) {
+    ConvertedValue<e_router_lookahead> from_str(std::string str) {
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
         ConvertedValue<e_router_lookahead> conv_value;
         if (str == "classic")
             conv_value.set_value(e_router_lookahead::CLASSIC);
         else if (str == "map")
             conv_value.set_value(e_router_lookahead::MAP);
+        else if (str == "compressed_map")
+            conv_value.set_value(e_router_lookahead::COMPRESSED_MAP);
         else if (str == "extended_map")
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
         else {
@@ -926,6 +931,8 @@ struct ParseRouterLookahead {
             conv_value.set_value("classic");
         else if (val == e_router_lookahead::MAP) {
             conv_value.set_value("map");
+        } else if (val == e_router_lookahead::COMPRESSED_MAP) {
+            conv_value.set_value("compressed_map");
         } else {
             VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
             conv_value.set_value("extended_map");
@@ -934,14 +941,16 @@ struct ParseRouterLookahead {
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "extended_map"};
+        return {"classic", "map", "compressed_map", "extended_map"};
     }
 };
 
 struct ParsePlaceDelayModel {
     ConvertedValue<PlaceDelayModelType> from_str(const std::string& str) {
         ConvertedValue<PlaceDelayModelType> conv_value;
-        if (str == "delta")
+        if (str == "simple") {
+            conv_value.set_value(PlaceDelayModelType::SIMPLE);
+        } else if (str == "delta")
             conv_value.set_value(PlaceDelayModelType::DELTA);
         else if (str == "delta_override")
             conv_value.set_value(PlaceDelayModelType::DELTA_OVERRIDE);
@@ -955,7 +964,9 @@ struct ParsePlaceDelayModel {
 
     ConvertedValue<std::string> to_str(PlaceDelayModelType val) {
         ConvertedValue<std::string> conv_value;
-        if (val == PlaceDelayModelType::DELTA)
+        if (val == PlaceDelayModelType::SIMPLE)
+            conv_value.set_value("simple");
+        else if (val == PlaceDelayModelType::DELTA)
             conv_value.set_value("delta");
         else if (val == PlaceDelayModelType::DELTA_OVERRIDE)
             conv_value.set_value("delta_override");
@@ -968,7 +979,7 @@ struct ParsePlaceDelayModel {
     }
 
     std::vector<std::string> default_choices() {
-        return {"delta", "delta_override"};
+        return {"simple", "delta", "delta_override"};
     }
 };
 
@@ -2245,6 +2256,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "This option controls what information is considered and how"
             " the placement delay model is constructed.\n"
             "Valid options:\n"
+            " * 'simple' uses map router lookahead\n"
             " * 'delta' uses differences in position only\n"
             " * 'delta_override' uses differences in position with overrides for direct connects\n")
         .default_value("delta")
@@ -2393,10 +2405,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_grp.add_argument<e_router_algorithm, ParseRouterAlgorithm>(args.RouterAlgorithm, "--router_algorithm")
         .help(
             "Specifies the router algorithm to use.\n"
-            " * parallel: [experimental] timing_driven but multithreaded\n"
-            " * timing_driven: focuses on routability and circuit speed\n")
+            " * timing driven: focuses on routability and circuit speed [default]\n"
+            " * parallel: timing_driven with nets in different regions of the chip routed in parallel\n"
+            " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n")
         .default_value("timing_driven")
-        .choices({"parallel", "timing_driven"})
+        .choices({"parallel", "parallel_decomp", "timing_driven"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
@@ -2566,6 +2579,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * classic: The classic VPR lookahead (may perform better on un-buffered routing\n"
             "            architectures)\n"
             " * map: An advanced lookahead which accounts for diverse wire type\n"
+            " * compressed_map: The algorithm is similar to map lookahead with the exception of saprse sampling of the chip"
+            " to reduce the run-time to build the router lookahead and also its memory footprint\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
             "\n"
@@ -2802,7 +2817,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     noc_grp.add_argument<double>(args.noc_placement_weighting, "--noc_placement_weighting")
         .help(
             "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design."
-            "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength, a value of 1 would mean noc placement is considered equal to timing and wirelength and a value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
+            "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength."
+            "A value of 1 would mean noc placement is considered equal to timing and wirelength"
+            "A value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
         .default_value("5.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2815,22 +2832,31 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_constraints_weighting")
         .help(
-            "Controls the importance of meeting all the NoC traffic flow latency constraints."
-            "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement, a value of 1 would mean the latency constraints are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by meeting the latency constraints of the traffic flows.")
+            "Controls the importance of meeting all the NoC traffic flow latency constraints.\n"
+            "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement.\n"
+            "Other positive numbers specify the importance of meeting latency constraints to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
         .default_value("0.6")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_latency_weighting, "--noc_latency_weighting")
         .help(
-            "Controls the importance of reducing the latencies of the NoC traffic flows."
-            "This value can be >=0, where 0 would mean the latencies have no relevance to placement, a value of 1 would mean the latencies  are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by reducing the latencies of the traffic flows.")
+            "Controls the importance of reducing the latencies of the NoC traffic flows.\n"
+            "This value can be >=0, where 0 would mean the latencies have no relevance to placement.\n"
+            "Other positive numbers specify the importance of minimizing aggregate latency to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
         .default_value("0.02")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_congestion_weighting, "--noc_congestion_weighting")
         .help(
-            "Controls the importance of reducing the congestion of the NoC links."
-            "This value can be >=0, where 0 would mean the congestion has no relevance to placement, a value of 1 would mean the congestion is weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by reducing the link congestions.")
+            "Controls the importance of reducing the congestion of the NoC links.\n"
+            "This value can be >=0, where 0 would mean the congestion has no relevance to placement.\n"
+            "Other positive numbers specify the importance of minimizing congestion to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
         .default_value("0.00")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

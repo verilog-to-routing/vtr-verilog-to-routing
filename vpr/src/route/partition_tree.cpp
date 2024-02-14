@@ -2,6 +2,11 @@
 #include <cmath>
 #include <memory>
 
+/** Minimum number of nets inside a partition to continue further partitioning.
+ * Mostly an arbitrary limit. At a certain point, the quality lost due to disturbed net ordering 
+ * and the task creation overhead outweighs the advantage of partitioning, so we should stop. */
+constexpr size_t MIN_NETS_TO_PARTITION = 256;
+
 PartitionTree::PartitionTree(const Netlist<>& netlist) {
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -16,22 +21,30 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
     const auto& route_ctx = g_vpr_ctx.routing();
     auto out = std::make_unique<PartitionTreeNode>();
 
+    if (nets.size() < MIN_NETS_TO_PARTITION) {
+        out->nets = nets;
+        return out;
+    }
+
     /* Build ParaDRo-ish prefix sum lookup for each bin (coordinate) in the device.
      * Do this for every step with only given nets, because each cutline takes some nets out
      * of the game, so if we just built a global lookup it wouldn't yield accurate results.
      *
      * VPR's bounding boxes include the borders (see ConnectionRouter::timing_driven_expand_neighbour())
      * so try to include x=bb.xmax, y=bb.ymax etc. when calculating things. */
-    int W = x2 - x1 + 1;
-    int H = y2 - y1 + 1;
+    int width = x2 - x1 + 1;
+    int height = y2 - y1 + 1;
 
-    VTR_ASSERT(W > 1 && H > 1);
+    VTR_ASSERT(width > 1 && height > 1);
     /* Cutlines are placed between integral coordinates.
      * For instance, x_total_before[0] assumes a cutline at x=0.5, so fanouts at x=0 are included but not
      * x=1. It's similar for x_total_after[0], which excludes fanouts at x=0 and includes x=1.
-     * Note that we have W-1 possible cutlines for a W-wide box. */
-    std::vector<int> x_total_before(W - 1, 0), x_total_after(W - 1, 0);
-    std::vector<int> y_total_before(H - 1, 0), y_total_after(H - 1, 0);
+     * Note that we have W-1 possible cutlines for a W-wide box.
+     *
+     * Here, *_total_before holds total score of nets before the cutline and not intersecting it.
+     * In ParaDRo this would be total_before + total_on. (same for total_after)*/
+    std::vector<int> x_total_before(width - 1, 0), x_total_after(width - 1, 0), x_total_on(width - 1, 0);
+    std::vector<int> y_total_before(height - 1, 0), y_total_after(height - 1, 0), y_total_on(height - 1, 0);
 
     for (auto net_id : nets) {
         t_bb bb = route_ctx.route_bb[net_id];
@@ -40,20 +53,28 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
         /* Inclusive start and end coords of the bbox relative to x1. Clamp to [x1, x2]. */
         int x_start = std::max(x1, bb.xmin) - x1;
         int x_end = std::min(bb.xmax, x2) - x1;
-        /* Fill in the lookups assuming a cutline at x + 0.5. */
-        for (int x = x_start; x < W - 1; x++) {
+        /* Fill in the lookups assuming a cutline at x + 0.5.
+         * This means total_before includes the max coord of the bbox but
+         * total_after does not include the min coord. */
+        for (int x = x_end; x < width - 1; x++) {
             x_total_before[x] += fanouts;
         }
-        for (int x = 0; x < x_end; x++) {
+        for (int x = 0; x < x_start; x++) {
             x_total_after[x] += fanouts;
+        }
+        for (int x = x_start; x < x_end; x++) {
+            x_total_on[x] += fanouts;
         }
         int y_start = std::max(y1, bb.ymin) - y1;
         int y_end = std::min(bb.ymax, y2) - y1;
-        for (int y = y_start; y < H - 1; y++) {
+        for (int y = y_end; y < height - 1; y++) {
             y_total_before[y] += fanouts;
         }
-        for (int y = 0; y < y_end; y++) {
+        for (int y = 0; y < y_start; y++) {
             y_total_after[y] += fanouts;
+        }
+        for (int y = y_start; y < y_end; y++) {
+            y_total_on[y] += fanouts;
         }
     }
 
@@ -61,14 +82,14 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
     float best_pos = std::numeric_limits<double>::quiet_NaN();
     Axis best_axis = Axis::X;
 
-    int max_x_before = x_total_before[W - 2];
-    int max_x_after = x_total_after[0];
-    for (int x = 0; x < W - 1; x++) {
+    for (int x = 0; x < width - 1; x++) {
         int before = x_total_before[x];
         int after = x_total_after[x];
-        if (before == max_x_before || after == max_x_after) /* Cutting here would leave no nets to the left or right */
+        if (before == 0 || after == 0) /* Cutting here would leave no nets to the left or right */
             continue;
-        int score = abs(x_total_before[x] - x_total_after[x]);
+        /* Now get a measure of "critical path": work on cutline + max(work on sides) */
+        int score = x_total_on[x] + std::max(x_total_before[x], x_total_after[x]);
+        // int score = std::abs(int(x_total_before[x]) - int(x_total_after[x]));
         if (score < best_score) {
             best_score = score;
             best_pos = x1 + x + 0.5; /* Lookups are relative to (x1, y1) */
@@ -76,14 +97,13 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
         }
     }
 
-    int max_y_before = y_total_before[H - 2];
-    int max_y_after = y_total_after[0];
-    for (int y = 0; y < H - 1; y++) {
+    for (int y = 0; y < height - 1; y++) {
         int before = y_total_before[y];
         int after = y_total_after[y];
-        if (before == max_y_before || after == max_y_after) /* Cutting here would leave no nets to the left or right (sideways) */
+        if (before == 0 || after == 0) /* Cutting here would leave no nets to the left or right (sideways) */
             continue;
-        int score = abs(y_total_before[y] - y_total_after[y]);
+        int score = y_total_on[y] + std::max(y_total_before[y], y_total_after[y]);
+        // int score = std::abs(int(y_total_before[y]) - int(y_total_after[y]));
         if (score < best_score) {
             best_score = score;
             best_pos = y1 + y + 0.5; /* Lookups are relative to (x1, y1) */

@@ -66,7 +66,7 @@ void initial_noc_routing(void) {
     return;
 }
 
-void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs) {
+void reinitialize_noc_routing(t_placer_costs& costs) {
     // used to access NoC links and modify them
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
@@ -86,9 +86,12 @@ void reinitialize_noc_routing(const t_noc_opts& noc_opts, t_placer_costs& costs)
 
 void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
                                                     NocCostTerms& delta_c) {
+    /* For speed, delta_c is passed by reference instead of being returned.
+     * We expect delta cost terms to be zero to ensure correctness.
+     */
     VTR_ASSERT_SAFE(delta_c.aggregate_bandwidth == 0.);
     VTR_ASSERT_SAFE(delta_c.latency == 0.);
-    VTR_ASSERT(delta_c.latency_overrun == 0.);
+    VTR_ASSERT_SAFE(delta_c.latency_overrun == 0.);
     VTR_ASSERT_SAFE(delta_c.congestion == 0.);
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
@@ -596,9 +599,16 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
     double cost = 0.0;
 
     /* NoC's contribution to the placement cost is a weighted sum over:
-     * 1) Traffic flow latency costs
-     * 2) Traffic flow aggregate bandwidth costs
-     * 3) Link congestion costs
+     * 1) Traffic flow aggregate bandwidth cost
+     * 2) Traffic flow latency cost
+     * 3) Traffic flow latency overrun cost
+     * 4) Link congestion cost
+     *
+     * Since NoC-related cost terms have different scales, they are
+     * rescaled by multiplying each cost term with its corresponding
+     * normalization factor. Then, a weighted sum over normalized cost terms
+     * is computed. Weighting factors determine the contribution of each
+     * normalized term to the sum.
      */
     cost = noc_opts.noc_placement_weighting * (
                cost_terms.aggregate_bandwidth * norm_factors.aggregate_bandwidth * noc_opts.noc_aggregate_bandwidth_weighting +
