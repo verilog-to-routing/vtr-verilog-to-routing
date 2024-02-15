@@ -196,7 +196,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     }
 
     int num_partitions = 0;
-    for (auto region : region_atoms) {
+    for (const auto& region : region_atoms) {
         Partition part;
         PartitionId partid(num_partitions);
         std::string part_name = "Part" + std::to_string(num_partitions);
@@ -205,15 +205,15 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
                          {reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax, reg_coord.layer_num});
         constraints.add_partition(part);
 
-        for (unsigned int k = 0; k < region.second.size(); k++) {
-            constraints.add_constrained_atom(region.second[k], partid);
+        for (auto blk_id : region.second) {
+            constraints.add_constrained_atom(blk_id, partid);
         }
 
         num_partitions++;
     }
 }
 
-void create_partition(Partition& part, std::string part_name, const RegionRectCoord& region_cord) {
+void create_partition(Partition& part, const std::string& part_name, const RegionRectCoord& region_cord) {
     part.set_name(part_name);
     PartitionRegion part_pr;
     Region part_region;

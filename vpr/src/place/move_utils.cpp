@@ -1276,13 +1276,10 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
                                max_grid_loc.y,
                                layer_num});
 
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    PartitionRegion pr = floorplanning_ctx.cluster_constraints[b_from];
-    std::vector<Region> regions;
-    if (!pr.empty()) {
-        regions = pr.get_partition_region();
-    }
+    const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[b_from];
+    const std::vector<Region>& regions = pr.get_regions();
     Region intersect_reg;
     /*
      * If region size is greater than 1, the block is constrained to more than one rectangular region.

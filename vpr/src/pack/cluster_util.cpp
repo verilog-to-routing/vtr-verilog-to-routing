@@ -94,11 +94,11 @@ static void echo_clusters(char* filename) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
     for (ClusterBlockId clb_id : cluster_ctx.clb_nlist.blocks()) {
-        std::vector<Region> reg = floorplanning_ctx.cluster_constraints[clb_id].get_partition_region();
-        if (reg.size() != 0) {
+        const std::vector<Region>& regions = floorplanning_ctx.cluster_constraints[clb_id].get_regions();
+        if (!regions.empty()) {
             fprintf(fp, "\nRegions in Cluster %zu:\n", size_t(clb_id));
-            for (unsigned int i = 0; i < reg.size(); i++) {
-                print_region(fp, reg[i]);
+            for (const auto & region : regions) {
+                print_region(fp, region);
             }
         }
     }

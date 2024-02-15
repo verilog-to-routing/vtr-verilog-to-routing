@@ -42,8 +42,8 @@ bool is_macro_constrained(const t_pl_macro& pl_macro) {
     bool is_macro_constrained = false;
     bool is_member_constrained = false;
 
-    for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-        ClusterBlockId iblk = pl_macro.members[imember].blk_index;
+    for (const auto & member : pl_macro.members) {
+        ClusterBlockId iblk = member.blk_index;
         is_member_constrained = is_cluster_constrained(iblk);
 
         if (is_member_constrained) {
@@ -62,25 +62,25 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
     int num_constrained_members = 0;
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-        ClusterBlockId iblk = pl_macro.members[imember].blk_index;
+    for (const auto & member : pl_macro.members) {
+        ClusterBlockId iblk = member.blk_index;
         is_member_constrained = is_cluster_constrained(iblk);
 
         if (is_member_constrained) {
             num_constrained_members++;
-            //PartitionRegion of the constrained block
-            PartitionRegion block_pr;
+
             //PartitionRegion of the constrained block modified for the head according to the offset
             PartitionRegion modified_pr;
 
-            block_pr = floorplanning_ctx.cluster_constraints[iblk];
-            std::vector<Region> block_regions = block_pr.get_partition_region();
+            //PartitionRegion of the constrained block
+            const PartitionRegion& block_pr = floorplanning_ctx.cluster_constraints[iblk];
+            const std::vector<Region>& block_regions = block_pr.get_regions();
 
-            for (unsigned int i = 0; i < block_regions.size(); i++) {
+            for (const auto & block_region : block_regions) {
                 Region modified_reg;
-                auto offset = pl_macro.members[imember].offset;
+                auto offset = member.offset;
 
-                const auto block_reg_coord = block_regions[i].get_region_rect();
+                const auto block_reg_coord = block_region.get_region_rect();
 
                 modified_reg.set_region_rect({block_reg_coord.xmin - offset.x,
                                               block_reg_coord.ymin - offset.y,
@@ -89,8 +89,8 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
                                               block_reg_coord.layer_num});
 
                 //check that subtile is not an invalid value before changing, otherwise it just stays -1
-                if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
-                    modified_reg.set_sub_tile(block_regions[i].get_sub_tile() - offset.sub_tile);
+                if (block_region.get_sub_tile() != NO_SUBTILE) {
+                    modified_reg.set_sub_tile(block_region.get_sub_tile() - offset.sub_tile);
                 }
 
                 modified_pr.add_to_part_region(modified_reg);
@@ -116,13 +116,13 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
 }
 
 PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr, const t_pl_macro& pl_macro) {
-    std::vector<Region> block_regions = head_pr.get_partition_region();
+    const std::vector<Region>& block_regions = head_pr.get_regions();
     PartitionRegion macro_pr;
 
-    for (unsigned int i = 0; i < block_regions.size(); i++) {
+    for (const auto & block_region : block_regions) {
         Region modified_reg;
 
-        const auto block_reg_coord = block_regions[i].get_region_rect();
+        const auto block_reg_coord = block_region.get_region_rect();
 
         modified_reg.set_region_rect({block_reg_coord.xmin + offset.x,
                                       block_reg_coord.ymin + offset.y,
@@ -131,8 +131,8 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
                                       block_reg_coord.layer_num});
 
         //check that subtile is not an invalid value before changing, otherwise it just stays -1
-        if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
-            modified_reg.set_sub_tile(block_regions[i].get_sub_tile() + offset.sub_tile);
+        if (block_region.get_sub_tile() != NO_SUBTILE) {
+            modified_reg.set_sub_tile(block_region.get_sub_tile() + offset.sub_tile);
         }
 
         macro_pr.add_to_part_region(modified_reg);
@@ -154,9 +154,9 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro) {
     VTR_LOG(
         "Feasible floorplanning constraints could not be calculated for the placement macro. \n"
         "The placement macro contains the following blocks: \n");
-    for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
-        std::string blk_name = cluster_ctx.clb_nlist.block_name((pl_macro.members[i].blk_index));
-        VTR_LOG("Block %s (#%zu) ", blk_name.c_str(), size_t(pl_macro.members[i].blk_index));
+    for (const auto & member : pl_macro.members) {
+        std::string blk_name = cluster_ctx.clb_nlist.block_name((member.blk_index));
+        VTR_LOG("Block %s (#%zu) ", blk_name.c_str(), size_t(member.blk_index));
     }
     VTR_LOG("\n");
     VPR_ERROR(VPR_ERROR_PLACE, " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");
@@ -380,7 +380,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
-    std::vector<Region> regions = pr.get_partition_region();
+    const std::vector<Region>& regions = pr.get_regions();
     bool pr_size_one;
     int pr_size = 0;
     int reg_size;
@@ -439,11 +439,11 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
 }
 
 int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
-    std::vector<Region> part_reg = pr.get_partition_region();
+    const std::vector<Region>& regions = pr.get_regions();
     int num_tiles = 0;
 
-    for (unsigned int i_reg = 0; i_reg < part_reg.size(); i_reg++) {
-        num_tiles += grid_tiles.region_tile_count(part_reg[i_reg], block_type);
+    for (const auto & region : regions) {
+        num_tiles += grid_tiles.region_tile_count(region, block_type);
     }
 
     return num_tiles;

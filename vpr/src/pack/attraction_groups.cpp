@@ -64,8 +64,8 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
     for (int ipart = 0; ipart < num_parts; ipart++) {
         PartitionId partid(ipart);
 
-        Partition part = floorplanning_ctx.constraints.get_partition(partid);
-        auto& pr_regions = part.get_part_region();
+        const Partition& part = floorplanning_ctx.constraints.get_partition(partid);
+        const auto& pr_regions = part.get_part_region();
 
         PartitionRegion intersect_pr;
 
