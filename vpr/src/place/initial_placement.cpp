@@ -67,7 +67,11 @@ static void clear_all_grid_locs();
  * 
  * @return true if macro was placed, false if not.
  */
-static bool place_macro(int macros_max_num_tries, const t_pl_macro& pl_macro, enum e_pad_loc_type pad_loc_type, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid, vtr::vector<ClusterBlockId, t_block_score>& block_scores);
+static bool place_macro(int macros_max_num_tries,
+                        const t_pl_macro& pl_macro,
+                        enum e_pad_loc_type pad_loc_type,
+                        std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
+                        vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 /*
  * Assign scores to each block based on macro size and floorplanning constraints.
@@ -107,7 +111,10 @@ static int get_blk_type_first_loc(t_pl_loc& loc, const t_pl_macro& pl_macro, std
  *   @param blk_types_empty_locs_in_grid first location (lowest y) and number of remaining blocks in each column for the blk_id type 
  * 
  */
-static void update_blk_type_first_loc(int blk_type_column_index, t_logical_block_type_ptr block_type, const t_pl_macro& pl_macro, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid);
+static void update_blk_type_first_loc(int blk_type_column_index,
+                                      t_logical_block_type_ptr block_type,
+                                      const t_pl_macro& pl_macro,
+                                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid);
 
 /**
  * @brief  Initializes empty locations of the grid with a specific block type into vector for dense initial placement 
@@ -212,7 +219,8 @@ static void check_initial_placement_legality() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (place_ctx.block_locs[blk_id].loc.x == INVALID_X) {
-            VTR_LOG("Block %s (# %d) of type %s could not be placed during initial placement iteration %d\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id, cluster_ctx.clb_nlist.block_type(blk_id)->name, MAX_INIT_PLACE_ATTEMPTS - 1);
+            VTR_LOG("Block %s (# %d) of type %s could not be placed during initial placement iteration %d\n",
+                    cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id, cluster_ctx.clb_nlist.block_type(blk_id)->name, MAX_INIT_PLACE_ATTEMPTS - 1);
             unplaced_blocks++;
         }
     }

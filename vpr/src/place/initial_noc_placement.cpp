@@ -103,6 +103,11 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
      * only once.
      */
 
+    // check if all NoC routers have already been placed
+    if (unfixed_routers.empty()) {
+        return;
+    }
+
     // Make a copy of NoC physical routers because we want to change its order
     vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
 
