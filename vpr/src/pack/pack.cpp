@@ -66,6 +66,7 @@ static void update_noc_reachability_partitions(const std::vector<AtomBlockId>& n
     const auto& atom_ctx = g_vpr_ctx.atom();
     auto& constraints = g_vpr_ctx.mutable_floorplanning().constraints;
     const auto& high_fanout_thresholds = g_vpr_ctx.cl_helper().high_fanout_thresholds;
+    const auto& device_ctx = g_vpr_ctx.device();
 
     const size_t high_fanout_threshold = high_fanout_thresholds.get_threshold("");
 
@@ -76,10 +77,10 @@ static void update_noc_reachability_partitions(const std::vector<AtomBlockId>& n
 
     int exclusivity_cnt = 0;
 
-    RegionRectCoord unconstrained_rect{std::numeric_limits<int>::min(),
-                                       std::numeric_limits<int>::min(),
-                                       std::numeric_limits<int>::max(),
-                                       std::numeric_limits<int>::max(),
+    RegionRectCoord unconstrained_rect{0,
+                                       0,
+                                       (int)device_ctx.grid.width() - 1,
+                                       (int)device_ctx.grid.height() - 1,
                                        -1};
     Region unconstrained_region;
     unconstrained_region.set_region_rect(unconstrained_rect);
@@ -121,13 +122,14 @@ static void update_noc_reachability_partitions(const std::vector<AtomBlockId>& n
             AtomBlockId current_atom = q.front();
             q.pop();
 
-            PartitionId atom_partition_id = constraints.get_atom_partition(noc_atom_id);
+            PartitionId atom_partition_id = constraints.get_atom_partition(current_atom);
             if (atom_partition_id == PartitionId::INVALID()) {
                 constraints.add_constrained_atom(current_atom, associated_noc_partition_id);
             } else {
                 auto& atom_partition = constraints.get_mutable_partition(atom_partition_id);
                 auto& atom_partition_region = atom_partition.get_mutable_part_region();
-                VTR_ASSERT(atom_partition_region.get_exclusivity_index() < 0);
+//                std::cout << "ss" << atom_partition_region.get_exclusivity_index() << std::endl;
+                VTR_ASSERT(atom_partition_region.get_exclusivity_index() < 0 || current_atom == noc_atom_id);
                 atom_partition_region.set_exclusivity_index(exclusivity_cnt);
             }
 
