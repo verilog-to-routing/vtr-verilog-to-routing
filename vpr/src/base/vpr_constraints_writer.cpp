@@ -55,8 +55,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
      * The subtile can also optionally be set in the PartitionRegion, based on the value passed in by the user.
      */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        std::string part_name;
-        part_name = cluster_ctx.clb_nlist.block_name(blk_id);
+        const std::string& part_name = cluster_ctx.clb_nlist.block_name(blk_id);
         PartitionId partid(part_id);
 
         Partition part;
@@ -65,7 +64,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         PartitionRegion pr;
         Region reg;
 
-        auto loc = place_ctx.block_locs[blk_id].loc;
+        const auto& loc = place_ctx.block_locs[blk_id].loc;
 
         reg.set_region_rect({loc.x - expand,
                              loc.y - expand,

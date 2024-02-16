@@ -37,7 +37,19 @@
  */
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions);
 
-//Generate constraints which lock all blocks to one location.
+/**
+ * @brief Populates VprConstraints by creating a partition for each clustered block.
+ * All atoms in the clustered block are assigned to the same partition. The created partition
+ * for each clustered block would include the current location of the clustered block. The
+ * partition is expanded from four sides by "expand" blocks.
+ *
+ *   @param constraints The VprConstraints to be populated.
+ *   @param expand      The amount the floorplan region will be expanded around the current
+ *   					x, y location of the block. Ex. if location is (1, 1) and expand = 1,
+ *   					the floorplan region will be from (0, 0) to (2, 2).
+ *   @param subtile     Specifies whether to write out the constraint regions with or without
+ *                      subtile values.
+ */
 void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile);
 
 /* Generate constraints which divide the grid into partition according to the horizontal and vertical partition values passed in

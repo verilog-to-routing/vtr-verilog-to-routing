@@ -33,7 +33,7 @@ void setup_noc(const t_arch& arch) {
     } else if (noc_router_tiles.size() > arch.noc->router_list.size()) // check whether the noc topology information provided is using all the routers in the FPGA
     {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "The Provided NoC topology information in the architecture file uses less number of routers than what is available in the FPGA device.");
-    } else if (noc_router_tiles.size() == 0) // case where no physical router tiles were found
+    } else if (noc_router_tiles.empty()) // case where no physical router tiles were found
     {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
@@ -58,7 +58,7 @@ void setup_noc(const t_arch& arch) {
     return;
 }
 
-void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& noc_router_tiles, std::string noc_router_tile_name) {
+void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& noc_router_tiles, const std::string& noc_router_tile_name) {
     const int num_layers = device_grid.get_num_layers();
     int curr_tile_width;
     int curr_tile_height;
@@ -173,10 +173,10 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
         error_case_physical_router_index_2 = INVALID_PHYSICAL_ROUTER_INDEX;
 
         // determine the physical router tile that is closest to the current user described router in the arch file
-        for (auto physical_router = noc_router_tiles.begin(); physical_router != noc_router_tiles.end(); physical_router++) {
+        for (auto & physical_router : noc_router_tiles) {
             // get the position of the current physical router tile on the FPGA device
-            curr_physical_router_pos_x = physical_router->tile_centroid_x;
-            curr_physical_router_pos_y = physical_router->tile_centroid_y;
+            curr_physical_router_pos_x = physical_router.tile_centroid_x;
+            curr_physical_router_pos_y = physical_router.tile_centroid_y;
 
             // use euclidean distance to calculate the length between the current user described router and the physical router
             curr_calculated_distance = sqrt(pow(abs(curr_physical_router_pos_x - curr_logical_router_position_x), 2.0) + pow(abs(curr_physical_router_pos_y - curr_logical_router_position_y), 2.0));
@@ -237,14 +237,14 @@ void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
     noc_model->make_room_for_noc_router_link_list();
 
     // go through each router and add its outgoing links to the NoC
-    for (auto router = noc_info->router_list.begin(); router != noc_info->router_list.end(); router++) {
+    for (const auto & router : noc_info->router_list) {
         // get the converted id of the current source router
-        source_router = noc_model->convert_router_id(router->id);
+        source_router = noc_model->convert_router_id(router.id);
 
         // go through all the routers connected to the current one and add links to the noc
-        for (auto conn_router_id = router->connection_list.begin(); conn_router_id != router->connection_list.end(); conn_router_id++) {
+        for (int conn_router_id : router.connection_list) {
             // get the converted id of the currently connected sink router
-            sink_router = noc_model->convert_router_id(*conn_router_id);
+            sink_router = noc_model->convert_router_id(conn_router_id);
 
             // add the link to the Noc
             noc_model->add_link(source_router, sink_router);

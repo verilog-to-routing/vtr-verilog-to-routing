@@ -41,7 +41,7 @@ Partition& VprConstraints::get_mutable_partition(PartitionId part_id) {
 std::vector<AtomBlockId> VprConstraints::get_part_atoms(PartitionId part_id) const {
     std::vector<AtomBlockId> part_atoms;
 
-    for (auto& it : constrained_atoms) {
+    for (const auto& it : constrained_atoms) {
         if (it.second == part_id) {
             part_atoms.push_back(it.first);
         }

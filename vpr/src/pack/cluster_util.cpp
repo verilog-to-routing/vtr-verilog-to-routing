@@ -76,22 +76,21 @@ static void echo_clusters(char* filename) {
         cluster_atoms[clb_index].push_back(atom_blk_id);
     }
 
-    for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
-        std::string cluster_name;
-        cluster_name = cluster_ctx.clb_nlist.block_name(i->first);
-        fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(i->first));
+    for (auto & cluster_atom : cluster_atoms) {
+        const std::string& cluster_name = cluster_ctx.clb_nlist.block_name(cluster_atom.first);
+        fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(cluster_atom.first));
         fprintf(fp, "\tAtoms in cluster: \n");
 
-        int num_atoms = i->second.size();
+        int num_atoms = cluster_atom.second.size();
 
         for (auto j = 0; j < num_atoms; j++) {
-            AtomBlockId atom_id = i->second[j];
+            AtomBlockId atom_id = cluster_atom.second[j];
             fprintf(fp, "\t %s \n", atom_ctx.nlist.block_name(atom_id).c_str());
         }
     }
 
     fprintf(fp, "\nCluster Floorplanning Constraints:\n");
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     for (ClusterBlockId clb_id : cluster_ctx.clb_nlist.blocks()) {
         const std::vector<Region>& regions = floorplanning_ctx.cluster_constraints[clb_id].get_regions();
@@ -1318,9 +1317,6 @@ enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_
     PartitionId partid;
     partid = floorplanning_ctx.constraints.get_atom_partition(blk_id);
 
-    PartitionRegion atom_pr;
-    PartitionRegion cluster_pr;
-
     //if the atom does not belong to a partition, it can be put in the cluster
     //regardless of what the cluster's PartitionRegion is because it has no constraints
     if (partid == PartitionId::INVALID()) {
@@ -1331,12 +1327,12 @@ enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_
         return BLK_PASSED;
     } else {
         //get pr of that partition
-        atom_pr = floorplanning_ctx.constraints.get_partition_pr(partid);
+        const PartitionRegion& atom_pr = floorplanning_ctx.constraints.get_partition_pr(partid);
 
         //intersect it with the pr of the current cluster
-        cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
+        PartitionRegion cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
 
-        if (cluster_pr.empty() == true) {
+        if (cluster_pr.empty()) {
             temp_cluster_pr = atom_pr;
             cluster_pr_needs_update = true;
             if (verbosity > 3) {
@@ -1349,7 +1345,7 @@ enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_
             update_cluster_part_reg(cluster_pr, atom_pr);
         }
 
-        if (cluster_pr.empty() == true) {
+        if (cluster_pr.empty()) {
             if (verbosity > 3) {
                 VTR_LOG("\t\t\t Intersect: Atom block %d failed floorplanning check for cluster %d \n", blk_id, clb_index);
             }
@@ -2036,7 +2032,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        const int num_models,
                        const int max_cluster_size,
                        const t_arch* arch,
-                       std::string device_layout_name,
+                       const std::string& device_layout_name,
                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                        t_lb_router_data** router_data,
                        const int detailed_routing_stage,
@@ -3466,10 +3462,10 @@ enum e_block_pack_status check_chain_root_placement_feasibility(const t_pb_graph
         } else {
             block_pack_status = BLK_FAILED_FEASIBLE;
             for (const auto& chain : chain_root_pins) {
-                for (size_t tieOff = 0; tieOff < chain.size(); tieOff++) {
+                for (auto tieOff : chain) {
                     // check if this chosen primitive is one of the possible
                     // starting points for this chain.
-                    if (pb_graph_node == chain[tieOff]->parent_node) {
+                    if (pb_graph_node == tieOff->parent_node) {
                         // this location matches with the one of the dedicated chain
                         // input from outside logic block, therefore it is feasible
                         block_pack_status = BLK_PASSED;
@@ -3624,7 +3620,7 @@ void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_
  * This function returns true if the given physical block has
  * a primitive matching the given blif model and is used
  */
-bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name) {
+bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) {
     auto pb_graph_node = pb->pb_graph_node;
     auto pb_type = pb_graph_node->pb_type;
     auto mode = &pb_type->modes[pb->mode];

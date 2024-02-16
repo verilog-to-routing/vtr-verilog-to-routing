@@ -331,7 +331,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        const int num_models,
                        const int max_cluster_size,
                        const t_arch* arch,
-                       std::string device_layout_name,
+                       const std::string& device_layout_name,
                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                        t_lb_router_data** router_data,
                        const int detailed_routing_stage,
@@ -442,7 +442,7 @@ t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std:
 
 t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type);
 
-bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
+bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name);
 
 void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_type);
 

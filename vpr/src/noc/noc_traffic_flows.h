@@ -255,7 +255,13 @@ class NocTrafficFlows {
      * at the sink router.
      * @param traffic_flow_priority The importance of a given traffic flow.
      */
-    void create_noc_traffic_flow(const std::string& source_router_module_name, const std::string& sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
+    void create_noc_traffic_flow(const std::string& source_router_module_name,
+                                 const std::string& sink_router_module_name,
+                                 ClusterBlockId source_router_cluster_id,
+                                 ClusterBlockId sink_router_cluster_id,
+                                 double traffic_flow_bandwidth,
+                                 double traffic_flow_latency,
+                                 int traffic_flow_priority);
 
     /**
      * @brief Copies the passed in router_cluster_id_in_netlist vector to the
