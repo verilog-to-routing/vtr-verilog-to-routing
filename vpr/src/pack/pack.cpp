@@ -40,6 +40,26 @@ static bool try_size_device_grid(const t_arch& arch,
  */
 static int count_models(const t_model* user_models);
 
+static std::vector<AtomBlockId> find_noc_router_atoms() {
+    const auto& atom_ctx = g_vpr_ctx.atom();
+
+    // NoC router atoms are expected to have a specific blif model
+    const std::string noc_router_blif_model_name = "noc_router_adapter_block";
+
+    // stores found NoC router atoms
+    std::vector<AtomBlockId> noc_router_atoms;
+
+    // iterate over all atoms and find those whose blif model matches
+    for (auto atom_id : atom_ctx.nlist.blocks()) {
+        const t_model* model = atom_ctx.nlist.block_model(atom_id);
+        if (noc_router_blif_model_name == model->name) {
+            noc_router_atoms.push_back(atom_id);
+        }
+    }
+
+    return noc_router_atoms;
+}
+
 bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,
               const t_arch* arch,
@@ -130,6 +150,11 @@ bool try_pack(t_packer_opts* packer_opts,
 
     int pack_iteration = 1;
     bool floorplan_regions_overfull = false;
+
+    auto noc_atoms = find_noc_router_atoms();
+    for (auto noc_atom : noc_atoms) {
+        std::cout << "NoC Atom: " << atom_ctx.nlist.block_name(noc_atom) << std::endl;
+    }
 
     while (true) {
         free_clustering_data(*packer_opts, clustering_data);
