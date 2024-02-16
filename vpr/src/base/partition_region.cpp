@@ -36,6 +36,22 @@ bool PartitionRegion::is_loc_in_part_reg(const t_pl_loc& loc) const {
     return is_in_pr;
 }
 
+int PartitionRegion::get_exclusivity_index() const {
+    return exclusivity_index;
+}
+
+void PartitionRegion::set_exclusivity_index(int index) {
+    /* negative exclusivity index means this PartitionRegion is compatible
+     * with other PartitionsRegions as long as the intersection of their
+     * regions is not empty.
+     */
+    if (index < 0) {
+        index = -1;
+    }
+
+    exclusivity_index = index;
+}
+
 PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionRegion& new_pr) {
     /**for N regions in part_region and M in the calling object you can get anywhere from
      * 0 to M*N regions in the resulting vector. Only intersection regions with non-zero area rectangles and
@@ -43,11 +59,20 @@ PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionR
      * Rectangles are not merged even if it would be possible
      */
     PartitionRegion pr;
+
+    const int cluster_exclusivity = cluster_pr.get_exclusivity_index();
+    const int new_exclusivity = new_pr.get_exclusivity_index();
+
+    // PartitionRegion are not compatible even if their regions overlap
+    if (cluster_exclusivity != new_exclusivity) {
+        return pr;
+    }
+
     auto& pr_regions = pr.get_mutable_regions();
-    Region intersect_region;
+
     for (const auto& cluster_region : cluster_pr.get_regions()) {
         for (const auto& new_region : new_pr.get_regions()) {
-            intersect_region = intersection(cluster_region, new_region);
+            Region intersect_region = intersection(cluster_region, new_region);
             if (!intersect_region.empty()) {
                 pr_regions.push_back(intersect_region);
             }
@@ -60,14 +85,23 @@ PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionR
 void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion& new_pr) {
     std::vector<Region> int_regions;
 
-    for (const auto& cluster_region : cluster_pr.get_regions()) {
-        for (const auto& new_region : new_pr.get_regions()) {
-            Region intersect_region = intersection(cluster_region, new_region);
-            if (!intersect_region.empty()) {
-                int_regions.push_back(intersect_region);
+    const int cluster_exclusivity = cluster_pr.get_exclusivity_index();
+    const int new_exclusivity = new_pr.get_exclusivity_index();
+
+    // check whether PartitionRegions are compatible in the first place
+    if (cluster_exclusivity == new_exclusivity) {
+
+        // now that we know PartitionRegions are compatible, look for overlapping regions
+        for (const auto& cluster_region : cluster_pr.get_regions()) {
+            for (const auto& new_region : new_pr.get_regions()) {
+                Region intersect_region = intersection(cluster_region, new_region);
+                if (!intersect_region.empty()) {
+                    int_regions.push_back(intersect_region);
+                }
             }
         }
     }
+
     cluster_pr.set_partition_region(int_regions);
 }
 

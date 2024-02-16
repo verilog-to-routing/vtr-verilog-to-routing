@@ -50,15 +50,20 @@ class PartitionRegion {
      */
     bool is_loc_in_part_reg(const t_pl_loc& loc) const;
 
+    int get_exclusivity_index() const;
+
+    void set_exclusivity_index(int index);
+
   private:
     std::vector<Region> regions; ///< union of rectangular regions that a partition can be placed in
+    int exclusivity_index = -1;  ///< PartitionRegions with different exclusivity_index values are not compatible
 };
 
 ///@brief used to print data from a PartitionRegion
 void print_partition_region(FILE* fp, const PartitionRegion& pr);
 
 /**
-* @brief Global friend function that returns the intersection of two PartitionRegions
+* @brief Global function that returns the intersection of two PartitionRegions
 *
 *   @param cluster_pr     One of the PartitionRegions to be intersected
 *   @param new_pr         One of the PartitionRegions to be intersected
@@ -66,7 +71,7 @@ void print_partition_region(FILE* fp, const PartitionRegion& pr);
 PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
 
 /**
-* @brief Global friend function that updates the PartitionRegion of a cluster with the intersection
+* @brief Global function that updates the PartitionRegion of a cluster with the intersection
 *        of the cluster PartitionRegion and a new PartitionRegion
 *
 *   @param cluster_pr     The cluster PartitionRegion that is to be updated
