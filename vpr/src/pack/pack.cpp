@@ -66,7 +66,6 @@ static void update_noc_reachability_partitions(const std::vector<AtomBlockId>& n
     const auto& atom_ctx = g_vpr_ctx.atom();
     auto& constraints = g_vpr_ctx.mutable_floorplanning().constraints;
     const auto& high_fanout_thresholds = g_vpr_ctx.cl_helper().high_fanout_thresholds;
-    const auto& device_ctx = g_vpr_ctx.device();
 
     const size_t high_fanout_threshold = high_fanout_thresholds.get_threshold("");
 
@@ -79,9 +78,9 @@ static void update_noc_reachability_partitions(const std::vector<AtomBlockId>& n
 
     RegionRectCoord unconstrained_rect{0,
                                        0,
-                                       (int)device_ctx.grid.width() - 1,
-                                       (int)device_ctx.grid.height() - 1,
-                                       -1};
+                                       std::numeric_limits<int>::max(),
+                                       std::numeric_limits<int>::max(),
+                                       0};
     Region unconstrained_region;
     unconstrained_region.set_region_rect(unconstrained_rect);
 
@@ -128,7 +127,6 @@ static void update_noc_reachability_partitions(const std::vector<AtomBlockId>& n
             } else {
                 auto& atom_partition = constraints.get_mutable_partition(atom_partition_id);
                 auto& atom_partition_region = atom_partition.get_mutable_part_region();
-//                std::cout << "ss" << atom_partition_region.get_exclusivity_index() << std::endl;
                 VTR_ASSERT(atom_partition_region.get_exclusivity_index() < 0 || current_atom == noc_atom_id);
                 atom_partition_region.set_exclusivity_index(exclusivity_cnt);
             }
@@ -253,6 +251,7 @@ bool try_pack(t_packer_opts* packer_opts,
     int pack_iteration = 1;
     bool floorplan_regions_overfull = false;
 
+    auto constraints_backup = g_vpr_ctx.floorplanning().constraints;
     // find all NoC router atoms
     auto noc_atoms = find_noc_router_atoms();
     update_noc_reachability_partitions(noc_atoms);
@@ -397,6 +396,21 @@ bool try_pack(t_packer_opts* packer_opts,
 
     //check clustering and output it
     check_and_output_clustering(*packer_opts, is_clock, arch, helper_ctx.total_clb_num, clustering_data.intra_lb_routing);
+
+
+    g_vpr_ctx.mutable_floorplanning().constraints = constraints_backup;
+    const int max_y = (int)g_vpr_ctx.device().grid.height();
+    const int max_x = (int)g_vpr_ctx.device().grid.width();
+    for (auto& cluster_partition_region : g_vpr_ctx.mutable_floorplanning().cluster_constraints) {
+        const auto& regions = cluster_partition_region.get_regions();
+        if (regions.size() == 1) {
+            const auto rect = regions[0].get_region_rect();
+
+            if (rect.xmin <= 0 && rect.ymin <= 0 && rect.xmax >= max_x && rect.ymax >= max_y) {
+                cluster_partition_region = PartitionRegion();
+            }
+        }
+    }
 
     // Free Data Structures
     free_clustering_data(*packer_opts, clustering_data);

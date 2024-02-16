@@ -33,8 +33,7 @@ int check_placement_floorplanning() {
 /*returns true if cluster has floorplanning constraints, false if it doesn't*/
 bool is_cluster_constrained(ClusterBlockId blk_id) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    PartitionRegion pr;
-    pr = floorplanning_ctx.cluster_constraints[blk_id];
+    const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
     return (!pr.empty());
 }
 
@@ -250,7 +249,7 @@ void load_cluster_constraints() {
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 
-        //if there are any constrainted atoms in the cluster,
+        //if there are any constrained atoms in the cluster,
         //we update the cluster's PartitionRegion
         for (auto atom : *atoms) {
             PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atom);
