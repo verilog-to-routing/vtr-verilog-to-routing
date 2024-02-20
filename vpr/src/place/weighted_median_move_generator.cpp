@@ -28,7 +28,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    bool is_multi_layer = (num_layers > 1);
+
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);

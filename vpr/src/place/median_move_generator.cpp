@@ -12,7 +12,7 @@ static bool get_bb_incrementally(ClusterNetId net_id,
                                  int layer_old,
                                  int xnew,
                                  int ynew,
-                                 int layer_old);
+                                 int layer_new);
 
 static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
@@ -36,7 +36,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     const int num_layers = device_ctx.grid.get_num_layers();
-    bool is_multi_layer = (num_layers > 1);
+
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     int from_layer = from.layer;
@@ -122,7 +122,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                       coords,
                                       xold,
                                       yold,
-                                      layer_old
+                                      layer_old,
                                       xnew,
                                       ynew,
                                       layer_new)) {
