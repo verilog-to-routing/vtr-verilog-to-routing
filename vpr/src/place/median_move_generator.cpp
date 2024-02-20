@@ -49,6 +49,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     //reused to save allocation time
     place_move_ctx.X_coord.clear();
     place_move_ctx.Y_coord.clear();
+    place_move_ctx.layer_coord.clear();
     std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself
@@ -112,33 +113,28 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.X_coord.push_back(coords.xmax);
         place_move_ctx.Y_coord.push_back(coords.ymin);
         place_move_ctx.Y_coord.push_back(coords.ymax);
-        if (is_multi_layer) {
-            for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num];
-            }
-            // If the pin under consideration is of type sink, it shouldn't be added to layer_blk_cnt since the block
-            // is moving
-            if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::SINK) {
-                VTR_ASSERT_SAFE(layer_blk_cnt[from_layer] > 0);
-                layer_blk_cnt[from_layer]--;
-            }
-        }
+        place_move_ctx.layer_coord.push_back(coords.layer_min);
+        place_move_ctx.layer_coord.push_back(coords.layer_max);
     }
 
-    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord and y_coord are empty\n");
+    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()) || (place_move_ctx.layer_coord.empty())) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
     }
 
     //calculate the median region
     std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
     std::sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
+    std::sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
 
     limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
     limit_coords.xmax = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2) + 1];
 
     limit_coords.ymin = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2)];
     limit_coords.ymax = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
+
+    limit_coords.layer_min = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2)];
+    limit_coords.layer_max = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
 
     //arrange the different range limiters
     t_range_limiters range_limiters{rlim,
@@ -149,17 +145,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
+    median_point.layer = (limit_coords.layer_min + limit_coords.layer_max) / 2;
 
-    // Before calling find_to_loc_centroid a valid layer should be assigned to "to" location. If there are multiple layers, the layer
-    // with highest number of sinks will be used. Otherwise, the same layer as "from" loc is assigned.
-    if (is_multi_layer) {
-        int layer_num = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
-        median_point.layer = layer_num;
-        to.layer = layer_num;
-    } else {
-        median_point.layer = from.layer;
-        to.layer = from.layer;
-    }
     if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }
@@ -194,6 +181,9 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
     int ymin = OPEN;
     int ymax = OPEN;
 
+    int layer_min = OPEN;
+    int layer_max = OPEN;
+
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -208,11 +198,14 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
         pnum = net_pin_to_tile_pin_index(net_id, 0);
         int src_x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         int src_y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+        int src_layer = place_ctx.block_locs[bnum].loc.layer;
 
         xmin = src_x;
         ymin = src_y;
         xmax = src_x;
         ymax = src_y;
+        layer_min = src_layer;
+        layer_max = src_layer;
         first_block = true;
     }
 
@@ -225,12 +218,15 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
         const auto& block_loc = place_ctx.block_locs[bnum].loc;
         int x = block_loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         int y = block_loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+        int layer = block_loc.layer;
 
         if (!first_block) {
             xmin = x;
             ymin = y;
             xmax = x;
             ymax = y;
+            layer_max = layer;
+            layer_min = layer;
             first_block = true;
             continue;
         }
@@ -245,6 +241,12 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
         } else if (y > ymax) {
             ymax = y;
         }
+
+        if (layer < layer_min) {
+            layer_min = layer;
+        } else if (layer > layer_max) {
+            layer_max = layer;
+        }
     }
 
     /* Now I've found the coordinates of the bounding box.  There are no *
@@ -258,6 +260,10 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
     bb_coord_new.ymin = std::max(std::min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     bb_coord_new.xmax = std::max(std::min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymax = std::max(std::min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    VTR_ASSERT(layer_min >= 0);
+    bb_coord_new.layer_min = layer_min;
+    VTR_ASSERT(layer_max < device_ctx.grid.get_num_layers());
+    bb_coord_new.layer_max = layer_max;
 }
 
 /*
