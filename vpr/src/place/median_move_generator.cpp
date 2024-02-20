@@ -5,7 +5,14 @@
 #include "placer_globals.h"
 #include "move_utils.h"
 
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew);
+static bool get_bb_incrementally(ClusterNetId net_id,
+                                 t_bb& bb_coord_new,
+                                 int xold,
+                                 int yold,
+                                 int layer_old,
+                                 int xnew,
+                                 int ynew,
+                                 int layer_old);
 
 static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
@@ -43,7 +50,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_bb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
     t_bb limit_coords;
     ClusterBlockId bnum;
-    int pnum, xnew, xold, ynew, yold;
+    int pnum, xnew, xold, ynew, yold, layer_new, layer_old;
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
@@ -85,8 +92,11 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             VTR_ASSERT(pnum >= 0);
             xold = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
             yold = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+            layer_old = place_ctx.block_locs[bnum].loc.layer;
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+            VTR_ASSERT(layer_old >= 0);
+            VTR_ASSERT(layer_old < device_ctx.grid.get_num_layers());
 
             //To calulate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
@@ -102,7 +112,20 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 ynew = net_bb_coords.ymin;
             }
 
-            if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew)) {
+            if (net_bb_coords.layer_min == layer_old) {
+                layer_new = net_bb_coords.layer_max;
+            } else {
+                layer_new = net_bb_coords.layer_min;
+            }
+
+            if (!get_bb_incrementally(net_id,
+                                      coords,
+                                      xold,
+                                      yold,
+                                      layer_old
+                                      xnew,
+                                      ynew,
+                                      layer_new)) {
                 get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
                 if (skip_net)
                     continue;
@@ -279,7 +302,14 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
  * the pins always lie on the outside of the bounding box.            *
  * The x and y coordinates are the pin's x and y coordinates.         */
 /* IO blocks are considered to be one cell in for simplicity.         */
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew) {
+static bool get_bb_incrementally(ClusterNetId net_id,
+                                 t_bb& bb_coord_new,
+                                 int xold,
+                                 int yold,
+                                 int layer_old,
+                                 int xnew,
+                                 int ynew,
+                                 int layer_new) {
     //TODO: account for multiple physical pin instances per logical pin
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -287,8 +317,12 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    VTR_ASSERT(layer_new > 0);
+    VTR_ASSERT(layer_new < device_ctx.grid.get_num_layers());
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    VTR_ASSERT(layer_old > 0);
+    VTR_ASSERT(layer_old < device_ctx.grid.get_num_layers());
 
     t_bb union_bb_edge;
     t_bb union_bb;
@@ -415,6 +449,48 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     } else { /* ynew == yold -- no y motion. */
         bb_coord_new.ymin = curr_bb_coord.ymin;
         bb_coord_new.ymax = curr_bb_coord.ymax;
+    }
+
+    if (layer_new < layer_old) {
+        if (layer_old == curr_bb_coord.layer_max) {
+            if (curr_bb_edge.layer_max == 1) {
+                return false;
+            } else {
+                bb_coord_new.layer_max = curr_bb_coord.layer_max;
+            }
+        } else {
+            bb_coord_new.layer_max = curr_bb_coord.layer_max;
+        }
+
+        if (layer_new < curr_bb_coord.layer_min) {
+            bb_coord_new.layer_min = layer_new;
+        } else if (layer_new == curr_bb_coord.layer_min) {
+            bb_coord_new.layer_min = layer_new;
+        } else {
+            bb_coord_new.layer_min = curr_bb_coord.layer_min;
+        }
+
+    } else if (layer_new > layer_old) {
+        if (layer_old == curr_bb_coord.layer_min) {
+            if (curr_bb_edge.layer_min == 1) {
+                return false;
+            } else {
+                bb_coord_new.layer_min = curr_bb_coord.layer_min;
+            }
+        } else {
+            bb_coord_new.layer_min = curr_bb_coord.layer_min;
+        }
+
+        if (layer_new > curr_bb_coord.layer_max) {
+            bb_coord_new.layer_max = layer_new;
+        } else if (layer_new == curr_bb_coord.layer_max) {
+            bb_coord_new.layer_max = layer_new;
+        } else {
+            bb_coord_new.layer_max = curr_bb_coord.layer_max;
+        }
+    } else {
+        bb_coord_new.layer_min = curr_bb_coord.layer_min;
+        bb_coord_new.layer_max = curr_bb_coord.layer_max;
     }
     return true;
 }
