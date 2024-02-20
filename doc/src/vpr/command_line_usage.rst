@@ -350,7 +350,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_rr_graph <file>
 
-    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages. Expects a file extension of either ``.xml`` and ``.bin``.
+    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages. Expects a file extension of either ``.xml`` or ``.bin``.
 
     The routing resource graph overthrows all the architecture definitions regarding switches, nodes, and edges. Other information such as grid information, block types, and segment information are matched with the architecture file to ensure accuracy.
 
@@ -368,22 +368,22 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_router_lookahead <file>
 
-    Reads the lookahead data from the specified file instead of computing it.
+    Reads the lookahead data from the specified file instead of computing it. Expects a file extension of either ``.capnp`` or ``.bin``.
 
 .. option:: --write_router_lookahead <file>
 
-    Writes the lookahead data to the specified file.
+    Writes the lookahead data to the specified file. Accepted fine extensions are ``.capnp``, ``.bin``, and ``.csv``.
 
 .. option:: --read_placement_delay_lookup <file>
 
-    Reads the placement delay lookup from the specified file instead of computing it.
+    Reads the placement delay lookup from the specified file instead of computing it. Expects a file extension of either ``.capnp`` or ``.bin``.
 
 .. option:: --write_placement_delay_lookup <file>
 
-    Writes the placement delay lookup to the specified file.
+    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
 .. option:: --write_initial_place_file <file>
 
-    Writes out the the placement chosen by the initial placement algorithm to the specified file
+    Writes out the the placement chosen by the initial placement algorithm to the specified file.
 
 .. option:: --outfile_prefix <string>
 
