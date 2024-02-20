@@ -372,7 +372,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --write_router_lookahead <file>
 
-    Writes the lookahead data to the specified file. Accepted fine extensions are ``.capnp``, ``.bin``, and ``.csv``.
+    Writes the lookahead data to the specified file. Accepted file extensions are ``.capnp``, ``.bin``, and ``.csv``.
 
 .. option:: --read_placement_delay_lookup <file>
 
