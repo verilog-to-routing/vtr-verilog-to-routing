@@ -162,8 +162,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
  *      - criticalities: the timing criticalities of all connections
  */
 static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net) {
-    int pnum, x, y, xmin, xmax, ymin, ymax;
-    float xmin_cost, xmax_cost, ymin_cost, ymax_cost, cost;
+    int pnum, x, y, layer, xmin, xmax, ymin, ymax, layer_min, layer_max;
+    float xmin_cost, xmax_cost, ymin_cost, ymax_cost, layer_min_cost, layer_max_cost, cost;
 
     skip_net = true;
 
@@ -171,11 +171,16 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
     xmax = 0;
     ymin = 0;
     ymax = 0;
+    layer_min = 0;
+    layer_max = 0;
+
     cost = 0.0;
     xmin_cost = 0.0;
     xmax_cost = 0.0;
     ymin_cost = 0.0;
     ymax_cost = 0.0;
+    layer_min_cost = 0.;
+    layer_max_cost = 0.;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -187,6 +192,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
     int ipin;
     for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+        layer = place_ctx.block_locs[bnum].loc.layer;
 
         if (pin_id != moving_pin_id) {
             skip_net = false;
@@ -220,6 +226,10 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
                 xmax_cost = cost;
                 ymax = y;
                 ymax_cost = cost;
+                layer_min = layer;
+                layer_min_cost = cost;
+                layer_max = layer;
+                layer_max_cost = cost;
                 is_first_block = false;
             } else {
                 if (x < xmin) {
@@ -237,6 +247,20 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
                     ymax = y;
                     ymax_cost = cost;
                 }
+
+                if (layer < layer_min) {
+                    layer_min = layer;
+                    layer_min_cost = cost;
+                } else if (layer > layer_max) {
+                    layer_max = layer;
+                    layer_max_cost = cost;
+                } else if (layer == layer_min) {
+                    if (cost > layer_min_cost)
+                        layer_min_cost = cost;
+                } else if (layer == layer_max) {
+                    if (cost > layer_max_cost)
+                        layer_max_cost = cost;
+                }
             }
         }
     }
@@ -246,4 +270,6 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
     coords->xmax = {xmax, xmax_cost};
     coords->ymin = {ymin, ymin_cost};
     coords->ymax = {ymax, ymax_cost};
+    coords->layer_min = {layer_min, layer_min_cost};
+    coords->layer_max = {layer_max, layer_max_cost};
 }
