@@ -933,6 +933,7 @@ void try_place(const Netlist<>& net_list,
     //allocate helper vectors that are used by many move generators
     place_move_ctx.X_coord.resize(10, 0);
     place_move_ctx.Y_coord.resize(10, 0);
+    place_move_ctx.layer_coord.resize(10, 0);
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
