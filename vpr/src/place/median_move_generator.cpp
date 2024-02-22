@@ -321,7 +321,7 @@ static bool get_bb_incrementally(ClusterNetId net_id,
     VTR_ASSERT(layer_new < device_ctx.grid.get_num_layers());
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    VTR_ASSERT(layer_old > 0);
+    VTR_ASSERT(layer_old >= 0);
     VTR_ASSERT(layer_old < device_ctx.grid.get_num_layers());
 
     t_bb union_bb_edge;
