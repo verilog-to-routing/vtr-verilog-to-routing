@@ -317,7 +317,7 @@ static bool get_bb_incrementally(ClusterNetId net_id,
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    VTR_ASSERT(layer_new > 0);
+    VTR_ASSERT(layer_new >= 0);
     VTR_ASSERT(layer_new < device_ctx.grid.get_num_layers());
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
