@@ -190,6 +190,28 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+#ifdef VPR_USE_TBB
+    tbb::combinable<size_t> overused_nodes(0), total_overuse(0), worst_overuse(0);
+    tbb::parallel_for_each(rr_graph.nodes().begin(), rr_graph.nodes().end(), [&](RRNodeId rr_id) {
+        int overuse = route_ctx.rr_node_route_inf[rr_id].occ() - rr_graph.node_capacity(rr_id);
+
+        // If overused, update the acc_cost and add this node to the overuse info
+        // If not, do nothing
+        if (overuse > 0) {
+            route_ctx.rr_node_route_inf[rr_id].acc_cost += overuse * acc_fac;
+
+            ++overused_nodes.local();
+            total_overuse.local() += overuse;
+            worst_overuse.local() = std::max(worst_overuse.local(), size_t(overuse));
+        }
+    });
+
+    // Update overuse info
+    overuse_info.overused_nodes = overused_nodes.combine(std::plus<size_t>());
+    overuse_info.total_overuse = total_overuse.combine(std::plus<size_t>());
+    overuse_info.worst_overuse = worst_overuse.combine([](size_t a, size_t b) { return std::max(a, b); });
+#else
     size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
     for (const RRNodeId& rr_id : rr_graph.nodes()) {
@@ -210,6 +232,7 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     overuse_info.overused_nodes = overused_nodes;
     overuse_info.total_overuse = total_overuse;
     overuse_info.worst_overuse = worst_overuse;
+#endif
 }
 
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
