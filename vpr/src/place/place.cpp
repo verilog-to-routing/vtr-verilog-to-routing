@@ -3190,7 +3190,7 @@ static void get_non_updateable_bb(ClusterNetId net_id,
                                   vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
-    int xmax, ymax, xmin, ymin, x, y, layer;
+    int xmax, ymax, layer_max, xmin, ymin, layer_min, x, y, layer;
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -3204,11 +3204,14 @@ static void get_non_updateable_bb(ClusterNetId net_id,
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y
         + physical_tile_type(bnum)->pin_height_offset[pnum];
+    layer = place_ctx.block_locs[bnum].loc.layer;
 
     xmin = x;
     ymin = y;
+    layer_min = layer;
     xmax = x;
     ymax = y;
+    layer_max = layer;
 
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
@@ -3235,6 +3238,12 @@ static void get_non_updateable_bb(ClusterNetId net_id,
             ymax = y;
         }
 
+        if (layer < layer_min) {
+            layer_min = layer;
+        } else if (layer > layer_max) {
+            layer_max = layer;
+        }
+
         num_sink_pin_layer[layer]++;
     }
 
@@ -3248,8 +3257,10 @@ static void get_non_updateable_bb(ClusterNetId net_id,
 
     bb_coord_new.xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymin = max(min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.layer_min = max(min<int>(layer_min, device_ctx.grid.get_num_layers() - 1), 0);
     bb_coord_new.xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.layer_max = max(min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
 }
 
 static void get_non_updateable_layer_bb(ClusterNetId net_id,
