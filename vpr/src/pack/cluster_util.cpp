@@ -76,7 +76,7 @@ static void echo_clusters(char* filename) {
         cluster_atoms[clb_index].push_back(atom_blk_id);
     }
 
-    for (auto & cluster_atom : cluster_atoms) {
+    for (auto& cluster_atom : cluster_atoms) {
         const std::string& cluster_name = cluster_ctx.clb_nlist.block_name(cluster_atom.first);
         fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(cluster_atom.first));
         fprintf(fp, "\tAtoms in cluster: \n");
@@ -96,7 +96,7 @@ static void echo_clusters(char* filename) {
         const std::vector<Region>& regions = floorplanning_ctx.cluster_constraints[clb_id].get_regions();
         if (!regions.empty()) {
             fprintf(fp, "\nRegions in Cluster %zu:\n", size_t(clb_id));
-            for (const auto & region : regions) {
+            for (const auto& region : regions) {
                 print_region(fp, region);
             }
         }

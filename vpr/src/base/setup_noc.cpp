@@ -139,7 +139,7 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
     double curr_logical_router_position_x;
     double curr_logical_router_position_y;
 
-    // keep track of the index of each physical router (this helps uniqely identify them)
+    // keep track of the index of each physical router (this helps uniquely identify them)
     int curr_physical_router_index = 0;
 
     // keep track of the ids of the routers that create the case where multiple routers have the same distance to a physical router tile
@@ -153,7 +153,7 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
 
     // Below we create all the routers within the NoC //
 
-    // go through each user desctibed router in the arch file and assign it to a physical router on the FPGA
+    // go through each user described router in the arch file and assign it to a physical router on the FPGA
     for (auto logical_router = noc_info.router_list.begin(); logical_router != noc_info.router_list.end(); logical_router++) {
         // assign the shortest distance to a large value (this is done so that the first distance calculated and we can replace this)
         shortest_distance = LLONG_MAX;
@@ -173,7 +173,7 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
         error_case_physical_router_index_2 = INVALID_PHYSICAL_ROUTER_INDEX;
 
         // determine the physical router tile that is closest to the current user described router in the arch file
-        for (auto & physical_router : noc_router_tiles) {
+        for (auto& physical_router : noc_router_tiles) {
             // get the position of the current physical router tile on the FPGA device
             curr_physical_router_pos_x = physical_router.tile_centroid_x;
             curr_physical_router_pos_y = physical_router.tile_centroid_y;
@@ -237,7 +237,7 @@ void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
     noc_model->make_room_for_noc_router_link_list();
 
     // go through each router and add its outgoing links to the NoC
-    for (const auto & router : noc_info->router_list) {
+    for (const auto& router : noc_info->router_list) {
         // get the converted id of the current source router
         source_router = noc_model->convert_router_id(router.id);
 

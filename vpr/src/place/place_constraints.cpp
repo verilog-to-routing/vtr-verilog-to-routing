@@ -41,7 +41,7 @@ bool is_macro_constrained(const t_pl_macro& pl_macro) {
     bool is_macro_constrained = false;
     bool is_member_constrained = false;
 
-    for (const auto & member : pl_macro.members) {
+    for (const auto& member : pl_macro.members) {
         ClusterBlockId iblk = member.blk_index;
         is_member_constrained = is_cluster_constrained(iblk);
 
@@ -61,7 +61,7 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
     int num_constrained_members = 0;
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    for (const auto & member : pl_macro.members) {
+    for (const auto& member : pl_macro.members) {
         ClusterBlockId iblk = member.blk_index;
         is_member_constrained = is_cluster_constrained(iblk);
 
@@ -75,7 +75,7 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
             const PartitionRegion& block_pr = floorplanning_ctx.cluster_constraints[iblk];
             const std::vector<Region>& block_regions = block_pr.get_regions();
 
-            for (const auto & block_region : block_regions) {
+            for (const auto& block_region : block_regions) {
                 Region modified_reg;
                 auto offset = member.offset;
 
@@ -118,7 +118,7 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
     const std::vector<Region>& block_regions = head_pr.get_regions();
     PartitionRegion macro_pr;
 
-    for (const auto & block_region : block_regions) {
+    for (const auto& block_region : block_regions) {
         Region modified_reg;
 
         const auto block_reg_coord = block_region.get_region_rect();
@@ -153,7 +153,7 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro) {
     VTR_LOG(
         "Feasible floorplanning constraints could not be calculated for the placement macro. \n"
         "The placement macro contains the following blocks: \n");
-    for (const auto & member : pl_macro.members) {
+    for (const auto& member : pl_macro.members) {
         std::string blk_name = cluster_ctx.clb_nlist.block_name((member.blk_index));
         VTR_LOG("Block %s (#%zu) ", blk_name.c_str(), size_t(member.blk_index));
     }
@@ -371,7 +371,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
 }
 
 /*
- * Used when marking fixed blocks to check whether the ParitionRegion associated with a block
+ * Used when marking fixed blocks to check whether the PartitionRegion associated with a block
  * covers one tile. If it covers one tile, it is marked as fixed. If it covers 0 tiles or
  * more than one tile, it will not be marked as fixed. As soon as it is known that the
  * PartitionRegion covers more than one tile, there is no need to check further regions
@@ -441,7 +441,7 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, 
     const std::vector<Region>& regions = pr.get_regions();
     int num_tiles = 0;
 
-    for (const auto & region : regions) {
+    for (const auto& region : regions) {
         num_tiles += grid_tiles.region_tile_count(region, block_type);
     }
 

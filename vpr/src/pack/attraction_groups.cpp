@@ -49,7 +49,7 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
 
     const auto& overfull_regions = floorplanning_ctx.overfull_regions;
     PartitionRegion overfull_regions_pr;
-    for (const auto & overfull_region : overfull_regions) {
+    for (const auto& overfull_region : overfull_regions) {
         overfull_regions_pr.add_to_part_region(overfull_region);
     }
     /*
