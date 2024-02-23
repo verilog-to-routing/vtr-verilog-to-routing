@@ -281,10 +281,10 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
      * is 0).  See route_common.cpp for a channel diagram.               */
     bb_coord_new.xmin = std::max(std::min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymin = std::max(std::min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    bb_coord_new.layer_min = std::max(std::min<int>(layer_min, device_ctx.grid.get_num_layers()), 0);
+    bb_coord_new.layer_min = std::max(std::min<int>(layer_min, device_ctx.grid.get_num_layers() - 1), 0);
     bb_coord_new.xmax = std::max(std::min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymax = std::max(std::min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    bb_coord_new.layer_max = std::max(std::min<int>(layer_max, device_ctx.grid.get_num_layers()), 0);
+    bb_coord_new.layer_max = std::max(std::min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
 }
 
 /*
@@ -315,12 +315,11 @@ static bool get_bb_incrementally(ClusterNetId net_id,
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    VTR_ASSERT(layer_new >= 0);
-    VTR_ASSERT(layer_new < device_ctx.grid.get_num_layers());
+    layer_new = std::max(std::min<int>(layer_new, device_ctx.grid.get_num_layers() -1 ), 0);
+
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    VTR_ASSERT(layer_old >= 0);
-    VTR_ASSERT(layer_old < device_ctx.grid.get_num_layers());
+    layer_old = std::max(std::min<int>(layer_old, device_ctx.grid.get_num_layers() - 1), 0);
 
     t_bb union_bb_edge;
     t_bb union_bb;
