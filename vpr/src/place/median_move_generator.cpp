@@ -93,10 +93,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             xold = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
             yold = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
             layer_old = place_ctx.block_locs[bnum].loc.layer;
+
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-            VTR_ASSERT(layer_old >= 0);
-            VTR_ASSERT(layer_old < device_ctx.grid.get_num_layers());
+            layer_old = std::max(std::min(layer_old, (int)device_ctx.grid.get_num_layers() - 1), 0);
 
             //To calulate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
