@@ -55,8 +55,8 @@ class ConnectionRouterInterface {
     virtual std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params)
         = 0;
@@ -74,8 +74,8 @@ class ConnectionRouterInterface {
     virtual std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params)
@@ -92,8 +92,8 @@ class ConnectionRouterInterface {
     // RouterLookahead used should be the NoOpLookahead.
     virtual vtr::vector<RRNodeId, t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
         const RouteTreeNode& rt_root,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params)
         = 0;

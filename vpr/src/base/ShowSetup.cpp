@@ -263,6 +263,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case PARALLEL:
                 VTR_LOG("PARALLEL\n");
                 break;
+            case PARALLEL_DECOMP:
+                VTR_LOG("PARALLEL_DECOMP\n");
+                break;
             case TIMING_DRIVEN:
                 VTR_LOG("TIMING_DRIVEN\n");
                 break;
@@ -794,6 +797,7 @@ static void ShowNocOpts(const t_noc_opts& NocOpts) {
     VTR_LOG("NocOpts.noc_placement_weighting: %f\n", NocOpts.noc_placement_weighting);
     VTR_LOG("NocOpts.noc_latency_constraints_weighting: %f\n", NocOpts.noc_latency_constraints_weighting);
     VTR_LOG("NocOpts.noc_latency_weighting: %f\n", NocOpts.noc_latency_weighting);
+    VTR_LOG("NocOpts.noc_congestion_weighting: %f\n", NocOpts.noc_congestion_weighting);
     VTR_LOG("NocOpts.noc_swap_percentage: %d%%\n", NocOpts.noc_swap_percentage);
     VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_placement_file_name.c_str());
     VTR_LOG("\n");

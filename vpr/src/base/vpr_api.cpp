@@ -559,12 +559,12 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
  * @param noc_routing_algorithm_name A user provided string that identifies a
  * NoC routing algorithm
  */
-void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name) {
+void vpr_setup_noc_routing_algorithm(const std::string& noc_routing_algorithm_name) {
     // Need to be abke to modify the NoC context, since we will be adding the
     // newly created routing algorithm to it
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
-    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator().create_routing_algorithm(noc_routing_algorithm_name);
+    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_routing_algorithm_name);
     return;
 }
 
@@ -1085,7 +1085,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
     auto type = find_most_common_tile_type(grid);
     /* get Fc_in/out for most common block (e.g. logic blocks) */
-    VTR_ASSERT(type->fc_specs.size() > 0);
+    VTR_ASSERT(!type->fc_specs.empty());
 
     //Estimate the maximum Fc_in/Fc_out
 
@@ -1208,10 +1208,7 @@ static void free_routing() {
 /**
  * @brief handles the deletion of NoC related datastructures.
  */
-static void free_noc() {
-    auto& noc_ctx = g_vpr_ctx.mutable_noc();
-    delete noc_ctx.noc_flows_router;
-}
+static void free_noc() {}
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {

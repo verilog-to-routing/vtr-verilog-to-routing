@@ -502,7 +502,7 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
     }
 
     if (_net_id.is_valid()) /* We don't have this lookup if the tree isn't associated with a net */
-        _is_isink_reached[target_net_pin_index] = true;
+        _is_isink_reached.set(target_net_pin_index, true);
 
     return {*start_of_new_subtree_rt_node, *sink_rt_node};
 }
@@ -711,11 +711,11 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
             //Valid path to sink
 
             //Record sink as reached
-            _is_isink_reached[rt_node.net_pin_index] = true;
+            _is_isink_reached.set(rt_node.net_pin_index, true);
             return rt_node; // Not pruned
         } else {
             //Record as not reached
-            _is_isink_reached[rt_node.net_pin_index] = false;
+            _is_isink_reached.set(rt_node.net_pin_index, false);
             return vtr::nullopt; // Pruned
         }
     } else if (all_children_pruned) {

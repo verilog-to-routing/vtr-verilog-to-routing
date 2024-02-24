@@ -3,6 +3,7 @@
 #include "initial_placement.h"
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
+#include "vtr_math.h"
 
 /**
  * @brief Evaluates whether a NoC router swap should be accepted or not.
@@ -32,7 +33,8 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id);
  *   NoC routers.
  *   @param seed Used for shuffling NoC routers.
  */
-static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers, int seed);
+static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
+                                       int seed);
 
 /**
  * @brief Runs a simulated annealing optimizer for NoC routers.
@@ -158,10 +160,11 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     t_placer_costs costs;
 
     // Initialize NoC-related costs
-    costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
-    costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
+    costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();
+    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = comp_noc_latency_cost();
+    costs.noc_cost_terms.congestion = comp_noc_congestion_cost();
     update_noc_normalization_factors(costs);
-    costs.cost = calculate_noc_cost(costs, noc_opts);
+    costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
 
     // Maximum distance in each direction that a router can travel in a move
     // It is assumed that NoC routers are organized in a square grid.
@@ -178,10 +181,12 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     // the constant factor above 35000.
     // Get all the router clusters and figure out how many of them exist
     const int num_router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist().size();
-    const int N_MOVES = num_router_clusters * 35000;
+    const int N_MOVES_PER_ROUTER = 35000;
+    const int N_MOVES = num_router_clusters * N_MOVES_PER_ROUTER;
 
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
+
 
     // The checkpoint stored the placement with the lowest cost.
     NoCPlacementCheckpoint checkpoint;
@@ -211,10 +216,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
         if (create_move_outcome != e_create_move::ABORT) {
             apply_move_blocks(blocks_affected);
 
-            double noc_aggregate_bandwidth_delta_c = 0.0;
-            double noc_latency_delta_c = 0.0;
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
-            double delta_cost = (noc_opts.noc_placement_weighting) * (noc_latency_delta_c * costs.noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs.noc_aggregate_bandwidth_cost_norm);
+            NocCostTerms noc_delta_c;
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
+            double delta_cost = calculate_noc_cost(noc_delta_c, costs.noc_cost_norm_factors, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
             bool move_accepted = accept_noc_swap(delta_cost, prob);
@@ -223,8 +227,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
                 costs.cost += delta_cost;
                 commit_move_blocks(blocks_affected);
                 commit_noc_costs();
-                costs.noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
-                costs.noc_latency_cost += noc_latency_delta_c;
+                costs += noc_delta_c;
+                // check if the current placement is better than the stored checkpoint
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
                     checkpoint.save_checkpoint(costs.cost);
                 }
@@ -236,7 +240,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     }
 
     if (checkpoint.get_cost() < costs.cost) {
-        checkpoint.restore_checkpoint(noc_opts, costs);
+        checkpoint.restore_checkpoint(costs);
     }
 }
 

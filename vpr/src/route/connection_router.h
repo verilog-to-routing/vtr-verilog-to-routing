@@ -72,8 +72,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params) final;
 
@@ -90,8 +90,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
-        const t_conn_cost_params cost_params,
-        t_bb net_bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& net_bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params) final;
@@ -107,8 +107,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // RouterLookahead used should be the NoOpLookahead.
     vtr::vector<RRNodeId, t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
         const RouteTreeNode& rt_root,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params) final;
 
@@ -163,8 +163,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     std::tuple<bool, t_heap*> timing_driven_route_connection_common_setup(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box);
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box);
 
     // Finds a path to sink_node, starting from the elements currently in the
     // heap.
@@ -177,21 +177,21 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // found
     t_heap* timing_driven_route_connection_from_heap(
         RRNodeId sink_node,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box);
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box);
 
     // Expand this current node if it is a cheaper path.
     void timing_driven_expand_cheapest(
         t_heap* cheapest,
         RRNodeId target_node,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box);
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box);
 
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
         t_heap* current,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         RRNodeId target_node);
 
     // Conditionally adds to_node to the router heap (via path from from_node
@@ -204,15 +204,15 @@ class ConnectionRouter : public ConnectionRouterInterface {
         RRNodeId from_node,
         RREdgeId from_edge,
         RRNodeId to_node,
-        const t_conn_cost_params cost_params,
-        const t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         RRNodeId target_node,
-        const t_bb target_bb);
+        const t_bb& target_bb);
 
     // Add to_node to the heap, and also add any nodes which are connected by
     // non-configurable edges
     void timing_driven_add_to_heap(
-        const t_conn_cost_params cost_params,
+        const t_conn_cost_params& cost_params,
         const t_heap* current,
         RRNodeId from_node,
         RRNodeId to_node,
@@ -222,7 +222,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Calculates the cost of reaching to_node
     void evaluate_timing_driven_node_costs(
         t_heap* to,
-        const t_conn_cost_params cost_params,
+        const t_conn_cost_params& cost_params,
         RRNodeId from_node,
         RRNodeId to_node,
         RREdgeId from_edge,
@@ -230,8 +230,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     // Find paths from current heap to all nodes in the RR graph
     vtr::vector<RRNodeId, t_heap> timing_driven_find_all_shortest_paths_from_heap(
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box);
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box);
 
     void empty_heap_annotating_node_route_inf();
 
@@ -239,7 +239,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     //used as branch-points for further routing.
     void add_route_tree_to_heap(const RouteTreeNode& rt_node,
                                 RRNodeId target_node,
-                                const t_conn_cost_params cost_params);
+                                const t_conn_cost_params& cost_params,
+                                const t_bb& net_bb);
 
     // Evaluate node costs using the RCV algorith
     float compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
@@ -256,14 +257,15 @@ class ConnectionRouter : public ConnectionRouterInterface {
     void add_route_tree_node_to_heap(
         const RouteTreeNode& rt_node,
         RRNodeId target_node,
-        const t_conn_cost_params cost_params);
+        const t_conn_cost_params& cost_params,
+        const t_bb& net_bb);
 
     t_bb add_high_fanout_route_tree_to_heap(
         const RouteTreeNode& rt_root,
         RRNodeId target_node,
-        const t_conn_cost_params cost_params,
+        const t_conn_cost_params& cost_params,
         const SpatialRouteTreeLookup& spatial_route_tree_lookup,
-        t_bb net_bounding_box);
+        const t_bb& net_bounding_box);
 
     const DeviceGrid& grid_;
     const RouterLookahead& router_lookahead_;

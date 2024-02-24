@@ -551,7 +551,7 @@ struct NocContext : public Context {
      *
      * This is created from a user supplied command line option "--noc_routing_algorithm"
      */
-    NocRouting* noc_flows_router;
+    std::unique_ptr<NocRouting> noc_flows_router;
 };
 
 /**
