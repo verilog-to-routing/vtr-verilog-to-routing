@@ -618,6 +618,13 @@ void try_place(const Netlist<>& net_list,
     num_swap_aborted = 0;
     num_ts_called = 0;
 
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if (cluster_ctx.clb_nlist.net_name(net_id) == "reset") {
+            g_vpr_ctx.mutable_clustering().clb_nlist.set_net_is_global(net_id, true);
+            g_vpr_ctx.mutable_clustering().clb_nlist.set_net_is_ignored(net_id, true);
+        }
+    }
+
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(net_list,
