@@ -97,9 +97,9 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
     }
 
     //Calculate the centroid location
-    centroid.x = acc_x / acc_weight;
-    centroid.y = acc_y / acc_weight;
-    centroid.layer = acc_layer / acc_weight;
+    centroid.x = (int)std::round(acc_x / acc_weight);
+    centroid.y = (int)std::round(acc_y / acc_weight);
+    centroid.layer = (int)std::round(acc_layer / acc_weight);
 }
 
 static std::map<std::string, e_reward_function> available_reward_function = {
