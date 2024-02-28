@@ -5,6 +5,9 @@
 #include "noc_place_checkpoint.h"
 #include "vtr_math.h"
 
+#include <limits>
+#include <queue>
+
 /**
  * @brief Evaluates whether a NoC router swap should be accepted or not.
  * If delta cost is non-positive, the move is always accepted. If the cost
@@ -251,6 +254,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
 void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     auto& noc_ctx = g_vpr_ctx.noc();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // Get all the router clusters
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
@@ -280,4 +284,71 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
 
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts);
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    for (auto router_blk_id : router_blk_ids) {
+        g_vpr_ctx.mutable_placement().block_locs[router_blk_id].is_fixed = true;
+
+        vtr::vector<ClusterBlockId, bool> block_visited(cluster_ctx.clb_nlist.blocks().size(), false);
+
+        std::queue<ClusterBlockId> q;
+        q.push(router_blk_id);
+        block_visited[router_blk_id] = true;
+
+        const auto& noc_loc = g_vpr_ctx.placement().block_locs[router_blk_id].loc;
+
+        const int height = device_ctx.grid.height();
+        const int width = device_ctx.grid.width();
+
+        RegionRectCoord rect_coord{std::max(0, noc_loc.x - 20),
+                                   std::max(0, noc_loc.y - 20),
+                                   std::min(width-1, noc_loc.x + 20),
+                                   std::min(height-1, noc_loc.y + 20), 0};
+        Region region;
+        region.set_region_rect(rect_coord);
+
+        while (!q.empty()) {
+            ClusterBlockId current_block_id = q.front();
+            q.pop();
+
+            auto block_type = cluster_ctx.clb_nlist.block_type(current_block_id);
+            if (std::strcmp(block_type->name, "io") != 0) {
+                auto& constraint = g_vpr_ctx.mutable_floorplanning().cluster_constraints[current_block_id];
+                constraint.add_to_part_region(region);
+            }
+
+            for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(current_block_id)) {
+                ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
+
+                if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+                    continue;
+                }
+
+                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= 32) {
+                    continue;
+                }
+
+                if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
+                    //ignore nets that are globally routed
+
+                    for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+                        auto sink_block_id = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
+                        if (!block_visited[sink_block_id]) {
+                            block_visited[sink_block_id] = true;
+                            q.push(sink_block_id);
+                        }
+                    }
+                } else { //else the pin is sink --> only care about its driver
+                    ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
+                    auto source_blk_id = cluster_ctx.clb_nlist.pin_block(source_pin);
+                    if (!block_visited[source_blk_id]) {
+                        block_visited[source_blk_id] = true;
+                        q.push(source_blk_id);
+                    }
+                }
+            }
+        }
+
+    }
 }

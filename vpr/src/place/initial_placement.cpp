@@ -1123,6 +1123,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     if (noc_opts.noc) {
         // NoC routers are placed before other blocks
         initial_noc_placement(noc_opts, placer_opts.seed);
+        propagate_place_constraints();
     }
 
     //Assign scores to blocks and placement macros according to how difficult they are to place
