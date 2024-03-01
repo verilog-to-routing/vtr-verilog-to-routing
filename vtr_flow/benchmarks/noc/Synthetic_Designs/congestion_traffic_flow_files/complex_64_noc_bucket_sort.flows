@@ -52,81 +52,77 @@
 
 
 
+    <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
 
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
 
+    <single_flow src=".*noc_router_adapter_block_19.*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_19.*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_19.*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_19.*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_19.*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_19.*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_19.*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_19.*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
 
+    <single_flow src=".*noc_router_adapter_block_27.*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_27.*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_27.*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_27.*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_27.*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_27.*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_27.*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_27.*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_3[^\d]*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_3[^\d]*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_3[^\d]*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_3[^\d]*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_3[^\d]*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_3[^\d]*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_3[^\d]*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_3[^\d]*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_35.*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_35.*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_35.*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_35.*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_35.*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_35.*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_35.*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_35.*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_11*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_11*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_11*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_11*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_11*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_11*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_11*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_11*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_43.*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_43.*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_43.*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_43.*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_43.*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_43.*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_43.*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_43.*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_19*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_19*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_19*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_19*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_19*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_19*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_19*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_19*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_51.*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_51.*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_51.*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_51.*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_51.*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_51.*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_51.*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_51.*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_27*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_27*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_27*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_27*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_27*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_27*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_27*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_27*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
-
-    <single_flow src=".*noc_router_adapter_block_35*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_35*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_35*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_35*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_35*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_35*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_35*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_35*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
-
-    <single_flow src=".*noc_router_adapter_block_43*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_43*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_43*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_43*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_43*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_43*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_43*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_43*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
-
-    <single_flow src=".*noc_router_adapter_block_51*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_51*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_51*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_51*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_51*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_51*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_51*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_51*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
-
-    <single_flow src=".*noc_router_adapter_block_59*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_59*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_59*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_59*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_59*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_59*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_59*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_59*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_59.*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_59.*" dst=".*noc_router_adapter_block_12.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_59.*" dst=".*noc_router_adapter_block_20.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_59.*" dst=".*noc_router_adapter_block_28.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_59.*" dst=".*noc_router_adapter_block_36.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_59.*" dst=".*noc_router_adapter_block_44.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_59.*" dst=".*noc_router_adapter_block_52.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_59.*" dst=".*noc_router_adapter_block_60.*" bandwidth="1.25e5" />
 
 
 
@@ -137,77 +133,77 @@
 
 
 
-    <single_flow src=".*noc_router_adapter_block_4[^\d]*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_4[^\d]*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_4[^\d]*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_4[^\d]*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_4[^\d]*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_4[^\d]*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_4[^\d]*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_4[^\d]*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_4[^\d].*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_4[^\d].*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_4[^\d].*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_4[^\d].*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_4[^\d].*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_4[^\d].*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_4[^\d].*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_4[^\d].*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_12*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_12*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_12*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_12*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_12*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_12*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_12*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_12*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_20*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_20*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_20*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_20*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_20*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_20*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_20*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_20*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_20.*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_20.*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_20.*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_20.*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_20.*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_20.*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_20.*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_20.*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_28*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_28*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_28*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_28*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_28*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_28*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_28*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_28*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_28.*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_28.*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_28.*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_28.*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_28.*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_28.*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_28.*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_28.*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_36*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_36*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_36*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_36*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_36*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_36*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_36*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_36*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_36.*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_36.*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_36.*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_36.*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_36.*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_36.*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_36.*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_36.*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_44*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_44*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_44*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_44*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_44*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_44*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_44*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_44*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_44.*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_44.*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_44.*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_44.*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_44.*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_44.*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_44.*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_44.*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_52*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_52*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_52*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_52*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_52*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_52*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_52*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_52*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_52.*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_52.*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_52.*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_52.*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_52.*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_52.*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_52.*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_52.*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
 
-    <single_flow src=".*noc_router_adapter_block_60*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_60*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_60*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_60*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_60*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_60*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_60*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
-    <single_flow src=".*noc_router_adapter_block_60*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_60.*" dst=".*noc_router_adapter_block_5[^\d].*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_60.*" dst=".*noc_router_adapter_block_13.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_60.*" dst=".*noc_router_adapter_block_21.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_60.*" dst=".*noc_router_adapter_block_29.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_60.*" dst=".*noc_router_adapter_block_37.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_60.*" dst=".*noc_router_adapter_block_45.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_60.*" dst=".*noc_router_adapter_block_53.*" bandwidth="1.25e5" />
+    <single_flow src=".*noc_router_adapter_block_60.*" dst=".*noc_router_adapter_block_61.*" bandwidth="1.25e5" />
 
 
 </traffic_flows>
