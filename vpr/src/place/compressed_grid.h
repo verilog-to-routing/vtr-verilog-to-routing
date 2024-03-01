@@ -67,14 +67,12 @@ struct t_compressed_block_grid {
      * the nearest compressed location to point by rounding it down
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx(t_physical_tile_loc grid_loc) const {
-        const int layer_num = grid_loc.layer_num;
-
-        auto find_closest_compressed_point = [](int grid_loc, const std::vector<int>& compressed_grid_dim) -> int {
-            auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), grid_loc);
+        auto find_closest_compressed_point = [](int loc, const std::vector<int>& compressed_grid_dim) -> int {
+            auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), loc);
             int cx;
             if (itr < compressed_grid_dim.end() - 1) {
-                int dist_prev = abs(grid_loc - *itr);
-                int dist_next = abs(grid_loc - *(itr+1));
+                int dist_prev = abs(loc - *itr);
+                int dist_next = abs(loc - *(itr+1));
                 if (dist_prev < dist_next) {
                     cx = std::distance(compressed_grid_dim.begin(), itr);
                 } else {
@@ -89,8 +87,9 @@ struct t_compressed_block_grid {
             return cx;
         };
 
-        int cx = find_closest_compressed_point(grid_loc.x, compressed_to_grid_x[layer_num]);
-        int cy = find_closest_compressed_point(grid_loc.y, compressed_to_grid_y[layer_num]);
+        const int layer_num = grid_loc.layer_num;
+        const int cx = find_closest_compressed_point(grid_loc.x, compressed_to_grid_x[layer_num]);
+        const int cy = find_closest_compressed_point(grid_loc.y, compressed_to_grid_y[layer_num]);
 
         return {cx, cy, layer_num};
     }
