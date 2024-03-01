@@ -925,8 +925,8 @@ static void place_all_blocks(const t_placer_opts& /* placer_opts */, vtr::vector
         clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr);
         unplaced_blk_type_in_curr_itr.clear();
 
-        //Check whether the constraint file is NULL, if not, read in the block locations from the constraints file here
-        if (strlen(constraints_file) != 0) {
+        // read the constraint file if the user has provided one and this is not the first attempt
+        if (strlen(constraints_file) != 0 && iter_no != 0) {
             read_constraints(constraints_file);
         }
 
@@ -1111,6 +1111,11 @@ void initial_placement(const t_placer_opts& placer_opts,
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
      * as fixed so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
     mark_fixed_blocks();
+
+    
+    if (strlen(constraints_file) != 0) {
+        read_constraints(constraints_file);
+    }
 
     if (noc_opts.noc) {
         // NoC routers are placed before other blocks
