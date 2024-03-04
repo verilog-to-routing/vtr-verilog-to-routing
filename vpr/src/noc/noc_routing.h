@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "noc_data_types.h"
-#include "noc_traffic_flows.h"
 #include "noc_storage.h"
 
 class NocRouting {

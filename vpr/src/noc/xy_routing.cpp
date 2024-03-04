@@ -2,8 +2,6 @@
 #include <vector>
 
 #include "xy_routing.h"
-#include "globals.h"
-#include "vpr_error.h"
 
 XYRouting::~XYRouting() = default;
 

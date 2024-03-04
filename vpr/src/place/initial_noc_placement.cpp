@@ -3,6 +3,7 @@
 #include "initial_placement.h"
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
+#include "place_constraints.h"
 #include "vtr_math.h"
 
 /**
@@ -280,7 +281,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     bool has_cycle = noc_routing_has_cycle();
     if (has_cycle) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                        "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock"
+                        "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
                         "when packets wait on each other in a cycle.\n");
     }
 }

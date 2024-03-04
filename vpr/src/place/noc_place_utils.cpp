@@ -1,6 +1,19 @@
 
 #include "noc_place_utils.h"
 
+#include "globals.h"
+#include "vtr_log.h"
+#include "vtr_assert.h"
+#include "vtr_random.h"
+
+#include "channel_dependency_graph.h"
+#include "noc_routing_algorithm_creator.h"
+#include "noc_routing.h"
+#include "place_constraints.h"
+#include "move_transactions.h"
+
+#include <fstream>
+
 /********************** Variables local to noc_place_utils.c pp***************************/
 /* Proposed and actual cost of a noc traffic flow used for each move assessment */
 static vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, proposed_traffic_flow_costs;
@@ -41,7 +54,7 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links,
                                                                   std::vector<NocLinkId>& curr_links);
 
-void initial_noc_routing(void) {
+void initial_noc_routing() {
     // need to update the link usages within after routing all the traffic flows
     // also need to route all the traffic flows and store them
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
@@ -62,8 +75,6 @@ void initial_noc_routing(void) {
         // update the links used in the found traffic flow route, links' bandwidth should be incremented since the traffic flow is routed
         update_traffic_flow_link_usage(curr_traffic_flow_route, noc_ctx.noc_model, 1, curr_traffic_flow.traffic_flow_bandwidth);
     }
-
-    return;
 }
 
 void reinitialize_noc_routing(t_placer_costs& costs) {
@@ -173,8 +184,6 @@ void commit_noc_costs() {
         // invalidate the proposed link congestion flow costs
         proposed_link_congestion_costs[link] = INVALID_NOC_COST_TERM;
     }
-
-    return;
 }
 
 std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
@@ -214,8 +223,6 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
         // check that the bandwidth never goes to negative
         VTR_ASSERT(curr_link.get_bandwidth_usage() >= 0.0);
     }
-
-    return;
 }
 
 void re_route_associated_traffic_flows(ClusterBlockId moved_block_router_id,
@@ -309,8 +316,6 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
     // now get the re-routed traffic flow route and increment all the link usages with this reverted route
     std::vector<NocLinkId>& re_routed_traffic_flow_route = route_traffic_flow(traffic_flow_id, noc_model, noc_traffic_flows_storage, noc_flows_router);
     update_traffic_flow_link_usage(re_routed_traffic_flow_route, noc_model, 1, curr_traffic_flow.traffic_flow_bandwidth);
-
-    return;
 }
 
 void recompute_noc_costs(NocCostTerms& new_cost) {
@@ -330,8 +335,6 @@ void recompute_noc_costs(NocCostTerms& new_cost) {
     for (auto& link_id : noc_ctx.noc_model.get_noc_links()) {
         new_cost.congestion += link_congestion_costs[link_id];
     }
-
-    return;
 }
 
 void update_noc_normalization_factors(t_placer_costs& costs) {
@@ -354,11 +357,9 @@ void update_noc_normalization_factors(t_placer_costs& costs) {
     } else {
         costs.noc_cost_norm_factors.congestion = MAX_INV_NOC_CONGESTION_COST;
     }
-
-    return;
 }
 
-double comp_noc_aggregate_bandwidth_cost(void) {
+double comp_noc_aggregate_bandwidth_cost() {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.noc();
     // datastructure that stores all the traffic flow routes
@@ -619,7 +620,7 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
     return cost;
 }
 
-int get_number_of_traffic_flows_with_latency_cons_met(void) {
+int get_number_of_traffic_flows_with_latency_cons_met() {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     // datastructure that stores all the traffic flow routes
@@ -653,7 +654,7 @@ int get_number_of_traffic_flows_with_latency_cons_met(void) {
     return count_of_achieved_latency_cons;
 }
 
-int get_number_of_congested_noc_links(void) {
+int get_number_of_congested_noc_links() {
     // get NoC links
     auto& noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();
 
@@ -671,7 +672,7 @@ int get_number_of_congested_noc_links(void) {
     return num_congested_links;
 }
 
-double get_total_congestion_bandwidth_ratio(void) {
+double get_total_congestion_bandwidth_ratio() {
     // get NoC links
     auto& noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();
 
@@ -702,7 +703,7 @@ std::vector<NocLink> get_top_n_congested_links(int n) {
     return std::vector<NocLink>{noc_links.begin(), noc_links.begin() + pick_n};
 }
 
-void allocate_and_load_noc_placement_structs(void) {
+void allocate_and_load_noc_placement_structs() {
     auto& noc_ctx = g_vpr_ctx.noc();
 
     int number_of_traffic_flows = noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows();
@@ -714,11 +715,9 @@ void allocate_and_load_noc_placement_structs(void) {
 
     link_congestion_costs.resize(number_of_noc_links, INVALID_NOC_COST_TERM);
     proposed_link_congestion_costs.resize(number_of_noc_links, INVALID_NOC_COST_TERM);
-
-    return;
 }
 
-void free_noc_placement_structs(void) {
+void free_noc_placement_structs() {
     vtr::release_memory(traffic_flow_costs);
     vtr::release_memory(proposed_traffic_flow_costs);
     vtr::release_memory(affected_traffic_flows);
@@ -726,8 +725,6 @@ void free_noc_placement_structs(void) {
     vtr::release_memory(link_congestion_costs);
     vtr::release_memory(proposed_link_congestion_costs);
     vtr::release_memory(affected_noc_links);
-
-    return;
 }
 
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
@@ -866,8 +863,6 @@ void write_noc_placement_file(const std::string& file_name) {
 
     // finished writing placement information so close the file
     noc_placement_file.close();
-
-    return;
 }
 
 bool noc_routing_has_cycle() {

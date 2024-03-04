@@ -21,12 +21,6 @@
 #include <memory>
 
 #include "noc_routing.h"
-#include "xy_routing.h"
-#include "bfs_routing.h"
-#include "west_first_routing.h"
-#include "north_last_routing.h"
-#include "negative_first_routing.h"
-#include "odd_even_routing.h"
 
 class NocRoutingAlgorithmCreator {
   public:

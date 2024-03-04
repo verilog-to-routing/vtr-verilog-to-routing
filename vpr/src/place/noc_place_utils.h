@@ -1,18 +1,8 @@
 #ifndef NOC_PLACE_UTILS_H
 #define NOC_PLACE_UTILS_H
 
-#include "globals.h"
-#include "noc_routing.h"
-#include "place_util.h"
-#include "vtr_assert.h"
-#include "move_transactions.h"
-#include "vtr_log.h"
-#include "noc_routing_algorithm_creator.h"
-#include "channel_dependency_graph.h"
 #include "move_utils.h"
-#include "vtr_random.h"
-#include "place_constraints.h"
-#include "fstream"
+#include "place_util.h"
 
 // represent the maximum values of the NoC cost normalization factors //
 // we need to handle the case where the aggregate bandwidth is 0, so we set this to some arbitrary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
@@ -60,7 +50,7 @@ struct TrafficFlowPlaceCost {
  * routed. This is why this function should only be used once.
  * 
  */
-void initial_noc_routing(void);
+void initial_noc_routing();
 
 /**
  * @brief Zeros out all link bandwidth usage an re-routes traffic flows.
@@ -302,7 +292,7 @@ void update_noc_normalization_factors(t_placer_costs& costs);
  * 
  * @return double The aggregate bandwidth cost of the NoC.
  */
-double comp_noc_aggregate_bandwidth_cost(void);
+double comp_noc_aggregate_bandwidth_cost();
 
 /**
  * @brief Calculates the latency cost of each traffic flow in the NoC
@@ -435,7 +425,7 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
  * 
  * @return The total number of traffic flows with latency constraints being met
  */
-int get_number_of_traffic_flows_with_latency_cons_met(void);
+int get_number_of_traffic_flows_with_latency_cons_met();
 
 /**
  * @brief Goes through all NoC links and counts the congested ones.
@@ -444,7 +434,7 @@ int get_number_of_traffic_flows_with_latency_cons_met(void);
  *
  * @return The total number of congested NoC links.
  */
-int get_number_of_congested_noc_links(void);
+int get_number_of_congested_noc_links();
 
 /**
  * @brief Goes through all NoC links and determines whether they
@@ -453,7 +443,7 @@ int get_number_of_congested_noc_links(void);
  *
  * @return The total congestion ratio
  */
-double get_total_congestion_bandwidth_ratio(void);
+double get_total_congestion_bandwidth_ratio();
 
 /**
  * @brief Goes through all NoC links and determines whether they
@@ -482,7 +472,7 @@ std::vector<double> get_top_n_congestion_ratios(int n);
  * This should be called before starting the simulated annealing placement.
  * 
  */
-void allocate_and_load_noc_placement_structs(void);
+void allocate_and_load_noc_placement_structs();
 
 /**
  * @brief We delete the static datastructures which were created in
@@ -490,7 +480,7 @@ void allocate_and_load_noc_placement_structs(void);
  * 
  * This should be called after placement is finished.
  */
-void free_noc_placement_structs(void);
+void free_noc_placement_structs();
 
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
 

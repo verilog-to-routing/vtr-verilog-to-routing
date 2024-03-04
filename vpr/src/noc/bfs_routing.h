@@ -14,13 +14,13 @@
  * traffic flow. Once the destination router is found a path from the source to
  * the destination router is generated. The main advantage of this algorithm is
  * that the found path from the source to the destination router uses the 
- * minimum number of links required within the NoC.
- * 
+ * minimum number of links required within the NoC. This algorithm does not
+ * guarantee deadlock freedom. In other words, the algorithm might generate
+ * routes that form cycles in channel dependency graph.
  */
 
 #include <vector>
 #include <unordered_map>
-#include <queue>
 
 #include "noc_routing.h"
 
@@ -81,7 +81,10 @@ class BFSRouting : public NocRouting {
      * router in the NoC (parent link is the link used to visit the router during
      * the BFS routing algorithm).
      */
-    void generate_route(NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model, const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link);
+    void generate_route(NocRouterId sink_router_id,
+                        std::vector<NocLinkId>& flow_route,
+                        const NocStorage& noc_model,
+                        const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link);
 };
 
 #endif

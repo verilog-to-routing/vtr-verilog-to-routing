@@ -78,8 +78,11 @@
  * Mesh. This algorithm will work for other types of topologies but the
  * directional nature of the algorithm makes it ideal for mesh topologies. If
  * the algorithm fails to find a router then an error is thrown; this should
- * only happen for non-mesh topologies.
- * 
+ * only happen for non-mesh topologies. If this algorithms is used for non-mesh
+ * topologies, it might be able to generate routes for all traffic flows, but
+ * the generated routes are not guaranteed to be deadlock free in a non-mesh
+ * topology. Im mesh and torus topologies, xy-routing algorithm is guaranteed
+ * to generate deadlock free routes.
  */
 
 #include "turn_model_routing.h"
@@ -89,32 +92,6 @@ class XYRouting : public TurnModelRouting {
   public:
     ~XYRouting() override;
 
-    /**
-     * @brief Finds a route that goes from the starting router in a 
-     * traffic flow to the destination router. Uses the XY-routing
-     * algorithm to determine the route. A route consists of a series
-     * of links that should be traversed when travelling between two routers
-     * within the NoC.
-     * 
-     * @param src_router_id The source router of a traffic flow. Identifies 
-     * the starting point of the route within the NoC. This represents a 
-     * physical router on the FPGA.
-     * @param sink_router_id The destination router of a traffic flow.
-     * Identifies the ending point of the route within the NoC.This represents a 
-     * physical router on the FPGA.
-     * @param traffic_flow_id The unique ID for the traffic flow being routed.
-     * @param flow_route Stores the path returned by this function
-     * as a series of NoC links found by 
-     * a NoC routing algorithm between two routers in a traffic flow.
-     * The function will clear any
-     * previously stored path and re-insert the new found path between the
-     * two routers. 
-     * @param noc_model A model of the NoC. This is used to traverse the
-     * NoC and find a route between the two routers.
-     */
-//    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, NocTrafficFlowId traffic_flow_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
-
-    // internally used helper functions
   private:
     const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
                                                                          NocRouterId curr_router_id,
@@ -127,47 +104,7 @@ class XYRouting : public TurnModelRouting {
                                                       NocRouterId curr_router_id,
                                                       NocTrafficFlowId traffic_flow_id,
                                                       const NocStorage& noc_model) override;
-    /**
-     * @brief Based on the position of the current router the algorithm is
-     * visiting, this function determines the next direction to travel. 
-     * 
-     * @param sink_router_x_position The horizontal grid position of the
-     * destination router on the FPGA
-     * @param sink_router_y_position  The vertical grid position of the
-     * destination router on the FPGA
-     * @param curr_router_x_position The horizontal grid position of the
-     * router that is currently being visited on the FPGA
-     * @param curr_router_y_position The vertical grid position of the router
-     * that is currently being visited on the FPGA
-     * @return RouteDirection The direction to travel next
-     */
-//    RouteDirection get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position);
 
-    /**
-     * @brief Given the direction to travel next, this function determines
-     * the outgoing link that should be used to travel in the intended direction.
-     * Each router may have any number of outgoing links and each link is not
-     * guaranteed to point in the intended direction, So this function makes
-     * sure that the link chosen points in the intended direction.
-     * 
-     * @param curr_router_id The physical router on the FPGA that the routing
-     * algorithm is currently visiting. 
-     * @param curr_router_x_position The horizontal grid position of the
-     * router that is currently being visited on the FPGA
-     * @param curr_router_y_position he vertical grid position of the router
-     * that is currently being visited on the FPGA
-     * @param next_step_direction The direction to travel next
-     * @param flow_route Stores the path as a series of NoC links found by 
-     * a NoC routing algorithm between two routers in a traffic flow. The 
-     * NoC link found to travel next will be added to this path.
-     * @param visited_routers Keeps track of which routers have been reached
-     * already while traversing the NoC.
-     * @param noc_model A model of the NoC. This is used to traverse the
-     * NoC and find a route between the two routers.
-     * @return true A suitable link was found that we can traverse next
-     * @return false No suitable link was found that could be traversed
-     */
-//    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
 
   private:
     const std::vector<TurnModelRouting::Direction> x_axis_directions {TurnModelRouting::Direction::LEFT, TurnModelRouting::Direction::RIGHT};

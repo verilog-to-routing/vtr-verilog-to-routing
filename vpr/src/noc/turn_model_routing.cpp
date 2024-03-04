@@ -1,3 +1,4 @@
+
 #include "turn_model_routing.h"
 
 TurnModelRouting::~TurnModelRouting() = default;
@@ -87,9 +88,6 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
                                                 TurnModelRouting::Direction next_step_direction,
                                                 std::unordered_set<NocRouterId>& visited_routers,
                                                 const NocStorage& noc_model) {
-    // represents the router that will be visited when taking an outgoing link
-    NocRouterId next_router_id(-1);
-
     // next link to be added to the route, initialized with INVALID
     auto next_link = NocLinkId();
 
@@ -108,7 +106,7 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
         const NocLink& curr_outgoing_link = noc_model.get_single_noc_link(connecting_link);
 
         // get the next router that we will visit if we travel across the current link
-        next_router_id = curr_outgoing_link.get_sink_router();
+        auto next_router_id = curr_outgoing_link.get_sink_router();
         const NocRouter& next_router = noc_model.get_single_noc_router(next_router_id);
 
         // get the coordinates of the next router
@@ -169,18 +167,17 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
     return next_link;
 }
 
-uint32_t TurnModelRouting::murmur_32_scramble(uint32_t k) {
-    k *= 0xcc9e2d51;
-    k = (k << 15) | (k >> 17);
-    k *= 0x1b873593;
-    return k;
-}
-
 uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t seed) {
     uint32_t h = seed;
 
-    for (uint32_t k : key) {
+    auto murmur_32_scramble = [](uint32_t k) -> uint32_t {
+        k *= 0xcc9e2d51;
+        k = (k << 15) | (k >> 17);
+        k *= 0x1b873593;
+        return k;
+    };
 
+    for (uint32_t k : key) {
         h ^= murmur_32_scramble(k);
         h = (h << 13) | (h >> 19);
         h = h * 5 + 0xe6546b64;
@@ -224,7 +221,8 @@ TurnModelRouting::Direction TurnModelRouting::select_horizontal_direction(const 
     return TurnModelRouting::Direction::INVALID;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const std::vector<TurnModelRouting::Direction>& directions, TurnModelRouting::Direction other_than) {
+TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const std::vector<TurnModelRouting::Direction>& directions,
+                                                                          TurnModelRouting::Direction other_than) {
     // Iterate over all given directions and return the first one which is not "other_than"
     for (const auto& direction : directions) {
         if (direction != other_than) {
