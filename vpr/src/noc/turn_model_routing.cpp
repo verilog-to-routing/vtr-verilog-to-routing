@@ -40,9 +40,6 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
     // the last router added to the path, initialized with the source id
     NocRouterId curr_router_id = src_router_id;
 
-    // get the physical location of the destination router
-    const auto dst_loc = dst_router.get_router_physical_location();
-
     /**
      * Keeps track of which routers have been reached already
      * while traversing the NoC. This variable will help determine
