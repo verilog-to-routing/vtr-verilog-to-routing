@@ -3,8 +3,6 @@
 
 #include "xy_routing.h"
 
-namespace {
-
 /**
  * @brief Compares two vectors of NocLinks. These vectors represent
  * two routes between a start and destination routers. This function
@@ -274,7 +272,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
     // creating the XY routing object
     XYRouting routing_algorithm;
 
-    SECTION("Test case where the xy routing algorithm fails to find a horziontal link to traverse.") {
+    SECTION("Test case where the xy routing algorithm fails to find a horizontal link to traverse.") {
         /*
          * The route we will test will be starting at router 3 and end at
          * router 0. We will delete the link connecting router 2 to router 1.
@@ -338,7 +336,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * just pinpong between routers 0 and 3.
      *
      * The purpose of this test case is to make sure that this situation is
-     * appropristely handled through an error.
+     * appropriately handled through an error.
      *
      * This is a map of what the NoC looks like, where the numbers indicate the NoC router id.
      *
@@ -380,5 +378,3 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
     REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
                         "No route could be found from starting router with ID:'3' and the destination router with ID:'1' using the XY-Routing algorithm.");
 }
-
-} // namespace

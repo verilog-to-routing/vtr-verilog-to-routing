@@ -73,7 +73,7 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
         if (next_link) {
             flow_route.push_back(next_link);
         } else {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d'"
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d' "
                             "and the destination router with ID:'%d' using the XY-Routing algorithm.",
                             src_router.get_router_user_id(),
                             dst_router.get_router_user_id());
