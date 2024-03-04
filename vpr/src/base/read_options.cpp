@@ -2823,10 +2823,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("5.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_aggregate_bandwidth_weighting")
+    noc_grp.add_argument<double>(args.noc_agg_bandwidth_weighting, "--noc_aggregate_bandwidth_weighting")
         .help(
-            "Controls the importance of meeting all the NoC traffic flow latency constraints."
-            "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement, a value of 1 would mean the latency constraints are weighted equally to the sum of other placement cost components and a value greater than 1 would mean the placement is increasingly dominated by meeting the latency constraints of the traffic flows.")
+            "Controls the importance of minimizing the NoC aggregate bandwidth.\n"
+            "This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.\n"
+            "Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
         .default_value("0.38")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
