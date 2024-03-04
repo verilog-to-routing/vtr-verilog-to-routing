@@ -251,6 +251,23 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
 
     auto& route_ctx = g_vpr_ctx.routing();
 
+#ifdef VPR_USE_TBB
+    tbb::combinable<size_t> thread_used_wirelength(0);
+
+    tbb::parallel_for_each(net_list.nets().begin(), net_list.nets().end(), [&](ParentNetId net_id) {
+        if (!net_list.net_is_ignored(net_id)
+            && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
+            && route_ctx.route_trees[net_id]) {
+            int bends, wirelength, segments;
+            bool is_absorbed;
+            get_num_bends_and_length(net_id, &bends, &wirelength, &segments, &is_absorbed);
+
+            thread_used_wirelength.local() += wirelength;
+        }
+    });
+
+    used_wirelength = thread_used_wirelength.combine(std::plus<size_t>());
+#else
     for (auto net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id)
             && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
@@ -262,6 +279,7 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
             used_wirelength += wirelength;
         }
     }
+#endif
 
     return WirelengthInfo(available_wirelength, used_wirelength);
 }

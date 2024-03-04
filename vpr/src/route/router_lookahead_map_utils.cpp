@@ -26,7 +26,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
  * @param itile
  * @return Return the maximum ptc number of the SOURCE/OPINs of a tile type
  */
-static int get_tile_src_opin_max_ptc_from_rr_graph(int itile);
+static int get_tile_src_opin_max_ptc(int itile);
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev);
 
@@ -338,7 +338,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
 
     // Get the maximum OPIN ptc for each tile type to reserve src_opin_delays
     for (int itile = 0; itile < (int)device_ctx.physical_tile_types.size(); itile++) {
-        tile_max_ptc[itile] = get_tile_src_opin_max_ptc_from_rr_graph(itile);
+        tile_max_ptc[itile] = get_tile_src_opin_max_ptc(itile);
     }
 
     // Resize src_opin_delays to accomodate enough ptc and layer
@@ -1114,55 +1114,19 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
     }
 }
 
-static int get_tile_src_opin_max_ptc_from_rr_graph(int itile) {
+static int get_tile_src_opin_max_ptc(int itile) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& physical_tile = device_ctx.physical_tile_types[itile];
-    const auto& rr_graph = device_ctx.rr_graph;
-    const int num_layers = device_ctx.grid.get_num_layers();
-    int max_ptc = OPEN;
+    int max_ptc = 0;
 
-    // Find a layer that has instances of the tile type
-    int tile_layer_num = OPEN;
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        if (device_ctx.grid.num_instances(&physical_tile, layer_num) > 0) {
-            tile_layer_num = layer_num;
-            break;
+    // Output pin
+    for (const auto& class_inf: physical_tile.class_inf) {
+        if (class_inf.type != e_pin_type::DRIVER) {
+            continue;
         }
-    }
-
-    if (tile_layer_num == OPEN) {
-        VTR_LOG_WARN("Found no sample locations for %s\n",
-                     physical_tile.name);
-        max_ptc = OPEN;
-    } else {
-        for (e_rr_type rr_type : {SOURCE, OPIN}) {
-            t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
-            sample_loc = pick_sample_tile(tile_layer_num, &physical_tile, sample_loc);
-
-            if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
-                //No untried instances of the current tile type left
-                VTR_LOG_WARN("Found no sample locations for %s in %s\n",
-                             rr_node_typename[rr_type],
-                             physical_tile.name);
-                return OPEN;
-            }
-
-            const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num,
-                                                                                                                          sample_loc.x,
-                                                                                                                          sample_loc.y,
-                                                                                                                          rr_type);
-            for (RRNodeId node_id : rr_nodes_at_loc) {
-                int ptc = rr_graph.node_ptc_num(node_id);
-                // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                if (!is_inter_cluster_node(&physical_tile,
-                                           rr_type,
-                                           ptc)) {
-                    continue;
-                }
-
-                if (ptc >= max_ptc) {
-                    max_ptc = ptc;
-                }
+        for (const auto& pin_ptc : class_inf.pinlist) {
+            if (pin_ptc > max_ptc) {
+                max_ptc = pin_ptc;
             }
         }
     }
