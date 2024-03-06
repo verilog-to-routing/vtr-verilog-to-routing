@@ -61,7 +61,7 @@ add_library(libvpr STATIC
 
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
-#VPR_ANALYTIC_PLACE is inisitalized in the root CMakeLists
+#VPR_ANALYTIC_PLACE is initialized in the root CMakeLists
 #Check Eigen dependency
 if(${VPR_ANALYTIC_PLACE})
 	message(STATUS "VPR Analytic Placement: Requested")
@@ -79,7 +79,7 @@ endif()
 
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(libvpr
                         libvtrutil
                         libarchfpga
@@ -90,6 +90,8 @@ target_link_libraries(libvpr
                         libpugixml
                         librrgraph
 )
+
+target_link_libraries(libvpr ortools::ortools)
 
 #link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")
@@ -138,7 +140,7 @@ add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr libvpr)
 
 
-#Supress IPO link warnings if IPO is enabled
+#Suppress IPO link warnings if IPO is enabled
 get_target_property(VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
 if (VPR_USES_IPO)
     set_property(TARGET vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
@@ -249,7 +251,7 @@ endif()
 # Signal handler configuration
 #
 if (VPR_USE_SIGNAL_HANDLER)
-    #Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
+    #Check whether VPR can use sigaction to handle signals (only supported by POSIX)
     CHECK_CXX_SYMBOL_EXISTS(sigaction csignal HAVE_SIGACTION)
     if(HAVE_SIGACTION)
         target_compile_definitions(libvpr PRIVATE VPR_USE_SIGACTION)
@@ -269,7 +271,7 @@ target_link_libraries(test_vpr
                         Catch2::Catch2WithMain
                         libvpr)
 
-#Supress IPO link warnings if IPO is enabled
+#Suppress IPO link warnings if IPO is enabled
 get_target_property(TEST_VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
 if (TEST_VPR_USES_IPO)
     set_property(TARGET test_vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})

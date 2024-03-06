@@ -1,3 +1,6 @@
 [submodule "libs/EXTERNAL/libcatch2"]
 	path = libs/EXTERNAL/libcatch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "libs/EXTERNAL/or-tools"]
+	path = libs/EXTERNAL/or-tools
+	url = https://github.com/google/or-tools.git
