@@ -35,6 +35,7 @@
  */
 
 #include "noc_routing.h"
+#include <array>
 
 class TurnModelRouting : public NocRouting {
   public:
@@ -72,6 +73,8 @@ class TurnModelRouting : public NocRouting {
                     NocTrafficFlowId traffic_flow_id,
                     std::vector<NocLinkId>& flow_route,
                     const NocStorage& noc_model) override;
+
+    std::vector<std::pair<NocLinkId, NocLinkId>> get_all_illegal_turns(const NocStorage& noc_model) const;
 
   protected:
     /**
@@ -212,6 +215,8 @@ class TurnModelRouting : public NocRouting {
                                                               NocTrafficFlowId traffic_flow_id,
                                                               const NocStorage& noc_model)
         = 0;
+
+    virtual bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const = 0;
 
   protected:
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector

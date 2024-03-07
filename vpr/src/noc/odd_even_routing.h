@@ -20,6 +20,8 @@ class OddEvenRouting : public TurnModelRouting{
                                                       NocTrafficFlowId traffic_flow_id,
                                                       const NocStorage& noc_model) override;
 
+    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;
+
     static inline bool is_odd(int number);
     static inline bool is_even(int number);
 };

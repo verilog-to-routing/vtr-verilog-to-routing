@@ -233,3 +233,33 @@ TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const 
     // if there was not any direction different from "other_than", return INVALID
     return TurnModelRouting::Direction::INVALID;
 }
+
+std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_turns(const NocStorage& noc_model) const {
+    std::vector<std::pair<NocLinkId, NocLinkId>> illegal_turns;
+
+    for (const auto& noc_router : noc_model.get_noc_routers()) {
+        const int noc_router_user_id = noc_router.get_router_user_id();
+        const NocRouterId noc_router_id = noc_model.convert_router_id(noc_router_user_id);
+        VTR_ASSERT(noc_router_id != NocRouterId::INVALID());
+        const auto& first_noc_link_ids = noc_model.get_noc_router_outgoing_links(noc_router_id);
+
+        for (auto first_noc_link_id : first_noc_link_ids) {
+            const NocLink& first_noc_link = noc_model.get_single_noc_link(first_noc_link_id);
+            const NocRouterId second_noc_router_id = first_noc_link.get_sink_router();
+            const NocRouter& second_noc_router = noc_model.get_single_noc_router(second_noc_router_id);
+            const auto& second_noc_link_ids = noc_model.get_noc_router_outgoing_links(second_noc_router_id);
+
+            for (auto second_noc_link_id : second_noc_link_ids) {
+                const NocLink& second_noc_link = noc_model.get_single_noc_link(second_noc_link_id);
+                const NocRouterId third_noc_router_id = second_noc_link.get_sink_router();
+                const NocRouter& third_noc_router = noc_model.get_single_noc_router(third_noc_router_id);
+                if (!is_turn_legal({noc_router, second_noc_router, third_noc_router})) {
+                    illegal_turns.emplace_back(first_noc_link_id, second_noc_link_id);
+                }
+            }
+        }
+    }
+
+    return illegal_turns;
+}
+
