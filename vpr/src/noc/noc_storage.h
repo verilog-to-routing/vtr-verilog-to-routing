@@ -63,7 +63,9 @@ class NocStorage {
      * in the NoC.
      * 
      */
-    vtr::vector<NocRouterId, std::vector<NocLinkId>> router_link_list;
+    vtr::vector<NocRouterId, std::vector<NocLinkId>> router_outgoing_links_list;
+
+    vtr::vector<NocRouterId, std::vector<NocLinkId>> router_incoming_links_list;
 
     /** Contains all the links in the NoC*/
     vtr::vector<NocLinkId, NocLink> link_storage;
@@ -167,7 +169,9 @@ class NocStorage {
      * @return A vector of links. The links are represented by a unique
      * identifier.
      */
-    const std::vector<NocLinkId>& get_noc_router_connections(NocRouterId id) const;
+    const std::vector<NocLinkId>& get_noc_router_outgoing_links(NocRouterId id) const;
+
+    const std::vector<NocLinkId>& get_noc_router_incoming_links(NocRouterId id) const;
 
     /**
      * @brief Get all the routers in the NoC. The routers themselves cannot
@@ -282,7 +286,7 @@ class NocStorage {
      * to the destination router. NocLinkId::INVALID() is such a link is not
      * found.
      */
-    NocLinkId  get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const;
+    NocLinkId get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const;
 
     /**
      * @brief Given a unique link identifier, get the corresponding link
@@ -372,7 +376,7 @@ class NocStorage {
 
     void set_device_grid_spec(int grid_width, int grid_height);
 
-    // general utiliy functions
+    // general utility functions
     /**
      * @brief The link is removed from the outgoing vector of links for
      * the source router. The link is not removed from the vector of all

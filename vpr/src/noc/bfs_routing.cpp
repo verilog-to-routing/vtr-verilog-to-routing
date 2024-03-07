@@ -58,7 +58,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
         routers_to_process.pop();
 
         // get the links leaving the router currently being processed(these represent possible paths to explore in the NoC)
-        const std::vector<NocLinkId>& outgoing_links = noc_model.get_noc_router_connections(processing_router);
+        const std::vector<NocLinkId>& outgoing_links = noc_model.get_noc_router_outgoing_links(processing_router);
 
         // go through the outgoing links of the current router and process the sink routers connected to these links
         for (auto link : outgoing_links) {

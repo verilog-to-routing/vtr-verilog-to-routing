@@ -179,7 +179,7 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
     const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
 
     // get the compressed location of the second NoC router
-    auto compressed_2_loc = get_compressed_loc_approx(compressed_noc_grid, t_pl_loc{router2_pos, 0}, num_layers)[router2_pos.layer_num];
+    auto compressed_2_loc = get_compressed_loc(compressed_noc_grid, t_pl_loc{router2_pos, 0}, num_layers)[router2_pos.layer_num];
 
     // going back to the first router is not allowed
     if (x1 == x3 && y1 == y3) {

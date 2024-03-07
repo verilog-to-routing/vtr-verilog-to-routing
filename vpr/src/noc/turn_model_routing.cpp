@@ -98,7 +98,7 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
     bool visited_next_router = false;
 
     // get all the outgoing links for the current router
-    const auto& router_connections = noc_model.get_noc_router_connections(curr_router_id);
+    const auto& router_connections = noc_model.get_noc_router_outgoing_links(curr_router_id);
 
     // go through each outgoing link and determine whether the link leads towards the intended route direction
     for (auto connecting_link : router_connections) {

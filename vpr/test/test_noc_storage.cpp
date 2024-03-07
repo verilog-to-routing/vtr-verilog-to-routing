@@ -266,7 +266,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
         source = (NocRouterId)id;
 
         // get the router connections from the
-        const std::vector<NocLinkId>& router_links = test_noc.get_noc_router_connections(source);
+        const std::vector<NocLinkId>& router_links = test_noc.get_noc_router_outgoing_links(source);
 
         // get the size of the current router connection list
         connection_size = golden_set[source].size();
@@ -351,7 +351,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         // variable to keep track of whether the link was deleted from the vector outgoing links of its source router
         bool link_removed_from_outgoing_vector = true;
 
-        auto& outgoing_links = test_noc.get_noc_router_connections(link_to_remove_src_router);
+        auto& outgoing_links = test_noc.get_noc_router_outgoing_links(link_to_remove_src_router);
         // go through all the outgoing links  of the source router in the link we removed and check that the link does not exist there as well.
         for (auto outgoing_link : outgoing_links) {
             // get the current outgoing link
