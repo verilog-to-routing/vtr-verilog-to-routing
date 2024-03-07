@@ -263,6 +263,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case PARALLEL:
                 VTR_LOG("PARALLEL\n");
                 break;
+            case PARALLEL_DECOMP:
+                VTR_LOG("PARALLEL_DECOMP\n");
+                break;
             case TIMING_DRIVEN:
                 VTR_LOG("TIMING_DRIVEN\n");
                 break;
@@ -372,6 +375,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                     break;
                 case e_router_lookahead::MAP:
                     VTR_LOG("MAP\n");
+                    break;
+                case e_router_lookahead::COMPRESSED_MAP:
+                    VTR_LOG("COMPRESSED_MAP\n");
                     break;
                 case e_router_lookahead::EXTENDED_MAP:
                     VTR_LOG("EXTENDED_MAP\n");
@@ -512,6 +518,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 case e_router_lookahead::MAP:
                     VTR_LOG("MAP\n");
                     break;
+                case e_router_lookahead::COMPRESSED_MAP:
+                    VTR_LOG("COMPRESSED_MAP\n");
+                    break;
                 case e_router_lookahead::EXTENDED_MAP:
                     VTR_LOG("EXTENDED_MAP\n");
                     break;
@@ -628,8 +637,8 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_reducer\n");
             VTR_LOG("PlacerOpts.delay_model_reducer: %s\n", e_reducer_strings[(size_t)PlacerOpts.delay_model_reducer].c_str());
 
-            std::string place_delay_model_strings[2] = {"DELTA", "DELTA_OVERRIDE"};
-            if ((size_t)PlacerOpts.delay_model_type > 1)
+            std::string place_delay_model_strings[3] = {"SIMPLE", "DELTA", "DELTA_OVERRIDE"};
+            if ((size_t)PlacerOpts.delay_model_type > 2)
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_type\n");
             VTR_LOG("PlacerOpts.delay_model_type: %s\n", place_delay_model_strings[(size_t)PlacerOpts.delay_model_type].c_str());
         }
@@ -788,6 +797,7 @@ static void ShowNocOpts(const t_noc_opts& NocOpts) {
     VTR_LOG("NocOpts.noc_placement_weighting: %f\n", NocOpts.noc_placement_weighting);
     VTR_LOG("NocOpts.noc_latency_constraints_weighting: %f\n", NocOpts.noc_latency_constraints_weighting);
     VTR_LOG("NocOpts.noc_latency_weighting: %f\n", NocOpts.noc_latency_weighting);
+    VTR_LOG("NocOpts.noc_congestion_weighting: %f\n", NocOpts.noc_congestion_weighting);
     VTR_LOG("NocOpts.noc_swap_percentage: %d%%\n", NocOpts.noc_swap_percentage);
     VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_placement_file_name.c_str());
     VTR_LOG("\n");

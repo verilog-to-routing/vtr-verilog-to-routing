@@ -9,18 +9,24 @@ setattr -mod -set keep_hierarchy 1 dual_port_ram
 
 puts "Using parmys as partial mapper"
 
+# arch file: QQQ
+# input files: [XXX]
+# other args: [YYY]
+# config file: CCC
+# output file: ZZZ
+
 parmys_arch -a QQQ
 
 if {$env(PARSER) == "surelog" } {
 	puts "Using Yosys read_uhdm command"
 	plugin -i systemverilog
 	yosys -import
-	read_uhdm -debug XXX
+	read_uhdm XXX
 } elseif {$env(PARSER) == "system-verilog" } {
 	puts "Using Yosys read_systemverilog command"
 	plugin -i systemverilog
 	yosys -import
-	read_systemverilog -debug XXX
+	read_systemverilog XXX
 } elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
 	read_verilog -sv -nolatches XXX
@@ -60,9 +66,7 @@ techmap -map +/parmys/aldffe2dff.v
 
 opt -full
 
-#stat
-
-parmys -a QQQ -nopass -c odin_config.xml
+parmys -a QQQ -nopass -c CCC YYY
 
 opt -full
 
@@ -74,7 +78,7 @@ opt -fast -noff
 
 #autoname
 
-tee -o /dev/stdout stat
+stat
 
 hierarchy -check -auto-top -purge_lib
 

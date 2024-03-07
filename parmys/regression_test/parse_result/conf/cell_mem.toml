@@ -1,0 +1,644 @@
+["DLATCHSR_PPP"]
+    regex = "\$$_DLATCHSR_PPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCHSR_PPN"]
+    regex = "\$$_DLATCHSR_PPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCHSR_PNP"]
+    regex = "\$$_DLATCHSR_PNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCHSR_PNN"]
+    regex = "\$$_DLATCHSR_PNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCHSR_NPP"]
+    regex = "\$$_DLATCHSR_NPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCHSR_NPN"]
+    regex = "\$$_DLATCHSR_NPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCHSR_NNP"]
+    regex = "\$$_DLATCHSR_NNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCHSR_NNN"]
+    regex = "\$$_DLATCHSR_NNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_PP1"]
+    regex = "\$$_DLATCH_PP1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_PP0"]
+    regex = "\$$_DLATCH_PP0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_PN1"]
+    regex = "\$$_DLATCH_PN1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_PN0"]
+    regex = "\$$_DLATCH_PN0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_NP1"]
+    regex = "\$$_DLATCH_NP1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_NP0"]
+    regex = "\$$_DLATCH_NP0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_NN1"]
+    regex = "\$$_DLATCH_NN1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_NN0"]
+    regex = "\$$_DLATCH_NN0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_P"]
+    regex = "\$$_DLATCH_P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DLATCH_N"]
+    regex = "\$$_DLATCH_N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_PP1P"]
+    regex = "\$$_SDFFCE_PP1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_PP1N"]
+    regex = "\$$_SDFFCE_PP1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_PP0P"]
+    regex = "\$$_SDFFCE_PP0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_PP0N"]
+    regex = "\$$_SDFFCE_PP0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_PN1P"]
+    regex = "\$$_SDFFCE_PN1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_PN1N"]
+    regex = "\$$_SDFFCE_PN1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_PN0P"]
+    regex = "\$$_SDFFCE_PN0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_PN0N"]
+    regex = "\$$_SDFFCE_PN0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_NP1P"]
+    regex = "\$$_SDFFCE_NP1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_NP1N"]
+    regex = "\$$_SDFFCE_NP1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_NP0P"]
+    regex = "\$$_SDFFCE_NP0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_NP0N"]
+    regex = "\$$_SDFFCE_NP0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_NN1P"]
+    regex = "\$$_SDFFCE_NN1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_NN1N"]
+    regex = "\$$_SDFFCE_NN1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_NN0P"]
+    regex = "\$$_SDFFCE_NN0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFCE_NN0N"]
+    regex = "\$$_SDFFCE_NN0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_PP1P"]
+    regex = "\$$_SDFFE_PP1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_PP1N"]
+    regex = "\$$_SDFFE_PP1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_PP0P"]
+    regex = "\$$_SDFFE_PP0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_PP0N"]
+    regex = "\$$_SDFFE_PP0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_PN1P"]
+    regex = "\$$_SDFFE_PN1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_PN1N"]
+    regex = "\$$_SDFFE_PN1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_PN0P"]
+    regex = "\$$_SDFFE_PN0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_PN0N"]
+    regex = "\$$_SDFFE_PN0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_NP1P"]
+    regex = "\$$_SDFFE_NP1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_NP1N"]
+    regex = "\$$_SDFFE_NP1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_NP0P"]
+    regex = "\$$_SDFFE_NP0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_NP0N"]
+    regex = "\$$_SDFFE_NP0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_NN1P"]
+    regex = "\$$_SDFFE_NN1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_NN1N"]
+    regex = "\$$_SDFFE_NN1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_NN0P"]
+    regex = "\$$_SDFFE_NN0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFFE_NN0N"]
+    regex = "\$$_SDFFE_NN0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFF_PP1"]
+    regex = "\$$_SDFF_PP1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFF_PP0"]
+    regex = "\$$_SDFF_PP0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFF_PN1"]
+    regex = "\$$_SDFF_PN1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFF_PN0"]
+    regex = "\$$_SDFF_PN0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFF_NP1"]
+    regex = "\$$_SDFF_NP1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFF_NP0"]
+    regex = "\$$_SDFF_NP0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFF_NN1"]
+    regex = "\$$_SDFF_NN1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SDFF_NN0"]
+    regex = "\$$_SDFF_NN0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_PPPP"]
+    regex = "\$$_DFFSRE_PPPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_PPPN"]
+    regex = "\$$_DFFSRE_PPPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_PPNP"]
+    regex = "\$$_DFFSRE_PPNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_PPNN"]
+    regex = "\$$_DFFSRE_PPNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_PNPP"]
+    regex = "\$$_DFFSRE_PNPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_PNPN"]
+    regex = "\$$_DFFSRE_PNPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_PNNP"]
+    regex = "\$$_DFFSRE_PNNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_PNNN"]
+    regex = "\$$_DFFSRE_PNNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_NPPP"]
+    regex = "\$$_DFFSRE_NPPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_NPPN"]
+    regex = "\$$_DFFSRE_NPPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_NPNP"]
+    regex = "\$$_DFFSRE_NPNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_NPNN"]
+    regex = "\$$_DFFSRE_NPNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_NNPP"]
+    regex = "\$$_DFFSRE_NNPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_NNPN"]
+    regex = "\$$_DFFSRE_NNPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_NNNP"]
+    regex = "\$$_DFFSRE_NNNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSRE_NNNN"]
+    regex = "\$$_DFFSRE_NNNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSR_PPP"]
+    regex = "\$$_DFFSR_PPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSR_PPN"]
+    regex = "\$$_DFFSR_PPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSR_PNP"]
+    regex = "\$$_DFFSR_PNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSR_PNN"]
+    regex = "\$$_DFFSR_PNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSR_NPP"]
+    regex = "\$$_DFFSR_NPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSR_NPN"]
+    regex = "\$$_DFFSR_NPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSR_NNP"]
+    regex = "\$$_DFFSR_NNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFSR_NNN"]
+    regex = "\$$_DFFSR_NNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFFE_PPP"]
+    regex = "\$$_ALDFFE_PPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFFE_PPN"]
+    regex = "\$$_ALDFFE_PPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFFE_PNP"]
+    regex = "\$$_ALDFFE_PNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFFE_PNN"]
+    regex = "\$$_ALDFFE_PNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFFE_NPP"]
+    regex = "\$$_ALDFFE_NPP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFFE_NPN"]
+    regex = "\$$_ALDFFE_NPN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFFE_NNP"]
+    regex = "\$$_ALDFFE_NNP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFFE_NNN"]
+    regex = "\$$_ALDFFE_NNN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFF_PP"]
+    regex = "\$$_ALDFF_PP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFF_PN"]
+    regex = "\$$_ALDFF_PN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFF_NP"]
+    regex = "\$$_ALDFF_NP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ALDFF_NN"]
+    regex = "\$$_ALDFF_NN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PP1P"]
+    regex = "\$$_DFFE_PP1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PP1N"]
+    regex = "\$$_DFFE_PP1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PP0P"]
+    regex = "\$$_DFFE_PP0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PP0N"]
+    regex = "\$$_DFFE_PP0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PN1P"]
+    regex = "\$$_DFFE_PN1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PN1N"]
+    regex = "\$$_DFFE_PN1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PN0P"]
+    regex = "\$$_DFFE_PN0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PN0N"]
+    regex = "\$$_DFFE_PN0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NP1P"]
+    regex = "\$$_DFFE_NP1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NP1N"]
+    regex = "\$$_DFFE_NP1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NP0P"]
+    regex = "\$$_DFFE_NP0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NP0N"]
+    regex = "\$$_DFFE_NP0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NN1P"]
+    regex = "\$$_DFFE_NN1P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NN1N"]
+    regex = "\$$_DFFE_NN1N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NN0P"]
+    regex = "\$$_DFFE_NN0P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NN0N"]
+    regex = "\$$_DFFE_NN0N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_PP1"]
+    regex = "\$$_DFF_PP1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_PP0"]
+    regex = "\$$_DFF_PP0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_PN1"]
+    regex = "\$$_DFF_PN1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_PN0"]
+    regex = "\$$_DFF_PN0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_NP1"]
+    regex = "\$$_DFF_NP1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_NP0"]
+    regex = "\$$_DFF_NP0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_NN1"]
+    regex = "\$$_DFF_NN1_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_NN0"]
+    regex = "\$$_DFF_NN0_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PP"]
+    regex = "\$$_DFFE_PP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_PN"]
+    regex = "\$$_DFFE_PN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NP"]
+    regex = "\$$_DFFE_NP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE_NN"]
+    regex = "\$$_DFFE_NN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_P"]
+    regex = "\$$_DFF_P_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF_N"]
+    regex = "\$$_DFF_N_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["FF"]
+    regex = "\$$_FF_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SR_PP"]
+    regex = "\$$_SR_PP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SR_PN"]
+    regex = "\$$_SR_PN_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SR_NP"]
+    regex = "\$$_SR_NP_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["SR_NN"]
+    regex = "\$$_SR_NN_ (\d+)"
+    default = 0
+    hide-if = 0

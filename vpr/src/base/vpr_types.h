@@ -119,10 +119,11 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 #endif
 
 enum class e_router_lookahead {
-    CLASSIC,      ///<VPR's classic lookahead (assumes uniform wire types)
-    MAP,          ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    EXTENDED_MAP, ///<Lookahead with a more extensive node sampling method
-    NO_OP         ///<A no-operation lookahead which always returns zero
+    CLASSIC,        ///<VPR's classic lookahead (assumes uniform wire types)
+    MAP,            ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    COMPRESSED_MAP, /// Similar to MAP, but use a sparse sampling of the chip
+    EXTENDED_MAP,   ///<Lookahead with a more extensive node sampling method
+    NO_OP           ///<A no-operation lookahead which always returns zero
 };
 
 enum class e_route_bb_update {
@@ -194,16 +195,21 @@ class t_ext_pin_util_targets {
   public:
     t_ext_pin_util_targets() = default;
     t_ext_pin_util_targets(float default_in_util, float default_out_util);
+    t_ext_pin_util_targets(const std::vector<std::string>& specs);
+    t_ext_pin_util_targets& operator=(t_ext_pin_util_targets&& other) noexcept;
 
     ///@brief Returns the input pin util of the specified block (or default if unspecified)
-    t_ext_pin_util get_pin_util(std::string block_type_name) const;
+    t_ext_pin_util get_pin_util(const std::string& block_type_name) const;
+
+    ///@brief Returns a string describing input/output pin utilization targets
+    std::string to_string() const;
 
   public:
     /**
      * @brief Sets the pin util for the specified block type
      * @return true if non-default was previously set
      */
-    void set_block_pin_util(std::string block_type_name, t_ext_pin_util target);
+    void set_block_pin_util(const std::string& block_type_name, t_ext_pin_util target);
 
     /**
      * @brief Sets the default pin util
@@ -219,16 +225,22 @@ class t_ext_pin_util_targets {
 class t_pack_high_fanout_thresholds {
   public:
     t_pack_high_fanout_thresholds() = default;
-    t_pack_high_fanout_thresholds(int threshold);
+    explicit t_pack_high_fanout_thresholds(int threshold);
+    explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
+    t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    int get_threshold(std::string block_type_name) const;
+    ///@brief Returns the high fanout threshold of the specifi  ed block
+    int get_threshold(const std::string& block_type_name) const;
+
+    ///@brief Returns a string describing high fanout thresholds for different block types
+    std::string to_string() const;
 
   public:
     /**
      * @brief Sets the pin util for the specified block type
      * @return true if non-default was previously set
      */
-    void set(std::string block_type_name, int threshold);
+    void set(const std::string& block_type_name, int threshold);
 
     /**
      * @brief Sets the default pin util
@@ -723,6 +735,11 @@ struct t_pl_loc {
         , y(yloc)
         , sub_tile(sub_tile_loc)
         , layer(layer_num) {}
+    t_pl_loc(const t_physical_tile_loc& phy_loc, int sub_tile_loc)
+        : x(phy_loc.x)
+        , y(phy_loc.y)
+        , sub_tile(sub_tile_loc)
+        , layer(phy_loc.layer_num) {}
 
     int x = OPEN;
     int y = OPEN;
@@ -1113,6 +1130,7 @@ enum e_place_effort_scaling {
 };
 
 enum class PlaceDelayModelType {
+    SIMPLE,
     DELTA,          ///<Delta x/y based delay model
     DELTA_OVERRIDE, ///<Delta x/y based delay model with special case delay overrides
 };
@@ -1327,6 +1345,7 @@ struct t_placer_opts {
 
 enum e_router_algorithm {
     PARALLEL,
+    PARALLEL_DECOMP,
     TIMING_DRIVEN,
 };
 
@@ -1480,9 +1499,11 @@ struct t_noc_opts {
     std::string noc_flows_file;               ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
     std::string noc_routing_algorithm;        ///<controls the routing algorithm used to route packets within the NoC
     double noc_placement_weighting;           ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
-    double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow contraints range:[0-inf)
+    double noc_aggregate_bandwidth_weighting; ///<controls the significance of aggregate used bandwidth relative to other NoC placement costs:[0:-inf)
+    double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
     double noc_latency_weighting;             ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
-    int noc_swap_percentage;                  ///<controls the number of NoC router block swap attemps relative to the total number of swaps attempted by the placer range:[0-100]
+    double noc_congestion_weighting;          ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
+    int noc_swap_percentage;                  ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
     std::string noc_placement_file_name;      ///<is the name of the output file that contains the NoC placement information
 };
 

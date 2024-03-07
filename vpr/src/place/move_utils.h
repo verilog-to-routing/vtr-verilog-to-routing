@@ -222,16 +222,29 @@ const std::string& move_type_to_string(e_move_type);
 void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_physical_tile_loc compressed_loc,
                             t_pl_loc& to_loc);
+
+/**
+ * @brief Checks whether the given location has a compatible empty subtile with
+ * the given type.
+ *
+ * @param type logical block type
+ * @param to_loc The location to be checked
+ *
+ * @return bool True if the given location has at least one empty compatible subtile.
+ */
+bool has_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                  const t_physical_tile_loc& to_loc);
+
 /**
  * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
  * 
  * type: defines the moving block type
- * min_cx, max_cx: the minimum and maximum x coordinates of the range in the compressed grid
- * min_cy, max_cx: the minimum and maximum y coordinates of the range in the compressed grid
- * cx_from, cy_from: the x and y coordinates of the old location 
- * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
+ * search_range: the minimum and maximum coordinates of the search range in the compressed grid
+ * from_loc: the coordinates of the old location
+ * to_loc: the coordinates of the new location on the compressed grid
  * is_median: true if this is called from find_to_loc_median
  * to_layer_num: the layer number of the new location (set by the caller)
+ * search_for_empty: indicates that the returned location must be empty
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
@@ -239,7 +252,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
-                                             int to_layer_num);
+                                             int to_layer_num,
+                                             bool search_for_empty);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)

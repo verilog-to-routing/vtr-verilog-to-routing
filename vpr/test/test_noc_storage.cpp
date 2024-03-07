@@ -155,6 +155,8 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
     // allocate the size for outgoing link vector for each router
     test_noc.make_room_for_noc_router_link_list();
+    // incremental counter used as NocLinkId
+    int noc_link_id_counter = 0;
 
     for (int source_router_id = 0; source_router_id < NUM_OF_ROUTERS; source_router_id++) {
         source = (NocRouterId)source_router_id;
@@ -164,8 +166,12 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
             // makes sure we do not create a link for a router who acts as a sink and source
             if (source_router_id != sink_router_id) {
+                // converting the counter to link index
+                link_id = (NocLinkId)noc_link_id_counter;
+                noc_link_id_counter++;
+
                 // add link to the golden reference
-                golden_set.emplace_back(source, sink);
+                golden_set.emplace_back(link_id, source, sink, 0.0);
 
                 // add the link to the NoC
                 test_noc.add_link(source, sink);
