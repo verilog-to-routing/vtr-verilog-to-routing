@@ -253,14 +253,74 @@ static int comp_max_number_of_traversed_links(NocTrafficFlowId traffic_flow_id) 
 
 }
 
+
+std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId>& links) {
+    std::vector<NocLinkId> route;
+    if (links.empty()) {
+        return route;
+    }
+
+    const auto& noc_model = g_vpr_ctx.noc().noc_model;
+
+    // Create a map to find pairs by their first element
+    std::unordered_map<NocRouterId , NocLinkId> src_map;
+    std::unordered_map<NocRouterId , bool> is_dst;
+    for (const auto& l : links) {
+        NocRouterId src_router_id = noc_model.get_single_noc_link(l).get_source_router();
+        NocRouterId dst_router_id = noc_model.get_single_noc_link(l).get_sink_router();
+        src_map[src_router_id] = l;
+        is_dst[dst_router_id] = true;
+    }
+
+    // Find the starting pair (whose first element is not a second element of any pair)
+    auto it = links.begin();
+    for (; it != links.end(); ++it) {
+        NocRouterId src_router_id = noc_model.get_single_noc_link(*it).get_source_router();
+        if (is_dst.find(src_router_id) == is_dst.end()) {
+            break;
+        }
+    }
+
+    // Reconstruct the chain starting from the found starting pair
+    auto current = *it;
+    while (true) {
+        route.push_back(current);
+        NocRouterId dst_router_id = noc_model.get_single_noc_link(current).get_source_router();
+        auto nextIt = src_map.find(dst_router_id);
+        if (nextIt == src_map.end()) {
+            break; // End of chain
+        }
+        current = nextIt->second;
+    }
+
+    VTR_ASSERT(route.size() == links.size());
+
+    return route;
+}
+
 vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route() {
     const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& noc_model = noc_ctx.noc_model;
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
 
+    // Used to add variables and  constraints to a CP-SAT model
     operations_research::sat::CpModelBuilder cp_model;
 
+    /*
+     * For each traffic flow and NoC link pair, we create a boolean variable.
+     * When a variable associated with traffic flow t and NoC link l is set,
+     * it means that t is routed through l.
+     */
     std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar> flow_link_vars;
+
+    /*
+     * Each traffic flow latency constraint is translated to how many NoC links
+     * the traffic flow can traverse without violating the constraint.
+     * These integer variables specify the number of additional links traversed
+     * beyond the maximum allowed number of links.
+     */
     std::map<NocTrafficFlowId , operations_research::sat::IntVar> latency_overrun_vars;
+    // TODO: specify the domain based on NoC topology
     operations_research::Domain latency_overrun_domain(0, 20);
 
     // create boolean variables for each traffic flow and link pair
@@ -268,10 +328,12 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route() {
     for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
         const auto& traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
+        // create an integer variable for each latency-constrained traffic flow
         if (traffic_flow.max_traffic_flow_latency < 0.1) {
             latency_overrun_vars[traffic_flow_id] = cp_model.NewIntVar(latency_overrun_domain);
         }
 
+        // create (traffic flow, NoC link) pair boolean variables
         for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
             const NocLinkId noc_link_id = noc_link.get_link_id();
             flow_link_vars[{traffic_flow_id, noc_link_id}] = cp_model.NewBoolVar();
@@ -301,15 +363,6 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route() {
 
     add_distance_constraints(flow_link_vars, cp_model, up, down, right, left);
 
-    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
-        const auto& route = traffic_flow_storage.get_traffic_flow_route(traffic_flow_id);
-
-        for (auto noc_link_id : route) {
-            cp_model.AddEquality(flow_link_vars[{traffic_flow_id, noc_link_id}], 1);
-        }
-    }
-
-
     operations_research::sat::LinearExpr latency_overrun_sum;
     for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
         latency_overrun_sum += latency_overrun_var;
@@ -319,35 +372,32 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route() {
 
     const operations_research::sat::CpSolverResponse response = operations_research::sat::Solve(cp_model.Build());
 
+    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> routes;
+
     LOG(INFO) << CpSolverResponseStats(response);
     if (response.status() == operations_research::sat::CpSolverStatus::FEASIBLE ||
         response.status() == operations_research::sat::CpSolverStatus::OPTIMAL) {
 
+        routes.resize(traffic_flow_storage.get_number_of_traffic_flows());
+
         for (auto& [key, var] : flow_link_vars) {
-            NocTrafficFlowId flow_id = key.first;
-            NocLinkId link_id = key.second;
-
-            auto& noc_link = noc_ctx.noc_model.get_single_noc_link(link_id);
-            const NocRouterId src_noc_router_id = noc_link.get_source_router();
-            const NocRouterId dst_noc_router_id = noc_link.get_sink_router();
-            const NocRouter& src_noc_router = noc_ctx.noc_model.get_single_noc_router(src_noc_router_id);
-            const NocRouter& dst_noc_router = noc_ctx.noc_model.get_single_noc_router(dst_noc_router_id);
-            auto src_loc = src_noc_router.get_router_physical_location();
-            auto dst_loc = dst_noc_router.get_router_physical_location();
-
+            auto [traffic_flow_id, noc_link_id] = key;
             bool value = operations_research::sat::SolutionBooleanValue(response, var);
+            if (value) {
+                routes[traffic_flow_id].push_back(noc_link_id);
+            }
+        }
 
-            if (value)
-                std::cout << "tf: " << (size_t)flow_id << " (" << src_loc.x << ", " << src_loc.y << ") --> (" << dst_loc.x << ", " << dst_loc.y << ")" << std::endl;
-
+        for (auto& route : routes) {
+            route = sort_noc_links_in_chain_order(route);
         }
 
     } else {
-        for (const int index : response.sufficient_assumptions_for_infeasibility()) {
-            LOG(INFO) << index;
-        }
+//        for (const int index : response.sufficient_assumptions_for_infeasibility()) {
+//            LOG(INFO) << index;
+//        }
         std::cout << "CP-SAT solver failed to find a solution" << std::endl;
     }
 
-    return {};
+    return routes;
 }
