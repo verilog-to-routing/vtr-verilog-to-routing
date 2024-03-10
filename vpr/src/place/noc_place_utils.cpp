@@ -54,12 +54,15 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links,
                                                                   std::vector<NocLinkId>& curr_links);
 
-void initial_noc_routing() {
+void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes) {
     // need to update the link usages within after routing all the traffic flows
     // also need to route all the traffic flows and store them
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
     NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
+
+    VTR_ASSERT(new_traffic_flow_routes.size() == (size_t)noc_traffic_flows_storage.get_number_of_traffic_flows() ||
+               new_traffic_flow_routes.empty());
 
     /* We need all the traffic flow ids to be able to access them. The range
      * of traffic flow ids go from 0 to the total number of traffic flows within
@@ -70,16 +73,20 @@ void initial_noc_routing() {
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
         // update the traffic flow route based on where the router cluster blocks are placed
-        std::vector<NocLinkId>& curr_traffic_flow_route = route_traffic_flow(traffic_flow_id, noc_ctx.noc_model,noc_traffic_flows_storage, *noc_ctx.noc_flows_router);
+        const std::vector<NocLinkId>& curr_traffic_flow_route = new_traffic_flow_routes.empty() ? route_traffic_flow(traffic_flow_id, noc_ctx.noc_model,noc_traffic_flows_storage, *noc_ctx.noc_flows_router) : new_traffic_flow_routes[traffic_flow_id];
 
         // update the links used in the found traffic flow route, links' bandwidth should be incremented since the traffic flow is routed
         update_traffic_flow_link_usage(curr_traffic_flow_route, noc_ctx.noc_model, 1, curr_traffic_flow.traffic_flow_bandwidth);
     }
 }
 
-void reinitialize_noc_routing(t_placer_costs& costs) {
+void reinitialize_noc_routing(t_placer_costs& costs,
+                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes) {
     // used to access NoC links and modify them
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
+
+    VTR_ASSERT((size_t)noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows() == new_traffic_flow_routes.size() ||
+               new_traffic_flow_routes.empty());
 
     // Zero out bandwidth usage for all links
     for (auto& noc_link : noc_ctx.noc_model.get_mutable_noc_links()) {
@@ -87,7 +94,7 @@ void reinitialize_noc_routing(t_placer_costs& costs) {
     }
 
     // Route traffic flows and update link bandwidth usage
-    initial_noc_routing();
+    initial_noc_routing(new_traffic_flow_routes);
 
     // Initialize traffic_flow_costs
     costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();

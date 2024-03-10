@@ -245,6 +245,13 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     if (checkpoint.get_cost() < costs.cost) {
         checkpoint.restore_checkpoint(costs);
     }
+
+    std::cout << "Initial NoC placement costs: "
+              << " Agg BW: " << costs.noc_cost_terms.aggregate_bandwidth
+              << " Latency: " << costs.noc_cost_terms.latency
+              << " Latency Over: " << costs.noc_cost_terms.latency_overrun
+              << " Congestion: " << costs.noc_cost_terms.congestion << std::endl;
+
 }
 
 void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
@@ -274,7 +281,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     place_noc_routers_randomly(unfixed_routers, seed);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
-    initial_noc_routing();
+    initial_noc_routing({});
 
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts);
@@ -288,13 +295,25 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     }
 
 
-    auto traffic_flow_routes = noc_sat_route();
+    auto traffic_flow_routes = noc_sat_route(true);
     if (!traffic_flow_routes.empty()) {
         has_cycle = noc_routing_has_cycle(traffic_flow_routes);
         if (has_cycle) {
             std::cout << "SAT NoC routing has cycles" << std::endl;
         }
+
+
+        t_placer_costs costs;
+        reinitialize_noc_routing(costs, traffic_flow_routes);
+
+        std::cout << "Initial NoC placement costs: "
+                  << " Agg BW: " << costs.noc_cost_terms.aggregate_bandwidth
+                  << " Latency: " << costs.noc_cost_terms.latency
+                  << " Latency Over: " << costs.noc_cost_terms.latency_overrun
+                  << " Congestion: " << costs.noc_cost_terms.congestion << std::endl;
+    } else {
+        std::cout << "SAT routing failed" << std::endl;
     }
 
-
+    exit(0);
 }

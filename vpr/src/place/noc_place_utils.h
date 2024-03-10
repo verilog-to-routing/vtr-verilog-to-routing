@@ -50,7 +50,7 @@ struct TrafficFlowPlaceCost {
  * routed. This is why this function should only be used once.
  * 
  */
-void initial_noc_routing();
+void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
 
 /**
  * @brief Zeros out all link bandwidth usage an re-routes traffic flows.
@@ -65,7 +65,8 @@ void initial_noc_routing();
  *
  * @param costs Used to get aggregate bandwidth and latency costs.
  */
-void reinitialize_noc_routing(t_placer_costs& costs);
+void reinitialize_noc_routing(t_placer_costs& costs,
+                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
 
 /**
  * @brief Goes through all the cluster blocks that were moved

@@ -13,6 +13,8 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 
+static constexpr int NOC_LINK_BANDWIDTH_RESOLUTION = 1024;
+
 std::vector<operations_research::sat::BoolVar> get_flow_link_vars(const std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& map,
                                                                   const std::vector<NocTrafficFlowId>& traffic_flow_ids,
                                                                   const std::vector<NocLinkId>& noc_link_ids) {
@@ -47,13 +49,11 @@ static void forbid_illegal_turns(std::unordered_map<std::pair<NocTrafficFlowId, 
     }
 }
 
-static void add_congestion_constraints(std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& flow_link_vars,
-                                       operations_research::sat::CpModelBuilder& cp_model) {
+static vtr::vector<NocTrafficFlowId, int> rescale_traffic_flow_bandwidths() {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
 
     const double link_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth();
-    constexpr int NOC_LINK_BANDWIDTH_RESOLUTION = 1024;
 
     vtr::vector<NocTrafficFlowId, int> rescaled_traffic_flow_bandwidths;
     rescaled_traffic_flow_bandwidths.resize(traffic_flow_storage.get_number_of_traffic_flows());
@@ -65,6 +65,16 @@ static void add_congestion_constraints(std::unordered_map<std::pair<NocTrafficFl
         int rescaled_bandwidth = (int)std::floor((bandwidth / link_bandwidth) * NOC_LINK_BANDWIDTH_RESOLUTION);
         rescaled_traffic_flow_bandwidths[traffic_flow_id] = rescaled_bandwidth;
     }
+
+    return  rescaled_traffic_flow_bandwidths;
+}
+
+static void add_congestion_constraints(std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& flow_link_vars,
+                                       operations_research::sat::CpModelBuilder& cp_model) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+
+    vtr::vector<NocTrafficFlowId, int> rescaled_traffic_flow_bandwidths = rescale_traffic_flow_bandwidths();
 
     // add NoC link congestion constraints
     for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
@@ -297,7 +307,33 @@ std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId
     return route;
 }
 
-vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool mini) {
+static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_routes(std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& flow_link_vars,
+                                                                                    const operations_research::sat::CpSolverResponse& response) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+
+    VTR_ASSERT(response.status() == operations_research::sat::CpSolverStatus::FEASIBLE ||
+               response.status() == operations_research::sat::CpSolverStatus::OPTIMAL);
+
+    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> routes;
+    routes.resize(traffic_flow_storage.get_number_of_traffic_flows());
+
+    for (auto& [key, var] : flow_link_vars) {
+        auto [traffic_flow_id, noc_link_id] = key;
+        bool value = operations_research::sat::SolutionBooleanValue(response, var);
+        if (value) {
+            routes[traffic_flow_id].push_back(noc_link_id);
+        }
+    }
+
+    for (auto& route : routes) {
+        route = sort_noc_links_in_chain_order(route);
+    }
+
+    return routes;
+}
+
+vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& noc_model = noc_ctx.noc_model;
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
@@ -369,34 +405,35 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool mini) {
 
     cp_model.Minimize(latency_overrun_sum);
 
-    const operations_research::sat::CpSolverResponse response = operations_research::sat::Solve(cp_model.Build());
+    operations_research::sat::CpSolverResponse response = operations_research::sat::Solve(cp_model.Build());
 
-    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> routes;
-
-    LOG(INFO) << CpSolverResponseStats(response);
     if (response.status() == operations_research::sat::CpSolverStatus::FEASIBLE ||
         response.status() == operations_research::sat::CpSolverStatus::OPTIMAL) {
 
-        routes.resize(traffic_flow_storage.get_number_of_traffic_flows());
+        if (!minimize_aggregate_bandwidth) {
+            auto routes = convert_vars_to_routes(flow_link_vars, response);
+            return routes;
+        } else {
+            int latency_overrun_value = operations_research::sat::SolutionIntegerValue(response, latency_overrun_sum);
+            cp_model.AddEquality(latency_overrun_sum, latency_overrun_value);
 
-        for (auto& [key, var] : flow_link_vars) {
-            auto [traffic_flow_id, noc_link_id] = key;
-            bool value = operations_research::sat::SolutionBooleanValue(response, var);
-            if (value) {
-                routes[traffic_flow_id].push_back(noc_link_id);
+            auto rescaled_traffic_flow_bandwidths = rescale_traffic_flow_bandwidths();
+            operations_research::sat::LinearExpr agg_bw_expr;
+            for (auto& [key, var] : flow_link_vars) {
+                auto [traffic_flow_id, noc_link_id] = key;
+                agg_bw_expr += operations_research::sat::LinearExpr(var * rescaled_traffic_flow_bandwidths[traffic_flow_id]);
+            }
+
+            cp_model.Minimize(agg_bw_expr);
+            response = operations_research::sat::Solve(cp_model.Build());
+
+            if (response.status() == operations_research::sat::CpSolverStatus::FEASIBLE ||
+                response.status() == operations_research::sat::CpSolverStatus::OPTIMAL) {
+                auto routes = convert_vars_to_routes(flow_link_vars, response);
+                return routes;
             }
         }
-
-        for (auto& route : routes) {
-            route = sort_noc_links_in_chain_order(route);
-        }
-
-    } else {
-//        for (const int index : response.sufficient_assumptions_for_infeasibility()) {
-//            LOG(INFO) << index;
-//        }
-        std::cout << "CP-SAT solver failed to find a solution" << std::endl;
     }
 
-    return routes;
+    return {};
 }
