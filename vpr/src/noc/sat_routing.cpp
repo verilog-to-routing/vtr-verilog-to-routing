@@ -64,7 +64,6 @@ static void add_congestion_constraints(std::unordered_map<std::pair<NocTrafficFl
         double bandwidth = traffic_flow.traffic_flow_bandwidth;
         int rescaled_bandwidth = (int)std::floor((bandwidth / link_bandwidth) * NOC_LINK_BANDWIDTH_RESOLUTION);
         rescaled_traffic_flow_bandwidths[traffic_flow_id] = rescaled_bandwidth;
-        std::cout << "Rescaled " << rescaled_bandwidth << std::endl;
     }
 
     // add NoC link congestion constraints
@@ -285,7 +284,7 @@ std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId
     auto current = *it;
     while (true) {
         route.push_back(current);
-        NocRouterId dst_router_id = noc_model.get_single_noc_link(current).get_source_router();
+        NocRouterId dst_router_id = noc_model.get_single_noc_link(current).get_sink_router();
         auto nextIt = src_map.find(dst_router_id);
         if (nextIt == src_map.end()) {
             break; // End of chain
@@ -298,7 +297,7 @@ std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId
     return route;
 }
 
-vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route() {
+vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool mini) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& noc_model = noc_ctx.noc_model;
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
@@ -334,7 +333,7 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route() {
         }
 
         // create (traffic flow, NoC link) pair boolean variables
-        for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
+        for (const auto& noc_link : noc_model.get_noc_links()) {
             const NocLinkId noc_link_id = noc_link.get_link_id();
             flow_link_vars[{traffic_flow_id, noc_link_id}] = cp_model.NewBoolVar();
         }
@@ -343,7 +342,7 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route() {
     for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
         int n_max_links = comp_max_number_of_traversed_links(traffic_flow_id);
         auto link_vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id},
-                                            {noc_ctx.noc_model.get_noc_links().keys().begin(), noc_ctx.noc_model.get_noc_links().keys().end()});
+                                            {noc_model.get_noc_links().keys().begin(), noc_model.get_noc_links().keys().end()});
 
         operations_research::sat::LinearExpr latency_overrun_expr;
         latency_overrun_expr += operations_research::sat::LinearExpr::Sum(link_vars);
