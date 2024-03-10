@@ -548,4 +548,6 @@ void write_noc_placement_file(const std::string& file_name);
  */
 bool noc_routing_has_cycle();
 
+bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes);
+
 #endif

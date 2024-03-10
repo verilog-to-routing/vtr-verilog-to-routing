@@ -871,10 +871,20 @@ bool noc_routing_has_cycle() {
     // get all traffic flow routes
     const auto& traffic_flow_routes = noc_ctx.noc_traffic_flows_storage.get_all_traffic_flow_routes();
 
-    // get the total number of NoC links
-    const size_t num_noc_links = noc_ctx.noc_model.get_number_of_noc_links();
+    bool has_cycle = noc_routing_has_cycle(traffic_flow_routes);
 
-    ChannelDependencyGraph channel_dependency_graph(num_noc_links, traffic_flow_routes);
+    return has_cycle;
+}
+
+bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    ChannelDependencyGraph channel_dependency_graph(noc_ctx.noc_model,
+                                                    noc_ctx.noc_traffic_flows_storage,
+                                                    routes,
+                                                    place_ctx.block_locs);
+
     bool has_cycles = channel_dependency_graph.has_cycles();
 
     return has_cycles;

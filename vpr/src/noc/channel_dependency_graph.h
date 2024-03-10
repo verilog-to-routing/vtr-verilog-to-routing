@@ -24,6 +24,8 @@
 
 #include "vtr_vector.h"
 #include "noc_data_types.h"
+#include "noc_storage.h"
+#include "noc_traffic_flows.h"
 
 class ChannelDependencyGraph {
   public:
@@ -36,8 +38,10 @@ class ChannelDependencyGraph {
      * @param traffic_flow_routes Generated traffic flow routes by the routing
      * algorithm.
      */
-    ChannelDependencyGraph(size_t n_links,
-                           const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes);
+    ChannelDependencyGraph(const NocStorage& noc_model,
+                           const NocTrafficFlows& traffic_flow_storage,
+                           const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
+                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
      * @brief Checks whether CDG has any cycles.

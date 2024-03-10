@@ -287,6 +287,14 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
                         "when packets wait on each other in a cycle.\n");
     }
 
-    noc_sat_route();
+
+    auto traffic_flow_routes = noc_sat_route();
+    if (!traffic_flow_routes.empty()) {
+        has_cycle = noc_routing_has_cycle(traffic_flow_routes);
+        if (has_cycle) {
+            std::cout << "SAT NoC routing has cycles" << std::endl;
+        }
+    }
+
 
 }
