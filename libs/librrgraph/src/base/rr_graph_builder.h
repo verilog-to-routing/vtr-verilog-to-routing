@@ -114,6 +114,11 @@ class RRGraphBuilder {
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
     }
+
+    /** @brief Set the node name with a given valid id */
+    inline void set_node_name(RRNodeId id, std::string name) {
+        node_storage_.set_node_name(id, name);
+    }
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *
@@ -217,6 +222,11 @@ class RRGraphBuilder {
     /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
     inline void set_node_direction(RRNodeId id, Direction new_direction) {
         node_storage_.set_node_direction(id, new_direction);
+    }
+
+    /** @brief Set the node id for clock network virtual sink */
+    inline void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
+        node_storage_.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
     }
 
     /** @brief Reserve the lists of edges to be memory efficient.

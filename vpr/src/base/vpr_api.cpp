@@ -380,7 +380,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             return false; //Unimplementable
         }
     }
-
     // For the time being, we decided to create the flat graph after placement is done. Thus, the is_flat parameter for this function
     //, since it is called before routing, should be false.
     vpr_create_device(vpr_setup, arch, false);

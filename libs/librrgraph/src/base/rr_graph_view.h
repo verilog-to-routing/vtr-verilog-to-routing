@@ -93,6 +93,11 @@ class RRGraphView {
         return node_storage_.node_type(node);
     }
 
+    /** @brief Get the name assigned to a node id. */
+    std::optional<const std::string*> node_name(RRNodeId node) const {
+        return node_storage_.node_name(node);
+    }
+
     /** @brief Get the type string of a routing resource node. This function is inlined for runtime optimization. */
     inline const char* node_type_string(RRNodeId node) const {
         return node_storage_.node_type_string(node);
@@ -315,6 +320,17 @@ class RRGraphView {
     inline const char* node_side_string(RRNodeId node) const {
         return node_storage_.node_side_string(node);
     }
+
+    /** @brief Get the node id of the clock network virtual sink */
+    inline RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
+        return node_storage_.virtual_clock_network_root_idx(clock_network_name);
+    }
+
+    /** @brief Get the node id of the clock network virtual sink */
+    inline bool is_virtual_clock_network_root(RRNodeId id) const {
+        return node_storage_.is_virtual_clock_network_root(id);
+    }
+
     /** @brief Get the switch id that represents the iedge'th outgoing edge from a specific node
      * TODO: We may need to revisit this API and think about higher level APIs, like ``switch_delay()``
      **/

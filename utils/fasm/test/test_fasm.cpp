@@ -293,7 +293,6 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        device_ctx.arch,
                        &device_ctx.chan_width,
                        kRrGraphFile,
-                       device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
                        echo_file_name,
                        is_flat);
