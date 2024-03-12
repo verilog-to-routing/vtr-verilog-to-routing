@@ -91,6 +91,7 @@ target_link_libraries(libvpr
                         librrgraph
 )
 
+find_package(ortools CONFIG REQUIRED)
 target_link_libraries(libvpr ortools::ortools)
 
 #link graphics library only when graphics set to on

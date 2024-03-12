@@ -11,10 +11,6 @@ add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
 
 #SET(BUILD_DEPS ON CACHE BOOL "Build libfoo shared library")
-set(BUILD_DEPS ON)
-set(BUILD_SAMPLES OFF)
-set(BUILD_EXAMPLES OFF)
-add_subdirectory(or-tools)
 #add_subdirectory(parmys)
 
 #VPR_USE_EZGL is initialized in the root CMakeLists.
