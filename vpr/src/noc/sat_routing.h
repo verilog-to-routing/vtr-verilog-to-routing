@@ -7,7 +7,8 @@
 #include "vtr_hash.h"
 #include "vtr_vector.h"
 
-vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth);
+vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
+                                                                    int seed);
 
 namespace std {
 template<>

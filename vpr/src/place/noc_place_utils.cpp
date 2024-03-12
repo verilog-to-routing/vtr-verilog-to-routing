@@ -75,6 +75,10 @@ void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLink
         // update the traffic flow route based on where the router cluster blocks are placed
         const std::vector<NocLinkId>& curr_traffic_flow_route = new_traffic_flow_routes.empty() ? route_traffic_flow(traffic_flow_id, noc_ctx.noc_model,noc_traffic_flows_storage, *noc_ctx.noc_flows_router) : new_traffic_flow_routes[traffic_flow_id];
 
+        if (!new_traffic_flow_routes.empty()) {
+            noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow_id) = curr_traffic_flow_route;
+        }
+
         // update the links used in the found traffic flow route, links' bandwidth should be incremented since the traffic flow is routed
         update_traffic_flow_link_usage(curr_traffic_flow_route, noc_ctx.noc_model, 1, curr_traffic_flow.traffic_flow_bandwidth);
     }

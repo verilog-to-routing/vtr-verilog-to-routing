@@ -69,6 +69,7 @@
 #include "cluster_placement.h"
 
 #include "noc_place_utils.h"
+#include "sat_routing.h"
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
@@ -1241,6 +1242,40 @@ void try_place(const Netlist<>& net_list,
             costs.noc_cost_terms.congestion,
             get_total_congestion_bandwidth_ratio(),
             get_number_of_congested_noc_links());
+
+        if (costs.noc_cost_terms.congestion > 0.0) {
+            VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
+            auto traffic_flow_routes = noc_sat_route(true, placer_opts.seed);
+
+            if (!traffic_flow_routes.empty()) {
+                bool has_cycle = noc_routing_has_cycle(traffic_flow_routes);
+                if (has_cycle) {
+                    VTR_LOG("SAT NoC routing has cycles.\n");
+                }
+
+                reinitialize_noc_routing(costs, traffic_flow_routes);
+
+                VTR_LOG("\nNoC Placement Costs after SAT routing. "
+                    "cost: %g, "
+                    "aggregate_bandwidth_cost: %g, "
+                    "latency_cost: %g, "
+                    "n_met_latency_constraints: %d, "
+                    "latency_overrun_cost: %g, "
+                    "congestion_cost: %g, "
+                    "accum_congested_ratio: %g, "
+                    "n_congested_links: %d \n",
+                    calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
+                    costs.noc_cost_terms.aggregate_bandwidth,
+                    costs.noc_cost_terms.latency,
+                    get_number_of_traffic_flows_with_latency_cons_met(),
+                    costs.noc_cost_terms.latency_overrun,
+                    costs.noc_cost_terms.congestion,
+                    get_total_congestion_bandwidth_ratio(),
+                    get_number_of_congested_noc_links());
+            } else {
+                VTR_LOG("SAT routing failed.\n");
+            }
+        }
     }
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics

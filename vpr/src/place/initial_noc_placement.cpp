@@ -1,7 +1,6 @@
 
 #include "initial_noc_placment.h"
 #include "initial_placement.h"
-#include "sat_routing.h"
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
 #include "place_constraints.h"
@@ -293,27 +292,4 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
                         "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
                         "when packets wait on each other in a cycle.\n");
     }
-
-
-    auto traffic_flow_routes = noc_sat_route(true);
-    if (!traffic_flow_routes.empty()) {
-        has_cycle = noc_routing_has_cycle(traffic_flow_routes);
-        if (has_cycle) {
-            std::cout << "SAT NoC routing has cycles" << std::endl;
-        }
-
-
-        t_placer_costs costs;
-        reinitialize_noc_routing(costs, traffic_flow_routes);
-
-        std::cout << "Initial NoC placement costs: "
-                  << " Agg BW: " << costs.noc_cost_terms.aggregate_bandwidth
-                  << " Latency: " << costs.noc_cost_terms.latency
-                  << " Latency Over: " << costs.noc_cost_terms.latency_overrun
-                  << " Congestion: " << costs.noc_cost_terms.congestion << std::endl;
-    } else {
-        std::cout << "SAT routing failed" << std::endl;
-    }
-
-    exit(0);
 }

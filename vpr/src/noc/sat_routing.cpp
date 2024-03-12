@@ -4,6 +4,7 @@
 #include "move_utils.h"
 
 #include "globals.h"
+#include "vtr_time.h"
 
 #include <unordered_map>
 
@@ -15,9 +16,11 @@
 
 static constexpr int NOC_LINK_BANDWIDTH_RESOLUTION = 1024;
 
-std::vector<operations_research::sat::BoolVar> get_flow_link_vars(const std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& map,
-                                                                  const std::vector<NocTrafficFlowId>& traffic_flow_ids,
-                                                                  const std::vector<NocLinkId>& noc_link_ids) {
+typedef std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar> t_flow_link_var_map;
+
+static std::vector<operations_research::sat::BoolVar> get_flow_link_vars(const t_flow_link_var_map& map,
+                                                                         const std::vector<NocTrafficFlowId>& traffic_flow_ids,
+                                                                         const std::vector<NocLinkId>& noc_link_ids) {
     std::vector<operations_research::sat::BoolVar> results;
     for (auto traffic_flow_id : traffic_flow_ids) {
         for (auto noc_link_id : noc_link_ids) {
@@ -30,7 +33,7 @@ std::vector<operations_research::sat::BoolVar> get_flow_link_vars(const std::uno
     return results;
 }
 
-static void forbid_illegal_turns(std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& flow_link_vars,
+static void forbid_illegal_turns(t_flow_link_var_map& flow_link_vars,
                                  operations_research::sat::CpModelBuilder& cp_model) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
@@ -69,7 +72,7 @@ static vtr::vector<NocTrafficFlowId, int> rescale_traffic_flow_bandwidths() {
     return  rescaled_traffic_flow_bandwidths;
 }
 
-static void add_congestion_constraints(std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& flow_link_vars,
+static void add_congestion_constraints(t_flow_link_var_map& flow_link_vars,
                                        operations_research::sat::CpModelBuilder& cp_model) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
@@ -90,7 +93,7 @@ static void add_congestion_constraints(std::unordered_map<std::pair<NocTrafficFl
     }
 }
 
-static void add_continuity_constraints(std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& flow_link_vars,
+static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
                                        operations_research::sat::CpModelBuilder& cp_model)
 {
     const auto& noc_ctx = g_vpr_ctx.noc();
@@ -148,7 +151,7 @@ static void add_continuity_constraints(std::unordered_map<std::pair<NocTrafficFl
     }
 }
 
-static void add_distance_constraints(std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& flow_link_vars,
+static void add_distance_constraints(t_flow_link_var_map& flow_link_vars,
                                      operations_research::sat::CpModelBuilder& cp_model,
                                      const std::vector<NocLinkId>& up,
                                      const std::vector<NocLinkId>& down,
@@ -263,7 +266,7 @@ static int comp_max_number_of_traversed_links(NocTrafficFlowId traffic_flow_id) 
 }
 
 
-std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId>& links) {
+static std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId>& links) {
     std::vector<NocLinkId> route;
     if (links.empty()) {
         return route;
@@ -307,7 +310,7 @@ std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId
     return route;
 }
 
-static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_routes(std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar>& flow_link_vars,
+static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_routes(t_flow_link_var_map& flow_link_vars,
                                                                                     const operations_research::sat::CpSolverResponse& response) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
@@ -333,7 +336,10 @@ static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_rou
     return routes;
 }
 
-vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth) {
+vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
+                                                                    int seed) {
+    vtr::ScopedStartFinishTimer timer("NoC SAT Routing");
+
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& noc_model = noc_ctx.noc_model;
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
@@ -346,7 +352,7 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
      * When a variable associated with traffic flow t and NoC link l is set,
      * it means that t is routed through l.
      */
-    std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar> flow_link_vars;
+    t_flow_link_var_map flow_link_vars;
 
     /*
      * Each traffic flow latency constraint is translated to how many NoC links
@@ -405,7 +411,16 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
 
     cp_model.Minimize(latency_overrun_sum);
 
-    operations_research::sat::CpSolverResponse response = operations_research::sat::Solve(cp_model.Build());
+    operations_research::sat::Model model;
+
+    operations_research::sat::SatParameters sat_params;
+    sat_params.set_num_workers(1);
+    sat_params.set_num_search_workers(1);
+    sat_params.set_random_seed(seed);
+
+    model.Add(NewSatParameters(sat_params));
+
+    operations_research::sat::CpSolverResponse response = operations_research::sat::SolveCpModel(cp_model.Build(), &model);
 
     if (response.status() == operations_research::sat::CpSolverStatus::FEASIBLE ||
         response.status() == operations_research::sat::CpSolverStatus::OPTIMAL) {
@@ -414,7 +429,7 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
             auto routes = convert_vars_to_routes(flow_link_vars, response);
             return routes;
         } else {
-            int latency_overrun_value = operations_research::sat::SolutionIntegerValue(response, latency_overrun_sum);
+            int latency_overrun_value = (int)operations_research::sat::SolutionIntegerValue(response, latency_overrun_sum);
             cp_model.AddEquality(latency_overrun_sum, latency_overrun_value);
 
             auto rescaled_traffic_flow_bandwidths = rescale_traffic_flow_bandwidths();
