@@ -1717,10 +1717,7 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  * @brief Extra information about each rr_node needed only during routing
  *        (i.e. during the maze expansion).
  *
- *   @param prev_node  Index of the previous node (on the lowest cost path known
- *                     to reach this node); used to generate the traceback.
- *                     If there is no predecessor, prev_node = NO_PREVIOUS.
- *   @param prev_edge  Index of the edge (from 0 to num_edges-1 of prev_node)
+ *   @param prev_edge  ID of the edge (globally unique edge ID in the RR Graph)
  *                     that was used to reach this node from the previous node.
  *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
  *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
@@ -1732,7 +1729,6 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  *   @param occ        The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
-    RRNodeId prev_node;
     RREdgeId prev_edge;
 
     float acc_cost;

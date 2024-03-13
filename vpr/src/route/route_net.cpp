@@ -117,7 +117,6 @@ void update_rr_route_inf_from_tree(const RouteTreeNode& rt_node) {
 
     for (auto& node : rt_node.all_nodes()) {
         RRNodeId inode = node.inode;
-        route_ctx.rr_node_route_inf[inode].prev_node = RRNodeId::INVALID();
         route_ctx.rr_node_route_inf[inode].prev_edge = RREdgeId::INVALID();
 
         // path cost should be unset

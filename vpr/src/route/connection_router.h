@@ -145,7 +145,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
         //Record final link to target
         add_to_mod_list(cheapest->index);
 
-        route_inf->prev_node = cheapest->prev_node();
         route_inf->prev_edge = cheapest->prev_edge();
         route_inf->path_cost = cheapest->cost;
         route_inf->backward_path_cost = cheapest->backward_path_cost;
