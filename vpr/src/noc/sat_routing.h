@@ -15,7 +15,7 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
 
 void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
                              std::map<ClusterBlockId, t_pl_loc>& noc_router_locs,
-                             bool minimize_aggregate_bandwidth,
+
                              int seed);
 
 namespace std {

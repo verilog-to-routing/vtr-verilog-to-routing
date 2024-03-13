@@ -284,7 +284,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
     std::map<ClusterBlockId, t_pl_loc> noc_router_locs;
 
-    noc_sat_place_and_route(traffic_flow_routes, noc_router_locs, true, 4);
+    noc_sat_place_and_route(traffic_flow_routes, noc_router_locs, 4);
 
     for (auto& [router_blk_id, loc] : noc_router_locs) {
         // Create a macro with a single member

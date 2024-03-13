@@ -14,7 +14,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 
-static constexpr int NOC_LINK_BANDWIDTH_RESOLUTION = 1024;
+static constexpr int NOC_LINK_BANDWIDTH_RESOLUTION = 128;
 
 typedef std::unordered_map<std::pair<NocTrafficFlowId, NocLinkId>, operations_research::sat::BoolVar> t_flow_link_var_map;
 
@@ -538,8 +538,8 @@ static void add_movable_continuity_constraints(t_flow_link_var_map& flow_link_va
 
             const auto& incoming_links = noc_ctx.noc_model.get_noc_router_incoming_links(noc_router_id);
             auto vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id}, incoming_links);
-//            cp_model.AddAtMostOne(vars).OnlyEnforceIf(nor_src_dst_mapped);
-//            cp_model.AddExactlyOne(vars).OnlyEnforceIf(dst_is_mapped);
+            //            cp_model.AddAtMostOne(vars).OnlyEnforceIf(nor_src_dst_mapped);
+            //            cp_model.AddExactlyOne(vars).OnlyEnforceIf(dst_is_mapped);
             operations_research::sat::LinearExpr lhs = operations_research::sat::LinearExpr::Sum(vars);
             cp_model.AddEquality(lhs, 0).OnlyEnforceIf(src_is_mapped);
             cp_model.AddLessOrEqual(lhs, 1).OnlyEnforceIf(nor_src_dst_mapped);
@@ -547,8 +547,8 @@ static void add_movable_continuity_constraints(t_flow_link_var_map& flow_link_va
 
             const auto& outgoing_links = noc_ctx.noc_model.get_noc_router_outgoing_links(noc_router_id);
             vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id}, outgoing_links);
-//            cp_model.AddAtMostOne(vars).OnlyEnforceIf(nor_src_dst_mapped);
-//            cp_model.AddExactlyOne(vars).OnlyEnforceIf(src_is_mapped);
+            //            cp_model.AddAtMostOne(vars).OnlyEnforceIf(nor_src_dst_mapped);
+            //            cp_model.AddExactlyOne(vars).OnlyEnforceIf(src_is_mapped);
             operations_research::sat::LinearExpr rhs = operations_research::sat::LinearExpr::Sum(vars);
             cp_model.AddEquality(rhs, 0).OnlyEnforceIf(dst_is_mapped);
             cp_model.AddLessOrEqual(rhs, 1).OnlyEnforceIf(nor_src_dst_mapped);
@@ -606,7 +606,7 @@ static void convert_vars_to_locs(std::map<ClusterBlockId, t_pl_loc>& noc_router_
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-//    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    //    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     // Get the logical block type for router
     const auto router_block_type = cluster_ctx.clb_nlist.block_type(traffic_flow_storage.get_router_clusters_in_netlist()[0]);
@@ -629,7 +629,7 @@ static void convert_vars_to_locs(std::map<ClusterBlockId, t_pl_loc>& noc_router_
 
 void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
                              std::map<ClusterBlockId, t_pl_loc>& noc_router_locs,
-                             bool minimize_aggregate_bandwidth,
+
                              int seed) {
     vtr::ScopedStartFinishTimer timer("NoC SAT Placement and Routing");
     const auto& noc_ctx = g_vpr_ctx.noc();
@@ -683,11 +683,21 @@ void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId
         latency_overrun_sum += latency_overrun_var;
     }
 
-    cp_model.Minimize(latency_overrun_sum);
+    latency_overrun_sum *= 1024;
+
+    auto rescaled_traffic_flow_bandwidths = rescale_traffic_flow_bandwidths();
+    operations_research::sat::LinearExpr agg_bw_expr;
+    for (auto& [key, var] : flow_link_vars) {
+        auto [traffic_flow_id, noc_link_id] = key;
+        agg_bw_expr += operations_research::sat::LinearExpr(var * rescaled_traffic_flow_bandwidths[traffic_flow_id]);
+    }
+
+    cp_model.Minimize(latency_overrun_sum + agg_bw_expr);
 
     operations_research::sat::SatParameters sat_params;
     sat_params.set_random_seed(seed);
     sat_params.set_log_search_progress(true);
+    sat_params.set_max_time_in_seconds(5*60);
 
     operations_research::sat::Model model;
     model.Add(NewSatParameters(sat_params));
@@ -697,28 +707,28 @@ void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId
     if (response.status() == operations_research::sat::CpSolverStatus::FEASIBLE ||
         response.status() == operations_research::sat::CpSolverStatus::OPTIMAL) {
 
-        if (!minimize_aggregate_bandwidth) {
-            traffic_flow_routes = convert_vars_to_routes(flow_link_vars, response);
-            convert_vars_to_locs(noc_router_locs, x_loc_vars, y_loc_vars, response);
-        } else {
-            int latency_overrun_value = (int)operations_research::sat::SolutionIntegerValue(response, latency_overrun_sum);
-            cp_model.AddEquality(latency_overrun_sum, latency_overrun_value);
-
-            auto rescaled_traffic_flow_bandwidths = rescale_traffic_flow_bandwidths();
-            operations_research::sat::LinearExpr agg_bw_expr;
-            for (auto& [key, var] : flow_link_vars) {
-                auto [traffic_flow_id, noc_link_id] = key;
-                agg_bw_expr += operations_research::sat::LinearExpr(var * rescaled_traffic_flow_bandwidths[traffic_flow_id]);
-            }
-
-            cp_model.Minimize(agg_bw_expr);
-            response = operations_research::sat::SolveCpModel(cp_model.Build(), &model);
-
-            if (response.status() == operations_research::sat::CpSolverStatus::FEASIBLE ||
-                response.status() == operations_research::sat::CpSolverStatus::OPTIMAL) {
-                traffic_flow_routes = convert_vars_to_routes(flow_link_vars, response);
-                convert_vars_to_locs(noc_router_locs, x_loc_vars, y_loc_vars, response);
-            }
-        }
+        //        if (!minimize_aggregate_bandwidth) {
+        traffic_flow_routes = convert_vars_to_routes(flow_link_vars, response);
+        convert_vars_to_locs(noc_router_locs, x_loc_vars, y_loc_vars, response);
+        //        } else {
+        //            int latency_overrun_value = (int)operations_research::sat::SolutionIntegerValue(response, latency_overrun_sum);
+        //            cp_model.AddEquality(latency_overrun_sum, latency_overrun_value);
+        //
+        //            auto rescaled_traffic_flow_bandwidths = rescale_traffic_flow_bandwidths();
+        //            operations_research::sat::LinearExpr agg_bw_expr;
+        //            for (auto& [key, var] : flow_link_vars) {
+        //                auto [traffic_flow_id, noc_link_id] = key;
+        //                agg_bw_expr += operations_research::sat::LinearExpr(var * rescaled_traffic_flow_bandwidths[traffic_flow_id]);
+        //            }
+        //
+        //            cp_model.Minimize(agg_bw_expr);
+        //            response = operations_research::sat::SolveCpModel(cp_model.Build(), &model);
+        //
+        //            if (response.status() == operations_research::sat::CpSolverStatus::FEASIBLE ||
+        //                response.status() == operations_research::sat::CpSolverStatus::OPTIMAL) {
+        //                traffic_flow_routes = convert_vars_to_routes(flow_link_vars, response);
+        //                convert_vars_to_locs(noc_router_locs, x_loc_vars, y_loc_vars, response);
+        //            }
+        //        }
     }
 }
