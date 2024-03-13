@@ -2,14 +2,21 @@
 #define VTR_SATROUTING_H
 
 #include <utility>
+#include <map>
 
 #include "noc_data_types.h"
+#include "vpr_types.h"
 #include "vtr_hash.h"
 #include "vtr_vector.h"
 #include "clustered_netlist_fwd.h"
 
 vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
                                                                     int seed);
+
+void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
+                             std::map<ClusterBlockId, t_pl_loc>& noc_router_locs,
+                             bool minimize_aggregate_bandwidth,
+                             int seed);
 
 namespace std {
 template<>
