@@ -42,11 +42,6 @@ void setup_net(int itry,
 
         // since all connections will be rerouted for this net, clear all of net's forced reroute flags
         connections_inf.clear_force_reroute_for_net(net_id);
-
-        // when we don't prune the tree, we also don't know the sink node indices
-        // thus we'll use functions that act on pin indices like mark_ends instead
-        // of their versions that act on node indices directly like mark_remaining_ends
-        mark_ends(net_list, net_id);
     } else {
         profiling::net_rebuild_start();
 
@@ -91,9 +86,6 @@ void setup_net(int itry,
 
         // congestion should've been pruned away
         VTR_ASSERT_SAFE(tree->is_uncongested());
-
-        // mark remaining ends
-        mark_remaining_ends(net_id);
 
         // mark the lookup (rr_node_route_inf) for existing tree elements as NO_PREVIOUS so add_to_path stops when it reaches one of them
         update_rr_route_inf_from_tree(tree->root());

@@ -315,34 +315,6 @@ float get_rr_cong_cost(RRNodeId inode, float pres_fac) {
     return (cost);
 }
 
-/* Mark all the SINKs of this net as targets by setting their target flags  *
- * to the number of times the net must connect to each SINK.  Note that     *
- * this number can occasionally be greater than 1 -- think of connecting   *
- * the same net to two inputs of an and-gate (and-gate inputs are logically *
- * equivalent, so both will connect to the same SINK).                      */
-void mark_ends(const Netlist<>& net_list, ParentNetId net_id) {
-    unsigned int ipin;
-    RRNodeId inode;
-
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    for (ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
-        inode = route_ctx.net_rr_terminals[net_id][ipin];
-        route_ctx.rr_node_route_inf[inode].target_flag++;
-    }
-}
-
-/** like mark_ends, but only performs it for the remaining sinks of a net */
-void mark_remaining_ends(ParentNetId net_id) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    const auto& tree = route_ctx.route_trees[net_id].value();
-
-    for (int sink_pin : tree.get_remaining_isinks()) {
-        RRNodeId inode = route_ctx.net_rr_terminals[net_id][sink_pin];
-        ++route_ctx.rr_node_route_inf[inode].target_flag;
-    }
-}
-
 //Calculates how many (and allocates space for) OPINs which must be reserved to
 //respect 'instance' equivalence.
 //
@@ -453,7 +425,6 @@ void reset_rr_node_route_structs() {
         node_inf.acc_cost = 1.0;
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
-        node_inf.target_flag = 0;
         node_inf.set_occ(0);
     }
 }

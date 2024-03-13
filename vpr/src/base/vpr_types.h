@@ -1729,8 +1729,6 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  *                     is being used.
  *   @param backward_path_cost  Total cost of the path up to and including this
  *                     node.
- *   @param target_flag  Is this node a target (sink) for the current routing?
- *                     Number of times this node must be reached to fully route.
  *   @param occ        The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
@@ -1740,8 +1738,6 @@ struct t_rr_node_route_inf {
     float acc_cost;
     float path_cost;
     float backward_path_cost;
-
-    short target_flag;
 
   public: //Accessors
     short occ() const { return occ_; }

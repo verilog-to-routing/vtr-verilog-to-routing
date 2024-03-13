@@ -448,9 +448,6 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
 
     profiling::sink_criticality_end(cost_params.criticality);
 
-    RRNodeId inode(cheapest.index);
-    route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-
     vtr::optional<const RouteTreeNode&> new_branch, new_sink;
     std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, target_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr), is_flat);
 
