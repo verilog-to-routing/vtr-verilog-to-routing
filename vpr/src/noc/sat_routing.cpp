@@ -94,8 +94,7 @@ static void add_congestion_constraints(t_flow_link_var_map& flow_link_vars,
 }
 
 static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
-                                       operations_research::sat::CpModelBuilder& cp_model)
-{
+                                       operations_research::sat::CpModelBuilder& cp_model) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -336,6 +335,53 @@ static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_rou
     return routes;
 }
 
+static void create_flow_link_vars(operations_research::sat::CpModelBuilder& cp_model,
+                                  t_flow_link_var_map& flow_link_vars,
+                                  std::map<NocTrafficFlowId , operations_research::sat::IntVar>& latency_overrun_vars) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& noc_model = noc_ctx.noc_model;
+    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+
+    // TODO: specify the domain based on NoC topology
+    operations_research::Domain latency_overrun_domain(0, 20);
+
+    // create boolean variables for each traffic flow and link pair
+    // create integer variables for traffic flows with constrained latency
+    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
+        const auto& traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(traffic_flow_id);
+
+        // create an integer variable for each latency-constrained traffic flow
+        if (traffic_flow.max_traffic_flow_latency < 0.1) {
+            latency_overrun_vars[traffic_flow_id] = cp_model.NewIntVar(latency_overrun_domain);
+        }
+
+        // create (traffic flow, NoC link) pair boolean variables
+        for (const auto& noc_link : noc_model.get_noc_links()) {
+            const NocLinkId noc_link_id = noc_link.get_link_id();
+            flow_link_vars[{traffic_flow_id, noc_link_id}] = cp_model.NewBoolVar();
+        }
+    }
+}
+
+static void constrain_latency_overrun_vars(operations_research::sat::CpModelBuilder& cp_model,
+                                           t_flow_link_var_map& flow_link_vars,
+                                           std::map<NocTrafficFlowId , operations_research::sat::IntVar>& latency_overrun_vars) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& noc_model = noc_ctx.noc_model;
+
+    for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
+        int n_max_links = comp_max_number_of_traversed_links(traffic_flow_id);
+        auto link_vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id},
+                                            {noc_model.get_noc_links().keys().begin(), noc_model.get_noc_links().keys().end()});
+
+        operations_research::sat::LinearExpr latency_overrun_expr;
+        latency_overrun_expr += operations_research::sat::LinearExpr::Sum(link_vars);
+        latency_overrun_expr -= n_max_links;
+
+        cp_model.AddMaxEquality(latency_overrun_var, {latency_overrun_expr, 0});
+    }
+}
+
 vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
                                                                     int seed) {
     vtr::ScopedStartFinishTimer timer("NoC SAT Routing");
@@ -360,38 +406,11 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
      * These integer variables specify the number of additional links traversed
      * beyond the maximum allowed number of links.
      */
-    std::map<NocTrafficFlowId , operations_research::sat::IntVar> latency_overrun_vars;
-    // TODO: specify the domain based on NoC topology
-    operations_research::Domain latency_overrun_domain(0, 20);
+    std::map<NocTrafficFlowId, operations_research::sat::IntVar> latency_overrun_vars;
 
-    // create boolean variables for each traffic flow and link pair
-    // create integer variables for traffic flows with constrained latency
-    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
-        const auto& traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(traffic_flow_id);
+    create_flow_link_vars(cp_model, flow_link_vars, latency_overrun_vars);
 
-        // create an integer variable for each latency-constrained traffic flow
-        if (traffic_flow.max_traffic_flow_latency < 0.1) {
-            latency_overrun_vars[traffic_flow_id] = cp_model.NewIntVar(latency_overrun_domain);
-        }
-
-        // create (traffic flow, NoC link) pair boolean variables
-        for (const auto& noc_link : noc_model.get_noc_links()) {
-            const NocLinkId noc_link_id = noc_link.get_link_id();
-            flow_link_vars[{traffic_flow_id, noc_link_id}] = cp_model.NewBoolVar();
-        }
-    }
-
-    for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
-        int n_max_links = comp_max_number_of_traversed_links(traffic_flow_id);
-        auto link_vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id},
-                                            {noc_model.get_noc_links().keys().begin(), noc_model.get_noc_links().keys().end()});
-
-        operations_research::sat::LinearExpr latency_overrun_expr;
-        latency_overrun_expr += operations_research::sat::LinearExpr::Sum(link_vars);
-        latency_overrun_expr -= n_max_links;
-
-        cp_model.AddMaxEquality(latency_overrun_var, {latency_overrun_expr, 0});
-    }
+    constrain_latency_overrun_vars(cp_model, flow_link_vars, latency_overrun_vars);
 
     forbid_illegal_turns(flow_link_vars, cp_model);
 
@@ -415,7 +434,6 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
 
     operations_research::sat::SatParameters sat_params;
     sat_params.set_num_workers(1);
-    sat_params.set_num_search_workers(1);
     sat_params.set_random_seed(seed);
 
     model.Add(NewSatParameters(sat_params));
@@ -451,4 +469,133 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
     }
 
     return {};
+}
+
+static void add_movable_continuity_constraints(t_flow_link_var_map& flow_link_vars,
+                                               std::map<ClusterBlockId, operations_research::sat::IntVar>& x_loc_vars,
+                                               std::map<ClusterBlockId, operations_research::sat::IntVar>& y_loc_vars,
+                                               operations_research::sat::CpModelBuilder& cp_model) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& noc_model = noc_ctx.noc_model;
+    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+    const auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Get the logical block type for router
+    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+
+    // Get the compressed grid for NoC
+    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
+
+    std::unordered_map<std::pair<ClusterBlockId, NocRouterId>, operations_research::sat::BoolVar> logical_physical_mapped;
+
+    for (auto& [key, x_loc_var] : x_loc_vars) {
+        auto& y_loc_var = y_loc_vars[key];
+
+        for (auto noc_router_id : noc_model.get_noc_routers().keys()) {
+            const auto& noc_router = noc_model.get_single_noc_router(noc_router_id);
+            const auto noc_router_pos = noc_router.get_router_physical_location();
+            auto compressed_loc = get_compressed_loc_approx(compressed_noc_grid, t_pl_loc{noc_router_pos, 0}, 1)[noc_router_pos.layer_num];
+
+            operations_research::sat::BoolVar x_condition = cp_model.NewBoolVar();
+            cp_model.AddEquality(x_loc_var, compressed_loc.x).OnlyEnforceIf(x_condition);
+            cp_model.AddNotEqual(x_loc_var, compressed_loc.x).OnlyEnforceIf(Not(x_condition));
+
+            operations_research::sat::BoolVar y_condition = cp_model.NewBoolVar();
+            cp_model.AddEquality(y_loc_var, compressed_loc.y).OnlyEnforceIf(y_condition);
+            cp_model.AddNotEqual(y_loc_var, compressed_loc.y).OnlyEnforceIf(Not(y_condition));
+
+            // Combine conditions using AddBoolAnd
+            operations_research::sat::BoolVar both_conds_met = cp_model.NewBoolVar();
+            cp_model.AddBoolAnd({x_condition, y_condition}).OnlyEnforceIf(both_conds_met);
+            cp_model.AddBoolOr({Not(x_condition), Not(y_condition)}).OnlyEnforceIf(Not(both_conds_met));
+
+            logical_physical_mapped[{key, noc_router_id}] = both_conds_met;
+        }
+    }
+
+    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
+        const auto& traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(traffic_flow_id);
+
+        // get the source and destination logical router blocks in the current traffic flow
+        ClusterBlockId logical_source_router_block_id = traffic_flow.source_router_cluster_id;
+        ClusterBlockId logical_sink_router_block_id = traffic_flow.sink_router_cluster_id;
+
+        // each NoC router has at most one incoming and one outgoing link activated
+        for (auto noc_router_id : noc_ctx.noc_model.get_noc_routers().keys()) {
+
+            auto& src_is_mapped = logical_physical_mapped[{logical_source_router_block_id, noc_router_id}];
+            auto& dst_is_mapped = logical_physical_mapped[{logical_source_router_block_id, noc_router_id}];
+
+            operations_research::sat::BoolVar nor_src_dst_mapped = cp_model.NewBoolVar();
+
+            cp_model.AddImplication(src_is_mapped , nor_src_dst_mapped.Not());
+            cp_model.AddImplication(dst_is_mapped , nor_src_dst_mapped.Not());
+            cp_model.AddBoolOr({src_is_mapped.Not(), dst_is_mapped.Not()}).OnlyEnforceIf(nor_src_dst_mapped);
+
+            const auto& incoming_links = noc_ctx.noc_model.get_noc_router_incoming_links(noc_router_id);
+            auto vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id}, incoming_links);
+            cp_model.AddAtMostOne(vars).OnlyEnforceIf(nor_src_dst_mapped);
+            cp_model.AddExactlyOne(vars).OnlyEnforceIf(dst_is_mapped);
+            cp_model.AddEquality(operations_research::sat::LinearExpr::Sum(vars), 0).OnlyEnforceIf(src_is_mapped);
+
+            operations_research::sat::LinearExpr lhs;
+            lhs = operations_research::sat::LinearExpr::Sum(vars);
+
+            const auto& outgoing_links = noc_ctx.noc_model.get_noc_router_outgoing_links(noc_router_id);
+            vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id}, outgoing_links);
+            cp_model.AddAtMostOne(vars).OnlyEnforceIf(nor_src_dst_mapped);
+            cp_model.AddExactlyOne(vars).OnlyEnforceIf(src_is_mapped);
+            cp_model.AddEquality(operations_research::sat::LinearExpr::Sum(vars), 0).OnlyEnforceIf(dst_is_mapped);
+
+            operations_research::sat::LinearExpr rhs;
+            rhs = operations_research::sat::LinearExpr::Sum(vars);
+
+            cp_model.AddEquality(lhs, rhs).OnlyEnforceIf(nor_src_dst_mapped);
+        }
+    }
+}
+
+void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
+                             bool minimize_aggregate_bandwidth,
+                             int seed) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& noc_model = noc_ctx.noc_model;
+    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+
+    operations_research::sat::CpModelBuilder cp_model;
+
+    t_flow_link_var_map flow_link_vars;
+
+    std::map<NocTrafficFlowId, operations_research::sat::IntVar> latency_overrun_vars;
+
+    const std::vector<ClusterBlockId>& router_blk_ids = traffic_flow_storage.get_router_clusters_in_netlist();
+    operations_research::Domain loc_domain(0, 9);
+    std::map<ClusterBlockId, operations_research::sat::IntVar> x_loc_vars;
+    std::map<ClusterBlockId, operations_research::sat::IntVar> y_loc_vars;
+    std::vector<std::pair<operations_research::sat::IntervalVar, operations_research::sat::IntervalVar>> loc_intervals;
+
+
+    for (auto router_blk_id : router_blk_ids) {
+        x_loc_vars[router_blk_id] = cp_model.NewIntVar(loc_domain);
+        y_loc_vars[router_blk_id] = cp_model.NewIntVar(loc_domain);
+
+        loc_intervals.emplace_back(cp_model.NewIntervalVar(x_loc_vars[router_blk_id], 1, x_loc_vars[router_blk_id]+1),
+                                   cp_model.NewIntervalVar(y_loc_vars[router_blk_id], 1, y_loc_vars[router_blk_id]+1));
+    }
+
+    operations_research::sat::NoOverlap2DConstraint no_overlap_2d = cp_model.AddNoOverlap2D();
+
+    for (auto& [x_interval, y_interval] : loc_intervals) {
+        no_overlap_2d.AddRectangle(x_interval, y_interval);
+    }
+
+    create_flow_link_vars(cp_model, flow_link_vars, latency_overrun_vars);
+
+    constrain_latency_overrun_vars(cp_model, flow_link_vars, latency_overrun_vars);
+
+    forbid_illegal_turns(flow_link_vars, cp_model);
+
+    add_movable_continuity_constraints(flow_link_vars, x_loc_vars, y_loc_vars, cp_model);
+
 }
