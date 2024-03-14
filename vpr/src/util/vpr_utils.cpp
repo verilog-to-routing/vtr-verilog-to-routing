@@ -3,6 +3,7 @@
 #include <regex>
 #include <algorithm>
 #include <sstream>
+#include <string.h>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -17,11 +18,9 @@
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "place_macro.h"
-#include "string.h"
 #include "pack_types.h"
 #include "device_grid.h"
 #include "timing_fail_error.h"
-#include "route_constraint.h"
 #include "re_cluster_util.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
@@ -76,6 +75,8 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
+static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
+static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
 /******************** Subroutine definitions *********************************/
 
@@ -180,7 +181,7 @@ void sync_grid_to_blocks() {
         }
 
         if (device_ctx.grid.get_width_offset({blk_x, blk_y, blk_layer}) != 0 || device_ctx.grid.get_height_offset({blk_x, blk_y, blk_layer}) != 0) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d, %d).",
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placement for cluster_ctx.blocks %lu at (%d, %d, %d, %d).",
                             size_t(blk_id), blk_x, blk_y, blk_z, blk_layer);
         }
 
@@ -674,7 +675,7 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     *pin_high = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_high];
 }
 
-t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
+t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {
     for (auto const& type : types) {
         if (type.name == name) {
             return &type;
@@ -813,7 +814,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid) {
     return max_type;
 }
 
-InstPort parse_inst_port(std::string str) {
+InstPort parse_inst_port(const std::string& str) {
     InstPort inst_port(str);
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1171,7 +1172,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
     return nullptr;
 }
 
-const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name) {
+const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::string& port_name) {
     const t_pb_graph_pin* gpin = find_pb_graph_pin(pb_gnode, port_name, 0);
 
     if (gpin != nullptr) {
@@ -1180,7 +1181,7 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string po
     return nullptr;
 }
 
-const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index) {
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index) {
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
         if (pb_gnode->num_input_pins[iport] < index) continue;
 
@@ -1247,7 +1248,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
@@ -1275,7 +1276,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_t
 }
 
 /* Free pb_graph_pin lookup array */
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
     if (pb_graph_pin_lookup_from_type == nullptr) {
         return;
     }
@@ -2239,7 +2240,7 @@ void pretty_print_float(const char* prefix, double value, int num_digits, int sc
     }
 }
 
-void print_timing_stats(std::string name,
+void print_timing_stats(const std::string& name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past) {
     VTR_LOG("%s timing analysis took %g seconds (%g STA, %g slack) (%zu full updates: %zu setup, %zu hold, %zu combined).\n",
@@ -2286,22 +2287,6 @@ bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
         } else {
             VTR_ASSERT(node_type == SINK || node_type == SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
-        }
-    }
-}
-
-void apply_route_constraints(VprConstraints& vpr_constraint) {
-    ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
-    for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
-        std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
-        const RouteConstraint rc = vpr_constraint.get_route_constraint_by_net_name(net_name);
-        if (rc.is_valid()) {
-            mutable_cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
-            if (rc.route_model() == "route") {
-                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, false);
-            } else {
-                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, true);
-            }
         }
     }
 }
@@ -2522,4 +2507,22 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
             }
         }
     }
+}
+
+float get_min_cross_layer_delay() {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    float min_delay = std::numeric_limits<float>::max();
+
+    for (const auto& driver_node : rr_graph.nodes()) {
+        for (size_t edge_id = 0; edge_id < rr_graph.num_edges(driver_node); edge_id++) {
+            const auto& sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
+            if (rr_graph.node_layer(driver_node) != rr_graph.node_layer(sink_node)) {
+                int i_switch = rr_graph.edge_switch(driver_node, edge_id);
+                float edge_delay = rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
+                min_delay = std::min(min_delay, edge_delay);
+            }
+        }
+    }
+
+    return min_delay;
 }

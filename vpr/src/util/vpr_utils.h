@@ -153,10 +153,10 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logic
 std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_route_id);
 
 //Returns the port matching name within pb_gnode
-const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name);
+const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::string& port_name);
 
 //Returns the graph pin matching name at pin index
-const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index);
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index);
 
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
@@ -168,7 +168,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid);
 
 //Parses a block_name.port[x:y] (e.g. LAB.data_in[3:10]) pin range specification, if no pin range is specified
 //looks-up the block port and fills in the full range
-InstPort parse_inst_port(std::string str);
+InstPort parse_inst_port(const std::string& str);
 
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
@@ -180,9 +180,7 @@ bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
@@ -252,7 +250,7 @@ int max_pins_per_grid_tile();
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision);
 void pretty_print_float(const char* prefix, double value, int num_digits, int scientific_precision);
 
-void print_timing_stats(std::string name,
+void print_timing_stats(const std::string& name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past = t_timing_analysis_profile_info());
 
@@ -313,8 +311,14 @@ t_arch_switch_inf create_internal_arch_sw(float delay);
 
 void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
 
-// apply route constraints for route flow
-class VprConstraints;
-void apply_route_constraints(VprConstraints& constraint);
+/**
+ * @brief Iterate over all inter-layer switch types and return the minimum delay of it.
+ * useful four router lookahead to to have some estimate of the cost of crossing a layer
+ * @param arch_switch_inf
+ * @param segment_inf
+ * @param wire_to_ipin_arch_sw_id
+ * @return
+ */
+float get_min_cross_layer_delay();
 
 #endif
