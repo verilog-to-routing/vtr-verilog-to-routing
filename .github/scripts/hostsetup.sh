@@ -69,8 +69,7 @@ apt install -y \
   default-jdk \
   g++-9 \
   gcc-9 \
-  wget \
-  libtbb-dev
+  wget
 
 # installing the latest version of cmake
 apt install -y apt-transport-https ca-certificates gnupg
