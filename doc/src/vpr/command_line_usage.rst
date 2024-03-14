@@ -350,7 +350,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_rr_graph <file>
 
-    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages. Expects a file extension of either ``.xml`` and ``.bin``.
+    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages. Expects a file extension of either ``.xml`` or ``.bin``.
 
     The routing resource graph overthrows all the architecture definitions regarding switches, nodes, and edges. Other information such as grid information, block types, and segment information are matched with the architecture file to ensure accuracy.
 
@@ -358,29 +358,32 @@ Use the options below to override this default naming behaviour.
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
 
-.. option:: --read_vpr_constraints <file1>:<file2>:...:<fileN>
+.. option:: --read_vpr_constraints <file>
 
-    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file; and/or reads the :ref:`global route constraints <vpr_constraints_file>` that router must respect from the specified XML file. Multiple files are allowed and should be seperated with a colomn char. 
+    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
 
 .. option:: --write_vpr_constraints <file>
 
-    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file; and/or writes out new :ref:`global route constraints <vpr_constraints_file>` based on current global routecounstraints to the specified XML file. Note that a single combined file is written to even there are multiple input constraint files read in.
+    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
 
 .. option:: --read_router_lookahead <file>
 
-    Reads the lookahead data from the specified file instead of computing it.
+    Reads the lookahead data from the specified file instead of computing it. Expects a file extension of either ``.capnp`` or ``.bin``.
 
 .. option:: --write_router_lookahead <file>
 
-    Writes the lookahead data to the specified file.
+    Writes the lookahead data to the specified file. Accepted file extensions are ``.capnp``, ``.bin``, and ``.csv``.
 
 .. option:: --read_placement_delay_lookup <file>
 
-    Reads the placement delay lookup from the specified file instead of computing it.
+    Reads the placement delay lookup from the specified file instead of computing it. Expects a file extension of either ``.capnp`` or ``.bin``.
 
 .. option:: --write_placement_delay_lookup <file>
 
-    Writes the placement delay lookup to the specified file.
+    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
+.. option:: --write_initial_place_file <file>
+
+    Writes out the the placement chosen by the initial placement algorithm to the specified file.
 
 .. option:: --outfile_prefix <string>
 
@@ -769,6 +772,19 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:**  ``criticality_timing``
 
+.. option:: --place_bounding_box_mode {auto_bb | cube_bb | per_layer_bb}
+
+    Specifies the type of the wirelength estimator used during placement. For single layer architectures, cube_bb (a 3D bounding box) is always used (and is the same as per_layer_bb).
+    For 3D architectures, cube_bb is appropriate if you can cross between layers at switch blocks, while if you can only cross between layers at output pins per_layer_bb (one bouding box per layer) is more accurate and appropriate.
+
+    ``auto_bb``: The bounding box type is determined automatically based on the cross-layer connections.
+
+    ``cube_bb``: ``cube_bb`` bounding box is used to estimate the wirelength.
+
+    ``per_layer_bb``: ``per_layer_bb`` bounding box is used to estimate the wirelength
+
+    **Default:** ``auto_bb``
+
 .. option:: --place_chan_width <int>
 
     Tells VPR how many tracks a channel of relative width 1 is expected to need to complete routing of this circuit.
@@ -784,7 +800,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     **Default:** ``0.0``
 
 .. _dusty_sa_options:
-Setting any of the following options selects `Dusty's annealing schedule <dusty_sa.rst>`_.
+Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>` .
 
 .. option:: --alpha_min <float>
 
@@ -879,6 +895,38 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 
     **Default:** ``move_block_type``
 
+.. option:: --placer_debug_block <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which block the placer produces detailed debug information for. 
+    
+    If the block being moved has the same ID as the number assigned to this parameter, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the block ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all blocks.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
+.. option:: --placer_debug_net <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which net the placer produces detailed debug information for.
+
+    If a net with the same ID assigned to this parameter is connected to the block that is being moved, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the net ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all nets.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
 
 .. _timing_driven_placer_options:
 
@@ -903,6 +951,13 @@ The following options are only valid when the placement engine is in timing-driv
 .. option:: --inner_loop_recompute_divider <int>
 
     Controls how many times the placer performs a timing analysis to update its criticality estimates while at a single temperature.
+
+    **Default:** ``0``
+
+.. option:: --quench_recompute_divider <int>
+
+    Controls how many times the placer performs a timing analysis to update its criticality estimates during a quench. 
+    If unspecified, uses the value from --inner_loop_recompute_divider.
 
     **Default:** ``0``
 
@@ -1064,6 +1119,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 .. note:: By default the router performs a binary search to find the minimum routable channel width.  To route at a fixed channel width use :option:`--route_chan_width`.
 
 .. seealso:: :ref:`timing_driven_router_options`
+
+.. option:: --flat_routing {on | off}
+
+    If this option is enabled, the *run-flat* router is used instead of the *two-stage* router.
+    This means that during the routing stage, all nets, both intra- and inter-cluster, are routed directly from one primitive pin to another primitive pin.
+    This increases routing time but can improve routing quality by re-arranging LUT inputs and exposing additional optimization opportunities in architectures with local intra-cluster routing that is not a full crossbar.
+
+    **Default:** ``OFF`
 
 .. option:: --max_router_iterations <int>
 

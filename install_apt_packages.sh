@@ -9,9 +9,7 @@ sudo apt-get install -y \
     bison \
     flex \
     python3-dev \
-    python3-venv \
-    openssl \
-    libssl-dev
+    python3-venv
     
 # Required for graphics
 sudo apt-get install -y \

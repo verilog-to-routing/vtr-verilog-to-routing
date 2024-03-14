@@ -31,7 +31,6 @@ option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
-option(VTR_ENABLE_VERSION "Enable version number up-to-date during compilation" ON) 
 option(VTR_ENABLE_VERBOSE "Enable increased debug verbosity" OFF)
 option(SPEC_CPU "Enable SPEC CPU v8 support" OFF)
 
