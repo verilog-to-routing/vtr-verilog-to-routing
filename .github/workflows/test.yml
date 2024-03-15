@@ -350,6 +350,7 @@ jobs:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on'
         BUILD_TYPE: debug
       run: |
+        sudo sysctl -w vm.mmap_rnd_bits=28
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
