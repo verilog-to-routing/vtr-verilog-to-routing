@@ -15,6 +15,12 @@ set(VPR_PGO_DATA_DIR "." CACHE PATH "Where to store and retrieve PGO data")
 #Handle graphics setup
 set(GRAPHICS_DEFINES "")
 
+#sockpp
+set(SOCKPP_BUILD_SHARED OFF CACHE BOOL "Override default value" FORCE)
+set(SOCKPP_BUILD_STATIC ON CACHE BOOL "Override default value" FORCE)
+add_subdirectory(thirdparty/sockpp)
+set(THIRDPARTY_INCLUDE_DIRS thirdparty/sockpp/include)
+
 if (VPR_USE_EZGL STREQUAL "on")
     message(STATUS "EZGL: graphics enabled")
     set(
@@ -59,7 +65,7 @@ add_library(libvpr STATIC
 )
 
 
-target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
+target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS} ${THIRDPARTY_INCLUDE_DIRS})
 
 #VPR_ANALYTIC_PLACE is inisitalized in the root CMakeLists
 #Check Eigen dependency
@@ -89,6 +95,8 @@ target_link_libraries(libvpr
                         libargparse
                         libpugixml
                         librrgraph
+                        sockpp-static
+                        -lz
 )
 
 #link graphics library only when graphics set to on

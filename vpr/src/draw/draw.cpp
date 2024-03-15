@@ -63,6 +63,9 @@
 #include "ui_setup.h"
 #include "buttons.h"
 
+#include "gateio.h"
+#include "serverupdate.h"
+
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
 #endif
@@ -181,7 +184,9 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
-                         bool is_flat) {
+                         bool is_flat,
+                         bool enable_server,
+                         int port_num) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -197,6 +202,14 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->graphics_commands = graphics_commands;
     draw_state->is_flat = is_flat;
 
+    if (enable_server) {
+        /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
+        server::GateIO& gate_io = g_vpr_ctx.mutable_server().mutable_gateIO();
+        if (!gate_io.isRunning()) {
+            gate_io.start(port_num);
+            g_timeout_add(/*interval_ms*/ 100, server::update, &application);
+        }
+    }
 #else
     //Suppress unused parameter warnings
     (void)show_graphics_val;

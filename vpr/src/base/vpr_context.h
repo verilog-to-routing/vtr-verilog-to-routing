@@ -32,6 +32,10 @@
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
+#include "gateio.h"
+#include "taskresolver.h"
+#include "tatum/report/TimingPath.hpp"
+
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -550,6 +554,75 @@ struct NocContext : public Context {
 };
 
 /**
+ * @brief State relating to server mode
+ *
+ * This should contain only data structures that
+ * related to server state.
+ */
+class ServerContext : public Context {
+  public:
+    const server::GateIO& gateIO() const { return gate_io_; }
+    server::GateIO& mutable_gateIO() { return gate_io_; }
+
+    const server::TaskResolver& task_resolver() const { return task_resolver_; }
+    server::TaskResolver& mutable_task_resolver() { return task_resolver_; }
+
+    void set_crit_paths(const std::vector<tatum::TimingPath>& crit_paths) { crit_paths_ = crit_paths; }
+    const std::vector<tatum::TimingPath>& crit_paths() const { return crit_paths_; }
+
+    void set_critical_path_num(int critical_path_num) { critical_path_num_ = critical_path_num; }
+    int critical_path_num() const { return critical_path_num_; }
+
+    void set_path_type(const std::string& path_type) { path_type_ = path_type; }
+    const std::string& path_type() const { return path_type_; }
+
+    void set_crit_path_elements(std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes) { crit_path_element_indexes_ = crit_path_element_indexes; }
+    std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes() const { return crit_path_element_indexes_; }
+
+    void set_draw_crit_path_contour(bool draw_crit_path_contour) { draw_crit_path_contour_ = draw_crit_path_contour; }
+    bool draw_crit_path_contour() const { return draw_crit_path_contour_; }
+
+  private:
+    server::GateIO gate_io_;
+    server::TaskResolver task_resolver_;
+
+    /**
+     * @brief Stores the critical path items.
+     *
+     * This value is used when rendering the critical path by the selected index.
+     * Once calculated upon request, it provides the value for a specific critical path
+     * to be rendered upon user request.
+     */
+    std::vector<tatum::TimingPath> crit_paths_;
+
+    /**
+     * @brief Stores the number of critical paths items.
+     *
+     * This value is used to generate a critical path report with a certain number of items,
+     * which will be sent back to the client upon request.
+     */
+    int critical_path_num_ = 1;
+
+    /**
+     * @brief Stores the critical path type.
+     *
+     * This value is used to generate a specific type of critical path report and send
+     * it back to the client upon request.
+     */
+    std::string path_type_ = "setup";
+
+    /**
+     * @brief Stores the selected critical path elements.
+     *
+     * This value is used to render the selected critical path elements upon client request.
+     * The std::map key plays role of path index, where the element indexes are stored as std::set.
+     */
+    std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes_;
+
+    bool draw_crit_path_contour_ = false;
+};
+
+/**
  * @brief This object encapsulates VPR's state.
  *
  * There is typically a single instance which is
@@ -632,6 +705,9 @@ class VprContext : public Context {
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
 
+    const ServerContext& server() const { return server_; }
+    ServerContext& mutable_server() { return server_; }
+
   private:
     DeviceContext device_;
 
@@ -647,6 +723,8 @@ class VprContext : public Context {
     RoutingContext routing_;
     FloorplanningContext constraints_;
     NocContext noc_;
+
+    ServerContext server_;
 
     PackingMultithreadingContext packing_multithreading_;
 };

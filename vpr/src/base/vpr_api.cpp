@@ -291,6 +291,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->RouterOpts,
              &vpr_setup->AnalysisOpts,
              &vpr_setup->NocOpts,
+             &vpr_setup->ServerOpts,
              &vpr_setup->RoutingArch,
              &vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
@@ -1045,7 +1046,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, is_flat);
+                        vpr_setup.GraphicsCommands, is_flat, vpr_setup.ServerOpts.is_server_mode_enabled, vpr_setup.ServerOpts.port_num);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }
@@ -1257,6 +1258,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
                    t_noc_opts* NocOpts,
+                   t_server_opts* ServerOpts,
                    t_det_routing_arch* RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
@@ -1281,6 +1283,7 @@ void vpr_setup_vpr(t_options* Options,
              RouterOpts,
              AnalysisOpts,
              NocOpts,
+             ServerOpts,
              RoutingArch,
              PackerRRGraph,
              Segments,
