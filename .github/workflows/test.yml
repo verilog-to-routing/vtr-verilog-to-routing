@@ -303,6 +303,17 @@ jobs:
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
 
+    - name: Upload regression run files
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{matrix.name}}_run_files
+        path: |
+          vtr_flow/**/*.out
+          vtr_flow/**/*.blif
+          vtr_flow/**/*.p
+          vtr_flow/**/*.net
+          vtr_flow/**/*.r
+
 
   Parmys:
     name: 'Parmys Basic Test'
