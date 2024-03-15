@@ -8,6 +8,7 @@
 #include "sat_routing.h"
 
 #include "vtr_math.h"
+#include "vtr_time.h"
 
 /**
  * @brief Evaluates whether a NoC router swap should be accepted or not.
@@ -251,42 +252,76 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
               << " Agg BW: " << costs.noc_cost_terms.aggregate_bandwidth
               << " Latency: " << costs.noc_cost_terms.latency
               << " Latency Over: " << costs.noc_cost_terms.latency_overrun
-              << " Congestion: " << costs.noc_cost_terms.congestion << std::endl;
+              << " Congestion: " << costs.noc_cost_terms.congestion
+              << " Congested Links: " << get_number_of_congested_noc_links() << std::endl;
 
 }
 
 void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
-//    auto& noc_ctx = g_vpr_ctx.noc();
+    vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
+    auto& noc_ctx = g_vpr_ctx.noc();
 
     // Get all the router clusters
-//    const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+    const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+//
+    // Holds all the routers that are not fixed into a specific location by constraints
+    std::vector<ClusterBlockId> unfixed_routers;
 
-//    // Holds all the routers that are not fixed into a specific location by constraints
-//    std::vector<ClusterBlockId> unfixed_routers;
-//
-//    // Check for floorplanning constraints and place constrained NoC routers
-//    for (auto router_blk_id : router_blk_ids) {
-//        // The block is fixed and was placed in mark_fixed_blocks()
-//        if (is_block_placed((router_blk_id))) {
-//            continue;
-//        }
-//
-//        if (is_cluster_constrained(router_blk_id)) {
-//            place_constrained_noc_router(router_blk_id);
-//        } else {
-//            unfixed_routers.push_back(router_blk_id);
-//        }
-//    }
-//
-//    // Place unconstrained NoC routers randomly
-//    place_noc_routers_randomly(unfixed_routers, seed);
+    // Check for floorplanning constraints and place constrained NoC routers
+    for (auto router_blk_id : router_blk_ids) {
+        // The block is fixed and was placed in mark_fixed_blocks()
+        if (is_block_placed((router_blk_id))) {
+            continue;
+        }
+
+        if (is_cluster_constrained(router_blk_id)) {
+            place_constrained_noc_router(router_blk_id);
+        } else {
+            unfixed_routers.push_back(router_blk_id);
+        }
+    }
+
+    // Place unconstrained NoC routers randomly
+    place_noc_routers_randomly(unfixed_routers, seed);
+
+    // populate internal data structures to maintain route, bandwidth usage, and latencies
+    initial_noc_routing({});
+
+    // Run the simulated annealing optimizer for NoC routers
+    noc_routers_anneal(noc_opts);
+
+    // check if there is any cycles
+    bool has_cycle = noc_routing_has_cycle();
+    if (has_cycle) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                        "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
+                        "when packets wait on each other in a cycle.\n");
+    }
+
+
+
+    const auto& placement_ctx = g_vpr_ctx.placement();
 
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
     std::map<ClusterBlockId, t_pl_loc> noc_router_locs;
 
     noc_sat_place_and_route(traffic_flow_routes, noc_router_locs, 4);
 
+    t_placer_costs costs;
+    reinitialize_noc_routing(costs, traffic_flow_routes);
+
+    std::cout << "Initial NoC placement costs: "
+              << " Agg BW: " << costs.noc_cost_terms.aggregate_bandwidth
+              << " Latency: " << costs.noc_cost_terms.latency
+              << " Latency Over: " << costs.noc_cost_terms.latency_overrun
+              << " Congestion: " << costs.noc_cost_terms.congestion
+              << " Congested Links: " << get_number_of_congested_noc_links() << std::endl;
+
     for (auto& [router_blk_id, loc] : noc_router_locs) {
+        if (placement_ctx.block_locs[router_blk_id].is_fixed) {
+            continue;
+        }
+
         // Create a macro with a single member
         t_pl_macro_member macro_member;
         macro_member.blk_index = router_blk_id;
@@ -298,19 +333,5 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
         if (!legal) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Could not place a router cluster into an empty physical router.");
         }
-    }
-
-    // populate internal data structures to maintain route, bandwidth usage, and latencies
-    initial_noc_routing(traffic_flow_routes);
-
-    // Run the simulated annealing optimizer for NoC routers
-//    noc_routers_anneal(noc_opts);
-
-    // check if there is any cycles
-    bool has_cycle = noc_routing_has_cycle();
-    if (has_cycle) {
-        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                        "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
-                        "when packets wait on each other in a cycle.\n");
     }
 }

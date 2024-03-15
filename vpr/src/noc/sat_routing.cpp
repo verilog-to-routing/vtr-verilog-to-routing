@@ -693,7 +693,6 @@ static void constrain_fixed_noc_routers(std::map<ClusterBlockId, orsat::IntVar>&
         const auto& router_loc = place_ctx.block_locs[router_blk_id];
         if (router_loc.is_fixed)  {
             auto compressed_loc = get_compressed_loc(compressed_noc_grid, router_loc.loc, num_layers)[router_loc.loc.layer];
-            std::cout << compressed_loc.x << " " << compressed_loc.y << std::endl;
             cp_model.AddEquality(x_loc_vars[router_blk_id], compressed_loc.x);
             cp_model.AddEquality(y_loc_vars[router_blk_id], compressed_loc.y);
         }
@@ -706,6 +705,8 @@ void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId
     vtr::ScopedStartFinishTimer timer("NoC SAT Placement and Routing");
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+    const auto& placement_ctx = g_vpr_ctx.placement();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     traffic_flow_routes.clear();
     noc_router_locs.clear();
@@ -757,6 +758,24 @@ void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId
 
     constrain_fixed_noc_routers(x_loc_vars, y_loc_vars, cp_model);
 
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
+    // Get the logical block type for router
+    const auto router_block_type = cluster_ctx.clb_nlist.block_type(traffic_flow_storage.get_router_clusters_in_netlist()[0]);
+
+    // Get the compressed grid for NoC
+    const auto& compressed_noc_grid = placement_ctx.compressed_block_grids[router_block_type->index];
+    for (auto router_blk_id : router_blk_ids) {
+        auto router_loc = placement_ctx.block_locs[router_blk_id];
+
+        auto compressed_loc = get_compressed_loc(compressed_noc_grid, router_loc.loc, num_layers)[0];
+
+        cp_model.AddHint(x_loc_vars[router_blk_id], compressed_loc.x);
+        cp_model.AddHint(y_loc_vars[router_blk_id], compressed_loc.y);
+//        cp_model.AddEquality(x_loc_vars[router_blk_id], compressed_loc.x);
+//        cp_model.AddEquality(y_loc_vars[router_blk_id], compressed_loc.y);
+    }
+
     orsat::LinearExpr latency_overrun_sum;
     for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
         latency_overrun_sum += latency_overrun_var;
@@ -771,10 +790,26 @@ void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId
         agg_bw_expr += orsat::LinearExpr::Term(var, rescaled_traffic_flow_bandwidths[traffic_flow_id]);
     }
 
+    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
+        std::vector<NocLinkId> activated_links;
+        for (auto route_link_id : traffic_flow_storage.get_traffic_flow_route(traffic_flow_id)) {
+            cp_model.AddHint(flow_link_vars[{traffic_flow_id, route_link_id}], true);
+//            cp_model.AddEquality(flow_link_vars[{traffic_flow_id, route_link_id}], true);
+            activated_links.push_back(route_link_id);
+        }
+
+        for (auto noc_link_id : noc_ctx.noc_model.get_noc_links().keys()) {
+            if (std::find(activated_links.begin(), activated_links.end(), noc_link_id) == activated_links.end()) {
+                cp_model.AddHint(flow_link_vars[{traffic_flow_id, noc_link_id}], false);
+//                cp_model.AddEquality(flow_link_vars[{traffic_flow_id, noc_link_id}], false);
+            }
+        }
+    }
+
     orsat::LinearExpr congested_link_sum = orsat::LinearExpr::Sum(link_congested_vars);
     congested_link_sum *= (1024 * 16);
 
-    cp_model.Minimize(latency_overrun_sum + agg_bw_expr);
+    cp_model.Minimize(latency_overrun_sum + agg_bw_expr + congested_link_sum);
 
     orsat::SatParameters sat_params;
     sat_params.set_random_seed(seed);
