@@ -383,12 +383,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 8 (Ubuntu Jammy - 22.04)',     eval: 'CC=gcc-8 && CXX=g++-8',           }
         - { name: 'GCC 9 (Ubuntu Jammy - 22.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
         - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         }
         - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-11 && CXX=g++-11',         }
         - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-12 && CXX=g++-12',         }
-        - { name: 'Clang 8 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-8 && CXX=clang++-8',   }
         - { name: 'Clang 11 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-11 && CXX=clang++-11',   }
         - { name: 'Clang 12 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-12 && CXX=clang++-12',   }
         - { name: 'Clang 13 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-13 && CXX=clang++-13',   }
@@ -412,17 +410,6 @@ jobs:
         MATRIX_EVAL: ${{ matrix.eval }}
         BUILD_TYPE: release
       run: |
-        sudo apt update
-        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-8/gcc-8_8.4.0-3ubuntu2_amd64.deb
-        wget http://mirrors.edge.kernel.org/ubuntu/pool/universe/g/gcc-8/gcc-8-base_8.4.0-3ubuntu2_amd64.deb
-        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-8/libgcc-8-dev_8.4.0-3ubuntu2_amd64.deb
-        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-8/cpp-8_8.4.0-3ubuntu2_amd64.deb
-        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-8/libmpx2_8.4.0-3ubuntu2_amd64.deb
-        wget http://mirrors.kernel.org/ubuntu/pool/main/i/isl/libisl22_0.22.1-1_amd64.deb
-        sudo apt install ./libisl22_0.22.1-1_amd64.deb ./libmpx2_8.4.0-3ubuntu2_amd64.deb ./cpp-8_8.4.0-3ubuntu2_amd64.deb ./libgcc-8-dev_8.4.0-3ubuntu2_amd64.deb ./gcc-8-base_8.4.0-3ubuntu2_amd64.deb ./gcc-8_8.4.0-3ubuntu2_amd64.deb
-        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-8/libstdc++-8-dev_8.4.0-3ubuntu2_amd64.deb
-        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-8/g++-8_8.4.0-3ubuntu2_amd64.deb
-        sudo apt install ./libstdc++-8-dev_8.4.0-3ubuntu2_amd64.deb ./g++-8_8.4.0-3ubuntu2_amd64.deb
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
 
