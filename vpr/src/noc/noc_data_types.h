@@ -24,4 +24,7 @@ struct noc_traffic_flow_id_tag;
 /** Datatype to index traffic flows within the application */
 typedef vtr::StrongId<noc_traffic_flow_id_tag, int> NocTrafficFlowId;
 
+struct noc_group_id_tag;
+typedef vtr::StrongId<noc_group_id_tag, int> NocGroupId;
+
 #endif

@@ -413,6 +413,14 @@ struct PlacementContext : public Context {
      * it would mean that per-layer bounding box is used. For the 2D architecture, the cube bounding box would be used.
      */
     bool cube_bb = false;
+
+
+    vtr::vector<NocGroupId, std::vector<ClusterBlockId>> noc_group_clusters;
+
+    vtr::vector<NocGroupId, std::vector<ClusterBlockId>> noc_group_routers;
+
+    std::map<ClusterBlockId, NocGroupId> noc_router_to_noc_group;
+
 };
 
 /**

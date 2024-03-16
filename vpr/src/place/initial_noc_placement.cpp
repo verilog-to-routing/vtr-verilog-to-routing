@@ -252,12 +252,13 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     }
 }
 
-void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
+void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& placer_opts) {
     auto& noc_ctx = g_vpr_ctx.noc();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // Get all the router clusters
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+    const auto router_block_type = cluster_ctx.clb_nlist.block_type(router_blk_ids[0]);
 
     // Holds all the routers that are not fixed into a specific location by constraints
     std::vector<ClusterBlockId> unfixed_routers;
@@ -277,7 +278,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     }
 
     // Place unconstrained NoC routers randomly
-    place_noc_routers_randomly(unfixed_routers, seed);
+    place_noc_routers_randomly(unfixed_routers, placer_opts.seed);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();
@@ -285,37 +286,35 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts);
 
-    auto& device_ctx = g_vpr_ctx.device();
+    vtr::vector<ClusterBlockId, bool> block_visited(cluster_ctx.clb_nlist.blocks().size(), false);
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    int noc_group_cnt = 0;
 
     for (auto router_blk_id : router_blk_ids) {
-        g_vpr_ctx.mutable_placement().block_locs[router_blk_id].is_fixed = true;
 
-        vtr::vector<ClusterBlockId, bool> block_visited(cluster_ctx.clb_nlist.blocks().size(), false);
+        if (block_visited[router_blk_id]) {
+            continue;
+        }
+
+        NocGroupId noc_group_id(noc_group_cnt);
+        noc_group_cnt++;
+        place_ctx.noc_group_routers.emplace_back();
+        place_ctx.noc_group_clusters.emplace_back();
 
         std::queue<ClusterBlockId> q;
         q.push(router_blk_id);
         block_visited[router_blk_id] = true;
-
-        const auto& noc_loc = g_vpr_ctx.placement().block_locs[router_blk_id].loc;
-
-        const int height = device_ctx.grid.height();
-        const int width = device_ctx.grid.width();
-
-        RegionRectCoord rect_coord{std::max(0, noc_loc.x - 20),
-                                   std::max(0, noc_loc.y - 20),
-                                   std::min(width-1, noc_loc.x + 20),
-                                   std::min(height-1, noc_loc.y + 20), 0};
-        Region region;
-        region.set_region_rect(rect_coord);
 
         while (!q.empty()) {
             ClusterBlockId current_block_id = q.front();
             q.pop();
 
             auto block_type = cluster_ctx.clb_nlist.block_type(current_block_id);
-            if (std::strcmp(block_type->name, "io") != 0) {
-                auto& constraint = g_vpr_ctx.mutable_floorplanning().cluster_constraints[current_block_id];
-                constraint.add_to_part_region(region);
+            if (block_type->index == router_block_type->index) {
+                place_ctx.noc_group_routers[noc_group_id].push_back(current_block_id);
+                place_ctx.noc_router_to_noc_group[current_block_id] = noc_group_id;
+            } else {
+                place_ctx.noc_group_clusters[noc_group_id].push_back(current_block_id);
             }
 
             for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(current_block_id)) {
@@ -325,7 +324,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
                     continue;
                 }
 
-                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= 32) {
+                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= placer_opts.place_high_fanout_net) {
                     continue;
                 }
 
