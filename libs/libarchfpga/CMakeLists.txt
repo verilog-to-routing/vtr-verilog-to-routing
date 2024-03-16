@@ -17,7 +17,7 @@ target_include_directories(libarchfpga PUBLIC ${LIB_INCLUDE_DIRS})
 
 set_target_properties(libarchfpga PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(libarchfpga
                         libvtrutil
                         libpugixml

@@ -100,7 +100,7 @@ set_target_properties(libvtrutil PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 #Ensure version is always up to date by requiring version to be run first
 add_dependencies(libvtrutil version)
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(libvtrutil
                         liblog)
 
