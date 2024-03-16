@@ -65,9 +65,12 @@ static std::vector<AtomBlockId> find_noc_router_atoms() {
 static void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atoms) {
     const auto& atom_ctx = g_vpr_ctx.atom();
     auto& constraints = g_vpr_ctx.mutable_floorplanning().constraints;
-//    const auto& high_fanout_thresholds = g_vpr_ctx.cl_helper().high_fanout_thresholds;
+    const auto& high_fanout_thresholds = g_vpr_ctx.cl_helper().high_fanout_thresholds;
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
-    const size_t high_fanout_threshold = 32; //;high_fanout_thresholds.get_threshold("");
+    t_logical_block_type_ptr logic_block_type = infer_logic_block_type(grid);
+    const size_t high_fanout_threshold = high_fanout_thresholds.get_threshold(logic_block_type->name);
 
     // get the total number of atoms
     const size_t n_atoms = atom_ctx.nlist.blocks().size();
