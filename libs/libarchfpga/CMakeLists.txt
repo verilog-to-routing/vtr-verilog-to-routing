@@ -17,13 +17,33 @@ target_include_directories(libarchfpga PUBLIC ${LIB_INCLUDE_DIRS})
 
 set_target_properties(libarchfpga PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(libarchfpga
                         libvtrutil
                         libpugixml
                         libpugiutil
                         libvtrcapnproto
 )
+
+# Using filesystem library requires additional compiler/linker options for GNU implementation prior to 9.1
+# and LLVM implementation prior to LLVM 9.0;
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    # Get the compiler version string
+    execute_process(COMMAND ${CMAKE_C_COMPILER} --version OUTPUT_VARIABLE _gcc_output)
+    string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" _gcc_version ${_gcc_output})
+
+    if(_gcc_version VERSION_LESS "9.1")
+        target_link_libraries(libarchfpga stdc++fs)
+    endif()
+elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    # Get the compiler version string
+    execute_process(COMMAND ${CMAKE_C_COMPILER} --version OUTPUT_VARIABLE _clang_output)
+    string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" _clang_version ${_clang_output})
+
+    if(_clang_version VERSION_LESS "9.0")
+        target_link_libraries(libarchfpga c++fs)
+    endif()
+endif()
 
 target_compile_definitions(libarchfpga PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
 
