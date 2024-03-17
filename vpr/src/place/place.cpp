@@ -70,6 +70,8 @@
 
 #include "noc_place_utils.h"
 
+#include "noc_group_move_generator.h"
+
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
@@ -1721,7 +1723,9 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected, rlim);
+//        create_move_outcome = propose_router_swap(blocks_affected, rlim);
+        NocGroupMoveGenerator noc_group_move_gen;
+        noc_group_move_gen.propose_move(blocks_affected, proposed_action, 20, placer_opts, criticalities);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1960,6 +1964,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
+    } else {
+        std::cout << "Group move delta cost: " << delta_c << std::endl;
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
