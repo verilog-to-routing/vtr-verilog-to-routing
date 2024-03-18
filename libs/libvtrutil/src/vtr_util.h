@@ -14,8 +14,8 @@ namespace vtr {
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const char* text, const std::string delims = " \t\n");
-std::vector<std::string> split(const std::string& text, const std::string delims = " \t\n");
+std::vector<std::string> split(const char* text, const std::string& delims = " \t\n");
+std::vector<std::string> split(const std::string& text, const std::string& delims = " \t\n");
 
 ///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
@@ -24,7 +24,7 @@ std::string replace_first(const std::string& input, const std::string& search, c
 std::string replace_all(const std::string& input, const std::string& search, const std::string& replace);
 
 ///@brief Retruns true if str starts with prefix
-bool starts_with(std::string str, std::string prefix);
+bool starts_with(const std::string& str, const std::string& prefix);
 
 ///@brief Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...);
@@ -69,7 +69,7 @@ double atod(const std::string& value);
  */
 int get_file_line_number_of_last_opened_file();
 bool file_exists(const char* filename);
-bool check_file_name_extension(std::string file_name, std::string file_extension);
+bool check_file_name_extension(const std::string& file_name, const std::string& file_extension);
 
 extern std::string out_file_prefix;
 
