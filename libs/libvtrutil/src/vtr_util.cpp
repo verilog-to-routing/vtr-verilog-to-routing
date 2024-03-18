@@ -31,7 +31,7 @@ std::vector<std::string> split(const char* text, const std::string& delims) {
         std::string text_str(text);
         return split(text_str, delims);
     }
-    return std::vector<std::string>();
+    return {};
 }
 
 /**
