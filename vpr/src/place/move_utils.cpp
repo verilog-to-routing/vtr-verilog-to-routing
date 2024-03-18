@@ -1035,12 +1035,12 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
     to_loc = t_pl_loc(grid_loc.x, grid_loc.y, sub_tile, grid_loc.layer_num);
 }
 
-bool has_empty_compatible_subtile(t_logical_block_type_ptr type, const t_physical_tile_loc& to_loc) {
+int has_empty_compatible_subtile(t_logical_block_type_ptr type, const t_physical_tile_loc& to_loc) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
-    bool legal = false;
+    int return_sub_tile = -1;
 
     t_pl_loc to_uncompressed_loc;
     compressed_grid_to_loc(type, to_loc, to_uncompressed_loc);
@@ -1049,12 +1049,12 @@ bool has_empty_compatible_subtile(t_logical_block_type_ptr type, const t_physica
     const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
     for (const auto& sub_tile : compatible_sub_tiles) {
         if (place_ctx.grid_blocks.is_sub_tile_empty(to_phy_uncompressed_loc, sub_tile)) {
-            legal = true;
+            return_sub_tile = sub_tile;
             break;
         }
     }
 
-    return legal;
+    return return_sub_tile;
 }
 
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
@@ -1147,7 +1147,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
                 continue;                  //Same from/to location -- try again for new y-position
             } else if (search_for_empty) { // Check if the location has at least one empty sub-tile
-                legal = has_empty_compatible_subtile(type, to_loc);
+                legal = has_empty_compatible_subtile(type, to_loc) >= 0;
             } else {
                 legal = true;
             }

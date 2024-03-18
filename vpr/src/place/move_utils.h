@@ -232,8 +232,8 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
  *
  * @return bool True if the given location has at least one empty compatible subtile.
  */
-bool has_empty_compatible_subtile(t_logical_block_type_ptr type,
-                                  const t_physical_tile_loc& to_loc);
+int has_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                 const t_physical_tile_loc& to_loc);
 
 /**
  * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
@@ -247,7 +247,7 @@ bool has_empty_compatible_subtile(t_logical_block_type_ptr type,
  * search_for_empty: indicates that the returned location must be empty
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
-                                             const int delta_cx,
+                                             int delta_cx,
                                              const t_physical_tile_loc& from_loc,
                                              t_bb search_range,
                                              t_physical_tile_loc& to_loc,
