@@ -19,6 +19,7 @@ void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc) {
 
 void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     t_physical_tile_loc tile_loc;
     int ipin;
@@ -27,6 +28,16 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
     float acc_y = 0;
     float acc_layer = 0;
     float weight = 1;
+
+    if (place_ctx.cluster_to_noc_grp[b_from] != NocGroupId::INVALID()) {
+        NocGroupId noc_grp_id = place_ctx.cluster_to_noc_grp[b_from];
+        for (ClusterBlockId router_blk_id : place_ctx.noc_group_routers[noc_grp_id]) {
+            t_block_loc router_loc = place_ctx.block_locs[router_blk_id];
+            acc_x += router_loc.loc.x;
+            acc_y += router_loc.loc.y;
+            acc_weight += 1.0f;
+        }
+    }
 
     int from_block_layer_num = g_vpr_ctx.placement().block_locs[b_from].loc.layer;
     VTR_ASSERT(from_block_layer_num != OPEN);

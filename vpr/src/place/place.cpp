@@ -620,13 +620,6 @@ void try_place(const Netlist<>& net_list,
     num_swap_aborted = 0;
     num_ts_called = 0;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_name(net_id) == "reset") {
-            g_vpr_ctx.mutable_clustering().clb_nlist.set_net_is_global(net_id, true);
-            g_vpr_ctx.mutable_clustering().clb_nlist.set_net_is_ignored(net_id, true);
-        }
-    }
-
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(net_list,
@@ -1725,7 +1718,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         // generate a move where two random router blocks are swapped
 //        create_move_outcome = propose_router_swap(blocks_affected, rlim);
         NocGroupMoveGenerator noc_group_move_gen;
-        noc_group_move_gen.propose_move(blocks_affected, proposed_action, 20, placer_opts, criticalities);
+        create_move_outcome = noc_group_move_gen.propose_move(blocks_affected, proposed_action, 20, placer_opts, criticalities);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1965,7 +1958,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
     } else {
-        std::cout << "Group move delta cost: " << delta_c << std::endl;
+//        std::cout << "Group move delta cost: " << delta_c << std::endl;
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING

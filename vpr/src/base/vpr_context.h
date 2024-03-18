@@ -419,6 +419,8 @@ struct PlacementContext : public Context {
 
     vtr::vector<NocGroupId, std::vector<ClusterBlockId>> noc_group_routers;
 
+    vtr::vector<ClusterBlockId, NocGroupId> cluster_to_noc_grp;
+
     std::map<ClusterBlockId, NocGroupId> noc_router_to_noc_group;
 
 };

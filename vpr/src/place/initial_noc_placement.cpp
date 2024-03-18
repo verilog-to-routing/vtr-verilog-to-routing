@@ -289,6 +289,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& plac
     vtr::vector<ClusterBlockId, bool> block_visited(cluster_ctx.clb_nlist.blocks().size(), false);
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     int noc_group_cnt = 0;
+    place_ctx.cluster_to_noc_grp.resize(cluster_ctx.clb_nlist.blocks().size(), NocGroupId ::INVALID());
 
     for (auto router_blk_id : router_blk_ids) {
 
@@ -315,7 +316,9 @@ void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& plac
                 place_ctx.noc_router_to_noc_group[current_block_id] = noc_group_id;
             } else {
                 place_ctx.noc_group_clusters[noc_group_id].push_back(current_block_id);
+                place_ctx.cluster_to_noc_grp[current_block_id] = noc_group_id;
             }
+
 
             for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(current_block_id)) {
                 ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
