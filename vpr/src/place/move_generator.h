@@ -47,10 +47,10 @@ class MoveGenerator {
     /**
      * @brief Updates affected_blocks with the proposed move, while respecting the current rlim
      *
-     * This function proposes a new move and updates blocks affected and move_type accorrdingly. The function interface is general 
+     * This function proposes a new move and updates blocks affected and move_type accordingly. The function interface is general
      * to match the parameters needed by all move generators
      *
-     *  @param blocks_affectedt: the output of the move
+     *  @param blocks_affected: the output of the move
      *  @param proposed_action: Contains the move type and block type. If the block type is specified,
      *  the proposed move swaps instances of the given block type. Otherwise, the selected block type
      *  by the move generator is written to proposed_action.logical_blk_type_index.

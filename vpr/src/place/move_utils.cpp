@@ -1003,7 +1003,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 }
 
 //Array of move type strings
-static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = {
+static const std::array<std::string, NUM_PL_MOVE_TYPES + 2> move_type_strings = {
     "Uniform",
     "Median",
     "Centroid",
@@ -1011,6 +1011,7 @@ static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = 
     "W. Median",
     "Crit. Uniform",
     "Feasible Region",
+    "NoC Centroid",
     "Manual Move"};
 
 //To convert enum move type to string

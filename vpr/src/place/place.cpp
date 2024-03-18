@@ -938,9 +938,9 @@ void try_place(const Netlist<>& net_list,
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
-    move_type_stat.blk_type_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
-    move_type_stat.accepted_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
-    move_type_stat.rejected_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
+    move_type_stat.blk_type_moves.resize(device_ctx.logical_block_types.size() * (int)e_move_type::NUMBER_OF_AUTO_MOVES, 0);
+    move_type_stat.accepted_moves.resize(device_ctx.logical_block_types.size() * (int)e_move_type::NUMBER_OF_AUTO_MOVES, 0);
+    move_type_stat.rejected_moves.resize(device_ctx.logical_block_types.size() * (int)e_move_type::NUMBER_OF_AUTO_MOVES, 0);
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
@@ -1067,7 +1067,7 @@ void try_place(const Netlist<>& net_list,
             //#endif
         } while (state.outer_loop_update(stats.success_rate, costs, placer_opts,
                                          annealing_sched));
-        /* Outer loop of the simmulated annealing ends */
+        /* Outer loop of the simulated annealing ends */
     } //skip_anneal ends
 
     /* Start Quench */
@@ -1085,7 +1085,7 @@ void try_place(const Netlist<>& net_list,
                                       placer_setup_slacks.get(), pin_timing_invalidator.get(),
                                       timing_info.get());
 
-        //move the appropoiate move_generator to be the current used move generator
+        //move the appropriate move_generator to be the current used move generator
         assign_current_move_generator(move_generator, move_generator2,
                                       agent_state, placer_opts, true, current_move_generator);
 
@@ -1726,7 +1726,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
-        ++move_type_stat.blk_type_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+        ++move_type_stat.blk_type_moves[(proposed_action.logical_blk_type_index * (int)e_move_type::NUMBER_OF_AUTO_MOVES) + (int)proposed_action.move_type];
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
@@ -1877,7 +1877,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             commit_move_blocks(blocks_affected);
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
-                ++move_type_stat.accepted_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+                ++move_type_stat.accepted_moves[(proposed_action.logical_blk_type_index * (int)e_move_type::NUMBER_OF_AUTO_MOVES) + (int)proposed_action.move_type];
             }
             if (noc_opts.noc) {
                 commit_noc_costs();
@@ -1928,7 +1928,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
-                ++move_type_stat.rejected_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+                ++move_type_stat.rejected_moves[(proposed_action.logical_blk_type_index * (int)e_move_type::NUMBER_OF_AUTO_MOVES) + (int)proposed_action.move_type];
             }
             /* Revert the traffic flow routes within the NoC*/
             if (noc_opts.noc) {
