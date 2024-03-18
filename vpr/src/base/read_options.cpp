@@ -2035,7 +2035,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "The percentage probabilities of different moves in Simulated Annealing placement."
             "This option is only effective for timing-driven placement."
-            "The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove, WeightedCentroid, WeightedMedian, Timing feasible Region(TFR), Critical UniformMove}, in that order.")
+            "The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove, WeightedCentroid, WeightedMedian, Critical UniformMove, Timing feasible Region(TFR)}, in that order.")
         .nargs('+')
         .default_value({"100", "0", "0", "0", "0", "0", "0"})
 

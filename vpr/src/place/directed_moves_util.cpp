@@ -17,7 +17,12 @@ void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc) {
     tile_loc.y = std::max(std::min(tile_loc.y, (int)grid.height() - 2), 1); //-2 for no perim channels
 }
 
-void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities) {
+void calculate_centroid_loc(ClusterBlockId b_from,
+                            bool timing_weights,
+                            t_pl_loc& centroid,
+                            const PlacerCriticalities* criticalities,
+                            bool noc_attraction_enabled,
+                            float noc_attraction_weight) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -92,16 +97,15 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
         }
     }
 
-    if (!place_ctx.cluster_to_noc_grp.empty()) {
+    if (noc_attraction_enabled) {
         if (place_ctx.cluster_to_noc_grp[b_from] != NocGroupId::INVALID()) {
 
             NocGroupId noc_grp_id = place_ctx.cluster_to_noc_grp[b_from];
-            float noc_weight = place_ctx.noc_centroid_weight;
-            float single_noc_weight = (acc_weight * noc_weight) / place_ctx.noc_group_routers[noc_grp_id].size();
+            float single_noc_weight = (acc_weight * noc_attraction_weight) / place_ctx.noc_group_routers[noc_grp_id].size();
 
-            acc_x *= (1.0f - noc_weight);
-            acc_y *= (1.0f - noc_weight);
-            acc_weight *= (1.0f - noc_weight);
+            acc_x *= (1.0f - noc_attraction_weight);
+            acc_y *= (1.0f - noc_attraction_weight);
+            acc_weight *= (1.0f - noc_attraction_weight);
 
             for (ClusterBlockId router_blk_id : place_ctx.noc_group_routers[noc_grp_id]) {
                 t_block_loc router_loc = place_ctx.block_locs[router_blk_id];

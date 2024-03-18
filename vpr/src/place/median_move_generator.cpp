@@ -61,7 +61,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             continue;
         /* To speed up the calculation, we found it is useful to ignore high fanout nets.
          * Especially that in most cases, these high fanout nets are scattered in many locations of
-         * the device and don't guide to a specific location. We also assuered these assumpitions experimentally.
+         * the device and don't guide to a specific location. We also assured these assumptions experimentally.
          */
         if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
             continue;

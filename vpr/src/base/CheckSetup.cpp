@@ -12,7 +12,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_router_opts& RouterOpts,
                 const t_det_routing_arch& RoutingArch,
                 const std::vector<t_segment_inf>& Segments,
-                const t_timing_inf Timing,
+                const t_timing_inf& Timing,
                 const t_chan_width_dist Chans) {
     int i;
     int Tmp;
@@ -31,7 +31,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
             "This is allowed, but strange, and circuit speed will suffer.\n");
     }
 
-    if ((false == Timing.timing_analysis_enabled)
+    if (!Timing.timing_analysis_enabled
         && (PlacerOpts.place_algorithm.is_timing_driven())) {
         /* May work, not tested */
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -57,7 +57,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
         if (!Timing.timing_analysis_enabled
             && (DEMAND_ONLY != RouterOpts.base_cost_type && DEMAND_ONLY_NORMALIZED_LENGTH != RouterOpts.base_cost_type)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "base_cost_type must be demand_only or demand_only_normailzed_length when timing analysis is disabled.\n");
+                            "base_cost_type must be demand_only or demand_only_normalized_length when timing analysis is disabled.\n");
         }
     }
 
@@ -72,7 +72,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     for (i = 0; i < (int)Segments.size(); ++i) {
         Tmp = Segments[i].arch_opin_switch;
         auto& device_ctx = g_vpr_ctx.device();
-        if (false == device_ctx.arch_switch_inf[Tmp].buffered()) {
+        if (!device_ctx.arch_switch_inf[Tmp].buffered()) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
         }

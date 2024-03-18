@@ -86,7 +86,7 @@ class KArmedBanditAgent {
   protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_moves_;            //Number of move types that agent can choose from to perform
-    size_t num_available_types_;            //Number of block types that exist in the netlest. Agent may not choose the block type.
+    size_t num_available_types_;            //Number of block types that exist in the netlist. Agent may not choose the block type.
     size_t num_available_actions_;          //Total number of available actions
     bool propose_blk_type_ = false;         //Check if agent should propose both move and block type or only move type
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
@@ -216,18 +216,26 @@ class SimpleRLMoveGenerator : public MoveGenerator {
      */
     template<class T,
              class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
-    explicit SimpleRLMoveGenerator(std::unique_ptr<T>& agent);
+    explicit SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float noc_attraction_weight);
 
     // Updates affected_blocks with the proposed move, while respecting the current rlim
-    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) override;
+    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                               t_propose_action& proposed_action,
+                               float rlim,
+                               const t_placer_opts& placer_opts,
+                               const PlacerCriticalities* criticalities) override;
 
     // Receives feedback about the outcome of the previously proposed move
     void process_outcome(double reward, e_reward_function reward_fun) override;
 };
 
 template<class T, class>
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent) {
-    avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float noc_attraction_weight) {
+    if (noc_attraction_weight > 0.0f) {
+        avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
+    } else {
+        avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES - 1);
+    }
 
     avail_moves[(int)e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
     avail_moves[(int)e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
@@ -236,6 +244,9 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent) {
     avail_moves[(int)e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
     avail_moves[(int)e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
     avail_moves[(int)e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
+    if (noc_attraction_weight > 0.0f) {
+        avail_moves[(int)e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(noc_attraction_weight);
+    }
 
     karmed_bandit_agent = std::move(agent);
 }

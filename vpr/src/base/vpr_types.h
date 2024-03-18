@@ -112,10 +112,10 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
 #define NO_CLUSTER -1
 #define NEVER_CLUSTER -2
-#define NOT_VALID -10000 /* Marks gains that aren't valid */
+#define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
 #ifndef UNDEFINED
-#    define UNDEFINED -1
+#    define UNDEFINED (-1)
 #endif
 
 enum class e_router_lookahead {
@@ -550,9 +550,9 @@ enum class e_timing_update_type {
  ****************************************************************************/
 
 /* Values of number of placement available move types */
-#define NUM_PL_MOVE_TYPES 7
-#define NUM_PL_NONTIMING_MOVE_TYPES 3
-#define NUM_PL_1ST_STATE_MOVE_TYPES 4
+constexpr int NUM_PL_MOVE_TYPES = 7;
+constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
+constexpr int NUM_PL_1ST_STATE_MOVE_TYPES = 4;
 
 /* Timing data structures end */
 enum sched_type {
@@ -1503,8 +1503,8 @@ struct t_noc_opts {
     double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
     double noc_latency_weighting;             ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
     double noc_congestion_weighting;          ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
-    int noc_swap_percentage;                  ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
     double noc_centroid_weight;
+    int noc_swap_percentage;                  ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
     std::string noc_placement_file_name;      ///<is the name of the output file that contains the NoC placement information
 };
 

@@ -651,7 +651,7 @@ void try_place(const Netlist<>& net_list,
                      * pow(net_list.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
+    create_move_generators(move_generator, move_generator2, placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 

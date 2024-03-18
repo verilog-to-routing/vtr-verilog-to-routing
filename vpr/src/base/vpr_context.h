@@ -422,9 +422,6 @@ struct PlacementContext : public Context {
     vtr::vector<ClusterBlockId, NocGroupId> cluster_to_noc_grp;
 
     std::map<ClusterBlockId, NocGroupId> noc_router_to_noc_group;
-
-    float noc_centroid_weight;
-
 };
 
 /**

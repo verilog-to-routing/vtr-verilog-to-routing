@@ -31,6 +31,18 @@ void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc);
  * 
  *      @return The calculated location is returned in centroid parameter that is sent by reference
  */
-void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities);
+void calculate_centroid_loc(ClusterBlockId b_from,
+                            bool timing_weights,
+                            t_pl_loc& centroid,
+                            const PlacerCriticalities* criticalities,
+                            bool noc_attraction_enabled,
+                            float noc_attraction_weight);
+
+inline void calculate_centroid_loc(ClusterBlockId b_from,
+                                   bool timing_weights,
+                                   t_pl_loc& centroid,
+                                   const PlacerCriticalities* criticalities) {
+    calculate_centroid_loc(b_from, timing_weights,centroid, criticalities,false, 0.0f);
+}
 
 #endif
