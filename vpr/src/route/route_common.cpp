@@ -286,7 +286,6 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
     for (auto node : visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
-        route_ctx.rr_node_route_inf[node].prev_node = RRNodeId::INVALID();
         route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
     }
 }
@@ -313,34 +312,6 @@ float get_rr_cong_cost(RRNodeId inode, float pres_fac) {
         }
     }
     return (cost);
-}
-
-/* Mark all the SINKs of this net as targets by setting their target flags  *
- * to the number of times the net must connect to each SINK.  Note that     *
- * this number can occasionally be greater than 1 -- think of connecting   *
- * the same net to two inputs of an and-gate (and-gate inputs are logically *
- * equivalent, so both will connect to the same SINK).                      */
-void mark_ends(const Netlist<>& net_list, ParentNetId net_id) {
-    unsigned int ipin;
-    RRNodeId inode;
-
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    for (ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
-        inode = route_ctx.net_rr_terminals[net_id][ipin];
-        route_ctx.rr_node_route_inf[inode].target_flag++;
-    }
-}
-
-/** like mark_ends, but only performs it for the remaining sinks of a net */
-void mark_remaining_ends(ParentNetId net_id) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    const auto& tree = route_ctx.route_trees[net_id].value();
-
-    for (int sink_pin : tree.get_remaining_isinks()) {
-        RRNodeId inode = route_ctx.net_rr_terminals[net_id][sink_pin];
-        ++route_ctx.rr_node_route_inf[inode].target_flag;
-    }
 }
 
 //Calculates how many (and allocates space for) OPINs which must be reserved to
@@ -448,12 +419,10 @@ void reset_rr_node_route_structs() {
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
-        node_inf.prev_node = RRNodeId::INVALID();
         node_inf.prev_edge = RREdgeId::INVALID();
         node_inf.acc_cost = 1.0;
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
-        node_inf.target_flag = 0;
         node_inf.set_occ(0);
     }
 }
@@ -937,8 +906,8 @@ void print_rr_node_route_inf() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         const auto& inf = route_ctx.rr_node_route_inf[RRNodeId(inode)];
         if (!std::isinf(inf.path_cost)) {
-            RRNodeId prev_node = inf.prev_node;
             RREdgeId prev_edge = inf.prev_edge;
+            RRNodeId prev_node = rr_graph.edge_src_node(prev_edge);
             auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
             VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
                     inode, prev_node, (size_t)prev_edge);
@@ -973,8 +942,8 @@ void print_rr_node_route_inf_dot() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         const auto& inf = route_ctx.rr_node_route_inf[RRNodeId(inode)];
         if (!std::isinf(inf.path_cost)) {
-            RRNodeId prev_node = inf.prev_node;
             RREdgeId prev_edge = inf.prev_edge;
+            RRNodeId prev_node = rr_graph.edge_src_node(prev_edge);
             auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
 
             if (prev_node.is_valid() && prev_edge.is_valid()) {

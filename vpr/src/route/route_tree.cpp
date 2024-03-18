@@ -532,7 +532,7 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
      * new_branch_inodes: [sink, nodeN-1, nodeN-2, ... node 1] of length N
      * and new_branch_iswitches: [N-1->sink, N-2->N-1, ... 2->1, 1->found_node] of length N */
     RREdgeId edge = hptr->prev_edge();
-    RRNodeId new_inode = RRNodeId(hptr->prev_node());
+    RRNodeId new_inode = rr_graph.edge_src_node(edge);
     RRSwitchId new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
 
     /* build a path, looking up rr nodes and switches from rr_node_route_inf */
@@ -541,7 +541,7 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
         new_branch_inodes.push_back(new_inode);
         new_branch_iswitches.push_back(new_iswitch);
         edge = route_ctx.rr_node_route_inf[new_inode].prev_edge;
-        new_inode = RRNodeId(route_ctx.rr_node_route_inf[new_inode].prev_node);
+        new_inode = rr_graph.edge_src_node(edge);
         new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
     }
     new_branch_iswitches.push_back(new_iswitch);
