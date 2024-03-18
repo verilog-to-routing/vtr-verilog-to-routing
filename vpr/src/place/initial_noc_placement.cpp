@@ -290,6 +290,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& plac
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     int noc_group_cnt = 0;
     place_ctx.cluster_to_noc_grp.resize(cluster_ctx.clb_nlist.blocks().size(), NocGroupId ::INVALID());
+    place_ctx.noc_centroid_weight = (float)noc_opts.noc_centroid_weight;
 
     for (auto router_blk_id : router_blk_ids) {
 

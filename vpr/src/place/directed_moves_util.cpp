@@ -29,16 +29,6 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
     float acc_layer = 0;
     float weight = 1;
 
-    if (place_ctx.cluster_to_noc_grp[b_from] != NocGroupId::INVALID()) {
-        NocGroupId noc_grp_id = place_ctx.cluster_to_noc_grp[b_from];
-        for (ClusterBlockId router_blk_id : place_ctx.noc_group_routers[noc_grp_id]) {
-            t_block_loc router_loc = place_ctx.block_locs[router_blk_id];
-            acc_x += router_loc.loc.x;
-            acc_y += router_loc.loc.y;
-            acc_weight += 1.0f;
-        }
-    }
-
     int from_block_layer_num = g_vpr_ctx.placement().block_locs[b_from].loc.layer;
     VTR_ASSERT(from_block_layer_num != OPEN);
 
@@ -99,6 +89,26 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
             acc_y += tile_loc.y * weight;
             acc_layer += tile_loc.layer_num * weight;
             acc_weight += weight;
+        }
+    }
+
+    if (!place_ctx.cluster_to_noc_grp.empty()) {
+        if (place_ctx.cluster_to_noc_grp[b_from] != NocGroupId::INVALID()) {
+
+            NocGroupId noc_grp_id = place_ctx.cluster_to_noc_grp[b_from];
+            float noc_weight = place_ctx.noc_centroid_weight;
+            float single_noc_weight = (acc_weight * noc_weight) / place_ctx.noc_group_routers[noc_grp_id].size();
+
+            acc_x *= (1.0f - noc_weight);
+            acc_y *= (1.0f - noc_weight);
+            acc_weight *= (1.0f - noc_weight);
+
+            for (ClusterBlockId router_blk_id : place_ctx.noc_group_routers[noc_grp_id]) {
+                t_block_loc router_loc = place_ctx.block_locs[router_blk_id];
+                acc_x += router_loc.loc.x;
+                acc_y += router_loc.loc.y;
+                acc_weight += 1.0f;
+            }
         }
     }
 

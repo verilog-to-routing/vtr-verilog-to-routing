@@ -2859,6 +2859,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
+        .help(
+            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
+            "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
         .help(
             "Name of the output file that contains the NoC placement information."
