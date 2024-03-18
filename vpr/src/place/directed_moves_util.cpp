@@ -105,9 +105,9 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
 
             for (ClusterBlockId router_blk_id : place_ctx.noc_group_routers[noc_grp_id]) {
                 t_block_loc router_loc = place_ctx.block_locs[router_blk_id];
-                acc_x += router_loc.loc.x;
-                acc_y += router_loc.loc.y;
-                acc_weight += 1.0f;
+                acc_x += router_loc.loc.x * single_noc_weight;
+                acc_y += router_loc.loc.y * single_noc_weight;
+                acc_weight += single_noc_weight;
             }
         }
     }
