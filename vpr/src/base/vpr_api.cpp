@@ -507,7 +507,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if (!device_ctx.grid.limiting_resources().empty()) {
         std::vector<std::string> limiting_block_names;
         for (auto blk_type : device_ctx.grid.limiting_resources()) {
-            limiting_block_names.push_back(blk_type->name);
+            limiting_block_names.emplace_back(blk_type->name);
         }
         VTR_LOG("FPGA size limited by block type(s): %s\n", vtr::join(limiting_block_names, " ").c_str());
         VTR_LOG("\n");
@@ -598,7 +598,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         check_netlist(packer_opts.pack_verbosity);
 
         /* Output the netlist stats to console and optionally to file. */
-        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage.c_str());
+        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
 
         // print the total number of used physical blocks for each
         // physical block type after finishing the packing stage
@@ -1422,15 +1422,15 @@ void vpr_analysis(const Netlist<>& net_list,
         generate_setup_timing_stats(/*prefix=*/"", *timing_info,
                                     *analysis_delay_calc, vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing);
 
-        //Write the post-syntesis netlist
+        //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc,
+            netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc,
                            vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist
         if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
-            merged_netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc, vpr_setup.AnalysisOpts);
+            merged_netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc, vpr_setup.AnalysisOpts);
         }
 
         //Do power analysis
