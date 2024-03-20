@@ -198,6 +198,11 @@ jobs:
             suite: 'vtr_reg_basic'
           },
           {
+            name: 'Basic with CAPNPROTO disabled',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
             params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
             suite: 'vtr_reg_basic'
