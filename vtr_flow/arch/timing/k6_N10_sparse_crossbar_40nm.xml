@@ -6,7 +6,9 @@
     K = 6, N = 10
   - Routing architecture: L = 4, fc_in = 0.15, fc_out = 0.15
   - Unidirectional (mux-based) routing
-
+  - Logic block local routing: 
+      - cluster input -> BLE input crossbar 80% depopulated
+      - BLE output -> BLE input (local feedback) crossbar fully populated 
 
   Details on Modelling:
 
@@ -15,7 +17,7 @@
   FPGAs with a comparable architecture and 40 nm interconnect and 
   transistor models.
 
-  Authors: Jason Luu, Jeff Goeders, Vaughn Betz
+  Authors: Vaughn Betz, Amin Mohaghegh, Jason Luu, Jeff Goeders
 -->
 <architecture>
   <!-- 
@@ -69,8 +71,10 @@
                 routing). It's a bit on the low side given the large crossbars in this
                 architecture - more appropriate for a lower-cost
                 FPGA with smaller transistors and narrower metal.
+                Compared to an architecture with a fully populated 
+                crossbar the logic block area is about 35% smaller.
                 -->
-    <tile name="clb" area="18000">
+    <tile name="clb" area="12500">
       <!-- We can place a clustered block of type clb on a tile location 
            of type clb.
            -->
@@ -87,7 +91,12 @@
            they can also be swapped by the router.
            -->
 
-        <input name="I" num_pins="40" equivalent="full"/>
+        <input name="I0" num_pins="7" equivalent="full"/>
+        <input name="I1" num_pins="7" equivalent="full"/>
+        <input name="I2" num_pins="7" equivalent="full"/>
+        <input name="I3" num_pins="7" equivalent="full"/>
+        <input name="I4" num_pins="7" equivalent="full"/>
+        <input name="I5" num_pins="5" equivalent="full"/>
         <output name="O" num_pins="10" equivalent="instance"/>
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.15"/>
@@ -209,7 +218,12 @@
                 routing).  
            -->
     <pb_type name="clb">
-      <input name="I" num_pins="40" equivalent="full"/>
+      <input name="I0" num_pins="7" equivalent="full"/>
+      <input name="I1" num_pins="7" equivalent="full"/>
+      <input name="I2" num_pins="7" equivalent="full"/>
+      <input name="I3" num_pins="7" equivalent="full"/>
+      <input name="I4" num_pins="7" equivalent="full"/>
+      <input name="I5" num_pins="5" equivalent="full"/>
       <output name="O" num_pins="10" equivalent="instance"/>
       <clock name="clk" num_pins="1"/>
       <!-- Describe basic logic element.  
@@ -278,19 +292,39 @@
         <!-- 6-LUT mode definition end -->
       </pb_type>
       <interconnect>
-        <!-- We use a full crossbar to get logical equivalence at inputs of CLB 
+        <!-- We use a sparse crossbar to get logical equivalence at inputs of CLB 
 		     The delays below come from Stratix IV. the delay through a connection block
 		     input mux + the crossbar in Stratix IV is 167 ps. We already have a 72 ps 
 		     delay on the connection block input mux (modeled by Ian Kuon), so the remaining
-		     delay within the crossbar is 95 ps. 
+		     delay within the crossbar is 95 ps. Since we're using smaller crossbars than 
+                     Stratix IV in this sparse architecture we further reduce the delay to 70 ps. 
 		     The delays of cluster feedbacks in Stratix IV is 100 ps, when driven by a LUT.
 		     Since all our outputs LUT outputs go to a BLE output, and have a delay of 
 		     25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
 		     to get the part that should be marked on the crossbar.	 -->
-        <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
-          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in"/>
+        <complete name="crossbar" input="fle[9:0].out" output="fle[9:0].in">
           <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in"/>
         </complete>
+
+        <complete name="pin0_mux" input="clb.I0" output="fle[9:0].in[0:0]">
+         <delay_constant max="70e-12" in_port="clb.I0" out_port="fle[9:0].in[0:0]"/>
+        </complete>
+        <complete name="pin1_mux" input="clb.I1" output="fle[9:0].in[1:1]">
+         <delay_constant max="70e-12" in_port="clb.I1" out_port="fle[9:0].in[1:1]"/>
+        </complete>
+        <complete name="pin2_mux" input="clb.I2" output="fle[9:0].in[2:2]">
+         <delay_constant max="70e-12" in_port="clb.I2" out_port="fle[9:0].in[2:2]"/>
+        </complete>
+        <complete name="pin3_mux" input="clb.I3" output="fle[9:0].in[3:3]">
+         <delay_constant max="70e-12" in_port="clb.I3" out_port="fle[9:0].in[3:3]"/>
+        </complete>
+        <complete name="pin4_mux" input="clb.I4" output="fle[9:0].in[4:4]">
+         <delay_constant max="70e-12" in_port="clb.I4" out_port="fle[9:0].in[4:4]"/>
+        </complete>
+        <complete name="pin5_mux" input="clb.I5" output="fle[9:0].in[5:5]">
+         <delay_constant max="70e-12" in_port="clb.I5" out_port="fle[9:0].in[5:5]"/>
+        </complete>
+
         <complete name="clks" input="clb.clk" output="fle[9:0].clk">
         </complete>
 
