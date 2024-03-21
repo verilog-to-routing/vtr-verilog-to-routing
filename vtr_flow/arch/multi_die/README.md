@@ -28,6 +28,7 @@ This directory contains architecture files for 3D FPGAs. The architectures are d
        - The architecture has two dice.
        - Both dice are SIV-like FPGA fabric.
        - All pins can cross die.
+       - This is a completely hypothetical architecture, as the area required to place drivers on every channel segment to drive an IPIN on the other die would be too large. For the purpose of this scenario, we assume an inter-die connection delay of 0.
      - `3d_full_OPIN_inter_die_stratixiv_arch.timing.xml`
        - The architecture has two dice.
        - Both dice are SIV-like FPGA fabric.
