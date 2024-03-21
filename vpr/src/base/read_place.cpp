@@ -92,8 +92,12 @@ void read_place_header(std::ifstream& placement_file,
     bool seen_netlist_id = false;
     bool seen_grid_dimensions = false;
 
+    // store the current position in file
+    // if an invalid line is read, we might need to return to the beginning of that line
+    std::streampos file_pos = placement_file.tellg();
+
     while (std::getline(placement_file, line) && (!seen_netlist_id || !seen_grid_dimensions)) { //Parse line-by-line
-        ++lineno;
+       ++lineno;
 
         std::vector<std::string> tokens = vtr::split(line);
 
@@ -120,7 +124,7 @@ void read_place_header(std::ifstream& placement_file,
             std::string place_netlist_id = tokens[3];
             std::string place_netlist_file = tokens[1];
 
-            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id().c_str()) {
+            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id()) {
                 auto msg = vtr::string_fmt(
                     "The packed netlist file that generated placement (File: '%s' ID: '%s')"
                     " does not match current netlist (File: '%s' ID: '%s')",
@@ -146,19 +150,41 @@ void read_place_header(std::ifstream& placement_file,
             size_t place_file_width = vtr::atou(tokens[2]);
             size_t place_file_height = vtr::atou(tokens[4]);
             if (grid.width() != place_file_width || grid.height() != place_file_height) {
-                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
-                          "Current FPGA size (%d x %d) is different from size when placement generated (%d x %d)",
-                          grid.width(), grid.height(), place_file_width, place_file_height);
+                auto msg = vtr::string_fmt(
+                    "Current FPGA size (%d x %d) is different from size when placement generated (%d x %d)",
+                    grid.width(), grid.height(), place_file_width, place_file_height);
+                if (verify_file_digests) {
+                    vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
+                } else {
+                    VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
+                }
             }
 
             seen_grid_dimensions = true;
 
         } else {
             //Unrecognized
-            vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
-                      "Invalid line '%s' in placement file header",
-                      line.c_str());
+            auto msg = vtr::string_fmt(
+                "Invalid line '%s' in placement file header."
+                "Expected to see netlist filename and device size first.",
+                line.c_str());
+
+            if (verify_file_digests) {
+                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
+            } else {
+                VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
+            }
+
+            if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) ||
+                (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
+                placement_file.seekg(file_pos);
+                break;
+            }
         }
+
+        // store the current position in the file before reading the next line
+        // we might need to return to this position
+        file_pos = placement_file.tellg();
     }
 }
 

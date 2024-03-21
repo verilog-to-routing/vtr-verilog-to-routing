@@ -590,80 +590,44 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
     return b_from;
 }
 
-//Pick a random block to be swapped with another random block.
+//Pick a random movable block to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_block() {
-    /* Some blocks may be fixed, and should never be moved from their *
-     * initial positions. If we randomly selected such a block try    *
-     * another random block.                                          *
-     *                                                                *
-     * We need to track the blocks we have tried to avoid an infinite *
-     * loop if all blocks are fixed.                                  */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    std::unordered_set<ClusterBlockId> tried_from_blocks;
+    // get the number of movable clustered blocks
+    const size_t n_movable_blocks = place_ctx.movable_blocks.size();
 
-    //Keep selecting random blocks as long as there are any untried blocks
-    //Can get slow if there are many blocks but only a few (or none) can move
-    while (tried_from_blocks.size() < cluster_ctx.clb_nlist.blocks().size()) {
-        //Pick a block at random
-        ClusterBlockId b_from = ClusterBlockId(vtr::irand((int)cluster_ctx.clb_nlist.blocks().size() - 1));
-
-        //Record it as tried
-        tried_from_blocks.insert(b_from);
-
-        if (place_ctx.block_locs[b_from].is_fixed) {
-            continue; //Fixed location, try again
-        }
-
-        //Found a movable block
+    if (n_movable_blocks > 0) {
+        //Pick a movable block at random and return it
+        auto b_from = ClusterBlockId(vtr::irand((int)n_movable_blocks - 1));
         return b_from;
-    }
-
-    //No movable blocks found
-    return ClusterBlockId::INVALID();
-}
-
-//Pick a random block with a specific blk_type to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_block(const int logical_blk_type_index) {
-    /* Some blocks may be fixed, and should never be moved from their *
-     * initial positions. If we randomly selected such a block try    *
-     * another random block.                                          *
-     *                                                                *
-     * We need to track the blocks we have tried to avoid an infinite *
-     * loop if all blocks are fixed.                                  */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    t_logical_block_type blk_type_temp;
-    blk_type_temp.index = logical_blk_type_index;
-    const auto& blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
-
-    //no blocks with this type is available
-    if (blocks_per_type.empty()) {
+    } else {
+        //No movable blocks found
         return ClusterBlockId::INVALID();
     }
+}
 
-    std::unordered_set<ClusterBlockId> tried_from_blocks;
+//Pick a random movable block with a specific blk_type to be swapped with another random block.
+//If none is found return ClusterBlockId::INVALID()
+ClusterBlockId pick_from_block(const int logical_blk_type_index) {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    //Keep selecting random blocks as long as there are any untried blocks with type "blk_type"
-    //Can get slow if there are many blocks but only a few (or none) can move
-    while (tried_from_blocks.size() < blocks_per_type.size()) {
-        //Pick a block at random
-        ClusterBlockId b_from = ClusterBlockId(blocks_per_type[vtr::irand((int)blocks_per_type.size() - 1)]);
-        //Record it as tried
-        tried_from_blocks.insert(b_from);
-
-        if (place_ctx.block_locs[b_from].is_fixed) {
-            continue; //Fixed location, try again
+    auto found_blocks = place_ctx.movable_blocks_per_type.find(logical_blk_type_index);
+    if (found_blocks != place_ctx.movable_blocks_per_type.end()) {
+        const auto& blocks_per_type = found_blocks->second;
+        //no blocks with this type is movable
+        if (blocks_per_type.empty()) {
+            return ClusterBlockId::INVALID();
         }
-        //Found a movable block
+
+        //Pick a block at random
+        auto b_from = ClusterBlockId(blocks_per_type[vtr::irand((int)blocks_per_type.size() - 1)]);
+
+        // return the movable block of the given type
         return b_from;
     }
 
-    //No movable blocks found
-    //Unreachable statement
     return ClusterBlockId::INVALID();
 }
 
@@ -1077,9 +1041,9 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
     else
         possibilities = delta_cx;
 
-    while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhaused
+    while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhausted
         //Pick a random x-location within [min_cx, max_cx],
-        //until we find a legal swap, or have exhuasted all possiblites
+        //until we find a legal swap, or have exhausted all possibilities
         to_loc.x = search_range.xmin + vtr::irand(delta_cx);
 
         VTR_ASSERT(to_loc.x >= search_range.xmin);
