@@ -3,13 +3,15 @@
 
 #include "xy_routing.h"
 
+namespace {
+
 /**
  * @brief Compares two vectors of NocLinks. These vectors represent
  * two routes between a start and destination routers. This function
  * verifies whether the two routers are the exact same or not.
  * 
  */
-static void compare_routes(const std::vector<NocLink>& golden_path, const std::vector<NocLinkId>& found_path, const NocStorage& noc_model) {
+void compare_routes(const std::vector<NocLink>& golden_path, const std::vector<NocLinkId>& found_path, const NocStorage& noc_model) {
     // make sure that size of the found route and golden route match
     REQUIRE(found_path.size() == golden_path.size());
 
@@ -86,7 +88,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         // choosing the start and end routers as router 10
         auto start_router_id = NocRouterId(10);
         auto sink_router_id = NocRouterId(10);
-        auto traffic_flow_id = NocTrafficFlowId (33);
+        auto traffic_flow_id = NocTrafficFlowId(33);
 
         // store the route found by the algorithm
         std::vector<NocLinkId> found_path;
@@ -101,14 +103,14 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         // choose start router as 7, and choose the destination router as 4
         auto start_router_id = NocRouterId(7);
         auto sink_router_id = NocRouterId(4);
-        auto traffic_flow_id = NocTrafficFlowId (34);
+        auto traffic_flow_id = NocTrafficFlowId(34);
 
         // build the golden route that we expect the algorithm to produce
         // the expectation is a number of links that path horizontally from router 7 to router 4
         std::vector<NocLink> golden_path;
 
         for (int current_router = 7; current_router != 4; current_router--) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -126,14 +128,14 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         // choose start router as 2, and choose the destination router as 14
         auto start_router_id = NocRouterId(2);
         auto sink_router_id = NocRouterId(14);
-        auto traffic_flow_id = NocTrafficFlowId (35);
+        auto traffic_flow_id = NocTrafficFlowId(35);
 
         // build the golden route that we expect the algorithm to produce
         // the expectation is a number of links that path vertically from router 2 to router 14
         std::vector<NocLink> golden_path;
 
         for (int current_row = 0; current_row < 3; current_row++) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 2), NocRouterId((current_row + 1) * 4 + 2));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 2), NocRouterId((current_row + 1) * 4 + 2));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -151,7 +153,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         // choose start router as 3, and choose the destination router as 14
         auto start_router_id = NocRouterId(3);
         auto sink_router_id = NocRouterId(12);
-        auto traffic_flow_id = NocTrafficFlowId (37);
+        auto traffic_flow_id = NocTrafficFlowId(37);
 
         // build the golden route that we expect the algorithm to produce
         // the expectation is a number of links that path horizontally from router 3 to router 0 and then vertically from router 0 to 12
@@ -159,14 +161,14 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
 
         // generate the horizontal path first
         for (int current_router = 3; current_router != 0; current_router--) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
 
         // generate the vertical path next
         for (int current_row = 0; current_row < 3; current_row++) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4), NocRouterId((current_row + 1) * 4));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4), NocRouterId((current_row + 1) * 4));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -195,14 +197,14 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
 
         // generate the horizontal path first
         for (int current_router = 12; current_router != 15; current_router++) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router + 1));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router + 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
 
         // generate the vertical path next
         for (int current_row = 3; current_row > 0; current_row--) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 3), NocRouterId((current_row - 1) * 4 + 3));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 3), NocRouterId((current_row - 1) * 4 + 3));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -282,7 +284,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
         // store the source and destination routers
         auto start_router_id = NocRouterId(3);
         auto sink_router_id = NocRouterId(0);
-        auto traffic_flow_id = NocTrafficFlowId (39);
+        auto traffic_flow_id = NocTrafficFlowId(39);
 
         // routers associated to the link to remove
         auto link_to_remove_src_router_id = NocRouterId(2);
@@ -308,7 +310,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
         // store the source and destination routers
         auto start_router_id = NocRouterId(3);
         auto sink_router_id = NocRouterId(15);
-        auto traffic_flow_id = NocTrafficFlowId (41);
+        auto traffic_flow_id = NocTrafficFlowId(41);
 
         // routers associated to the link to remove
         auto link_to_remove_src_router_id = NocRouterId(11);
@@ -366,7 +368,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
     // now create the start and the destination routers of the route we want to test
     auto start_router_id = NocRouterId(3);
     auto sink_router_id = NocRouterId(1);
-    auto traffic_flow_id = NocTrafficFlowId (40);
+    auto traffic_flow_id = NocTrafficFlowId(40);
 
     // creating the XY routing object
     XYRouting routing_algorithm;
@@ -378,3 +380,4 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
     REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
                         "No route could be found from starting router with ID:'3' and the destination router with ID:'1' using the XY-Routing algorithm.");
 }
+} // namespace

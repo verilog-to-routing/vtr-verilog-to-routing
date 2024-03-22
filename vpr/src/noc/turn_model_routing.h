@@ -10,19 +10,19 @@
  *
  * Overview
  * ========
- * The TurnModelRouting class abstract Turn Model routing algorithms.
+ * The TurnModelRouting class abstracts Turn Model routing algorithms.
  * The main idea in Turn Model algorithm is to forbid specific turns
  * for traffic flows based on the source, destination, and current NoC
  * router locations in a mesh or torus topology. TurnModelRouting class
  * exposes a shared interface for all Turn Model routing algorithms.
- * Derived class can implement specific routing algorithms by implementing
+ * Derived classes can implement specific routing algorithms by implementing
  * their override of the exposed interface. More specifically,
  * get_legal_directions() method returns legal directions that a
  * traffic flow can follow based on the source, destination, and current
  * NoC routers are located. select_next_direction() selects one of these
  * legal directions. TurnModelRouting() method does not implement these
  * methods, but calls them in route_flow(). For example, XYRouting can be
- * implemented by override these two methods. get_legal_directions()
+ * implemented by overriding these two methods. get_legal_directions()
  * should return horizontal directions when the current router and the
  * destination are not in the same column. When the traffic flow arrives
  * a router located in the same column as the destination,
@@ -219,7 +219,7 @@ class TurnModelRouting : public NocRouting {
     std::vector<TurnModelRouting::Direction> returned_legal_direction{4};
 
   private:
-    std::vector<uint32_t> inputs_to_murmur3_hahser{4};
+    std::vector<uint32_t> inputs_to_murmur3_hasher{4};
 
 };
 
