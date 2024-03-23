@@ -162,7 +162,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
      * @param[in] bounding_box Keep search confined to this bounding box
      * @return bool Signal to retry this connection with a full-device bounding box,
      * @return t_heap* Heap element describing the path found. */
-    std::tuple<bool, t_heap*> timing_driven_route_connection_common_setup(
+    bool timing_driven_route_connection_common_setup(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
         const t_conn_cost_params& cost_params,
@@ -177,7 +177,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     //
     // Returns either the last element of the path, or nullptr if no path is
     // found
-    t_heap* timing_driven_route_connection_from_heap(
+    void timing_driven_route_connection_from_heap(
         RRNodeId sink_node,
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box);

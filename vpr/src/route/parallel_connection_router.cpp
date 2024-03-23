@@ -51,13 +51,12 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
     conn_params_ = &conn_params;
 
     bool retry = false;
-    t_heap* cheapest;
-    std::tie(retry, cheapest) = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
+    retry = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
-    if (cheapest != nullptr) {
-        update_cheapest(cheapest);
-        t_heap out = *cheapest;
-        heap_.free(cheapest);
+    if (rr_node_route_inf_[sink_node].prev_edge != RREdgeId::INVALID()) {
+        t_heap out;
+        out.index = sink_node;
+        out.set_prev_edge(rr_node_route_inf_[sink_node].prev_edge);
         heap_.empty_heap();
         return std::make_tuple(true, /*retry=*/false, out);
     } else {
@@ -69,7 +68,7 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
 }
 
 /** Return <retry with full bb?, cheapest> */
-std::tuple<bool, t_heap*> ParallelConnectionRouter::timing_driven_route_connection_common_setup(
+bool ParallelConnectionRouter::timing_driven_route_connection_common_setup(
     const RouteTreeNode& rt_root,
     RRNodeId sink_node,
     const t_conn_cost_params& cost_params,
@@ -84,18 +83,18 @@ std::tuple<bool, t_heap*> ParallelConnectionRouter::timing_driven_route_connecti
 
     if (heap_.is_empty_heap()) {
         VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
-        return std::make_tuple(false, nullptr);
+        return false;
     }
 
     VTR_LOGV_DEBUG(router_debug_, "  Routing to %d as normal net (BB: %d,%d,%d x %d,%d,%d)\n", sink_node,
                    bounding_box.layer_min, bounding_box.xmin, bounding_box.ymin,
                    bounding_box.layer_max, bounding_box.xmax, bounding_box.ymax);
 
-    t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
-                                                                cost_params,
-                                                                bounding_box);
+    timing_driven_route_connection_from_heap(sink_node,
+                                             cost_params,
+                                             bounding_box);
 
-    if (cheapest == nullptr) {
+    if (rr_node_route_inf_[sink_node].prev_edge == RREdgeId::INVALID()) {
         // No path found within the current bounding box.
         //
         // If the bounding box is already max size, just fail
@@ -106,20 +105,20 @@ std::tuple<bool, t_heap*> ParallelConnectionRouter::timing_driven_route_connecti
             && bounding_box.layer_min == 0
             && bounding_box.layer_max == (int)(grid_.get_num_layers() - 1)) {
             VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
-            return std::make_tuple(false, nullptr);
+            return false;
         }
 
         // Otherwise, leave unrouted and bubble up a signal to retry this net with a full-device bounding box
         VTR_LOG_WARN("No routing path for connection to sink_rr %d, leaving unrouted to retry later\n", sink_node);
-        return std::make_tuple(true, nullptr);
+        return true;
     }
 
-    if (cheapest == nullptr) {
+    if (rr_node_route_inf_[sink_node].prev_edge == RREdgeId::INVALID()) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
-        return std::make_tuple(false, nullptr);
+        return false;
     }
 
-    return std::make_tuple(false, cheapest);
+    return false;
 }
 
 // Finds a path from the route tree rooted at rt_root to sink_node for a high fanout net.
@@ -155,12 +154,11 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
                    high_fanout_bb.layer_max, high_fanout_bb.xmax, high_fanout_bb.ymax);
 
     bool retry_with_full_bb = false;
-    t_heap* cheapest;
-    cheapest = timing_driven_route_connection_from_heap(sink_node,
-                                                        cost_params,
-                                                        high_fanout_bb);
+    timing_driven_route_connection_from_heap(sink_node,
+                                             cost_params,
+                                             high_fanout_bb);
 
-    if (cheapest == nullptr) {
+    if (rr_node_route_inf_[sink_node].prev_edge == RREdgeId::INVALID()) {
         //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
         //try again with the full route tree to be sure this is not an artifact of high-fanout routing
         VTR_LOG_WARN("No routing path found in high-fanout mode for net connection (to sink_rr %d), retrying with full route tree\n", sink_node);
@@ -170,23 +168,22 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
         reset_path_costs();
         modified_rr_node_inf_.clear();
 
-        std::tie(retry_with_full_bb, cheapest) = timing_driven_route_connection_common_setup(rt_root,
+        retry_with_full_bb = timing_driven_route_connection_common_setup(rt_root,
                                                                                              sink_node,
                                                                                              cost_params,
                                                                                              net_bounding_box);
     }
 
-    if (cheapest == nullptr) {
+    if (rr_node_route_inf_[sink_node].prev_edge == RREdgeId::INVALID()) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
         heap_.empty_heap();
         return std::make_tuple(false, retry_with_full_bb, t_heap());
     }
 
-    update_cheapest(cheapest);
-
-    t_heap out = *cheapest;
-    heap_.free(cheapest);
+    t_heap out;
+    out.index = sink_node;
+    out.set_prev_edge(rr_node_route_inf_[sink_node].prev_edge);
     heap_.empty_heap();
 
     return std::make_tuple(true, retry_with_full_bb, out);
@@ -201,6 +198,7 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
     RREdgeId best_prev_edge = route_inf->prev_edge;
     t_rr_node_route_inf* target_route_inf = &rr_node_route_inf_[target_node];
     float best_back_cost_to_target = target_route_inf->backward_path_cost;
+    float best_total_cost_to_target = target_route_inf->path_cost;
     RREdgeId best_prev_edge_to_target = target_route_inf->prev_edge;
 #ifdef IS_DETERMINISTIC
     // Deterministic version prefers a given EdgeID, so a unique path is returned since,
@@ -208,24 +206,32 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
     auto is_preferred_edge = [](RREdgeId first, RREdgeId second) {
         return first < second;
     };
-    // TODO: What about best_total_cost_to_target?
+    // TODO: Double check the best_total_cost_to_target, this may break determinism
+    // TODO: In truth, pruning based on both the total cost and the back cost yields a
+    //       race condition... This may be non-determinstic. May only be able to prune
+    //       based on back cost.
+    if (best_total_cost_to_target < new_total_cost)
+        return true;
     if (best_back_cost_to_target < new_back_cost)
         return true;
-    if ((best_back_cost_to_target == new_back_cost) &&
-        (is_preferred_edge(new_prev_edge, best_prev_edge_to_target)))
-        return false;
+    if (((best_total_cost_to_target == new_total_cost) ||
+         (best_back_cost_to_target == new_back_cost)) &&
+        (!is_preferred_edge(new_prev_edge, best_prev_edge_to_target)))
+        return true;
     if (best_total_cost < new_total_cost)
         return true;
     if (best_back_cost < new_back_cost)
         return true;
     if (((best_total_cost == new_total_cost) ||
-        (best_back_cost == new_back_cost)) &&
-        (is_preferred_edge(new_prev_edge, best_prev_edge)))
-        return false;
+         (best_back_cost == new_back_cost)) &&
+        (!is_preferred_edge(new_prev_edge, best_prev_edge)))
+        return true;
 #else   // IS_DETERMINISTIC
     // Non-deterministic version does not prefer a given EdgeID, therefore there
     // is a race-condition on which path wins in the case of a tie.
-    // TODO: What about best_total_cost_to_target?
+    // TODO: Confirm if best_total_cost_to_target should be included here.
+    if (best_total_cost_to_target <= new_total_cost)
+        return true;
     if (best_back_cost_to_target <= new_back_cost)
         return true;
     if (best_total_cost <= new_total_cost)
@@ -253,36 +259,36 @@ static inline void releaseLock(RRNodeId inode) {
 // This is the core maze routing routine.
 //
 // Returns either the last element of the path, or nullptr if no path is found
-t_heap* ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId sink_node,
+void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId sink_node,
                                                                          const t_conn_cost_params& cost_params,
                                                                          const t_bb& bounding_box) {
 
-    t_heap* cheapest = nullptr;
     // While the heap is not empty do
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
-        cheapest = heap_.get_heap_head();
+        t_heap* cheapest_ptr = heap_.get_heap_head();
+        t_heap cheapest = *cheapest_ptr;
+        heap_.free(cheapest_ptr);
         // update_router_stats(router_stats_,
         //                     false,
         //                     cheapest->index,
         //                     rr_graph_);
 
-        RRNodeId inode = cheapest->index;
+        RRNodeId inode = cheapest.index;
 
         // Exit Condition
-        if (inode == sink_node) {
-            break;
-        }
+        // if (inode == sink_node) {
+        //     update_cheapest(&cheapest, &rr_node_route_inf_[inode]);
+        //     break;
+        // }
 
-        float new_total_cost = cheapest->cost;
-        float new_back_cost = cheapest->backward_path_cost;
-        RREdgeId new_prev_edge = cheapest->prev_edge();
+        float new_total_cost = cheapest.cost;
+        float new_back_cost = cheapest.backward_path_cost;
+        RREdgeId new_prev_edge = cheapest.prev_edge();
         // Pruning
         // NOTE: This is thread-safe since, even though the values may change during operation, that is ok,
         //       since if any of the arguments need to be pruned it will.
         if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_)) {
-            heap_.free(cheapest);
-            cheapest = nullptr;
             continue;
         }
 
@@ -291,35 +297,24 @@ t_heap* ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNod
 
         // Need to double check pruning since things may have changed since obtaining the lock.
         if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_)) {
-            heap_.free(cheapest);
-            cheapest = nullptr;
             releaseLock(inode);
             continue;
         }
 
         // Update the global values now that we are in the critical section.
-        update_cheapest(cheapest, &rr_node_route_inf_[inode]);
+        update_cheapest(&cheapest, &rr_node_route_inf_[inode]);
 
         releaseLock(inode);
 
         // Adding nodes to heap
-        timing_driven_expand_neighbours(cheapest, cost_params, bounding_box, sink_node);
+        timing_driven_expand_neighbours(&cheapest, cost_params, bounding_box, sink_node);
 
-        heap_.free(cheapest);
-        cheapest = nullptr;
     }
 
     if (router_debug_) {
         //Update known path costs for nodes pushed but not popped, useful for debugging
         empty_heap_annotating_node_route_inf();
     }
-
-    if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
-        VTR_LOGV_DEBUG(router_debug_, "  Empty heap (no path found)\n");
-        return nullptr;
-    }
-
-    return cheapest;
 }
 
 // Find shortest paths from specified route tree to all nodes in the RR graph
