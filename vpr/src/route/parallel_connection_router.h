@@ -12,6 +12,8 @@
 
 #include "binary_heap.h"
 
+#include "MultiQueueIO.h"
+
 // Prune the heap when it contains 4x the number of nodes in the RR graph.
 // constexpr size_t kHeapPruneFactor = 4;
 
@@ -180,13 +182,6 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box);
 
-    // Expand this current node if it is a cheaper path.
-    void timing_driven_expand_cheapest(
-        t_heap* cheapest,
-        RRNodeId target_node,
-        const t_conn_cost_params& cost_params,
-        const t_bb& bounding_box);
-
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
         t_heap* current,
@@ -281,6 +276,25 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     RouterStats* router_stats_;
     const ConnectionParameters* conn_params_;
     BinaryHeap heap_;
+    struct pq_node_tag_t {
+        int32_t id;
+        int32_t pre;
+        float total_cost;
+        pq_node_tag_t() {}
+        pq_node_tag_t(int dont_care) {}
+        pq_node_tag_t(int32_t id, int32_t pre, float total_cost)
+                : id(id),
+                  pre(pre),
+                  total_cost(total_cost) {}
+    };
+    using pq_node_t = std::tuple<float /*priority*/, pq_node_tag_t>;
+    struct pq_compare {
+        bool operator()(const pq_node_t &u, const pq_node_t &v) {
+            return std::get<0>(u) > std::get<0>(v);
+        }
+    };
+    using MQ_IO = MultiQueueIO<pq_compare, float, pq_node_tag_t>;
+    MQ_IO *pq;
     bool router_debug_;
 
     bool only_opin_inter_layer;

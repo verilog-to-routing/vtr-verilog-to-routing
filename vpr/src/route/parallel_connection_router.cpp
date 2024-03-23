@@ -289,105 +289,10 @@ vtr::vector<RRNodeId, t_heap> ParallelConnectionRouter::timing_driven_find_all_s
 vtr::vector<RRNodeId, t_heap> ParallelConnectionRouter::timing_driven_find_all_shortest_paths_from_heap(
     const t_conn_cost_params& cost_params,
     const t_bb& bounding_box) {
-    vtr::vector<RRNodeId, t_heap> cheapest_paths(rr_nodes_.size());
-
-    VTR_ASSERT_SAFE(heap_.is_valid());
-
-    if (heap_.is_empty_heap()) { // No source
-        VTR_LOGV_DEBUG(router_debug_, "  Initial heap empty (no source)\n");
-    }
-
-    while (!heap_.is_empty_heap()) {
-        // cheapest t_heap in current route tree to be expanded on
-        t_heap* cheapest = heap_.get_heap_head();
-        update_router_stats(router_stats_,
-                            false,
-                            cheapest->index,
-                            rr_graph_);
-
-        RRNodeId inode = cheapest->index;
-        VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
-                       inode, cheapest->cost);
-
-        // Since we want to find shortest paths to all nodes in the graph
-        // we do not specify a target node.
-        //
-        // By setting the target_node to INVALID in combination with the NoOp router
-        // lookahead we can re-use the node exploration code from the regular router
-        RRNodeId target_node = RRNodeId::INVALID();
-
-        timing_driven_expand_cheapest(cheapest,
-                                      target_node,
-                                      cost_params,
-                                      bounding_box);
-
-        if (cheapest_paths[inode].index == RRNodeId::INVALID() || cheapest_paths[inode].cost >= cheapest->cost) {
-            VTR_LOGV_DEBUG(router_debug_, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
-            cheapest_paths[inode] = *cheapest;
-        } else {
-            VTR_LOGV_DEBUG(router_debug_, "  Worse cost to node %d: %g (better %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
-        }
-
-        rcv_path_manager.free_path_struct(cheapest->path_data);
-        heap_.free(cheapest);
-    }
-
-    return cheapest_paths;
-}
-
-void ParallelConnectionRouter::timing_driven_expand_cheapest(t_heap* cheapest,
-                                                           RRNodeId target_node,
-                                                           const t_conn_cost_params& cost_params,
-                                                           const t_bb& bounding_box) {
-    RRNodeId inode = cheapest->index;
-
-    t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
-    float best_total_cost = route_inf->path_cost;
-    float best_back_cost = route_inf->backward_path_cost;
-
-    float new_total_cost = cheapest->cost;
-    float new_back_cost = cheapest->backward_path_cost;
-
-    if (prune_node(new_total_cost, new_back_cost, best_total_cost, best_back_cost))
-        return;
-
-    update_cheapest(cheapest, route_inf);
-
-    timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
-                                        target_node);
-
-    /* I only re-expand a node if both the "known" backward cost is lower  *
-     * in the new expansion (this is necessary to prevent loops from       *
-     * forming in the routing and causing havoc) *and* the expected total  *
-     * cost to the sink is lower than the old value.  Different R_upstream *
-     * values could make a path with lower back_path_cost less desirable   *
-     * than one with higher cost.  Test whether or not I should disallow   *
-     * re-expansion based on a higher total cost.                          */
-
-    // if (best_total_cost > new_total_cost && ((rcv_path_manager.is_enabled()) || best_back_cost > new_back_cost)) {
-    //     // Explore from this node, since the current/new partial path has the best cost
-    //     // found so far
-    //     VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
-    //     VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "      Setting path costs for associated node %d (from %d edge %zu)\n",
-    //                    cheapest->index,
-    //                    static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
-    //                    static_cast<size_t>(cheapest->prev_edge()));
-
-    //     update_cheapest(cheapest, route_inf);
-
-    //     timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
-    //                                     target_node);
-    // } else {
-    //     // Post-heap prune, do not re-explore from the current/new partial path as it
-    //     // has worse cost than the best partial path to this node found so far
-    //     VTR_LOGV_DEBUG(router_debug_, "    Worse cost to %d\n", inode);
-    //     VTR_LOGV_DEBUG(router_debug_, "    Old total cost: %g\n", best_total_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "    Old back cost: %g\n", best_back_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-    // }
+    
+    (void)cost_params;
+    (void)bounding_box;
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SSMDSP not yet implemented (nor is the focus of this project). Not expected to be called.");
 }
 
 void ParallelConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
@@ -596,76 +501,26 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
                         true,
                         to_node,
                         rr_graph_);
-
-
-    // if (new_total_cost < best_total_cost && ((rcv_path_manager.is_enabled()) || (new_back_cost < best_back_cost))) {
-    //     VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node,
-    //                    describe_rr_node(device_ctx.rr_graph,
-    //                                     device_ctx.grid,
-    //                                     device_ctx.rr_indexed_data,
-    //                                     to_node,
-    //                                     is_flat_)
-    //                        .c_str());
-    //     VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g\n", new_total_cost, new_back_cost);
-    //     //Add node to the heap only if the cost via the current partial path is less than the
-    //     //best known cost, since there is no reason for the router to expand more expensive paths.
-    //     //
-    //     //Pre-heap prune to keep the heap small, by not putting paths which are known to be
-    //     //sub-optimal (at this point in time) into the heap.
-    //     t_heap* next_ptr = heap_.alloc();
-
-    //     // Use the already created next path structure pointer when RCV is enabled
-    //     if (rcv_path_manager.is_enabled()) rcv_path_manager.move(next_ptr->path_data, next.path_data);
-
-    //     //Record how we reached this node
-    //     next_ptr->cost = next.cost;
-    //     next_ptr->R_upstream = next.R_upstream;
-    //     next_ptr->backward_path_cost = next.backward_path_cost;
-    //     next_ptr->index = to_node;
-    //     next_ptr->set_prev_edge(from_edge);
-
-    //     if (rcv_path_manager.is_enabled() && current->path_data) {
-    //         next_ptr->path_data->path_rr = current->path_data->path_rr;
-    //         next_ptr->path_data->edge = current->path_data->edge;
-    //         next_ptr->path_data->path_rr.emplace_back(from_node);
-    //         next_ptr->path_data->edge.emplace_back(from_edge);
-    //     }
-
-    //     heap_.add_to_heap(next_ptr);
-    //     update_router_stats(router_stats_,
-    //                         true,
-    //                         to_node,
-    //                         rr_graph_);
-
-    // } else {
-    //     VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
-    //     VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost, best_back_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
-    // }
-
-    // if (rcv_path_manager.is_enabled() && next.path_data != nullptr) {
-    //     rcv_path_manager.free_path_struct(next.path_data);
-    // }
 }
 
-#ifdef VTR_ASSERT_SAFE_ENABLED
+// #ifdef VTR_ASSERT_SAFE_ENABLED
 
-//Returns true if both nodes are part of the same non-configurable edge set
-static bool same_non_config_node_set(RRNodeId from_node, RRNodeId to_node) {
-    auto& device_ctx = g_vpr_ctx.device();
+// //Returns true if both nodes are part of the same non-configurable edge set
+// static bool same_non_config_node_set(RRNodeId from_node, RRNodeId to_node) {
+//     auto& device_ctx = g_vpr_ctx.device();
 
-    auto from_itr = device_ctx.rr_node_to_non_config_node_set.find(from_node);
-    auto to_itr = device_ctx.rr_node_to_non_config_node_set.find(to_node);
+//     auto from_itr = device_ctx.rr_node_to_non_config_node_set.find(from_node);
+//     auto to_itr = device_ctx.rr_node_to_non_config_node_set.find(to_node);
 
-    if (from_itr == device_ctx.rr_node_to_non_config_node_set.end()
-        || to_itr == device_ctx.rr_node_to_non_config_node_set.end()) {
-        return false; //Not part of a non-config node set
-    }
+//     if (from_itr == device_ctx.rr_node_to_non_config_node_set.end()
+//         || to_itr == device_ctx.rr_node_to_non_config_node_set.end()) {
+//         return false; //Not part of a non-config node set
+//     }
 
-    return from_itr->second == to_itr->second; //Check for same non-config set IDs
-}
+//     return from_itr->second == to_itr->second; //Check for same non-config set IDs
+// }
 
-#endif
+// #endif
 
 float ParallelConnectionRouter::compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
                                                           RRNodeId to_node,

@@ -436,6 +436,7 @@ endif()
 add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
 add_compile_options(${ADDITIONAL_FLAGS})
 link_libraries(${ADDITIONAL_FLAGS})
+set(CPS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/CPS/include)
 add_subdirectory(vpr)
 if(${WITH_ABC})
     add_subdirectory(ace2)
