@@ -308,6 +308,8 @@ bool route(const Netlist<>& net_list,
         float iter_cumm_time = iteration_timer.elapsed_sec();
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
+        PartitionTreeDebug::log("Iteration " + std::to_string(itry) + " took " +  std::to_string(iter_elapsed_time) + " s");
+
         //Output progress
         print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
@@ -424,10 +426,12 @@ bool route(const Netlist<>& net_list,
         /*
          * Prepare for the next iteration
          */
-
         if (router_opts.route_bb_update == e_route_bb_update::DYNAMIC) {
-            num_net_bounding_boxes_updated = dynamic_update_bounding_boxes(iter_results.rerouted_nets);
+            dynamic_update_bounding_boxes(iter_results.rerouted_nets, iter_results.bb_updated_nets);
         }
+
+        num_net_bounding_boxes_updated = iter_results.bb_updated_nets.size();
+        netlist_router->handle_bb_updated_nets(iter_results.bb_updated_nets);
 
         if (itry >= high_effort_congestion_mode_iteration_threshold) {
             //We are approaching the maximum number of routing iterations,
