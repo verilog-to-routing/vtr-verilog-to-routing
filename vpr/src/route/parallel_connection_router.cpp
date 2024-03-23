@@ -5,6 +5,8 @@
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
+#define IS_DETERMINISTIC
+
 /**
  * @brief This function is relevant when the architecture is 3D. If inter-layer connections are only from OPINs (determine by is_inter_layer_opin_connection),
  * then nodes (other that OPINs) which are on the other layer than sink's layer, don't need to be pushed back to the heap.
@@ -191,11 +193,40 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
     return std::make_tuple(true, retry_with_full_bb, out);
 }
 
-static inline bool prune_node(float new_total_cost, float new_back_cost, float best_total_cost, float best_back_cost) {
+// TODO: Once we have a heap node struct, clean this up!
+static inline bool prune_node(float new_total_cost, float new_back_cost, RREdgeId new_prev_edge, float best_total_cost, float best_back_cost, RREdgeId best_prev_edge,
+                              float best_back_cost_to_target, RREdgeId best_prev_edge_to_target) {
+#ifdef IS_DETERMINISTIC
+    // Deterministic version prefers a given EdgeID, so a unique path is returned since,
+    // in the case of a tie, a determinstic path wins.
+    auto is_preferred_edge = [](RREdgeId first, RREdgeId second) {
+        return first < second;
+    };
+    // TODO: What about best_total_cost_to_target?
+    if (best_back_cost_to_target < new_back_cost)
+        return true;
+    if ((best_back_cost_to_target == new_back_cost) &&
+        (is_preferred_edge(new_prev_edge, best_prev_edge_to_target)))
+        return false;
+    if (best_total_cost < new_total_cost)
+        return true;
+    if (best_back_cost < new_back_cost)
+        return true;
+    if (((best_total_cost == new_total_cost) ||
+        (best_back_cost == new_back_cost)) &&
+        (is_preferred_edge(new_prev_edge, best_prev_edge)))
+        return false;
+#else   // IS_DETERMINISTIC
+    // Non-deterministic version does not prefer a given EdgeID, therefore there
+    // is a race-condition on which path wins in the case of a tie.
+    // TODO: What about best_total_cost_to_target?
+    if (best_back_cost_to_target <= new_back_cost)
+        return true;
     if (best_total_cost <= new_total_cost)
         return true;
     if (best_back_cost <= new_back_cost)
         return true;
+#endif  // IS_DETERMINISTIC
     return false;
 }
 
@@ -230,8 +261,10 @@ t_heap* ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNod
         float best_back_cost = route_inf->backward_path_cost;
         float new_total_cost = cheapest->cost;
         float new_back_cost = cheapest->backward_path_cost;
+        float best_back_cost_to_target = rr_node_route_inf_[sink_node].backward_path_cost;
+        RREdgeId best_prev_edge_to_target = rr_node_route_inf_[sink_node].prev_edge;
         // Pruning
-        if (prune_node(new_total_cost, new_back_cost, best_total_cost, best_back_cost)) {
+        if (prune_node(new_total_cost, new_back_cost, cheapest->prev_edge(), best_total_cost, best_back_cost, route_inf->prev_edge, best_back_cost_to_target, best_prev_edge_to_target)) {
             heap_.free(cheapest);
             cheapest = nullptr;
             continue;
@@ -483,7 +516,9 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
     float new_total_cost = next.cost;
     float new_back_cost = next.backward_path_cost;
 
-    if (prune_node(new_total_cost, new_back_cost, best_total_cost, best_back_cost))
+    float best_back_cost_to_target = rr_node_route_inf_[target_node].backward_path_cost;
+    RREdgeId best_prev_edge_to_target = rr_node_route_inf_[target_node].prev_edge;
+    if (prune_node(new_total_cost, new_back_cost, next.prev_edge(), best_total_cost, best_back_cost, rr_node_route_inf_[to_node].prev_edge, best_back_cost_to_target, best_prev_edge_to_target))
         return;
 
     t_heap* next_ptr = heap_.alloc();
