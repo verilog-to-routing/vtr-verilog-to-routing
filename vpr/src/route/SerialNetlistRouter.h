@@ -3,6 +3,7 @@
 /** @file Serial case for \ref NetlistRouter: just loop through nets */
 
 #include "netlist_routers.h"
+#include "parallel_connection_router.h"
 
 template<typename HeapType>
 class SerialNetlistRouter : public NetlistRouter {
@@ -32,18 +33,32 @@ class SerialNetlistRouter : public NetlistRouter {
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
         , _is_flat(is_flat) {}
-    ~SerialNetlistRouter() {}
+    ~SerialNetlistRouter() {
+      delete _router;
+    }
 
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
     void set_rcv_enabled(bool x);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
-    ConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
+    ConnectionRouterInterface *_make_router(const RouterLookahead* router_lookahead, bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-        return ConnectionRouter<HeapType>(
+        // Serial Connection Router
+        // return new ConnectionRouter<HeapType>(
+        //     device_ctx.grid,
+        //     *router_lookahead,
+        //     device_ctx.rr_graph.rr_nodes(),
+        //     &device_ctx.rr_graph,
+        //     device_ctx.rr_rc_data,
+        //     device_ctx.rr_graph.rr_switch(),
+        //     route_ctx.rr_node_route_inf,
+        //     is_flat);
+        
+        // Parallel Connection Router
+        return new ParallelConnectionRouter(
             device_ctx.grid,
             *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
@@ -54,7 +69,7 @@ class SerialNetlistRouter : public NetlistRouter {
             is_flat);
     }
     /* Context fields */
-    ConnectionRouter<HeapType> _router;
+    ConnectionRouterInterface *_router;
     const Netlist<>& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;

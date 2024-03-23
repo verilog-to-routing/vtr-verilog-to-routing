@@ -41,7 +41,7 @@
  * @param sink_mask Which sinks to route? Assumed all sinks if nullopt, otherwise a mask of [1..num_sinks+1] where set bits request the sink to be routed
  * @return NetResultFlags for this net */
 template<typename ConnectionRouter>
-inline NetResultFlags route_net(ConnectionRouter& router,
+inline NetResultFlags route_net(ConnectionRouter *router,
                                 const Netlist<>& net_list,
                                 const ParentNetId& net_id,
                                 int itry,
@@ -148,7 +148,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
         //VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
         RRNodeId sink_node(device_ctx.virtual_clock_network_root_idx);
 
-        enable_router_debug(router_opts, net_id, sink_node, itry, &router);
+        enable_router_debug(router_opts, net_id, sink_node, itry, router);
 
         VTR_LOGV_DEBUG(f_router_debug, "Pre-routing global net %zu\n", size_t(net_id));
 
@@ -178,7 +178,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
         RRNodeId sink_rr = route_ctx.net_rr_terminals[net_id][target_pin];
 
-        enable_router_debug(router_opts, net_id, sink_rr, itry, &router);
+        enable_router_debug(router_opts, net_id, sink_rr, itry, router);
 
         cost_params.criticality = pin_criticality[target_pin];
 
@@ -247,7 +247,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     VTR_ASSERT_MSG(g_vpr_ctx.routing().rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode), "SOURCE should never be congested");
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
-    router.empty_rcv_route_tree_set(); // ?
+    router->empty_rcv_route_tree_set(); // ?
 
     profiling::net_fanout_end(net_list.net_sinks(net_id).size());
 
@@ -258,7 +258,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 /** Route to a "virtual sink" in the netlist which corresponds to the start point
  * of the global clock network. */
 template<typename ConnectionRouter>
-inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
+inline NetResultFlags pre_route_to_clock_root(ConnectionRouter *router,
                                               ParentNetId net_id,
                                               const Netlist<>& net_list,
                                               RRNodeId sink_node,
@@ -281,7 +281,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
 
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
-    router.clear_modified_rr_node_info();
+    router->clear_modified_rr_node_info();
 
     bool found_path, retry_with_full_bb;
     t_heap cheapest;
@@ -290,7 +290,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
 
-    std::tie(found_path, retry_with_full_bb, cheapest) = router.timing_driven_route_connection_from_route_tree(
+    std::tie(found_path, retry_with_full_bb, cheapest) = router->timing_driven_route_connection_from_route_tree(
         tree.root(),
         sink_node,
         cost_params,
@@ -309,7 +309,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
         if (f_router_debug) {
             update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
         }
-        router.reset_path_costs();
+        router->reset_path_costs();
         out.success = false;
         out.retry_with_full_bb = retry_with_full_bb;
         return out;
@@ -336,7 +336,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
-    router.reset_path_costs();
+    router->reset_path_costs();
 
     // Post route cleanup:
     // - remove sink from route tree and fix routing for all nodes leading to the sink ("freeze")
@@ -371,7 +371,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @return NetResultFlags for this sink to be bubbled up through route_net */
 template<typename ConnectionRouter>
-inline NetResultFlags route_sink(ConnectionRouter& router,
+inline NetResultFlags route_sink(ConnectionRouter *router,
                                  const Netlist<>& net_list,
                                  ParentNetId net_id,
                                  unsigned itarget,
@@ -396,7 +396,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     RRNodeId sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
 
-    router.clear_modified_rr_node_info();
+    router->clear_modified_rr_node_info();
 
     bool found_path;
     t_heap cheapest;
@@ -414,7 +414,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
     if (high_fanout && !sink_critical && !net_is_global && !net_is_clock && -routing_predictor.get_slope() > router_opts.high_fanout_max_slope) {
-        std::tie(found_path, flags.retry_with_full_bb, cheapest) = router.timing_driven_route_connection_from_route_tree_high_fanout(tree.root(),
+        std::tie(found_path, flags.retry_with_full_bb, cheapest) = router->timing_driven_route_connection_from_route_tree_high_fanout(tree.root(),
                                                                                                                                      sink_node,
                                                                                                                                      cost_params,
                                                                                                                                      net_bb,
@@ -422,7 +422,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
                                                                                                                                      router_stats,
                                                                                                                                      conn_params);
     } else {
-        std::tie(found_path, flags.retry_with_full_bb, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
+        std::tie(found_path, flags.retry_with_full_bb, cheapest) = router->timing_driven_route_connection_from_route_tree(tree.root(),
                                                                                                                          sink_node,
                                                                                                                          cost_params,
                                                                                                                          net_bb,
@@ -442,7 +442,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
             update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
         }
         flags.success = false;
-        router.reset_path_costs();
+        router->reset_path_costs();
         return flags;
     }
 
@@ -470,7 +470,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
-    router.reset_path_costs();
+    router->reset_path_costs();
 
     // routed to a sink successfully
     flags.success = true;

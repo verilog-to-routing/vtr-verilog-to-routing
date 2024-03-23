@@ -161,7 +161,7 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
             }
             /* decompose_and_route fails when we get bad flags, so we only need to handle them here */
             auto flags = route_net(
-                _routers_th.local(),
+                &_routers_th.local(),
                 _net_list,
                 net_id,
                 _itry,
@@ -209,7 +209,7 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
             /* Route the full vnet. Again we don't care about the flags, they should be handled by the regular path */
             auto sink_mask = get_vnet_sink_mask(vnet);
             route_net(
-                _routers_th.local(),
+                &_routers_th.local(),
                 _net_list,
                 vnet.net_id,
                 _itry,
@@ -285,7 +285,7 @@ bool DecompNetlistRouter<HeapType>::decompose_and_route_net(ParentNetId net_id, 
 
     /* Route the net with the given mask: only the sinks we ask for will be routed */
     auto flags = route_net(
-        _routers_th.local(),
+        &_routers_th.local(),
         _net_list,
         net_id,
         _itry,
@@ -386,7 +386,7 @@ bool DecompNetlistRouter<HeapType>::decompose_and_route_vnet(VirtualNet& vnet, c
 
     /* Route the *parent* net with the given mask: only the sinks we ask for will be routed */
     auto flags = route_net(
-        _routers_th.local(),
+        &_routers_th.local(),
         _net_list,
         vnet.net_id,
         _itry,

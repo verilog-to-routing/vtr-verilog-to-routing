@@ -64,7 +64,7 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
 
 template<typename HeapType>
 void SerialNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
-    _router.set_rcv_enabled(x);
+    _router->set_rcv_enabled(x);
 }
 
 template<typename HeapType>

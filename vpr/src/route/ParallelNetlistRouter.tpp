@@ -49,7 +49,7 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
     vtr::Timer t;
     for (auto net_id : node.nets) {
         auto flags = route_net(
-            _routers_th.local(),
+            &_routers_th.local(),
             _net_list,
             net_id,
             _itry,
