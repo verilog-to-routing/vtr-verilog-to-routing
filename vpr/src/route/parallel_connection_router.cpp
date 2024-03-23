@@ -180,7 +180,6 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
         heap_.empty_heap();
-        rcv_path_manager.empty_heap();
         return std::make_tuple(false, retry_with_full_bb, t_heap());
     }
 
@@ -263,10 +262,10 @@ t_heap* ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNod
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         cheapest = heap_.get_heap_head();
-        update_router_stats(router_stats_,
-                            false,
-                            cheapest->index,
-                            rr_graph_);
+        // update_router_stats(router_stats_,
+        //                     false,
+        //                     cheapest->index,
+        //                     rr_graph_);
 
         RRNodeId inode = cheapest->index;
 
@@ -413,8 +412,7 @@ void ParallelConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
     // TODO: Only disable pruning if the net has negative hold slack, maybe go off budgets
-    if (!inside_bb(to_node, bounding_box)
-        && !rcv_path_manager.is_enabled()) {
+    if (!inside_bb(to_node, bounding_box)) {
         // VTR_LOGV_DEBUG(router_debug_,
         //                "      Pruned expansion of node %d edge %zu -> %d"
         //                " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
@@ -464,23 +462,6 @@ void ParallelConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
     // VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
     //                from_node, size_t(from_edge), size_t(to_node));
 
-    // Check if the node exists in the route tree when RCV is enabled
-    // Other pruning methods have been disabled when RCV is on, so this method is required to prevent "loops" from being created
-    // bool node_exists = false;
-    // if (rcv_path_manager.is_enabled()) {
-    //     node_exists = rcv_path_manager.node_exists_in_tree(current->path_data,
-    //                                                        to_node);
-    // }
-
-    // if (!node_exists || !rcv_path_manager.is_enabled()) {
-    //     timing_driven_add_to_heap(cost_params,
-    //                               current,
-    //                               from_node,
-    //                               to_node,
-    //                               from_edge,
-    //                               target_node);
-    // }
-
     timing_driven_add_to_heap(cost_params,
                               current,
                               from_node,
@@ -499,18 +480,9 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
     // const auto& device_ctx = g_vpr_ctx.device();
     t_heap next;
 
-    // Initalize RCV data struct if needed, otherwise it's set to nullptr
-    // rcv_path_manager.alloc_path_struct(next.path_data);
-
     // Costs initialized to current
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
     next.backward_path_cost = current->backward_path_cost;
-
-    // path_data variables are initialized to current values
-    // if (rcv_path_manager.is_enabled() && current->path_data) {
-    //     next.path_data->backward_cong = current->path_data->backward_cong;
-    //     next.path_data->backward_delay = current->path_data->backward_delay;
-    // }
 
     next.R_upstream = current->R_upstream;
 
@@ -538,10 +510,10 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
 
     heap_.add_to_heap(next_ptr);
 
-    update_router_stats(router_stats_,
-                        true,
-                        to_node,
-                        rr_graph_);
+    // update_router_stats(router_stats_,
+    //                     true,
+    //                     to_node,
+    //                     rr_graph_);
 }
 
 // #ifdef VTR_ASSERT_SAFE_ENABLED
@@ -565,12 +537,15 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
 
 // Empty the route tree set node, use this after each net is routed
 void ParallelConnectionRouter::empty_rcv_route_tree_set() {
-    rcv_path_manager.empty_route_tree_nodes();
+    // rcv_path_manager.empty_route_tree_nodes();
+    // Do nothing.
 }
 
 // Enable or disable RCV
 void ParallelConnectionRouter::set_rcv_enabled(bool enable) {
-    rcv_path_manager.set_enabled(enable);
+    // rcv_path_manager.set_enabled(enable);
+    (void)enable;
+    // Do nothing.
 }
 
 //Calculates the cost of reaching to_node
@@ -719,7 +694,6 @@ void ParallelConnectionRouter::empty_heap_annotating_node_route_inf() {
         rr_node_route_inf_[tmp->index].backward_path_cost = tmp->backward_path_cost;
         modified_rr_node_inf_.push_back(tmp->index);
 
-        rcv_path_manager.free_path_struct(tmp->path_data);
         heap_.free(tmp);
     }
 }
@@ -813,14 +787,14 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
     //                              backward_path_cost, R_upstream, rt_node.Tdel, &rcv_path_manager);
     // }
 
-    update_router_stats(router_stats_,
-                        true,
-                        inode,
-                        rr_graph_);
+//     update_router_stats(router_stats_,
+//                         true,
+//                         inode,
+//                         rr_graph_);
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-    router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
-#endif
+// #ifdef VTR_ENABLE_DEBUG_LOGGING
+//     router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
+// #endif
 }
 
 /* Expand bb by inode's extents and clip against net_bb */

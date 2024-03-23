@@ -285,9 +285,6 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     bool router_debug_;
 
     bool only_opin_inter_layer;
-
-    // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of the heap types
-    PathManager rcv_path_manager;
 };
 
 #endif /* _PARALLEL_CONNECTION_ROUTER_H */
