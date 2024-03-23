@@ -330,33 +330,12 @@ vtr::vector<RRNodeId, t_heap> ParallelConnectionRouter::timing_driven_find_all_s
     const t_bb& bounding_box,
     RouterStats& router_stats,
     const ConnectionParameters& conn_params) {
-    router_stats_ = &router_stats;
-    conn_params_ = &conn_params;
 
-    // Add the route tree to the heap with no specific target node
-    RRNodeId target_node = RRNodeId::INVALID();
-    add_route_tree_to_heap(rt_root, target_node, cost_params, bounding_box);
-    heap_.build_heap(); // via sifting down everything
-
-    auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
-    heap_.empty_heap();
-
-    return res;
-}
-
-// Find shortest paths from current heap to all nodes in the RR graph
-//
-// Since there is no single *target* node this uses Dijkstra's algorithm
-// with a modified exit condition (runs until heap is empty).
-//
-// Note that to re-use code used for the regular A*-based router we use a
-// no-operation lookahead which always returns zero.
-vtr::vector<RRNodeId, t_heap> ParallelConnectionRouter::timing_driven_find_all_shortest_paths_from_heap(
-    const t_conn_cost_params& cost_params,
-    const t_bb& bounding_box) {
-    
+    (void)rt_root;
     (void)cost_params;
     (void)bounding_box;
+    (void)router_stats;
+    (void)conn_params;
     VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SSMDSP not yet implemented (nor is the focus of this project). Not expected to be called.");
 }
 
@@ -583,45 +562,6 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
 // }
 
 // #endif
-
-float ParallelConnectionRouter::compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
-                                                          RRNodeId to_node,
-                                                          RRNodeId target_node,
-                                                          float backwards_delay,
-                                                          float backwards_cong,
-                                                          float R_upstream) {
-    float expected_delay;
-    float expected_cong;
-
-    const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
-    // TODO: This function is not tested for is_flat == true
-    VTR_ASSERT(is_flat_ != true);
-    std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
-
-    float expected_total_delay_cost;
-    float expected_total_cong_cost;
-
-    float expected_total_cong = cost_params.astar_fac * expected_cong + backwards_cong;
-    float expected_total_delay = cost_params.astar_fac * expected_delay + backwards_delay;
-
-    //If budgets specified calculate cost as described by RCV paper:
-    //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
-    //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
-    //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
-
-    // Normalization constant defined in RCV paper cited above
-    constexpr float NORMALIZATION_CONSTANT = 100e-12;
-
-    expected_total_delay_cost = expected_total_delay;
-    expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-    // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
-    expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / NORMALIZATION_CONSTANT;
-    expected_total_cong_cost = expected_total_cong;
-
-    float total_cost = expected_total_delay_cost + expected_total_cong_cost;
-
-    return total_cost;
-}
 
 // Empty the route tree set node, use this after each net is routed
 void ParallelConnectionRouter::empty_rcv_route_tree_set() {
@@ -850,7 +790,7 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
      * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
     // float expected_cost = router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
 
-    if (!rcv_path_manager.is_enabled()) {
+    // if (!rcv_path_manager.is_enabled()) {
         // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
         float tot_cost = backward_path_cost
                          + cost_params.astar_fac
@@ -866,12 +806,12 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
         push_back_node(&heap_, rr_node_route_inf_,
                        inode, tot_cost, RREdgeId::INVALID(),
                        backward_path_cost, R_upstream);
-    } else {
-        float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);
+    // } else {
+    //     float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);
 
-        push_back_node_with_info(&heap_, inode, expected_total_cost,
-                                 backward_path_cost, R_upstream, rt_node.Tdel, &rcv_path_manager);
-    }
+    //     push_back_node_with_info(&heap_, inode, expected_total_cost,
+    //                              backward_path_cost, R_upstream, rt_node.Tdel, &rcv_path_manager);
+    // }
 
     update_router_stats(router_stats_,
                         true,

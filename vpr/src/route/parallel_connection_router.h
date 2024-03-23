@@ -223,11 +223,6 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         RREdgeId from_edge,
         RRNodeId target_node);
 
-    // Find paths from current heap to all nodes in the RR graph
-    vtr::vector<RRNodeId, t_heap> timing_driven_find_all_shortest_paths_from_heap(
-        const t_conn_cost_params& cost_params,
-        const t_bb& bounding_box);
-
     void empty_heap_annotating_node_route_inf();
 
     //Adds the route tree rooted at rt_node to the heap, preparing it to be
@@ -236,14 +231,6 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
                                 RRNodeId target_node,
                                 const t_conn_cost_params& cost_params,
                                 const t_bb& net_bb);
-
-    // Evaluate node costs using the RCV algorith
-    float compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
-                                      RRNodeId to_node,
-                                      RRNodeId target_node,
-                                      float backwards_delay,
-                                      float backwards_cong,
-                                      float R_upstream);
 
     //Unconditionally adds rt_node to the heap
     //
