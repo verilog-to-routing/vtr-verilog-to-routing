@@ -194,8 +194,15 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
 }
 
 // TODO: Once we have a heap node struct, clean this up!
-static inline bool prune_node(float new_total_cost, float new_back_cost, RREdgeId new_prev_edge, float best_total_cost, float best_back_cost, RREdgeId best_prev_edge,
-                              float best_back_cost_to_target, RREdgeId best_prev_edge_to_target) {
+static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_back_cost, RREdgeId new_prev_edge, RRNodeId target_node, vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_) {
+    // Get the global information INSIDE this function.
+    t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
+    float best_total_cost = route_inf->path_cost;
+    float best_back_cost = route_inf->backward_path_cost;
+    RREdgeId best_prev_edge = route_inf->prev_edge;
+    t_rr_node_route_inf* target_route_inf = &rr_node_route_inf_[target_node];
+    float best_back_cost_to_target = target_route_inf->backward_path_cost;
+    RREdgeId best_prev_edge_to_target = target_route_inf->prev_edge;
 #ifdef IS_DETERMINISTIC
     // Deterministic version prefers a given EdgeID, so a unique path is returned since,
     // in the case of a tie, a determinstic path wins.
@@ -230,6 +237,18 @@ static inline bool prune_node(float new_total_cost, float new_back_cost, RREdgeI
     return false;
 }
 
+static inline void obtainSpinLock(RRNodeId inode) {
+    // TODO: Implement
+    (void)inode;
+    return;
+}
+
+static inline void releaseLock(RRNodeId inode) {
+    // TODO: Implement
+    (void)inode;
+    return;
+}
+
 //Finds a path to sink_node, starting from the elements currently in the heap.
 //
 // This is the core maze routing routine.
@@ -256,21 +275,34 @@ t_heap* ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNod
             break;
         }
 
-        t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
-        float best_total_cost = route_inf->path_cost;
-        float best_back_cost = route_inf->backward_path_cost;
         float new_total_cost = cheapest->cost;
         float new_back_cost = cheapest->backward_path_cost;
-        float best_back_cost_to_target = rr_node_route_inf_[sink_node].backward_path_cost;
-        RREdgeId best_prev_edge_to_target = rr_node_route_inf_[sink_node].prev_edge;
+        RREdgeId new_prev_edge = cheapest->prev_edge();
         // Pruning
-        if (prune_node(new_total_cost, new_back_cost, cheapest->prev_edge(), best_total_cost, best_back_cost, route_inf->prev_edge, best_back_cost_to_target, best_prev_edge_to_target)) {
+        // NOTE: This is thread-safe since, even though the values may change during operation, that is ok,
+        //       since if any of the arguments need to be pruned it will.
+        if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_)) {
             heap_.free(cheapest);
             cheapest = nullptr;
             continue;
         }
+
         // Synchronization Point
-        update_cheapest(cheapest, route_inf);
+        obtainSpinLock(inode);
+
+        // Need to double check pruning since things may have changed since obtaining the lock.
+        if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_)) {
+            heap_.free(cheapest);
+            cheapest = nullptr;
+            releaseLock(inode);
+            continue;
+        }
+
+        // Update the global values now that we are in the critical section.
+        update_cheapest(cheapest, &rr_node_route_inf_[inode]);
+
+        releaseLock(inode);
+
         // Adding nodes to heap
         timing_driven_expand_neighbours(cheapest, cost_params, bounding_box, sink_node);
 
@@ -510,15 +542,10 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
                                       from_edge,
                                       target_node);
 
-    float best_total_cost = rr_node_route_inf_[to_node].path_cost;
-    float best_back_cost = rr_node_route_inf_[to_node].backward_path_cost;
-
     float new_total_cost = next.cost;
     float new_back_cost = next.backward_path_cost;
-
-    float best_back_cost_to_target = rr_node_route_inf_[target_node].backward_path_cost;
-    RREdgeId best_prev_edge_to_target = rr_node_route_inf_[target_node].prev_edge;
-    if (prune_node(new_total_cost, new_back_cost, next.prev_edge(), best_total_cost, best_back_cost, rr_node_route_inf_[to_node].prev_edge, best_back_cost_to_target, best_prev_edge_to_target))
+    RREdgeId new_prev_edge = next.prev_edge();
+    if (prune_node(to_node, new_total_cost, new_back_cost, new_prev_edge, target_node, rr_node_route_inf_))
         return;
 
     t_heap* next_ptr = heap_.alloc();
