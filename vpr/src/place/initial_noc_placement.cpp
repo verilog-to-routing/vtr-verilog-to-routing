@@ -3,6 +3,7 @@
 #include "initial_placement.h"
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
+#include "place_constraints.h"
 #include "vtr_math.h"
 
 #include <limits>
@@ -189,7 +190,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     // the constant factor above 35000.
     // Get all the router clusters and figure out how many of them exist
     const int num_router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist().size();
-    const int N_MOVES_PER_ROUTER = 35000;
+    const int N_MOVES_PER_ROUTER = 50000;
     const int N_MOVES = num_router_clusters * N_MOVES_PER_ROUTER;
 
     const double starting_prob = 0.5;
@@ -285,6 +286,14 @@ void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& plac
 
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts);
+
+    // check if there is any cycles
+    bool has_cycle = noc_routing_has_cycle();
+    if (has_cycle) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                        "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
+                        "when packets wait on each other in a cycle.\n");
+    }
 
     vtr::vector<ClusterBlockId, bool> block_visited(cluster_ctx.clb_nlist.blocks().size(), false);
     auto& place_ctx = g_vpr_ctx.mutable_placement();

@@ -17,8 +17,9 @@ const t_noc_traffic_flow& NocTrafficFlows::get_single_noc_traffic_flow(NocTraffi
     return noc_traffic_flows[traffic_flow_id];
 }
 
-const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const {
-    const std::vector<NocTrafficFlowId>* associated_traffic_flows_ref = nullptr;
+const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const {
+    // to be returned in the given router does not have any associated traffic flows
+    static const std::vector<NocTrafficFlowId> empty_vector;
 
     // get a reference to the traffic flows that have the current router as a source or sink
     auto associated_traffic_flows = traffic_flows_associated_to_router_blocks.find(router_block_id);
@@ -26,10 +27,10 @@ const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associat
     // check if there are any traffic flows associated with the current router
     if (associated_traffic_flows != traffic_flows_associated_to_router_blocks.end()) {
         // if we are here then there exists at least 1 traffic flow that includes the current router as a source or sink
-        associated_traffic_flows_ref = &(associated_traffic_flows->second);
+        return associated_traffic_flows->second;
+    } else {
+        return empty_vector;
     }
-
-    return associated_traffic_flows_ref;
 }
 
 int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
@@ -42,6 +43,10 @@ const std::vector<NocLinkId>& NocTrafficFlows::get_traffic_flow_route(NocTraffic
 
 std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id) {
     return traffic_flow_routes[traffic_flow_id];
+}
+
+const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& NocTrafficFlows::get_all_traffic_flow_routes() const {
+    return traffic_flow_routes;
 }
 
 const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netlist(void) const {
@@ -122,7 +127,7 @@ bool NocTrafficFlows::check_if_cluster_block_has_traffic_flows(ClusterBlockId bl
     auto traffic_flows = get_traffic_flows_associated_to_router_block(block_id);
 
     // indicate whether a vector of traffic flows were found that are associated to the current cluster block
-    return (traffic_flows != nullptr);
+    return (!traffic_flows.empty());
 }
 
 // private functions used internally

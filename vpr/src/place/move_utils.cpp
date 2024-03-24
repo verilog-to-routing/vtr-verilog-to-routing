@@ -51,7 +51,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
             outcome = find_affected_blocks(blocks_affected, b_to, from);
 
             if (outcome == e_block_move_result::INVERT) {
-                log_move_abort("inverted move recurrsion");
+                log_move_abort("inverted move recursion");
                 outcome = e_block_move_result::ABORT;
             }
         }
