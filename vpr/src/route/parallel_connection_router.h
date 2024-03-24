@@ -10,9 +10,8 @@
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
 
-#include "binary_heap.h"
-
-#include "MultiQueueIO.h"
+// #include "binary_heap.h"
+#include "multi_queue_priority_queue.h"
 
 // Prune the heap when it contains 4x the number of nodes in the RR graph.
 // constexpr size_t kHeapPruneFactor = 4;
@@ -262,26 +261,9 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     std::vector<RRNodeId> modified_rr_node_inf_;
     RouterStats* router_stats_;
     const ConnectionParameters* conn_params_;
-    BinaryHeap heap_;
-    struct pq_node_tag_t {
-        int32_t id;
-        int32_t pre;
-        float total_cost;
-        pq_node_tag_t() {}
-        pq_node_tag_t(int dont_care) {}
-        pq_node_tag_t(int32_t id, int32_t pre, float total_cost)
-                : id(id),
-                  pre(pre),
-                  total_cost(total_cost) {}
-    };
-    using pq_node_t = std::tuple<float /*priority*/, pq_node_tag_t>;
-    struct pq_compare {
-        bool operator()(const pq_node_t &u, const pq_node_t &v) {
-            return std::get<0>(u) > std::get<0>(v);
-        }
-    };
-    using MQ_IO = MultiQueueIO<pq_compare, float, pq_node_tag_t>;
-    MQ_IO *pq;
+    // BinaryHeap heap_;
+    MultiQueuePriorityQueue heap_;
+
     bool router_debug_;
 
     bool only_opin_inter_layer;
