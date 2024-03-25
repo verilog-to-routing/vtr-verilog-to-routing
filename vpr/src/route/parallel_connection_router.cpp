@@ -271,13 +271,10 @@ static inline void releaseLock(RRNodeId inode) {
 void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId sink_node,
                                                                          const t_conn_cost_params& cost_params,
                                                                          const t_bb& bounding_box) {
-
+    // cheapest t_heap in current route tree to be expanded on
+    pq_node_t cheapest;
     // While the heap is not empty do
-    while (!heap_.is_empty_heap()) {
-        // cheapest t_heap in current route tree to be expanded on
-        t_heap* cheapest_ptr = heap_.get_heap_head();
-        t_heap cheapest = *cheapest_ptr;
-        heap_.free(cheapest_ptr);
+    while (heap_.try_pop(cheapest)) {
         // update_router_stats(router_stats_,
         //                     false,
         //                     cheapest->index,
@@ -342,7 +339,7 @@ vtr::vector<RRNodeId, t_heap> ParallelConnectionRouter::timing_driven_find_all_s
     VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SSMDSP not yet implemented (nor is the focus of this project). Not expected to be called.");
 }
 
-void ParallelConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
+void ParallelConnectionRouter::timing_driven_expand_neighbours(pq_node_t* current,
                                                              const t_conn_cost_params& cost_params,
                                                              const t_bb& bounding_box,
                                                              RRNodeId target_node) {
@@ -403,7 +400,7 @@ void ParallelConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
 // Conditionally adds to_node to the router heap (via path from from_node via from_edge).
 // RR nodes outside the expanded bounding box specified in bounding_box are not added
 // to the heap.
-void ParallelConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
+void ParallelConnectionRouter::timing_driven_expand_neighbour(pq_node_t* current,
                                                             RRNodeId from_node,
                                                             RREdgeId from_edge,
                                                             RRNodeId to_node,
@@ -476,13 +473,13 @@ void ParallelConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
 
 // Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_params& cost_params,
-                                                       const t_heap* current,
+                                                       const pq_node_t* current,
                                                        RRNodeId from_node,
                                                        RRNodeId to_node,
                                                        const RREdgeId from_edge,
                                                        RRNodeId target_node) {
     // const auto& device_ctx = g_vpr_ctx.device();
-    t_heap next;
+    pq_node_t next;
 
     // Costs initialized to current
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
@@ -502,16 +499,11 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
     if (prune_node(to_node, new_total_cost, new_back_cost, from_edge, target_node, rr_node_route_inf_))
         return;
 
-    t_heap* next_ptr = heap_.alloc();
-
     //Record how we reached this node
-    next_ptr->cost = next.cost;
-    next_ptr->R_upstream = next.R_upstream;
-    next_ptr->backward_path_cost = next.backward_path_cost;
-    next_ptr->index = to_node;
-    next_ptr->set_prev_edge(from_edge);
+    next.index = to_node;
+    next.set_prev_edge(from_edge);
 
-    heap_.add_to_heap(next_ptr);
+    heap_.add_to_heap(next);
 
     // update_router_stats(router_stats_,
     //                     true,
@@ -552,7 +544,7 @@ void ParallelConnectionRouter::set_rcv_enabled(bool enable) {
 }
 
 //Calculates the cost of reaching to_node
-void ParallelConnectionRouter::evaluate_timing_driven_node_costs(t_heap* to,
+void ParallelConnectionRouter::evaluate_timing_driven_node_costs(pq_node_t* to,
                                                                const t_conn_cost_params& cost_params,
                                                                RRNodeId from_node,
                                                                RRNodeId to_node,
@@ -690,14 +682,11 @@ void ParallelConnectionRouter::empty_heap_annotating_node_route_inf() {
     //the cost of all nodes considered by the router (e.g. nodes never
     //expanded, such as parts of the initial route tree far from the
     //target).
-    while (!heap_.is_empty_heap()) {
-        t_heap* tmp = heap_.get_heap_head();
-
-        rr_node_route_inf_[tmp->index].path_cost = tmp->cost;
-        rr_node_route_inf_[tmp->index].backward_path_cost = tmp->backward_path_cost;
-        modified_rr_node_inf_.push_back(tmp->index);
-
-        heap_.free(tmp);
+    pq_node_t tmp;
+    while (heap_.try_pop(tmp)) {
+        rr_node_route_inf_[tmp.index].path_cost = tmp.cost;
+        rr_node_route_inf_[tmp.index].backward_path_cost = tmp.backward_path_cost;
+        modified_rr_node_inf_.push_back(tmp.index);
     }
 }
 
@@ -743,6 +732,29 @@ void ParallelConnectionRouter::add_route_tree_to_heap(
     }
 }
 
+/* Puts an rr_node on the heap with the same condition as add_node_to_heap,
+ * but do not fix heap property yet as that is more efficiently done from
+ * bottom up with build_heap    */
+template<typename RouteInf>
+void parallel_connection_router_push_back_node(
+    MultiQueuePriorityQueue* heap,
+    const RouteInf& rr_node_route_inf,
+    RRNodeId inode,
+    float total_cost,
+    RREdgeId prev_edge,
+    float backward_path_cost,
+    float R_upstream) {
+    if (total_cost >= rr_node_route_inf[inode].path_cost)
+        return ;
+    pq_node_t hptr;
+    hptr.index = inode;
+    hptr.cost = total_cost;
+    hptr.set_prev_edge(prev_edge);
+    hptr.backward_path_cost = backward_path_cost;
+    hptr.R_upstream = R_upstream;
+    heap->push_back(hptr);
+}
+
 //Unconditionally adds rt_node to the heap
 //
 //Note that if you want to respect rt_node.re_expand that is the caller's
@@ -780,7 +792,7 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
                        tot_cost,
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
-        push_back_node(&heap_, rr_node_route_inf_,
+        parallel_connection_router_push_back_node(&heap_, rr_node_route_inf_,
                        inode, tot_cost, RREdgeId::INVALID(),
                        backward_path_cost, R_upstream);
     // } else {

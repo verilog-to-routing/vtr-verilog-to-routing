@@ -48,7 +48,6 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         , router_stats_(nullptr)
         , router_debug_(false) {
         heap_.init_heap(grid);
-        heap_.set_prune_limit(rr_nodes_.size(), 4 * rr_nodes_.size());
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
     }
 
@@ -139,11 +138,11 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     }
 
     // Update the route path to the node pointed to by cheapest.
-    inline void update_cheapest(t_heap* cheapest) {
+    inline void update_cheapest(pq_node_t* cheapest) {
         update_cheapest(cheapest, &rr_node_route_inf_[cheapest->index]);
     }
 
-    inline void update_cheapest(t_heap* cheapest, t_rr_node_route_inf* route_inf) {
+    inline void update_cheapest(pq_node_t* cheapest, t_rr_node_route_inf* route_inf) {
         //Record final link to target
         add_to_mod_list(cheapest->index);
 
@@ -183,7 +182,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
 
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
-        t_heap* current,
+        pq_node_t* current,
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
         RRNodeId target_node);
@@ -194,7 +193,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     // RR nodes outside bounding box specified in bounding_box are not added
     // to the heap.
     void timing_driven_expand_neighbour(
-        t_heap* current,
+        pq_node_t* current,
         RRNodeId from_node,
         RREdgeId from_edge,
         RRNodeId to_node,
@@ -207,7 +206,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     // non-configurable edges
     void timing_driven_add_to_heap(
         const t_conn_cost_params& cost_params,
-        const t_heap* current,
+        const pq_node_t* current,
         RRNodeId from_node,
         RRNodeId to_node,
         RREdgeId from_edge,
@@ -215,7 +214,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
 
     // Calculates the cost of reaching to_node
     void evaluate_timing_driven_node_costs(
-        t_heap* to,
+        pq_node_t* to,
         const t_conn_cost_params& cost_params,
         RRNodeId from_node,
         RRNodeId to_node,
