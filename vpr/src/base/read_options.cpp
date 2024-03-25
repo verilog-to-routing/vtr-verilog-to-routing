@@ -2810,7 +2810,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n"
             "This can be used with any NoC topology\n")
         .default_value("bfs_routing")
-        .choices({"xy_routing", "bfs_routing"})
+        .choices({"xy_routing", "bfs_routing", "west_first_routing", "north_last_routing", "negative_first_routing",
+                  "odd_even_routing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_placement_weighting, "--noc_placement_weighting")
@@ -2820,6 +2821,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "A value of 1 would mean noc placement is considered equal to timing and wirelength"
             "A value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
         .default_value("5.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<double>(args.noc_agg_bandwidth_weighting, "--noc_aggregate_bandwidth_weighting")
+        .help(
+            "Controls the importance of minimizing the NoC aggregate bandwidth.\n"
+            "This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.\n"
+            "Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
+        .default_value("0.38")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_constraints_weighting")

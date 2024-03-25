@@ -104,14 +104,14 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
             int number_of_traffic_flows_associated_with_current_router = golden_list_of_associated_traffic_flows_to_routers[router_id].size();
 
             // get the traffic flows associated to the current router from the test datastructure
-            const std::vector<NocTrafficFlowId>* associated_traffic_flows_to_router = traffic_flow_storage.get_traffic_flows_associated_to_router_block(router_id);
+            const std::vector<NocTrafficFlowId>& associated_traffic_flows_to_router = traffic_flow_storage.get_traffic_flows_associated_to_router_block(router_id);
 
             // make sure that the number of traffic flows associated to each router within the NocTrafficFlows data structure matches the golden set
-            REQUIRE((int)associated_traffic_flows_to_router->size() == number_of_traffic_flows_associated_with_current_router);
+            REQUIRE((int)associated_traffic_flows_to_router.size() == number_of_traffic_flows_associated_with_current_router);
 
             // now go through the associated traffic flows and make sure the correct ones were added to the current router
             for (int router_traffic_flow = 0; router_traffic_flow < number_of_traffic_flows_associated_with_current_router; router_traffic_flow++) {
-                REQUIRE((size_t)golden_list_of_associated_traffic_flows_to_routers[router_id][router_traffic_flow] == (size_t)(*associated_traffic_flows_to_router)[router_traffic_flow]);
+                REQUIRE((size_t)golden_list_of_associated_traffic_flows_to_routers[router_id][router_traffic_flow] == (size_t)associated_traffic_flows_to_router[router_traffic_flow]);
             }
         }
 
@@ -130,7 +130,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
         ClusterBlockId invalid_block = (ClusterBlockId)(NUM_OF_ROUTERS + 1);
 
         // check that this router has no traffic flows associated with it
-        REQUIRE(traffic_flow_storage.get_traffic_flows_associated_to_router_block(invalid_block) == nullptr);
+        REQUIRE(traffic_flow_storage.get_traffic_flows_associated_to_router_block(invalid_block).empty());
     }
 }
 } // namespace

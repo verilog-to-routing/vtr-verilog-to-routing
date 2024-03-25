@@ -21,14 +21,12 @@
 #include <memory>
 
 #include "noc_routing.h"
-#include "xy_routing.h"
-#include "bfs_routing.h"
 
 class NocRoutingAlgorithmCreator {
   public:
     // nothing to do in the constructor and destructor
-    NocRoutingAlgorithmCreator() {}
-    ~NocRoutingAlgorithmCreator() {}
+    NocRoutingAlgorithmCreator() = default;
+    ~NocRoutingAlgorithmCreator() = default;
 
     /**
      * @brief Given a string that identifies a NoC routing algorithm, this 
@@ -38,7 +36,7 @@ class NocRoutingAlgorithmCreator {
      * 
      * @param routing_algorithm_name A user provided string that identifies a 
      * NoC routing algorithm
-     * @return NocRouting* A reference to the created NoC routing algorithm
+     * @return std::unique_ptr<NocRouting> A reference to the created NoC routing algorithm
      */
     static std::unique_ptr<NocRouting> create_routing_algorithm(const std::string& routing_algorithm_name);
 };

@@ -1,0 +1,17 @@
+noc_router_adapter_block:noc_router_adapter_block_8|slave_tready~reg0	4	157	0	0
+noc_router_adapter_block:noc_router_adapter_block_16|slave_tready~reg0	27	157 0	0
+noc_router_adapter_block:noc_router_adapter_block_24|slave_tready~reg0	73	157	0	0
+noc_router_adapter_block:noc_router_adapter_block_32|slave_tready~reg0	96	157	0	0
+noc_router_adapter_block:noc_router_adapter_block_40|slave_tready~reg0	119	157	0	0
+noc_router_adapter_block:noc_router_adapter_block_48|slave_tready~reg0	142	157	0	0
+noc_router_adapter_block:noc_router_adapter_block_56|slave_tready~reg0	188	157	0	0
+noc_router_adapter_block:noc_router_adapter_block_64|slave_tready~reg0	211	157	0	0
+
+noc_router_adapter_block:noc_router_adapter_block_1|slave_tready~reg0	4	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_9|slave_tready~reg0	27	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_17|slave_tready~reg0	73	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_25|slave_tready~reg0	96	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_33|slave_tready~reg0	119	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_41|slave_tready~reg0	142	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_49|slave_tready~reg0	188	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_57|slave_tready~reg0	211	4	0	0

@@ -24,13 +24,12 @@
 #include <vector>
 
 #include "noc_data_types.h"
-#include "noc_traffic_flows.h"
 #include "noc_storage.h"
 
 class NocRouting {
     // pure virtual functions that should be implemented in derived classes.
   public:
-    virtual ~NocRouting() {}
+    virtual ~NocRouting() = default;
 
     /**
      * @brief Finds a route that goes from the starting router in a 
@@ -47,6 +46,7 @@ class NocRouting {
      * @param sink_router_id The destination router of a traffic flow.
      * Identifies the ending point of the route within the NoC.This represents a 
      * physical router on the FPGA.
+     * @param traffic_flow_id The unique ID for the traffic flow being routed.
      * @param flow_route Stores the path returned by this function
      * as a series of NoC links found by 
      * a NoC routing algorithm between two routers in a traffic flow.
@@ -56,7 +56,11 @@ class NocRouting {
      * @param noc_model A model of the NoC. This is used to traverse the
      * NoC and find a route between the two routers.
      */
-    virtual void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) = 0;
+    virtual void route_flow(NocRouterId src_router_id,
+                            NocRouterId sink_router_id,
+                            NocTrafficFlowId traffic_flow_id,
+                            std::vector<NocLinkId>& flow_route,
+                            const NocStorage& noc_model) = 0;
 };
 
 #endif

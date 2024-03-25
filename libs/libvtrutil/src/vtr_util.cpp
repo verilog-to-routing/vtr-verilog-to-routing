@@ -125,7 +125,7 @@ std::string string_fmt(const char* fmt, ...) {
 
 ///@brief Returns a std::string formatted using a printf-style format string taking an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
-    // We need to copy the args so we don't change them before the true formating
+    // We need to copy the args so we don't change them before the true formatting
     va_list va_args_copy;
     va_copy(va_args_copy, args);
 
