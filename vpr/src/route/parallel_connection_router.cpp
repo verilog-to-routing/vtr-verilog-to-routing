@@ -62,7 +62,7 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
         return std::make_tuple(true, /*retry=*/false, out);
     } else {
         reset_path_costs();
-        modified_rr_node_inf_.clear();
+        clear_modified_rr_node_info();
         heap_.empty_heap();
         return std::make_tuple(false, retry, t_heap());
     }
@@ -168,7 +168,7 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
         //Reset any previously recorded node costs so timing_driven_route_connection()
         //starts over from scratch.
         reset_path_costs();
-        modified_rr_node_inf_.clear();
+        clear_modified_rr_node_info();
 
         retry_with_full_bb = timing_driven_route_connection_common_setup(rt_root,
                                                                                              sink_node,
@@ -251,18 +251,6 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
     return false;
 }
 
-static inline void obtainSpinLock(RRNodeId inode) {
-    // TODO: Implement
-    (void)inode;
-    return;
-}
-
-static inline void releaseLock(RRNodeId inode) {
-    // TODO: Implement
-    (void)inode;
-    return;
-}
-
 //Finds a path to sink_node, starting from the elements currently in the heap.
 //
 // This is the core maze routing routine.
@@ -271,6 +259,41 @@ static inline void releaseLock(RRNodeId inode) {
 void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId sink_node,
                                                                          const t_conn_cost_params& cost_params,
                                                                          const t_bb& bounding_box) {
+    const size_t num_threads = thread_pool_.size();
+    for (size_t i = 0; i < num_threads; ++i) {
+        thread_stopped_[i] = false;
+    }
+    for (size_t i = 0; i < num_threads; ++i) {
+        thread_pool_[i] = std::thread([this, i, num_threads, &sink_node, &cost_params, &bounding_box] {
+            bool pool_stop;
+            do {
+                this->timing_driven_route_connection_from_heap_thread_func(sink_node, cost_params, bounding_box, i);
+                this->thread_stopped_[i] = true;
+                pool_stop = true;
+                for (size_t j = 0; j < num_threads; ++j) {
+                    if (this->thread_stopped_[j] == false) { // no need to use lock
+                        pool_stop = false;
+                        break;
+                    }
+                }
+            } while (!pool_stop);
+        });
+    }
+    for (size_t i = 0; i < num_threads; ++i) {
+        thread_pool_[i].join();
+    }
+
+    heap_.empty_heap();
+    // if (router_debug_) {
+    //     //Update known path costs for nodes pushed but not popped, useful for debugging
+    //     empty_heap_annotating_node_route_inf();
+    // }
+}
+
+void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_func(RRNodeId sink_node,
+                                                                         const t_conn_cost_params& cost_params,
+                                                                         const t_bb& bounding_box,
+                                                                         const size_t thread_idx) {
     // cheapest t_heap in current route tree to be expanded on
     pq_node_t cheapest;
     // While the heap is not empty do
@@ -308,19 +331,18 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId
         }
 
         // Update the global values now that we are in the critical section.
-        update_cheapest(&cheapest, &rr_node_route_inf_[inode]);
+        update_cheapest(&cheapest, &rr_node_route_inf_[inode], thread_idx);
 
         releaseLock(inode);
+
+        if (inode == sink_node) {
+            continue;
+        }
 
         // Adding nodes to heap
         timing_driven_expand_neighbours(&cheapest, cost_params, bounding_box, sink_node);
 
     }
-
-    // if (router_debug_) {
-    //     //Update known path costs for nodes pushed but not popped, useful for debugging
-    //     empty_heap_annotating_node_route_inf();
-    // }
 }
 
 // Find shortest paths from specified route tree to all nodes in the RR graph
@@ -686,7 +708,8 @@ void ParallelConnectionRouter::empty_heap_annotating_node_route_inf() {
     while (heap_.try_pop(tmp)) {
         rr_node_route_inf_[tmp.index].path_cost = tmp.cost;
         rr_node_route_inf_[tmp.index].backward_path_cost = tmp.backward_path_cost;
-        modified_rr_node_inf_.push_back(tmp.index);
+        // Push back serially at this point
+        modified_rr_node_inf_[modified_rr_node_inf_.size()-1].push_back(tmp.index);
     }
 }
 

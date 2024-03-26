@@ -13,6 +13,17 @@
 // #include "binary_heap.h"
 #include "multi_queue_priority_queue.h"
 
+#include <thread>
+
+const size_t mq_num_threads = std::atoi(
+    std::getenv("MQ_NUM_THREADS") ? std::getenv("MQ_NUM_THREADS") : "1");
+const size_t mq_num_queues_per_thread = std::atoi(
+    std::getenv("MQ_NUM_QUEUES_PER_THREAD") ? std::getenv("MQ_NUM_QUEUES_PER_THREAD") : "2");
+const size_t mq_num_queues_from_env = std::atoi(
+    std::getenv("MQ_NUM_QUEUES") ? std::getenv("MQ_NUM_QUEUES") : "0");
+const size_t mq_num_queues = mq_num_queues_from_env ?
+    mq_num_queues_from_env : (mq_num_threads * mq_num_queues_per_thread);
+
 // Prune the heap when it contains 4x the number of nodes in the RR graph.
 // constexpr size_t kHeapPruneFactor = 4;
 
@@ -45,21 +56,38 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
+        , modified_rr_node_inf_(mq_num_threads)
         , router_stats_(nullptr)
+        , heap_(mq_num_threads, mq_num_queues)
+        , thread_pool_(mq_num_threads)
+        , thread_stopped_(mq_num_threads)
+        , locks_(rr_node_route_inf.size())
         , router_debug_(false) {
         heap_.init_heap(grid);
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
+        std::cout << "MQ #T=" << mq_num_threads << " #Q=" << mq_num_queues << std::endl << std::flush;
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
     // have been called.
     void clear_modified_rr_node_info() final {
-        modified_rr_node_inf_.clear();
+        for (auto& thread_visited_rr_nodes : modified_rr_node_inf_) {
+            thread_visited_rr_nodes.clear();
+        }
     }
 
     // Reset modified data in rr_node_route_inf based on modified_rr_node_inf.
+    // Derived from `reset_path_costs` from route_common.cpp as a specific version
+    // for the parallel connection router.
     void reset_path_costs() final {
-        ::reset_path_costs(modified_rr_node_inf_);
+        auto& route_ctx = g_vpr_ctx.mutable_routing();
+        for (const auto& thread_visited_rr_nodes : modified_rr_node_inf_) {
+            for (const auto node : thread_visited_rr_nodes) {
+                route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
+                route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
+                route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
+            }
+        }
     }
 
     /** Finds a path from the route tree rooted at rt_root to sink_node.
@@ -131,24 +159,32 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
   private:
     // Mark that data associated with rr_node "inode" has been modified, and
     // needs to be reset in reset_path_costs.
-    void add_to_mod_list(RRNodeId inode) {
+    void add_to_mod_list(RRNodeId inode, size_t thread_idx) {
         if (std::isinf(rr_node_route_inf_[inode].path_cost)) {
-            modified_rr_node_inf_.push_back(inode);
+            modified_rr_node_inf_[thread_idx].push_back(inode);
         }
     }
 
     // Update the route path to the node pointed to by cheapest.
-    inline void update_cheapest(pq_node_t* cheapest) {
-        update_cheapest(cheapest, &rr_node_route_inf_[cheapest->index]);
+    inline void update_cheapest(pq_node_t* cheapest, size_t thread_idx) {
+        update_cheapest(cheapest, &rr_node_route_inf_[cheapest->index], thread_idx);
     }
 
-    inline void update_cheapest(pq_node_t* cheapest, t_rr_node_route_inf* route_inf) {
+    inline void update_cheapest(pq_node_t* cheapest, t_rr_node_route_inf* route_inf, size_t thread_idx) {
         //Record final link to target
-        add_to_mod_list(cheapest->index);
+        add_to_mod_list(cheapest->index, thread_idx);
 
         route_inf->prev_edge = cheapest->prev_edge();
         route_inf->path_cost = cheapest->cost;
         route_inf->backward_path_cost = cheapest->backward_path_cost;
+    }
+
+    inline void obtainSpinLock(RRNodeId inode) {
+        locks_[size_t(inode)].acquire();
+    }
+
+    inline void releaseLock(RRNodeId inode) {
+        locks_[size_t(inode)].release();
     }
 
     /** Common logic from timing_driven_route_connection_from_route_tree and
@@ -179,6 +215,12 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         RRNodeId sink_node,
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box);
+
+    void timing_driven_route_connection_from_heap_thread_func(
+        RRNodeId sink_node,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
+        const size_t thread_idx);
 
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
@@ -257,11 +299,27 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num;
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_;
     bool is_flat_;
-    std::vector<RRNodeId> modified_rr_node_inf_;
+    std::vector<std::vector<RRNodeId>> modified_rr_node_inf_;
     RouterStats* router_stats_;
     const ConnectionParameters* conn_params_;
     // BinaryHeap heap_;
     MultiQueuePriorityQueue heap_;
+    std::vector<std::thread> thread_pool_;
+    std::vector<bool> thread_stopped_;
+
+    class spin_lock_t {
+        std::atomic_flag lock_ = ATOMIC_FLAG_INIT;
+    public:
+        void acquire() {
+            while (std::atomic_flag_test_and_set_explicit(&lock_, std::memory_order_acquire));
+        }
+
+        void release() {
+            std::atomic_flag_clear_explicit(&lock_, std::memory_order_release);
+        }
+    };
+
+    std::vector<spin_lock_t> locks_;
 
     bool router_debug_;
 
