@@ -816,7 +816,7 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
         }
         return rr_costs[lhs_node] < rr_costs[rhs_node];
     };
-    std::sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
+    std::stable_sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
 
     for (RRNodeId inode : nodes) {
         float cost = rr_costs[inode];

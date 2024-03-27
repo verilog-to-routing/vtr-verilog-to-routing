@@ -880,8 +880,8 @@ void write_noc_placement_file(const std::string& file_name) {
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links,
                                                                   std::vector<NocLinkId>& curr_links) {
     // Sort both link containers
-    std::sort(prev_links.begin(), prev_links.end());
-    std::sort(curr_links.begin(), curr_links.end());
+    std::stable_sort(prev_links.begin(), prev_links.end());
+    std::stable_sort(curr_links.begin(), curr_links.end());
 
     // stores links that appear either in prev_links or curr_links but not both of them
     std::vector<NocLinkId> unique_links;

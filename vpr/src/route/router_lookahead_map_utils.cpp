@@ -671,7 +671,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
 
     //Uniquify the increments (avoid sampling the same locations repeatedly if they happen to
     //overlap)
-    std::sort(ref_increments.begin(), ref_increments.end());
+    std::stable_sort(ref_increments.begin(), ref_increments.end());
     ref_increments.erase(std::unique(ref_increments.begin(), ref_increments.end()), ref_increments.end());
 
     //Upper right non-corner

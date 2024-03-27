@@ -339,7 +339,7 @@ void draw_congestion(ezgl::renderer* g) {
 
         return lhs_cong_ratio < rhs_cong_ratio;
     };
-    std::sort(congested_rr_nodes.begin(), congested_rr_nodes.end(), cmp_ascending_acc_cost);
+    std::stable_sort(congested_rr_nodes.begin(), congested_rr_nodes.end(), cmp_ascending_acc_cost);
 
     if (draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS) {
         auto rr_node_nets = collect_rr_node_nets();
