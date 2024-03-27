@@ -493,4 +493,3 @@ NocCostTerms& NocCostTerms::operator+=(const NocCostTerms& noc_delta_cost) {
 
     return *this;
 }
-

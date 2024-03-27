@@ -109,7 +109,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLink> golden_path;
 
         for (int current_router = 7; current_router != 4; current_router--) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -133,7 +133,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLink> golden_path;
 
         for (int current_row = 0; current_row < 3; current_row++) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 2), NocRouterId((current_row + 1) * 4 + 2));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 2), NocRouterId((current_row + 1) * 4 + 2));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -158,14 +158,14 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
 
         // generate the horizontal path first
         for (int current_router = 3; current_router != 0; current_router--) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
 
         // generate the vertical path next
         for (int current_row = 0; current_row < 3; current_row++) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4), NocRouterId((current_row + 1) * 4));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4), NocRouterId((current_row + 1) * 4));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -193,14 +193,14 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
 
         // generate the horizontal path first
         for (int current_router = 12; current_router != 15; current_router++) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router + 1));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router + 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
 
         // generate the vertical path next
         for (int current_row = 3; current_row > 0; current_row--) {
-            NocLinkId  link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 3), NocRouterId((current_row - 1) * 4 + 3));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 3), NocRouterId((current_row - 1) * 4 + 3));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }

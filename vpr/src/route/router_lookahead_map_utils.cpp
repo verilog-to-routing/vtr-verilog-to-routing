@@ -1114,7 +1114,7 @@ static int get_tile_src_opin_max_ptc(int itile) {
     int max_ptc = 0;
 
     // Output pin
-    for (const auto& class_inf: physical_tile.class_inf) {
+    for (const auto& class_inf : physical_tile.class_inf) {
         if (class_inf.type != e_pin_type::DRIVER) {
             continue;
         }
