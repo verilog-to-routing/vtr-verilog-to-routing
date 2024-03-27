@@ -385,9 +385,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                     for (RRNodeId node_id : rr_nodes_at_loc) {
                         int ptc = rr_graph.node_ptc_num(node_id);
                         // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                        if (!is_inter_cluster_node(&device_ctx.physical_tile_types[itile],
-                                                   rr_type,
-                                                   ptc)) {
+                        if (!is_inter_cluster_node(rr_graph, node_id)) {
                             continue;
                         }
 
@@ -991,9 +989,7 @@ static void dijkstra_flood_to_wires(int itile,
                 t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(next_node),
                                                                                             rr_graph.node_ylow(next_node),
                                                                                             rr_graph.node_layer(next_node)});
-                if (!is_inter_cluster_node(physical_type,
-                                           rr_graph.node_type(next_node),
-                                           rr_graph.node_ptc_num(next_node))) {
+                if (!is_inter_cluster_node(rr_graph, next_node)) {
                     // Don't go inside the clusters
                     continue;
                 }
@@ -1357,9 +1353,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                                                                     rr_graph.node_ylow(child_node),
                                                                                     rr_graph.node_layer(child_node)});
 
-        if (!is_inter_cluster_node(physical_type,
-                                   rr_graph.node_type(child_node),
-                                   rr_graph.node_ptc_num(child_node))) {
+        if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
