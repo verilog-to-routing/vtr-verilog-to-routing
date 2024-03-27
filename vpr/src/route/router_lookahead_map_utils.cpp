@@ -986,9 +986,7 @@ static void dijkstra_flood_to_wires(int itile,
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(next_node),
-                                                                                            rr_graph.node_ylow(next_node),
-                                                                                            rr_graph.node_layer(next_node)});
+
                 if (!is_inter_cluster_node(rr_graph, next_node)) {
                     // Don't go inside the clusters
                     continue;
@@ -1349,9 +1347,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
-        t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(child_node),
-                                                                                    rr_graph.node_ylow(child_node),
-                                                                                    rr_graph.node_layer(child_node)});
 
         if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
