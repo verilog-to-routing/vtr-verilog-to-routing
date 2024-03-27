@@ -549,6 +549,9 @@ void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     char str[vtr::bufsize];
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    if (!is_inter_cluster_node(rr_graph, inode)) {
+        return;
+    }
 
     int ipin = rr_graph.node_pin_num(RRNodeId(inode));
 
@@ -581,6 +584,9 @@ void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    if (!is_inter_cluster_node(rr_graph, inode)) {
+        return;
+    }
 
     int transparency_factor = get_rr_node_transparency(inode);
 
