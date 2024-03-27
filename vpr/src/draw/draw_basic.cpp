@@ -773,6 +773,10 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
     int current_node_layer = rr_graph.node_layer(current_node);
     int prev_node_layer = rr_graph.node_layer(prev_node);
 
+    if (!(is_inter_cluster_node(rr_graph, current_node)) || !(is_inter_cluster_node(rr_graph, prev_node))) {
+        return false;
+    }
+
     if (current_node_layer != prev_node_layer) {
         if (draw_state->cross_layer_display.visible && draw_state->draw_layer_display[current_node_layer].visible && draw_state->draw_layer_display[prev_node_layer].visible) {
             return true; //if both layers are enabled and cross layer connections are enabled
