@@ -56,7 +56,7 @@ public:
         checkKeysPresence(expectedKeys);
     }
 
-    ~TelegramOptions() {}
+    ~TelegramOptions()=default;
 
     bool hasErrors() const { return !m_errors.empty(); }
 
@@ -73,11 +73,11 @@ public:
                     std::vector<std::string> pathElementIndexes = splitString(pathElementIndexesStr, ',');
                     std::set<std::size_t> elements;
                     for (const std::string& pathElementIndex: pathElementIndexes) {
-                        if (std::optional<int> optValue = tryConvertToInt(pathElementIndex.c_str())) {
+                        if (std::optional<int> optValue = tryConvertToInt(pathElementIndex)) {
                             elements.insert(optValue.value());
                         }
                     }
-                    if (std::optional<int> optPathIndex = tryConvertToInt(pathIndexStr.c_str())) {
+                    if (std::optional<int> optPathIndex = tryConvertToInt(pathIndexStr)) {
                         result[optPathIndex.value()] = elements;
                     }
                 } else {
