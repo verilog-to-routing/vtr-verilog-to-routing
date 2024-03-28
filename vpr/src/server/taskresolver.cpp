@@ -95,7 +95,7 @@ bool TaskResolver::update(ezgl::application* app)
 
 void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& task)
 {
-    TelegramOptions options{task->options(), {comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLOAT_ROUTING}};
+    TelegramOptions options{task->options(), {comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLAT_ROUTING}};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
@@ -105,7 +105,7 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
         const int nCriticalPathNum = options.getInt(comm::OPTION_PATH_NUM, 1);
         const std::string pathType = options.getString(comm::OPTION_PATH_TYPE);
         const std::string detailsLevel = options.getString(comm::OPTION_DETAILS_LEVEL);
-        const bool isFlat = options.getBool(comm::OPTION_IS_FLOAT_ROUTING, false);
+        const bool isFlat = options.getBool(comm::OPTION_IS_FLAT_ROUTING, false);
 
         // calculate critical path depending on options and store result in server context
         CritPathsResult crit_paths_result = calcCriticalPath(pathType, nCriticalPathNum, getDetailsLevelEnum(detailsLevel), isFlat);
