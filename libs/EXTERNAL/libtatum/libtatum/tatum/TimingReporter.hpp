@@ -64,11 +64,11 @@ class TimingReporter {
     public:
         void report_timing_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_timing_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
-        void report_timing_setup(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS, bool usePathElementSeparator=false) const;
+        void report_timing_setup(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
 
         void report_timing_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_timing_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
-        void report_timing_hold(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS, bool usePathElementSeparator=false) const;
+        void report_timing_hold(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
 
         void report_skew_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_skew_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
@@ -96,9 +96,9 @@ class TimingReporter {
         };
 
     private:
-        void report_timing(std::ostream& os, const std::vector<TimingPath>& paths, bool usePathElementSeparator = false) const;
+        void report_timing(std::ostream& os, const std::vector<TimingPath>& paths) const;
 
-        void report_timing_path(std::ostream& os, const TimingPath& path, bool usePathElementSeparator = false) const;
+        void report_timing_path(std::ostream& os, const TimingPath& path) const;
 
         void report_unconstrained(std::ostream& os, const NodeType type, const detail::TagRetriever& tag_retriever) const;
 
@@ -125,8 +125,7 @@ class TimingReporter {
                                                 const TimingSubPath& subpath,
                                                 DomainId domain,
                                                 TimingType timing_type,
-                                                Time path,
-                                                bool usePathElementSeparator = false) const;
+                                                Time path) const;
 
         Time report_timing_data_required_element(std::ostream& os,
                                                  detail::ReportTimingPathHelper& path_helper,

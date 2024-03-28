@@ -102,10 +102,10 @@ void TimingReporter::report_timing_setup(std::ostream& os,
 void TimingReporter::report_timing_setup(std::vector<tatum::TimingPath>& paths,
                                          std::ostream& os,
                                          const SetupTimingAnalyzer& setup_analyzer,
-                                         size_t npaths, bool usePathElementSeparator) const {
+                                         size_t npaths) const {
     paths = path_collector_.collect_worst_setup_timing_paths(timing_graph_, setup_analyzer, npaths);
 
-    report_timing(os, paths, usePathElementSeparator);
+    report_timing(os, paths);
 }
 
 void TimingReporter::report_timing_hold(std::string filename, 
@@ -126,11 +126,10 @@ void TimingReporter::report_timing_hold(std::ostream& os,
 void TimingReporter::report_timing_hold(std::vector<tatum::TimingPath>& paths,
                                          std::ostream& os,
                                          const HoldTimingAnalyzer& hold_analyzer,
-                                         size_t npaths,
-                                         bool usePathElementSeparator) const {
+                                         size_t npaths) const {
     paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths);
 
-    report_timing(os, paths, usePathElementSeparator);
+    report_timing(os, paths);
 }
 
 void TimingReporter::report_skew_setup(std::string filename, 
@@ -214,7 +213,7 @@ void TimingReporter::report_unconstrained_hold(std::ostream& os,
  */
 
 void TimingReporter::report_timing(std::ostream& os,
-                                   const std::vector<TimingPath>& paths, bool usePathElementSeparator) const {
+                                   const std::vector<TimingPath>& paths) const {
     tatum::OsFormatGuard flag_guard(os);
 
     os << "#Timing report of worst " << paths.size() << " path(s)\n";
@@ -225,14 +224,14 @@ void TimingReporter::report_timing(std::ostream& os,
     size_t i = 0;
     for(const auto& path : paths) {
         os << "#Path " << ++i << "\n";
-        report_timing_path(os, path, usePathElementSeparator);
+        report_timing_path(os, path);
         os << "\n";
     }
 
     os << "#End of timing report\n";
 }
 
-void TimingReporter::report_timing_path(std::ostream& os, const TimingPath& timing_path, bool usePathElementSeparator) const {
+void TimingReporter::report_timing_path(std::ostream& os, const TimingPath& timing_path) const {
     std::string divider = "--------------------------------------------------------------------------------";
 
     TimingPathInfo path_info = timing_path.path_info();
@@ -271,7 +270,7 @@ void TimingReporter::report_timing_path(std::ostream& os, const TimingPath& timi
 
         arr_path = report_timing_clock_launch_subpath(os, path_helper, timing_path.clock_launch_path(), path_info.launch_domain(), path_info.type());
 
-        arr_path = report_timing_data_arrival_subpath(os, path_helper, timing_path.data_arrival_path(), path_info.launch_domain(), path_info.type(), arr_path, usePathElementSeparator);
+        arr_path = report_timing_data_arrival_subpath(os, path_helper, timing_path.data_arrival_path(), path_info.launch_domain(), path_info.type(), arr_path);
 
         {
             //Final arrival time
@@ -603,8 +602,7 @@ Time TimingReporter::report_timing_data_arrival_subpath(std::ostream& os,
                                                         const TimingSubPath& subpath,
                                                         DomainId domain,
                                                         TimingType timing_type,
-                                                        Time path,
-                                                        bool usePathElementSeparator) const {
+                                                        Time path) const {
 
     {
         //Input constraint
@@ -635,7 +633,6 @@ Time TimingReporter::report_timing_data_arrival_subpath(std::ostream& os,
 
     //Launch data
     for(const TimingPathElem& path_elem : subpath.elements()) {
-        if (usePathElementSeparator) os << "el{\n";
         //Ask the application for a detailed breakdown of the edge delays
         auto delay_breakdown = name_resolver_.edge_delay_breakdown(path_elem.incomming_edge(), delay_type);
         if (!delay_breakdown.components.empty()) {
@@ -664,7 +661,6 @@ Time TimingReporter::report_timing_data_arrival_subpath(std::ostream& os,
         path = path_elem.tag().time();
 
         path_helper.update_print_path(os, point, path);
-        if (usePathElementSeparator) os << "el}\n";
     }
     return path;
 }

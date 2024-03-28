@@ -24,7 +24,7 @@ struct CritPathsResult {
 /** 
  * @brief Unified helper function to calculate the critical path with specified parameters.
  */
-CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing, bool usePathElementSeparator);
+CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing);
 
 } // namespace server
 

@@ -108,7 +108,7 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
         const bool isFlat = options.getBool(comm::OPTION_IS_FLOAT_ROUTING, false);
 
         // calculate critical path depending on options and store result in server context
-        CritPathsResult crit_paths_result = calcCriticalPath(pathType, nCriticalPathNum, getDetailsLevelEnum(detailsLevel), isFlat, /*usePathElementSeparator*/true);
+        CritPathsResult crit_paths_result = calcCriticalPath(pathType, nCriticalPathNum, getDetailsLevelEnum(detailsLevel), isFlat);
 
         // setup context
         server_ctx.set_path_type(pathType);
