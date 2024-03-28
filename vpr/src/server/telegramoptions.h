@@ -64,8 +64,8 @@ public:
         std::map<std::size_t, std::set<std::size_t>> result;
         std::string dataStr = getString(name);
         if (!dataStr.empty()) {
-            std::vector<std::string> pathes = splitString(dataStr, '|');
-            for (const std::string& path: pathes) {
+            std::vector<std::string> paths = splitString(dataStr, '|');
+            for (const std::string& path: paths) {
                 std::vector<std::string> pathStruct = splitString(path, '#');
                 if (pathStruct.size() == 2) {
                     std::string pathIndexStr = pathStruct[0];
