@@ -21,7 +21,8 @@ class TelegramBuffer
     static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
 public:
-    TelegramBuffer(std::size_t sizeHint = DEFAULT_SIZE_HINT): m_rawBuffer(sizeHint) {}
+    TelegramBuffer(): m_rawBuffer(DEFAULT_SIZE_HINT) {}
+    TelegramBuffer(std::size_t sizeHint): m_rawBuffer(sizeHint) {}
     ~TelegramBuffer()=default;
 
     bool empty() { return m_rawBuffer.empty(); }
