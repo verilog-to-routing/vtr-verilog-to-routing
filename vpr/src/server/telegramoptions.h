@@ -141,7 +141,7 @@ private:
     }
 
     bool isDataTypeSupported(const std::string& type) {
-        static std::set<std::string> supportedTypes{"int", "string", "bool"};
+        static const std::set<std::string> supportedTypes{"int", "string", "bool"};
         return supportedTypes.count(type) != 0;
     }
 
