@@ -15,6 +15,7 @@ MultiQueuePriorityQueue::~MultiQueuePriorityQueue() {
 }
 
 void MultiQueuePriorityQueue::init_heap(const DeviceGrid& grid) {
+    (void)grid;
     // TODO: Reserve storage for MQ_IO
 }
 

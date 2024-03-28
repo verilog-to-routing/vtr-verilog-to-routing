@@ -232,6 +232,7 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
         (!is_preferred_edge(new_prev_edge, best_prev_edge)))
         return true;
 #else   // IS_DETERMINISTIC
+    (void)new_prev_edge;
     (void)best_prev_edge;
     (void)best_prev_edge_to_target;
     // Non-deterministic version does not prefer a given EdgeID, therefore there
@@ -283,7 +284,15 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId
         thread_pool_[i].join();
     }
 
+    // TODO: I do not think this is needed anymore. Consider removing.
     heap_.empty_heap();
+
+    // Collect the number of heap pushes and pops
+    router_stats_->heap_pushes += heap_.getNumPushes();
+    router_stats_->heap_pops += heap_.getNumPops();
+    // Reset the heap for the next connection
+    heap_.reset();
+
     // if (router_debug_) {
     //     //Update known path costs for nodes pushed but not popped, useful for debugging
     //     empty_heap_annotating_node_route_inf();

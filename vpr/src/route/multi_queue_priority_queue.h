@@ -52,6 +52,9 @@ class MultiQueuePriorityQueue {
     bool is_valid() const;
     void empty_heap();
     void build_heap();
+    inline uint64_t getNumPushes() const { return pq_->getNumPushes(); }
+    inline uint64_t getNumPops() const { return pq_->getNumPops(); }
+    inline void reset() { pq_->reset(); }
 
   private:
     MQ_IO* pq_;
