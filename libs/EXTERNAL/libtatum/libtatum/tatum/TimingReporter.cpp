@@ -633,6 +633,7 @@ Time TimingReporter::report_timing_data_arrival_subpath(std::ostream& os,
 
     //Launch data
     for(const TimingPathElem& path_elem : subpath.elements()) {
+
         //Ask the application for a detailed breakdown of the edge delays
         auto delay_breakdown = name_resolver_.edge_delay_breakdown(path_elem.incomming_edge(), delay_type);
         if (!delay_breakdown.components.empty()) {
