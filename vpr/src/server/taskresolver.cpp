@@ -132,12 +132,12 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
 
 void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const TaskPtr& task)
 {
-    TelegramOptions options{task->options(), {comm::OPTION_PATH_ELEMENTS, comm::OPTION_HIGHTLIGHT_MODE, comm::OPTION_DRAW_PATH_CONTOUR}};
+    TelegramOptions options{task->options(), {comm::OPTION_PATH_ELEMENTS, comm::OPTION_HIGHLIGHT_MODE, comm::OPTION_DRAW_PATH_CONTOUR}};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
         const std::map<std::size_t, std::set<std::size_t>> path_elements = options.getMapOfSets(comm::OPTION_PATH_ELEMENTS);
-        const std::string highLightMode = options.getString(comm::OPTION_HIGHTLIGHT_MODE);
+        const std::string highLightMode = options.getString(comm::OPTION_HIGHLIGHT_MODE);
         const bool drawPathContour = options.getBool(comm::OPTION_DRAW_PATH_CONTOUR, false);
 
         // set critical path elements to render
