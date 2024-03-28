@@ -40,7 +40,7 @@ void GateIO::stop()
     }
 }
 
-void GateIO::takeRecievedTasks(std::vector<TaskPtr>& tasks)
+void GateIO::takeReceivedTasks(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
     if (m_receivedTasks.size() > 0) {

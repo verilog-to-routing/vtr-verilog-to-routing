@@ -18,7 +18,7 @@ gboolean update(gpointer data) {
 
         std::vector<TaskPtr> tasksBuff;
 
-        gate_io.takeRecievedTasks(tasksBuff);
+        gate_io.takeReceivedTasks(tasksBuff);
         task_resolver.addTasks(tasksBuff);
 
         bool process_task = task_resolver.update(app);

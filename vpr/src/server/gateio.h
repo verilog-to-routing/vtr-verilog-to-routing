@@ -119,7 +119,7 @@ public:
 
     bool isRunning() const { return m_isRunning.load(); }
 
-    void takeRecievedTasks(std::vector<TaskPtr>&);
+    void takeReceivedTasks(std::vector<TaskPtr>&);
     void moveTasksToSendQueue(std::vector<TaskPtr>&);
 
     void printLogs(); // called from main thread
