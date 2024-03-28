@@ -117,7 +117,7 @@ public:
     std::string errorsStr() const { 
         std::string result;
         for (const std::string& error: m_errors) {
-            result += error + ";";
+            result += error + ';';
         }
         return result; 
     }

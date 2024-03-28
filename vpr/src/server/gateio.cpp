@@ -43,7 +43,7 @@ void GateIO::stop()
 void GateIO::takeReceivedTasks(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
-    if (m_receivedTasks.size() > 0) {
+    if (!m_receivedTasks.empty()) {
         m_logger.queue(LogLevel::Debug, "take", m_receivedTasks.size(), "num of received tasks");
     }
     std::swap(tasks, m_receivedTasks);
