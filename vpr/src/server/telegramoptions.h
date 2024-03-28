@@ -52,7 +52,7 @@ public:
             }
         }
 
-        // check keys presense
+        // check keys presence
         checkKeysPresence(expectedKeys);
     }
 
