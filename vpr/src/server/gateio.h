@@ -136,7 +136,7 @@ private:
 
     std::mutex m_tasksMutex;
     std::vector<TaskPtr> m_receivedTasks; // tasks from client (requests)
-    std::vector<TaskPtr> m_sendTasks; // task to client (reponses)
+    std::vector<TaskPtr> m_sendTasks; // tasks to client (responses)
 
     TLogger m_logger;
 
