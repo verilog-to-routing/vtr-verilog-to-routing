@@ -5,7 +5,6 @@
 
 #include "argparse.hpp"
 
-#include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
@@ -14,7 +13,7 @@
 using argparse::ConvertedValue;
 using argparse::Provenance;
 
-///@brief Read and process VPR's command-line aruments
+///@brief Read and process VPR's command-line arguments
 t_options read_options(int argc, const char** argv) {
     t_options args = t_options(); //Explicitly initialize for zero initialization
 
@@ -1259,7 +1258,7 @@ struct ParsePostSynthNetlistUnconnOutputHandling {
     }
 };
 
-argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
+argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
         " by performing packing/placement/routing, and analyzes the result.\n"
@@ -2807,8 +2806,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "Controls the algorithm used by the NoC to route packets.\n"
             "* xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
-            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n"
-            "This can be used with any NoC topology\n")
+            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links."
+            " This algorithm is not guaranteed to generate deadlock-free traffic flow routes, but can be used with any NoC topology\n"
+            "* west_first_routing: Uses the west-first routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* north_last_routing: Uses the north-last routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* negative_first_routing: Uses the negative-first routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* odd_even_routing: Uses the odd-even routing algorithm. This is recommended to be used with mesh NoC topologies.\n")
         .default_value("bfs_routing")
         .choices({"xy_routing", "bfs_routing", "west_first_routing", "north_last_routing", "negative_first_routing",
                   "odd_even_routing"})
@@ -2860,7 +2863,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Other positive numbers specify the importance of minimizing congestion to other NoC-related cost terms.\n"
             "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
             "only their relative ratios determine the importance of each cost term.")
-        .default_value("0.00")
+        .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
