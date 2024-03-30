@@ -897,20 +897,20 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
         "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
 void read_router_lookahead(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read " DISABLE_ERROR);
+    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read_router_lookahead " DISABLE_ERROR);
 }
 
-void write_router_lookahead(const std::string& file) {
-    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write " DISABLE_ERROR);
+void write_router_lookahead(const std::string& /*file*/) {
+    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write_router_lookahead " DISABLE_ERROR);
 }
 
-static void read_intra_cluster_router_lookahead(std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& /*intra_tile_pin_primitive_pin_delay*/,
+static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& /*intra_tile_pin_primitive_pin_delay*/,
                                                 const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read_intra_cluster_router_lookahead " DISABLE_ERROR);
 }
 
 static void write_intra_cluster_router_lookahead(const std::string& /*file*/,
-                                                 const std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& /*intra_tile_pin_primitive_pin_delay*/) {
+                                                 const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& /*intra_tile_pin_primitive_pin_delay*/) {
     VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write_intra_cluster_router_lookahead " DISABLE_ERROR);
 }
 
