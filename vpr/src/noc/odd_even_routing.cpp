@@ -49,6 +49,8 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     /* The implementation below is a carbon copy of the Fig. 2 in the following paper
      * Chiu GM. The odd-even turn model for adaptive routing.
      * IEEE Transactions on parallel and distributed systems. 2000 Jul;11(7):729-38.
+     * In summary, the odd-even algorithm forbids NW and SW turns in odd columns,
+     * while EN and ES turns are forbidden in even columns.
      */
     if (diff_x == 0) { // the same column as the destination. Only north or south are allowed
         if (diff_y > 0) {
@@ -61,6 +63,8 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
             if (diff_y == 0) { // already in the same row as the destination. Just move to the east
                 returned_legal_direction.push_back(TurnModelRouting::Direction::RIGHT);
             } else {
+                /* Since EN and ES turns are forbidden in even columns, we move along the vertical
+                 * direction only in we are in an odd column. */
                 if (is_odd(compressed_curr_loc.x) || compressed_curr_loc.x == compressed_src_loc.x) {
                     if (diff_y > 0) {
                         returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
@@ -75,6 +79,8 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
             }
         } else { // westbound message
             returned_legal_direction.push_back(TurnModelRouting::Direction::LEFT);
+            /* Since NW and SW turns are forbidden in odd columns, we allow
+             * moving along vertical axis only in even columns */
             if (is_even(compressed_curr_loc.x)) {
                 if (diff_y > 0) {
                     returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
