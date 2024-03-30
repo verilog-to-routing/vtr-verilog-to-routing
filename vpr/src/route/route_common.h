@@ -53,6 +53,8 @@ void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_o
 
 void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes);
 
+void reset_path_costs(uint32_t min_node_id, uint32_t max_node_id);
+
 float get_rr_cong_cost(RRNodeId inode, float pres_fac);
 
 /* Returns the base cost of using this rr_node */

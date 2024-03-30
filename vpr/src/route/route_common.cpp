@@ -290,6 +290,16 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
     }
 }
 
+void reset_path_costs(uint32_t min_node_id, uint32_t max_node_id) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    for (uint32_t node = min_node_id; node <= max_node_id; node++) {
+        route_ctx.rr_node_route_inf[RRNodeId(node)].path_cost = std::numeric_limits<float>::infinity();
+        route_ctx.rr_node_route_inf[RRNodeId(node)].backward_path_cost = std::numeric_limits<float>::infinity();
+        route_ctx.rr_node_route_inf[RRNodeId(node)].prev_edge = RREdgeId::INVALID();
+    }
+}
+
 /* Returns the congestion cost of using this rr-node plus that of any      *
  * non-configurably connected rr_nodes that must be used when it is used.  */
 float get_rr_cong_cost(RRNodeId inode, float pres_fac) {

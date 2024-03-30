@@ -43,6 +43,12 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
+        , min_modified_rr_node_id_(std::numeric_limits<uint32_t>::max())
+        , max_modified_rr_node_id_(0)
+        , min_modified_rr_node_id_chanx_(std::numeric_limits<uint32_t>::max())
+        , max_modified_rr_node_id_chanx_(0)
+        , min_modified_rr_node_id_chany_(std::numeric_limits<uint32_t>::max())
+        , max_modified_rr_node_id_chany_(0)
         , router_stats_(nullptr)
         , router_debug_(false) {
         heap_.init_heap(grid);
@@ -53,13 +59,17 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Clear's the modified list.  Should be called after reset_path_costs
     // have been called.
     void clear_modified_rr_node_info() final {
-        modified_rr_node_inf_.clear();
+        // modified_rr_node_inf_.clear();
+        min_modified_rr_node_id_ = std::numeric_limits<uint32_t>::max();
+        max_modified_rr_node_id_ = 0;
+        min_modified_rr_node_id_chanx_ = std::numeric_limits<uint32_t>::max();
+        max_modified_rr_node_id_chanx_ = 0;
+        min_modified_rr_node_id_chany_ = std::numeric_limits<uint32_t>::max();
+        max_modified_rr_node_id_chany_ = 0;
     }
 
     // Reset modified data in rr_node_route_inf based on modified_rr_node_inf.
-    void reset_path_costs() final {
-        ::reset_path_costs(modified_rr_node_inf_);
-    }
+    void reset_path_costs() final;
 
     /** Finds a path from the route tree rooted at rt_root to sink_node.
      * This is used when you want to allow previous routing of the same net to
@@ -131,8 +141,26 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Mark that data associated with rr_node "inode" has been modified, and
     // needs to be reset in reset_path_costs.
     void add_to_mod_list(RRNodeId inode) {
-        if (std::isinf(rr_node_route_inf_[inode].path_cost)) {
-            modified_rr_node_inf_.push_back(inode);
+        // if (std::isinf(rr_node_route_inf_[inode].path_cost)) {
+        //     modified_rr_node_inf_.push_back(inode);
+        // }
+        static_assert(sizeof(RRNodeId) == sizeof(uint32_t));
+        t_rr_type node_ty = rr_graph_->node_type(inode);
+        if (node_ty == t_rr_type::CHANX) {
+            if ((size_t)inode < min_modified_rr_node_id_chanx_)
+                min_modified_rr_node_id_chanx_ = (size_t)inode;
+            if ((size_t)inode > max_modified_rr_node_id_chanx_)
+                max_modified_rr_node_id_chanx_ = (size_t)inode;
+        } else if (node_ty == t_rr_type::CHANY) { 
+            if ((size_t)inode < min_modified_rr_node_id_chany_)
+                min_modified_rr_node_id_chany_ = (size_t)inode;
+            if ((size_t)inode > max_modified_rr_node_id_chany_)
+                max_modified_rr_node_id_chany_ = (size_t)inode;
+        } else {
+            if ((size_t)inode < min_modified_rr_node_id_)
+                min_modified_rr_node_id_ = (size_t)inode;
+            if ((size_t)inode > max_modified_rr_node_id_)
+                max_modified_rr_node_id_ = (size_t)inode;
         }
     }
 
@@ -276,7 +304,13 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num;
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_;
     bool is_flat_;
-    std::vector<RRNodeId> modified_rr_node_inf_;
+    // std::vector<RRNodeId> modified_rr_node_inf_;
+    uint32_t min_modified_rr_node_id_;
+    uint32_t max_modified_rr_node_id_;
+    uint32_t min_modified_rr_node_id_chanx_;
+    uint32_t max_modified_rr_node_id_chanx_;
+    uint32_t min_modified_rr_node_id_chany_;
+    uint32_t max_modified_rr_node_id_chany_;
     RouterStats* router_stats_;
     const ConnectionParameters* conn_params_;
     HeapImplementation heap_;

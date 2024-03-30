@@ -5,6 +5,25 @@
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
+// #include<fstream>
+// std::ofstream profile_csv_file("modified_list_profile.csv");
+
+template<typename Heap>
+void ConnectionRouter<Heap>::reset_path_costs() {
+    // profile_csv_file << modified_rr_node_inf_.size() << "," << rr_node_route_inf_.size();
+    // profile_csv_file << "," << min_modified_rr_node_id_chanx_ << "," << max_modified_rr_node_id_chanx_;
+    // profile_csv_file << "," << min_modified_rr_node_id_chany_ << "," << max_modified_rr_node_id_chany_;
+    // profile_csv_file << "," << min_modified_rr_node_id_ << "," << max_modified_rr_node_id_;
+    // profile_csv_file << std::endl;
+    // ::reset_path_costs(modified_rr_node_inf_);
+    if (min_modified_rr_node_id_chanx_ <= max_modified_rr_node_id_chanx_)
+        ::reset_path_costs(min_modified_rr_node_id_chanx_, max_modified_rr_node_id_chanx_);
+    if (min_modified_rr_node_id_chany_ <= max_modified_rr_node_id_chany_)
+        ::reset_path_costs(min_modified_rr_node_id_chany_, max_modified_rr_node_id_chany_);
+    if (min_modified_rr_node_id_ <= max_modified_rr_node_id_)
+        ::reset_path_costs(min_modified_rr_node_id_, max_modified_rr_node_id_);
+}
+
 /**
  * @brief This function is relevant when the architecture is 3D. If inter-layer connections are only from OPINs (determine by is_inter_layer_opin_connection),
  * then nodes (other that OPINs) which are on the other layer than sink's layer, don't need to be pushed back to the heap.
@@ -63,7 +82,8 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
         return std::make_tuple(true, /*retry=*/false, out);
     } else {
         reset_path_costs();
-        modified_rr_node_inf_.clear();
+        // modified_rr_node_inf_.clear();
+        clear_modified_rr_node_info();
         heap_.empty_heap();
         return std::make_tuple(false, retry, t_heap());
     }
@@ -171,7 +191,8 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
         //Reset any previously recorded node costs so timing_driven_route_connection()
         //starts over from scratch.
         reset_path_costs();
-        modified_rr_node_inf_.clear();
+        // modified_rr_node_inf_.clear();
+        clear_modified_rr_node_info();
 
         std::tie(retry_with_full_bb, cheapest) = timing_driven_route_connection_common_setup(rt_root,
                                                                                              sink_node,
@@ -832,9 +853,11 @@ void ConnectionRouter<Heap>::empty_heap_annotating_node_route_inf() {
     while (!heap_.is_empty_heap()) {
         t_heap* tmp = heap_.get_heap_head();
 
+        add_to_mod_list(tmp->index);
         rr_node_route_inf_[tmp->index].path_cost = tmp->cost;
         rr_node_route_inf_[tmp->index].backward_path_cost = tmp->backward_path_cost;
-        modified_rr_node_inf_.push_back(tmp->index);
+        // modified_rr_node_inf_.push_back(tmp->index);
+
 
         rcv_path_manager.free_path_struct(tmp->path_data);
         heap_.free(tmp);
