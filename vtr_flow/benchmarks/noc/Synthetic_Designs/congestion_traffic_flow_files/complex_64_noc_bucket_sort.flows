@@ -1,5 +1,23 @@
 <traffic_flows>
 
+    <!--
+        Based on the architecture proposed in [1],
+        we lock down 8 NoC routers at two opposite sides of
+        the device. Each PE line is a chain of NoC-attached PEs
+        starting from one of the bottom NoC routers and ending at
+        one of the top routers. There are two fully-connected layers
+        that redistribute the data between PE lines, complicating a
+        congestion-free mapping. Fixed NoC routers are specified in
+        complex_64_noc_bucket_sort.fixed file, which is to be passed
+        to VPR by --fix_clusters command line option. Fixed clusters file
+        assume that the stratixiv_arch.timing_with_a_embedded_10X10_mesh_noc_topology.xml
+        architecture with EP4SE820 is selected.
+
+        [1] N. Samardzic, W. Qiao, V. Aggarwal, M.-C. F. Chang, and J. Cong,
+        “Bonsai: High-performance adaptive merge tree sorting,” in 2020
+        ACM/IEEE 47th Annual International Symposium on Computer Architecture (ISCA), pp. 282–294, IEEE, 2020
+    -->
+
     <single_flow src=".*noc_router_adapter_block_1[^\d].*" dst=".*noc_router_adapter_block_2[^\d].*" bandwidth="1e6" />
     <single_flow src=".*noc_router_adapter_block_2[^\d].*" dst=".*noc_router_adapter_block_3[^\d].*" bandwidth="1e6" />
     <single_flow src=".*noc_router_adapter_block_5[^\d].*" dst=".*noc_router_adapter_block_6[^\d].*" bandwidth="1e6" />
