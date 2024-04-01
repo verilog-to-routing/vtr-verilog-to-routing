@@ -9,9 +9,7 @@ std::optional<int> tryConvertToInt(const std::string& str)
     std::istringstream iss(str);
     int intValue;
     if (iss >> intValue) {
-        // Check if there are no any characters left in the stream
-        char remaining;
-        if (!(iss >> remaining)) {
+        if (iss.eof()) {
             result = intValue;
         }
     }
