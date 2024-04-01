@@ -153,6 +153,7 @@ struct t_options {
     argparse::ArgValue<std::string> noc_flows_file;
     argparse::ArgValue<std::string> noc_routing_algorithm;
     argparse::ArgValue<double> noc_placement_weighting;
+    argparse::ArgValue<double> noc_agg_bandwidth_weighting;
     argparse::ArgValue<double> noc_latency_constraints_weighting;
     argparse::ArgValue<double> noc_latency_weighting;
     argparse::ArgValue<double> noc_congestion_weighting;
@@ -241,7 +242,7 @@ struct t_options {
     argparse::ArgValue<std::string> write_timing_summary;
 };
 
-argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
+argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);
 t_options read_options(int argc, const char** argv);
 void set_conditional_defaults(t_options& args);
 bool verify_args(const t_options& args);
