@@ -17,14 +17,12 @@
 #include <cassert>
 
 namespace server {
-    
-namespace {
 
 /** 
  * @brief helper function to collect crit parser metadata.
  * This data is used on parser side to properly extract arrival path elements from the timing report.
  */
-void collect_crit_path_metadata(std::stringstream& ss, const std::vector<tatum::TimingPath>& paths)
+static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<tatum::TimingPath>& paths)
 {
     ss << "#RPT METADATA:\n";
     ss << "path_index/clock_launch_path_elements_num/arrival_path_elements_num\n";
@@ -40,7 +38,7 @@ void collect_crit_path_metadata(std::stringstream& ss, const std::vector<tatum::
 /** 
  * @brief helper function to calculate the setup critical path with specified parameters.
  */
-CritPathsResult generate_setup_timing_report(const SetupTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts, bool is_flat) {
+static CritPathsResult generate_setup_timing_report(const SetupTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts, bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -59,7 +57,7 @@ CritPathsResult generate_setup_timing_report(const SetupTimingInfo& timing_info,
 /** 
  * @brief helper function to calculate the hold critical path with specified parameters.
  */
-CritPathsResult generate_hold_timing_report(const HoldTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts, bool is_flat) {
+static CritPathsResult generate_hold_timing_report(const HoldTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts, bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -74,8 +72,6 @@ CritPathsResult generate_hold_timing_report(const HoldTimingInfo& timing_info, c
     collect_crit_path_metadata(ss, paths);
     return CritPathsResult{paths, ss.str()};
 }
-
-} // namespace
 
 /** 
  * @brief Unified helper function to calculate the critical path with specified parameters.

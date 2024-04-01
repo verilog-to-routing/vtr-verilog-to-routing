@@ -14,14 +14,12 @@ std::optional<int> tryConvertToInt(const std::string& str)
     }
 }
 
-namespace {
-std::string getPrettyStrFromFloat(float value)
+static std::string getPrettyStrFromFloat(float value)
 {
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(2) << value;  // Set precision to 2 digit after the decimal point
     return ss.str();
 }
-} // namespace
 
 std::string getPrettyDurationStrFromMs(int64_t durationMs)
 {
