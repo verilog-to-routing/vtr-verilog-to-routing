@@ -1407,6 +1407,7 @@ struct t_router_opts {
     float first_iter_pres_fac;
     float initial_pres_fac;
     float pres_fac_mult;
+    float max_pres_fac;
     float acc_fac;
     float bend_cost;
     int max_router_iterations;
