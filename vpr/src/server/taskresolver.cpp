@@ -17,7 +17,7 @@ void TaskResolver::addTask(TaskPtr& newTask)
     for (const auto& task: m_tasks) {
         if (task->cmd() == newTask->cmd()) {
             if (task->optionsMatch(newTask)) {
-                std::string msg = "similar task is already in execution, reject new " + newTask->info()+ " and waiting for old " + task->info() + " execution";
+                std::string msg = "similar task is already in execution, reject new " + newTask->info() + " and waiting for old " + task->info() + " execution";
                 newTask->fail(msg);
             } else {
                 // handle case when task has same cmd but different options

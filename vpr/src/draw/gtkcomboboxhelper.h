@@ -4,8 +4,14 @@
 #include <glib.h>
 
 /**
- * @brief Helper function to retrieve the index of an item by its text.
- * Returns -1 if the item with the specified text is absent.
+ * @brief Get the index of an item in a combo box by its text.
+ * 
+ * This function searches for an item with the specified text in the combo box
+ * and returns its index if found.
+ * 
+ * @param combo_box A pointer to the combo box widget.
+ * @param target_item The text of the item to search for.
+ * @return The index of the item if found, or -1 if not found.
  */
 gint get_item_index_by_text(gpointer combo_box, const gchar* target_item);
 
