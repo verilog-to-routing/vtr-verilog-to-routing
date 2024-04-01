@@ -328,6 +328,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
         VTR_LOG("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
         VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
+        VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
         VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
         VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
         VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
@@ -473,6 +474,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
         VTR_LOG("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
         VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
+        VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
         VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
         VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
         VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
