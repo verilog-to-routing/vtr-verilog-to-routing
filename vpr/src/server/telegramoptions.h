@@ -72,13 +72,17 @@ public:
                     std::string pathElementIndexesStr = pathStruct[1];
                     std::vector<std::string> pathElementIndexes = splitString(pathElementIndexesStr, ',');
                     std::set<std::size_t> elements;
-                    for (const std::string& pathElementIndex: pathElementIndexes) {
-                        if (std::optional<int> optValue = tryConvertToInt(pathElementIndex)) {
+                    for (const std::string& pathElementIndexStr: pathElementIndexes) {
+                        if (std::optional<int> optValue = tryConvertToInt(pathElementIndexStr)) {
                             elements.insert(optValue.value());
+                        } else {
+                            m_errors.emplace_back("cannot extract path element index from " + pathElementIndexStr);
                         }
                     }
                     if (std::optional<int> optPathIndex = tryConvertToInt(pathIndexStr)) {
                         result[optPathIndex.value()] = elements;
+                    } else {
+                        m_errors.emplace_back("cannot extract path index from " + pathIndexStr);
                     }
                 } else {
                     m_errors.emplace_back("wrong path data structure = " + path);

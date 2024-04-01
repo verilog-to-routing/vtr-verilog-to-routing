@@ -2,18 +2,16 @@
 #include <sstream>
 #include <iomanip>
 
+#include "vtr_util.h"
+#include "vtr_error.h"
+
 std::optional<int> tryConvertToInt(const std::string& str)
 {
-    std::optional<int> result;
-
-    std::istringstream iss(str);
-    int intValue;
-    if (iss >> intValue) {
-        if (iss.eof()) {
-            result = intValue;
-        }
+    try {
+        return vtr::atoi(str);
+    } catch (const vtr::VtrError&) {
+        return std::nullopt;
     }
-    return result;
 }
 
 namespace {
