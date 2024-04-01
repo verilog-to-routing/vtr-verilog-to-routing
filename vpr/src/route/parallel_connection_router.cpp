@@ -260,32 +260,13 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
 void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId sink_node,
                                                                          const t_conn_cost_params& cost_params,
                                                                          const t_bb& bounding_box) {
-    const size_t num_threads = thread_pool_.size();
-    for (size_t i = 0; i < num_threads; ++i) {
-        thread_stopped_[i] = false;
-    }
-    for (size_t i = 0; i < num_threads; ++i) {
-        thread_pool_[i] = std::thread([this, i, num_threads, &sink_node, &cost_params, &bounding_box] {
-            bool pool_stop;
-            do {
-                this->timing_driven_route_connection_from_heap_thread_func(sink_node, cost_params, bounding_box, i);
-                this->thread_stopped_[i] = true;
-                pool_stop = true;
-                for (size_t j = 0; j < num_threads; ++j) {
-                    if (this->thread_stopped_[j] == false) { // no need to use lock
-                        pool_stop = false;
-                        break;
-                    }
-                }
-            } while (!pool_stop);
-        });
-    }
-    for (size_t i = 0; i < num_threads; ++i) {
-        thread_pool_[i].join();
-    }
+    this->sink_node_ = &sink_node;
+    this->cost_params_ = const_cast<t_conn_cost_params*>(&cost_params);
+    this->bounding_box_ = const_cast<t_bb*>(&bounding_box);
 
-    // TODO: I do not think this is needed anymore. Consider removing.
-    heap_.empty_heap();
+    thread_barrier_head_.wait();
+    this->timing_driven_route_connection_from_heap_thread_func(*this->sink_node_, *this->cost_params_, *this->bounding_box_, 0);
+    thread_barrier_tail_.wait();
 
     // Collect the number of heap pushes and pops
     router_stats_->heap_pushes += heap_.getNumPushes();

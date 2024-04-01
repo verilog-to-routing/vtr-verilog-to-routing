@@ -13,7 +13,10 @@
 // #include "binary_heap.h"
 #include "multi_queue_priority_queue.h"
 
+#include <atomic>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 const size_t mq_num_threads = std::atoi(
     std::getenv("MQ_NUM_THREADS") ? std::getenv("MQ_NUM_THREADS") : "1");
@@ -59,13 +62,36 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         , modified_rr_node_inf_(mq_num_threads)
         , router_stats_(nullptr)
         , heap_(mq_num_threads, mq_num_queues)
-        , thread_pool_(mq_num_threads)
-        , thread_stopped_(mq_num_threads)
+        , thread_barrier_head_(mq_num_threads)
+        , thread_barrier_tail_(mq_num_threads)
+        , is_router_destroying_(false)
         , locks_(rr_node_route_inf.size())
         , router_debug_(false) {
         heap_.init_heap(grid);
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
         std::cout << "MQ #T=" << mq_num_threads << " #Q=" << mq_num_queues << std::endl << std::flush;
+        sub_threads_.resize(mq_num_threads-1);
+        for (size_t i = 0 ; i < mq_num_threads - 1; ++i) {
+            sub_threads_[i] = std::thread([i, this] {
+                while (true) {
+                    this->thread_barrier_head_.wait();
+                    if (this->is_router_destroying_ == true) {
+                        return;
+                    } else {
+                        this->timing_driven_route_connection_from_heap_thread_func(*this->sink_node_, *this->cost_params_, *this->bounding_box_, i+1);
+                    }
+                    this->thread_barrier_tail_.wait();
+                }
+            });
+        }
+        for (size_t i = 0; i < mq_num_threads - 1; ++i) {
+            sub_threads_[i].detach();
+        }
+    }
+
+    ~ParallelConnectionRouter() {
+        is_router_destroying_ = true;
+        thread_barrier_head_.wait();
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
@@ -304,8 +330,33 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     const ConnectionParameters* conn_params_;
     // BinaryHeap heap_;
     MultiQueuePriorityQueue heap_;
-    std::vector<std::thread> thread_pool_;
-    std::vector<bool> thread_stopped_;
+    std::vector<std::thread> sub_threads_;
+
+    class barrier_t {
+        std::mutex mutex_;
+        std::condition_variable cv_;
+        size_t count_;
+        size_t max_count_;
+        size_t generation_ = 0;
+    public:
+        explicit barrier_t(size_t num_threads) : count_(num_threads), max_count_(num_threads) { }
+
+        void wait() {
+            std::unique_lock<std::mutex> lock{mutex_};
+            size_t gen = generation_;
+            if (--count_ == 0) {
+                generation_ ++;
+                count_ = max_count_;
+                cv_.notify_all();
+            } else {
+                cv_.wait(lock, [this, &gen] { return gen != generation_; });
+            }
+        }
+    };
+
+    barrier_t thread_barrier_head_;
+    barrier_t thread_barrier_tail_;
+    std::atomic<bool> is_router_destroying_;
 
     class spin_lock_t {
         std::atomic_flag lock_ = ATOMIC_FLAG_INIT;
@@ -324,6 +375,10 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     bool router_debug_;
 
     bool only_opin_inter_layer;
+
+    std::atomic<RRNodeId*> sink_node_;
+    std::atomic<t_conn_cost_params*> cost_params_;
+    std::atomic<t_bb*> bounding_box_;
 };
 
 #endif /* _PARALLEL_CONNECTION_ROUTER_H */

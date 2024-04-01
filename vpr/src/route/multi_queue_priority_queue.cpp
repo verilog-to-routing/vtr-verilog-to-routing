@@ -47,7 +47,7 @@ bool MultiQueuePriorityQueue::is_valid() const {
 }
 
 void MultiQueuePriorityQueue::empty_heap() {
-    while (pq_->tryPop()) {}
+    // while (pq_->tryPop()) {} // BUG is fixed!
     VTR_ASSERT(is_empty_heap());
 }
 
