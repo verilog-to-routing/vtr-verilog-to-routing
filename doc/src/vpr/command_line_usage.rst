@@ -1163,6 +1163,12 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``1.3``
 
+.. option:: --max_pres_fac <float>
+
+    Sets the maximum present overuse penalty factor.
+
+    **Default:** ``1000.0``
+
 .. option:: --acc_fac <float>
 
     Specifies the accumulated overuse factor (historical congestion cost factor).
