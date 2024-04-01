@@ -183,7 +183,7 @@ private:
 
     std::thread m_thread; // thread to execute socket IO work
 
-    std::mutex m_tasksMutex;
+    std::mutex m_tasksMutex; // we used single mutex to guard both vectors m_receivedTasks and m_sendTasks
     std::vector<TaskPtr> m_receivedTasks; // tasks from client (requests)
     std::vector<TaskPtr> m_sendTasks; // tasks to client (responses)
 
