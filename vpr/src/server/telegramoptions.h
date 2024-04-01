@@ -140,7 +140,7 @@ private:
         return tokens;
     }
 
-    bool isDataTypeSupported(const std::string& type) {
+    bool isDataTypeSupported(const std::string& type) const {
         static const std::set<std::string> supportedTypes{"int", "string", "bool"};
         return supportedTypes.count(type) != 0;
     }
