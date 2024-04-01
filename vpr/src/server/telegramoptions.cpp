@@ -1,6 +1,9 @@
 #include "telegramoptions.h"
 #include "convertutils.h"
 
+#include "vtr_util.h"
+
+#include <optional>
 #include <sstream>
 
 namespace server {
@@ -8,9 +11,9 @@ namespace server {
 TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std::string>& expectedKeys) 
 {
     // parse data string
-    std::vector<std::string> options = splitString(data, ';');
+    std::vector<std::string> options = vtr::split(data, ";");
     for (const std::string& optionStr: options) {
-        std::vector<std::string> fragments = splitString(optionStr, ':');
+        std::vector<std::string> fragments = vtr::split(optionStr, ":");
         if (fragments.size() == TOTAL_INDEXES_NUM) {
             std::string name = fragments[INDEX_NAME];
             Option option{fragments[INDEX_TYPE], fragments[INDEX_VALUE]};
@@ -33,13 +36,13 @@ std::map<std::size_t, std::set<std::size_t>> TelegramOptions::getMapOfSets(const
     std::map<std::size_t, std::set<std::size_t>> result;
     std::string dataStr = getString(name);
     if (!dataStr.empty()) {
-        std::vector<std::string> paths = splitString(dataStr, '|');
+        std::vector<std::string> paths = vtr::split(dataStr, "|");
         for (const std::string& path: paths) {
-            std::vector<std::string> pathStruct = splitString(path, '#');
+            std::vector<std::string> pathStruct = vtr::split(path, "#");
             if (pathStruct.size() == 2) {
                 std::string pathIndexStr = pathStruct[0];
                 std::string pathElementIndexesStr = pathStruct[1];
-                std::vector<std::string> pathElementIndexes = splitString(pathElementIndexesStr, ',');
+                std::vector<std::string> pathElementIndexes = vtr::split(pathElementIndexesStr, ",");
                 std::set<std::size_t> elements;
                 for (const std::string& pathElementIndexStr: pathElementIndexes) {
                     if (std::optional<int> optValue = tryConvertToInt(pathElementIndexStr)) {
@@ -97,19 +100,6 @@ std::string TelegramOptions::errorsStr() const
         result += error + ';';
     }
     return result; 
-}
-
-std::vector<std::string> TelegramOptions::splitString(const std::string& input, char delimiter)
-{
-    std::vector<std::string> tokens;
-    std::istringstream tokenStream(input);
-    std::string token;
-
-    while (std::getline(tokenStream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-
-    return tokens;
 }
 
 bool TelegramOptions::isDataTypeSupported(const std::string& type) const 

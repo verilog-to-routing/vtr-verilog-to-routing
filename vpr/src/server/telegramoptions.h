@@ -50,9 +50,6 @@ private:
     std::unordered_map<std::string, Option> m_options;
     std::vector<std::string> m_errors;
 
-
-    std::vector<std::string> splitString(const std::string& input, char delimiter);
-
     bool isDataTypeSupported(const std::string& type) const;
     bool checkKeysPresence(const std::vector<std::string>& keys);
 };
