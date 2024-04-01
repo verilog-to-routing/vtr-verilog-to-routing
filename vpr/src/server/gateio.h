@@ -16,16 +16,19 @@ namespace server {
 
 /**
  * @brief Implements the socket communication layer with the outside world.
- *        Operable only with a single client. As soon as client connection is detected
- *        it begins listening on the specified port number for incoming client requests,
- *        collects and encapsulates them into tasks. 
- *        The incoming tasks are extracted and handled by the top-level logic (TaskResolver). 
- *        Once the tasks are resolved by the TaskResolver, they are returned 
- *        to be sent back to the client as a response.
  * 
- * Note: 
- * - gateio is not started automatically upon creation; you have to use the 'start' method with the port number.
- * - The gateio runs in a separate thread to ensure smooth IO behavior.
+ * Operable only with a single client. As soon as client connection is detected
+ * it begins listening on the specified port number for incoming client requests,
+ * collects and encapsulates them into tasks.
+ * The incoming tasks are extracted and handled by the top-level logic (TaskResolver). 
+ * Once the tasks are resolved by the TaskResolver, they are returned 
+ * to be sent back to the client as a response.
+ * 
+ * @note: 
+ * - The GateIO instance should be created and managed from the main thread, while its internal processing 
+ *   and IO operations are performed asynchronously in a separate thread.  This separation ensures smooth IO behavior 
+ *   and responsiveness of the application.
+ * - Gateio is not started automatically upon creation, you have to use the 'start' method with the port number.
  * - The socket is initialized in a non-blocking mode to function properly in a multithreaded environment.
 */
 class GateIO
