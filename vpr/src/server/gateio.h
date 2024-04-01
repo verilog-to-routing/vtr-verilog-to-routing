@@ -112,8 +112,14 @@ class GateIO
     };
 
 public:
-    explicit GateIO();
+    GateIO();
     ~GateIO();
+
+    GateIO(const GateIO&) = delete;
+    GateIO& operator=(const GateIO&) = delete;
+
+    GateIO(GateIO&&) = delete;
+    GateIO& operator=(GateIO&&) = delete;
 
     const int LOOP_INTERVAL_MS = 100;
 
