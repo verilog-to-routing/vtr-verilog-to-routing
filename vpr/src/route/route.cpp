@@ -441,8 +441,8 @@ bool route(const Netlist<>& net_list,
         } else {
             pres_fac *= router_opts.pres_fac_mult;
 
-            /* Avoid overflow for high iteration counts, even if acc_cost is big */
-            pres_fac = update_draw_pres_fac(std::min(pres_fac, static_cast<float>(1000)));
+            /* Set the maximum pres_fac to the value passed by the command line argument */
+            pres_fac = update_draw_pres_fac(std::min(pres_fac, router_opts.pres_fac_mult));
 
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
