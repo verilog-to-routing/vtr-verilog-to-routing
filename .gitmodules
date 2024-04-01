@@ -3,4 +3,4 @@
 	url = https://github.com/catchorg/Catch2.git
 [submodule "libs/EXTERNAL/CPS"]
 	path = libs/EXTERNAL/CPS
-	url = git@github.com:mcj-group/CPS.git
+	url = git@github.com:AlexandreSinger/CPS.git
