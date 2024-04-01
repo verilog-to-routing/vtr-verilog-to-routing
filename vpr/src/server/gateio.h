@@ -111,6 +111,8 @@ class GateIO
         std::atomic<int> m_logLevel;
     };
 
+    const int LOOP_INTERVAL_MS = 100;
+
 public:
     GateIO();
     ~GateIO();
@@ -121,16 +123,57 @@ public:
     GateIO(GateIO&&) = delete;
     GateIO& operator=(GateIO&&) = delete;
 
-    const int LOOP_INTERVAL_MS = 100;
-
+    // Check if the port listening process is currently running
     bool isRunning() const { return m_isRunning.load(); }
 
+    /**
+     * @brief Transfers ownership of received tasks to the caller.
+     * 
+     * This method moves all received tasks from the internal storage to the provided vector.
+     * After calling this method, the internal list of received tasks will be cleared.
+     * 
+     * @param tasks A reference to a vector where the received tasks will be moved.
+     */
     void takeReceivedTasks(std::vector<TaskPtr>&);
+
+    /**
+     * @brief Moves tasks to the send queue.
+     * 
+     * This method moves the tasks to the send queue.
+     * Each task is moved from the input vector to the send queue, and the input vector
+     * remains empty after the operation.
+     * 
+     * @param tasks A reference to a vector containing the tasks to be moved to the send queue.
+    */
     void moveTasksToSendQueue(std::vector<TaskPtr>&);
 
-    void printLogs(); // called from main thread
+    /**
+     * @brief Prints log messages for the GateIO.
+     * 
+     * @note Must be called from main thread since it's invoke std::cout.
+     * Calling this method from other threads may result in unexpected behavior.
+     */
+    void printLogs(); 
 
+    /**
+     * @brief Starts the server on the specified port number.
+     * 
+     * This method starts the server to listen for incoming connections on the specified port number.
+     * Once started,the server will continue running in a separate thread and will accept connection only from a single client
+     * attempting to connect to the specified port.
+     * 
+     * @param portNum The port number on which the server will listen for incoming connection.
+     */
     void start(int portNum);
+
+    /**
+     * @brief Stops the server and terminates the listening thread.
+     * 
+     * This method stops the server and terminates the listening thread. After calling this method,
+     * the server will no longer accept incoming connections and the listening thread will be terminated.
+     * 
+     * @note This method should be called when the server needs to be shut down gracefully.
+     */
     void stop();
 
 private:

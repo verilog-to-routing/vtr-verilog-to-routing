@@ -43,24 +43,21 @@ void GateIO::stop()
 void GateIO::takeReceivedTasks(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
-    if (!m_receivedTasks.empty()) {
-        m_logger.queue(LogLevel::Debug, "take", m_receivedTasks.size(), "num of received tasks");
+    for (TaskPtr& task: m_receivedTasks) {
+        m_logger.queue(LogLevel::Debug, "move task id=", task->jobId(), "for processing");
+        tasks.push_back(std::move(task));
     }
-    std::swap(tasks, m_receivedTasks);
+    m_receivedTasks.clear();
 }
 
 void GateIO::moveTasksToSendQueue(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
     for (TaskPtr& task: tasks) {
-        if (task->hasError()) {
-            m_logger.queue(LogLevel::Debug, "task id=", task->jobId(), "finished with error", task->error(), "moving it to send queue");
-        } else {
-            m_logger.queue(LogLevel::Debug, "task id=", task->jobId(), "finished with success, moving it to send queue");
-        }
-
+        m_logger.queue(LogLevel::Debug, "move task id=", task->jobId(), "finished", (task->hasError()? "with error": "succesfully"), task->error(), "to send queue");
         m_sendTasks.push_back(std::move(task));
     }
+    tasks.clear();
 }
 
 void GateIO::startListening()
