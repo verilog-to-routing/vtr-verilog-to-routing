@@ -8,7 +8,7 @@ struct test_tag;
 using TestStrongId = vtr::StrongId<test_tag>;
 
 TEST_CASE("Array view", "[array_view/array_view]") {
-    std::array<uint16_t, 10> arr;
+    std::array<uint16_t, 10> arr = {0};
     vtr::array_view<uint16_t> arr_view(arr.data(), arr.size());
 
     const vtr::array_view<uint16_t>& carr_view = arr_view;
@@ -56,7 +56,7 @@ TEST_CASE("Array view", "[array_view/array_view]") {
 }
 
 TEST_CASE("Array view id", "[array_view/array_view_id]") {
-    std::array<uint16_t, 10> arr;
+    std::array<uint16_t, 10> arr = {0};
     vtr::array_view_id<TestStrongId, uint16_t> arr_view(arr.data(), arr.size());
 
     const vtr::array_view_id<TestStrongId, uint16_t>& carr_view = arr_view;
