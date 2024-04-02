@@ -1709,6 +1709,9 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
+#else //NO_GRAPHICS
+        // Cast to void to explicitly avoid warning.
+        (void)manual_move_generator;
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
@@ -3985,9 +3988,11 @@ static void check_place(const t_placer_costs& costs,
                                    place_algorithm);
     error += check_placement_floorplanning();
 
-    // check the NoC costs during placement if the user is using the NoC supported flow
     if (noc_opts.noc) {
+        // check the NoC costs during placement if the user is using the NoC supported flow
         error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts);
+        // make sure NoC routing configuration does not create any cycles in CDG
+        error += (int)noc_routing_has_cycle();
     }
 
     if (error == 0) {

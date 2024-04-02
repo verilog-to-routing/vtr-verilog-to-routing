@@ -162,7 +162,11 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, traffic_flow_route, noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id,
+                                      (NocRouterId)sink_hard_routed_id,
+                                      (NocTrafficFlowId) traffic_flow_number,
+                                      traffic_flow_route,
+                                      noc_ctx.noc_model);
     }
 
     /* in the test function we will be routing all the traffic flows and then updating their link usages. So we will be generating a vector of all links
@@ -360,7 +364,11 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, traffic_flow_route, noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id,
+                                      (NocRouterId)sink_hard_routed_id,
+                                      (NocTrafficFlowId)traffic_flow_number,
+                                      traffic_flow_route,
+                                      noc_ctx.noc_model);
 
         // store the number of links in the traffic flow
         golden_traffic_flow_route_sizes[traffic_flow_number] = traffic_flow_route.size();
@@ -647,7 +655,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id,
+                                      (NocRouterId)sink_hard_routed_id,
+                                      (NocTrafficFlowId)traffic_flow_number,
+                                      golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number],
+                                      noc_ctx.noc_model);
     }
 
     // assume this works
@@ -756,78 +768,86 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         place_ctx.block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
         // get all the associated traffic flows of the moved cluster blocks
-        const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
-        const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+        const std::vector<NocTrafficFlowId>& assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
+        const std::vector<NocTrafficFlowId>& assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
         // now go through the traffic flows and update the link bandwidths and traffic flow routes locally
-        for (auto& traffic_flow : *assoc_traffic_flows_block_one) {
-            if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
+        for (auto traffic_flow_id : assoc_traffic_flows_block_one) {
+            if (routed_traffic_flows.find(traffic_flow_id) == routed_traffic_flows.end()) {
                 // get the current traffic flow
-                const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
+                const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
                 // go through the current traffic flow and reduce the bandwidths of the links
-                for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+                for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
                     golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
                     golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
                 }
 
                 // re-route the traffic flow
-                routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+                routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                              router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                              traffic_flow_id,
+                                              golden_traffic_flow_routes[traffic_flow_id],
+                                              noc_ctx.noc_model);
 
                 // go through the current traffic flow and increase the bandwidths of the links
-                for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+                for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
                     golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
                     golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
                 }
 
                 // update the costs now
-                golden_traffic_flow_bandwidth_costs[traffic_flow] = golden_traffic_flow_routes[traffic_flow].size() * curr_traffic_flow.traffic_flow_bandwidth;
-                golden_traffic_flow_bandwidth_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+                golden_traffic_flow_bandwidth_costs[traffic_flow_id] = golden_traffic_flow_routes[traffic_flow_id].size() * curr_traffic_flow.traffic_flow_bandwidth;
+                golden_traffic_flow_bandwidth_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
 
-                double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow].size());
+                double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow_id].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow_id].size());
 
-                golden_traffic_flow_latency_costs[traffic_flow] = curr_traffic_flow_latency;
-                golden_traffic_flow_latency_overrun_costs[traffic_flow] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
-                golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
-                golden_traffic_flow_latency_overrun_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+                golden_traffic_flow_latency_costs[traffic_flow_id] = curr_traffic_flow_latency;
+                golden_traffic_flow_latency_overrun_costs[traffic_flow_id] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
+                golden_traffic_flow_latency_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
+                golden_traffic_flow_latency_overrun_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
 
-                routed_traffic_flows.insert(traffic_flow);
+                routed_traffic_flows.insert(traffic_flow_id);
             }
         }
 
         // this is for the second swapped block
-        for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
-            if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
+        for (auto traffic_flow_id : assoc_traffic_flows_block_two) {
+            if (routed_traffic_flows.find(traffic_flow_id) == routed_traffic_flows.end()) {
                 // get the current traffic flow
-                const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
+                const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
                 // go through the current traffic flow and reduce the bandwidths of the links
-                for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+                for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
                     golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
                     golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
                 }
 
                 // re-route the traffic flow
-                routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+                routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                              router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                              traffic_flow_id,
+                                              golden_traffic_flow_routes[traffic_flow_id],
+                                              noc_ctx.noc_model);
 
                 // go through the current traffic flow and increase the bandwidths of the links
-                for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+                for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
                     golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
                     golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
                 }
 
                 // update the costs now
-                golden_traffic_flow_bandwidth_costs[traffic_flow] = golden_traffic_flow_routes[traffic_flow].size() * curr_traffic_flow.traffic_flow_bandwidth;
-                golden_traffic_flow_bandwidth_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+                golden_traffic_flow_bandwidth_costs[traffic_flow_id] = golden_traffic_flow_routes[traffic_flow_id].size() * curr_traffic_flow.traffic_flow_bandwidth;
+                golden_traffic_flow_bandwidth_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
 
-                double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow].size());
+                double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow_id].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow_id].size());
 
-                golden_traffic_flow_latency_costs[traffic_flow] = curr_traffic_flow_latency;
-                golden_traffic_flow_latency_overrun_costs[traffic_flow] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
-                golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
-                golden_traffic_flow_latency_overrun_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+                golden_traffic_flow_latency_costs[traffic_flow_id] = curr_traffic_flow_latency;
+                golden_traffic_flow_latency_overrun_costs[traffic_flow_id] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
+                golden_traffic_flow_latency_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
+                golden_traffic_flow_latency_overrun_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
 
-                routed_traffic_flows.insert(traffic_flow);
+                routed_traffic_flows.insert(traffic_flow_id);
             }
         }
 
@@ -904,71 +924,79 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     place_ctx.block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
     // get all the associated traffic flows of the moved cluster blocks
-    const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
-    const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+    const std::vector<NocTrafficFlowId>& assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
+    const std::vector<NocTrafficFlowId>& assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
     // now go through the traffic flows and update the link bandwidths and traffic flow routes locally
-    for (auto& traffic_flow : *assoc_traffic_flows_block_one) {
+    for (auto traffic_flow_id : assoc_traffic_flows_block_one) {
         // get the current traffic flow
-        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
+        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
         // go through the current traffic flow and reduce the bandwidths of the links
-        for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+        for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
             golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
             golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // re-route the traffic flow
-        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                      router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                      traffic_flow_id,
+                                      golden_traffic_flow_routes[traffic_flow_id],
+                                      noc_ctx.noc_model);
 
         // go through the current traffic flow and increase the bandwidths of the links
-        for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+        for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
             golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
             golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // update the costs now
-        golden_traffic_flow_bandwidth_costs[traffic_flow] = golden_traffic_flow_routes[traffic_flow].size() * curr_traffic_flow.traffic_flow_bandwidth;
-        golden_traffic_flow_bandwidth_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_bandwidth_costs[traffic_flow_id] = golden_traffic_flow_routes[traffic_flow_id].size() * curr_traffic_flow.traffic_flow_bandwidth;
+        golden_traffic_flow_bandwidth_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
 
-        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow].size());
+        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow_id].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow_id].size());
 
-        golden_traffic_flow_latency_costs[traffic_flow] = curr_traffic_flow_latency;
-        golden_traffic_flow_latency_overrun_costs[traffic_flow] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
-        golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
-        golden_traffic_flow_latency_overrun_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_latency_costs[traffic_flow_id] = curr_traffic_flow_latency;
+        golden_traffic_flow_latency_overrun_costs[traffic_flow_id] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
+        golden_traffic_flow_latency_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_latency_overrun_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
     }
 
     // this is for the second swapped block
-    for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
+    for (auto traffic_flow_id : assoc_traffic_flows_block_two) {
         // get the current traffic flow
-        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
+        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
         // go through the current traffic flow and reduce the bandwidths of the links
-        for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+        for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
             golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
             golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // re-route the traffic flow
-        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                      router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                      traffic_flow_id,
+                                      golden_traffic_flow_routes[traffic_flow_id],
+                                      noc_ctx.noc_model);
 
         // go through the current traffic flow and increase the bandwidths of the links
-        for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+        for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
             golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
             golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // update the costs now
-        golden_traffic_flow_bandwidth_costs[traffic_flow] = golden_traffic_flow_routes[traffic_flow].size() * curr_traffic_flow.traffic_flow_bandwidth;
-        golden_traffic_flow_bandwidth_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_bandwidth_costs[traffic_flow_id] = golden_traffic_flow_routes[traffic_flow_id].size() * curr_traffic_flow.traffic_flow_bandwidth;
+        golden_traffic_flow_bandwidth_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
 
-        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow].size());
+        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow_id].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow_id].size());
 
-        golden_traffic_flow_latency_costs[traffic_flow] = curr_traffic_flow_latency;
-        golden_traffic_flow_latency_overrun_costs[traffic_flow] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
-        golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
-        golden_traffic_flow_latency_overrun_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_latency_costs[traffic_flow_id] = curr_traffic_flow_latency;
+        golden_traffic_flow_latency_overrun_costs[traffic_flow_id] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
+        golden_traffic_flow_latency_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_latency_overrun_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
     }
 
     NocCostTerms delta_cost;
@@ -1033,38 +1061,42 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // get all the associated traffic flows of the moved cluster blocks
     // remember that the first cluster block doesn't have any traffic flows associated to it
-    assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+    const auto& assoc_traffic_flows_block_2 = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
     // this is for the second swapped block
-    for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
+    for (auto traffic_flow_id : assoc_traffic_flows_block_2) {
         // get the current traffic flow
-        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
+        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
         // go through the current traffic flow and reduce the bandwidths of the links
-        for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+        for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
             golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
             golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // re-route the traffic flow
-        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                      router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                      traffic_flow_id,
+                                      golden_traffic_flow_routes[traffic_flow_id],
+                                      noc_ctx.noc_model);
 
         // go through the current traffic flow and increase the bandwidths of the links
-        for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+        for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
             golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
             golden_link_congestion_costs[link] = std::max(golden_link_bandwidths[link] - link_bandwidth, 0.0);
         }
 
         // update the costs now
-        golden_traffic_flow_bandwidth_costs[traffic_flow] = golden_traffic_flow_routes[traffic_flow].size() * curr_traffic_flow.traffic_flow_bandwidth;
-        golden_traffic_flow_bandwidth_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_bandwidth_costs[traffic_flow_id] = golden_traffic_flow_routes[traffic_flow_id].size() * curr_traffic_flow.traffic_flow_bandwidth;
+        golden_traffic_flow_bandwidth_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
 
-        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow].size());
+        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow_id].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow_id].size());
 
-        golden_traffic_flow_latency_costs[traffic_flow] = curr_traffic_flow_latency;
-        golden_traffic_flow_latency_overrun_costs[traffic_flow] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
-        golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
-        golden_traffic_flow_latency_overrun_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_latency_costs[traffic_flow_id] = curr_traffic_flow_latency;
+        golden_traffic_flow_latency_overrun_costs[traffic_flow_id] = std::max(curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency, 0.);
+        golden_traffic_flow_latency_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
+        golden_traffic_flow_latency_overrun_costs[traffic_flow_id] *= curr_traffic_flow.traffic_flow_priority;
     }
 
     // reset the delta costs
@@ -1480,7 +1512,11 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
 
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id,
+                                      (NocRouterId)sink_hard_routed_id,
+                                      (NocTrafficFlowId)traffic_flow_number,
+                                      golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number],
+                                      noc_ctx.noc_model);
     }
 
     const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> initial_golden_traffic_flow_routes = golden_traffic_flow_routes;
@@ -1560,72 +1596,80 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     router_where_cluster_is_placed[swap_router_block_two] = router_first_swap_cluster_location;
 
     // get all the associated traffic flows of the moved cluster blocks
-    const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
-    const std::vector<NocTrafficFlowId>* assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+    const std::vector<NocTrafficFlowId>& assoc_traffic_flows_block_one = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_one);
+    const std::vector<NocTrafficFlowId>& assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
 
     // now go through the traffic flows and update the link bandwidths and traffic flow routes locally
-    for (auto& traffic_flow : *assoc_traffic_flows_block_one) {
-        if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
+    for (auto traffic_flow_id : assoc_traffic_flows_block_one) {
+        if (routed_traffic_flows.find(traffic_flow_id) == routed_traffic_flows.end()) {
             // get the current traffic flow
-            const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
+            const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
-            std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow);
+            std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow_id);
             traffic_flow_route.clear();
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
             // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
-            for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+            for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
                 // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
                 noc_ctx.noc_model.get_single_mutable_noc_link(link).set_bandwidth_usage(current_link_bandwidth - curr_traffic_flow.traffic_flow_bandwidth);
             }
 
             // re-route the traffic flow
-            noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+            noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                                 router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                                 traffic_flow_id,
+                                                 golden_traffic_flow_routes[traffic_flow_id],
+                                                 noc_ctx.noc_model);
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
             // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
-            for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+            for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
                 // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
                 noc_ctx.noc_model.get_single_mutable_noc_link(link).set_bandwidth_usage(current_link_bandwidth + curr_traffic_flow.traffic_flow_bandwidth);
                 traffic_flow_route.push_back(link);
             }
 
-            routed_traffic_flows.insert(traffic_flow);
+            routed_traffic_flows.insert(traffic_flow_id);
         }
     }
 
     // now go through the traffic flows associated with the second swapped block
-    for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
-        if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
+    for (auto traffic_flow_id : assoc_traffic_flows_block_two) {
+        if (routed_traffic_flows.find(traffic_flow_id) == routed_traffic_flows.end()) {
             // get the current traffic flow
-            const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
+            const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
-            std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow);
+            std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow_id);
             traffic_flow_route.clear();
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
             // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
-            for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+            for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
                 // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
                 noc_ctx.noc_model.get_single_mutable_noc_link(link).set_bandwidth_usage(current_link_bandwidth - curr_traffic_flow.traffic_flow_bandwidth);
             }
 
             // re-route the traffic flow
-            noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+            noc_ctx.noc_flows_router->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id],
+                                                 router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id],
+                                                 traffic_flow_id,
+                                                 golden_traffic_flow_routes[traffic_flow_id],
+                                                 noc_ctx.noc_model);
 
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
             // This shouldn't be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
-            for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+            for (auto& link : golden_traffic_flow_routes[traffic_flow_id]) {
                 // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
                 noc_ctx.noc_model.get_single_mutable_noc_link(link).set_bandwidth_usage(current_link_bandwidth + curr_traffic_flow.traffic_flow_bandwidth);
                 traffic_flow_route.push_back(link);
             }
 
-            routed_traffic_flows.insert(traffic_flow);
+            routed_traffic_flows.insert(traffic_flow_id);
         }
     }
 
@@ -1828,7 +1872,11 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         double traffic_flow_bandwidth = curr_traffic_flow.traffic_flow_bandwidth;
 
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, traffic_flow_route, noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id,
+                                      (NocRouterId)sink_hard_routed_id,
+                                      (NocTrafficFlowId)traffic_flow_number,
+                                      traffic_flow_route,
+                                      noc_ctx.noc_model);
 
         // update link bandwidth utilization
         for (auto link_id : traffic_flow_route) {
