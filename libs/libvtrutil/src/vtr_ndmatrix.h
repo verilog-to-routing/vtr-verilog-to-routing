@@ -139,7 +139,7 @@ class NdMatrixProxy<T, 1> {
  * This should improve memory usage (no extra pointers to store for each dimension),
  * and cache locality (less indirection via pointers, predictable strides).
  *
- * The indices are calculated based on the dimensions to access the appropriate elements.
+ * The indicies are calculated based on the dimensions to access the appropriate elements.
  * Since the indexing calculations are visible to the compiler at compile time they can be
  * optimized to be efficient.
  */
