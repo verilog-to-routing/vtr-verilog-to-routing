@@ -38,7 +38,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         "Timing analysis must be enabled for timing-driven placement.\n");
     }
 
-    if (!PlacerOpts.doPlacement && ("" != PlacerOpts.constraints_file)) {
+    if (!PlacerOpts.doPlacement && (!PlacerOpts.constraints_file.empty())) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "A block location file requires that placement is enabled.\n");
     }
@@ -57,7 +57,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
         if (!Timing.timing_analysis_enabled
             && (DEMAND_ONLY != RouterOpts.base_cost_type && DEMAND_ONLY_NORMALIZED_LENGTH != RouterOpts.base_cost_type)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "base_cost_type must be demand_only or demand_only_normailzed_length when timing analysis is disabled.\n");
+                            "base_cost_type must be demand_only or demand_only_normalized_length when timing analysis is disabled.\n");
         }
     }
 
