@@ -297,7 +297,7 @@ void remove_one_lut_nodes ( busvec* buses, std::unordered_map<std::string, int> 
 	t_node_port_association* source_port;
 	t_node_port_association* prev_port;
 	netvec* prev_bus;
-	t_net* prev_net;
+	t_net* prev_net = nullptr;
 
 	netvec* vcc_bus = get_bus_from_hash (hash_table, const_cast<char*>("vcc"), buses);
 	VTR_ASSERT(vcc_bus != NULL);
@@ -658,7 +658,7 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unorder
 		auto hash_entry = hash_table.find(ref_pin->name);
 
 		VTR_ASSERT(hash_entry != hash_table.end());
-		VTR_ASSERT((unsigned int)hash_entry->second == i);
+		VTR_ASSERT((unsigned int)hash_entry->second == (unsigned int)i);
 
 		for (int j = 0; (unsigned int)j < temp_bus->size(); j++){
 			temp_net = &(temp_bus->at(j));
