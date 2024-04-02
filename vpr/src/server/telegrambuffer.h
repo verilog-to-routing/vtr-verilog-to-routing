@@ -72,7 +72,7 @@ private:
     std::vector<std::string> m_errors;
     std::optional<TelegramHeader> m_headerOpt;
 
-    bool checkRawBuffer();
+    bool checkTelegramHeaderPresence();
 };
 
 } // namespace comm
