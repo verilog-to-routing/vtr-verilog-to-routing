@@ -4111,9 +4111,10 @@ static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp) 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const int num_tiles = device_ctx.grid.height() * device_ctx.grid.width();
-    vtr::NdMatrix<float, 3> tile_num_inter_die_conn({device_ctx.grid.width(),
-                                                     device_ctx.grid.height(),
-                                                     static_cast<size_t>(device_ctx.grid.get_num_layers())}, 0);
+    vtr::NdMatrix<float, 3> tile_num_inter_die_conn({static_cast<size_t>(device_ctx.grid.get_num_layers()),
+                                                     device_ctx.grid.width(),
+                                                     device_ctx.grid.height()}, 0);
+    int total_number_inter_die_conn = 0;
 
     for (const auto& src_rr_node : rr_graph.nodes()) {
         for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
@@ -4124,7 +4125,8 @@ static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp) 
                 VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
 
                 int src_layer = rr_graph.node_layer(src_rr_node);
-                tile_num_inter_die_conn[src_x][src_y][src_layer]++;
+                tile_num_inter_die_conn[src_layer][src_x][src_y]++;
+                total_number_inter_die_conn++;
             }
         }
 
@@ -4136,12 +4138,14 @@ static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp) 
                 int src_y = rr_graph.node_yhigh(src_rr_node);
                 VTR_ASSERT(rr_graph.node_ylow(src_rr_node) == src_y && rr_graph.node_ylow(src_rr_node) == src_y);
                 int src_layer = rr_graph.node_layer(src_rr_node);
-                tile_num_inter_die_conn[src_x][src_y][src_layer]++;
+                tile_num_inter_die_conn[src_layer][src_x][src_y]++;
+                total_number_inter_die_conn++;
             }
         }
     }
 
     chanz_place_cost_fac[0][0][0][0][0][0] = tile_num_inter_die_conn[0][0][0];
+    float avg_num_inter_die_conn_per_tile = static_cast<float>(total_number_inter_die_conn) / num_tiles;
 
     for (int layer_high_num = 1; layer_high_num < device_ctx.grid.get_num_layers(); layer_high_num++) {
         for (int x_high = 1; x_high < (int)device_ctx.grid.width(); x_high++) {
@@ -4153,12 +4157,12 @@ static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp) 
                             for (int layer_num = layer_low_num; layer_num <= layer_high_num; layer_num++) {
                                 for (int x = x_low; x <= x_high; x++) {
                                     for (int y = y_low; y <= y_high; y++) {
-                                        num_inter_die_conn += tile_num_inter_die_conn[x][y][layer_num];
+                                        num_inter_die_conn += tile_num_inter_die_conn[layer_num][x][y];
                                     }
                                 }
                             }
                             chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low] =
-                                (static_cast<float>(num_inter_die_conn) / num_tiles);
+                                (avg_num_inter_die_conn_per_tile  / num_inter_die_conn);
 
                             chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low] = pow(
                                 (double)chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low],
