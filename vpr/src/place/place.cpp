@@ -278,6 +278,8 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
+static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp);
+
 static void free_fast_cost_update();
 
 static double comp_bb_cost(e_cost_methods method);
@@ -3099,6 +3101,7 @@ static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
 
     double ncost, crossing;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const bool is_multi_layer = (g_vpr_ctx.device().grid.get_num_layers() > 1);
 
     crossing = wirelength_crossing_count(
         cluster_ctx.clb_nlist.net_pins(net_id).size());
@@ -3902,6 +3905,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
     chanx_place_cost_fac.resize({device_ctx.grid.height(), device_ctx.grid.height() + 1});
     chany_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});
+    chanz_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});
 
     /* First compute the number of tracks between channel high and channel *
      * low, inclusive, in an efficient manner.                             */
@@ -3977,6 +3981,73 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
                 (double)chany_place_cost_fac[high][low],
                 (double)place_cost_exp);
         }
+
+    alloc_and_load_for_fast_vertical_cost_update(place_cost_exp);
+
+}
+
+static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    const int num_tiles = device_ctx.grid.height() * device_ctx.grid.width();
+    vtr::NdMatrix<float, 3> tile_num_inter_die_conn({device_ctx.grid.width(),
+                                                     device_ctx.grid.height(),
+                                                     static_cast<size_t>(device_ctx.grid.get_num_layers())}, 0);
+
+    for (const auto& src_rr_node : rr_graph.nodes()) {
+        for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
+
+                int src_layer = rr_graph.node_layer(src_rr_node);
+                tile_num_inter_die_conn[src_x][src_y][src_layer]++;
+            }
+        }
+
+        for (const auto& rr_edge_idx : rr_graph.non_configurable_edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_xlow(src_rr_node) == src_x);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_ylow(src_rr_node) == src_y && rr_graph.node_ylow(src_rr_node) == src_y);
+                int src_layer = rr_graph.node_layer(src_rr_node);
+                tile_num_inter_die_conn[src_x][src_y][src_layer]++;
+            }
+        }
+    }
+
+    chanz_place_cost_fac[0][0][0][0][0][0] = tile_num_inter_die_conn[0][0][0];
+
+    for (int layer_high_num = 1; layer_high_num < device_ctx.grid.get_num_layers(); layer_high_num++) {
+        for (int x_high = 1; x_high < (int)device_ctx.grid.width(); x_high++) {
+            for (int y_high = 1; y_high < (int)device_ctx.grid.height(); y_high++) {
+                for (int layer_low_num = 0; layer_low_num < layer_high_num; layer_low_num++) {
+                    for (int x_low = 0; x_low < x_high; x_low++) {
+                        for (int y_low = 0; y_low < y_high; y_low++) {
+                            int num_inter_die_conn = 0;
+                            for (int layer_num = layer_low_num; layer_num <= layer_high_num; layer_num++) {
+                                for (int x = x_low; x <= x_high; x++) {
+                                    for (int y = y_low; y <= y_high; y++) {
+                                        num_inter_die_conn += tile_num_inter_die_conn[x][y][layer_num];
+                                    }
+                                }
+                            }
+                            chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low] =
+                                (static_cast<float>(num_inter_die_conn) / num_tiles);
+
+                            chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low] = pow(
+                                (double)chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low],
+                                (double)place_cost_exp);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 static void check_place(const t_placer_costs& costs,
