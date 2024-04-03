@@ -146,6 +146,7 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
  */
 static vtr::NdMatrix<float, 2> chanx_place_cost_fac({0, 0}); //[0...device_ctx.grid.width()-2]
 static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); //[0...device_ctx.grid.height()-2]
+static vtr::NdMatrix<float, 6> chanz_place_cost_fac({0, 0, 0, 0, 0, 0}); //[0...device_ctx.grid.height()-2]
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
