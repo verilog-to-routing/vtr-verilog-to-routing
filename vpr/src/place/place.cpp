@@ -3116,6 +3116,11 @@ static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
     ncost += (bbptr.ymax - bbptr.ymin + 1) * crossing
              * chany_place_cost_fac[bbptr.xmax][bbptr.xmin - 1];
 
+    if (is_multi_layer) {
+        ncost += (bbptr.layer_max - bbptr.layer_min) * crossing
+                 * chanz_place_cost_fac[bbptr.layer_max][bbptr.xmax][bbptr.ymax][bbptr.layer_min][bbptr.xmin][bbptr.ymin];
+    }
+
     return (ncost);
 }
 
