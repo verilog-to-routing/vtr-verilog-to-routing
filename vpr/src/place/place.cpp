@@ -455,7 +455,9 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
 
 static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
-static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr);
+static double get_net_cost(ClusterNetId net_id,
+                           const t_bb& bbptr,
+                           const vtr::Matrix<int>& num_sink_per_layer);
 
 static double get_net_layer_cost(ClusterNetId /* net_id */,
                                  const std::vector<t_2D_bb>& bbptr,
@@ -2086,10 +2088,10 @@ static int find_affected_nets_and_update_costs(
     for (int inet_affected = 0; inet_affected < num_affected_nets;
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
-
         if (cube_bb) {
             proposed_net_cost[net_id] = get_net_cost(net_id,
-                                                     ts_bb_coord_new[net_id]);
+                                                     ts_bb_coord_new[net_id],
+                                                     ts_layer_sink_pin_count);
         } else {
             proposed_net_cost[net_id] = get_net_layer_cost(net_id,
                                                            layer_ts_bb_coord_new[net_id],
@@ -2579,7 +2581,9 @@ static double comp_bb_cost(e_cost_methods method) {
                                       place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
 
-            net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
+            net_cost[net_id] = get_net_cost(net_id,
+                                            place_move_ctx.bb_coords[net_id],
+                                            place_move_ctx.num_sink_pin_layer);
             cost += net_cost[net_id];
             if (method == CHECK)
                 expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
@@ -3095,13 +3099,16 @@ static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
     return (ncost);
 }
 
-static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
+static double get_net_cost(ClusterNetId net_id,
+                           const t_bb& bbptr,
+                           const vtr::Matrix<int>& num_sink_per_layer) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
 
     double ncost, crossing;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    const bool is_multi_layer = (g_vpr_ctx.device().grid.get_num_layers() > 1);
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const bool is_multi_layer = (num_layers > 1);
 
     crossing = wirelength_crossing_count(
         cluster_ctx.clb_nlist.net_pins(net_id).size());
@@ -3120,7 +3127,17 @@ static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
              * chany_place_cost_fac[bbptr.xmax][bbptr.xmin - 1];
 
     if (is_multi_layer) {
-        ncost += (bbptr.layer_max - bbptr.layer_min) * crossing
+        const auto& move_ctx = g_placer_ctx.move();
+        int src_layer = 0;
+        int num_cross_layer_sink = OPEN;
+        if (num_sink_per_layer[(size_t)net_id][0] > num_sink_per_layer[(size_t)net_id][1]) {
+            num_cross_layer_sink = num_sink_per_layer[(size_t)net_id][1];
+        } else {
+            num_cross_layer_sink = num_sink_per_layer[(size_t)net_id][0];
+        }
+        VTR_ASSERT_DEBUG(num_cross_layer_sink >= 0);
+
+        ncost += (bbptr.layer_max - bbptr.layer_min) * num_cross_layer_sink
                  * chanz_place_cost_fac[bbptr.layer_max][bbptr.xmax][bbptr.ymax][bbptr.layer_min][bbptr.xmin][bbptr.ymin];
     }
 
@@ -3905,7 +3922,12 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
     chanx_place_cost_fac.resize({device_ctx.grid.height(), device_ctx.grid.height() + 1});
     chany_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});
-    chanz_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});
+    chanz_place_cost_fac.resize({static_cast<size_t>(device_ctx.grid.get_num_layers()),
+                                 device_ctx.grid.width(),
+                                 device_ctx.grid.height(),
+                                 static_cast<size_t>(device_ctx.grid.get_num_layers()),
+                                 device_ctx.grid.width(),
+                                 device_ctx.grid.height()});
 
     /* First compute the number of tracks between channel high and channel *
      * low, inclusive, in an efficient manner.                             */
